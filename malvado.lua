@@ -8,43 +8,70 @@
 --
 --
 
-Process = {
+VERSION = 0.1
+
+proc_counter = 0
+
+local MalvadoProcess = {
+  ident = 0,
   graph = nil,
+  func = function() end,
   x = 0,
   y = 0,
   z = 0,
 }
 
---[[
--- Meta class
-Rectangle = {area = 0, length = 0, breadth = 0}
-
--- Derived class method new
-
-function Rectangle:new (o,length,breadth)
-   o = o or {}
-   setmetatable(o, self)
-   self.__index = self
-   self.length = length or 0
-   self.breadth = breadth or 0
-   self.area = length*breadth;
-   return o
+MalvadoProcess.__index = MalvadoProcess
+MalvadoProcess.__call = function ()
+  malvado.proc_count = malvado.proc_count + 1
+  self.ident = malvado.proc_count
+  table.insert(malvado.processes, proc)
 end
 
--- Derived class method printArea
-
-function Rectangle:printArea ()
-   print("The area of Rectangle is ",self.area)
+function MalvadoProcess:new(ident, func)
+  return setmetatable({
+    ident = ident,
+    func = func,
+  }, MalvadoProcess)
 end
-Creating an Object
-Creating an object is the process of allocating memory for the class instance. Each of the objects has its own memory and share the common class data.
 
-r = Rectangle:new(nil,10,20)
---]]
+local MalvadoEngine = {}
+MalvadoEngine.__index = MalvadoEngine
 
--- Library interface
-function process(initialization, body)
-  return nil
+function MalvadoEngine:new()
+  return setmetatable({
+    processes = {},
+    proc_count = 0,
+  }, MalvadoEngine)
 end
+
+function MalvadoEngine:add_proc(func)
+  proc = MalvadoProcess:new(func)
+  return proc
+end
+
+function MalvadoEngine:keypressed(key)
+end
+
+function MalvadoEngine:update(dt)
+end
+
+--function MalvadoEngine:key_pressed(key)
+--end
+
+malvado = MalvadoEngine:new()
+
+-- #############################################################################
+-- LIBRARY INTERFACE
+-- #############################################################################
+function key(code)
+  --return malvado:key_pressed(code)
+  return false
+end
+
+function process(func)
+  return malvado:add_proc(func)
+end
+
 function kill(processToKill)
 end
