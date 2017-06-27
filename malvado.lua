@@ -35,18 +35,22 @@ local function Process(engine, func)
   local process = {
     ident = -1,
     graph = nil,
-    func = func,
+    func = nil,
+    args = nil,
     x = 0,
     y = 0,
     z = 0,
   }
 
-  mtproc = {}
+  mtproc = {
+  }
 
-  mtproc.__call = function(args)
-    --process.ident = engine.newProcId()
-    --engine.addProc(process)
-    -- Exit status
+  mtproc.__call = function(t, ...)
+    process.ident = engine.newProcId()
+    process.func = coroutine.create(func)
+    process.args = {...}
+
+    engine.addProc(process)
     return 0
   end
 
@@ -55,6 +59,21 @@ local function Process(engine, func)
   return process
 end
 
+function print_v(o) print(dump(o)) end
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. '['..k..'] = ' .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
+end
+
+
 -- #############################################################################
 -- ENGINE
 -- #############################################################################
@@ -62,9 +81,24 @@ local function Engine()
   local engine = {
     processes = {},
     proc_counter = 1,
+    started = false
   }
 
   engine.update = function (dt)
+    if not engine.started then
+      for i,v in ipairs(engine.processes) do
+        coroutine.resume(v.func, unpack(v.args))
+      end
+      engine.started = true
+    end
+
+    for i,v in ipairs(engine.processes) do
+      --print 'update'
+      --print(v.func)
+      --print(coroutine.status(v.func))
+      coroutine.resume(v.func)
+      --print 'update2'
+    end
   end
 
   engine.keypressed = function(key)
@@ -86,14 +120,14 @@ end
 -- #############################################################################
 -- LIBRARY INTERFACE
 -- #############################################################################
-engine = Engine()
+malvado = Engine()
 
 function key(code)
   return false
 end
 
 function process(func)
-  return Process(engine, func)
+  return Process(malvado, func)
 end
 
 function frame()
