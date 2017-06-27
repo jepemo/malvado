@@ -13,9 +13,9 @@ function love.load()
 end
 
 function love.update(dt)
-  malvado:update(dt)
+  engine.update(dt)
 end
 
 function love.keypressed(key)
-  malvado:keypressed(key)
+  engine.keypressed(key)
 end

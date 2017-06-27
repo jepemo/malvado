@@ -6,7 +6,6 @@
  | || || ( ( | | |\ V ( ( | ( (_| | |_| |
  |_||_||_|\_||_|_| \_/ \_||_|\____|\___/
 
-
  malvado - A game programming library with  "DIV Game Studio"-style
             processes for Lua/Love2D implemented in C with differents
             bindings for other languages.
@@ -29,68 +28,87 @@
 
 VERSION = 0.1
 
-local proc_counter = 0
-
-local MalvadoProcess = {
-  ident = 0,
-  graph = nil,
-  func = function() end,
-  x = 0,
-  y = 0,
-  z = 0,
-}
-
-MalvadoProcess.__call = function ()
-  malvado.proc_count = malvado.proc_count + 1
-  --self.ident = malvado.proc_count
-  --table.insert(malvado.processes, proc)
-end
-
-function MalvadoProcess:new(ident, func)
-  self.__index = self
-  return setmetatable({
-    ident = ident,
+-- #############################################################################
+-- PROCESS
+-- #############################################################################
+local function Process(engine, func)
+  local process = {
+    ident = -1,
+    graph = nil,
     func = func,
-  }, MalvadoProcess)
+    x = 0,
+    y = 0,
+    z = 0,
+  }
+
+  mtproc = {}
+
+  mtproc.__call = function(args)
+    --process.ident = engine.newProcId()
+    --engine.addProc(process)
+    -- Exit status
+    return 0
+  end
+
+  setmetatable(process, mtproc)
+
+  return process
 end
 
-local MalvadoEngine = {}
-MalvadoEngine.__index = MalvadoEngine
-
-function MalvadoEngine:new()
-  return setmetatable({
+-- #############################################################################
+-- ENGINE
+-- #############################################################################
+local function Engine()
+  local engine = {
     processes = {},
-    proc_count = 0,
-  }, MalvadoEngine)
+    proc_counter = 1,
+  }
+
+  engine.update = function (dt)
+  end
+
+  engine.keypressed = function(key)
+  end
+
+  engine.addProc = function(proc)
+    table.insert(engine.processes, proc)
+  end
+
+  engine.newProcId = function()
+    local newId = engine.proc_counter
+    engine.proc_counter = engine.proc_counter + 1
+    return newId
+  end
+
+  return engine
 end
-
-function MalvadoEngine:add_proc(func)
-  proc = MalvadoProcess:new(func)
-  return proc
-end
-
-function MalvadoEngine:keypressed(key)
-end
-
-function MalvadoEngine:update(dt)
-end
-
---function MalvadoEngine:key_pressed(key)
---end
-
-malvado = MalvadoEngine:new()
 
 -- #############################################################################
 -- LIBRARY INTERFACE
 -- #############################################################################
+engine = Engine()
+
 function key(code)
-  --return malvado:key_pressed(code)
   return false
 end
 
 function process(func)
-  return malvado:add_proc(func)
+  return Process(engine, func)
+end
+
+function frame()
+  coroutine.yield()
 end
 
 function kill(processToKill)
 end
+
+--[[
+return {
+  malvado = engine,
+  process = mProcess,
+  key = mKey,
+  frame = mFrame,
+  kill = mKill
+}
+]]--
