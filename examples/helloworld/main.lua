@@ -9,7 +9,7 @@ Background = process(function(x, y, text)
 end)
 
 function love.load()
-  hw = Background(400, 300, "Hello World")
+  hw = Background(350, 300, "Hello World")
 end
 
 function love.update(dt)

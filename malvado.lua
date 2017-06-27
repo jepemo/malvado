@@ -81,7 +81,8 @@ local function Engine()
   local engine = {
     processes = {},
     proc_counter = 1,
-    started = false
+    started = false,
+    keys = {},
   }
 
   engine.update = function (dt)
@@ -92,16 +93,30 @@ local function Engine()
       engine.started = true
     end
 
+    to_delete = {}
     for i,v in ipairs(engine.processes) do
-      --print 'update'
-      --print(v.func)
-      --print(coroutine.status(v.func))
       coroutine.resume(v.func)
-      --print 'update2'
+
+      if coroutine.status(v.func) == "dead" then
+        table.insert(to_delete, i)
+      end
     end
+
+    if #to_delete > 0 then
+      for i,v in ipairs(to_delete) do
+        table.remove(engine.processes, v)
+      end
+    end
+
+    if #engine.processes == 0 then
+      love.event.quit(0)
+    end
+
+    engine.keys = {}
   end
 
   engine.keypressed = function(key)
+    engine.keys[key] = true
   end
 
   engine.addProc = function(proc)
@@ -123,7 +138,7 @@ end
 malvado = Engine()
 
 function key(code)
-  return false
+  return malvado.keys[code] ~= nil and malvado.keys[code]
 end
 
 function process(func)
