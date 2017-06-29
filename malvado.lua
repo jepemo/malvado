@@ -151,12 +151,8 @@ end
 function kill(processToKill)
 end
 
---[[
-return {
-  malvado = engine,
-  process = mProcess,
-  key = mKey,
-  frame = mFrame,
-  kill = mKill
-}
-]]--
+function write(font, x, y, text)
+  love.graphics.setFont(font)
+  love.graphics.setColor(0, 0, 0, 255)
+  love.graphics.print(text, x, y)
+end

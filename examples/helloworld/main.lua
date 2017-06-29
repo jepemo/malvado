@@ -6,9 +6,7 @@ local font = love.graphics.newFont(60)
 Background = process(function(x, y, text)
   while not key("escape") do
     love.graphics.setBackgroundColor(231, 231, 231)
-    love.graphics.setFont(font)
-    love.graphics.setColor(0, 0, 0, 255)
-    love.graphics.print(text, x, y)
+    write(font, x, y, text)
     frame()
   end
 end)
