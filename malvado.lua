@@ -151,8 +151,18 @@ end
 function kill(processToKill)
 end
 
+function font(size, r, g, b, a)
+  return {
+    font = love.graphics.newFont(size),
+    r = r,
+    g = g,
+    b = b,
+    a = a
+  }
+end
+
 function write(font, x, y, text)
-  love.graphics.setFont(font)
-  love.graphics.setColor(0, 0, 0, 255)
+  love.graphics.setFont(font.font)
+  love.graphics.setColor(font.r, font.g, font.b, font.a)
   love.graphics.print(text, x, y)
 end
