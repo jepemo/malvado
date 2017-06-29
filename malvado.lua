@@ -84,7 +84,7 @@ local function Engine()
     keys = {},
   }
 
-  engine.update = function (dt)
+  engine.draw = function ()
     if not engine.started then
       for i,v in ipairs(engine.processes) do
         coroutine.resume(v.func, unpack(v.args))

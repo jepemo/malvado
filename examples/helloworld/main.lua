@@ -1,23 +1,22 @@
 package.path = package.path .. ";../../?.lua"
 require ('malvado')
 
-Background = process(function(x, y, text)
+Background = process(function(x, y, text, font)
   while not key("escape") do
+    love.graphics.setBackgroundColor(231, 231, 231)
+    love.graphics.setFont(font)
     love.graphics.print(text, x, y)
     frame()
   end
 end)
 
 function love.load()
-  hw = Background(350, 300, "Hello World")
-end
-
-function love.update(dt)
-  --malvado.update(dt)
+  local font = love.graphics.newFont(60)
+  hw = Background(250, 280, "Hello World", font)
 end
 
 function love.draw()
-  malvado.update(0)
+  malvado.draw()
 end
 
 function love.keypressed(key)
