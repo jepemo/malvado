@@ -33,6 +33,22 @@ VERSION = 0.1
 local function angleToRadians (angle)
   return (angle * math.pi) / 180
 end
+local function debug(text)
+  print(text)
+end
+function print_v(o) print(dump(o)) end
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. '['..k..'] = ' .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
+end
 
 -- #############################################################################
 -- PROCESS
@@ -48,6 +64,7 @@ local function Process(engine, func)
     z = 0,
     angle = 0,
     size = 1,
+    state = 0,
   }
 
   mtproc = {
@@ -59,7 +76,8 @@ local function Process(engine, func)
     process.args = args
 
     process = setmetatable(process, args)
-    --print_v(process)
+
+    debug("Created process:" .. process.id)
 
     engine.addProc(process)
     return 0
@@ -69,21 +87,6 @@ local function Process(engine, func)
 
   return process
 end
-
-function print_v(o) print(dump(o)) end
-function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
-end
-
 
 -- #############################################################################
 -- ENGINE
@@ -115,26 +118,26 @@ local function Engine()
   end
 
   engine.draw = function ()
-    if not engine.started then
-      for i,v in ipairs(engine.processes) do
-        -- Merge tables
+    to_delete = {}
+    for i,v in ipairs(engine.processes) do
+      if v.state == 0 then
         for k2,v2 in pairs(v.args) do
           v[k2] = v2
         end
-
-        coroutine.resume(v.func, v)
+        v.state = 1
       end
-      engine.started = true
-    end
 
-    to_delete = {}
-    for i,v in ipairs(engine.processes) do
-      coroutine.resume(v.func, v)
+      local ok, error = coroutine.resume(v.func, v)
+      if not ok then
+        debug(error)
+      end
+
       if (v.graph ~= nil) then
         render_process(v)
       end
 
       if coroutine.status(v.func) == "dead" then
+        debug("Finalized process:" .. v.id)
         table.insert(to_delete, i)
       end
     end
