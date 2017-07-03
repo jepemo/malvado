@@ -18,4 +18,3 @@ end
 
 -- boilerplate
 function love.draw() malvado.draw() end
-function love.keypressed(key) malvado.keypressed(key) end

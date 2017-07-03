@@ -20,11 +20,17 @@ SpaceShip = process(function(self)
   self.graph = love.graphics.newImage('spaceship.png')
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
-  self.size = 0.3
+  self.size = 0.1
+  local angleVelocity = 1
+  local angleInit = -90
 
   while not key("escape") do
-    if key("left")  then self.angle = self.angle+0.5 end
-    if key("right") then self.angle = self.angle-0.5 end
+    if key("left")  then self.angle = self.angle-angleVelocity end
+    if key("right") then self.angle = self.angle+angleVelocity end
+    if key("up") then
+      self.x = self.x+cos(self.angle+angleInit)
+      self.y = self.y+sin(self.angle+angleInit)
+    end
     frame()
   end
 end)
@@ -38,4 +44,3 @@ end
 
 -- boilerplate
 function love.draw() malvado.draw() end
-function love.keypressed(key) malvado.keypressed(key) end

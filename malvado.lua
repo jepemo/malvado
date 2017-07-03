@@ -28,6 +28,13 @@
 VERSION = 0.1
 
 -- #############################################################################
+-- UTILITIES
+-- #############################################################################
+local function angleToRadians (angle)
+  return (angle * math.pi) / 180
+end
+
+-- #############################################################################
 -- PROCESS
 -- #############################################################################
 local function Process(engine, func)
@@ -91,7 +98,19 @@ local function Engine()
 
   local function render_process(process)
     if type(process.graph) == 'userdata' then
-      love.graphics.draw(process.graph, process.x, process.y, process.angle, process.size, process.size)
+      local gwidth, gheight = process.graph:getDimensions()
+
+      love.graphics.draw(
+        process.graph,
+        process.x,
+        process.y,
+        --process.angle,
+        angleToRadians(process.angle),
+        process.size,
+        process.size,
+        gwidth/2,
+        gheight/2
+      )
     end
   end
 
@@ -133,10 +152,6 @@ local function Engine()
     engine.keys = {}
   end
 
-  engine.keypressed = function(key)
-    engine.keys[key] = true
-  end
-
   engine.addProc = function(proc)
     table.insert(engine.processes, proc)
 
@@ -160,7 +175,7 @@ end
 malvado = Engine()
 
 function key(code)
-  return malvado.keys[code] ~= nil and malvado.keys[code]
+  return love.keyboard.isDown(code)
 end
 
 function process(func)
@@ -182,6 +197,13 @@ function font(size, r, g, b, a)
     b = b,
     a = a
   }
+end
+
+function cos(angle)
+  return math.cos(angleToRadians(angle))
+end
+function sin(angle)
+  return math.sin(angleToRadians(angle))
 end
 
 function write(font, x, y, text)
