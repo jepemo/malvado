@@ -40,7 +40,7 @@ local function Process(engine, func)
     y = 0,
     z = 0,
     angle = 0,
-    size = 100,
+    size = 1,
   }
 
   mtproc = {
@@ -89,6 +89,12 @@ local function Engine()
     keys = {},
   }
 
+  local function render_process(process)
+    if type(process.graph) == 'userdata' then
+      love.graphics.draw(process.graph, process.x, process.y, process.angle, process.size, process.size)
+    end
+  end
+
   engine.draw = function ()
     if not engine.started then
       for i,v in ipairs(engine.processes) do
@@ -105,6 +111,9 @@ local function Engine()
     to_delete = {}
     for i,v in ipairs(engine.processes) do
       coroutine.resume(v.func, v)
+      if (v.graph ~= nil) then
+        render_process(v)
+      end
 
       if coroutine.status(v.func) == "dead" then
         table.insert(to_delete, i)
@@ -183,4 +192,12 @@ end
 
 function set_title(title)
   love.window.setTitle(title)
+end
+function get_screen_width()
+  local screen_width, _ = love.graphics.getDimensions()
+  return screen_width
+end
+function get_screen_height()
+  local _, screen_height = love.graphics.getDimensions()
+  return screen_height
 end
