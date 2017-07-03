@@ -32,28 +32,32 @@ VERSION = 0.1
 -- #############################################################################
 local function Process(engine, func)
   local process = {
-    ident = -1,
+    id = -1,
     graph = nil,
     func = nil,
     args = nil,
     x = 0,
     y = 0,
     z = 0,
+    angle = 0,
   }
 
   mtproc = {
   }
 
-  mtproc.__call = function(t, ...)
-    process.ident = engine.newProcId()
+  mtproc.__call = function(t, args)
+    process.id = engine.newProcId()
     process.func = coroutine.create(func)
-    process.args = {...}
+    process.args = args
+
+    --process = setmetatable(process, args)
+    --print_v(process)
 
     engine.addProc(process)
     return 0
   end
 
-  setmetatable(process, mtproc)
+  process = setmetatable(process, mtproc)
 
   return process
 end
@@ -87,7 +91,12 @@ local function Engine()
   engine.draw = function ()
     if not engine.started then
       for i,v in ipairs(engine.processes) do
-        coroutine.resume(v.func, unpack(v.args))
+        -- Merge tables
+        for k2,v2 in pairs(v.args) do
+          v[k2] = v2
+        end
+
+        coroutine.resume(v.func, v)--, unpack(v.args))
       end
       engine.started = true
     end
@@ -120,6 +129,10 @@ local function Engine()
 
   engine.addProc = function(proc)
     table.insert(engine.processes, proc)
+
+    table.sort(engine.processes, function(a, b)
+      return a.z < b.z
+    end)
   end
 
   engine.newProcId = function()
