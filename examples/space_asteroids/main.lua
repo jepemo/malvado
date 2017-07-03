@@ -48,17 +48,12 @@ SpaceShip = process(function(self)
     end
 
     if key("space") and fired == 0 then
-      print 'antes'
-      local result = pcall(Laser)
-      print (result)
-
       Laser { x = self.x,
               y = self.y,
               angle = self.angle,
               xdir = cos(self.angle+angleDesp),
               ydir = sin(self.angle+angleDesp)}
       fired = 1
-      print 'despres'
     end
 
     if not key("space") then fired = 0 end

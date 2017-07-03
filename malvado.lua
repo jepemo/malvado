@@ -36,8 +36,7 @@ end
 local function debug(text)
   print(text)
 end
-function print_v(o) print(dump(o)) end
-function dump(o)
+local function dump(o)
    if type(o) == 'table' then
       local s = '{ '
       for k,v in pairs(o) do
@@ -48,6 +47,21 @@ function dump(o)
    else
       return tostring(o)
    end
+end
+function print_v(o) print(dump(o)) end
+local function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
 end
 
 -- #############################################################################
@@ -71,15 +85,17 @@ local function Process(engine, func)
   }
 
   mtproc.__call = function(t, args)
-    process.id = engine.newProcId()
-    process.func = coroutine.create(func)
-    process.args = args
+    new_proc = deepcopy(process)
 
-    process = setmetatable(process, args)
+    new_proc.id = engine.newProcId()
+    new_proc.func = coroutine.create(func)
+    new_proc.args = args
 
-    debug("Created process:" .. process.id)
+    --process = setmetatable(process, args)
+    new_proc = setmetatable(new_proc, mtproc)
 
-    engine.addProc(process)
+    engine.addProc(new_proc)
+    debug("Created process:" .. new_proc.id)
     return 0
   end
 
