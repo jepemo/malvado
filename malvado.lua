@@ -40,6 +40,7 @@ local function Process(engine, func)
     y = 0,
     z = 0,
     angle = 0,
+    size = 100,
   }
 
   mtproc = {
@@ -50,7 +51,7 @@ local function Process(engine, func)
     process.func = coroutine.create(func)
     process.args = args
 
-    --process = setmetatable(process, args)
+    process = setmetatable(process, args)
     --print_v(process)
 
     engine.addProc(process)
@@ -96,14 +97,14 @@ local function Engine()
           v[k2] = v2
         end
 
-        coroutine.resume(v.func, v)--, unpack(v.args))
+        coroutine.resume(v.func, v)
       end
       engine.started = true
     end
 
     to_delete = {}
     for i,v in ipairs(engine.processes) do
-      coroutine.resume(v.func)
+      coroutine.resume(v.func, v)
 
       if coroutine.status(v.func) == "dead" then
         table.insert(to_delete, i)
@@ -178,4 +179,8 @@ function write(font, x, y, text)
   love.graphics.setFont(font.font)
   love.graphics.setColor(font.r, font.g, font.b, font.a)
   love.graphics.print(text, x, y)
+end
+
+function set_title(title)
+  love.window.setTitle(title)
 end

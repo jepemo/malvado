@@ -19,18 +19,23 @@ Stars = process(function(self)
 end)
 
 SpaceShip = process(function(self)
+  local screen_width, screen_height = love.graphics.getDimensions()
+  local graph = love.graphics.newImage('spaceship.png')
+  self.x = screen_width / 2
+  self.y = screen_height / 2
   while not key("escape") do
+    love.graphics.draw(graph, self.x, self.y, self.angle, 0.3, 0.3)
     frame()
   end
 end)
 
 function love.load()
-  love.window.setTitle('Space Asteroids')
+  set_title('Space Asteroids')
   Stars { z = -1000, max_stars = 200 }
   SpaceShip { z = 0 }
 end
 
 
--- The boilerplate code
+-- boilerplate
 function love.draw() malvado.draw() end
 function love.keypressed(key) malvado.keypressed(key) end

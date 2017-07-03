@@ -12,13 +12,10 @@ Background = process(function(self)
 end)
 
 function love.load()
-  hw = Background { x=240, y=280, text="Hello World" }
+  set_title("Hello world")
+  Background { x=240, y=280, text="Hello World" }
 end
 
-function love.draw()
-  malvado.draw()
-end
-
-function love.keypressed(key)
-  malvado.keypressed(key)
-end
+-- boilerplate
+function love.draw() malvado.draw() end
+function love.keypressed(key) malvado.keypressed(key) end
