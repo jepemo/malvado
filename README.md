@@ -18,14 +18,14 @@ require 'malvado'
 -- Define global font (size, color (r, g, b), alfa)
 local font = font(60, 0, 0, 0, 255)
 
--- Define (not run) the one process
+-- Define (not run) one process
 HelloWorld = process(function(self)
   -- Runs until escape key is pressed
   while not key("escape") do
     -- Set background to grey
     love.graphics.setBackgroundColor(231, 231, 231)
 
-    -- Write the "Hello world" text to the passed position
+    -- Write the "Hello world" text in the process position
     write(font, self.x, self.y, self.text)
 
     -- Render the process
