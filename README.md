@@ -2,14 +2,15 @@
 A game programming library with  "DIV Game Studio"-style processes for Lua/Love2D
 
 - [Getting Started](#getting-started)
-- [Hello World](#hello-world)
+  - [Examples](#examples)
+  - [Hello World Example](#hello-world-example)
 - [Cookbook](#cookbook)
 - [Api Reference](#api-reference)
 
 ## Getting Started
 
 * Install [Love2d](https://love2d.org/)
-* Install *Malvado*:
+* Install **Malvado**:
 ```bash
 luarocks install malvado
 ```
@@ -22,7 +23,7 @@ love examples/space_asteroids
 love examples/sprites
 ```
 
-## Hello World Example
+### Hello World Example
 
 ```lua
 require 'malvado'
