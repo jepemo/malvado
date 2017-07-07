@@ -25,14 +25,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-package.path = package.path .. ";./?.lua"
-
-require 'malvado.utils'
-require 'malvado.math'
-require 'malvado.video'
-
-require 'malvado.core'
-require 'malvado.draw'
-require 'malvado.map'
-require 'malvado.text'
-require 'malvado.wm'
+function write(font, x, y, text)
+  love.graphics.setFont(font.font)
+  love.graphics.setColor(font.r, font.g, font.b, font.a)
+  love.graphics.print(text, x, y)
+end

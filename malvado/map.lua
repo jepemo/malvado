@@ -25,14 +25,55 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-package.path = package.path .. ";./?.lua"
+function font(size, r, g, b, a)
+  return {
+    font = love.graphics.newFont(size),
+    r = r,
+    g = g,
+    b = b,
+    a = a
+  }
+end
 
-require 'malvado.utils'
-require 'malvado.math'
-require 'malvado.video'
+--------------------------------------------------------------------------------
+-- FADE
+--------------------------------------------------------------------------------
 
-require 'malvado.core'
-require 'malvado.draw'
-require 'malvado.map'
-require 'malvado.text'
-require 'malvado.wm'
+
+
+fade_process = nil
+FadeProcess = process(function(self)
+  local in_progress = true
+  local width = get_screen_width()
+  local height = get_screen_height()
+  local red = 0
+  local green = 0
+  local blue = 0
+  local alpha = 0
+
+  while true do
+    if in_progress then
+      love.graphics.setColor(red, green, blue, alpha )
+    end
+
+    love.graphics.rectangle("fill", 0, 0, width, height)
+
+    frame()
+  end
+end)
+
+function fade(r, g, b, speed)
+  if fade_process == nil then
+    fade_process = FadeProcess { z = 1000000, rcomp = r, gcomp = g, bcomp = b, speed = speed }
+  else
+    -- Change
+  end
+end
+
+function fade_on()
+  fade(100,100,100,16)
+end
+
+function fade_off()
+  fade(0,0,0,16)
+end

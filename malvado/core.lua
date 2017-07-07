@@ -59,7 +59,7 @@ local function Process(engine, func)
 
     engine.addProc(new_proc)
     debug("Created process:" .. new_proc.id)
-    return 0
+    return new_proc.id
   end
 
   process = setmetatable(process, mtproc)
@@ -169,20 +169,4 @@ function frame()
 end
 
 function kill(processToKill)
-end
-
-function font(size, r, g, b, a)
-  return {
-    font = love.graphics.newFont(size),
-    r = r,
-    g = g,
-    b = b,
-    a = a
-  }
-end
-
-function write(font, x, y, text)
-  love.graphics.setFont(font.font)
-  love.graphics.setColor(font.r, font.g, font.b, font.a)
-  love.graphics.print(text, x, y)
 end

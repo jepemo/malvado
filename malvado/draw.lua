@@ -25,14 +25,14 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-package.path = package.path .. ";./?.lua"
+function set_color(red, green, blue, alpha)
+  alpha = alpha or 255
+  love.graphics.setColor(red, green, blue, alpha)
+end
 
-require 'malvado.utils'
-require 'malvado.math'
-require 'malvado.video'
-
-require 'malvado.core'
-require 'malvado.draw'
-require 'malvado.map'
-require 'malvado.text'
-require 'malvado.wm'
+function draw_circle(x, y, radius)
+   love.graphics.circle("line", x, y, radius)
+end
+function draw_fcircle(x, y, radius)
+   love.graphics.circle("fill", x, y, radius)
+end
