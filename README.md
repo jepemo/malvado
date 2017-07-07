@@ -3,18 +3,49 @@ A game programming library with  "DIV Game Studio"-style processes for Lua/Love2
 
 - [Getting Started](#getting-started)
 - [Hello World](#hello-world)
+- [Cookbook](#cookbook)
+- [Api Reference](#api-reference)
 
 ## Getting Started
 
 * Install [Love2d](https://love2d.org/)
 
-## Hello world
+## Hello world Example
 
 ```lua
-require('malvado')
+require 'malvado'
 
-function love.draw()
-  malvado.draw()
+-- Define global font (size, color (r, g, b), alfa)
+local font = font(60, 0, 0, 0, 255)
+
+-- The background process
+Background = process(function(self)
+  -- Runs until escape key is pressed
+  while not key("escape") do
+    -- Set background to grey
+    love.graphics.setBackgroundColor(231, 231, 231)
+
+    -- Write the "Hello world" text to the passed position
+    write(font, self.x, self.y, self.text)
+
+    -- Render the process
+    frame()
+  end
+end)
+
+-- Main init
+function love.load()
+  -- Set the title text of the window
+  set_title("Hello world")
+
+  -- Launch the background process
+  -- The application runs until there is no running process.
+  Background { x=240, y=280, text="Hello World" }
 end
 
+-- boilerplate
+function love.draw() malvado.draw() end
 ```
+
+## [Cookbook](doc/cookbook.md)
+## [Api Reference](doc/api.md)

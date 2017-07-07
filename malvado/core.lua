@@ -28,43 +28,6 @@
 VERSION = 0.1
 
 -- #############################################################################
--- UTILITIES
--- #############################################################################
-local function angleToRadians (angle)
-  return (angle * math.pi) / 180
-end
-local function debug(text)
-  print(text)
-end
-local function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
-end
-function print_v(o) print(dump(o)) end
-local function deepcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[deepcopy(orig_key)] = deepcopy(orig_value)
-        end
-        setmetatable(copy, deepcopy(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
--- #############################################################################
 -- PROCESS
 -- #############################################################################
 local function Process(engine, func)
@@ -218,27 +181,8 @@ function font(size, r, g, b, a)
   }
 end
 
-function cos(angle)
-  return math.cos(angleToRadians(angle))
-end
-function sin(angle)
-  return math.sin(angleToRadians(angle))
-end
-
 function write(font, x, y, text)
   love.graphics.setFont(font.font)
   love.graphics.setColor(font.r, font.g, font.b, font.a)
   love.graphics.print(text, x, y)
-end
-
-function set_title(title)
-  love.window.setTitle(title)
-end
-function get_screen_width()
-  local screen_width, _ = love.graphics.getDimensions()
-  return screen_width
-end
-function get_screen_height()
-  local _, screen_height = love.graphics.getDimensions()
-  return screen_height
 end
