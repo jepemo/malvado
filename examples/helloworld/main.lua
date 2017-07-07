@@ -1,5 +1,4 @@
-package.path = package.path .. ";../../?/?.lua"
-
+package.path = package.path .. ";./?/init.lua"
 require 'malvado'
 
 -- Define global font (size, color (r, g, b), alfa)

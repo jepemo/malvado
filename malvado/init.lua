@@ -25,6 +25,9 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+package.path = package.path .. ";./?.lua"
+
+require 'malvado.utils'
 require 'malvado.utils'
 require 'malvado.math'
 
