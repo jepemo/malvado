@@ -18,8 +18,8 @@ require 'malvado'
 -- Define global font (size, color (r, g, b), alfa)
 local font = font(60, 0, 0, 0, 255)
 
--- The background process
-Background = process(function(self)
+-- Define (not run) the one process
+HelloWorld = process(function(self)
   -- Runs until escape key is pressed
   while not key("escape") do
     -- Set background to grey
@@ -40,7 +40,7 @@ function love.load()
 
   -- Launch the background process
   -- The application runs until there is no running process.
-  Background { x=240, y=280, text="Hello World" }
+  HelloWorld { x=240, y=280, text="Hello World" }
 end
 
 -- boilerplate
