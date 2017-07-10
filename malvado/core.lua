@@ -42,12 +42,25 @@ local function Process(engine, func)
     angle = 0,
     size = 1,
     state = 0,
+    data_msg = {}
   }
+
+  process.recv = function(self)
+    if #self.data_msg > 0 then
+      return table.remove(self.data_msg)
+    else
+      return nil
+    end
+  end
 
   mtproc = {
   }
 
   mtproc.__call = function(t, args)
+    -- print_v(t)
+
+    args = args or {}
+
     new_proc = deepcopy(process)
 
     new_proc.id = engine.newProcId()
@@ -76,6 +89,8 @@ local function Engine()
     proc_counter = 1,
     started = false,
     keys = {},
+    background_color = { r = 0, g = 0, b = 0 },
+    messages = {}
   }
 
   local function render_process(process)
@@ -97,6 +112,11 @@ local function Engine()
   end
 
   engine.draw = function ()
+    love.graphics.setBackgroundColor(
+      engine.background_color.r,
+      engine.background_color.g,
+      engine.background_color.b)
+
     to_delete = {}
     for i,v in ipairs(engine.processes) do
       if v.state == 0 then
@@ -132,20 +152,43 @@ local function Engine()
     end
 
     engine.keys = {}
+
+    -- Esto hay que revisarlo
+    table.sort(engine.processes, function(a, b)
+      return a.z < b.z
+    end)
   end
 
   engine.addProc = function(proc)
     table.insert(engine.processes, proc)
-
-    table.sort(engine.processes, function(a, b)
-      return a.z < b.z
-    end)
   end
 
   engine.newProcId = function()
     local newId = engine.proc_counter
     engine.proc_counter = engine.proc_counter + 1
     return newId
+  end
+
+  engine.kill = function(processToKill)
+    local pos = 0
+    for i, v in ipais(engine.processes) do
+      if v[id] == processToKill then
+        pos = i
+        break
+      end
+    end
+
+    if pos > 0 then
+      table.remove(engine.processes, pos)
+    end
+  end
+
+  engine.send = function(proc_id, data)
+    for i, v in ipairs(engine.processes) do
+      if v.id == proc_id then
+        table.insert(v.data_msg, data)
+      end
+    end
   end
 
   return engine
@@ -169,4 +212,9 @@ function frame()
 end
 
 function kill(processToKill)
+  malvado.kill(processToKill)
+end
+
+function send(proc_id, data)
+  malvado.send(proc_id, data)
 end

@@ -2,15 +2,15 @@ package.path = package.path .. ";./?/init.lua"
 require 'malvado'
 
 -- Define global font (size, color (r, g, b), alfa)
-local font = font(60, 0, 0, 0, 255)
+local font = font(60, 0, 0, 0)
 
 -- Define (not run) one process
 HelloWorld = process(function(self)
+  -- Set background to grey
+  clear_screen(231, 231, 231)
+
   -- Runs until escape key is pressed
   while not key("escape") do
-    -- Set background to grey
-    love.graphics.setBackgroundColor(231, 231, 231)
-
     -- Write the "Hello world" text in the process position
     write(font, self.x, self.y, self.text)
 

@@ -25,15 +25,14 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-package.path = package.path .. ";./?.lua"
+function clear_screen(r, g, b)
+  r = r or 0
+  g = g or 0
+  b = b or 0
 
-require 'malvado.utils'
-require 'malvado.math'
-require 'malvado.video'
-
-require 'malvado.core'
-require 'malvado.draw'
-require 'malvado.map'
-require 'malvado.screen'
-require 'malvado.text'
-require 'malvado.wm'
+  malvado.background_color = {
+    r = r,
+    g = g,
+    b = b,
+  }
+end

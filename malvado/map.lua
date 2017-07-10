@@ -26,6 +26,12 @@
 --]]
 
 function font(size, r, g, b, a)
+  -- Default values
+  r = r or 255
+  g = g or 255
+  b = b or 255
+  a = a or 255
+
   return {
     font = love.graphics.newFont(size),
     r = r,
@@ -41,39 +47,78 @@ end
 
 
 
-fade_process = nil
 FadeProcess = process(function(self)
-  local in_progress = true
+  local in_progress = false
   local width = get_screen_width()
   local height = get_screen_height()
-  local red = 0
-  local green = 0
-  local blue = 0
-  local alpha = 0
 
-  while true do
-    if in_progress then
-      love.graphics.setColor(red, green, blue, alpha )
+  local r = 0
+  local r_end = 0
+
+  local g = 0
+  local g_end = 0
+
+  local b = 0
+  local b_end = 0
+
+  local a = 0
+  local a_end = 255
+
+  local speed = 30
+  self.z = 1000000
+
+  while #malvado.processes > 1 do
+    if in_progress == true then
+      if r ~= r_end then
+        if r_end < r then r = r - 1 else r = r + 1 end
+      end
+      if g ~= g_end then
+        if g_end < r then g = g - 1 else g = g + 1 end
+      end
+      if b ~= b_end then
+        if b_end < r then b = b - 1 else b = b + 1 end
+      end
+
+      if a ~= a_end then
+        if a_end < a then a = a - 1 else a = a + 1 end
+      end
+
+      -- Reset the queue
+      self.data_msg = {}
+
+      if r == r_end and g == g_end and b == b_end and a == a_end then
+        in_progress = false
+      end
+    else
+      data = self:recv()
+
+      if data ~= nil then
+        --print_v(data)
+        r_end = data.r
+        g_end = data.g
+        b_end = data.b
+        a_end = data.a
+
+        in_progress = true
+      end
     end
 
+    love.graphics.setColor(r, g, b, a)
     love.graphics.rectangle("fill", 0, 0, width, height)
-
     frame()
   end
 end)
 
-function fade(r, g, b, speed)
-  if fade_process == nil then
-    fade_process = FadeProcess { z = 1000000, rcomp = r, gcomp = g, bcomp = b, speed = speed }
-  else
-    -- Change
-  end
+fade_process = FadeProcess {z = 1000000}
+
+function fade(rc, gc, bc, ac, speedc)
+  send(fade_process, { r = rc, g = gc, b = bc, a = ac, speed = speedc})
 end
 
 function fade_on()
-  fade(100,100,100,16)
+  fade(0, 0, 0, 0, 16)
 end
 
 function fade_off()
-  fade(0,0,0,16)
+  fade(0,0,0, 255, 16)
 end

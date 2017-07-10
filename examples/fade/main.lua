@@ -9,13 +9,18 @@ Circle = process(function(self)
   while not key("escape") do
     set_color(255, 128, 0)
     draw_fcircle(x, y, r)
+
+    if key("space") then
+      fade_off()
+    end
+
     frame()
   end
 end)
 
 function love.load()
   set_title("Fade example")
-  Circle {}
+  Circle { z = 0}
 end
 
 -- boilerplate
