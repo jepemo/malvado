@@ -5,13 +5,16 @@ Circle = process(function(self)
   local r = get_screen_height() / 5
   local x = get_screen_width() / 2
   local y = get_screen_height() / 2
+  local entra = 0
 
   while not key("escape") do
     set_color(255, 128, 0)
     draw_fcircle(x, y, r)
 
-    if key("space") then
+    if key("space") and entra == 0 then
+      entra = 1
       fade_off()
+      fade_on()
     end
 
     frame()

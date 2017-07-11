@@ -45,7 +45,22 @@ end
 -- FADE
 --------------------------------------------------------------------------------
 
+function inc_value(current_value, maxmin_value, direction, increment)
+  if direction == 1 and current_value >= maxmin_value then
+    return 0
+  end
+  if direction == -1 and current_value <= maxmin_value then
+    return 0
+  end
 
+  if direction == 1 and current_value < maxmin_value then
+    return increment
+  end
+
+  if direction == -1 and current_value > maxmin_value then
+    return -increment
+  end
+end
 
 FadeProcess = process(function(self)
   local in_progress = false
@@ -67,37 +82,62 @@ FadeProcess = process(function(self)
   local speed = 30
   self.z = 1000000
 
+  local dir_r = 0
+  local dir_g = 0
+  local dir_b = 0
+  local dir_a = 0
+  local fades = {}
+
+  print (self.id)
+
   while #malvado.processes > 1 do
     if in_progress == true then
-      if r ~= r_end then
-        if r_end < r then r = r - 1 else r = r + 1 end
-      end
-      if g ~= g_end then
-        if g_end < r then g = g - 1 else g = g + 1 end
-      end
-      if b ~= b_end then
-        if b_end < r then b = b - 1 else b = b + 1 end
-      end
 
-      if a ~= a_end then
-        if a_end < a then a = a - 1 else a = a + 1 end
-      end
+      local inc_r = inc_value(r, r_end, dir_r, speed)
+      local inc_g = inc_value(g, g_end, dir_g, speed)
+      local inc_b = inc_value(b, b_end, dir_b, speed)
+      local inc_a = inc_value(a, a_end, dir_a, speed)
+
+      r = r + inc_r
+      g = g + inc_g
+      b = b + inc_b
+      a = a + inc_a
 
       -- Reset the queue
-      self.data_msg = {}
+      --self.data_msg = {}
 
-      if r == r_end and g == g_end and b == b_end and a == a_end then
+      if inc_r == 0 and
+         inc_g == 0 and
+         inc_b == 0 and
+         inc_a == 0 then
         in_progress = false
       end
     else
+      --[[
+      if #fades == 0 then
+        data = self:recv()
+        if data ~= nil then
+
+        end
+      end
+      ]]--
+
       data = self:recv()
 
       if data ~= nil then
-        --print_v(data)
+        print 'a'
+        print_v(data)
+        print 'b'
         r_end = data.r
         g_end = data.g
         b_end = data.b
         a_end = data.a
+        speed = data.speed
+
+        if r_end > r then dir_r = 1 else dir_r = -1 end
+        if g_end > r then dir_g = 1 else dir_g = -1 end
+        if b_end > r then dir_b = 1 else dir_b = -1 end
+        if a_end > r then dir_a = 1 else dir_a = -1 end
 
         in_progress = true
       end
@@ -116,9 +156,9 @@ function fade(rc, gc, bc, ac, speedc)
 end
 
 function fade_on()
-  fade(0, 0, 0, 0, 16)
+  fade(0, 0, 0, 0, 5)
 end
 
 function fade_off()
-  fade(0,0,0, 255, 16)
+  fade(0,0,0, 255, 5)
 end
