@@ -47,7 +47,7 @@ local function Process(engine, func)
 
   process.recv = function(self)
     if #self.data_msg > 0 then
-      return table.remove(self.data_msg)
+      return table.remove(self.data_msg, 1)
     else
       return nil
     end

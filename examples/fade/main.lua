@@ -17,6 +17,8 @@ Circle = process(function(self)
       fade_on()
     end
 
+    if not key("space") then entra = 0 end
+
     frame()
   end
 end)

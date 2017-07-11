@@ -79,7 +79,7 @@ FadeProcess = process(function(self)
   local a = 0
   local a_end = 255
 
-  local speed = 30
+  local speed = 1
   self.z = 1000000
 
   local dir_r = 0
@@ -88,8 +88,6 @@ FadeProcess = process(function(self)
   local dir_a = 0
   local fades = {}
 
-  print (self.id)
-
   while #malvado.processes > 1 do
     if in_progress == true then
 
@@ -97,6 +95,8 @@ FadeProcess = process(function(self)
       local inc_g = inc_value(g, g_end, dir_g, speed)
       local inc_b = inc_value(b, b_end, dir_b, speed)
       local inc_a = inc_value(a, a_end, dir_a, speed)
+
+      --print (a)
 
       r = r + inc_r
       g = g + inc_g
@@ -125,9 +125,7 @@ FadeProcess = process(function(self)
       data = self:recv()
 
       if data ~= nil then
-        print 'a'
-        print_v(data)
-        print 'b'
+        --debug(data)
         r_end = data.r
         g_end = data.g
         b_end = data.b
@@ -155,10 +153,12 @@ function fade(rc, gc, bc, ac, speedc)
   send(fade_process, { r = rc, g = gc, b = bc, a = ac, speed = speedc})
 end
 
-function fade_on()
-  fade(0, 0, 0, 0, 5)
+function fade_on(speed)
+  speed = speed or 4
+  fade(0, 0, 0, 0, 16)
 end
 
-function fade_off()
-  fade(0,0,0, 255, 5)
+function fade_off(speed)
+  speed = speed or 4
+  fade(0,0,0, 255, 16)
 end
