@@ -171,7 +171,7 @@ local function Engine()
 
   engine.kill = function(processToKill)
     local pos = 0
-    for i, v in ipais(engine.processes) do
+    for i, v in ipairs(engine.processes) do
       if v[id] == processToKill then
         pos = i
         break

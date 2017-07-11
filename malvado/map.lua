@@ -45,7 +45,7 @@ end
 -- FADE
 --------------------------------------------------------------------------------
 
-function inc_value(current_value, maxmin_value, direction, increment)
+local function inc_value(current_value, maxmin_value, direction, increment)
   if direction == 1 and current_value >= maxmin_value then
     return 0
   end
@@ -86,25 +86,18 @@ FadeProcess = process(function(self)
   local dir_g = 0
   local dir_b = 0
   local dir_a = 0
-  local fades = {}
 
   while #malvado.processes > 1 do
     if in_progress == true then
-
       local inc_r = inc_value(r, r_end, dir_r, speed)
       local inc_g = inc_value(g, g_end, dir_g, speed)
       local inc_b = inc_value(b, b_end, dir_b, speed)
       local inc_a = inc_value(a, a_end, dir_a, speed)
 
-      --print (a)
-
       r = r + inc_r
       g = g + inc_g
       b = b + inc_b
       a = a + inc_a
-
-      -- Reset the queue
-      --self.data_msg = {}
 
       if inc_r == 0 and
          inc_g == 0 and
@@ -113,19 +106,9 @@ FadeProcess = process(function(self)
         in_progress = false
       end
     else
-      --[[
-      if #fades == 0 then
-        data = self:recv()
-        if data ~= nil then
-
-        end
-      end
-      ]]--
-
       data = self:recv()
 
       if data ~= nil then
-        --debug(data)
         r_end = data.r
         g_end = data.g
         b_end = data.b

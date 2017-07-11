@@ -10,7 +10,8 @@ Stars = process(function(self)
    end
 
   while not key("escape") do
-    love.graphics.setBackgroundColor(0, 0, 0)
+    clear_screen()
+    set_color(255, 255, 255)
     love.graphics.points(stars)
     frame()
   end
@@ -26,6 +27,29 @@ Laser = process(function(self)
     and self.y > 0 and self.y < get_screen_height() do
     self.x = self.x + self.xdir * velocity
     self.y = self.y + self.ydir * velocity
+    frame()
+  end
+end)
+
+
+Asteroid = process(function(self)
+  self.graph = love.graphics.newImage('asteroid.png')
+  self.x = get_screen_width() / 5
+  self.y = get_screen_height() / 5
+  self.size = 0.5
+
+  local destroyed = false
+
+  while not key("escape") do
+    self.angle = self.angle + 1
+    self.x = self.x + self.xdir
+    self.y = self.y + self.ydir
+
+    if (self.x < 0)  then self.x = get_screen_width() end
+    if (self.x > get_screen_width()) then self.x = 0 end
+    if (self.y < 0) then self.y = get_screen_height() end
+    if (self.y > get_screen_height()) then self.y = 0 end
+
     frame()
   end
 end)
@@ -64,8 +88,10 @@ end)
 
 function love.load()
   set_title('Space Asteroids')
-  Stars { z = -1000, max_stars = 200 }
+  Stars { z = -1, max_stars = 200 }
   SpaceShip { z = 0 }
+  Asteroid { z = 1, xdir = 0.2, ydir = 0.8 }
+  Asteroid { z = 1, xdir = 0.6, ydir = 0.3 }
 end
 
 
