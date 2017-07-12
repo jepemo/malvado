@@ -18,7 +18,7 @@ Stars = process(function(self)
 end)
 
 Laser = process(function(self)
-  self.graph = love.graphics.newImage('laser.png')
+  self.graph = load_image('laser.png')
   self.size = 0.5
   local velocity = 3
 
@@ -33,7 +33,7 @@ end)
 
 
 Asteroid = process(function(self)
-  self.graph = love.graphics.newImage('asteroid.png')
+  self.graph = load_image('asteroid.png')
   self.x = get_screen_width() / 5
   self.y = get_screen_height() / 5
   self.size = 0.5
@@ -55,7 +55,7 @@ Asteroid = process(function(self)
 end)
 
 SpaceShip = process(function(self)
-  self.graph = love.graphics.newImage('spaceship.png')
+  self.graph = load_image('spaceship.png')
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
   self.size = 0.1

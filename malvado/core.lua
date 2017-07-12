@@ -94,14 +94,31 @@ local function Engine()
   }
 
   local function render_process(process)
-    if type(process.graph) == 'userdata' then
-      local gwidth, gheight = process.graph:getDimensions()
+    local graphic = nil
 
+    if process.fpg ~= nil
+      and process.fpg.data ~= nil
+      and #process.fpg.data > 0 then
+
+      if self.graph ~= nil
+        and type(self.graph) == 'number'
+        and self.graph > 0
+        and self.graph <= #process.fpg.data then
+
+        graphic = process.fpg.data[self.graph]
+      end
+    elseif process.graph ~= nil then
+      if process.graph.type == 'image' then
+        graphic = process.graph.data
+      end
+    end
+
+    if graphic ~= nil then
+      local gwidth, gheight = graphic:getDimensions()
       love.graphics.draw(
-        process.graph,
+        graphic,
         process.x,
         process.y,
-        --process.angle,
         angleToRadians(process.angle),
         process.size,
         process.size,

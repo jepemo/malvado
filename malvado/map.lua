@@ -41,6 +41,38 @@ function font(size, r, g, b, a)
   }
 end
 
+function load_image(image_path)
+  return {
+    type = 'image',
+    data = love.graphics.newImage(image_path)
+  }
+end
+
+function load_fpg(fpg_path)
+  local dir = love.filesystem.getSourceBaseDirectory()
+  print (fpg_path)
+  love.filesystem.mount(dir .. '/' .. fpg_path, "content")
+
+  files = {}
+  local files = love.filesystem.getDirectoryItems("content")
+
+  os.execute("sleep 10")
+  print 'files'
+  for k, file in ipairs(files) do
+    print(k .. ". " .. file)
+    table.insert(files, love.graphics.newImage(file))
+  end
+
+  love.filesystem.unmount(fpg_path)
+
+  print_v(files)
+
+  return {
+    type = 'zip',
+    data = files
+  }
+end
+
 --------------------------------------------------------------------------------
 -- FADE
 --------------------------------------------------------------------------------
