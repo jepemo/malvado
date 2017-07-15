@@ -25,11 +25,11 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-VERSION = 0.1
+--- Core module implements all the process workflow: creation/etc.
 
--- #############################################################################
--- PROCESS
--- #############################################################################
+--- [Internal] Process Object definition
+-- @param engine ...
+-- @param func ...
 local function Process(engine, func)
   local process = {
     id = -1,
@@ -86,9 +86,7 @@ local function Process(engine, func)
   return process
 end
 
--- #############################################################################
--- ENGINE
--- #############################################################################
+--- [Internal] Process engine
 local function Engine()
   local engine = {
     processes = {},
@@ -217,27 +215,37 @@ local function Engine()
   return engine
 end
 
--- #############################################################################
--- LIBRARY INTERFACE
--- #############################################################################
+--- Engine instantiation.
 malvado = Engine()
 
+--- Check if a key is pressed. The key codes are same in [love2d](https://love2d.org/wiki/KeyConstant).
+-- @param code Key code
+-- @return true|false if the key is pressed
 function key(code)
   return love.keyboard.isDown(code)
 end
 
+--- Define a process.
+-- @param func the function definition of the process
+-- @return The process definition (not the instance)
 function process(func)
   return Process(malvado, func)
 end
 
+--- Stops the process executions and allow that itself can be rendered.
 function frame()
   coroutine.yield()
 end
 
+--- Kills one process.
+-- @param processToKill Unique identifier of the process, returned when is instantiated.
 function kill(processToKill)
   malvado.kill(processToKill)
 end
 
+--- Sends a message to a process.
+-- @param proc_id Unique identifier of the process, returned when is instantiated.
+-- @param data Table with the data to send
 function send(proc_id, data)
   malvado.send(proc_id, data)
 end

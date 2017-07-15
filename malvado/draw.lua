@@ -25,6 +25,13 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+--- Draw module implements the draw privimites utilities.
+
+--- Sets the color of the next primitive to be painted. It's an alias of: love.graphics.setColor.
+-- @param red Red
+-- @param green Green
+-- @param blue Blue
+-- @param alpha Alpha (Optional: Default 255)
 function set_color(red, green, blue, alpha)
   alpha = alpha or 255
   love.graphics.setColor(red, green, blue, alpha)

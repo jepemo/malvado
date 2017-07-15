@@ -65,4 +65,4 @@ function love.draw() malvado.draw() end
 ```
 
 ## [Cookbook](doc/cookbook.md)
-## [Api Reference](doc/api.md)
+## [Api Reference](doc/index.html)
