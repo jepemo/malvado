@@ -16,6 +16,8 @@ A game programming library with  "DIV Game Studio"-style processes for Lua/Love2
 ```bash
 luarocks install malvado
 ```
+To generate the documentation. If you download from github. You will need [LDoc](https://github.com/stevedonovan/LDoc) and [Penlight](https://github.com/stevedonovan/Penlight) .
+
 ### Run Examples
 ```
 love examples/helloworld

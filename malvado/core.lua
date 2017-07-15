@@ -33,7 +33,13 @@ VERSION = 0.1
 local function Process(engine, func)
   local process = {
     id = -1,
+    -- Graphic
     graph = nil,
+    -- Graphic package
+    fpg = nil,
+    -- Graphic index
+    fpgIndex = -1,
+    -- Process function
     func = nil,
     args = nil,
     x = 0,
