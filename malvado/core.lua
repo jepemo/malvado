@@ -25,7 +25,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
---- Core module implements all the process workflow: creation/etc.
+--- Core module implements all the process workflow
+-- @module malvado.core
 
 --- [Internal] Process Object definition
 -- @param engine ...
@@ -217,13 +218,6 @@ end
 
 --- Engine instantiation.
 malvado = Engine()
-
---- Check if a key is pressed. The key codes are same in [love2d](https://love2d.org/wiki/KeyConstant).
--- @param code Key code
--- @return true|false if the key is pressed
-function key(code)
-  return love.keyboard.isDown(code)
-end
 
 --- Define a process.
 -- @param func the function definition of the process

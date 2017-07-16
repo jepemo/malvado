@@ -7,7 +7,7 @@ install:
 	@echo "Installing..."
 
 doc:
-	@lua /home/jere/libs/LDoc/ldoc.lua -p Malvado malvado/core.lua malvado/draw.lua
+	@lua /home/jere/libs/LDoc/ldoc.lua -M -p Malvado -c doc/config.ld .
 
 clean:
 	rm -f doc/index.html

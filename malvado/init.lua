@@ -33,6 +33,7 @@ require 'malvado.video'
 
 require 'malvado.core'
 require 'malvado.draw'
+require 'malvado.key'
 require 'malvado.map'
 require 'malvado.screen'
 require 'malvado.text'

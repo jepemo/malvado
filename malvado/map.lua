@@ -25,6 +25,16 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+--- Map module implements load graphic utilities
+-- @module malvado.map
+
+--- Sets the color of the next primitive to be painted. It's an alias of: love.graphics.setColor.
+-- @param size Size
+-- @param r Red (default 255)
+-- @param g Green (default 255)
+-- @param b Blue (default 255)
+-- @param a Alpha (default 255)
+-- @return Object font
 function font(size, r, g, b, a)
   -- Default values
   r = r or 255

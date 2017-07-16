@@ -25,22 +25,12 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
---- Draw module implements the draw privimites utilities
--- @module malvado.draw
+--- Core module implements keyboard input iteractions
+-- @module malvado.key
 
---- Sets the color of the next primitive to be painted. It's an alias of: love.graphics.setColor.
--- @param red Red
--- @param green Green
--- @param blue Blue
--- @param alpha Alpha (Optional: Default 255)
-function set_color(red, green, blue, alpha)
-  alpha = alpha or 255
-  love.graphics.setColor(red, green, blue, alpha)
-end
-
-function draw_circle(x, y, radius)
-   love.graphics.circle("line", x, y, radius)
-end
-function draw_fcircle(x, y, radius)
-   love.graphics.circle("fill", x, y, radius)
+--- Check if a key is pressed. The key codes are same in [love2d](https://love2d.org/wiki/KeyConstant).
+-- @param code Key code
+-- @return true|false if the key is pressed
+function key(code)
+  return love.keyboard.isDown(code)
 end
