@@ -60,20 +60,42 @@ end
 
 function load_fpg(fpg_path)
   local dir = love.filesystem.getSourceBaseDirectory()
-  print (fpg_path)
-  love.filesystem.mount(dir .. '/' .. fpg_path, "content")
+  --local path = dir .. '/' .. fpg_path
+  local path = fpg_path
+  --local virtual_dir = dir .. '/' .. fpg_path .. ".virtual"
+  --local virtual_dir = fpg_path .. ".virtual"
+  local virtual_dir = 'content'
+  print ('path:' .. path)
+  print ('virtual_dir:' .. virtual_dir)
+  --print(love.filesystem.getSourceBaseDirectory())
+  --print(love.filesystem.getWorkingDirectory( ))
+  --print(love.filesystem.getAppdataDirectory( ))
+  --print(love.filesystem.getUserDirectory( ))
+  print(love.filesystem.getSaveDirectory( ))
+  local success = love.filesystem.mount(path, virtual_dir)
+  print('success=' .. tostring(success))
 
   files = {}
-  local files = love.filesystem.getDirectoryItems("content")
+  local files_input = love.filesystem.getDirectoryItems(virtual_dir)
 
-  os.execute("sleep 10")
-  print 'files'
-  for k, file in ipairs(files) do
+  local exists = love.filesystem.exists(virtual_dir .. '/' .. 'c1.png')
+  print('exists:' .. tostring(exists))
+
+  local pathfile = '/home/jere/workspaces/src/github.com/jepemo/malvado/examples/sprites/cat.zip'
+  local isFile = love.filesystem.exists( 'cat.zip' )
+  print('isFile:' .. tostring(isFile))
+
+  print_v(files_input)
+
+  print 'files_start'
+  for k, file in ipairs(files_input) do
     print(k .. ". " .. file)
     table.insert(files, love.graphics.newImage(file))
   end
+  print 'files_end'
+  os.execute("sleep 10")
 
-  love.filesystem.unmount(fpg_path)
+  love.filesystem.unmount(path)
 
   print_v(files)
 

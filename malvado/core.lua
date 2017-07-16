@@ -105,12 +105,12 @@ local function Engine()
       and process.fpg.data ~= nil
       and #process.fpg.data > 0 then
 
-      if self.graph ~= nil
-        and type(self.graph) == 'number'
-        and self.graph > 0
-        and self.graph <= #process.fpg.data then
+      if self.fpgIndex ~= nil
+        and type(self.fpgIndex) == 'number'
+        and self.fpgIndex > 0
+        and self.fpgIndex <= #process.fpg.data then
 
-        graphic = process.fpg.data[self.graph]
+        graphic = process.fpg.data[self.fpgIndex]
       end
     elseif process.graph ~= nil then
       if process.graph.type == 'image' then

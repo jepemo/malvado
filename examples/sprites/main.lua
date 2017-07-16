@@ -3,15 +3,15 @@ require ('malvado')
 
 Cat = process(function(self)
   self.fpg = load_fpg("cat.zip")
-  self.graph = 0
+  self.fpgIndex = 0
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
 
   while not key("escape") do
-    self.graph = self.graph+1
-    print (self.graph)
-    if self.graph > 6 then
-      self.graph = 1
+    self.fpgIndex = self.fpgIndex+1
+    print (self.fpgIndex)
+    if self.fpgIndex > 6 then
+      self.fpgIndex = 1
     end
 
     frame()
