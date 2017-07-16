@@ -58,6 +58,29 @@ function load_image(image_path)
   }
 end
 
+function load_fpg_image(path, num_rows, num_cols)
+  local image = love.graphics.newImage(path)
+  local image_w, image_h = image:getDimensions()
+  local quad_w, quad_h = image_w / num_cols, image_h / num_rows
+
+  local animation_table = {}
+  for y = 0, num_rows do
+		for x = 0, num_cols do
+			animation_table[#animation_table + 1] = love.graphics.newQuad(x * quad_w, y * quad_h, quad_w, quad_h, image_w, image_h)
+		end
+	end
+
+  animation_table[#animation_table] = nil
+
+  print_v(animation_table)
+
+  return {
+    type = 'fpg_image',
+    data = files
+  }
+
+end
+
 function load_fpg(fpg_path)
   local dir = love.filesystem.getSourceBaseDirectory()
   --local path = dir .. '/' .. fpg_path
