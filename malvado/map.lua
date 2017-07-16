@@ -72,11 +72,12 @@ function load_fpg_image(path, num_rows, num_cols)
 
   animation_table[#animation_table] = nil
 
-  print_v(animation_table)
+  --print_v(animation_table)
 
   return {
     type = 'fpg_image',
-    data = files
+    anim_table = animation_table,
+    data = image
   }
 
 end
@@ -123,7 +124,7 @@ function load_fpg(fpg_path)
   print_v(files)
 
   return {
-    type = 'zip',
+    type = 'fpg_zip',
     data = files
   }
 end

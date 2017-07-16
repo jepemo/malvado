@@ -99,9 +99,20 @@ local function Engine()
   }
 
   local function render_process(process)
+    --debug('Rendering:' .. process.id)
     local graphic = nil
+    local anim_table = nil
 
-    if process.fpg ~= nil
+    if process.fpg ~= nil then
+      local fpg = process.fpg
+
+      --print_v(fpg)
+      if fpg.type == 'fpg_image' then
+        graphic = fpg.data
+        anim_table = fpg.anim_table[process.fpgIndex]
+        --print_v(graphic)
+      end
+      --[[
       and process.fpg.data ~= nil
       and #process.fpg.data > 0 then
 
@@ -111,25 +122,51 @@ local function Engine()
         and self.fpgIndex <= #process.fpg.data then
 
         graphic = process.fpg.data[self.fpgIndex]
+        anim_table = process.fpg.
       end
+      ]]--
     elseif process.graph ~= nil then
       if process.graph.type == 'image' then
         graphic = process.graph.data
       end
     end
 
+    --print(graphic)
+    --print(anim_table)
+    --print '-------------'
+
     if graphic ~= nil then
       local gwidth, gheight = graphic:getDimensions()
-      love.graphics.draw(
-        graphic,
-        process.x,
-        process.y,
-        angleToRadians(process.angle),
-        process.size,
-        process.size,
-        gwidth/2,
-        gheight/2
-      )
+
+      if anim_table ~= nil then
+        --print '1'
+        love.graphics.draw(graphic, 50, 50)
+        --[[
+        love.graphics.draw(
+          graphic,
+          anim_table,
+          process.x,
+          process.y
+          angleToRadians(process.angle),
+          process.size,
+          process.size,
+          gwidth/2,
+          gheight/2
+        )
+        ]]--
+      else
+        --print '2'
+        love.graphics.draw(
+          graphic,
+          process.x,
+          process.y,
+          angleToRadians(process.angle),
+          process.size,
+          process.size,
+          gwidth/2,
+          gheight/2
+        )
+      end
     end
   end
 
@@ -153,7 +190,7 @@ local function Engine()
         debug(error)
       end
 
-      if (v.graph ~= nil) then
+      if (v.graph ~= nil or v.fpg ~= nil) then
         render_process(v)
       end
 

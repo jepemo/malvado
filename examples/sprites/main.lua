@@ -1,12 +1,16 @@
 package.path = package.path .. ";./?/init.lua"
 require ('malvado')
 
-Cat = process(function(self)
+Bird = process(function(self)
   --self.fpg = load_fpg("assets/cat.zip")
   self.fpg = load_fpg_image("assets/bird.png", 3, 5)
   self.fpgIndex = 0
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
+  self.size = 2
+  self.z = 10
+
+  clear_screen(0, 0, 0)
 
   while not key("escape") do
     self.fpgIndex = self.fpgIndex+1
@@ -22,7 +26,7 @@ end)
 
 function love.load()
   set_title('Sprite example')
-  Cat {}
+  Bird {}
 end
 
 -- boilerplate
