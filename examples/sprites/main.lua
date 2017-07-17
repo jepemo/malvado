@@ -3,7 +3,8 @@ require ('malvado')
 
 Bird = process(function(self)
   --self.fpg = load_fpg("assets/cat.zip")
-  self.fpg = load_fpg_image("assets/bird.png", 3, 5)
+  --self.fpg = load_fpg_image("assets/bird.png", 3, 5)
+  self.graph = load_image('bird.png')
   self.fpgIndex = 0
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
@@ -30,4 +31,4 @@ function love.load()
 end
 
 -- boilerplate
-function love.draw() malvado.draw() end
+function love.update(dt) malvado.update(dt) end

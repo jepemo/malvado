@@ -96,4 +96,4 @@ end
 
 
 -- boilerplate
-function love.draw() malvado.draw() end
+function love.update(dt) malvado.update(dt) end

@@ -170,7 +170,7 @@ local function Engine()
     end
   end
 
-  engine.draw = function ()
+  engine.update = function (dt)
     love.graphics.setBackgroundColor(
       engine.background_color.r,
       engine.background_color.g,

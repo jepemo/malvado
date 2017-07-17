@@ -32,8 +32,8 @@ love examples/sprites
 ```lua
 require 'malvado'
 
--- Define global font (size, color (r, g, b), alfa)
-local font = font(60, 0, 0, 0, 255)
+-- Define global font (size, color (r, g, b))
+local font = font(60, 0, 0, 0)
 
 -- Define (not run) one process
 HelloWorld = process(function(self)
@@ -61,7 +61,7 @@ function love.load()
 end
 
 -- boilerplate
-function love.draw() malvado.draw() end
+function love.update(dt) malvado.update(dt) end
 ```
 
 ## [Cookbook](doc/cookbook.md)
