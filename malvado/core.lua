@@ -28,9 +28,6 @@
 --- Core module implements all the process workflow
 -- @module malvado.core
 
---- [Internal] Process Object definition
--- @param engine ...
--- @param func ...
 local function Process(engine, func)
   local process = {
     id = -1,
@@ -49,7 +46,9 @@ local function Process(engine, func)
     angle = 0,
     size = 1,
     state = 0,
-    data_msg = {}
+    delta = 1,
+    data_msg = {},
+    last_z = 0
   }
 
   process.recv = function(self)
@@ -87,7 +86,6 @@ local function Process(engine, func)
   return process
 end
 
---- [Internal] Process engine
 local function Engine()
   local engine = {
     processes = {},
@@ -99,18 +97,15 @@ local function Engine()
   }
 
   local function render_process(process)
-    --debug('Rendering:' .. process.id)
     local graphic = nil
     local anim_table = nil
 
     if process.fpg ~= nil then
       local fpg = process.fpg
 
-      --print_v(fpg)
       if fpg.type == 'fpg_image' then
         graphic = fpg.data
         anim_table = fpg.anim_table[process.fpgIndex]
-        --print_v(graphic)
       end
       --[[
       and process.fpg.data ~= nil
@@ -170,7 +165,10 @@ local function Engine()
     end
   end
 
-  engine.update = function (dt)
+  engine.draw = function ()
+    local dt = 1
+    local z_changed = false
+
     love.graphics.setBackgroundColor(
       engine.background_color.r,
       engine.background_color.g,
@@ -185,19 +183,27 @@ local function Engine()
         v.state = 1
       end
 
+      v.delta = dt
+
       local ok, error = coroutine.resume(v.func, v)
       if not ok then
         debug(error)
       end
 
       if (v.graph ~= nil or v.fpg ~= nil) then
-        render_process(v)
+        --render_process(v)
       end
 
       if coroutine.status(v.func) == "dead" then
         debug("Finalized process:" .. v.id)
         table.insert(to_delete, i)
       end
+
+      if not z_changed and v.z ~= v.last_z then
+        z_changed = true
+      end
+
+      v.last_z = v.z
     end
 
     if #to_delete > 0 then
@@ -212,14 +218,15 @@ local function Engine()
 
     engine.keys = {}
 
-    -- Esto hay que revisarlo
-    table.sort(engine.processes, function(a, b)
-      return a.z < b.z
-    end)
+    if z_changed then
+      table.sort(engine.processes, function(a, b)
+        return a.z < b.z
+      end)
+    end
   end
 
   engine.addProc = function(proc)
-    table.insert(engine.processes, proc)
+    engine.processes[proc.id] = proc
   end
 
   engine.newProcId = function()
@@ -229,24 +236,23 @@ local function Engine()
   end
 
   engine.kill = function(processToKill)
-    local pos = 0
-    for i, v in ipairs(engine.processes) do
-      if v[id] == processToKill then
-        pos = i
-        break
-      end
-    end
-
-    if pos > 0 then
-      table.remove(engine.processes, pos)
+    if engine.processes[processToKill] ~= nil then
+      engine.processes[processToKill] = nil
     end
   end
 
   engine.send = function(proc_id, data)
-    for i, v in ipairs(engine.processes) do
-      if v.id == proc_id then
-        table.insert(v.data_msg, data)
-      end
+    if engine.processes[proc_id] ~= nil then
+      proc = engine.processes[proc_id]
+      table.insert(proc.data_msg, data)
+    end
+  end
+
+  engine.start = function(init)
+    love.draw = engine.draw
+
+    if init ~= nil then
+      init()
     end
   end
 
@@ -279,4 +285,11 @@ end
 -- @param data Table with the data to send
 function send(proc_id, data)
   malvado.send(proc_id, data)
+end
+
+--- Exits from the application
+-- @param statusCode Exit status code. Default value 0
+function exit(statusCode)
+  statusCode = statusCode or 0
+  love.event.quit(statusCode)
 end

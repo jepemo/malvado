@@ -27,6 +27,6 @@
 
 function write(font, x, y, text)
   love.graphics.setFont(font.font)
-  love.graphics.setColor(font.r, font.g, font.b, font.a)
+  love.graphics.setColor(font.r, font.g, font.b, 255)
   love.graphics.print(text, x, y)
 end
