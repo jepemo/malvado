@@ -63,9 +63,6 @@ function load_fpg_image(path, num_rows, num_cols)
   local image_w, image_h = image:getDimensions()
   local quad_w, quad_h = image_w / num_cols, image_h / num_rows
 
-  print(image_w .. '-' .. image_h)
-  print(quad_w .. '-' .. quad_h)
-
   local animation_table = {}
   for y = 0, num_rows do
 		for x = 0, num_cols do

@@ -191,22 +191,22 @@ local function Engine()
         if not ok then
           debug(error)
         end
-
-        if (v.graph ~= nil or v.fpg ~= nil) then
-          render_process(v)
-        end
-
-        if coroutine.status(v.func) == "dead" then
-          debug("Finalized process:" .. v.id)
-          table.insert(to_delete, i)
-        end
-
-        if not z_changed and v.z ~= v.last_z then
-          z_changed = true
-        end
-
-        v.last_z = v.z
       end
+
+      if (v.graph ~= nil or v.fpg ~= nil) then
+        render_process(v)
+      end
+
+      if coroutine.status(v.func) == "dead" then
+        debug("Finalized process:" .. v.id)
+        table.insert(to_delete, i)
+      end
+
+      if not z_changed and v.z ~= v.last_z then
+        z_changed = true
+      end
+
+      v.last_z = v.z
     end
 
     if #to_delete > 0 then
