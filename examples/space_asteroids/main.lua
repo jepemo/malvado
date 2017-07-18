@@ -86,14 +86,11 @@ SpaceShip = process(function(self)
   end
 end)
 
-function love.load()
+-- Start
+malvado.start(function()
   set_title('Space Asteroids')
   Stars { z = -1, max_stars = 200 }
   SpaceShip { z = 0 }
   Asteroid { z = 1, xdir = 0.2, ydir = 0.8 }
   Asteroid { z = 1, xdir = 0.6, ydir = 0.3 }
-end
-
-
--- boilerplate
-function love.update(dt) malvado.update(dt) end
+end)

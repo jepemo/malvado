@@ -91,9 +91,9 @@ local function Engine()
     processes = {},
     proc_counter = 1,
     started = false,
-    keys = {},
     background_color = { r = 0, g = 0, b = 0 },
-    messages = {}
+    messages = {},
+    last_ms = 0
   }
 
   local function render_process(process)
@@ -106,6 +106,7 @@ local function Engine()
       if fpg.type == 'fpg_image' then
         graphic = fpg.data
         anim_table = fpg.anim_table[process.fpgIndex]
+        --print_v(anim_table)
       end
       --[[
       and process.fpg.data ~= nil
@@ -126,31 +127,23 @@ local function Engine()
       end
     end
 
-    --print(graphic)
-    --print(anim_table)
-    --print '-------------'
-
     if graphic ~= nil then
       local gwidth, gheight = graphic:getDimensions()
 
+      set_color(255, 255, 255, 255)
       if anim_table ~= nil then
-        --print '1'
-        love.graphics.draw(graphic, 50, 50)
-        --[[
-        love.graphics.draw(
+        love.graphics.draw (
           graphic,
           anim_table,
           process.x,
-          process.y
+          process.y,
           angleToRadians(process.angle),
           process.size,
           process.size,
           gwidth/2,
           gheight/2
         )
-        ]]--
       else
-        --print '2'
         love.graphics.draw(
           graphic,
           process.x,
@@ -174,6 +167,9 @@ local function Engine()
       engine.background_color.g,
       engine.background_color.b)
 
+    local current_time = love.timer.getTime()
+    local dt = current_time - engine.last_ms
+
     to_delete = {}
     for i,v in ipairs(engine.processes) do
       if v.state == 0 then
@@ -182,7 +178,6 @@ local function Engine()
         end
         v.state = 1
       end
-
       v.delta = dt
 
       local ok, error = coroutine.resume(v.func, v)
@@ -191,7 +186,7 @@ local function Engine()
       end
 
       if (v.graph ~= nil or v.fpg ~= nil) then
-        --render_process(v)
+        render_process(v)
       end
 
       if coroutine.status(v.func) == "dead" then
@@ -206,6 +201,8 @@ local function Engine()
       v.last_z = v.z
     end
 
+    engine.last_ms = current_time
+
     if #to_delete > 0 then
       for i,v in ipairs(to_delete) do
         table.remove(engine.processes, v)
@@ -216,13 +213,13 @@ local function Engine()
       love.event.quit(0)
     end
 
-    engine.keys = {}
-
     if z_changed then
       table.sort(engine.processes, function(a, b)
         return a.z < b.z
       end)
     end
+
+    --love.graphics.present( )
   end
 
   engine.addProc = function(proc)
@@ -249,6 +246,9 @@ local function Engine()
   end
 
   engine.start = function(init)
+    -- Init te timer
+    engine.last_ms = os.time()
+
     love.draw = engine.draw
 
     if init ~= nil then

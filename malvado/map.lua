@@ -72,8 +72,6 @@ function load_fpg_image(path, num_rows, num_cols)
 
   animation_table[#animation_table] = nil
 
-  --print_v(animation_table)
-
   return {
     type = 'fpg_image',
     anim_table = animation_table,
