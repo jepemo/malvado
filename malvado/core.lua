@@ -48,7 +48,10 @@ local function Process(engine, func)
     state = 0,
     delta = 1,
     data_msg = {},
-    last_z = 0
+    last_z = 0,
+    fps = 30,
+    time_per_frame = 0.03,
+    current_frame_duration = 0
   }
 
   process.recv = function(self)
@@ -139,9 +142,9 @@ local function Engine()
           process.y,
           angleToRadians(process.angle),
           process.size,
-          process.size,
-          gwidth/2,
-          gheight/2
+          process.size
+          --gwidth/2,
+          --gheight/2
         )
       else
         love.graphics.draw(
@@ -167,9 +170,7 @@ local function Engine()
       engine.background_color.g,
       engine.background_color.b)
 
-    local current_time = love.timer.getTime()
-    local dt = current_time - engine.last_ms
-
+    local dt = love.timer.getDelta( )
     to_delete = {}
     for i,v in ipairs(engine.processes) do
       if v.state == 0 then
@@ -178,30 +179,35 @@ local function Engine()
         end
         v.state = 1
       end
+
+      v.time_per_frame = 1.0 / v.fps
       v.delta = dt
+      v.current_frame_duration = v.current_frame_duration + dt
 
-      local ok, error = coroutine.resume(v.func, v)
-      if not ok then
-        debug(error)
+      local execute_process = (v.current_frame_duration >= v.time_per_frame)
+      if execute_process then
+        v.current_frame_duration = 0
+        local ok, error = coroutine.resume(v.func, v)
+        if not ok then
+          debug(error)
+        end
+
+        if (v.graph ~= nil or v.fpg ~= nil) then
+          render_process(v)
+        end
+
+        if coroutine.status(v.func) == "dead" then
+          debug("Finalized process:" .. v.id)
+          table.insert(to_delete, i)
+        end
+
+        if not z_changed and v.z ~= v.last_z then
+          z_changed = true
+        end
+
+        v.last_z = v.z
       end
-
-      if (v.graph ~= nil or v.fpg ~= nil) then
-        render_process(v)
-      end
-
-      if coroutine.status(v.func) == "dead" then
-        debug("Finalized process:" .. v.id)
-        table.insert(to_delete, i)
-      end
-
-      if not z_changed and v.z ~= v.last_z then
-        z_changed = true
-      end
-
-      v.last_z = v.z
     end
-
-    engine.last_ms = current_time
 
     if #to_delete > 0 then
       for i,v in ipairs(to_delete) do

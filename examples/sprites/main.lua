@@ -20,22 +20,30 @@ Cat = process(function(self)
   end
 end)
 
-Bird = process(function(self)
-  self.fpg = load_fpg_image("assets/bird.png", 3, 5)
-  self.fpgIndex = 0
+Guy = process(function(self)
+  self.fpg = load_fpg_image("assets/hero_spritesheet.png", 5, 8)
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
   self.size = 1.5
+  self.fps = 15
 
   clear_screen(255, 255, 255)
 
-  local num_frames = 14
+  local ini_run  = 8
+  local end_run = 14
 
+  self.fpgIndex = ini_run
   while not key("escape") do
+    local x, y = love.mouse.getPosition()
+    self.x = x
+    self.y = y
+
     self.fpgIndex = self.fpgIndex+1
-    if self.fpgIndex > num_frames then
-      self.fpgIndex = 1
+    if self.fpgIndex > end_run then
+      self.fpgIndex = ini_run
     end
+
+    --love.timer.sleep(0.5)
 
     frame()
   end
@@ -44,6 +52,6 @@ end)
 -- Start
 malvado.start(function()
   set_title('Sprite example')
-  Bird {}
+  Guy {}
   --Cat {}
 end)
