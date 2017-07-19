@@ -51,6 +51,9 @@ function font(size, r, g, b, a)
   }
 end
 
+--- Load a image to be used in a process
+-- @param image_path Path of the image
+-- @return image object
 function load_image(image_path)
   return {
     type = 'image',
@@ -58,7 +61,33 @@ function load_image(image_path)
   }
 end
 
-function load_fpg_image(path, num_rows, num_cols)
+local function load_fpg_zip(path)
+  return {
+    type = 'zip',
+    data = nil
+  }
+end
+
+local function load_fpg_directory(path)
+  local files = love.filesystem.getDirectoryItems(path)
+
+  images = {}
+  for k, file in ipairs(files) do
+    local imgPath = path .. "/" .. file
+    debug("Loading: " .. imgPath)
+  	table.insert(images, love.graphics.newImage(imgPath))
+    --images[file] = love.graphics.newImage(imgPath)
+  end
+
+  --print_v(images)
+
+  return {
+    type = 'directory',
+    data = images
+  }
+end
+
+local function load_fpg_image(path, num_rows, num_cols)
   local image = love.graphics.newImage(path)
   local image_w, image_h = image:getDimensions()
   local quad_w, quad_h = image_w / num_cols, image_h / num_rows
@@ -73,11 +102,32 @@ function load_fpg_image(path, num_rows, num_cols)
   animation_table[#animation_table] = nil
 
   return {
-    type = 'fpg_image',
+    type = 'image',
     anim_table = animation_table,
     data = image
   }
+end
 
+--- Create a image library to use in the processes
+-- @param path images library path
+-- @param type Library type: image, zip, directory(default)
+-- @param num_rows Image num rows (needed for the type image)
+-- @param num_cols Image num colums (needed for the type image)
+-- @return fpg object
+function fpg(path, type, num_rows, num_cols)
+  type = type or "directory"
+
+  local fpg_obj = nil
+
+  if type == 'image' then
+    fpg_obj = load_fpg_image(path, num_rows, num_cols)
+  elseif type == "zip" then
+    fpg_obj = load_fpg_zip(path)
+  elseif type == "directory" then
+    fpg_obj = load_fpg_directory(path)
+  end
+
+  return fpg_obj
 end
 
 function load_fpg(fpg_path)

@@ -106,10 +106,11 @@ local function Engine()
     if process.fpg ~= nil then
       local fpg = process.fpg
 
-      if fpg.type == 'fpg_image' then
+      if fpg.type == 'image' then
         graphic = fpg.data
         anim_table = fpg.anim_table[process.fpgIndex]
-        --print_v(anim_table)
+      elseif fpg.type == 'directory' then
+        graphic = fpg.data[process.fpgIndex]
       end
       --[[
       and process.fpg.data ~= nil

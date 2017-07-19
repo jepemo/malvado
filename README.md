@@ -20,7 +20,7 @@ For the documentation generation, if you download from github, you need [LDoc](h
 
 ### Run Examples
 ```
-love examples/helloworld 
+love examples/helloworld
 # or
 love examples/space_asteroids
 # or
@@ -62,6 +62,10 @@ malvado.start(function()
   HelloWorld { x=240, y=280, text="Hello World" }
 end)
 ```
+
+## TODO
+- FPG: image, zip, directory
+- Examples: demo, bench
 
 ## [Cookbook](doc/cookbook.md)
 ## [Api Reference](https://cdn.rawgit.com/jepemo/malvado/master/doc/index.html)
