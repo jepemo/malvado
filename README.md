@@ -7,6 +7,7 @@ A game programming library with  "DIV Game Studio"-style processes for Lua/Love2
   - [Hello World Example](#hello-world-example)
 - [Cookbook](#cookbook)
 - [Api Reference](#api-reference)
+- [Roadmap](#roadmap)
 
 ## Getting Started
 
@@ -63,9 +64,12 @@ malvado.start(function()
 end)
 ```
 
-## TODO
+## [Cookbook](doc/cookbook.md)
+
+## [Api Reference](https://cdn.rawgit.com/jepemo/malvado/master/doc/index.html)
+
+## Roadmap
+### 1.0
+- ~~Entity Processes~~
 - FPG: image, zip, directory
 - Examples: demo, bench
-
-## [Cookbook](doc/cookbook.md)
-## [Api Reference](https://cdn.rawgit.com/jepemo/malvado/master/doc/index.html)
