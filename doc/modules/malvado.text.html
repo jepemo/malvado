@@ -39,19 +39,19 @@
 <h2>Modules</h2>
 <ul class="nowrap">
   <li><a href="../modules/malvado.core.html">malvado.core</a></li>
-  <li><strong>malvado.draw</strong></li>
+  <li><a href="../modules/malvado.draw.html">malvado.draw</a></li>
   <li><a href="../modules/malvado.key.html">malvado.key</a></li>
   <li><a href="../modules/malvado.map.html">malvado.map</a></li>
   <li><a href="../modules/malvado.math.html">malvado.math</a></li>
-  <li><a href="../modules/malvado.text.html">malvado.text</a></li>
+  <li><strong>malvado.text</strong></li>
 </ul>
 
 </div>
 
 <div id="content">
 
-<h1>Module <code>malvado.draw</code></h1>
-<p>Draw module implements the draw privimites utilities</p>
+<h1>Module <code>malvado.text</code></h1>
+<p>Text primitives</p>
 <p>
 
 </p>
@@ -60,8 +60,12 @@
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#set_color">set_color (red, green, blue, alpha)</a></td>
-	<td class="summary">Sets the color of the next primitive to be painted.</td>
+	<td class="name" nowrap><a href="#write">write (font, _x, _y, _text)</a></td>
+	<td class="summary">Create a text to render</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#delete_text">delete_text (id)</a></td>
+	<td class="summary">Delete a text by its identifier</td>
 	</tr>
 </table>
 
@@ -73,26 +77,50 @@
 
     <dl class="function">
     <dt>
-    <a name = "set_color"></a>
-    <strong>set_color (red, green, blue, alpha)</strong>
+    <a name = "write"></a>
+    <strong>write (font, _x, _y, _text)</strong>
     </dt>
     <dd>
-    Sets the color of the next primitive to be painted.  It's an alias of: love.graphics.setColor.
+    Create a text to render
 
 
     <h3>Parameters:</h3>
     <ul>
-        <li><span class="parameter">red</span>
-         Red
+        <li><span class="parameter">font</span>
+         Font object
         </li>
-        <li><span class="parameter">green</span>
-         Green
+        <li><span class="parameter">_x</span>
+         x
         </li>
-        <li><span class="parameter">blue</span>
-         Blue
+        <li><span class="parameter">_y</span>
+         y
         </li>
-        <li><span class="parameter">alpha</span>
-         Alpha (Optional: Default 255)
+        <li><span class="parameter">_text</span>
+         text
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/malvado.map.html#font">malvado.map.font</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "delete_text"></a>
+    <strong>delete_text (id)</strong>
+    </dt>
+    <dd>
+    Delete a text by its identifier
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">id</span>
+         text id
         </li>
     </ul>
 

@@ -268,15 +268,25 @@ end)
 
 fade_process = FadeProcess {z = 1000000}
 
+--- Creates a fade transition to the specified colour
+-- @param rc Red
+-- @param gc Green
+-- @param bc Blue
+-- @param ac Alpha
+-- @param speedc Speed
 function fade(rc, gc, bc, ac, speedc)
   send(fade_process, { r = rc, g = gc, b = bc, a = ac, speed = speedc})
 end
 
+--- Exists from the fade off (change alpha to 0)
+-- @param speed Speed
 function fade_on(speed)
   speed = speed or 4
   fade(0, 0, 0, 0, 16)
 end
 
+--- Go to a dark fade
+-- @param speed Speed
 function fade_off(speed)
   speed = speed or 4
   fade(0,0,0, 255, 16)

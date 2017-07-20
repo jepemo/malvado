@@ -79,3 +79,4 @@ end)
   - key
   - set_color
   - font
+  - fade (transitions)

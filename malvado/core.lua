@@ -96,7 +96,8 @@ local function Engine()
     started = false,
     background_color = { r = 0, g = 0, b = 0 },
     messages = {},
-    last_ms = 0
+    last_ms = 0,
+    texts = {}
   }
 
   local function render_process(process)
@@ -108,9 +109,9 @@ local function Engine()
 
       if fpg.type == 'image' then
         graphic = fpg.data
-        anim_table = fpg.anim_table[process.fpgIndex]
+        anim_table = fpg.anim_table[(process.fpgIndex % #fpg.anim_table)+1]
       elseif fpg.type == 'directory' then
-        graphic = fpg.data[process.fpgIndex]
+        graphic = fpg.data[(process.fpgIndex % #fpg.data)+1]
       end
       --[[
       and process.fpg.data ~= nil
@@ -210,6 +211,11 @@ local function Engine()
       v.last_z = v.z
     end
 
+    -- Text rendering
+    for i,t in ipairs(engine.texts) do
+      render_text(t)
+    end
+
     if #to_delete > 0 then
       for i,v in ipairs(to_delete) do
         table.remove(engine.processes, v)
@@ -225,8 +231,6 @@ local function Engine()
         return a.z < b.z
       end)
     end
-
-    --love.graphics.present( )
   end
 
   engine.addProc = function(proc)
@@ -250,6 +254,14 @@ local function Engine()
       proc = engine.processes[proc_id]
       table.insert(proc.data_msg, data)
     end
+  end
+
+  engine.add_text = function(text_obj)
+    local textId = text_obj.id
+    engine.texts[textId] = text_obj
+  end
+  engine.delete_text = function(text_id)
+    engine.texts[text_id] = nil
   end
 
   engine.start = function(init)

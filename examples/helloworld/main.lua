@@ -9,11 +9,11 @@ HelloWorld = process(function(self)
   -- Define global font (size, color (r, g, b))
   local font = font(60, 0, 0, 0)
 
+  -- Write the "Hello world" text in the process position
+  write(font, self.x, self.y, self.text)
+
   -- Runs until escape key is pressed
   while not key("escape") do
-    -- Write the "Hello world" text in the process position
-    write(font, self.x, self.y, self.text)
-
     -- Render the process
     frame()
   end

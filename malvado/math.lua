@@ -25,14 +25,34 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+--- Very basic math utilities
+-- @module malvado.math
+
+--- Convert an angle to radians
+-- @param angle
+-- @return radians
 function angleToRadians (angle)
   return (angle * math.pi) / 180
 end
 
+--- Calculate the cosinus
+-- @param angle
+-- @return cosinus
 function cos(angle)
   return math.cos(angleToRadians(angle))
 end
 
+--- Calculate the sinus
+-- @param angle
+-- @return sinus
 function sin(angle)
   return math.sin(angleToRadians(angle))
+end
+
+--- Calculate a random number between min and max
+-- @param min
+-- @param max
+-- @return random number
+function rand(min, max)
+  return love.math.random(min, max)
 end
