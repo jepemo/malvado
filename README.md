@@ -70,6 +70,12 @@ end)
 
 ## Roadmap
 ### 1.0
-- ~~Entity Processes~~
-- FPG: image, zip, directory
-- Examples: demo, bench
+- Basic process workflow
+- Graphic Packages (FPG): image, ~~zip~~, directory
+- Examples: helloworld, demo, bench, space_asteroids
+- Primitives and love2d aliases:
+  - clear_screen
+  - write (text)
+  - key
+  - set_color
+  - font
