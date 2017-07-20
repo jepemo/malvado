@@ -35,7 +35,7 @@ Hero = process(function()
   -- To implement
 end)
 
--- The level is also a process
+-- A game is also a process
 Level = process(function()
   while not exit_game do
     -- Entities instantiation
@@ -44,7 +44,7 @@ Level = process(function()
   end
 end)
 
--- main
+-- The game starts here
 malvado.start(function()
   Level()
 end)
@@ -52,7 +52,53 @@ end)
 ```
 ### Level transitions
 
-TODO
+**Problem:**
+
+A want many game levels.
+
+**Solution:**
+
+Every level is a process. In one special process (level manager) the levels are created.
+
+```lua
+require 'malvado'
+
+local playing = false
+local level = 1
+local exit_game = false
+
+Level1 = process(function()
+-- To implement
+-- In the end: playing = false
+end)
+
+Level2 = process(function()
+-- To implement
+end)
+
+LevelManager = process(function()
+
+  while not exit_game do
+    if not playing then
+      playing = true
+      fade_off()
+
+      if level = 1 then
+        Level1()
+      elseif level = 2 then
+        Level2()
+      end
+
+      fade_on()
+    end
+  end
+end)
+
+-- The game starts here
+malvado.start(function()
+  LevelManager()
+end)
+```
 
 ## Animations
 
@@ -60,7 +106,7 @@ TODO
 
 TODO
 
-### Image animation]
+### Image animation
 
 TODO
 
