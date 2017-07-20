@@ -2,15 +2,19 @@
 
 Basic recipes to create 2D games in malvado game engine.
 
-- [Basic process creation](#basic-process-creation)
+- [Game organization](#game-organization)
+  - [Basic process creation](#basic-process-creation)
 
-## Basic process creation
+## Game organization
+### Basic process creation
 
-**Problem**:
-I want to create many game entities: game character, live background, etc.
+**Problem:**
 
-**Solution**
-In malvado, a game entity is a process. When a process is alive, it is rendered in every frame.
+I want to create many game entities: a game character, live background, etc.
+
+**Solution:**
+
+In malvado, a game entity is a *process*. When a process is alive, it is rendered every frame. But it also can contains only logic.
 
 ```lua
 require 'malvado'
