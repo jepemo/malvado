@@ -3,10 +3,16 @@
 Basic recipes to create 2D games in malvado game engine.
 
 - [Game organization](#game-organization)
-  - [Basic process creation](#basic-process-creation)
+  - [Basic entity creation](#basic-entity-creation)
+  - [Level transitions](#level-transitions)
+- [Animations](#animations)
+  - [Basic Animation](#basic-animation)
+  - [Image animation](#image-animation)
+- [Sounds and Music](#sounds-and-music)
+
 
 ## Game organization
-### Basic process creation
+### Basic entity creation
 
 **Problem:**
 
@@ -44,3 +50,19 @@ malvado.start(function()
 end)
 
 ```
+### Level transitions
+
+TODO
+
+## Animations
+
+### Basic Animation
+
+TODO
+
+### Image animation]
+
+TODO
+
+
+## Sounds and Music
