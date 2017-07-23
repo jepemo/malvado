@@ -97,7 +97,7 @@ local function Engine()
     background_color = { r = 0, g = 0, b = 0 },
     messages = {},
     last_ms = 0,
-    texts = {}
+    --texts = {}
   }
 
   local function render_process(process)
@@ -212,9 +212,9 @@ local function Engine()
     end
 
     -- Text rendering
-    for i,t in ipairs(engine.texts) do
-      render_text(t)
-    end
+    --for i,t in ipairs(engine.texts) do
+    --  render_text(t)
+    --end
 
     if #to_delete > 0 then
       for i,v in ipairs(to_delete) do
@@ -256,6 +256,7 @@ local function Engine()
     end
   end
 
+  --[[
   engine.add_text = function(text_obj)
     local textId = text_obj.id
     engine.texts[textId] = text_obj
@@ -263,6 +264,7 @@ local function Engine()
   engine.delete_text = function(text_id)
     engine.texts[text_id] = nil
   end
+  ]]--
 
   engine.start = function(init)
     -- Init te timer

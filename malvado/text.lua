@@ -28,8 +28,20 @@
 --- Text primitives
 -- @module malvado.text
 
+TextProc = process(function(self)
+  local font = self.font
+
+  while true do
+    love.graphics.setFont(font.font)
+    love.graphics.setColor(font.r, font.g, font.b, 255)
+    love.graphics.print(self.text, self.x, self.y)
+    frame()
+  end
+end)
+
 local textId = 0
 
+--[[
 function render_text(text)
   local font = text.font
   local _text = text.text
@@ -40,6 +52,7 @@ function render_text(text)
   love.graphics.setColor(font.r, font.g, font.b, 255)
   love.graphics.print(_text, x, y)
 end
+]]--
 
 --- Create a text to render
 -- @param font Font object
@@ -47,7 +60,8 @@ end
 -- @param _y y
 -- @param _text text
 -- @see malvado.map.font
-function write(font, _x, _y, _text)
+function write(_font, _x, _y, _text)
+  --[[
   textId = textId + 1
   text_obj = {
     id = textId,
@@ -60,12 +74,15 @@ function write(font, _x, _y, _text)
   malvado.add_text(text_obj)
 
   return textId
+  ]]--
+  return TextProc { font = _font, x = _x, y = _y, text = _text }
 end
 
 --- Delete a text by its identifier
 -- @param id text id
 function delete_text(id)
   if id ~= nil then
-    malvado.delete_text(id)
+    --malvado.delete_text(id)
+    kill(id)
   end
 end
