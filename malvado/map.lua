@@ -266,7 +266,7 @@ FadeProcess = process(function(self)
   end
 end)
 
-fade_process = FadeProcess {z = 1000000}
+fade_process = FadeProcess { z = 1000000, internal_process = true }
 
 --- Creates a fade transition to the specified colour
 -- @param rc Red

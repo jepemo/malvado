@@ -51,7 +51,8 @@ local function Process(engine, func)
     last_z = 0,
     fps = 30,
     time_per_frame = 0.03,
-    current_frame_duration = 0
+    current_frame_duration = 0,
+    internal_process = false
   }
 
   process.recv = function(self)
@@ -80,6 +81,11 @@ local function Process(engine, func)
     new_proc = setmetatable(new_proc, mtproc)
 
     engine.addProc(new_proc)
+
+    if (args.internal_process) then
+      engine.n_internal_procs = engine.n_internal_procs + 1
+    end
+
     debug("Created process:" .. new_proc.id)
     return new_proc.id
   end
@@ -92,12 +98,12 @@ end
 local function Engine()
   local engine = {
     processes = {},
+    n_internal_procs = 0,
     proc_counter = 1,
     started = false,
     background_color = { r = 0, g = 0, b = 0 },
     messages = {},
     last_ms = 0,
-    --texts = {}
   }
 
   local function render_process(process)
@@ -211,18 +217,18 @@ local function Engine()
       v.last_z = v.z
     end
 
-    -- Text rendering
-    --for i,t in ipairs(engine.texts) do
-    --  render_text(t)
-    --end
-
     if #to_delete > 0 then
       for i,v in ipairs(to_delete) do
+        local proc = engine.processes[v]
+        if proc[internal_process] ~= nil and proc.internal_process then
+          engine.n_internal_procs = engine.n_internal_procs - 1
+        end
+
         table.remove(engine.processes, v)
       end
     end
 
-    if #engine.processes == 0 then
+    if #engine.processes == 0 or #engine.processes <= engine.n_internal_procs then
       love.event.quit(0)
     end
 
@@ -277,6 +283,14 @@ local function Engine()
     end
   end
 
+  engine.mod_process = function(proc_id, values)
+    proc = engine.processes[proc_id]
+
+    for i,v in ipairs(values) do
+      proc[i] = v
+    end
+  end
+
   return engine
 end
 
@@ -313,4 +327,11 @@ end
 function exit(statusCode)
   statusCode = statusCode or 0
   love.event.quit(statusCode)
+end
+
+--- Change process internal values
+-- @param proc_id Process id
+-- @param values Object with values to change
+function set_proc(proc_id, values)
+  malvado.mod_process(proc_id, values)
 end

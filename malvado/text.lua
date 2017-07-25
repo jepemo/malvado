@@ -55,27 +55,30 @@ end
 ]]--
 
 --- Create a text to render
--- @param font Font object
+-- @param _font Font object
 -- @param _x x
 -- @param _y y
 -- @param _text text
 -- @see malvado.map.font
 function write(_font, _x, _y, _text)
-  --[[
-  textId = textId + 1
-  text_obj = {
-    id = textId,
-    font = font,
-    x = _x,
-    y = _y,
-    text = _text
-  }
+  return TextProc { font = _font, x = _x, y = _y, text = _text, internal_process = true, z = 1000 }
+end
 
-  malvado.add_text(text_obj)
+--- Change some value of a created text
+-- @param text_id text id
+-- @param _text text
+-- @param _x x
+-- @param _y y
+-- @param _font font
+function change_text(text_id, _text, _x, _y, _font)
+  local values = {}
 
-  return textId
-  ]]--
-  return TextProc { font = _font, x = _x, y = _y, text = _text }
+  if (_text) then values[text] = _text end
+  if (_x)    then values[x] = _x end
+  if (_y)    then values[y] = _y end
+  if (_font) then values[font] = _font end
+
+  engine.mod_process(text_id, values)
 end
 
 --- Delete a text by its identifier
