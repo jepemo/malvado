@@ -27,11 +27,14 @@ Benchmark = process(function(self)
   local start = 0
   local millis_frames = 0
 
+  local tp = write(font_texts, 0, 0, ("Num. Procs: " .. tostring(num_procs)))
+  local tm = write(font_texts, get_screen_width() - 350, 0, ("Millis frames: " .. millis_frames))
+
   while not key("escape") do
     millis_frames = love.timer.getTime() - start
 
-    local tp = write(font_texts, 0, 0, ("Num. Procs: " .. tostring(num_procs)))
-    local tm = write(font_texts, get_screen_width() - 350, 0, ("Millis frames: " .. millis_frames))
+    change_text(tp, "Num. Procs: " .. tostring(num_procs))
+    change_text(tm, "Millis frames: " .. millis_frames)
 
     start = love.timer.getTime()
 
@@ -41,9 +44,6 @@ Benchmark = process(function(self)
     end
 
     frame()
-
-    delete_text(tp)
-    delete_text(tm)
   end
 
   exit_bench = true
@@ -53,4 +53,4 @@ end)
 malvado.start(function()
   set_title('Benchmark')
   Benchmark {}
-end)
+end, debug)

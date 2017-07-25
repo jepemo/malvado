@@ -39,21 +39,6 @@ TextProc = process(function(self)
   end
 end)
 
-local textId = 0
-
---[[
-function render_text(text)
-  local font = text.font
-  local _text = text.text
-  local x    = text.x
-  local y    = text.y
-
-  love.graphics.setFont(font.font)
-  love.graphics.setColor(font.r, font.g, font.b, 255)
-  love.graphics.print(_text, x, y)
-end
-]]--
-
 --- Create a text to render
 -- @param _font Font object
 -- @param _x x

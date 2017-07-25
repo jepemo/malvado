@@ -173,6 +173,7 @@ local function Engine()
     local dt = 1
     local z_changed = false
 
+
     love.graphics.setBackgroundColor(
       engine.background_color.r,
       engine.background_color.g,
@@ -193,7 +194,8 @@ local function Engine()
       v.current_frame_duration = v.current_frame_duration + dt
 
       local execute_process = (v.current_frame_duration >= v.time_per_frame)
-      if execute_process then
+      --local execute_process = true
+      if execute_process or v.internal_process then
         v.current_frame_duration = 0
         local ok, error = coroutine.resume(v.func, v)
         if not ok then
@@ -233,6 +235,7 @@ local function Engine()
     end
 
     if z_changed then
+      debug('Recalcula z...')
       table.sort(engine.processes, function(a, b)
         return a.z < b.z
       end)
@@ -262,17 +265,12 @@ local function Engine()
     end
   end
 
-  --[[
-  engine.add_text = function(text_obj)
-    local textId = text_obj.id
-    engine.texts[textId] = text_obj
-  end
-  engine.delete_text = function(text_id)
-    engine.texts[text_id] = nil
-  end
-  ]]--
+  --- Start the game program
+  -- @param init Initial function
+  -- @param debug Debug mode, default false
+  engine.start = function(init, debug)
+    debug_mode = debug or false
 
-  engine.start = function(init)
     -- Init te timer
     engine.last_ms = os.time()
 

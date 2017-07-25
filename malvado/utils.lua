@@ -25,8 +25,11 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+debug_mode = false
 function debug(text)
-  print(text)
+  if debug_mode then
+    print('[DEBUG] ' .. tostring(text))
+  end
 end
 
 local function dump(o)
