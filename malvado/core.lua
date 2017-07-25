@@ -181,6 +181,8 @@ local function Engine()
 
     local dt = love.timer.getDelta( )
     to_delete = {}
+    debug(" * Execute")
+    
     for i,v in ipairs(engine.processes) do
       if v.state == 0 then
         for k2,v2 in pairs(v.args) do
@@ -209,7 +211,7 @@ local function Engine()
 
       if coroutine.status(v.func) == "dead" then
         debug("Finalized process:" .. v.id)
-        table.insert(to_delete, i)
+        table.insert(to_delete, v.id)
       end
 
       if not z_changed and v.z ~= v.last_z then
@@ -219,14 +221,25 @@ local function Engine()
       v.last_z = v.z
     end
 
+    print (#engine.processes .. '-' .. engine.n_internal_procs)
+
     if #to_delete > 0 then
-      for i,v in ipairs(to_delete) do
-        local proc = engine.processes[v]
-        if proc[internal_process] ~= nil and proc.internal_process then
+      print_v(to_delete)
+
+      for i,vid in ipairs(to_delete) do
+        local proc_to_del = engine.processes[vid]
+        --print(v)
+        print 'deleting...'
+        print_v(vid)
+        print_v(proc_to_del)
+
+        if proc_to_del["internal_process"] ~= nil and proc_to_del["internal_process"] == true then
+          print 'entra'
           engine.n_internal_procs = engine.n_internal_procs - 1
+          print ('num_internal_procs:' .. tostring(engine.n_internal_procs))
         end
 
-        table.remove(engine.processes, v)
+        engine.processes[vid] = nil
       end
     end
 

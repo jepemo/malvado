@@ -58,12 +58,12 @@ end
 function change_text(text_id, _text, _x, _y, _font)
   local values = {}
 
-  if (_text) then values[text] = _text end
-  if (_x)    then values[x] = _x end
-  if (_y)    then values[y] = _y end
-  if (_font) then values[font] = _font end
+  if (_text) then values["text"] = _text end
+  if (_x)    then values["x"] = _x end
+  if (_y)    then values["y"] = _y end
+  if (_font) then values["font"] = _font end
 
-  engine.mod_process(text_id, values)
+  malvado.mod_process(text_id, values)
 end
 
 --- Delete a text by its identifier

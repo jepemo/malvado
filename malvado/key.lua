@@ -28,6 +28,9 @@
 --- Core module implements keyboard input iteractions
 -- @module malvado.key
 
+--- Define the last key pressed. 0 if there is no key pressed.
+scan_code = 0
+
 --- Check if a key is pressed. The key codes are same in [love2d](https://love2d.org/wiki/KeyConstant).
 -- @param code Key code
 -- @return true|false if the key is pressed
