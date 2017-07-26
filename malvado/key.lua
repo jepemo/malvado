@@ -35,5 +35,6 @@ scan_code = 0
 -- @param code Key code
 -- @return true|false if the key is pressed
 function key(code)
+  scan_code = code
   return love.keyboard.isDown(code)
 end

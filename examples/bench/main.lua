@@ -38,7 +38,7 @@ Benchmark = process(function(self)
 
     start = love.timer.getTime()
 
-    if key("space") then
+    if key("space") and scan_code == 0 then
       BenchProcess {}
       num_procs = num_procs + 1
     end

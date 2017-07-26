@@ -173,6 +173,7 @@ local function Engine()
     local dt = 1
     local z_changed = false
 
+    scan_code = 0
 
     love.graphics.setBackgroundColor(
       engine.background_color.r,
@@ -182,7 +183,7 @@ local function Engine()
     local dt = love.timer.getDelta( )
     to_delete = {}
     debug(" * Execute")
-    
+
     for i,v in ipairs(engine.processes) do
       if v.state == 0 then
         for k2,v2 in pairs(v.args) do
