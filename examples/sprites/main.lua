@@ -55,4 +55,4 @@ malvado.start(function()
   set_title('Sprite example')
   --Guy {}
   Cat {}
-end)
+end, true)

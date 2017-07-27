@@ -38,7 +38,7 @@ Benchmark = process(function(self)
 
     start = love.timer.getTime()
 
-    if key("space") and scan_code == 0 then
+    if key("space") then
       BenchProcess {}
       num_procs = num_procs + 1
     end
@@ -53,4 +53,4 @@ end)
 malvado.start(function()
   set_title('Benchmark')
   Benchmark {}
-end, debug)
+end, true)

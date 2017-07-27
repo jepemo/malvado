@@ -52,7 +52,7 @@ local function Process(engine, func)
     fps = 30,
     time_per_frame = 0.03,
     current_frame_duration = 0,
-    internal_process = false
+    internal = false
   }
 
   process.recv = function(self)
@@ -82,7 +82,7 @@ local function Process(engine, func)
 
     engine.addProc(new_proc)
 
-    if (args.internal_process) then
+    if (args.internal) then
       engine.n_internal_procs = engine.n_internal_procs + 1
     end
 
@@ -98,6 +98,7 @@ end
 local function Engine()
   local engine = {
     processes = {},
+    n_procs = 0,
     n_internal_procs = 0,
     proc_counter = 1,
     started = false,
@@ -170,94 +171,94 @@ local function Engine()
   end
 
   engine.draw = function ()
-    local dt = 1
+    -- Reset vars
+    local dt = love.timer.getDelta( )
+    local to_delete = {}
     local z_changed = false
 
     scan_code = 0
 
+    -- Clear screen
     love.graphics.setBackgroundColor(
       engine.background_color.r,
       engine.background_color.g,
       engine.background_color.b)
 
-    local dt = love.timer.getDelta( )
-    to_delete = {}
-    debug(" * Execute")
-
-    for i,v in ipairs(engine.processes) do
-      if v.state == 0 then
-        for k2,v2 in pairs(v.args) do
-          v[k2] = v2
+    -- For every process
+    for id, proc in pairs(engine.processes) do
+      -- Pass process arguments
+      if proc.state == 0 then
+        for k2,v2 in pairs(proc.args) do
+          proc[k2] = v2
         end
-        v.state = 1
+        proc.state = 1
       end
 
-      v.time_per_frame = 1.0 / v.fps
-      v.delta = dt
-      v.current_frame_duration = v.current_frame_duration + dt
+      -- Update frame vars
+      proc.time_per_frame = 1.0 / proc.fps
+      proc.delta = dt
+      proc.current_frame_duration = proc.current_frame_duration + dt
 
-      local execute_process = (v.current_frame_duration >= v.time_per_frame)
-      --local execute_process = true
-      if execute_process or v.internal_process then
-        v.current_frame_duration = 0
-        local ok, error = coroutine.resume(v.func, v)
+      -- Execute process
+      local execute_process = (proc.current_frame_duration >= proc.time_per_frame)
+      if execute_process or proc.internal then
+        proc.current_frame_duration = 0
+        local ok, error = coroutine.resume(proc.func, proc)
         if not ok then
           debug(error)
         end
       end
 
-      if (v.graph ~= nil or v.fpg ~= nil) then
-        render_process(v)
+      -- Render the process if as a graphic
+      if (proc.graph ~= nil or proc.fpg ~= nil) then
+        render_process(proc)
       end
 
-      if coroutine.status(v.func) == "dead" then
-        debug("Finalized process:" .. v.id)
-        table.insert(to_delete, v.id)
+      -- If the process have ended, mark to delete
+      if coroutine.status(proc.func) == "dead" then
+        debug("Finalized process:" .. id)
+        table.insert(to_delete, id)
       end
 
-      if not z_changed and v.z ~= v.last_z then
+      -- Check if some Z-depth have been updated
+      if not z_changed and proc.z ~= proc.last_z then
         z_changed = true
       end
 
-      v.last_z = v.z
+      -- Update te z-depth
+      proc.last_z = proc.z
     end
 
-    print (#engine.processes .. '-' .. engine.n_internal_procs)
-
+    -- Delete the processes that are finished
     if #to_delete > 0 then
-      print_v(to_delete)
-
-      for i,vid in ipairs(to_delete) do
-        local proc_to_del = engine.processes[vid]
-        --print(v)
-        print 'deleting...'
-        print_v(vid)
-        print_v(proc_to_del)
-
-        if proc_to_del["internal_process"] ~= nil and proc_to_del["internal_process"] == true then
-          print 'entra'
-          engine.n_internal_procs = engine.n_internal_procs - 1
-          print ('num_internal_procs:' .. tostring(engine.n_internal_procs))
-        end
-
-        engine.processes[vid] = nil
+      for _, id in ipairs(to_delete) do
+        engine.kill(id)
       end
     end
 
-    if #engine.processes == 0 or #engine.processes <= engine.n_internal_procs then
+    -- Exit the application if there aren't active processes
+    if engine.n_procs == 0 or engine.n_procs <= engine.n_internal_procs then
       love.event.quit(0)
     end
 
+    -- Re-order the processes if some z-depth have been changed
     if z_changed then
-      debug('Recalcula z...')
-      table.sort(engine.processes, function(a, b)
-        return a.z < b.z
-      end)
+      engine.update_zdepths()
     end
   end
 
+  engine.update_zdepths = function()
+    debug('Recalcula z...')
+    table.sort(engine.processes, function(a, b)
+      return a.z < b.z
+    end)
+  end
+
   engine.addProc = function(proc)
-    engine.processes[proc.id] = proc
+    engine.processes[ident(proc.id)] = proc
+    engine.n_procs = tlen(engine.processes)
+
+    engine.update_zdepths()
   end
 
   engine.newProcId = function()
@@ -267,14 +268,21 @@ local function Engine()
   end
 
   engine.kill = function(processToKill)
-    if engine.processes[processToKill] ~= nil then
-      engine.processes[processToKill] = nil
+    if engine.processes[ident(processToKill)] ~= nil then
+      local proc_del = engine.processes[ident(processToKill)]
+      if proc_del["internal"] ~= nil and proc_del["internal"] == true then
+        engine.n_internal_procs = engine.n_internal_procs - 1
+      end
+
+      engine.processes[ident(processToKill)] = nil
     end
+
+    engine.n_procs = tlen(engine.processes)
   end
 
   engine.send = function(proc_id, data)
-    if engine.processes[proc_id] ~= nil then
-      proc = engine.processes[proc_id]
+    if engine.processes[ident(proc_id)] ~= nil then
+      proc = engine.processes[ident(proc_id)]
       table.insert(proc.data_msg, data)
     end
   end
@@ -282,8 +290,9 @@ local function Engine()
   --- Start the game program
   -- @param init Initial function
   -- @param debug Debug mode, default false
-  engine.start = function(init, debug)
-    debug_mode = debug or false
+  engine.start = function(init, debug_)
+    debug_mode = debug_ or false
+    debug("Start")
 
     -- Init te timer
     engine.last_ms = os.time()
@@ -296,10 +305,9 @@ local function Engine()
   end
 
   engine.mod_process = function(proc_id, values)
-    proc = engine.processes[proc_id]
-
-    for i,v in ipairs(values) do
-      proc[i] = v
+    proc = engine.processes[ident(proc_id)]
+    for k,v in pairs(values) do
+      proc[k] = v
     end
   end
 

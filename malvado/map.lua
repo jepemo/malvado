@@ -223,7 +223,7 @@ FadeProcess = process(function(self)
   local dir_b = 0
   local dir_a = 0
 
-  while #malvado.processes > 1 do
+  while true do
     if in_progress == true then
       local inc_r = inc_value(r, r_end, dir_r, speed)
       local inc_g = inc_value(g, g_end, dir_g, speed)
@@ -266,7 +266,7 @@ FadeProcess = process(function(self)
   end
 end)
 
-fade_process = FadeProcess { z = 1000000, internal_process = true }
+fade_process = FadeProcess { z = 1000000, internal = true }
 
 --- Creates a fade transition to the specified colour
 -- @param rc Red

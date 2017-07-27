@@ -46,7 +46,7 @@ end)
 -- @param _text text
 -- @see malvado.map.font
 function write(_font, _x, _y, _text)
-  return TextProc { font = _font, x = _x, y = _y, text = _text, internal_process = true, z = 1000 }
+  return TextProc { font = _font, x = _x, y = _y, text = _text, internal = true, z = 1000 }
 end
 
 --- Change some value of a created text
