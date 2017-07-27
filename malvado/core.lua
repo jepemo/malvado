@@ -49,7 +49,7 @@ local function Process(engine, func)
     delta = 1,
     data_msg = {},
     last_z = 0,
-    fps = 30,
+    fps = 100,
     time_per_frame = 0.03,
     current_frame_duration = 0,
     internal = false
@@ -188,9 +188,7 @@ local function Engine()
     for id, proc in pairs(engine.processes) do
       -- Pass process arguments
       if proc.state == 0 then
-        for k2,v2 in pairs(proc.args) do
-          proc[k2] = v2
-        end
+        engine.mod_process(id, proc.args)
         proc.state = 1
       end
 

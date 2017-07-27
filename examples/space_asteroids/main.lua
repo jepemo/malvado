@@ -59,7 +59,8 @@ SpaceShip = process(function(self)
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
   self.size = 0.1
-  local angleVelocity = 1
+  local angleVelocity = 10
+  local vel = 200
   local angleDesp = -90
   local fired = 0
 
@@ -67,8 +68,8 @@ SpaceShip = process(function(self)
     if key("left")  then self.angle = self.angle-angleVelocity end
     if key("right") then self.angle = self.angle+angleVelocity end
     if key("up") then
-      self.x = self.x+cos(self.angle+angleDesp)
-      self.y = self.y+sin(self.angle+angleDesp)
+      self.x = self.x+(cos(self.angle+angleDesp) * self.delta * vel)
+      self.y = self.y+(sin(self.angle+angleDesp) * self.delta * vel )
     end
 
     if key("space") and fired == 0 then
