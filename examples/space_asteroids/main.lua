@@ -59,6 +59,7 @@ SpaceShip = process(function(self)
   self.x = get_screen_width() / 2
   self.y = get_screen_height() / 2
   self.size = 0.1
+  self.fps = 30
   local angleVelocity = 10
   local vel = 200
   local angleDesp = -90
@@ -94,4 +95,4 @@ malvado.start(function()
   SpaceShip { z = 0 }
   Asteroid { z = 1, xdir = 0.2, ydir = 0.8 }
   Asteroid { z = 1, xdir = 0.6, ydir = 0.3 }
-end)
+end, true)

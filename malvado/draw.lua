@@ -38,9 +38,36 @@ function set_color(red, green, blue, alpha)
   love.graphics.setColor(red, green, blue, alpha)
 end
 
-function draw_circle(x, y, radius)
-   love.graphics.circle("line", x, y, radius)
+--- Draws a non-filled circle with center (x0,y0) and radius radius.
+-- @param x0 X position
+-- @param y0 Y position
+-- @param radius Circle Radius
+function draw_circle(x0, y0, radius)
+   love.graphics.circle("line", x0, y0, radius)
 end
-function draw_fcircle(x, y, radius)
-   love.graphics.circle("fill", x, y, radius)
+
+--- Draws a filled circle with center (x0,y0) and radius radius.
+-- @param x0 X position
+-- @param y0 Y position
+-- @param radius Circle Radius
+function draw_fcircle(x0, y0, radius)
+   love.graphics.circle("fill", x0, y0, radius)
+end
+
+--- Draws a filled rectangle with corners (x0,y0), (x0,y1), (x1,y0) and (x1,y1).
+-- @param x0 The x coordinate of one corner of the filled rectangle.
+-- @param y0 The y coordinate of one corner of the filled rectangle.
+-- @param x1 The x coordinate of the diagonally opposite corner of the filled rectangle.
+-- @param y1 The y coordinate of the diagonally opposite corner of the filled rectangle.
+function draw_box(x0, y0, x1, y1)
+  love.graphics.rectangle("fill", x0, y0, x1-x0, y1-y0)
+end
+
+--- Draws a non filled rectangle with corners (x0,y0), (x0,y1), (x1,y0) and (x1,y1).
+-- @param x0 The x coordinate of one corner of the filled rectangle.
+-- @param y0 The y coordinate of one corner of the filled rectangle.
+-- @param x1 The x coordinate of the diagonally opposite corner of the filled rectangle.
+-- @param y1 The y coordinate of the diagonally opposite corner of the filled rectangle.
+function draw_rect(x0, y0, x1, y1)
+  love.graphics.rectangle("line", x0, y0, x1-x0, y1-y0)
 end

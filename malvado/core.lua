@@ -30,6 +30,9 @@
 
 local function Process(engine, func)
   local process = {
+    -- PUBLIC PROPERTIES ------------------------------------------------------
+
+    -- Process identifier
     id = -1,
     -- Graphic
     graph = nil,
@@ -37,52 +40,77 @@ local function Process(engine, func)
     fpg = nil,
     -- Graphic index
     fpgIndex = -1,
-    -- Process function
-    func = nil,
-    args = nil,
+    -- Process parent
+    parent = nil,
+    -- X pos
     x = 0,
+    -- Y pos
     y = 0,
+    -- Z pos
     z = 0,
+    -- Angle
     angle = 0,
+    -- Size
     size = 1,
-    state = 0,
+    -- Width
+    width = 0,
+    -- Height
+    height = 0,
+    -- Delta (fps)
     delta = 1,
-    data_msg = {},
-    last_z = 0,
-    fps = 100,
-    time_per_frame = 0.03,
-    current_frame_duration = 0,
-    internal = false
+    -- Frames per second
+    fps = 0,
+
+    -- PRIVATE PROPERTIES -----------------------------------------------------
+
+    -- Process function
+    _func = nil,
+    -- Process arguments
+    _args = nil,
+    -- Process state
+    _state = 0,
+    -- Message box
+    _data_msg = {},
+    -- Z position last frame
+    _last_z = 0,
+    -- delta adjuster
+    _time_per_frame = 0.03,
+    -- Current frame duration
+    _current_frame_duration = 0,
+    -- If it a special system process
+    _internal = false,
+    -- If a process have childs, to destroy when the parent is destroyed
+    _children = nil,
   }
 
+  --- Non blocking message receiver
   process.recv = function(self)
-    if #self.data_msg > 0 then
-      return table.remove(self.data_msg, 1)
+    if #self._data_msg > 0 then
+      return table.remove(self._data_msg, 1)
     else
       return nil
     end
   end
 
+  -- Process metaclass
   mtproc = {
   }
 
+  -- When a process is created
   mtproc.__call = function(t, args)
-    -- print_v(t)
-
     args = args or {}
 
     new_proc = deepcopy(process)
 
     new_proc.id = engine.newProcId()
-    new_proc.func = coroutine.create(func)
-    new_proc.args = args
+    new_proc._func = coroutine.create(func)
+    new_proc._args = args
 
-    --process = setmetatable(process, args)
     new_proc = setmetatable(new_proc, mtproc)
 
     engine.addProc(new_proc)
 
-    if (args.internal) then
+    if (args._internal) then
       engine.n_internal_procs = engine.n_internal_procs + 1
     end
 
@@ -93,6 +121,24 @@ local function Process(engine, func)
   process = setmetatable(process, mtproc)
 
   return process
+end
+
+-- Represents the mouse
+mouse = {
+  -- X pos
+  x = 0,
+  -- Y position
+  y = 0,
+  -- Graphic collection
+  fpg = 0,
+  -- Graphic of grapic collection
+  fpgIndex = 0,
+  -- Cursor graphic
+  graph = nil
+}
+
+local function render_mouse()
+  -- Nothing at te moment
 end
 
 local function Engine()
@@ -119,20 +165,9 @@ local function Engine()
         anim_table = fpg.anim_table[(process.fpgIndex % #fpg.anim_table)+1]
       elseif fpg.type == 'directory' then
         graphic = fpg.data[(process.fpgIndex % #fpg.data)+1]
+      elseif fpg.type == 'zip' then
+        error("FPG zip mode is not available")
       end
-      --[[
-      and process.fpg.data ~= nil
-      and #process.fpg.data > 0 then
-
-      if self.fpgIndex ~= nil
-        and type(self.fpgIndex) == 'number'
-        and self.fpgIndex > 0
-        and self.fpgIndex <= #process.fpg.data then
-
-        graphic = process.fpg.data[self.fpgIndex]
-        anim_table = process.fpg.
-      end
-      ]]--
     elseif process.graph ~= nil then
       if process.graph.type == 'image' then
         graphic = process.graph.data
@@ -178,6 +213,11 @@ local function Engine()
 
     scan_code = 0
 
+    mouse.x = love.mouse.getX()
+    mouse.y = love.mouse.getY()
+
+    render_mouse()
+
     -- Clear screen
     love.graphics.setBackgroundColor(
       engine.background_color.r,
@@ -187,21 +227,25 @@ local function Engine()
     -- For every process
     for id, proc in pairs(engine.processes) do
       -- Pass process arguments
-      if proc.state == 0 then
-        engine.mod_process(id, proc.args)
-        proc.state = 1
+      if proc._state == 0 then
+        engine.mod_process(id, proc._args)
+        proc._state = 1
       end
 
       -- Update frame vars
-      proc.time_per_frame = 1.0 / proc.fps
-      proc.delta = dt
-      proc.current_frame_duration = proc.current_frame_duration + dt
+      local execute_process = true
+      if proc.fps ~= 0 then
+        proc._time_per_frame = 1.0 / proc.fps
+        proc.delta = dt
+        proc._current_frame_duration = proc._current_frame_duration + dt
+
+        execute_process = (proc._current_frame_duration >= proc._time_per_frame)
+      end
 
       -- Execute process
-      local execute_process = (proc.current_frame_duration >= proc.time_per_frame)
       if execute_process or proc.internal then
-        proc.current_frame_duration = 0
-        local ok, error = coroutine.resume(proc.func, proc)
+        proc._current_frame_duration = 0
+        local ok, error = coroutine.resume(proc._func, proc)
         if not ok then
           debug(error)
         end
@@ -213,18 +257,18 @@ local function Engine()
       end
 
       -- If the process have ended, mark to delete
-      if coroutine.status(proc.func) == "dead" then
+      if coroutine.status(proc._func) == "dead" then
         debug("Finalized process:" .. id)
         table.insert(to_delete, id)
       end
 
       -- Check if some Z-depth have been updated
-      if not z_changed and proc.z ~= proc.last_z then
+      if not z_changed and proc.z ~= proc._last_z then
         z_changed = true
       end
 
       -- Update te z-depth
-      proc.last_z = proc.z
+      proc._last_z = proc.z
     end
 
     -- Delete the processes that are finished
@@ -257,6 +301,16 @@ local function Engine()
     engine.n_procs = tlen(engine.processes)
 
     engine.update_zdepths()
+
+    -- Update parent/children
+    if proc._args.parent ~= nil then
+      print 'entra!!!'
+      if proc._args.parent._children == nil then
+        proc._args.parent._children = {}
+      end
+
+      table.insert(proc._args.parent._children, proc.id)
+    end
   end
 
   engine.newProcId = function()
@@ -268,11 +322,18 @@ local function Engine()
   engine.kill = function(processToKill)
     if engine.processes[ident(processToKill)] ~= nil then
       local proc_del = engine.processes[ident(processToKill)]
-      if proc_del["internal"] ~= nil and proc_del["internal"] == true then
+      if proc_del["_internal"] ~= nil and proc_del["_internal"] == true then
         engine.n_internal_procs = engine.n_internal_procs - 1
       end
 
       engine.processes[ident(processToKill)] = nil
+
+      -- Delete children processses
+      if (proc_del._children ~= nil and #proc_del._children > 0) then
+        for ind, cid in ipairs(proc_del._children) do
+          engine.kill(cid)
+        end
+      end
     end
 
     engine.n_procs = tlen(engine.processes)
@@ -281,15 +342,15 @@ local function Engine()
   engine.send = function(proc_id, data)
     if engine.processes[ident(proc_id)] ~= nil then
       proc = engine.processes[ident(proc_id)]
-      table.insert(proc.data_msg, data)
+      table.insert(proc._data_msg, data)
     end
   end
 
   --- Start the game program
   -- @param init Initial function
-  -- @param debug Debug mode, default false
-  engine.start = function(init, debug_)
-    debug_mode = debug_ or false
+  -- @param debug_activated Debug mode, default false
+  engine.start = function(init, debug_activated)
+    debug_mode = debug_activated or false
     debug("Start")
 
     -- Init te timer
