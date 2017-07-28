@@ -130,15 +130,72 @@ mouse = {
   -- Y position
   y = 0,
   -- Graphic collection
-  fpg = 0,
+  fpg = nil,
   -- Graphic of grapic collection
-  fpgIndex = 0,
+  fpgIndex = -1,
   -- Cursor graphic
-  graph = nil
+  graph = nil,
+  -- Size
+  size = 1,
+  -- Angle
+  angle = 0,
 }
 
+local function render(graph, fpg, fpgIndex, x, y, angle, size)
+  local graphic = nil
+  local anim_table = nil
+
+  if fpg ~= nil then
+    if fpg.type == 'image' then
+      graphic = fpg.data
+      anim_table = fpg.anim_table[(fpgIndex % #fpg.anim_table)+1]
+    elseif fpg.type == 'directory' then
+      graphic = fpg.data[(fpgIndex % #fpg.data)+1]
+    elseif fpg.type == 'zip' then
+      error("FPG zip mode is not available")
+    end
+  elseif graph ~= nil then
+    if graph.type == 'image' then
+      graphic = graph.data
+    end
+  end
+
+  if graphic ~= nil then
+    local gwidth, gheight = graphic:getDimensions()
+
+    set_color(255, 255, 255, 255)
+    if anim_table ~= nil then
+      love.graphics.draw (
+        graphic,
+        anim_table,
+        x,
+        y,
+        angleToRadians(angle),
+        size,
+        size
+        --gwidth/2,
+        --gheight/2
+      )
+    else
+      love.graphics.draw(
+        graphic,
+        x,
+        y,
+        angleToRadians(angle),
+        size,
+        size,
+        gwidth/2,
+        gheight/2
+      )
+    end
+  end
+end
+
 local function render_mouse()
-  -- Nothing at te moment
+  render(mouse.graph, mouse.fpg, mouse.fpgIndex, mouse.x, mouse.y, mouse.angle, mouse.size)
+end
+local function render_process(process)
+  render(process.graph, process.fpg, process.fpgIndex, process.x, process.y, process.angle, process.size)
 end
 
 local function Engine()
@@ -153,58 +210,6 @@ local function Engine()
     last_ms = 0,
   }
 
-  local function render_process(process)
-    local graphic = nil
-    local anim_table = nil
-
-    if process.fpg ~= nil then
-      local fpg = process.fpg
-
-      if fpg.type == 'image' then
-        graphic = fpg.data
-        anim_table = fpg.anim_table[(process.fpgIndex % #fpg.anim_table)+1]
-      elseif fpg.type == 'directory' then
-        graphic = fpg.data[(process.fpgIndex % #fpg.data)+1]
-      elseif fpg.type == 'zip' then
-        error("FPG zip mode is not available")
-      end
-    elseif process.graph ~= nil then
-      if process.graph.type == 'image' then
-        graphic = process.graph.data
-      end
-    end
-
-    if graphic ~= nil then
-      local gwidth, gheight = graphic:getDimensions()
-
-      set_color(255, 255, 255, 255)
-      if anim_table ~= nil then
-        love.graphics.draw (
-          graphic,
-          anim_table,
-          process.x,
-          process.y,
-          angleToRadians(process.angle),
-          process.size,
-          process.size
-          --gwidth/2,
-          --gheight/2
-        )
-      else
-        love.graphics.draw(
-          graphic,
-          process.x,
-          process.y,
-          angleToRadians(process.angle),
-          process.size,
-          process.size,
-          gwidth/2,
-          gheight/2
-        )
-      end
-    end
-  end
-
   engine.draw = function ()
     -- Reset vars
     local dt = love.timer.getDelta( )
@@ -215,8 +220,6 @@ local function Engine()
 
     mouse.x = love.mouse.getX()
     mouse.y = love.mouse.getY()
-
-    render_mouse()
 
     -- Clear screen
     love.graphics.setBackgroundColor(
@@ -270,6 +273,9 @@ local function Engine()
       -- Update te z-depth
       proc._last_z = proc.z
     end
+
+    -- Render the mouse
+    render_mouse()
 
     -- Delete the processes that are finished
     if #to_delete > 0 then

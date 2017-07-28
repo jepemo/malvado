@@ -44,7 +44,7 @@ MenuOption = process (function(self)
   while selected_menu == 0 do
     set_color(172, 83, 83)
     draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
-    set_color(167, 76, 76)
+    set_color(10, 10, 10)--(161, 70, 70)
     draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
     frame()
   end
@@ -66,5 +66,9 @@ end)
 -- Start
 malvado.start(function()
   set_title('Malvad0 Dem0')
+
+  mouse.graph = load_image("cursor.png")
+  mouse.angle = -45
+
   Menu {}
 end, true)
