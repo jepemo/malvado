@@ -42,10 +42,16 @@ MenuOption = process (function(self)
   write(font(60, 255, 255, 255), self.x, self.y, self.text)
 
   while selected_menu == 0 do
+    --[[
     set_color(172, 83, 83)
     draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
-    set_color(10, 10, 10)--(161, 70, 70)
+    set_color(161, 70, 70)
     draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
+    ]]--
+    love.graphics.setColor(172, 83, 83)
+    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    love.graphics.setColor(161, 70, 70)
+    love.graphics.rectangle("fill", self.x, self.y, self.width+10, self.height+10)
     frame()
   end
 end)

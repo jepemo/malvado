@@ -201,6 +201,7 @@ end
 local function Engine()
   local engine = {
     processes = {},
+    processes_by_z = {},
     n_procs = 0,
     n_internal_procs = 0,
     proc_counter = 1,
@@ -229,6 +230,7 @@ local function Engine()
 
     -- For every process
     for id, proc in pairs(engine.processes) do
+      print('Processing: ' .. id .. ', z: ' .. proc.z)
       -- Pass process arguments
       if proc._state == 0 then
         engine.mod_process(id, proc._args)
@@ -293,6 +295,8 @@ local function Engine()
     if z_changed then
       engine.update_zdepths()
     end
+
+    print '------'
   end
 
   engine.update_zdepths = function()
@@ -310,7 +314,6 @@ local function Engine()
 
     -- Update parent/children
     if proc._args.parent ~= nil then
-      print 'entra!!!'
       if proc._args.parent._children == nil then
         proc._args.parent._children = {}
       end
