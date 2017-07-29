@@ -57,14 +57,13 @@ MenuOption = process (function(self)
       change_text(idtext, self.text, self.x+textXPos, self.y+textYPos, font_show)
 
       set_color(161, 70, 70)
-      draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
+      draw_box(self.x, self.y, self.x + self.width+3, self.y + self.height+3)
       set_color(172, 83, 83)
       draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
 
       if (self:collision('mouse') and mouse.left) then
         selected_menu = self.option
-
-        print(self.text .. ' -> ' .. tostring(selected_menu))
+        --print(self.text .. ' -> ' .. tostring(selected_menu))
       end
     else
       --print ('entra: ' .. self.text)

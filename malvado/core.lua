@@ -105,9 +105,10 @@ local function Process(engine, func)
       if procs ~= nil and #procs > 0 then
         for ind, proc in ipairs(procs) do
           --print ('C:' .. proc.x .. '-' .. proc.y .. ' -> (' .. self.x .. '+' .. self.width .. '-' .. self.y .. '+' .. self.height ..')')
-
-          if proc.x < (self.x + self.width)
-            and proc.y > (self.y + self.height) then
+          if    (proc.x > self.x)
+            and (proc.x < (self.x + self.width))
+            and (proc.y > self.y)
+            and (proc.y < (self.y + self.height)) then
               collisioned = true
               break
           end
