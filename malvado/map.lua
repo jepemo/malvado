@@ -184,13 +184,15 @@ function render(graph, fpg, fpgIndex, x, y, angle, size)
   local anim_table = nil
 
   if fpg ~= nil then
-    if fpg.type == 'image' then
-      graphic = fpg.data
-      anim_table = fpg.anim_table[(fpgIndex % #fpg.anim_table)+1]
-    elseif fpg.type == 'directory' then
-      graphic = fpg.data[(fpgIndex % #fpg.data)+1]
-    elseif fpg.type == 'zip' then
-      error("FPG zip mode is not available")
+    if fpgIndex ~=nil and fpgIndex > -1 then
+      if fpg.type == 'image' then
+        graphic = fpg.data
+        anim_table = fpg.anim_table[(fpgIndex % #fpg.anim_table)+1]
+      elseif fpg.type == 'directory' then
+        graphic = fpg.data[(fpgIndex % #fpg.data)+1]
+      elseif fpg.type == 'zip' then
+        error("FPG zip mode is not available")
+      end
     end
   elseif graph ~= nil then
     if graph.type == 'image' then

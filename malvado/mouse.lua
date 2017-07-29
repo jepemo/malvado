@@ -25,10 +25,9 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
---- Mouse module implements all mouse interactions
+--- Mouse module implements all mouse interactions.
 -- @module malvado.mouse
 
---- Represents the mouse.
 mouse = {
   -- class
   class = 'mouse',

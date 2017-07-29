@@ -175,8 +175,6 @@ local function Engine()
     local to_delete = {}
     local z_changed = false
 
-    scan_code = 0
-
     update_mouse_events()
 
     -- Clear screen
@@ -243,6 +241,8 @@ local function Engine()
         engine.kill(id)
       end
     end
+
+    --print (engine.n_procs .. '-' .. engine.n_internal_procs)
 
     -- Exit the application if there aren't active processes
     if engine.n_procs == 0 or engine.n_procs <= engine.n_internal_procs then
@@ -366,6 +366,11 @@ local function Engine()
     end
   end
 
+  engine.key_pressed = function( key, scancode, isrepeat )
+    --print('entra: ' .. scancode)
+    scan_code = scancode
+  end
+
   --- Start the game program
   -- @param init Initial function
   -- @param debug_activated Debug mode, default false
@@ -377,6 +382,7 @@ local function Engine()
     engine.last_ms = os.time()
 
     love.draw = engine.mainloop
+    love.keypressed = engine.key_pressed
 
     if init ~= nil then
       init()
