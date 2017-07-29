@@ -71,12 +71,10 @@ end)
 ## Roadmap
 ### 1.0
 - Basic process workflow
-- Graphic Packages (FPG): image, ~~zip~~, directory
+- Graphic Packages (FPG): image, directory, ~~zip~~
 - Examples: helloworld, demo, bench, space_asteroids
 - Primitives and love2d aliases:
-  - clear_screen
-  - write (text)
-  - key
-  - set_color
-  - font
+  - screen
+  - texts & fonts
+  - key & mouse interaction
   - fade (transitions)
