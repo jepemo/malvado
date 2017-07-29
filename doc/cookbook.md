@@ -129,7 +129,7 @@ I need to increment the *self.x* coord in every frame.
 local game_end = false
 
 Hero = process(function(self)
-  # I can adjust the velocity setting the frames per second of the process.
+  -- I can adjust the velocity setting the frames per second of the process.
   self.fps = 15
   self.x = 0
   self.y = get_screen_height() / 2
@@ -142,6 +142,7 @@ Hero = process(function(self)
     frame()
   end
 end)
+```
 
 ### Image animation
 
