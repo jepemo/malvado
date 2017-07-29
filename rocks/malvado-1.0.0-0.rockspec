@@ -20,6 +20,18 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-      ["malvado"] = "malvado/init.lua"
+      ["malvado"]         = "malvado/init.lua",
+      ["malvado.core"]    = "malvado/core.lua",
+      ["malvado.draw"]    = "malvado/draw.lua",
+      ["malvado.effects"] = "malvado/effects.lua",
+      ["malvado.key"]     = "malvado/key.lua",
+      ["malvado.map"]     = "malvado/map.lua",
+      ["malvado.math"]    = "malvado/math.lua",
+      ["malvado.mouse"]   = "malvado/mouse.lua",
+      ["malvado.screen"]  = "malvado/screen.lua",
+      ["malvado.text"]    = "malvado/text.lua",
+      ["malvado.utils"]   = "malvado/utils.lua",
+      ["malvado.video"]   = "malvado/video.lua",
+      ["malvado.wm"]      = "malvado/wm.lua",
    }
 }
