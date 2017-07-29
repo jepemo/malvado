@@ -1,15 +1,15 @@
 package.path = package.path .. ";./?/init.lua"
 require 'malvado'
 
-local selected_menu = 0
+local selected_menu = 1
 
 -- Options
 local OPTIONS = {
-  MENU_MAIN = 0,
-  MENU_SPRITES = 1,
-  MENU_KEYBOARD = 2,
-  MENU_TEXTS = 3,
-  MENU_FADE = 9
+  [1] = { text = "Back" },
+  [2] = { text = "Sprites" },
+  [3] = { text = "KeyBoard" },
+  [4] = { text = "Texts" },
+  [5] = { text = "Fade" }
 }
 
 FadeExample = process(function(self)
@@ -19,8 +19,7 @@ FadeExample = process(function(self)
   local entra = 0
 
   while true do
-    if selected_menu == OPTIONS.MENU_FADE then
-      print 'entraaaa'
+    if selected_menu == 5 then
       set_color(255, 128, 0)
       draw_fcircle(x, y, r)
 
@@ -46,10 +45,17 @@ MenuOption = process (function(self)
   local textYPos = fontSize / 3
   local textXPos = fontSize * 1.5
 
-  write(font(fontSize, 255, 255, 255), self.x+textXPos, self.y+textYPos, self.text)
+  local font_show = font(fontSize, 255, 255, 255, 255)
+  local font_hide = font(fontSize, 0,   0,   0,   0)
+
+  local idtext = write(font_show, self.x+textXPos, self.y+textYPos, self.text)
 
   while true do
-    if selected_menu == 0 then
+    if (selected_menu == 1 and self.option > 1)
+      or (selected_menu > 1 and self.option == 1) then
+
+      change_text(idtext, self.text, self.x+textXPos, self.y+textYPos, font_show)
+
       set_color(161, 70, 70)
       draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
       set_color(172, 83, 83)
@@ -60,6 +66,9 @@ MenuOption = process (function(self)
 
         print(self.text .. ' -> ' .. tostring(selected_menu))
       end
+    else
+      --print ('entra: ' .. self.text)
+      change_text(idtext, self.text, self.x+textXPos, self.y+textYPos, font_hide)
     end
 
     frame()
@@ -71,9 +80,9 @@ Menu = process(function(self)
   local h = (get_screen_height() / tlen(OPTIONS)) - 10
 
   -- Menu options
-  MenuOption { text = "Texts", y = yini, height = h, option = OPTIONS.MENU_TEXTS, parent=self }
-  MenuOption { text = "KeyBoard", y = yini+h+10, height = h, option = OPTIONS.MENU_KEYBOARD, parent=self }
-  MenuOption { text = "Fade", y = yini+(h*2)+(10*2), height = h, option = OPTIONS.MENU_FADE, parent=self }
+  for ind, obj in ipairs(OPTIONS) do
+    MenuOption { text = obj.text, y = yini+(h * (ind-1))+(10 * (ind-1)), height = h, option = ind, parent=self }
+  end
 
   FadeExample { z = 0 , parent=self }
   while not key("escape") do

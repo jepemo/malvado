@@ -29,11 +29,10 @@
 -- @module malvado.text
 
 TextProc = process(function(self)
-  local font = self.font
-
   while true do
+    local font = self.font
     love.graphics.setFont(font.font)
-    love.graphics.setColor(font.r, font.g, font.b, 255)
+    love.graphics.setColor(font.r, font.g, font.b, font.a)
     love.graphics.print(self.text, self.x, self.y)
     frame()
   end
