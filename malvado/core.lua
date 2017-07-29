@@ -93,7 +93,7 @@ local function Process(engine, func)
     end
   end
 
-  process.collision = function(process_class)
+  process.collision = function(self, process_class)
     local collisioned = false
     if process_class ~= nil then
       local procs = {}
@@ -103,9 +103,11 @@ local function Process(engine, func)
         procs = engine.find_by_class(process_class)
       end
       if procs ~= nil and #procs > 0 then
-        for ind, proc in iparis(procs) do
-          if self.x < (proc.x + proc.width)
-            and self.y > (proc.y + proc.height) then
+        for ind, proc in ipairs(procs) do
+          --print ('C:' .. proc.x .. '-' .. proc.y .. ' -> (' .. self.x .. '+' .. self.width .. '-' .. self.y .. '+' .. self.height ..')')
+
+          if proc.x < (self.x + self.width)
+            and proc.y > (self.y + self.height) then
               collisioned = true
               break
           end
@@ -147,81 +149,9 @@ local function Process(engine, func)
   return process
 end
 
--- Represents the mouse
-mouse = {
-  -- class
-  class = 'mouse',
-  -- X pos
-  x = 0,
-  -- Y position
-  y = 0,
-  -- Graphic collection
-  fpg = nil,
-  -- Graphic of grapic collection
-  fpgIndex = -1,
-  -- Cursor graphic
-  graph = nil,
-  -- Size
-  size = 1,
-  -- Angle
-  angle = 0,
-}
-
-local function render(graph, fpg, fpgIndex, x, y, angle, size)
-  local graphic = nil
-  local anim_table = nil
-
-  if fpg ~= nil then
-    if fpg.type == 'image' then
-      graphic = fpg.data
-      anim_table = fpg.anim_table[(fpgIndex % #fpg.anim_table)+1]
-    elseif fpg.type == 'directory' then
-      graphic = fpg.data[(fpgIndex % #fpg.data)+1]
-    elseif fpg.type == 'zip' then
-      error("FPG zip mode is not available")
-    end
-  elseif graph ~= nil then
-    if graph.type == 'image' then
-      graphic = graph.data
-    end
-  end
-
-  if graphic ~= nil then
-    local gwidth, gheight = graphic:getDimensions()
-
-    set_color(255, 255, 255, 255)
-    if anim_table ~= nil then
-      love.graphics.draw (
-        graphic,
-        anim_table,
-        x,
-        y,
-        angleToRadians(angle),
-        size,
-        size
-        --gwidth/2,
-        --gheight/2
-      )
-    else
-      love.graphics.draw(
-        graphic,
-        x,
-        y,
-        angleToRadians(angle),
-        size,
-        size,
-        gwidth/2,
-        gheight/2
-      )
-    end
-  end
-end
-
-local function render_mouse()
-  render(mouse.graph, mouse.fpg, mouse.fpgIndex, mouse.x, mouse.y, mouse.angle, mouse.size)
-end
 local function render_process(process)
-  render(process.graph, process.fpg, process.fpgIndex, process.x, process.y, process.angle, process.size)
+  process.width, process.height = render(
+    process.graph, process.fpg, process.fpgIndex, process.x, process.y, process.angle, process.size)
 end
 
 local function Engine()
@@ -246,8 +176,7 @@ local function Engine()
 
     scan_code = 0
 
-    mouse.x = love.mouse.getX()
-    mouse.y = love.mouse.getY()
+    update_mouse_events()
 
     -- Clear screen
     love.graphics.setBackgroundColor(

@@ -130,6 +130,7 @@ function fpg(path, type, num_rows, num_cols)
   return fpg_obj
 end
 
+--[[
 function load_fpg(fpg_path)
   local dir = love.filesystem.getSourceBaseDirectory()
   --local path = dir .. '/' .. fpg_path
@@ -176,118 +177,58 @@ function load_fpg(fpg_path)
     data = files
   }
 end
+]]--
 
---------------------------------------------------------------------------------
--- FADE
---------------------------------------------------------------------------------
+function render(graph, fpg, fpgIndex, x, y, angle, size)
+  local graphic = nil
+  local anim_table = nil
 
-local function inc_value(current_value, maxmin_value, direction, increment)
-  if direction == 1 and current_value >= maxmin_value then
-    return 0
-  end
-  if direction == -1 and current_value <= maxmin_value then
-    return 0
-  end
-
-  if direction == 1 and current_value < maxmin_value then
-    return increment
-  end
-
-  if direction == -1 and current_value > maxmin_value then
-    return -increment
-  end
-end
-
-FadeProcess = process(function(self)
-  local in_progress = false
-  local width = get_screen_width()
-  local height = get_screen_height()
-
-  local r = 0
-  local r_end = 0
-
-  local g = 0
-  local g_end = 0
-
-  local b = 0
-  local b_end = 0
-
-  local a = 0
-  local a_end = 255
-
-  local speed = 1
-  self.z = 1000000
-
-  local dir_r = 0
-  local dir_g = 0
-  local dir_b = 0
-  local dir_a = 0
-
-  while true do
-    if in_progress == true then
-      local inc_r = inc_value(r, r_end, dir_r, speed)
-      local inc_g = inc_value(g, g_end, dir_g, speed)
-      local inc_b = inc_value(b, b_end, dir_b, speed)
-      local inc_a = inc_value(a, a_end, dir_a, speed)
-
-      r = r + inc_r
-      g = g + inc_g
-      b = b + inc_b
-      a = a + inc_a
-
-      if inc_r == 0 and
-         inc_g == 0 and
-         inc_b == 0 and
-         inc_a == 0 then
-        in_progress = false
-      end
-    else
-      data = self:recv()
-
-      if data ~= nil then
-        r_end = data.r
-        g_end = data.g
-        b_end = data.b
-        a_end = data.a
-        speed = data.speed
-
-        if r_end > r then dir_r = 1 else dir_r = -1 end
-        if g_end > r then dir_g = 1 else dir_g = -1 end
-        if b_end > r then dir_b = 1 else dir_b = -1 end
-        if a_end > r then dir_a = 1 else dir_a = -1 end
-
-        in_progress = true
-      end
+  if fpg ~= nil then
+    if fpg.type == 'image' then
+      graphic = fpg.data
+      anim_table = fpg.anim_table[(fpgIndex % #fpg.anim_table)+1]
+    elseif fpg.type == 'directory' then
+      graphic = fpg.data[(fpgIndex % #fpg.data)+1]
+    elseif fpg.type == 'zip' then
+      error("FPG zip mode is not available")
     end
-
-    love.graphics.setColor(r, g, b, a)
-    love.graphics.rectangle("fill", 0, 0, width, height)
-    frame()
+  elseif graph ~= nil then
+    if graph.type == 'image' then
+      graphic = graph.data
+    end
   end
-end)
 
-fade_process = FadeProcess { z = 1000000, _internal = true }
+  if graphic ~= nil then
+    local gwidth, gheight = graphic:getDimensions()
 
---- Creates a fade transition to the specified colour
--- @param rc Red
--- @param gc Green
--- @param bc Blue
--- @param ac Alpha
--- @param speedc Speed
-function fade(rc, gc, bc, ac, speedc)
-  send(fade_process, { r = rc, g = gc, b = bc, a = ac, speed = speedc})
-end
+    set_color(255, 255, 255, 255)
+    if anim_table ~= nil then
+      love.graphics.draw (
+        graphic,
+        anim_table,
+        x,
+        y,
+        angleToRadians(angle),
+        size,
+        size
+        --gwidth/2,
+        --gheight/2
+      )
+      return 0, 0
+    else
+      love.graphics.draw(
+        graphic,
+        x,
+        y,
+        angleToRadians(angle),
+        size,
+        size,
+        gwidth/2,
+        gheight/2
+      )
+      return graphic:getWidth() * size, graphic:getHeight() * size
+    end
+  end
 
---- Exists from the fade off (change alpha to 0)
--- @param speed Speed
-function fade_on(speed)
-  speed = speed or 4
-  fade(0, 0, 0, 0, 16)
-end
-
---- Go to a dark fade
--- @param speed Speed
-function fade_off(speed)
-  speed = speed or 4
-  fade(0,0,0, 255, 16)
+  return 0, 0
 end

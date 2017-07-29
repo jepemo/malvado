@@ -18,17 +18,20 @@ FadeExample = process(function(self)
   local y = get_screen_height() / 2
   local entra = 0
 
-  while selected_menu == OPTIONS.MENU_FADE do
-    set_color(255, 128, 0)
-    draw_fcircle(x, y, r)
+  while true do
+    if selected_menu == OPTIONS.MENU_FADE then
+      print 'entraaaa'
+      set_color(255, 128, 0)
+      draw_fcircle(x, y, r)
 
-    if key("space") and entra == 0 then
-      entra = 1
-      fade_off()
-      fade_on()
+      if key("space") and entra == 0 then
+        entra = 1
+        fade_off()
+        fade_on()
+      end
+
+      if not key("space") then entra = 0 end
     end
-
-    if not key("space") then entra = 0 end
 
     frame()
   end
@@ -45,14 +48,18 @@ MenuOption = process (function(self)
 
   write(font(fontSize, 255, 255, 255), self.x+textXPos, self.y+textYPos, self.text)
 
-  while selected_menu == 0 do
-    set_color(161, 70, 70)
-    draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
-    set_color(172, 83, 83)
-    draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
+  while true do
+    if selected_menu == 0 then
+      set_color(161, 70, 70)
+      draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
+      set_color(172, 83, 83)
+      draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
 
-    if (self.collision('mouse')) then
-      selected_menu = self.option
+      if (self:collision('mouse') and mouse.left) then
+        selected_menu = self.option
+
+        print(self.text .. ' -> ' .. tostring(selected_menu))
+      end
     end
 
     frame()
@@ -65,10 +72,12 @@ Menu = process(function(self)
 
   -- Menu options
   MenuOption { text = "Texts", y = yini, height = h, option = OPTIONS.MENU_TEXTS, parent=self }
-  MenuOption { text = "KeyBoard", y = yini+h+10, height = h, option = OPTIONS.MENU_TEXTS, parent=self }
+  MenuOption { text = "KeyBoard", y = yini+h+10, height = h, option = OPTIONS.MENU_KEYBOARD, parent=self }
+  MenuOption { text = "Fade", y = yini+(h*2)+(10*2), height = h, option = OPTIONS.MENU_FADE, parent=self }
 
   FadeExample { z = 0 , parent=self }
   while not key("escape") do
+    --print (selected_menu)
     frame()
   end
 end)

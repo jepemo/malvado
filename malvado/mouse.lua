@@ -25,18 +25,48 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-package.path = package.path .. ";./?.lua"
+--- Mouse module implements all mouse interactions
+-- @module malvado.mouse
 
-require 'malvado.utils'
-require 'malvado.math'
-require 'malvado.video'
-require 'malvado.key'
-require 'malvado.map'
-require 'malvado.mouse'
+--- Represents the mouse.
+mouse = {
+  -- class
+  class = 'mouse',
+  -- X pos
+  x = 0,
+  -- Y position
+  y = 0,
+  -- Graphic collection
+  fpg = nil,
+  -- Graphic of grapic collection
+  fpgIndex = -1,
+  -- Cursor graphic
+  graph = nil,
+  -- Size
+  size = 1,
+  -- Width
+  width = 0,
+  -- Height
+  height = 0,
+  -- Angle
+  angle = 0,
+  -- If left button is clicked
+  left = false,
+  -- If right button is clicked
+  right = false
+}
 
-require 'malvado.core'
-require 'malvado.draw'
-require 'malvado.effects'
-require 'malvado.screen'
-require 'malvado.text'
-require 'malvado.wm'
+function render_mouse()
+  mouse.width, mouse.height = render(
+    mouse.graph, mouse.fpg, mouse.fpgIndex, mouse.x, mouse.y, mouse.angle, mouse.size)
+end
+
+function update_mouse_events ()
+  mouse.x = love.mouse.getX()
+  mouse.y = love.mouse.getY()
+  mouse.left = love.mouse.isDown(1)
+  mouse.right = love.mouse.isDown(2)
+
+  if mouse.left then debug("(Mouse) left button  - CLICKED") end
+  if mouse.right then debug("(Mouse) right button  - CLICKED") end
+end
