@@ -23,9 +23,9 @@ For the documentation generation, if you download from github, you need [LDoc](h
 ```
 love examples/helloworld
 # or
-love examples/space_asteroids
-# or
 love examples/demo
+# or
+love examples/space_asteroids
 # or
 love examples/bench
 ```

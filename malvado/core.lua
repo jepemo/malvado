@@ -31,7 +31,8 @@
 local function Process(engine, func)
   local process = {
     -- PUBLIC PROPERTIES ------------------------------------------------------
-
+    -- process class
+    class = nil,
     -- Process identifier
     id = -1,
     -- Graphic
@@ -92,6 +93,29 @@ local function Process(engine, func)
     end
   end
 
+  process.collision = function(process_class)
+    local collisioned = false
+    if process_class ~= nil then
+      local procs = {}
+      if process_class == 'mouse' then
+        table.insert(procs, mouse)
+      else
+        procs = engine.find_by_class(process_class)
+      end
+      if procs ~= nil and #procs > 0 then
+        for ind, proc in iparis(procs) do
+          if self.x < (proc.x + proc.width)
+            and self.y > (proc.y + proc.height) then
+              collisioned = true
+              break
+          end
+        end
+      end
+    end
+
+    return collisioned
+  end
+
   -- Process metaclass
   mtproc = {
   }
@@ -125,6 +149,8 @@ end
 
 -- Represents the mouse
 mouse = {
+  -- class
+  class = 'mouse',
   -- X pos
   x = 0,
   -- Y position
@@ -211,7 +237,8 @@ local function Engine()
     last_ms = 0,
   }
 
-  engine.draw = function ()
+  -- The mainloop
+  engine.mainloop = function ()
     -- Reset vars
     local dt = love.timer.getDelta( )
     local to_delete = {}
@@ -229,8 +256,9 @@ local function Engine()
       engine.background_color.b)
 
     -- For every process
-    for id, proc in pairs(engine.processes) do
-      print('Processing: ' .. id .. ', z: ' .. proc.z)
+    for pos, proc in ipairs(engine.processes) do
+      local id = proc.id
+
       -- Pass process arguments
       if proc._state == 0 then
         engine.mod_process(id, proc._args)
@@ -295,10 +323,9 @@ local function Engine()
     if z_changed then
       engine.update_zdepths()
     end
-
-    print '------'
   end
 
+  --- Updates the list of processes by it z pos.
   engine.update_zdepths = function()
     debug('Recalcula z...')
     table.sort(engine.processes, function(a, b)
@@ -306,9 +333,12 @@ local function Engine()
     end)
   end
 
+  --- Add a new process to the engine.
+  -- @param proc Process to add
   engine.addProc = function(proc)
-    engine.processes[ident(proc.id)] = proc
-    engine.n_procs = tlen(engine.processes)
+    -- engine.processes[ident(proc.id)] = proc
+    table.insert(engine.processes, proc)
+    engine.n_procs = #engine.processes --tlen(engine.processes)
 
     engine.update_zdepths()
 
@@ -322,20 +352,71 @@ local function Engine()
     end
   end
 
+  --- Returns a new proces identified.
+  -- @return New process ID
   engine.newProcId = function()
     local newId = engine.proc_counter
     engine.proc_counter = engine.proc_counter + 1
     return newId
   end
 
+  --- Find a process by his id.
+  -- @param proc_id Process id
+  -- @return Proces with id = proc_id
+  engine.find_process = function (proc_id)
+    local found = nil
+
+    for ind, proc in ipairs(engine.processes) do
+      if proc.id == proc_id then
+        found = proc
+        break
+      end
+    end
+
+    return found
+  end
+
+  --- Returns a list of processes by his class.
+  -- @param class_name Class Name
+  -- @return list of processes
+  engine.find_by_class = function (class_name)
+    local found_list = {}
+
+    for ind, proc in ipairs(engine.processes) do
+      if proc.class == class_name then
+        table.insert(found_list, proc)
+      end
+    end
+
+    return found_list
+  end
+
+  --- Delete a process.
+  -- @param proc_id Process Id
+  engine.del_process = function(proc_id)
+    local pos = nil
+    for ind, proc in ipairs(engine.processes) do
+      if proc.id == proc_id then
+        pos = ind
+        break
+      end
+    end
+
+    if pos ~= nil then
+      table.remove(engine.processes, pos)
+    end
+  end
+
+  --- Kills a process.
+  -- @param processToKill Process Id
   engine.kill = function(processToKill)
-    if engine.processes[ident(processToKill)] ~= nil then
-      local proc_del = engine.processes[ident(processToKill)]
+    local proc_del = engine.find_process(processToKill)
+    if proc_del ~= nil then
       if proc_del["_internal"] ~= nil and proc_del["_internal"] == true then
         engine.n_internal_procs = engine.n_internal_procs - 1
       end
 
-      engine.processes[ident(processToKill)] = nil
+      engine.del_process(processToKill)
 
       -- Delete children processses
       if (proc_del._children ~= nil and #proc_del._children > 0) then
@@ -345,12 +426,12 @@ local function Engine()
       end
     end
 
-    engine.n_procs = tlen(engine.processes)
+    engine.n_procs = #engine.processes --tlen(engine.processes)
   end
 
   engine.send = function(proc_id, data)
-    if engine.processes[ident(proc_id)] ~= nil then
-      proc = engine.processes[ident(proc_id)]
+    local proc = engine.find_process(proc_id)
+    if proc ~= nil then
       table.insert(proc._data_msg, data)
     end
   end
@@ -362,18 +443,21 @@ local function Engine()
     debug_mode = debug_activated or false
     debug("Start")
 
-    -- Init te timer
+    -- Init the timer
     engine.last_ms = os.time()
 
-    love.draw = engine.draw
+    love.draw = engine.mainloop
 
     if init ~= nil then
       init()
     end
   end
 
+  --- Modifies the properties of a process.
+  -- @param proc_id Process Id
+  -- @param values Object Values (as a table)
   engine.mod_process = function(proc_id, values)
-    proc = engine.processes[ident(proc_id)]
+    local proc = engine.find_process(proc_id)
     for k,v in pairs(values) do
       proc[k] = v
     end

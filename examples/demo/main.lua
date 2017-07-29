@@ -39,19 +39,22 @@ MenuOption = process (function(self)
   self.width = (get_screen_width() / 5) * 3
   self.z = 10
 
-  write(font(60, 255, 255, 255), self.x, self.y, self.text)
+  local fontSize = 60
+  local textYPos = fontSize / 3
+  local textXPos = fontSize * 1.5
+
+  write(font(fontSize, 255, 255, 255), self.x+textXPos, self.y+textYPos, self.text)
 
   while selected_menu == 0 do
-    --[[
-    set_color(172, 83, 83)
-    draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
     set_color(161, 70, 70)
     draw_box(self.x, self.y, self.x + self.width+5, self.y + self.height+5)
-    ]]--
-    love.graphics.setColor(172, 83, 83)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-    love.graphics.setColor(161, 70, 70)
-    love.graphics.rectangle("fill", self.x, self.y, self.width+10, self.height+10)
+    set_color(172, 83, 83)
+    draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
+
+    if (self.collision('mouse')) then
+      selected_menu = self.option
+    end
+
     frame()
   end
 end)
@@ -62,6 +65,7 @@ Menu = process(function(self)
 
   -- Menu options
   MenuOption { text = "Texts", y = yini, height = h, option = OPTIONS.MENU_TEXTS, parent=self }
+  MenuOption { text = "KeyBoard", y = yini+h+10, height = h, option = OPTIONS.MENU_TEXTS, parent=self }
 
   FadeExample { z = 0 , parent=self }
   while not key("escape") do
