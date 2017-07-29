@@ -2,7 +2,7 @@ package = "malvado"
 version = "1.0.0-0"
 source = {
    url = "git://github.com/jepemo/malvado",
-   tag = "v1.0.0-0",
+   tag = "v1.0",
    dir = "malvado"
 }
 description = {
