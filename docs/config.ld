@@ -7,4 +7,4 @@ package = 'malvado'
 format = 'discount'
 sort_modules=true
 file = '../malvado'
-dir = '../doc'
+dir = '../docs/api'

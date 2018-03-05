@@ -1,12 +1,12 @@
 # malvado
 A game programming library with  "DIV Game Studio"-style processes for Lua/Love2D
 
+You can find the *malvado* documentation on the [Website](http://jepemo.github.com/malvado)
+
 - [Getting Started](#getting-started)
   - [Installation](#installation)
   - [Run Examples](#examples)
   - [Hello World Example](#hello-world-example)
-- [Cookbook](#cookbook)
-- [Api Reference](#api-reference)
 - [Roadmap](#roadmap)
 
 ## Getting Started
@@ -63,10 +63,6 @@ malvado.start(function()
   HelloWorld { x=240, y=280, text="Hello World" }
 end)
 ```
-
-## [Cookbook](doc/cookbook.md)
-
-## [Api Reference](https://cdn.rawgit.com/jepemo/malvado/master/doc/index.html)
 
 ## Roadmap
 ### 1.0
