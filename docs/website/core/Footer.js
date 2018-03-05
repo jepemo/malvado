@@ -35,13 +35,13 @@ class Footer extends React.Component {
           </a>
           <div>
             <h5>Docs</h5>
-            <a href={this.docUrl('doc1.html', this.props.language)}>
+            <a href={this.docUrl('installation.html', '')}>
               Getting Started
             </a>
-            <a href={this.docUrl('doc2.html', this.props.language)}>
+            <a href={this.docUrl('cb_gorganization.html', '')}>
               CookBook
             </a>
-            <a href="https://cdn.rawgit.com/jepemo/malvado/master/docs/api">
+            <a href="https://cdn.rawgit.com/jepemo/malvado/master/docs/api/index.html">
               API Reference
             </a>
             <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">

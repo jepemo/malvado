@@ -1,13 +1,17 @@
 # malvado
 A game programming library with  "DIV Game Studio"-style processes for Lua/Love2D
 
-You can find the *malvado* documentation on the [Website](http://jepemo.github.com/malvado)
+You can find the *malvado* documentation on the [Website](https://jepemo.github.io/malvado/)
 
+- [Features](#features)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
   - [Run Examples](#examples)
   - [Hello World Example](#hello-world-example)
-- [Roadmap](#roadmap)
+
+## Features
+
+
 
 ## Getting Started
 
@@ -63,14 +67,3 @@ malvado.start(function()
   HelloWorld { x=240, y=280, text="Hello World" }
 end)
 ```
-
-## Roadmap
-### 1.0
-- Basic process workflow
-- Graphic Packages (FPG): image, directory, ~~zip~~
-- Examples: helloworld, demo, bench, space_asteroids
-- Primitives and love2d aliases:
-  - screen
-  - texts & fonts
-  - key & mouse interaction
-  - fade (transitions)

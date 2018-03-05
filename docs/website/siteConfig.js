@@ -25,8 +25,9 @@ const siteConfig = {
   baseUrl: '/malvado/' /* base url for your project */,
   projectName: 'malvado',
   headerLinks: [
-    {doc: 'doc1', label: 'Docs'},
-    {doc: 'doc4', label: 'API'},
+    {doc: 'installation', label: 'Docs'},
+    { href: "https://github.com/jepemo/malvado", label: "GitHub" },
+    //{doc: 'doc4', label: 'API'},
     //{page: 'help', label: 'Help'},
     //{blog: false, label: 'Blog'},
   ],

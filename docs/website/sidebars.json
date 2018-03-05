@@ -1,10 +1,7 @@
 {
   "docs": {
-    "Getting Started": ["doc1"],
-    "Cookbook": ["doc2"],
-    "Second Category": ["doc3"]
-  },
-  "docs-other": {
-    "First Category": ["doc4", "doc5"]
+    "Getting Started": ["installation", "helloworld"],
+    "Cookbook": ["cb_gorganization", "cb_animations", "cb_soundmusic"],
+    "Other": ["changelog"]
   }
 }
