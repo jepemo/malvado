@@ -1,0 +1,38 @@
+<html lang="en"><head><meta charset="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Hello World · malvado</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta property="og:title" content="Hello World · malvado"/><meta property="og:type" content="website"/><meta property="og:url" content="https://github.com/jepemo/malvado/malvado/index.html"/><meta property="og:description" content="## Hello World Example"/><link rel="shortcut icon" href="/malvado/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/malvado/css/main.css"/></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/malvado/"><img class="logo" src="/malvado/img/docusaurus.svg"/><h2 class="headerTitle">malvado</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li><a href="/malvado/docs/installation.html" target="_self">Docs</a></li><li><a href="https://github.com/jepemo/malvado" target="_self">GitHub</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>Getting Started</span></h2></div><div class="navGroups"><div class="navGroup navGroupActive"><h3>Getting Started</h3><ul><li class="navListItem"><a class="navItem" href="/malvado/docs/installation.html">Installation</a></li><li class="navListItem navListItemActive"><a class="navItem navItemActive" href="/malvado/docs/helloworld.html">Hello World Example</a></li></ul></div><div class="navGroup navGroupActive"><h3>Cookbook</h3><ul><li class="navListItem"><a class="navItem" href="/malvado/docs/cb_gorganization.html">Game organization</a></li><li class="navListItem"><a class="navItem" href="/malvado/docs/cb_animations.html">Animations</a></li><li class="navListItem"><a class="navItem" href="/malvado/docs/cb_soundmusic.html">Sound and music</a></li></ul></div><div class="navGroup navGroupActive"><h3>Other</h3><ul><li class="navListItem"><a class="navItem" href="/malvado/docs/changelog.html">Changelog</a></li></ul></div></div></section></div><script>
+          var toggler = document.getElementById('navToggler');
+          var nav = document.getElementById('docsNav');
+          toggler.onclick = function() {
+            nav.classList.toggle('docsSliderActive');
+          };
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1>Hello World</h1></header><article><div><span><h2><a class="anchor" aria-hidden="true" name="hello-world-example"></a><a href="#hello-world-example" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Hello World Example</h2>
+<pre><code class="hljs css lua"><span class="hljs-built_in">require</span> <span class="hljs-string">'malvado'</span>
+
+<span class="hljs-comment">-- Define (not run) one process</span>
+HelloWorld = process(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self)</span></span>
+  <span class="hljs-comment">-- Set background to grey</span>
+  clear_screen(<span class="hljs-number">250</span>, <span class="hljs-number">250</span>, <span class="hljs-number">250</span>)
+
+  <span class="hljs-comment">-- Define global font (size, color (r, g, b))</span>
+  <span class="hljs-keyword">local</span> font = font(<span class="hljs-number">60</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+
+  <span class="hljs-comment">-- Write the "Hello world" text in the process position</span>
+  <span class="hljs-built_in">write</span>(font, self.x, self.y, self.text)
+
+  <span class="hljs-comment">-- Runs until escape key is pressed</span>
+  <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> key(<span class="hljs-string">"escape"</span>) <span class="hljs-keyword">do</span>
+    <span class="hljs-comment">-- Render the process</span>
+    frame()
+  <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">end</span>)
+
+<span class="hljs-comment">-- Start (main)</span>
+malvado.start(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>
+  <span class="hljs-comment">-- Set the title text of the window</span>
+  set_title(<span class="hljs-string">"Hello world"</span>)
+
+  <span class="hljs-comment">-- Launch the background process</span>
+  <span class="hljs-comment">-- The application runs until there is no running process.</span>
+  HelloWorld { x=<span class="hljs-number">240</span>, y=<span class="hljs-number">280</span>, text=<span class="hljs-string">"Hello World"</span> }
+<span class="hljs-keyword">end</span>)
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="installation.html">← Installation</a><a class="docs-next button" href="cb_gorganization.html">Game organization →</a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/malvado/" class="nav-home"><img src="/malvado/img/docusaurus.svg" alt="malvado" width="66" height="58"/></a><div><h5>Docs</h5><a href="/malvado/docs/installation.html">Getting Started</a><a href="/malvado/docs/cb_gorganization.html">CookBook</a><a href="https://cdn.rawgit.com/jepemo/malvado/master/docs/api/index.html">API Reference</a><a href="https://www.gnu.org/licenses/gpl-3.0.en.html">LICENSE</a></div></section><section class="copyright">Copyright © 2018 Jeremies Pérez Morata.</section></footer></div></body></html>
