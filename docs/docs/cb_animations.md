@@ -53,7 +53,7 @@ Hero = process(function(self)
   -- This is the counter. First initialize with the first animation
   self.fpgIndex = 0
   -- Here I can adjunt the velocity of the animation
-  self.fpg = 15
+  self.fps = 15
 
   while not game_end do
     self.fpgIndex = self.fpgIndex + 1
