@@ -8,6 +8,6 @@ use_markdown_titles = true
 package = 'malvado'
 sort_modules=true
 file = '../malvado'
-dir = '../docs/api'
+dir = '../docs'
 readme = 'test.md'
 kind_names = {topic='Index'}

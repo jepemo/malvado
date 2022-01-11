@@ -1,14 +1,13 @@
 <html>
 
 <head>
-<title>$(ldoc.title)</title>
+    <title>$(ldoc.title)</title>
     <link rel="stylesheet" href="$(ldoc.css)" type="text/css" />
 </head>
 
 <body>
 
-<h1> MAIN </h1>
+<h1> $(ldoc.description) </h1>
 
 </body>
-
 </html>
