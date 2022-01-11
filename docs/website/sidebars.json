@@ -1,7 +1,0 @@
-{
-  "docs": {
-    "Getting Started": ["installation", "helloworld"],
-    "Cookbook": ["cb_gorganization", "cb_animations", "cb_soundmusic"],
-    "Other": ["changelog"]
-  }
-}
