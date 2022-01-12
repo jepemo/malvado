@@ -12,7 +12,7 @@ description = {
    with "independent" processes (game entities).
    ]],
    homepage = "http://github.com/jepemo/malvado",
-   license = "GPLv-3"
+   license = "Apache License 2.0"
 }
 dependencies = {
    "lua >= 5.1"
