@@ -26,5 +26,5 @@ malvado.start(function()
 
   -- Launch the background process
   -- The application runs until there is no running process.
-  HelloWorld { x=240, y=280, text="Hello World" }
+  HelloWorld { x=400, y=300, text="Hello World" }
 end, true)

@@ -28,6 +28,21 @@
 --- Text primitives
 -- @module malvado.text
 
+--- Text align values
+TextAlign = {
+  ALIGN_TOP_LEFT	= 0,
+  ALIGN_TOP = 1,
+  ALIGN_TOP_RIGHT = 2,
+  ALIGN_CENTER_LEFT = 3,
+  ALIGN_CENTER = 4,
+  ALIGN_CENTER_RIGHT = 5,
+  ALIGN_BOTTOM_LEFT = 6,
+  ALIGN_BOTTOM = 7,
+  ALIGN_BOTTOM_RIGHT = 8,
+}
+
+
+
 TextProc = process(function(self)
   while true do
     local font = self.font
@@ -38,14 +53,43 @@ TextProc = process(function(self)
   end
 end)
 
+local function _calculate_textalign_desp(font, text, text_align)
+  local text_width = font.font:getWidth(text)
+  local text_height = font.font:getHeight()
+
+  if text_align == TextAlign.ALIGN_TOP_LEFT then
+    return 0, 0
+  elseif text_align == TextAlign.ALIGN_TOP then
+    return text_width / 2, 0
+  elseif text_align == TextAlign.ALIGN_TOP_RIGHT then
+    return text_width, 0
+  elseif text_align == TextAlign.ALIGN_CENTER_LEFT then
+    return 0, text_height / 2
+  elseif text_align == TextAlign.ALIGN_CENTER then
+    return text_width / 2, text_height / 2
+  elseif text_align == TextAlign.ALIGN_CENTER_RIGHT then
+    return text_width, text_height / 2
+  elseif text_align == TextAlign.ALIGN_BOTTOM_LEFT then
+    return 0, text_height
+  elseif text_align == TextAlign.ALIGN_BOTTOM then
+    return text_width / 2, text_height
+  elseif text_align == TextAlign.ALIGN_BOTTOM_RIGHT then
+    return text_width, text_height
+  else
+    error('Invalid text align:' .. text_align)
+  end
+end
+
 --- Create a text to render
 -- @param _font Font object
 -- @param _x x
 -- @param _y y
 -- @param _text text
 -- @see malvado.map.font
-function write(_font, _x, _y, _text)
-  return TextProc { font = _font, x = _x, y = _y, text = _text, _internal = true, z = 10000 }
+function write(_font, _x, _y, _text, text_align)
+  text_align = text_align or TextAlign.ALIGN_CENTER
+  local xdesp, ydesp = _calculate_textalign_desp(_font, _text, text_align)
+  return TextProc { font = _font, x = _x - xdesp, y = _y - ydesp, text = _text, _internal = true, z = 10000 }
 end
 
 --- Change some value of a created text
