@@ -1,13 +1,13 @@
-# Licencias y atribución
+# Licenses and attribution
 
-Malvado fue creado por Jeremías Pérez. La licencia elegida para el **código propio nuevo de Malvado 2** es Apache License 2.0; el texto está en [LICENSE](../../LICENSE). Los archivos C propios y ejemplos/pruebas nuevos indican `SPDX-License-Identifier: Apache-2.0` y su atribución. Esta decisión no cambia las licencias de dependencias ni de archivos históricos.
+Jeremías Pérez created Malvado. The license selected for **new Malvado 2 code** is Apache License 2.0. The license text is in [LICENSE](../../LICENSE). New Malvado C files, examples, and tests identify their authors and include `SPDX-License-Identifier: Apache-2.0`. This choice does not change the licenses of dependencies or historical files.
 
-## Código histórico de Malvado 1
+## Historical Malvado 1 code
 
-El rockspec 1.0 declara Apache 2.0, mientras que varios archivos Lua históricos indican GPL versión 3 o posterior. Conservar esos encabezados y el rockspec histórico mientras se verifica su autoría y las condiciones de su distribución. La elección de Apache para el código nuevo no modifica automáticamente los permisos ya otorgados sobre copias distribuidas. Antes de reutilizar o redistribuir código histórico bajo Apache, confirmar la titularidad y documentar expresamente esa decisión; las contribuciones de terceros requieren su autorización si sus derechos no permiten el cambio.
+The 1.0 rockspec declares Apache 2.0. Several historical Lua files state GPL version 3 or later. Keep their headers and the historical rockspec while ownership and distribution terms are verified. The Apache license for new code does not automatically change permissions already granted for distributed copies. Before you reuse or redistribute historical code under Apache, confirm ownership and document the decision. Third-party contributions require permission from their rights holders if their terms do not permit the change.
 
-## Dependencias y referencias
+## Dependencies and references
 
-Lua descargado durante la compilación mantiene su licencia MIT; raylib y sus dependencias conservan sus propias licencias. Las fuentes BennuGD de `docs/api/upstream/` son material de referencia bajo sus avisos originales. No añadir encabezados Apache a estos archivos externos ni retirar sus avisos. La distribución del runtime, SDK y juegos debe incorporar los avisos y textos exigidos por las dependencias efectivamente incluidas.
+Lua downloaded during the build retains its MIT license. Raylib and its dependencies retain their own licenses. The BennuGD files in `docs/api/upstream/` are reference material and retain their original notices. Do not add Apache headers to external files or remove their notices. Distributions of the runtime, SDK, and games must include the notices and license texts required by the dependencies they contain.
 
-Revisar la procedencia y licencia de todos los assets, ejemplos históricos y nuevas dependencias antes de cada release. La distribución y cualquier futuro rockspec 2.0 deben reflejar el alcance de Apache 2.0 y los avisos externos.
+Before each release, review the origin and license of all assets, historical examples, and new dependencies. Distributions and any future 2.0 rockspec must state the scope of Apache 2.0 and include the applicable third-party notices.

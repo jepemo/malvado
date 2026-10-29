@@ -1,71 +1,71 @@
-# Versiones propuestas
+# Proposed versions
 
-El cambio de backend, dependencia de Lua, API y distribución justifica una nueva línea **2.0**. El rockspec actual contiene `1.0.0-0`; no se modifica aquí ni se publica una release. Las siguientes etiquetas son propuestas, no versiones entregadas.
+The backend, Lua dependency, API, and distribution changes justify a new **2.0** line. The current rockspec contains `1.0.0-0`; it is not changed here and no release is published. The tags below are proposals, not delivered versions.
 
-| Versión | Resultado visible | Dependencia |
+| Version | Result | Dependency |
 | --- | --- | --- |
-| Preparación | Fuentes/licencias revisadas, baseline y decisiones fijadas | Inventario documental actual |
-| `2.0.0-alpha.1` | Runtime C + raylib + Lua incluido y hello | Preparación |
-| `2.0.0-alpha.2` | Core y API C utilizables sin Lua; procesos, señales, binding Lua y paridad verificados ([en desarrollo](2.0.0-alpha.2.md)) | alpha.1 y [refactor C](../architecture/c-first.md) |
-| `2.0.0-alpha.3` | Gráficos, texto, entrada y audio en API C y binding Lua; cuatro ejemplos portados | alpha.2 |
-| `2.0.0-alpha.4` | malvado-cli, SDK C y paquetes C/Lua para Linux/macOS; ruta Windows en diseño | alpha.3 |
-| `2.0.0-alpha.5` | Perfil Bennu esencial delimitado y documentado | alpha.3 y contratos API |
-| `2.0.0-alpha.6` | Prototipo y APK/AAB Android; validación completa de Windows | alpha.4 y alpha.5 |
-| `2.0.0-beta.1` | Contrato esencial congelado y documentación verificable | Todas las alphas anteriores |
-| `2.0.0` | Estable del perfil esencial y exportadores aceptados | beta y criterios cerrados |
-| `2.1+` | Familias extendidas, variantes/export FPG, ZIP montable y mejoras compatibles | Matriz de cobertura por versión |
+| Preparation | Review sources and licenses; set baseline and decisions | Current documentation inventory |
+| `2.0.0-alpha.1` | C runtime, raylib, bundled Lua, and hello example | Preparation |
+| `2.0.0-alpha.2` | C core and API usable without Lua; processes, signals, Lua binding, and verified parity ([in development](2.0.0-alpha.2.md)) | alpha.1 and [C refactor](../architecture/c-first.md) |
+| `2.0.0-alpha.3` | Graphics, text, input, and audio in the C API and Lua binding; four ported examples | alpha.2 |
+| `2.0.0-alpha.4` | malvado-cli, C SDK, and C/Lua packages for Linux/macOS; Windows path in design | alpha.3 |
+| `2.0.0-alpha.5` | Defined and documented essential Bennu profile | alpha.3 and API contracts |
+| `2.0.0-alpha.6` | Android prototype and APK/AAB; full Windows validation | alpha.4 and alpha.5 |
+| `2.0.0-beta.1` | Frozen essential contract and verifiable documentation | All earlier alphas |
+| `2.0.0` | Stable essential profile and accepted exporters | beta and completed criteria |
+| `2.1+` | Extended families, FPG variants/export, mountable ZIP, and compatible improvements | Coverage matrix by version |
 
-El perfil esencial se delimita antes de implementar sus familias; no se inventa una promesa de «100% Bennu» para 2.0. Los perfiles extendidos pueden quedar pendientes sin bloquear 2.0 si se documentan. No hay estimaciones de fecha hasta cerrar el primer corte y medir complejidad de formatos y plataformas.
+Define the essential profile before implementing its families. Do not promise 100% Bennu compatibility for 2.0. Documented extended profiles can remain incomplete without blocking 2.0. There are no date estimates until the first cut is complete and format and platform complexity is measured.
 
-## Secuencia de validación por plataforma
+## Platform validation sequence
 
-Las alphas 1–5 se pueden cerrar con builds y pruebas obligatorias en macOS y Linux, sin esperar a Android ni Windows. La alpha.6 incluye el prototipo Android de ventana, background/foreground y Lua integrado, así como las pruebas y exportaciones Android. También incorpora Windows a CI y valida el recorrido completo: configuración/compilación, pruebas C/Lua y mixtas, ventana/entrada/audio, CLI, exportaciones y ejecución de paquetes en una máquina Windows limpia. Los fallos de ambas plataformas se corrigen en alpha.6 antes de beta; hasta entonces son objetivos pendientes, no soporte garantizado. GUI se valida en Windows en alpha.6 si se incluye en la distribución de ese momento.
+Alphas 1–5 can close with required macOS and Linux builds and tests, without waiting for Android or Windows. Alpha.6 includes the Android window, background/foreground, and bundled Lua prototype, Android tests, and exports. It also adds Windows CI and validates configuration/build, C/Lua and mixed tests, window/input/audio, CLI, exports, and packages on a clean Windows machine. Fix platform failures in alpha.6 before beta. Until then, Android and Windows are targets, not guaranteed support. Validate the GUI on Windows in alpha.6 if it is included in the distribution.
 
-El workflow actual se limita a macOS/Linux; recuperar el job Windows en alpha.6. No confundir un build CI con la aceptación real de instaladores, gráficos o ejecución en máquina limpia.
+The current workflow covers macOS/Linux. Restore the Windows job in alpha.6. A CI build does not by itself validate installers, graphics, or execution on a clean machine.
 
-## Puerta adicional de alpha.2: motor C independiente
+## Additional alpha.2 gate: independent C engine
 
-El comportamiento Lua existente sigue siendo una base útil, pero **alpha.2 no está cerrada** mientras procesos y señales residan en `runtime.c` y dependan de Lua. Antes de avanzar al cierre: core y API C compilables sin Lua/raylib en modo headless; juego C real y prueba de lifecycle; binding Lua conectado al mismo scheduler; paridad de señales, órdenes, mensajes y cleanup; pruebas C, Lua y mixtas en CI. El backend gráfico raylib se incorpora a la prueba C de ventana. Los detalles y pasos están en [arquitectura C](../architecture/c-first.md).
+The C core manages processes, signals, and messages. The Lua binding uses the same scheduler. There are headless and windowed C examples and C, Lua, and mixed tests. **Alpha.2 remains under validation** until the current changes pass CI and alpha.1 requirements are complete. See [C architecture](../architecture/c-first.md) for details and limits.
 
-## Documentación C y Lua
+## C and Lua documentation
 
-Alpha.2 incluye documentación de contratos y ejemplos mínimos C y Lua; alpha.3 añade la referencia de gráficos y un sitio MkDocs inicial; alpha.4 documenta SDK/CLI; beta completa símbolos y ejemplos y 2.0 publica documentación versionada. La [propuesta de documentación](../development/api-documentation.md) define criterios y herramientas; aún no se ha implementado el sitio.
+Alpha.2 includes contract documentation and minimal C and Lua examples. Alpha.3 adds the graphics reference and an initial MkDocs site. Alpha.4 documents the SDK and CLI. Beta completes symbols and examples, and 2.0 publishes versioned documentation. The [documentation proposal](../development/api-documentation.md) defines criteria and tools. The site is not implemented yet.
 
-## CI por versión
+## CI by version
 
-Alpha.1 incorpora builds CMake/CTest y comprobación de documentación en GitHub Actions; alpha.2 añade análisis y sanitizers; alpha.3, smoke gráfico y build del sitio; alpha.4, paquetes desktop y candidato de release; alpha.6, Android y la matriz/pruebas completas de Windows. Beta prepara Pages versionado y publicación revisada. Detalles y criterios de aceptación en [CI y releases](../development/ci.md). El workflow de builds, catálogo, sanitizers y prueba gráfica Linux [pasó en GitHub](https://github.com/jepemo/malvado/actions/runs/40908427079).
+Alpha.1 adds CMake/CTest builds and documentation checks in GitHub Actions. Alpha.2 adds analysis and sanitizers. Alpha.3 adds graphics smoke tests and the site build. Alpha.4 adds desktop packages and a release candidate. Alpha.6 adds Android and the complete Windows matrix and tests. Beta prepares versioned Pages and reviewed publication. See [CI and releases](../development/ci.md). The earlier build, catalog, sanitizer, and Linux graphics workflow [passed on GitHub](https://github.com/jepemo/malvado/actions/runs/40908427079).
 
-## Línea opcional malvado-gui
+## Optional malvado-gui track
 
-| Hito | Resultado | Dependencias |
+| Milestone | Result | Dependencies |
 | --- | --- | --- |
-| G0 | Prototipo de toolkit: ImGui/cimgui frente a raygui, DPI, árbol y atlas | Core alpha.3 |
-| GUI `0.1.0` / G1 | Proyectos, editor externo, Run/Stop, consola, preview recursos y export desktop | Core/CLI alpha.4 y servicios compartidos |
-| GUI `0.2.0` / G2 | Inspector de procesos, Pause y Step tick | G1, hooks del core P2 y protocolo local validado |
-| GUI `0.3.0` / G3 | Metadatos, pivotes/puntos/animación, undo y conversión FPG disponible | G2 y pipeline de assets |
-| GUI `1.0.0` / G4 | Flujo completo aceptado en hosts soportados | G1–G3; Android requiere CLI alpha.6 |
+| G0 | Toolkit prototype: ImGui/cimgui versus raygui, DPI, tree, and atlas | Core alpha.3 |
+| GUI `0.1.0` / G1 | Projects, external editor, Run/Stop, console, asset preview, and desktop export | Core/CLI alpha.4 and shared services |
+| GUI `0.2.0` / G2 | Process inspector, pause, and tick step | G1, core P2 hooks, and validated local protocol |
+| GUI `0.3.0` / G3 | Metadata, pivots/points/animation, undo, and available FPG conversion | G2 and asset pipeline |
+| GUI `1.0.0` / G4 | Complete flow accepted on supported hosts | G1–G3; Android requires CLI alpha.6 |
 
-La versión GUI es independiente de la versión del runtime. Ninguna de estas entregas se considera implementada ni bloquea el lanzamiento del core/CLI. Ver [alcance GUI](../specs/gui.md) y [formatos](../specs/assets.md).
+The GUI version is independent of the runtime version. None of these deliveries is implemented or blocks the core/CLI release. See [GUI scope](../specs/gui.md) and [formats](../specs/assets.md).
 
-El [estado del primer corte alpha.1](2.0.0-alpha.1.md) describe cómo compilarlo y qué falta.
+The [alpha.1 status](2.0.0-alpha.1.md) describes the build and remaining work.
 
-## Checklist de alpha.1
+## Alpha.1 checklist
 
-- [ ] Resolver contradicción de licencias del código existente.
-- [ ] Fijar versión exacta/hashes y avisos de Lua y raylib; builds sin descargas implícitas tras bootstrap.
-- [ ] Añadir CMake, API C opaca y runner C con Lua embebido.
-- [ ] Registrar require("malvado"), process, frame y arranque/cierre mínimos.
-- [ ] Mantener corutinas con referencias de registry y cerrar sin fugas.
-- [ ] Separar tick y draw; reloj inyectable en pruebas headless.
-- [ ] Ejecutar hello en macOS y Linux; smoke Windows se verifica en alpha.6.
-- [ ] Mostrar errores de script con traceback y código de salida no cero.
-- [ ] Documentar cómo compilar y ejecutar sin LÖVE ni Lua instalado.
-- [ ] CI de builds desktop disponibles, CTest con timeout y comprobación de catálogo/documentación.
+- [ ] Resolve the license conflict in existing code.
+- [ ] Pin exact Lua and raylib versions, hashes, and notices; avoid implicit downloads after bootstrap.
+- [ ] Add CMake, an opaque C API, and a C runner with bundled Lua.
+- [ ] Register `require("malvado")`, `process`, `frame`, and minimal startup/shutdown.
+- [ ] Keep coroutine registry references and close without leaks.
+- [ ] Separate tick and draw; allow an injected clock for headless tests.
+- [ ] Run hello on macOS and Linux; validate the Windows smoke test in alpha.6.
+- [ ] Show script errors with tracebacks and a nonzero exit code.
+- [ ] Document build and execution without installed LÖVE or Lua.
+- [ ] Run CI builds on available desktop platforms, CTest with timeouts, and catalog/documentation checks.
 
 ## LuaRocks
 
-Se conserva el rockspec 1.0 en raíz. Un rock 2.0 es una opción adicional sujeta a implementar y probar un módulo C para Lua externo; la distribución principal será el SDK autónomo. Ver [distribución](../development/distribution.md). CLI y GUI tienen canales propios y no se consideran automáticamente incluidas en ese rock.
+The 1.0 rockspec remains at the root. A 2.0 rock is an additional option that requires a tested C module for external Lua. The main distribution will be the standalone SDK. See [distribution](../development/distribution.md). CLI and GUI have separate channels and are not automatically included in the rock.
 
-## Política de versión
+## Version policy
 
-Runtime, binding Lua y CLI publican inicialmente una versión coordinada para reducir combinaciones. La GUI opcional lleva su propia versión y declara qué versiones de proyecto, runtime y protocolo de diagnóstico admite. El formato de proyecto lleva `schema=1`; una versión de documentación «2.0» no cambia ese esquema automáticamente. Mantener `main` como desarrollo, documentación por minor estable y etiquetas Git para la fuente exacta. Changelog solo de cambios entregados; el roadmap permanece separado.
+The runtime, Lua binding, and CLI initially use a coordinated version to reduce combinations. The optional GUI has its own version and declares supported project, runtime, and diagnostic protocol versions. The project format has `schema=1`. A documentation version of 2.0 does not change that schema. Keep `main` for development, documentation for each stable minor, and Git tags for exact source revisions. The changelog contains only delivered changes. Keep the roadmap separate.

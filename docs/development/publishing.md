@@ -1,47 +1,47 @@
-# Documentar Malvado en GitHub
+# Document Malvado on GitHub
 
-El detalle de workflows, permisos y generación de releases está en [CI y GitHub Actions](ci.md). El método concreto para documentar las APIs C y Lua con ejemplos se define en [documentación de APIs](api-documentation.md).
+See [CI and GitHub Actions](ci.md) for workflows, permissions, and release generation. See [API documentation](api-documentation.md) for the C and Lua documentation method and examples.
 
-## Propuesta
+## Proposal
 
-Usar **Markdown en `docs/` como fuente**, revisado en los mismos PR que el código, y publicar un sitio estático en GitHub Pages cuando exista el primer corte ejecutable. No usar GitHub Wiki como fuente principal: separa la documentación del versionado y de los cambios del motor.
+Use **Markdown in `docs/` as the source**. Review it in the same PRs as the code. Publish a static GitHub Pages site when the first runnable cut exists. Do not use GitHub Wiki as the main source: it separates documentation from engine versioning and changes.
 
-Para el sitio se propone MkDocs con el tema por defecto, con versión fijada al implementarlo. Las fuentes públicas irán en `docs/site/`; los planes y snapshots históricos permanecen fuera del directorio publicado. La documentación seguirá siendo legible directamente en GitHub sin generar nada. No se instala ni se publica un sitio en esta fase.
+Use MkDocs with its default theme and pin its version during implementation. Put public sources in `docs/site/`. Keep plans and historical snapshots outside the published directory. Documentation must remain readable directly on GitHub without a build. This phase does not install or publish a site.
 
-GitHub admite [publicar generadores estáticos mediante workflows de Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). El workflow futuro debe validar y construir en PR; desplegar únicamente desde la rama/release configurada. No activar despliegue automático por añadir estos documentos.
+GitHub supports [static generators through Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). The future workflow must validate and build on PRs and deploy only from the configured branch or release. Adding these documents does not enable automatic deployment.
 
-## Tres referencias relacionadas
+## Related references
 
-1. **Guía de usuario:** instalación, primer juego, procesos, assets, controles, CLI, exportación y solución de problemas.
-2. **API Lua:** fichas del contrato público, tipos/ownership, ejemplos y disponibilidad. Los juegos deben poder aprenderse desde aquí.
-3. **API C:** referencia por módulo con firmas, ownership, errores y ejemplos C.
-4. **Compatibilidad:** inventario Bennu, perfiles, divergencias y enlaces a código fuente fijado.
+1. **User guide:** installation, first game, processes, assets, controls, CLI, export, and troubleshooting.
+2. **Lua API:** public contract records, types/ownership, examples, and availability. A reader must be able to learn game development from this guide.
+3. **C API:** module reference with signatures, ownership, errors, and C examples.
+4. **Compatibility:** Bennu inventory, profiles, differences, and links to pinned source.
 
-LDoc también puede documentar módulos Lua escritos en C, pero necesita anotaciones explícitas para sus funciones; no se adopta de entrada. Las cabeceras públicas C y definiciones LuaCATS para el editor serán fuentes de firmas por lenguaje; Markdown explicará el comportamiento y enlazará a ejemplos reales. Añadir Doxygen o LDoc tras evaluar su utilidad, sin exigir inicialmente un esquema JSON propio. El catálogo Bennu no es la API propia.
+LDoc can document Lua modules written in C, but requires explicit function annotations. It is not adopted initially. Public C headers and LuaCATS editor definitions provide language signatures. Markdown explains behavior and links to actual examples. Evaluate Doxygen or LDoc before adding them. Do not initially require a custom JSON schema. The Bennu catalog is not the Malvado API.
 
-## Organización del sitio futuro
+## Future site layout
 
-Inicio → Primer juego → Tutoriales → Procesos y temporización → Gráficos/texto/entrada/audio → CLI y exportación por plataforma → malvado-gui y diagnóstico de procesos → Recursos/FPG/atlas/ZIP → API Lua → API C → Migrar desde LÖVE/Malvado 1 → Perfiles DIV/Bennu → Desarrollo y versiones.
+Home → First game → Tutorials → Processes and timing → Graphics/text/input/audio → CLI and platform export → malvado-gui and process diagnostics → Assets/FPG/atlas/ZIP → Lua API → C API → Migrate from LÖVE/Malvado 1 → DIV/Bennu profiles → Development and versions.
 
-El inventario externo extenso debe quedar en la sección de compatibilidad, sin eclipsar la guía de creación de juegos. Mantener docs de usuario en español inicialmente; decidir inglés/traducciones cuando haya capacidad para mantener ambas. API y símbolos conservan sus nombres originales.
+Keep the large external inventory in the compatibility section so it does not overshadow the game creation guide. User documentation must be friendly, concise English that follows ASD-STE100 Simplified Technical English. Preserve API and symbol names.
 
-## Ejemplos y generación
+## Examples and generation
 
-- Mostrar fragmentos desde `examples/`, con enlace al juego completo, controles y screenshot/GIF pequeño cuando ayude.
-- Un símbolo estable necesita al menos un ejemplo reproducible y versión mínima.
-- CI regenera el catálogo y falla si difiere de lo guardado; verifica hashes, enlaces relativos y estructura de fichas.
-- Las sobrecargas externas y los estados de implementación se gestionan por separado: regenerar inventario no borra decisiones manuales.
-- Doxygen y LuaLS se añaden cuando haya cabeceras/contrato propios; la documentación C no reemplaza los tutoriales Lua.
-- Ejecutar ejemplos headless donde sea posible; no simular que un build de Markdown valida un juego con ventana.
+- Show snippets from `examples/`. Link to the complete game and include controls and a small screenshot or GIF when useful.
+- A stable symbol needs at least one reproducible example and a minimum version.
+- CI regenerates the catalog and fails if it differs from the stored files. Check hashes, relative links, and record structure.
+- Manage external overloads and implementation states separately. Inventory regeneration must not erase manual decisions.
+- Add Doxygen and LuaLS when Malvado headers and contracts exist. C documentation does not replace Lua tutorials.
+- Run headless examples when possible. A Markdown build does not validate a windowed game.
 
-## Documentación de herramientas y recursos
+## Tool and asset documentation
 
-La [GUI](../specs/gui.md) tendrá guía por tareas, controles, capturas y versiones mínimas de runtime/protocolo. Distinguir Step tick de depuración de líneas y cambios temporales en ejecución de cambios guardados en assets. El mismo tutorial starter→asteroids debe poder completarse por CLI y GUI.
+The [GUI](../specs/gui.md) will have task-based guides, controls, screenshots, and minimum runtime/protocol versions. Distinguish tick stepping from line debugging, and temporary runtime changes from saved asset changes. The same starter-to-asteroids tutorial must work through CLI and GUI.
 
-La [guía de formatos](../specs/assets.md) publica matriz FPG por variante, importación frente a exportación, dialectos de atlas soportados y significado del paquete ZIP. Nunca anunciar «compatible FPG» sin límites y fixtures. La documentación de UI/ImGui es de desarrollo; el usuario necesita entender sus recursos y errores de conversión.
+The [format guide](../specs/assets.md) will publish the FPG matrix by variant, import versus export, supported atlas dialects, and the meaning of a ZIP package. Do not claim FPG compatibility without limits and fixtures. UI/ImGui documentation is for development. Users need to understand their assets and conversion errors.
 
-## Versionado y proyecto
+## Versions and project management
 
-README raíz breve con inicio rápido, enlaces al sitio y soporte real de plataformas. `docs/versions/` recoge propuestas y aceptación; CHANGELOG registra entregas. Publicar `/dev/` y `/2.0/` cuando el sitio exista; no duplicar a mano todos los documentos por parche.
+Keep the root README short, with a quick start, site links, and actual platform support. `docs/versions/` records proposals and acceptance. The changelog records deliveries. Publish `/dev/` and `/2.0/` when the site exists. Do not copy every document manually for each patch.
 
-GitHub Issues por entregable con enlace al contrato/ejemplo; milestones para alphas/beta; un Project opcional para estados. Las issues no sustituyen la especificación versionada. Releases con SDKs/runtimes por destino, checksums, avisos de licencia y enlaces a la documentación de esa versión. El trabajo actual no crea issues, tags, releases ni publicaciones externas.
+Use GitHub Issues for deliverables, with links to contracts and examples; use milestones for alphas and beta, and an optional Project for status. Issues do not replace the versioned specification. Releases include SDKs/runtimes per target, checksums, license notices, and links to that version's documentation. The current work does not create issues, tags, releases, or external publications.

@@ -1,0 +1,17 @@
+local mv = require("malvado")
+local main
+main = mv.process(function(self)
+    mv.frame()
+    assert(self:recv() == 7)
+    assert(mv.status(2) == "running")
+    local ids = mv.find(main)
+    assert(#ids == 2 and ids[1] == self.id and ids[2] == 2)
+    local processes = mv.snapshot().processes
+    assert(#processes == 2 and processes[2].id == 2 and processes[2].parent == self.id)
+    mv.set_priority(2, 11)
+    assert(mv.get_priority(2) == 11)
+    mv.send(2, "ping\0data")
+    mv.frame()
+    assert(self:recv() == "pong")
+end)
+mv.start(function() main() end)

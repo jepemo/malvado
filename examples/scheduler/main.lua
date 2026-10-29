@@ -3,13 +3,13 @@
 
 local mv = require("malvado")
 local worker = mv.process(function(self)
-  print(self.name .. ": primer tick")
+  print(self.name .. ": first tick")
   mv.frame()
-  print(self.name .. ": segundo tick")
+  print(self.name .. ": second tick")
 end)
 mv.start(function()
-  local low = worker { name = "Baja" }
-  local high = worker { name = "Alta" }
+  local low = worker { name = "Low" }
+  local high = worker { name = "High" }
   mv.set_priority(low, -10)
   mv.set_priority(high, 10)
 end)

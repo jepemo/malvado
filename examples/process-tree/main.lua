@@ -3,13 +3,13 @@
 
 local mv = require("malvado")
 local worker = mv.process(function(self)
-  print("Hijo", self.id, "del proceso", self.parent)
+  print("Child", self.id, "of process", self.parent)
   while true do mv.frame() end
 end)
 local group = mv.process(function(self)
   worker {}
   worker {}
-  print("Grupo", self.id, "creado")
+  print("Group", self.id, "created")
   while true do mv.frame() end
 end)
 local controller = mv.process(function()
@@ -18,6 +18,6 @@ local controller = mv.process(function()
   mv.frame()
   mv.frame()
   mv.kill_tree(group_id)
-  print("Grupo y descendientes detenidos")
+  print("Group and descendants stopped")
 end)
 mv.start(function() controller {} end)

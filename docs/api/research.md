@@ -1,47 +1,47 @@
-# Referencia de la familia DIV
+# DIV family reference
 
-Consulta: 2026-10-29. Recomendación de diseño: **BennuGD2 como referencia moderna principal**, con BennuGD clásico como inventario histórico y DIV/Fénix como referencias de semántica. No son APIs intercambiables ni un único estándar.
+Research date: 2026-10-29. Design recommendation: use **BennuGD2 as the main modern reference**, BennuGD classic as the historical inventory, and DIV/Fénix as semantic references. They are not interchangeable APIs or one standard.
 
-## Fuentes y elección
+## Sources and choice
 
-| Referencia | Fuente primaria | Uso propuesto |
+| Reference | Primary source | Proposed use |
 | --- | --- | --- |
-| DIV Games Studio | [Código, ayuda y ejemplos](https://github.com/DIVGAMES/DIV-Games-Studio), revisión consultada `77556912335d0a1b0efea855d4eb2490cf382128` | Modelo original de procesos y formatos, contraste histórico; ayuda en `help/`, runtime en `src/` |
-| Fénix | [Distribuciones del proyecto](https://sourceforge.net/projects/fenix/files/Fenix/) | Comprobar diferencias de época; la página consultada lista 0.92a. No se ha fijado aquí un snapshot completo de Fénix 0.93 |
-| BennuGD clásico | [Repositorio mantenido por SplinterGU](https://github.com/SplinterGU/BennuGD), revisión `d49f71891f38db9bbf08c0f6f0002007f564a03c` | 45 cabeceras de exportación de módulos: lista histórica muy útil y modular |
-| BennuGD2 | [Repositorio de SplinterGU](https://github.com/SplinterGU/BennuGD2), revisión `baf8dc1b744d47dae58fc20c139dd44656907911` | 10 cabeceras de exportación; referencia principal para API de juegos moderna |
-| Documentación BennuGD | [Portal del proyecto](https://divhub.github.io/bennugd-website/docs/) y [manual histórico](https://www.bennugd.org/downloads/static_docs/General.pdf) | Explicaciones y ejemplos; comprobar siempre contra revisión fuente |
-| PixTudio y otras variantes | [DIV Project Manager](https://divpm.divhub.org/), que documenta soporte de varios runtimes | Candidatos a contraste futuro; no se ha capturado su API y no condicionan el contrato inicial |
+| DIV Games Studio | [Code, help, and examples](https://github.com/DIVGAMES/DIV-Games-Studio), revision `77556912335d0a1b0efea855d4eb2490cf382128` | Original process and format model; historical comparison; help in `help/`, runtime in `src/` |
+| Fénix | [Project distributions](https://sourceforge.net/projects/fenix/files/Fenix/) | Check historical differences; the consulted page lists 0.92a. No complete Fénix 0.93 snapshot is pinned here |
+| BennuGD classic | [SplinterGU repository](https://github.com/SplinterGU/BennuGD), revision `d49f71891f38db9bbf08c0f6f0002007f564a03c` | 45 module export headers; useful modular historical inventory |
+| BennuGD2 | [SplinterGU repository](https://github.com/SplinterGU/BennuGD2), revision `baf8dc1b744d47dae58fc20c139dd44656907911` | 10 export headers; main reference for a modern game API |
+| BennuGD documentation | [Project portal](https://divhub.github.io/bennugd-website/docs/) and [historical manual](https://www.bennugd.org/downloads/static_docs/General.pdf) | Explanations and examples; always check against the source revision |
+| PixTudio and other variants | [DIV Project Manager](https://divpm.divhub.org/), which documents several runtimes | Candidates for later comparison; their APIs were not captured and do not define the initial contract |
 
-La elección de BennuGD2 es una conclusión de diseño a partir de sus módulos y código; no una garantía de compatibilidad ni una afirmación de que cubra todas las funciones de DIV. Por ejemplo, BennuGD clásico tiene `mod_m7`, `mod_path`, `mod_flic`, `mod_cd`, `mod_blendop` y `mod_effects`; la organización moderna concentra muchas funciones en `libmod_gfx`, `libmod_misc`, `libmod_input` y `libmod_sound` e incluye módulos como red, ads e IAP. Hay que comparar nombres **y semántica**, no equiparar módulos por número.
+The choice of BennuGD2 is a design conclusion based on its modules and code. It does not guarantee compatibility or claim that it covers every DIV function. For example, BennuGD classic has `mod_m7`, `mod_path`, `mod_flic`, `mod_cd`, `mod_blendop`, and `mod_effects`. The modern layout groups many functions in `libmod_gfx`, `libmod_misc`, `libmod_input`, and `libmod_sound`, and includes network, ads, and IAP modules. Compare both names and semantics. Do not equate modules by count.
 
-## Qué se ha conseguido
+## Results
 
-Se pueden descargar las 55 cabeceras `*_exports.h` encontradas en los árboles completos de estas dos revisiones. Incluyen registros `FUNC`, constantes, cadenas de globales y locales, alias y ramas de preprocesador. Hay **492 declaraciones de funciones/sobrecargas en BennuGD clásico y 616 en BennuGD2**; no son 1.108 funciones únicas ni funciones de Malvado. El [generador](../tools/catalog_api.py) reproduce el [inventario](inventory.md) y el [catálogo](catalog.json) sin red después de descargar las fuentes.
+The 55 `*_exports.h` headers found in the complete trees of these two revisions can be downloaded. They include `FUNC` registrations, constants, global and local strings, aliases, and preprocessor branches. There are **492 function/overload declarations in BennuGD classic and 616 in BennuGD2**. These are not 1,108 unique functions or Malvado functions. After downloading the sources, the [generator](../tools/catalog_api.py) reproduces the [inventory](inventory.md) and [catalog](catalog.json) offline.
 
-También se pueden descargar cabeceras auxiliares y ficheros de referencia del runtime. Cada original tiene URL fijada y SHA-256 en el [manifest](upstream-manifest.json). No se incorpora ese código externo al build del motor.
+Auxiliary headers and runtime reference files can also be downloaded. Each original has a pinned URL and SHA-256 in the [manifest](upstream-manifest.json). This external code is not part of the engine build.
 
-## Límites de «toda la API»
+## Limits of the full API
 
-El snapshot cubre todas las tablas de exportación de módulos de las revisiones citadas, comprobadas contra sus árboles. **No es todavía una especificación semántica completa** de DIV/Fénix/BennuGD y no certifica cada build: hay funciones condicionales, macros y alias; también construcciones del lenguaje, campos del core y extensiones externas que no se describen enteramente en esas tablas.
+The snapshot covers all module export tables in the cited revisions, checked against their trees. **It is not a complete semantic specification** of DIV/Fénix/BennuGD and does not certify each build. It contains conditional functions, macros, and aliases. Language constructs, core fields, and external extensions are not fully described by these tables.
 
-Queda trabajo explícito:
+Remaining work:
 
-1. Catalogar sintaxis/semántica de `PROCESS`, `FRAME`, tipos y estructuras; el juego seguirá usando Lua, no un compilador de `.prg`.
-2. Extraer campos de instancia del core (`id`, familia, prioridad, estado), variables del runtime y constantes no exportadas por módulos.
-3. Fijar una versión Fénix concreta y auditar las funciones originales de DIV; no dar por cubierta su unión por tener BennuGD.
-4. Para cada sobrecarga: nombres de argumentos, unidades, rangos, defaults, errores, ownership, efectos persistentes y plataformas.
-5. Clasificar equivalentes, renombradas, alternativas y ausentes; verificar comportamiento leyendo implementación y ejecutando ejemplos de referencia.
-6. Auditar extensiones de terceros por separado. Publicidad/IAP requieren servicios y SDK propios; no los proporciona raylib.
+1. Catalog `PROCESS`, `FRAME`, types, and structures. Games will use Lua, not a `.prg` compiler.
+2. Extract core instance fields (`id`, family, priority, status), runtime variables, and constants not exported by modules.
+3. Pin a Fénix version and audit original DIV functions. BennuGD alone does not prove coverage of their union.
+4. For each overload, document argument names, units, ranges, defaults, errors, ownership, persistent effects, and platforms.
+5. Classify equivalent, renamed, alternative, and missing functions. Check behavior against implementations and reference examples.
+6. Audit third-party extensions separately. Ads and IAP require their own services and SDKs; raylib does not provide them.
 
-## Precauciones concretas frente a la [lista histórica de API](../history/legacy-api.md)
+## Cautions about the [historical API list](../history/legacy-api.md)
 
-- `GET_ID` exporta una firma `I`: no asumir que `get_id()` sin argumentos significa «mi id». Podría ser un recorrido por tipo; hay que revisar implementación.
-- `SIGNAL` exporta `II`; una entrada `signal(pid)` no documenta la señal ni sus efectos.
-- `SET_FPS`, `WRITE`, `MAP_*`, colores y sonido tienen sobrecargas y diferencias entre generaciones.
-- En Malvado antiguo `angle` usa grados y `size` usa 1.0; el inventario Bennu clásico declara `size=100` y `PI=180000` en su contexto de ángulos. Adaptar unidades deliberadamente.
-- `write_var` con punteros a variables no se traduce pasando una dirección de Lua. Proponer un valor actualizable, getter Lua o binding específico, con costes claros.
+- `GET_ID` exports an `I` signature. Do not assume that `get_id()` without arguments means “my ID.” It may traverse by type; check the implementation.
+- `SIGNAL` exports `II`. An entry `signal(pid)` does not describe the signal or its effects.
+- `SET_FPS`, `WRITE`, `MAP_*`, colors, and sound have overloads and generation differences.
+- Older Malvado uses degrees for `angle` and 1.0 for `size`. The Bennu classic inventory declares `size=100` and `PI=180000` in its angle context. Convert units deliberately.
+- `write_var` with variable pointers does not translate to passing a Lua address. Propose an updatable value, Lua getter, or specific binding and explain its cost.
 
-## Cierre de la investigación por símbolo
+## Complete research for each symbol
 
-Una ficha pasa de «inventariado» a «especificado» solo con referencia fijada, firma semántica, ejemplo, divergencias y prueba de conformidad prevista. Solo pasa a «implementado» después del código y las comprobaciones. El porcentaje de cobertura se calcula sobre el perfil y la revisión fijados, contando sobrecargas por separado y mostrando exclusiones.
+Move a record from “inventoried” to “specified” only when it has a pinned reference, semantic signature, example, differences, and a planned conformance test. Mark it “implemented” only after code and checks exist. Calculate coverage for the pinned profile and revision. Count overloads separately and show exclusions.

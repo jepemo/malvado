@@ -1,44 +1,44 @@
-# Recursos gráficos: FPG, atlas modernos y paquetes ZIP
+# Graphics assets: FPG, modern atlases, and ZIP packages
 
-Estado: decisión propuesta, no soporte implementado. Completa el análisis de formatos del plan y de malvado-gui.
+Status: proposed decision, not implemented support. This extends the format analysis in the plan and malvado-gui.
 
-## Decisión recomendada
+## Recommended decision
 
-**Soportar FPG como vía de compatibilidad e importación; usar PNG y metadatos JSON como recursos editables; usar ZIP cuando convenga transportar o distribuir varios archivos.** Son capas diferentes: ZIP es un contenedor, no define gráficos, puntos, animaciones ni IDs.
+**Support FPG for compatibility and import; use PNG and JSON metadata as editable assets; use ZIP when it helps transport or distribute multiple files.** These are separate layers. ZIP is a container; it does not define graphics, points, animations, or IDs.
 
-No crear un nuevo formato binario de imagen. Sí hace falta un esquema pequeño de metadatos de Malvado, público y versionado, porque sus puntos de control, IDs históricos y perfiles de colisión no tienen una representación universal. Reutilizar formatos de intercambio existentes mediante adaptadores; no afirmar que «JSON» por sí solo sea un estándar único de atlas.
+Do not create a new binary image format. A small public, versioned Malvado metadata schema is needed because control points, historical IDs, and collision profiles do not have a universal representation. Reuse existing exchange formats through adapters. Do not claim that JSON alone is one atlas standard.
 
-## Qué representa FPG y qué conservar
+## What FPG represents and what to preserve
 
-FPG es una colección gráfica de la familia DIV, distinta de un único spritesheet y de un paquete completo de juego. El [lector/escritor de BennuGD clásico](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c) conserva códigos numéricos, nombres, dimensiones, gráficos y puntos de control; contempla variantes de profundidad y paletas. Esto hace útil importar material existente sin perder sus referencias. No asumir que todas las variantes de DIV/Fénix/BennuGD tienen el mismo layout.
+FPG is a graphics collection from the DIV family. It is not a single spritesheet or a complete game package. The [BennuGD classic reader/writer](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c) retains numeric codes, names, dimensions, graphics, and control points, and handles depth and palette variants. This helps import existing material without losing references. Do not assume all DIV/Fénix/BennuGD variants use the same layout.
 
-La [implementación de BennuGD2 consultada](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_gfx/m_fpg.c) carga FPG, mientras su wrapper de guardado está comentado en esa revisión. Por tanto, leer FPG y escribir FPG deben aparecer como capacidades diferentes; no prometer exportación porque una variante histórica la tuvo.
+The [consulted BennuGD2 implementation](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_gfx/m_fpg.c) loads FPG, while its save wrapper is commented out in that revision. Treat FPG reading and writing as separate capabilities. Do not promise export because a historical variant had it.
 
-Malvado actual llama `fpg()` a directorios/spritesheets y tiene experimentos ZIP en `malvado/map.lua`; eso no demuestra soporte binario FPG. El perfil legacy debe distinguir esa API del lector real.
+Current Malvado calls directories/spritesheets `fpg()` and has ZIP experiments in `malvado/map.lua`. This does not demonstrate binary FPG support. The legacy profile must distinguish that API from a real reader.
 
-## Comparación de opciones
+## Options
 
-| Opción | Uso adecuado | Ventajas | Límites |
+| Option | Suitable use | Benefits | Limits |
 | --- | --- | --- | --- |
-| FPG histórico | Reutilizar gráficos/proyectos DIV y derivados | IDs y puntos conocidos por ese ecosistema | Variantes, paletas, binario difícil de revisar; no es un proyecto completo |
-| PNG individuales + JSON | Fuente editable y primer runtime | Legible, Git, herramientas externas y carga simple | Muchos archivos; metadatos con contrato propio explícito |
-| Atlas PNG + JSON de herramienta | Intercambio y optimización de dibujo | Agrupa regiones, admite pipeline externo | Dialectos diferentes, recorte/rotación y puntos requieren adaptación |
-| ZIP + manifiesto | Compartir bibliotecas o distribuir juego | Contenedor conocido y varios tipos de recurso | Requiere lector C y límites; comprimir no equivale a proteger código |
-| Binario propietario nuevo | Caché optimizada si hay mediciones que lo justifiquen | Podría reducir tiempos de carga | Complejidad, conversores, debugging y versionado; diferido |
+| Historical FPG | Reuse DIV-family graphics/projects | IDs and points known in that ecosystem | Variants, palettes, binary difficult to review; not a complete project |
+| Individual PNG + JSON | Editable source and first runtime | Readable, Git-friendly, external tools, simple loading | Many files; explicit metadata contract required |
+| Tool-generated PNG + JSON atlas | Exchange and render optimization | Groups regions, supports external pipelines | Different dialects; crop/rotation and points require adaptation |
+| ZIP + manifest | Share libraries or distribute a game | Familiar container for multiple asset types | Needs C reader and limits; compression does not protect code |
+| New proprietary binary | Optimized cache if measurements justify it | Could reduce load time | Complexity, converters, debugging, versioning; deferred |
 
-[Aseprite permite exportar spritesheets PNG y metadatos JSON](https://www.aseprite.org/docs/cli/), con variantes json-array/json-hash y datos de animación. Proponer inicialmente un adaptador para exportaciones PNG+JSON json-array con un subconjunto probado; informar campos no soportados en lugar de ignorarlos. No requiere que el jugador tenga Aseprite ni redistribuir su editor.
+[Aseprite exports PNG spritesheets and JSON metadata](https://www.aseprite.org/docs/cli/), including json-array/json-hash variants and animation data. Initially propose an adapter for a tested subset of PNG+JSON json-array exports. Report unsupported fields instead of ignoring them. Players do not need Aseprite or a redistributed editor.
 
-Los mapas de niveles son otro recurso: [Tiled publica un formato JSON de mapas y tilesets](https://doc.mapeditor.org/en/stable/reference/json-map-format/). Considerar su importador cuando exista soporte de tilemaps; no forzar un nivel dentro de un FPG ni prometer compatibilidad Tiled completa en 2.0. PNG+JSON es una elección de pipeline, no una afirmación de que haya un único estándar moderno que sustituya todo DIV.
+Level maps are a separate asset. [Tiled publishes a JSON map and tileset format](https://doc.mapeditor.org/en/stable/reference/json-map-format/). Consider an importer when tilemaps are supported. Do not force a level into an FPG or promise complete Tiled compatibility in 2.0. PNG+JSON is a pipeline choice, not a claim that one modern standard replaces all DIV formats.
 
-## Modelo C común a todos los importadores
+## Common C model for importers
 
-Biblioteca de gráficos → entradas con ID lógico estable → imagen CPU/región de atlas → textura GPU. Conservar nombre, tamaño original, offsets de recorte, pivote, puntos de control, duración y secuencias de animación, filtrado y datos de colisión cuando existan. Los datos ausentes tienen defaults definidos; no inventar puntos de control a partir de nombres de archivos sin declararlo.
+Graphics library → entries with stable logical IDs → CPU image/atlas region → GPU texture. Preserve name, original size, crop offsets, pivot, control points, duration and animation sequences, filtering, and collision data when present. Define defaults for missing data. Do not invent control points from filenames without declaring that behavior.
 
-Los IDs numéricos FPG no se renumeran al ordenar carpetas o empaquetar un atlas. La API de compatibilidad `file/graph` usa una tabla de resolución a recursos del core; en API moderna pueden usarse nombres/handles. Los puntos se expresan en píxeles del espacio original del sprite, origen superior izquierdo; al recortar se aplica offset, al renderizar se transforma. Validar por separado índices históricos de puntos y el pivote utilizado para dibujo.
+Do not renumber FPG numeric IDs when sorting folders or packing an atlas. The compatibility `file/graph` API uses a lookup table to core assets. The modern API can use names/handles. Points use pixels in the original sprite space with a top-left origin. Apply crop offsets and transform points during rendering. Validate historical point indexes and the draw pivot separately.
 
-Para FPG indexado, conservar índices y paleta si el perfil permite cambios de paleta en ejecución. Convertir solo a RGBA puede preservar aspecto inicial pero perder ese comportamiento: el conversor debe avisar y documentarlo. Definir transparencia y valores de punto no definido con fixtures. No garantizar round-trip binario; el objetivo de importación es fidelidad de píxeles y metadatos soportados.
+For indexed FPG, preserve indexes and palette if the profile permits runtime palette changes. RGBA-only conversion can preserve the initial appearance but lose that behavior. The converter must warn and document it. Define transparency and undefined-point values with fixtures. Do not guarantee binary round trips. Import aims for pixel and supported-metadata fidelity.
 
-Ejemplo **ilustrativo** de metadatos Malvado, no JSON Aseprite ni esquema ya congelado:
+Illustrative Malvado metadata, not Aseprite JSON or a frozen schema:
 
 ```json
 {
@@ -56,35 +56,35 @@ Ejemplo **ilustrativo** de metadatos Malvado, no JSON Aseprite ni esquema ya con
 }
 ```
 
-El tamaño se obtiene de la imagen; validarlo al importar. La convención del pivote y puntos debe adaptarse expresamente al perfil histórico. El esquema de biblioteca, el de proyecto TOML y el del paquete de distribución tienen versiones independientes. GUI y CLI comparten validadores y conversores C.
+Read size from the image and validate it on import. Adapt pivot and point conventions explicitly to the historical profile. The library schema, TOML project schema, and distribution package schema have independent versions. GUI and CLI share C validators and converters.
 
-## Fuente editable y distribución
+## Editable source and distribution
 
-Durante desarrollo, carpeta normal con PNG/JSON/Lua y configuración TOML. Cambiar un punto o duración desde GUI modifica JSON con undo/redo y guardado atómico; las fuentes del artista permanecen aparte. La caché generada no sustituye las fuentes y queda fuera de Git.
+During development, use a normal folder with PNG/JSON/Lua and TOML configuration. GUI changes to a point or duration update JSON with undo/redo and atomic saving. Artist source files remain separate. Generated cache does not replace source and stays outside Git.
 
-Export: primero validar/cargar recursos y resolver referencias; después generar atlas si está activado; finalmente empaquetar runtime y recursos. Empezar con export de carpeta validado por destino. El ZIP de entrega puede contener esa carpeta. Un ZIP de assets montable por el runtime es una capacidad adicional y posterior, con manifiesto definido: no confundir el archivo descargable con el formato que abre el juego.
+For export, validate/load assets and resolve references first. Generate an atlas if enabled, then package runtime and assets. Start with a validated folder export per target. A delivery ZIP can contain that folder. A runtime-mountable asset ZIP is a separate later capability with a defined manifest. Do not confuse a downloadable archive with a format the game opens.
 
-No imponer una extensión nueva como `.fpg2` o `.malvado` antes de necesitarla. Una eventual extensión de paquete documentará que contiene ZIP y un esquema, sin fingir ser FPG. En Android los recursos van en assets del APK, ya empaquetado; no añadir ZIP anidado por defecto ni suponer acceso mediante rutas de escritorio. El servicio de assets oculta las diferencias de origen, no el formato de contenido.
+Do not impose a new extension such as `.fpg2` or `.malvado` before it is needed. A future package extension must document its ZIP contents and schema; it must not pretend to be FPG. Android assets are inside the already packaged APK. Do not add nested ZIP by default or assume desktop paths. The asset service hides source differences, not content formats.
 
-ZIP no cifra el juego y PNG ya está comprimido. Medir tamaño/carga antes de elegir compresión de todo; priorizar lecturas acotadas y no extraer indiscriminadamente. Seleccionar una biblioteca C de ZIP con licencia revisada en P0/P3; raylib no se considera por sí solo un sistema completo de paquetes.
+ZIP does not encrypt a game, and PNG is already compressed. Measure size/load time before selecting whole-package compression. Favor bounded reads and do not extract indiscriminately. Select a ZIP C library with reviewed license in P0/P3. Raylib alone is not treated as a complete package system.
 
-## Secuencia de implementación
+## Implementation sequence
 
-| Hito | Capacidad | Criterio de aceptación |
+| Milestone | Capability | Acceptance criterion |
 | --- | --- | --- |
-| Core alpha.3 | PNG, directorios/spritesheets y modelo de biblioteca JSON básico | sprites/demo sin LÖVE; IDs estables y pivot probado |
-| Core alpha.4 | Export de carpeta y ZIP de entrega | Juego funciona desde paquete extraído, mismas referencias que desarrollo |
-| Core alpha.5 | Primer importador FPG de variante fijada; adaptador Aseprite básico | Fixture 8-bit elegido con IDs/puntos/paleta preservados; spritesheet con animación equivalente |
-| GUI G1 | Explorar y previsualizar recursos ya soportados | No ofrece import FPG antes de existir lector |
-| GUI G3 | Editar metadatos y convertir FPG soportado a PNG+JSON | Guardar/reabrir y comparar puntos, IDs y píxeles |
-| 2.1+ | Variantes FPG adicionales, export FPG, ZIP montable, packing y formatos de mapas | Matriz de variantes y límites con pruebas propias |
+| Core alpha.3 | PNG, directories/spritesheets, basic JSON library model | Sprites/demo without LÖVE; stable IDs and tested pivot |
+| Core alpha.4 | Folder export and delivery ZIP | Game runs from extracted package with development references intact |
+| Core alpha.5 | First pinned-variant FPG importer; basic Aseprite adapter | Selected 8-bit fixture preserves IDs/points/palette; equivalent animated spritesheet |
+| GUI G1 | Browse and preview supported assets | Does not offer FPG import before a reader exists |
+| GUI G3 | Edit metadata and convert supported FPG to PNG+JSON | Save/reopen and compare points, IDs, and pixels |
+| 2.1+ | More FPG variants, FPG export, mountable ZIP, packing, map formats | Variant and limit matrix with dedicated tests |
 
-La primera variante FPG se seleccionará con archivos de muestra y procedencia conocida, sin declarar «todos los FPG». Export FPG será opcional por variante: rechazar o pedir conversión explícita si hay datos no representables, sin cuantizar paletas o perder alpha silenciosamente. El perfil estable documenta qué cargas/conversiones existen y qué sigue diferido.
+Choose the first FPG variant using samples of known origin. Do not claim support for all FPG files. FPG export is optional per variant. Reject or request explicit conversion of unrepresentable data. Do not silently quantize palettes or lose alpha. The stable profile documents available loads/conversions and deferred work.
 
-## Ejemplos y comprobaciones
+## Examples and checks
 
-Crear `fpg-import`: pequeña biblioteca con IDs no consecutivos, nombre, punto definido y no definido, paleta y transparencia; importar, generar PNG+JSON y mostrar la misma figura en runtime. Comparar píxeles/índices y metadatos soportados. Añadir variantes 16/32-bit solo con sus propios fixtures.
+Create `fpg-import`: a small library with non-consecutive IDs, name, defined and undefined point, palette, and transparency. Import it, generate PNG+JSON, and show the same image in the runtime. Compare pixels/indexes and supported metadata. Add 16/32-bit variants only with their own fixtures.
 
-Crear `atlas-import`: export Aseprite con varios frames/duraciones, recorte y pivote; validar subset y errores claros para rotación u otras opciones no soportadas. El packing inicial puede evitar rotación; su importador no debe aceptar datos que luego dibuje mal.
+Create `atlas-import`: Aseprite export with multiple frames/durations, crop, and pivot. Validate the subset and give clear errors for rotation or other unsupported options. Initial packing can avoid rotation. Its importer must not accept data that it will render incorrectly.
 
-Comprobar límites de dimensiones, overflow, tamaños truncados, IDs duplicados y versiones desconocidas. Para ZIP: rutas `../`, absolutas, duplicados con distinto case, tamaño descomprimido y número de entradas. Estas verificaciones pertenecen al lector/conversor C compartido, no solo al diálogo GUI. El fixture FPG debe tener licencia para redistribución; no copiar paquetes de juegos comerciales para probar.
+Check dimension limits, overflow, truncated sizes, duplicate IDs, and unknown versions. For ZIP, check `../` paths, absolute paths, case-variant duplicates, decompressed size, and entry count. These checks belong in the shared C reader/converter, not only the GUI dialog. FPG fixtures must be licensed for redistribution. Do not copy commercial game packages for tests.

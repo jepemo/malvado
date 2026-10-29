@@ -1,96 +1,96 @@
-# Runtime C, raylib y Lua embebido
+# C runtime, raylib, and bundled Lua
 
-Estado: diseño propuesto; la decisión vinculante es [core C independiente y binding Lua oficial](c-first.md). El avance implementado de procesos e inspección se describe en [alpha.2](../versions/2.0.0-alpha.2.md). El manual oficial describe cómo [integrar Lua en C](https://www.lua.org/manual/5.4/manual.html#4) y [manejar yields desde C](https://www.lua.org/manual/5.4/manual.html#4.5). La [cabecera y módulos de raylib](https://github.com/raysan5/raylib) son la referencia del backend; hay que fijar una revisión antes de implementar.
+Status: proposed design. The binding decision is [independent C core and official Lua binding](c-first.md). See [alpha.2](../versions/2.0.0-alpha.2.md) for implemented process and inspection work. The official Lua manual describes [embedding Lua in C](https://www.lua.org/manual/5.4/manual.html#4) and [handling yields from C](https://www.lua.org/manual/5.4/manual.html#4.5). The [raylib headers and modules](https://github.com/raysan5/raylib) are the backend reference; pin a revision before implementation.
 
-## Responsabilidades
+## Responsibilities
 
 ```mermaid
 flowchart TD
-    Game[Juego Lua] --> Binding[Binding C de Malvado]
-    CLI[malvado-cli en C] --> Runner[Runner C con Lua incluido]
+    Game[Lua game] --> Binding[Malvado C binding]
+    CLI[malvado-cli in C] --> Runner[C runner with bundled Lua]
     Runner --> Binding
-    Binding --> Core[Core C: procesos, reloj, mensajes y recursos]
-    Core --> Backend[Backend C raylib]
-    Backend --> Platform[Ventana, GPU, audio y entrada]
+    Binding --> Core[C core: processes, clock, messages and assets]
+    Core --> Backend[C raylib backend]
+    Backend --> Platform[Window, GPU, audio and input]
 ```
 
-El core define ownership, datos, módulos y scheduler. El adaptador raylib dibuja, captura entrada y sirve audio. El binding valida argumentos, transforma errores y expone userdata. La capa Lua se limita al DSL, importaciones y aliases. Usar `math`/`string` de Lua cuando cumplan el contrato; ya son bibliotecas C y duplicarlas no aporta rendimiento.
+The core defines ownership, data, modules, and scheduler. The raylib adapter draws, captures input, and provides audio. The binding validates arguments, transforms errors, and exposes userdata. The Lua layer is limited to the DSL, imports, and aliases. Use Lua `math`/`string` when they meet the contract. They are already C libraries; duplicating them does not improve performance.
 
-## Corutinas: gestión C, continuación Lua
+## Coroutines: C management, Lua continuation
 
-Un proceso script tiene un `lua_State *` creado por `lua_newthread`, con una referencia fuerte de registry (`luaL_ref`) para que no lo recoja el GC. Todos los procesos comparten una VM; no un `luaL_newstate` por proceso. La función script y su `self` se preparan en la pila de esa coroutine. Solo se pasa `self` en el primer `lua_resume`; las reanudaciones siguientes siguen el protocolo definido para `frame`.
+A script process has a `lua_State *` created by `lua_newthread`, with a strong registry reference (`luaL_ref`) so GC does not collect it. All processes share one VM, not one `luaL_newstate` per process. Prepare the script function and `self` on the coroutine stack. Pass `self` only on the first `lua_resume`; later resumptions follow the `frame` protocol.
 
-Cada tick el scheduler C seleccionará procesos ejecutables y llamará a su callback; para procesos Lua ese callback del binding llamará a `lua_resume`. En la implementación actual `runtime.c` realiza ambas tareas y debe separarse. `LUA_YIELD` indica suspensión, `LUA_OK` terminación, otros resultados error con traceback. Limpiar valores producidos según `nresults` para no acumular pila. No reanudar corutinas muertas.
+On each tick, the C scheduler selects runnable processes and calls their callback. For Lua processes, the binding callback calls `lua_resume`. `LUA_YIELD` means suspension, `LUA_OK` means completion, and other results produce an error with traceback. Remove produced values according to `nresults` to avoid stack accumulation. Do not resume dead coroutines.
 
-`frame()` será una función C breve: valida que la llamada esté dentro de un proceso yieldable, fija su próxima activación y llama a `lua_yield`/`lua_yieldk`. Si una función C necesita continuar trabajo después de una llamada Lua que puede ceder, usar `lua_callk`/`lua_pcallk` y continuaciones; no esperar que un yield conserve variables locales de C ni suspender a través de APIs C no yieldables. Una función nativa normal termina durante el tick o guarda su estado para el siguiente.
+`frame()` is a short C function: validate that it is called inside a yieldable process, set the next activation, and call `lua_yield`/`lua_yieldk`. If a C function must continue after a Lua call that can yield, use `lua_callk`/`lua_pcallk` and continuations. Do not expect a yield to retain C local variables or suspend through non-yieldable C APIs. A normal native function finishes during the tick or stores its state for the next one.
 
-Esquema ilustrativo para **Lua 5.4**, no código listo para compilar:
+Illustrative **Lua 5.4** sketch, not ready-to-compile code:
 
 ```c
-/* Primera activación: función y self ya preparados; luego nargs = 0. */
+/* First activation: function and self are prepared; later nargs = 0. */
 int nresults = 0;
 int status = lua_resume(proc->thread, host_lua, first_run ? 1 : 0, &nresults);
 switch (status) {
-case LUA_YIELD: /* extraer resultados y dejarlo suspendido */ break;
-case LUA_OK:    /* encolar destrucción */ break;
-default:       /* traceback, error de proceso y salida según política */ break;
+case LUA_YIELD: /* remove results and leave suspended */ break;
+case LUA_OK:    /* queue destruction */ break;
+default:       /* traceback, process error, and exit according to policy */ break;
 }
 ```
 
-`lua_newthread` no crea un hilo del sistema. Render y VM se ejecutan en un mismo hilo. En el futuro, workers para carga/cálculos solo intercambian resultados con el hilo principal; no acceden concurrentemente al mismo estado Lua ni a la GPU.
+`lua_newthread` does not create an operating-system thread. Render and VM run on the same thread. Future loading/calculation workers exchange results with the main thread. They do not access the same Lua state or GPU concurrently.
 
-## Datos y ciclo de vida
+## Data and lifecycle
 
-`MvContext` posee scheduler, pools y recursos. `MvProcess` contiene handle (slot + generación), tipo, padre/hijos, estado, prioridad, tick previsto, transform y referencia del script. `self` será userdata con `__index`/`__newindex` que accede a C. Propiedades extra del juego viven en una uservalue table por instancia, evitando un coste nativo para cada campo arbitrario.
+`MvContext` owns the scheduler, pools, and assets. The proposed `MvProcess` contains a handle (slot + generation), type, parent/children, state, priority, scheduled tick, transform, and script reference. `self` is userdata with `__index`/`__newindex` access to C. Extra game properties live in a per-instance uservalue table, avoiding native cost for each arbitrary field.
 
-Los handles caben en el entero de la versión Lua elegida; comprobar tamaños al compilar y evitar conversión por double. Acceder a un handle eliminado devuelve el error documentado, aunque el slot se haya reutilizado. PID y handles de recursos tienen tipos diferentes. Campos de motor de solo lectura: `id`, relación familiar y estado. Política de nombres reservados documentada.
+Handles must fit the integer type of the selected Lua version. Check sizes at build time and avoid conversion through double. Access to a deleted handle returns the documented error, even if the slot is reused. Process IDs and asset handles have different types. Engine identity, family relation, and status are read-only. Document the reserved-name policy.
 
-Los mensajes se implementan como colas C. Payloads Lua se mantienen por registry hasta su recepción/descarte; el contrato inicial entrega referencias compartidas dentro de la VM, no copias profundas. Documentar límites y backpressure. Una futura API nativa de mensajes solo puede usar payloads C definidos, sin exponer objetos Lua al core.
+Messages use C queues. Lua object payloads stay in the registry until receipt or discard. The initial contract uses shared references within the VM, not deep copies. Document limits and backpressure. The native message API uses defined C payloads and does not expose Lua objects to the core.
 
-Destruir un proceso no equivale a esperar al GC. Marcar, quitar del scheduler/dibujo y liberar sus referencias en un punto seguro; usar `lua_resetthread` para cerrar variables to-be-closed si se adopta Lua 5.4, revisar errores de cierre y después liberar la referencia de registry. El dibujo termina antes de descargar texturas. Los recursos compartidos se liberan explícitamente o al cerrar contexto; matar un proceso no borra recursos de otros.
+Destroying a process is not the same as waiting for GC. Mark it, remove it from scheduling/drawing, and release its references at a safe point. With Lua 5.4, use `lua_resetthread` to close to-be-closed variables, check close errors, then release the registry reference. Finish drawing before unloading textures. Release shared resources explicitly or at context shutdown; killing one process does not delete another process's resources.
 
-## Contrato de scheduler propuesto
+## Proposed scheduler contract
 
-| Tema | Regla inicial |
+| Topic | Initial rule |
 | --- | --- |
-| Reloj | Tick lógico fijo configurable (60 Hz por defecto), render desacoplado |
-| Orden | Prioridad documentada y desempate por orden de creación; `z` solo afecta al dibujo |
-| Alta durante tick | Proceso nuevo empieza en el siguiente tick; el PID se devuelve inmediatamente |
-| `frame()` | Ceder hasta el tick siguiente; solo válido dentro de un proceso |
-| Legacy `self.fps` | Cadencia por proceso con acumulador; no descartar remanente temporal |
-| `frame(percent)` Bennu | Función del perfil de compatibilidad; especificar fracciones y múltiples reanudaciones con trazas antes de implementarla |
-| Sleep | No ejecuta ni dibuja en el perfil Bennu propuesto; verificar referencia antes de etiquetar compatible |
-| Freeze | No ejecuta, conserva dibujo; verificar colisiones y señales en referencia |
-| Kill | Estado terminal y baja diferida; kill-tree explícito |
-| Padre | Inferido desde proceso activo; elegir kill-tree legacy mediante perfil |
-| Error Lua | Por defecto termina ejecución con traceback y salida no cero; modo de aislamiento opcional |
-| Sin procesos de juego | Cierre ordenado después del tick, sin contar servicios internos |
-| Proceso sin yield | Herramienta de diagnóstico con hook de instrucciones; por defecto error de presupuesto en desarrollo, no preempción transparente |
+| Clock | Configurable fixed logical tick (60 Hz by default); decoupled render |
+| Order | Documented priority and creation-order tie break; `z` affects drawing only |
+| Creation during tick | New process starts on the next tick; return PID immediately |
+| `frame()` | Yield until the next tick; valid only inside a process |
+| Legacy `self.fps` | Per-process cadence with accumulator; do not discard remaining time |
+| Bennu `frame(percent)` | Compatibility-profile function; specify fractions and multiple resumptions with traces before implementation |
+| Sleep | Does not execute or draw in the proposed Bennu profile; verify the reference before claiming compatibility |
+| Freeze | Does not execute; keeps drawing. Verify collisions and signals against the reference |
+| Kill | Terminal state and deferred removal; explicit kill-tree |
+| Parent | Inferred from active process; choose legacy kill-tree through the profile |
+| Lua error | By default, end execution with traceback and nonzero exit; optional isolation mode |
+| No game processes | Orderly shutdown after the tick, excluding internal services |
+| Process without yield | Diagnostic tool with instruction hook; development budget error by default, not transparent preemption |
 
-No inferir semántica histórica a partir del nombre de una función. `FRAME` es una construcción del lenguaje Bennu, no una función exportada de módulo. El comportamiento fraccionario y la ejecución inmediata de hijos deben medirse en el runtime de referencia y quedar separados de la política propuesta de Malvado.
+Do not infer historical semantics from a function name. `FRAME` is a Bennu language construct, not a module export. Measure fractional behavior and immediate child execution in the reference runtime and keep them separate from proposed Malvado policy.
 
-Tick: capturar entrada → fijar lista de activaciones → reanudar → aplicar señales/bajas → actualizar animaciones/colisiones → construir cola de dibujo → dibujar → presentar. Un número máximo de pasos de recuperación evita un bucle sin fin tras una pausa larga; registrar tiempo descartado. Android reinicia acumuladores tras volver de background.
+Tick sequence: capture input → fix activation list → resume → apply signals/removals → update animations/collisions → build draw queue → draw → present. A maximum catch-up count prevents an infinite loop after a long pause; record dropped time. Android resets accumulators after returning from the background.
 
-## Procesos escritos en C
+## C processes
 
-Requisito de alpha.2: callback C con estado explícito; por ejemplo, `MvStepResult step(MvContext *, MvProcess *, void *state)` (firma orientativa). El callback devuelve `CONTINUE`, `SLEEP_UNTIL` o `DONE`; su estado lo posee el proceso. Es una máquina de estados explícita, sin corutinas portables en C11. Lua conserva la forma de escribir secuencias con `frame()`; no es necesario introducir fibras, `ucontext` o `setjmp` para esto.
+Alpha.2 requires a C callback with explicit state. For example, `MvStepResult step(MvContext *, MvProcess *, void *state)` is an illustrative signature. The callback returns `CONTINUE`, `SLEEP_UNTIL`, or `DONE`; the process owns its state. This is an explicit state machine, not portable C11 coroutines. Lua retains sequential code with `frame()`. Fibers, `ucontext`, or `setjmp` are not required for this.
 
-## Implementación actual de observabilidad
+## Current observability
 
-El runner ofrece un hook C síncrono entre ticks, copia de estado, señales y pausa/paso. El hook de fotograma permite observar la imagen antes de presentarla. La API se utiliza y prueba dentro del mismo hilo; el protocolo IPC y la GUI siguen pendientes. El orden de ejecución ya vive en `src/core/schedule.c`, aunque el ciclo de vida de procesos y el binding siguen en el runner.
+The runner provides a synchronous C hook between ticks, state copies, signals, and pause/step. The frame hook can inspect the image before presentation. Use and test the API on the same thread. IPC and GUI remain pending. Scheduling and process lifecycle are in the C core; the binding is separate.
 
-## Servicios de herramientas y observabilidad
+## Tool services and observability
 
-[malvado-gui](../specs/gui.md) será un cliente opcional de servicios C compartidos con CLI. El core expone snapshots inmutables y comandos entre ticks, sin depender de ImGui ni del editor. Preparar esos puntos en P2; implementar protocolo local opt-in para G2. La GUI ejecuta el runner en un proceso separado, mantiene su propia ventana y captura errores sin bloquearse ante un juego que no ceda. Step avanza un tick de simulación, no una instrucción Lua. El IPC se versiona y su servidor de diagnóstico no se habilita por defecto en releases del juego.
+[malvado-gui](../specs/gui.md) will be an optional client of C services shared with the CLI. The core exposes immutable snapshots and commands between ticks, without an ImGui or editor dependency. Prepare these points in P2. Implement an opt-in local protocol for G2. The GUI runs the runner in a separate process, keeps its own window, and captures errors without blocking on a game that does not yield. Step advances one simulation tick, not one Lua instruction. Version the IPC protocol; do not enable its diagnostic server by default in game releases.
 
-Si se adopta Dear ImGui, sus dependencias C++ quedan en el target GUI detrás de interfaz C; core, CLI y exports siguen sin enlazarlas. No convertir el proyecto completo a C++ para integrar el toolkit.
+If Dear ImGui is selected, keep C++ dependencies in the GUI target behind a C interface. Core, CLI, and exports do not link them. Do not convert the entire project to C++ for the toolkit.
 
-## Render, formatos y pruebas
+## Rendering, formats, and tests
 
-Transformaciones canónicas propuestas: grados, escala 1.0 y píxeles; en perfiles DIV/Bennu convertir miligrados y porcentajes. La API C no debe heredar accidentalmente unidades internas de raylib. Color RGBA 0–255 y alpha explícito; ancla de sprite definida, orden `z` y empates probado. Los textos persistentes y primitivas no son necesariamente llamadas de dibujo inmediato: distinguir ambas semánticas.
+Proposed canonical transforms: degrees, scale 1.0, and pixels. Convert millidegrees and percentages in DIV/Bennu profiles. The C API must not accidentally inherit raylib internal units. Use RGBA 0–255 and explicit alpha. Define sprite anchors and test `z` order and ties. Persistent text and primitives are not necessarily immediate draw calls; distinguish the semantics.
 
-La [decisión detallada de assets](../specs/assets.md) distingue formatos, metadatos y contenedores: PNG+JSON editable, adaptadores FPG/Aseprite y ZIP para transporte. La importación FPG no implica exportación ni todas sus variantes; deben conservarse códigos y puntos estables.
+The [asset decision](../specs/assets.md) separates formats, metadata, and containers: editable PNG+JSON, FPG/Aseprite adapters, and ZIP for transport. FPG import does not imply export or support for all variants. Preserve stable codes and points.
 
-Separar imagen CPU, textura GPU y colección de gráficos. PNG/spritesheet primero. FPG/MAP/FNT/PAL/FLI necesitan lectores o conversores propios; incluir puntos de control, palette/indexado y transparencias en el contrato. Colisión AABB de dos cajas primero y máscaras transformadas después, declarando diferencias.
+Separate CPU image, GPU texture, and graphics collection. Start with PNG/spritesheets. FPG/MAP/FNT/PAL/FLI need dedicated readers or converters. Include control points, palette/indexing, and transparency in the contract. Start with two-box AABB collision, then transformed masks, and declare differences.
 
-Verificar core sin ventana: orden, altas/bajas, árboles, señales, memoria, errores y tiempos con reloj inyectado. Para backend: pruebas con ventana y capturas por plataforma, texturas, alpha, fuentes, audio y dispositivos. Usar sanitizers en plataformas compatibles, sin exigir igualdad bit a bit entre rasterizadores/GPU.
+Verify the core without a window: order, creation/removal, trees, signals, memory, errors, and timing with an injected clock. For the backend, test windows and captures per platform, textures, alpha, fonts, audio, and devices. Use sanitizers on compatible platforms. Do not require bit-identical rasterizer/GPU output.

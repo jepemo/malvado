@@ -1,42 +1,42 @@
-# Perfiles y matriz de compatibilidad
+# Compatibility profiles and matrix
 
-Estado: propuesta. Ninguna compatibilidad con un runtime nuevo está certificada.
+Status: proposal. No compatibility with a new runtime is certified.
 
-## Perfiles independientes
+## Independent profiles
 
-- **malvado-legacy:** preservar DSL actual, grados, tamaño 1.0, claves de teclado de texto, textos y ejemplos existentes. Registrar cada cambio intencional en migración.
-- **malvado-2:** API Lua con namespace, ownership seguro, errores consistentes y tipos C opacos. Es el perfil predeterminado propuesto.
-- **bennu2-essential:** procesos/señales, gráficos 2D, texto, entrada, audio, reloj y utilidades priorizadas de la revisión fijada. Especificar cada símbolo antes de congelarlo.
-- **bennu-classic-extended:** formatos, scroll, Mode 7, efectos, pathfinding y otras funciones históricas; ampliación por versiones.
-- **div/fenix:** contraste histórico y adaptaciones explícitas. No se promete leer programas `.prg`, `.dcb` ni reproducir un compilador propio.
+- **malvado-legacy:** preserve the current DSL, degrees, size 1.0, text keyboard keys, text, and existing examples. Record each intentional migration change.
+- **malvado-2:** namespaced Lua API, safe ownership, consistent errors, and opaque C types. This is the proposed default profile.
+- **bennu2-essential:** processes/signals, 2D graphics, text, input, audio, clock, and selected utilities from the pinned revision. Specify each symbol before freezing it.
+- **bennu-classic-extended:** formats, scrolling, Mode 7, effects, pathfinding, and other historical functions; expand by version.
+- **div/fenix:** historical comparison and explicit adaptations. There is no promise to read `.prg` or `.dcb` programs or reproduce a dedicated compiler.
 
-## Familias y secuencia de trabajo
+## Families and work sequence
 
-| Familia | Destino | Ejemplo mínimo | Diferencia que verificar |
+| Family | Target | Minimum example | Difference to verify |
 | --- | --- | --- | --- |
-| Proceso, familia, señales y búsqueda | Core C + binding Lua | padre crea hijos, sleep/freeze/kill-tree | orden, hijo inmediato/diferido, retorno de collision/get_id |
-| Ventana, reloj y regiones | Adaptador C + core | pantalla lógica escalada y dos regiones | frame vs render, DPI, clipping y cierre |
-| Sprite, mapa, color, puntos, FPG | Recursos/render C | atlas, puntos de control, espejo, alpha | formatos binarios, paletas, pivotes y unidades |
-| Dibujo y objetos persistentes | Módulo C | primitivas que se mueven y borran | ID persistente frente a dibujar una vez |
-| Texto y fuentes | Módulo C | texto fijo, marcador actualizable, alineación | FNT, UTF-8, `write_var`, lifetime |
-| Teclado, ratón, mando y touch | Snapshot de entrada C | movimiento, click, mando conectado | scancodes, repeat, deadzones, Android |
-| Sonido/música | Módulo C/raylib | WAV y música con pausa | canales, bucles, códecs y ciclo de vida |
-| Matemáticas, aleatorio y strings | C y stdlib Lua cuando equivalga | semilla fija y movimiento angular | miligrados, rangos y redondeo |
-| Archivos, directorios y tiempo | C/plataforma | guardar partida y leer assets | rutas de escritura, empaquetado, epoch |
-| Scroll/Mode 7/regiones | Render C propio | cámara sobre tilemap, suelo perspectivo | no son funciones raylib directas |
-| Máscaras, pathfinding y efectos | Algoritmos C propios | nave contra contorno, laberinto | AABB vs píxeles, escalado/rotación |
-| Regex, sort, memoria, criptografía | Adaptación por símbolo | búsqueda/orden con límites | punteros a memoria Bennu no son userdata Lua |
-| FLIC/CD-ROM | Pendiente histórico | fixture mínimo si se implementa | decodificador/servicio específico o no soportado |
-| Red/debug | Opcional posterior | echo local, inspector de procesos | raylib no proporciona el servicio de red |
-| Ads/IAP | Extensión opcional por plataforma | mock de eventos y prueba con SDK | credenciales, tienda y lifecycle; fuera de 2.0 esencial |
+| Process, family, signals, and lookup | C core + Lua binding | Parent creates children; sleep/freeze/kill-tree | Order, immediate/deferred children, collision/get_id return |
+| Window, clock, and regions | C adapter + core | Scaled logical screen and two regions | Frame versus render, DPI, clipping, and shutdown |
+| Sprite, map, color, points, FPG | C resources/render | Atlas, control points, mirror, alpha | Binary formats, palettes, pivots, and units |
+| Drawing and persistent objects | C module | Primitives that move and are removed | Persistent ID versus one-time drawing |
+| Text and fonts | C module | Fixed text, updatable score, alignment | FNT, UTF-8, `write_var`, lifetime |
+| Keyboard, mouse, controller, touch | C input snapshot | Movement, click, connected controller | Scancodes, repeat, deadzones, Android |
+| Sound/music | C/raylib module | WAV and music with pause | Channels, loops, codecs, and lifecycle |
+| Math, random, strings | C and Lua standard library when equivalent | Fixed seed and angular movement | Millidegrees, ranges, and rounding |
+| Files, directories, time | C/platform | Save a game and read assets | Writable paths, packaging, epoch |
+| Scroll/Mode 7/regions | Custom C render | Tilemap camera and perspective floor | These are not direct raylib functions |
+| Masks, pathfinding, effects | Custom C algorithms | Ship against contour, maze | AABB versus pixels, scale/rotation |
+| Regex, sort, memory, cryptography | Per-symbol adaptation | Bounded search/sort | Bennu memory pointers are not Lua userdata |
+| FLIC/CD-ROM | Historical, pending | Minimum fixture if implemented | Dedicated decoder/service or unsupported |
+| Network/debug | Optional later | Local echo, process inspector | Raylib does not provide the network service |
+| Ads/IAP | Optional platform extension | Event mock and SDK test | Credentials, store, lifecycle; outside essential 2.0 |
 
-## Formatos y herramientas
+## Formats and tools
 
-La compatibilidad de FPG se clasifica por variante y dirección: lectura, conversión y escritura son capacidades distintas. [La decisión de assets](../specs/assets.md) conserva ID/puntos/paleta y propone PNG+JSON editable sin eliminar el acceso histórico `file/graph`. La [GUI](../specs/gui.md) solo presenta importadores/exportadores que existan en los servicios C compartidos con CLI; un visor no certifica fidelidad ni soporte de todas las variantes.
+Classify FPG compatibility by variant and direction. Reading, conversion, and writing are separate capabilities. The [asset decision](../specs/assets.md) preserves IDs, points, and palettes and proposes editable PNG+JSON without removing historical `file/graph` access. The [GUI](../specs/gui.md) presents only importers/exporters that exist in C services shared with the CLI. A viewer does not certify fidelity or support for every variant.
 
-## Registro de seguimiento por símbolo
+## Per-symbol tracking record
 
-El catálogo generado usa `status=not_assessed` para todas las entradas de referencia. No editarlo manualmente. Crear una capa de decisiones independiente, por ID estable `engine/module/name/signature/return_type` (añadir condición si hay variantes), con estos campos:
+The generated catalog uses `status=not_assessed` for all reference entries. Do not edit it manually. Create a separate decisions layer keyed by stable ID `engine/module/name/signature/return_type` (add the condition for variants), with these fields:
 
 ```json
 {
@@ -48,12 +48,12 @@ El catálogo generado usa `status=not_assessed` para todas las entradas de refer
   "contract": "lua-contract.md",
   "example": "signals",
   "conformance_test": null,
-  "divergences": ["Revisar selector por tipo y manejo de arboles"]
+  "divergences": ["Review type selector and tree handling"]
 }
 ```
 
-Estados: `not_assessed`, `specified`, `planned`, `implemented`, `verified`, `unsupported`, `deferred`. Motivo obligatorio para los dos últimos. La matriz se rellenará al implementar; la tabla anterior clasifica familias, no certifica todas sus funciones. Para un perfil «completo», cada entrada, sobrecarga, constante y variable incluida debe tener decisión y evidencia. Los campos del core se añaden como entradas propias.
+States: `not_assessed`, `specified`, `planned`, `implemented`, `verified`, `unsupported`, and `deferred`. A reason is required for the last two. Fill the matrix during implementation. The table above classifies families; it does not certify every function. For a complete profile, each included entry, overload, constant, and variable needs a decision and evidence. Add core fields as separate entries.
 
-## Formato de ficha de API
+## API record format
 
-Nombre y aliases; procedencia/perfil; firma Lua; contrato C; argumentos con unidades/rango/default; retornos/errores; ownership; estado global o local afectado; disponibilidad por plataforma; ejemplo ejecutable; divergencias; prueba de conformidad. Documentar códigos históricos de error en el perfil de compatibilidad y errores Lua en el perfil moderno.
+Include name and aliases; origin/profile; Lua signature; C contract; arguments with units/range/default; returns/errors; ownership; affected global or local state; platform availability; runnable example; differences; and conformance test. Document historical error codes in the compatibility profile and Lua errors in the modern profile.

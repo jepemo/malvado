@@ -1,6 +1,6 @@
-# Primer ejemplo C: reloj lógico
+# First C example: logical clock
 
-Ejemplo headless de la API C inicial. No requiere Lua ni raylib y muestra dos ticks al avanzar 1/30 de segundo con una frecuencia de 60 Hz.
+This headless example uses the initial C API. It does not require Lua or raylib. It shows two ticks when the clock advances by 1/30 second at 60 Hz.
 
 ```sh
 cmake -S . -B build-c -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF
@@ -9,4 +9,4 @@ ctest --test-dir build-c --output-on-failure
 ./build-c/example-c-clock
 ```
 
-Es una prueba del contexto y reloj, no un juego completo: el scheduler y el binding común siguen pendientes.
+This example tests the context and clock. See the [process example](../processes/README.md) for scheduler use.

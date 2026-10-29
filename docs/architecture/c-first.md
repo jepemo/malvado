@@ -1,44 +1,44 @@
-# Arquitectura C y binding Lua oficial
+# C architecture and official Lua binding
 
-Estado: decisión de arquitectura y plan de refactorización, todavía no implementados. Esta decisión amplía y precisa el [roadmap](../planning/roadmap.md). Un juego debe poder utilizar Malvado directamente desde C; Lua es el binding oficial incluido en el repositorio y soportado al mismo nivel de calidad.
+Status: C core, Lua binding, and backends are separate and under validation. This decision extends and clarifies the [roadmap](../planning/roadmap.md). A game must be able to use Malvado directly from C. Lua is the official in-repository binding and receives the same level of support.
 
-## Situación real
+## Current state
 
-`malvado_core` contiene actualmente un contexto C opaco, reloj y orden de ejecución, pero `src/runner/runtime.c` reúne el estado global del motor, procesos, colas, ciclo de vida, `lua_State`, corutinas, dibujo raylib y funciones Lua. `malvado-run` enlaza Lua y raylib. `include/malvado/malvado.h` expone el contexto y reloj C iniciales; `runtime.h` ofrece hooks de diagnóstico. Todavía no existe una API C de procesos o de juego completo. Las pruebas y ejemplos existentes ejercitan principalmente Lua. Por tanto, las frases anteriores que describían un core independiente eran **objetivos**, no características ya disponibles. Los avances actuales son útiles como referencia y pruebas de regresión, pero no cierran esta decisión.
+`malvado_core` has an opaque C context, clock, scheduler, and process queues. `src/binding/runtime.c` adapts Lua coroutines to the scheduler and retains Lua references. `src/platform/` implements the raylib and headless backends. The runner links the binding. `include/malvado/malvado.h` exposes the initial C operations. `runtime.h` provides diagnostic hooks. CTest includes C, Lua, and mixed tests, plus a C window example. The API and current changes remain under validation.
 
-## Capas y dependencias
+## Layers and dependencies
 
 ```mermaid
 flowchart TD
-    CGame[Juego C] --> Public[API C pública: malvado]
-    LuaGame[Juego Lua] --> Binding[Binding oficial Lua / adaptador de corutinas]
+    CGame[C game] --> Public[Public C API: malvado]
+    LuaGame[Lua game] --> Binding[Official Lua binding / coroutine adapter]
     Binding --> Public
-    Public --> Core[Core C: scheduler, procesos, tiempo, recursos y eventos]
-    Core --> Platform[Interfaz C de plataforma y render]
-    Platform --> Raylib[Implementación raylib]
-    Platform --> Headless[Backend headless para pruebas]
-    Runner[Runner Lua con VM incluida] --> Binding
-    Tools[CLI y GUI] --> Public
+    Public --> Core[C core: scheduler, processes, time, assets and events]
+    Core --> Platform[C platform and rendering interface]
+    Platform --> Raylib[Raylib implementation]
+    Platform --> Headless[Headless test backend]
+    Runner[Lua runner with bundled VM] --> Binding
+    Tools[CLI and GUI] --> Public
 ```
 
-**Reglas verificables:** `include/malvado/` y `src/core/` no incluyen Lua ni tipos `lua_State`, ni dependen de Lua en compilación/enlace. Cabeceras públicas tampoco incluyen `raylib.h`: raylib está en su adaptador de plataforma. El núcleo debe poder configurarse, compilarse y probarse sin descargar, encontrar ni enlazar Lua o raylib con backend headless. El producto completo de escritorio utiliza raylib; el runner oficial enlaza Lua embebido fijado. Una prueba real de un juego C sin Lua garantiza que esta separación no sea solo de nombres.
+**Verifiable rules:** `include/malvado/` and `src/core/` do not include Lua or `lua_State` types and do not depend on Lua for build/link. Public headers do not include `raylib.h`; raylib is in its platform adapter. The core must configure, build, and test headless without downloading, finding, or linking Lua or raylib. The full desktop product uses raylib; the official runner links pinned bundled Lua. A real C game without Lua ensures that the separation is more than names.
 
-Capas previstas:
+Planned layers:
 
-- **API C:** cabeceras instalables, contexto opaco, identificadores y errores. Facilita juegos C y otras integraciones.
-- **Core C:** un único scheduler, estados y árbol de procesos, reloj, colas y operaciones de juego. No conoce ni llama a Lua.
-- **Backend:** interfaz interna C; implementación raylib para ventana/dibujo/entrada/audio y backend headless para pruebas. El core no necesita contexto GPU para sus pruebas.
-- **Binding Lua oficial:** un módulo C traduce la API Lua, crea y conserva corutinas Lua y llama al core. Ownership, errores y cleanup Lua quedan en esta capa.
-- **Runner:** programa opcional que crea VM, registra binding y ejecuta el juego Lua. Juegos puramente C enlazan core + backend sin runner ni VM.
+- **C API:** installable headers, opaque context, IDs, and errors for C games and integrations.
+- **C core:** one scheduler, process states and tree, clock, queues, and game operations. It does not know or call Lua.
+- **Backend:** internal C interface, raylib implementation for window/drawing/input/audio, and headless test backend. Core tests do not need a GPU context.
+- **Official Lua binding:** C module that translates the Lua API, creates and retains Lua coroutines, and calls the core. Lua ownership, errors, and cleanup stay in this layer.
+- **Runner:** optional program that creates the VM, registers the binding, and runs the Lua game. C-only games link the core and backend without the runner or VM.
 
-## Modelo de proceso C
+## C process model
 
-El core controla los procesos y su ciclo de vida con callbacks C y estado explícito. El callback de un proceso es invocado por el scheduler hasta que solicita ceder, dormir o terminar. **Un callback C retorna al scheduler**; no se promete suspender la pila C ni guardar sus variables locales automáticamente. El juego conserva su estado en memoria asociada al proceso; su destructor se llama una sola vez en terminación normal, señal, error o cierre de contexto.
+The core controls process lifecycle with C callbacks and explicit state. The scheduler invokes a process callback until it yields, sleeps, or ends. **A C callback returns to the scheduler**. It does not promise to suspend the C stack or automatically retain local variables. The game stores state in process-associated memory. Its destructor runs once on normal termination, signal, error, or context shutdown.
 
-Propuesta de forma, **ilustrativa y no implementada**:
+Illustrative proposal, **not implemented as shown**:
 
 ```c
-/* Nombres y firmas por concretar al implementar la API pública. */
+/* Names and signatures must be fixed during API implementation. */
 typedef struct { int x; } EnemyState;
 
 static MvStepResult enemy_step(MvContext *ctx, MvProcessId id, void *data)
@@ -49,49 +49,49 @@ static MvStepResult enemy_step(MvContext *ctx, MvProcessId id, void *data)
     return MV_STEP_YIELD;
 }
 
-/* El contexto posee el scheduler; la política de ownership del estado se
-   especificará en el descriptor del proceso antes de estabilizar la API. */
+/* The context owns the scheduler. Define state ownership in the process
+   descriptor before the API is stabilized. */
 ```
 
-`MV_STEP_YIELD`, suspensión, muerte, prioridad, árbol y orden se expresan en términos del core. El callback se invoca una vez por activación; procesos creados durante un tick empiezan el siguiente. La política de error C debe ser explícita, sin `longjmp` del binding a través del core. El ejemplo anterior no es una cabecera real ni promete que los nombres definitivos coincidan.
+`MV_STEP_YIELD`, suspension, termination, priority, tree, and order are expressed in core terms. The callback runs once per activation. A process created during a tick starts on the next tick. The C error policy must be explicit, without a binding `longjmp` through the core. The example is not a public header and does not promise final names.
 
-## Lua sobre ese mismo scheduler
+## Lua on the same scheduler
 
-Una instancia Lua es un proceso del core cuyo callback de adaptación reanuda una coroutine de la **misma VM del host**. El binding guarda la referencia de registry y la libera en su callback de destrucción; `frame()` cede la coroutine Lua y el callback devuelve el resultado equivalente al core. La eliminación diferida evita cerrar la coroutine mientras se ejecuta. Se conserva `process(function(self) ... frame() end)`; ningún segundo scheduler Lua repite el control del ciclo de vida.
+A Lua instance is a core process. Its adapter callback resumes a coroutine in the **same host VM**. The binding holds a registry reference and releases it in its destruction callback. `frame()` yields the Lua coroutine and the adapter returns the equivalent result to the core. Deferred removal prevents closing a running coroutine. Keep `process(function(self) ... frame() end)`. A second Lua scheduler must not duplicate lifecycle control.
 
-C y Lua pueden coexistir en un mismo contexto cuando el runner incluya el binding. Eventos, árbol, prioridades, señales y tick son compartidos. Los mensajes entre C y Lua necesitan un contrato explícito de valores y ownership: para la API común, definir valores nativos/serializables con copia o referencia gestionada; las referencias a objetos Lua actuales deben permanecer encapsuladas y liberadas por el binding, y su comportamiento compartido dentro de Lua debe cubrirse con pruebas de regresión. No meter `lua_State*` ni referencias de registry en structs o colas del core. Decidir si los valores Lua no convertibles tienen una vía local separada; no prometer intercambio C/Lua de tablas arbitrarias antes de diseñarlo.
+C and Lua can share a context when the runner includes the binding. Tree, priorities, signals, tick, and queues are shared. Both languages can exchange booleans, integers, numbers, and binary strings. Strings are copied. The core stores opaque values with a generic destructor. The binding encapsulates Lua references and sends non-primitive objects only to Lua processes. C receive transfers the message to the caller, who must call `mv_message_release`. An opaque send transfers ownership only on success. Lua tables retain shared identity within Lua.
 
-`self` debe representar un proceso del core sin que campos como identidad, estado, padre o prioridad puedan falsificar sus valores. Las propiedades particulares del juego Lua permanecen en una tabla de usuario del binding. Definir explícitamente vida de handles, detección de procesos eliminados y errores en ambos lenguajes.
+`self` must represent a core process without allowing fields such as identity, state, parent, or priority to falsify their values. Lua game properties remain in a binding user table. Define handle lifetimes, detection of deleted processes, and errors in both languages.
 
-## API C, ownership y ABI
+## C API, ownership, and ABI
 
-Introducir `include/malvado/malvado.h` y cabeceras por módulo cuando exista código real. Las APIs C y Lua tendrán referencia y ejemplos ejecutables según el [plan de documentación](../development/api-documentation.md). `MvContext` y recursos son opacos; IDs y valores públicos tienen tipos de ancho especificado. Documentar en cada función entradas, unidades, retornos, errores, duración de punteros, propiedad y destrucción. Gestionar texto/recursos/ventana desde el contexto, evitando singleton global para permitir crear, cerrar y volver a crear un contexto en pruebas.
+Introduce `include/malvado/malvado.h` and module headers as code exists. The C and Lua APIs have references and runnable examples according to the [documentation plan](../development/api-documentation.md). `MvContext` and resources are opaque. Public IDs and values use specified-width types. Document inputs, units, returns, errors, pointer lifetimes, ownership, and destruction for each function. Manage text/resources/window through the context. Avoid a global singleton so tests can create, close, and recreate a context.
 
-Empezar con biblioteca estática C y API fuente versionada; biblioteca compartida y estabilidad ABI se definen explícitamente antes de prometerlas. Funciones retornan códigos de error o resultados verificables; el binding los convierte en errores Lua. Las callbacks de C no deben recibir punteros a estructuras internas. El contexto se usa desde su hilo propietario; workers e IPC requieren diseño separado.
+Start with a static C library and versioned source API. Define a shared library and ABI stability before promising either. Functions return error codes or checkable results; the binding converts them to Lua errors. C callbacks must not receive pointers to internal structures. Use the context on its owner thread. Workers and IPC need separate designs.
 
-## Build, juegos y herramientas
+## Build, games, and tools
 
-Propuesta de targets CMake:
+Proposed CMake targets:
 
-| Target | Propósito | Dependencias |
+| Target | Purpose | Dependencies |
 | --- | --- | --- |
-| `malvado_core` | Scheduler y APIs del motor | C/stdlib; sin Lua, sin raylib |
-| `malvado_platform_headless` | Reloj/entrada/dibujo simulados para pruebas | C/stdlib |
-| `malvado_platform_raylib` | Plataforma de escritorio/juego | raylib |
-| `malvado_lua_binding` | Binding oficial, incluida coroutine Lua | core + Lua |
-| `malvado-run` | Ejecutable de juegos Lua con VM incluida | core + binding + backend |
-| `example-c-game` | Juego ejecutable escrito en C | core + backend; sin Lua |
+| `malvado_core` | Scheduler and engine APIs | C/stdlib; no Lua or raylib |
+| `malvado_platform_headless` | Simulated clock/input/drawing for tests | C/stdlib |
+| `malvado_platform_raylib` | Desktop/game platform | raylib |
+| `malvado_lua_binding` | Official binding, including Lua coroutines | core + Lua |
+| `malvado-run` | Lua game executable with bundled VM | core + binding + backend |
+| `example-c-game` | Runnable C game | core + backend; no Lua |
 
-Opciones de configuración deben permitir `MALVADO_BUILD_LUA=OFF`, `MALVADO_BUILD_RAYLIB=OFF` y pruebas headless sin descargar dependencias de ambos; nombres exactos por confirmar durante implementación. CMake debe declarar y descargar Lua/raylib solo si el target habilitado lo requiere; `build/_deps` sigue ignorado. Al instalar, distribuir cabeceras y librerías con licencias y reglas de link transitivas documentadas.
+Configuration must permit `MALVADO_BUILD_LUA=OFF`, `MALVADO_BUILD_RAYLIB=OFF`, and headless tests without downloading either dependency. CMake declares and downloads Lua/raylib only for enabled targets that require them. `build/_deps` remains ignored. Installation must distribute headers and libraries with licenses and documented transitive link rules.
 
-CLI/GUI reutilizan servicios C. Para proyectos Lua, `run/export` empaqueta runner y scripts. Para juegos C, el CLI podrá generar y compilar un proyecto nativo contra el SDK para el destino, con toolchain apropiado; eso es trabajo adicional de alpha.4/alpha.6, no una capacidad de exportación ya existente. Android necesita entrada/lifecycle, NDK y SDK para ambos caminos. El módulo opcional LuaRocks usa el Lua del host con ABI compatible; no debe insertar una VM Lua adicional en el core.
+CLI/GUI reuse C services. For Lua projects, `run/export` packages runner and scripts. For C games, the CLI may generate and build a native project against the target SDK with the proper toolchain. This is additional alpha.4/alpha.6 work, not an existing export capability. Android needs input/lifecycle, NDK, and SDK for both paths. The optional external LuaRocks module uses the host Lua with a compatible ABI. It must not insert an additional Lua VM into the core.
 
-## Migración incremental y aceptación
+## Incremental migration and acceptance
 
-1. **Corte 1, iniciado:** contexto C independiente y reloj con build sin Lua ni raylib y [ejemplo C](../../examples/c/clock/README.md). Aún faltan loop completo, backend headless y juego C de verdad; mantener runner existente mientras se compara.
-2. **Corte 2:** trasladar al core scheduler, tipos, IDs, árboles, prioridades y señales; proceso C con estado/callback/destructor. Probar `kill`, `kill_tree`, sleep/freeze/wakeup, creación durante tick, errores y cierre. El core debe liberar estado sin fugas.
-3. **Corte 3:** extraer el binding Lua y corutinas; conectar al scheduler C único. Ejecutar todas las pruebas Lua ya existentes y pruebas mixtas C/Lua de orden, mensajes, señales y cleanup. Preservar el comportamiento documentado o documentar y aprobar una migración explícita.
-4. **Corte 4:** mover recursos/dibujo y diagnósticos al core/adaptador; separar plataforma raylib; conservar freeze/sleep visual con capturas. Añadir backend headless y ejemplos equivalentes C/Lua, con contratos de ownership.
-5. **Corte 5:** instalar SDK C, empaquetar runner oficial y verificar CI, exportadores y documentación por plataforma. LuaRocks externo se verifica por separado cuando exista target de módulo.
+1. **Cut 1:** independent C context, clock, headless backend, and C [process](../../examples/c/processes/README.md) and [window](../../examples/c/window/README.md) examples.
+2. **Cut 2:** C scheduler with IDs, trees, priorities, signals, messages, callbacks, and destructors.
+3. **Cut 3:** Lua coroutines use the C scheduler. A mixed test covers messages, signals, and priorities. The binding has a separate target.
+4. **Cut 4, partial:** raylib and headless backends are separate, with a freeze/sleep visual test. Remaining resources and drawing belong to alpha.3. Lua diagnostics still live in the binding.
+5. **Cut 5:** install the C SDK, package the official runner, and validate CI, exporters, and platform documentation. Verify external LuaRocks separately when a module target exists.
 
-Para cada corte: ejecutar tests existentes antes y después, tests C independientes y sanitizers; no borrar ni desactivar el runner de trabajo hasta demostrar paridad. Pruebas headless en Linux/macOS durante alphas 1–5, smoke gráfico en plataformas disponibles y verificaciones de build sin Lua. Añadir Windows y verificar sus recorridos completos en alpha.6 antes de beta. Publicar un ejemplo completo C junto a su equivalente Lua y ejecutar ambos en CI. La ruta sin Lua es un criterio de aceptación, no una variante experimental que se pueda romper sin detectarlo.
+For each cut, run existing tests before and after, independent C tests, and sanitizers. Do not remove or disable the working runner until parity is demonstrated. Run headless tests on Linux/macOS during alphas 1–5 and graphics smoke tests on available platforms. Add Windows and verify full flows in alpha.6 before beta. Publish a complete C example with its Lua equivalent and run both in CI. The no-Lua path is an acceptance criterion, not an experimental variant that can silently break.

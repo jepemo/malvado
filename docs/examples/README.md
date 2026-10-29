@@ -1,48 +1,48 @@
-# Ejemplos como contrato del motor
+# Examples as an engine contract
 
-Todos los snippets nuevos son propuestas, no programas ya ejecutables con el runtime actual. Los ejemplos reales actuales viven en `examples/` y requieren LÖVE. Mantenerlos hasta tener su reemplazo verificado, guardando trazas/capturas de referencia.
+The new snippets below are proposals, not programs that all run on the current runtime. The original examples in `examples/` require LÖVE. Keep them until their replacements are verified. Keep reference traces and screenshots.
 
-## Ejemplos C y Lua de primera clase
+## First-class C and Lua examples
 
-Cada capacidad compartida del motor tendrá ejemplos C con la API pública y Lua con el binding oficial; un mismo programa puede demostrar varias funciones. Las páginas enlazarán a los archivos reales y CI los ejecutará. Ver [documentación de APIs](../development/api-documentation.md). Priorizar hello, procesos/árbol/señales y mensajes; además de un juego mixto C/Lua para verificar que comparten scheduler y contexto. El ejemplo C headless debe compilar y ejecutarse sin Lua ni raylib; la variante gráfica utiliza el backend raylib. Los fragmentos y targets son propuestos hasta implementar la [arquitectura C](../architecture/c-first.md).
+Each shared engine capability will have a C example that uses the public API and a Lua example that uses the official binding. One program can demonstrate several functions. Documentation pages will link to the actual files, and CI will run them. See [API documentation](../development/api-documentation.md). Give priority to hello, processes/trees/signals, and messages. Add a mixed C/Lua game to verify the shared scheduler and context. The headless C example must build and run without Lua or raylib. The graphics version uses the raylib backend. Snippets and targets remain proposals until the applicable [C architecture](../architecture/c-first.md) is implemented.
 
-## Migración de los ejemplos existentes
+## Migrate existing examples
 
-| Ejemplo actual | Qué debe conservar | Trabajo necesario |
+| Current example | Behavior to retain | Required work |
 | --- | --- | --- |
-| `examples/helloworld/main.lua` | Constructor de proceso, fuente, texto, Escape y cierre automático | Namespace/shim legacy, fuentes C y runner |
-| `examples/demo/main.lua` | Menú, spritesheets, teclado, textos y fades | Recursos persistentes, animación, z y cadencia por proceso |
-| `examples/space_asteroids/main.lua` | Juego completo, movimiento, balas y colisión | Eliminar llamadas `love.math.random`/`love.graphics.points`; mapear entrada y gráficos |
-| `examples/bench/main.lua` | Creación de procesos, carga y tiempos | Sustituir `love.timer.getTime`; separar coste de VM, scheduler y render |
+| `examples/helloworld/main.lua` | Process constructor, font, text, Escape, and automatic shutdown | Namespace/legacy shim, C fonts, and runner |
+| `examples/demo/main.lua` | Menu, spritesheets, keyboard, text, and fades | Persistent resources, animation, z, and per-process cadence |
+| `examples/space_asteroids/main.lua` | Complete game, movement, bullets, and collision | Remove `love.math.random`/`love.graphics.points`; map input and graphics |
+| `examples/bench/main.lua` | Process creation, load, and timing | Replace `love.timer.getTime`; separate VM, scheduler, and render costs |
 
-Los benchmarks comparan mismo equipo, número de procesos, recursos, VSync y FPS objetivo. Medir CPU por tick, tiempo de render, memoria y coste de creación/baja; fijar semilla y publicar resultados sin prometer una aceleración antes de medir.
+Compare benchmarks on the same machine with the same process count, resources, VSync, and target FPS. Measure CPU per tick, render time, memory, and process creation/removal cost. Fix the random seed and publish the results. Do not promise a speedup before measurement.
 
-## Colección nueva mínima
+## Minimum new collection
 
-| Ejemplo | Funciones demostradas | Comprobación |
+| Example | Functions shown | Check |
 | --- | --- | --- |
-| `hello` | start/process/frame/font/write | Se ve el saludo; Escape termina sin fugas |
-| `process-family` | PID, creación, parentesco, kill-tree | Árbol y traza de activación esperados |
-| `signals` | sleep/freeze/wakeup/kill | Contadores y visibilidad distinguen estados |
-| `messages` | send/recv | FIFO, referencia compartida documentada, destino muerto |
-| `timing` | tick fijo, cadencia por proceso | Sin deriva acumulada a distintos FPS de render |
-| `sprites` | image, atlas, pivot, angle, size, z | Captura con rotación, escala, espejo y empate de z |
-| `collision` | AABB y luego máscara | Contacto de bordes y tamaños diferentes |
-| `text` | write/change/delete, alineación, UTF-8 | Marcador cambia sin recrear objetos cada tick |
-| `input` | teclado, ratón, mando | Pulsación sostenida vs evento y hotplug |
-| `audio` | efecto, música, volumen y pause | Reanudación sin duplicar canales |
-| `scroll` | región y cámara | Escenario grande con HUD fijo |
-| `fpg-import` | Importar una variante FPG a PNG+JSON | IDs no consecutivos, puntos, transparencia y paleta preservados |
-| `atlas-import` | Subconjunto de atlas Aseprite PNG+JSON | Duraciones, offsets y rechazo explícito de opciones no soportadas |
-| `gui-workflow` | Copia de starter/asteroids abierta desde GUI | Crear, ejecutar, error a línea, inspeccionar ticks y exportar con servicios CLI |
-| `legacy-formats` | FPG/MAP/FNT/PAL cuando existan | Asset con controles/paleta conocidos |
-| `asteroids` | Juego completo y exportación | Ciclo iniciar/jugar/perder/reiniciar en cada destino |
-| `android-touch` | touch, Back, guardar y lifecycle | Juega tras bloquear/desbloquear dispositivo |
-| `native-process` | callback C con estado explícito | Se suspende por scheduler sin pila C suspendida |
+| `hello` | start/process/frame/font/write | Greeting is visible; Escape exits without leaks |
+| `process-family` | PID, creation, parentage, kill-tree | Expected tree and activation trace |
+| `signals` | sleep/freeze/wakeup/kill | Counters and visibility distinguish states |
+| `messages` | send/recv | FIFO, documented shared reference, dead destination |
+| `timing` | Fixed tick, per-process cadence | No accumulated drift at different render FPS |
+| `sprites` | image, atlas, pivot, angle, size, z | Screenshot covers rotation, scale, mirror, and z ties |
+| `collision` | AABB, then mask | Edge contact and different sizes |
+| `text` | write/change/delete, alignment, UTF-8 | Score changes without recreating objects each tick |
+| `input` | Keyboard, mouse, controller | Held key versus event and hotplug |
+| `audio` | Effect, music, volume, and pause | Resume without duplicate channels |
+| `scroll` | Region and camera | Large scene with fixed HUD |
+| `fpg-import` | Import one FPG variant to PNG+JSON | Preserve non-consecutive IDs, points, transparency, and palette |
+| `atlas-import` | Aseprite PNG+JSON atlas subset | Durations, offsets, and explicit rejection of unsupported options |
+| `gui-workflow` | Open a copy of starter/asteroids from the GUI | Create, run, navigate to error, inspect ticks, and export with CLI services |
+| `legacy-formats` | FPG/MAP/FNT/PAL when available | Asset with known controls and palette |
+| `asteroids` | Complete game and export | Start/play/lose/restart cycle on each target |
+| `android-touch` | Touch, Back, save, and lifecycle | Play after device lock/unlock |
+| `native-process` | C callback with explicit state | Scheduler yields without suspending the C stack |
 
-Cada carpeta tendrá README con controles/comportamiento, requisitos, comandos, assets con licencia, screenshot cuando ayude y salida/traza esperada si la tiene. Los ejemplos Lua tendrán `main.lua`; los C tendrán `main.c` y configuración de compilación. `malvado.toml` se añade cuando exista el formato de proyecto y corresponda. El README identifica perfiles y versión mínima. Fuente única para código mostrado en documentación: incluir fragmentos del ejemplo real en el sitio; no mantener una copia manual diferente.
+Each folder will have a README with controls and behavior, requirements, commands, licensed assets, a screenshot when useful, and expected output or trace when applicable. Lua examples have `main.lua`; C examples have `main.c` and build configuration. Add `malvado.toml` when the project format exists and applies. The README identifies profiles and minimum version. Include snippets from actual example files in the site. Do not maintain a separate manual copy.
 
-## Esqueleto de ejemplo de mensajes propuesto
+## Proposed message example
 
 ```lua
 local mv = require("malvado")
@@ -51,7 +51,7 @@ local Receiver = mv.process(function(self)
     local msg = self:recv()
     if msg then
       print(msg.kind)
-      return -- termina y permite cerrar cuando no quedan procesos de juego
+      return -- end the process so the runtime can close
     end
     mv.frame()
   end
@@ -59,14 +59,14 @@ end)
 
 mv.start(function()
   local pid = Receiver {}
-  mv.send(pid, { kind = "hola" })
+  mv.send(pid, { kind = "hello" })
 end)
 ```
 
-Aceptación: imprime `hola` una vez. La cola mantiene el mensaje hasta que el receptor empiece en el tick siguiente. Añadir comprobación de FIFO con varios mensajes y eliminación de receptor con mensajes pendientes.
+Acceptance: print `hello` once. The queue holds the message until the receiver starts on the next tick. Add checks for FIFO with multiple messages and for removal of a receiver with pending messages.
 
-Los recorridos y fixtures de [GUI](../specs/gui.md) y [assets/FPG](../specs/assets.md) se incorporan cuando existan sus capacidades. `gui-workflow` es una prueba de aceptación del producto sobre los mismos juegos; no un nuevo motor ni una copia divergente de asteroides.
+Add [GUI](../specs/gui.md) and [assets/FPG](../specs/assets.md) flows and fixtures when those capabilities exist. `gui-workflow` is a product acceptance test on the same games, not a new engine or a divergent copy of asteroids.
 
-## No declarar un ejemplo migrado solo porque compila
+## Do not declare an example migrated only because it builds
 
-Comprobar contratos de API por pruebas headless cuando sea posible; comprobar render y entrada en ejecución real. Las capturas permiten tolerancias visuales de fuentes/GPU. Los ejemplos Android deben poder jugarse mediante touch sin teclado externo. CI debe ejecutar los ejemplos sin ventana cuando tengan modo de traza y hacer smoke tests de ventana en los destinos disponibles.
+Use headless tests for API contracts when possible. Test rendering and input in a real run. Screenshots can allow visual tolerances for fonts and GPUs. Android examples must be playable with touch and no external keyboard. CI must run examples without a window when they have a trace mode and run window smoke tests on available targets.

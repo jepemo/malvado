@@ -1,4 +1,17 @@
-/* Malvado 2 - Jeremías Pérez and contributors. SPDX-License-Identifier: Apache-2.0 */
+/*
+ *  ______        _                _
+ * |  ___ \      | |              | |
+ * | | _ | | ____| |_   _ ____  _ | | ___
+ * | || || |/ _  | | | | / _  |/ || |/ _ \
+ * | || || ( ( | | |\ V ( ( | ( (_| | |_| |
+ * |_||_||_|\_||_|_| \_/ \_||_|\____|\___/
+ *
+ * malvado - A game engine for Lua, inspired by DIV Games Studio.
+ *
+ * Created by Jeremías Pérez and contributors.
+ * SPDX-License-Identifier: Apache-2.0
+ * See LICENSE for details.
+ */
 #include <stdio.h>
 #include "malvado/malvado.h"
 
@@ -14,7 +27,7 @@ main(void)
         mv_context_destroy(game);
         return 1;
     }
-    printf("Hola, Malvado C: %u ticks\n", steps);
+    printf("Hello, Malvado C: %u ticks\n", steps);
     mv_context_destroy(game);
     return steps == 2 ? 0 : 1;
 }

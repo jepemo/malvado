@@ -1,79 +1,79 @@
-# Documentación de las APIs C y Lua
+# C and Lua API documentation
 
-Estado: decisión de planificación, no sistema implementado. Fecha de consulta: 2026-10-29. Las dos APIs son de primera clase y deben tener referencia, ejemplos ejecutables y guía de inicio. El [núcleo C y el binding Lua oficial](../architecture/c-first.md) se documentan con los mismos comportamientos y sus diferencias de lenguaje.
+Status: planning decision, not an implemented documentation system. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
 
-## Recomendación: Markdown + MkDocs + GitHub Pages
+## Recommendation: Markdown + MkDocs + GitHub Pages
 
-1. **Markdown en Git** como documentación legible en GitHub y revisada con el código.
-2. **MkDocs con tema por defecto**, fijado en las dependencias de documentación, para navegación, búsqueda y publicación de un único sitio. MkDocs parte de archivos Markdown y una configuración `mkdocs.yml`; no hace falta un frontend propio. [Documentación oficial](https://www.mkdocs.org/user-guide/writing-your-docs/).
-3. **GitHub Actions y Pages** para construir el sitio en cada PR y desplegar desde la rama o tag autorizado. [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) admite workflows de generadores estáticos.
-4. **Fuentes de la API:** declaraciones y comentarios de las cabeceras públicas C; definiciones Lua anotadas para el binding registrado desde C; páginas Markdown por módulo con contratos y ejemplos en ambos lenguajes.
+1. **Markdown in Git** for documentation readable on GitHub and reviewed with code.
+2. **MkDocs with the default theme**, pinned in documentation dependencies, for navigation, search, and one published site. MkDocs uses Markdown and `mkdocs.yml`; no custom frontend is needed. See the [official documentation](https://www.mkdocs.org/user-guide/writing-your-docs/).
+3. **GitHub Actions and Pages** to build on each PR and deploy from an authorized branch or tag. [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) supports static-generator workflows.
+4. **API sources:** declarations and comments in public C headers; annotated Lua definitions for the C-registered binding; Markdown module pages with contracts and examples in both languages.
 
-Esta opción necesita un solo generador de sitio y no exige desde el inicio un esquema propio, plugins de documentación de C, ni generar HTML distinto para cada lenguaje. El contenido importante sigue siendo legible directamente en GitHub, incluso sin instalar MkDocs. Al crecer el número de funciones se puede añadir generación automática si reduce trabajo real.
+This option uses one site generator. It does not initially require a custom schema, C documentation plugins, or separate generated HTML for each language. Important content remains readable on GitHub without MkDocs. Add generation later if the number of functions makes it useful.
 
-## Comparación de herramientas
+## Tool comparison
 
-| Opción | Ventaja | Coste para Malvado | Decisión |
+| Option | Benefit | Cost for Malvado | Decision |
 | --- | --- | --- | --- |
-| Markdown + MkDocs | Un sitio, enlaces, búsqueda y revisión en PR | Hay que mantener fichas y firmas con disciplina | Base inicial |
-| Doxygen | Extrae símbolos y comentarios C; soporta Markdown y salida HTML/XML | Añade generación, posible duplicación y una integración a mantener | Anotar cabeceras con comentarios compatibles; evaluar generación cuando crezca la API C |
-| LDoc | Genera documentación Lua y puede procesar módulos Lua escritos en C | Requiere anotar explícitamente funciones registradas en C y mantener otra salida/herramienta | Evaluar más adelante; no necesario para la primera publicación |
-| Lua Language Server / LuaCATS | Tipos, firmas y ayuda en el editor a partir de anotaciones | Para un módulo C hacen falta definiciones Lua mantenidas o generadas | Usar definiciones de API Lua como soporte de editor, no como motor obligatorio del sitio |
+| Markdown + MkDocs | One site, links, search, PR review | Records and signatures require disciplined maintenance | Initial base |
+| Doxygen | Extracts C symbols and comments; supports Markdown and HTML/XML | More generation, possible duplication, and integration to maintain | Use compatible header comments; evaluate generation as the C API grows |
+| LDoc | Generates Lua documentation and can process Lua modules written in C | Requires explicit annotations for functions registered in C and another tool/output | Evaluate later; not required for first publication |
+| Lua Language Server / LuaCATS | Editor types, signatures, and help from annotations | A C module needs maintained or generated Lua definitions | Use for editor support, not as a required site generator |
 
-Fuentes: [Doxygen, comentarios de C](https://www.doxygen.nl/manual/docblocks.html); [LDoc](https://stevedonovan.github.io/ldoc/manual/doc.md.html) y [LuaCATS](https://luals.github.io/wiki/annotations/). LDoc **sí admite** documentar módulos Lua escritos en C, pero su manual indica que no puede deducir automáticamente sus nombres de función; hay que documentarlos. LuaCATS es el formato del servidor Lua Language Server; no afirmar que todas sus versiones sean idénticas a EmmyLua.
+Sources: [Doxygen C comments](https://www.doxygen.nl/manual/docblocks.html), [LDoc](https://stevedonovan.github.io/ldoc/manual/doc.md.html), and [LuaCATS](https://luals.github.io/wiki/annotations/). LDoc can document Lua modules written in C, but cannot automatically infer their function names; document them explicitly. LuaCATS is the Lua Language Server format. Do not claim all versions are identical to EmmyLua.
 
-## Organización propuesta
+## Proposed layout
 
 ```text
-README.md                         entrada breve, instalación y enlaces
-mkdocs.yml                        configuración futura del sitio
-requirements-docs.txt             versión de MkDocs fijada
-include/malvado/*.h               declaraciones y comentarios de la API C
-bindings/lua/definitions/         definiciones .lua anotadas, solo para tooling
-examples/c/                       proyectos y ejemplos C reales
-examples/lua/                     proyectos y ejemplos Lua reales
-tests/                            pruebas de comportamiento y de ejemplos
-docs/site/index.md                inicio público del sitio
-docs/site/getting-started/        primeros juegos C y Lua
-docs/site/api/c/                  referencia C por módulo
-docs/site/api/lua/                referencia Lua por módulo
-docs/site/guides/                 tutoriales compartidos y recetas
-docs/site/migration/              migración y compatibilidad
+README.md                         short entry point, installation, links
+mkdocs.yml                        future site configuration
+requirements-docs.txt             pinned MkDocs version
+include/malvado/*.h               C API declarations and comments
+bindings/lua/definitions/         annotated .lua definitions for tooling only
+examples/c/                       actual C projects and examples
+examples/lua/                     actual Lua projects and examples
+tests/                            behavior and example tests
+docs/site/index.md                public site home
+docs/site/getting-started/        first C and Lua games
+docs/site/api/c/                  C reference by module
+docs/site/api/lua/                Lua reference by module
+docs/site/guides/                 shared tutorials and recipes
+docs/site/migration/              migration and compatibility
 ```
 
-La ubicación `docs/site/` es una propuesta para **fuentes públicas** del sitio; configurar `docs_dir: docs/site` y un directorio de salida ignorado por Git. Esto evita que MkDocs copie o publique accidentalmente todas las fuentes históricas `docs/api/upstream/` y catálogos grandes. Los planes, fuentes históricas y análisis siguen en sus carpetas actuales de `docs/` y se pueden enlazar desde GitHub; no se mezclan con la referencia de APIs propias. La ruta final del binding debe coincidir con la arquitectura real al implementarse: no crear directorios vacíos solo por esta propuesta.
+`docs/site/` is a proposal for **public site sources**. Configure `docs_dir: docs/site` and a Git-ignored output directory. This prevents MkDocs from accidentally copying or publishing `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. Keep them separate from the Malvado API reference. The final binding path must match the implemented architecture; do not create empty directories only for this proposal.
 
-## Fuente de verdad por lenguaje
+## Source of truth by language
 
-**C:** la firma y tipos viven en las cabeceras públicas instalables `include/malvado/`. Documentar junto a cada declaración el propósito, parámetros, unidades, retornos/errores, ownership, ciclo de vida y versión. Usar comentarios `/** ... */` y etiquetas como `@param` y `@return`, compatibles con Doxygen, aunque el sitio inicial se redacte en Markdown. Los nombres y argumentos de la referencia se cotejan con esas cabeceras. No publicar una API C futura como si ya existiera.
+**C:** signatures and types live in installable public headers under `include/malvado/`. Document each declaration's purpose, parameters, units, returns/errors, ownership, lifetime, and version. Use `/** ... */` comments and tags such as `@param` and `@return`, compatible with Doxygen, even if the initial site is written in Markdown. Check reference names and arguments against the headers. Do not publish a future API as if it exists.
 
-**Lua:** la firma pública, tipos y comentarios viven en un archivo de definiciones `.lua` con anotaciones LuaCATS, para un binding implementado en C. Es un archivo de **tipos y tooling**: no debe instalarse ni cargarse como implementación que sustituya a `require("malvado")`. El contrato visible de cada función también se explica en su página Markdown y enlaza a su ejemplo. El registro de funciones del binding, las definiciones y la documentación se actualizan en el mismo cambio; CI comprueba que los nombres exportados coinciden y los tests ejercitan firmas y comportamiento. El inventario de referencia Bennu no forma parte de este contrato.
+**Lua:** public signatures, types, and comments live in a LuaCATS-annotated `.lua` definitions file for the C binding. This file is for **types and tooling**. Do not install or load it as an implementation that replaces `require("malvado")`. Each function's visible contract is also explained on its Markdown page and links to its example. Update binding registration, definitions, and documentation together. CI checks exported names, and tests exercise signatures and behavior. The Bennu reference inventory is not part of this contract.
 
-Las cabeceras C y las definiciones Lua son fuentes de firmas por lenguaje; las páginas Markdown son la fuente narrativa para comportamiento, ejemplos y diferencias entre lenguajes. Los comentarios de cabecera/definición deben mantenerse concisos y enlazar al módulo correspondiente. La comprobación de nombres no demuestra automáticamente que tipos, retornos o semántica sean correctos: revisarlos y probarlos. Evitar un tercer fichero de contratos JSON obligatorio hasta demostrar que genera y verifica ambas salidas con menos mantenimiento. No generar documentación desde una fachada Lua inexistente.
+C headers and Lua definitions provide language signatures. Markdown pages provide narrative behavior, examples, and language differences. Keep header and definition comments concise and link to the module. Matching names does not prove that types, returns, or semantics are correct; review and test them. Avoid a required third JSON contract until it demonstrably generates and validates both outputs with less maintenance. Do not generate documentation from a nonexistent Lua facade.
 
-## Ficha de API: contenido mínimo
+## Minimum API record
 
-Para cada función o tipo público y cada variante disponible:
+For each public function or type and each available variant, include:
 
-- Nombre, firma exacta del lenguaje, módulo y versión mínima; estado real: implementado o previsto.
-- Qué hace, argumentos, tipo, unidades, rangos, valores opcionales, retorno, errores y plataforma.
-- En C: ownership, nulabilidad, tiempo de vida de punteros/handles y destructor; en Lua: tipos, tablas/userdata, errores y gestión de referencias.
-- Efectos sobre proceso/tick, ejemplos relacionados y enlaces entre la API C y Lua cuando correspondan.
-- Enlace a un **ejemplo ejecutable**, con comandos, resultado y recursos necesarios. Un ejemplo puede cubrir varias funciones; no es obligatorio crear un programa distinto por símbolo.
+- Name, exact language signature, module, minimum version, and actual status: implemented or planned.
+- Purpose, arguments, types, units, ranges, optional values, return, errors, and platform.
+- In C: ownership, nullability, pointer/handle lifetime, and destructor. In Lua: types, tables/userdata, errors, and reference management.
+- Process/tick effects, related examples, and links between C and Lua APIs when applicable.
+- A link to a **runnable example** with commands, result, and required resources. One example can cover multiple functions; a separate program per symbol is not required.
 
-Organizar por módulos —contexto, procesos, señales/mensajes, tiempo, ventana, gráficos, texto, entrada y audio— con índices independientes C y Lua. Mantener juntos los conceptos compartidos en una guía y enlazar sus dos referencias. Los detalles exclusivos de C o de Lua se documentan en su propia referencia.
+Organize by module: context, processes, signals/messages, time, window, graphics, text, input, and audio. Keep separate C and Lua indexes. Put shared concepts in one guide and link both references. Document language-specific details in their own references.
 
-## Ejemplos como fuente real
+## Examples as source
 
-En `examples/`, no dentro de bloques mantenidos a mano en cada página. Cada carpeta incluirá README, requisitos, pasos de compilación/ejecución y salida esperada; C incluye `main.c` y configuración de build; Lua incluye `main.lua` y configuración cuando exista CLI. `hello`, procesos/señales/mensajes y un juego pequeño deben tener versiones C y Lua que muestran el mismo comportamiento. Añadir ejemplo mixto para interacción, con límites de tipos de mensajes documentados.
+Keep examples in `examples/`, not as separately maintained blocks in every page. Each folder needs a README, requirements, build/run steps, and expected output. C examples include `main.c` and build configuration. Lua examples include `main.lua` and configuration when a CLI exists. `hello`, processes/signals/messages, and a small game need C and Lua versions that show the same behavior. Add a mixed example and document message type limits.
 
-En el sitio inicial, enlazar al archivo real de GitHub y al README del ejemplo. Para la documentación de una release usar enlaces al **tag de esa versión**, no a `main`; para desarrollo se puede enlazar a `main`. Si se incluyen fragmentos directamente más adelante, usar una extracción automatizada de regiones del archivo real, con una dependencia fijada y comprobada: MkDocs básico no incluye por sí solo una directiva genérica para insertar archivos. No duplicar ejemplos de forma que puedan divergir silenciosamente.
+On the initial site, link to the actual GitHub file and example README. Release documentation links to the **version tag**, not `main`. Development docs may link to `main`. If snippets are included later, extract regions automatically from the actual file with a pinned dependency. Basic MkDocs does not include a generic file-insertion directive. Do not duplicate examples that can silently diverge.
 
-Los ejemplos headless deben terminar automáticamente en CI. Los gráficos pueden usar un modo smoke y verificaciones visuales en un runner apropiado. Al menos un ejemplo C se compila contra cabeceras y biblioteca **instaladas** con Lua desactivado; los ejemplos Lua se ejecutan con el runner oficial. El sitio se construye en CI, pero eso no sustituye ejecutar los ejemplos.
+Headless examples must terminate automatically in CI. Graphics examples can use smoke mode and visual checks on an appropriate runner. Compile at least one C example against **installed** headers and library with Lua disabled. Run Lua examples with the official runner. Building the site does not replace running the examples.
 
-## Construcción, CI y publicación
+## Build, CI, and publication
 
-Al implementar la documentación:
+When documentation is implemented:
 
 ```sh
 python3 -m pip install -r requirements-docs.txt
@@ -81,18 +81,18 @@ python3 -m mkdocs build --strict
 python3 -m mkdocs serve
 ```
 
-Estos comandos son objetivo; aún no existen `mkdocs.yml`, `requirements-docs.txt` ni `docs/site/`. El build genera un directorio de salida fuera de las fuentes y se comprueba en PR. Añadir a CI: dependencias fijadas, build estricto, enlaces internos, detección de firmas/símbolos y ejemplos C/Lua ejecutados. Si se usa un verificador de enlaces externos, ejecutarlo separadamente o controlar fallos temporales de red. No depender solo de nombres: probar resultados/errores/ownership y revisar las páginas junto al cambio de API.
+These are target commands. `mkdocs.yml`, `requirements-docs.txt`, and `docs/site/` do not exist yet. Build outside the source directory and check output in PRs. Add pinned dependencies, strict build, internal links, signature/symbol checks, and C/Lua examples to CI. If external links are checked, run that separately or handle temporary network failures. Do not check names alone: test results, errors, and ownership, and review pages with API changes.
 
-Desplegar Pages únicamente desde el workflow y entorno configurados para publicación; los PR construyen pero no despliegan. Documentación de desarrollo en `/dev/` y documentación estable por minor en `/2.0/` cuando se implemente versionado; ambas deben identificar commit/versión y enlazar a los ejemplos correspondientes. Definir la retención antes de reemplazar versiones. La publicación necesita configuración de Pages y permisos; este plan no modifica configuración externa ni publica nada.
+Deploy Pages only from the configured workflow and publication environment. PRs build but do not deploy. When versioning exists, put development docs at `/dev/` and stable docs by minor at `/2.0/`. Identify commit/version and link the relevant examples. Define retention before replacing versions. Publication requires Pages configuration and permissions. This plan does not change external configuration or publish a site.
 
-## Hitos y criterios
+## Milestones and criteria
 
-| Hito | Entrega | Aceptación |
+| Milestone | Delivery | Acceptance |
 | --- | --- | --- |
-| Alpha.2, refactor C | Contratos reales de contexto/procesos C y Lua; ejemplos equivalentes mínimos | Juego C sin Lua, juego Lua y casos mixtos ejecutados; fichas y errores revisados junto a API |
-| Alpha.3 | Gráficos, entrada, texto y audio en ambas referencias; sitio MkDocs inicial | Build estricto y enlaces; ejemplos por lenguaje funcionan en targets soportados |
-| Alpha.4 | Guías SDK C, runner Lua, CLI y exportación | Crear/compilar/exportar un juego C y uno Lua en rutas verificadas |
-| Beta | Completar inventario de símbolos públicos y fichas de ownership | Cada símbolo estable tiene documentación, caso(s) ejecutable(s), prueba de comportamiento y revisión de paridad |
-| Release 2.0 | Sitio versionado y fuentes fijadas | Documentación, ejemplos y binarios apuntan a la misma versión; Pages publicado tras configuración |
+| Alpha.2, C refactor | Actual C and Lua context/process contracts; minimal equivalent examples | C game without Lua, Lua game, and mixed cases run; review records and errors with API |
+| Alpha.3 | Graphics, input, text, and audio in both references; initial MkDocs site | Strict build and links; examples work on supported targets |
+| Alpha.4 | C SDK, Lua runner, CLI, and export guides | Create/build/export one C and one Lua game on verified paths |
+| Beta | Complete public-symbol inventory and ownership records | Each stable symbol has documentation, runnable cases, behavior test, and parity review |
+| Release 2.0 | Versioned site and pinned sources | Documentation, examples, and binaries point to the same version; Pages published after configuration |
 
-Doxygen o LDoc se incorporan solo tras una prueba pequeña que confirme cobertura de firmas, ejemplos y mantenimiento; sus salidas no reemplazan automáticamente la documentación narrativa. Si se elige generación, establecer una sola fuente para cada dato y hacer fallar CI cuando la salida o firmas estén desactualizadas.
+Add Doxygen or LDoc only after a small trial verifies signature coverage, examples, and maintenance cost. Their output does not automatically replace narrative documentation. If generation is selected, use one source for each datum and fail CI for stale output or signatures.

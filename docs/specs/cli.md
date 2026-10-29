@@ -1,12 +1,12 @@
-# malvado-cli: proyectos y exportadores
+# malvado-cli: projects and exporters
 
-Estado: propuesta incorporada a Malvado 2. Destinos solicitados: **Linux, Windows, macOS y Android**. La CLI y estos comandos aún no existen.
+Status: proposal for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. The CLI and these commands do not exist yet.
 
-## Experiencia objetivo
+## Target experience
 
 ```sh
-malvado-cli new mi-juego --template starter
-cd mi-juego
+malvado-cli new my-game --template starter
+cd my-game
 malvado-cli doctor
 malvado-cli run
 malvado-cli check
@@ -17,32 +17,32 @@ malvado-cli export --target android-arm64 --format apk --output dist/android
 malvado-cli export --target android-arm64 --format aab --release --output dist/android
 ```
 
-`malvado-cli --version` muestra versión CLI, runtime, formato de proyecto y dependencias fijadas. `export` usa un runtime compatible para el destino: genera un paquete del juego con ejecutable nativo y Lua incluido. No convierte automáticamente el código Lua en código máquina. Los scripts serán fuente Lua empaquetada inicialmente; bytecode opcional requeriría controlar versión de VM, arquitectura y compatibilidad, y no se presentará como protección del código.
+`malvado-cli --version` shows CLI, runtime, project-format, and pinned dependency versions. `export` uses a compatible target runtime and creates a game package with native executable and bundled Lua. It does not automatically convert Lua code to machine code. Initially, scripts are packaged Lua source. Optional bytecode requires control of VM version, architecture, and compatibility, and is not code protection.
 
-El jugador recibe el paquete; no necesita CLI, Lua, LuaRocks o LÖVE. El autor podrá exportar con runtimes precompilados del SDK o construirlos con toolchains documentados.
+The player receives the package and does not need CLI, Lua, LuaRocks, or LÖVE. Authors can export with prebuilt SDK runtimes or build them with documented toolchains.
 
-## Comandos propuestos
+## Proposed commands
 
-| Comando | Función | Hito |
+| Command | Purpose | Milestone |
 | --- | --- | --- |
-| `new NAME --template NAME` | Genera juego, configuración, README y assets mínimos | alpha.4 |
-| `run [PATH]` | Valida y ejecuta en runtime local compatible | alpha.4 |
-| `check [PATH]` | Sintaxis Lua, manifiesto, assets, identificadores y dependencias | alpha.4 |
-| `doctor [--target TARGET]` | Detecta SDK, versiones, herramientas y falta de runtimes | alpha.4; Android alpha.6 |
-| `export --target TARGET` | Empaqueta para destino con manifiesto y checksums | alpha.4/alpha.6 |
-| `templates list` | Describe plantillas disponibles sin red | alpha.4 |
-| `sdk list` | Lista runtimes/toolchains instalados y compatibilidad | alpha.4 |
-| `sdk install VERSION --target TARGET` | Descarga explícita y comprobada de runtimes publicados | Posterior, cuando haya releases verificadas |
-| `build --target TARGET` | Construye runtime nativo desde fuentes fijadas | Posterior al empaquetado con SDK |
-| `assets import` | Convierte el subconjunto FPG/Aseprite validado a la biblioteca PNG+JSON | alpha.5 |
-| `assets export --format fpg` | Exporta una variante FPG elegida y documenta pérdidas | 2.1+, opcional |
+| `new NAME --template NAME` | Generate game, configuration, README, and minimal assets | alpha.4 |
+| `run [PATH]` | Validate and run in a compatible local runtime | alpha.4 |
+| `check [PATH]` | Check Lua syntax, manifest, assets, identifiers, and dependencies | alpha.4 |
+| `doctor [--target TARGET]` | Detect SDK, versions, tools, and missing runtimes | alpha.4; Android alpha.6 |
+| `export --target TARGET` | Package for target with manifest and checksums | alpha.4/alpha.6 |
+| `templates list` | Describe available templates offline | alpha.4 |
+| `sdk list` | List installed runtimes/toolchains and compatibility | alpha.4 |
+| `sdk install VERSION --target TARGET` | Explicit, verified download of published runtimes | Later, after verified releases |
+| `build --target TARGET` | Build native runtime from pinned sources | After SDK packaging |
+| `assets import` | Convert validated FPG/Aseprite subset to PNG+JSON library | alpha.5 |
+| `assets export --format fpg` | Export a selected FPG variant and document losses | 2.1+, optional |
 
-`check` no demuestra que un juego funcione ni debe ejecutar código arbitrario para analizarlo. `run` sí ejecuta el proyecto. Códigos de salida: 0 éxito, 1 fallo de operación/juego, 2 uso o configuración inválidos; añadir JSON estructurado para CI cuando se cierre el contrato de errores.
+`check` does not prove that a game works and must not execute arbitrary code to analyze it. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
 
-## Proyecto generado
+## Generated project
 
 ```text
-mi-juego/
+my-game/
   malvado.toml
   main.lua
   assets/
@@ -50,14 +50,14 @@ mi-juego/
   .gitignore
 ```
 
-Ejemplo de configuración propuesta (no hay parser aún):
+Example proposed configuration; no parser exists yet:
 
 ```toml
 schema = 1
 
 [project]
-name = "Mi juego"
-id = "org.example.mijuego"
+name = "My game"
+id = "org.example.mygame"
 version = "0.1.0"
 entry = "main.lua"
 
@@ -68,68 +68,68 @@ api_profile = "malvado-2"
 [window]
 width = 800
 height = 600
-title = "Mi juego"
+title = "My game"
 
 [assets]
 include = ["assets/**", "*.lua"]
 
 [android]
-application_id = "org.example.mijuego"
+application_id = "org.example.mygame"
 version_code = 1
 orientation = "landscape"
 ```
 
-La configuración de ventana se aplica como default a `mv.start`; sus opciones explícitas prevalecen. Validar entry, rutas relativas, IDs por plataforma, versión y perfiles. Añadir archivo lock con revisión/hash del SDK y herramientas cuando exista resolución de dependencias. El esquema de proyecto evoluciona independientemente de la versión del runtime.
+Window configuration supplies defaults to `mv.start`; explicit options take precedence. Validate entry, relative paths, platform IDs, version, and profiles. Add a lockfile with SDK and tool revisions/hashes when dependency resolution exists. The project schema evolves independently of the runtime version.
 
-Plantillas propuestas: `starter`, `processes`, `asteroids`; `android-touch` tras validar móvil. La plantilla starter no necesita descargas ni assets externos. Las demás solo incorporan assets con procedencia y licencia registradas. Las plantillas se prueban como juegos reales, evitando copiar ejemplos que luego diverjan.
+Proposed templates: `starter`, `processes`, and `asteroids`; `android-touch` after mobile validation. Starter needs no downloads or external assets. Other templates include only assets with recorded origin and license. Test templates as real games. Avoid copies of examples that later diverge.
 
-## Uso compartido por malvado-gui
+## Shared use by malvado-gui
 
-La [GUI](gui.md) consume los mismos servicios C de proyecto, configuración, plantillas, jobs, validación y exportación. Si usa inicialmente un subproceso CLI, necesita salida estructurada y protocolo de trabajos, no parsear mensajes traducidos. El runner sigue siendo un proceso separado; el diagnóstico del juego usa snapshots y comandos entre ticks. La CLI funciona sin toolkit gráfico y los exports no incluyen ImGui.
+The [GUI](gui.md) uses the same C project, configuration, template, job, validation, and export services. If it initially invokes a CLI subprocess, it needs structured output and a job protocol. It must not parse translated messages. The runner remains a separate process; game diagnostics use snapshots and commands between ticks. The CLI works without a graphics toolkit, and exports do not include ImGui.
 
-## Recursos y empaquetado
+## Assets and packaging
 
-Ver [decisión de formatos](assets.md): PNG+JSON como fuente, adaptadores FPG/Aseprite y ZIP como contenedor. Ejemplos de comandos propuestos, aún no disponibles:
+See the [format decision](assets.md): PNG+JSON source, FPG/Aseprite adapters, and ZIP container. Proposed commands, not yet available:
 
 ```sh
-malvado-cli assets import --format fpg --input origen.fpg --output assets/importado
-malvado-cli assets import --format aseprite-json --input sheet.json --output assets/animacion
-malvado-cli assets export --format fpg --variant VARIANTE --input assets/importado --output dist/graficos.fpg
+malvado-cli assets import --format fpg --input source.fpg --output assets/imported
+malvado-cli assets import --format aseprite-json --input sheet.json --output assets/animation
+malvado-cli assets export --format fpg --variant VARIANT --input assets/imported --output dist/graphics.fpg
 ```
 
-La variante concreta y sus límites se documentarán al implementarla. `assets import` no renumera gráficos y emite informe de conversión/pérdidas; `assets export` FPG es posterior y puede rechazar datos no representables. ZIP de entrega no significa ZIP montable por el runtime; Android usa assets del APK sin contenedor ZIP extra por defecto.
+Document the exact variant and limits during implementation. `assets import` does not renumber graphics and reports conversion and losses. FPG `assets export` is later and can reject unrepresentable data. A delivery ZIP is not necessarily mountable by the runtime. Android uses APK assets without an extra nested ZIP by default.
 
-## Implementación en C
+## C implementation
 
-`src/cli` consume bibliotecas C de configuración, validación, empaquetado y lanzamiento. Incorporar una plantilla C además de la Lua y un proyecto con lenguaje explícito: C requiere SDK, cabeceras, biblioteca y toolchain del destino; Lua usa el runner con VM incorporada. `run` y `export` deberán comprobar cada ruta en CI; su implementación pertenece a alpha.4 y Android a alpha.6. Ver [arquitectura C](../architecture/c-first.md). Plantillas incluidas en el binario o SDK, con variables limitadas; no un motor de plantillas que ejecute código del proyecto. TOML requiere elegir un parser C pequeño con licencia compatible y fijarlo; no implementar un parser completo accidentalmente.
+`src/cli` uses C libraries for configuration, validation, packaging, and launch. Include a C template as well as Lua, and declare the project language. C requires the target SDK, headers, library, and toolchain. Lua uses the runner with bundled VM. CI must check each `run` and `export` path. Implementation belongs to alpha.4; Android to alpha.6. See [C architecture](../architecture/c-first.md). Include templates in the binary or SDK with limited variables. Do not use a template engine that executes project code. Select and pin a small C TOML parser with a compatible license. Do not accidentally implement a complete parser.
 
-Lanzar herramientas con arrays de argumentos, sin concatenar comandos shell a partir de nombres/rutas. Soportar espacios y Unicode. `new` falla si el destino ya contiene archivos; `export` usa staging y publicación atómica del resultado, sin borrar el proyecto. Repetir una exportación solo reemplaza los artefactos identificados como propios. Directorios de build, credenciales y `.git` no entran en el paquete. Manifest de archivos, hashes, licencias y versiones junto al artefacto.
+Launch tools with argument arrays, not shell command strings built from names/paths. Support spaces and Unicode. `new` fails if the destination already contains files. `export` uses staging and atomic result publication without deleting the project. Repeated exports replace only artifacts identified as their own. Build directories, credentials, and `.git` are excluded from packages. Include a file manifest, hashes, licenses, and versions with the artifact.
 
-## Contrato por destino
+## Contract by target
 
-| Destino | Primer artefacto | Herramientas/particularidades | Verificación |
+| Target | First artifact | Tools and details | Verification |
 | --- | --- | --- | --- |
-| Linux x86_64 | Carpeta/archivo comprimido con ejecutable y assets | Baseline glibc explícita; librerías necesarias/rpath; arm64 después | Equipo limpio sin Lua; input, audio y cierre |
-| Windows x86_64 | ZIP portable con `.exe`, assets y DLL necesarias | Build nativo CI o MinGW validado; dependencias de runtime incluidas | Windows limpio sin herramientas de desarrollo |
-| macOS arm64 | `.app` en ZIP; x86_64 o universal después | Info.plist, icono y bundle de recursos; firma/notarización de release en macOS | Lanzamiento desde Finder y bundle autocontenido |
-| Android arm64 | APK debug; APK release/AAB | SDK/NDK/JDK/Gradle fijados, ABI, Activity, assets y biblioteca nativa | Instalar/ejecutar en dispositivo o emulador, validar bundle |
+| Linux x86_64 | Folder/archive with executable and assets | Explicit glibc baseline; required libraries/rpath; arm64 later | Clean machine without Lua; input, audio, shutdown |
+| Windows x86_64 | Portable ZIP with `.exe`, assets, and required DLLs | Native CI build or validated MinGW; include runtime dependencies | Clean Windows without development tools |
+| macOS arm64 | `.app` in ZIP; x86_64 or universal later | Info.plist, icon, resource bundle; release signing/notarization on macOS | Finder launch and self-contained bundle |
+| Android arm64 | Debug APK; release APK/AAB | Pinned SDK/NDK/JDK/Gradle, ABI, Activity, assets, native library | Install/run on device or emulator; validate bundle |
 
-No todos los destinos tienen todas las arquitecturas en 2.0. La CLI debe rechazar combinaciones no soportadas con un diagnóstico útil. AAB es un formato de distribución que requiere verificación específica y no se instala directamente como APK.
+Not every target supports every architecture in 2.0. Reject unsupported combinations with a useful diagnostic. AAB is a distribution format and needs specific validation; it is not installed directly like an APK.
 
-La verificación y soporte efectivo de Windows se reservan a alpha.6; en alpha.4 se aceptan macOS y Linux. Escritorio no implica cross-compilar desde cualquier SO. Primer enfoque: builds nativos en CI por destino y SDKs versionados; el exportador selecciona el runtime. Android necesita su toolchain aunque el host sea macOS/Linux/Windows. La matriz de hosts soportados se publica tras probarlos.
+Windows verification and effective support are reserved for alpha.6. Alpha.4 accepts macOS and Linux. Desktop support does not imply cross-compilation from every OS. Start with native CI builds per target and versioned SDKs; the exporter selects the runtime. Android needs its toolchain on macOS/Linux/Windows hosts. Publish the host matrix after testing.
 
-## Android: trabajo de motor además del ZIP
+## Android: engine work beyond ZIP
 
-La documentación de [build Android de raylib](https://github.com/raysan5/raylib/wiki/Working-for-Android) será la referencia del prototipo; fijar la plantilla y toolchain en alpha.6, sin trasladar comandos de una versión no probada al producto.
+Use the [raylib Android build documentation](https://github.com/raysan5/raylib/wiki/Working-for-Android) as the prototype reference. Pin template and toolchain in alpha.6. Do not copy commands from an untested version into the product.
 
-- Host nativo integrado con la Activity de la plantilla seleccionada; empaquetar Lua y todos los módulos C como bibliotecas del juego, sin intérprete instalado.
-- Entrada touch con coordenadas de pantalla lógica, DPI, orientación, botón Back y teclado de pantalla cuando proceda. Asteroides con teclado no prueba Android.
-- Entrada de background/foreground: pausar simulación/audio, recuperar recursos cuando corresponda y reiniciar delta para evitar saltos gigantes.
-- Assets de APK son de lectura; guardados en directorio escribible de la aplicación. Resolver rutas mediante el servicio de assets, no suponiendo un cwd de escritorio.
-- Sonido, suspensión, pantalla bloqueada y regreso al juego probados en dispositivo.
-- `application_id`, `version_code`, iconos, orientación y ABI validados. Elegir minSdk/targetSdk al fijar toolchain conforme a requisitos vigentes de distribución; no congelar valores de tienda sin comprobarlos.
-- APK debug para iteración. Export release consulta claves por ruta/entorno seguro; no copia contraseñas o keystores al proyecto, logs, plantilla ni paquete. Firma/notarización requieren credenciales del autor; no se realizan en esta fase de documentación.
+- Integrate a native host with the selected Activity template. Package Lua and C modules as game libraries; no installed interpreter.
+- Support touch in logical screen coordinates, DPI, orientation, Back, and on-screen keyboard when applicable. Keyboard-only asteroids does not test Android.
+- On background/foreground, pause simulation/audio, restore assets when needed, and reset delta to prevent large jumps.
+- APK assets are read-only. Save data in the application's writable directory. Resolve paths through the asset service, not a desktop cwd assumption.
+- Test sound, suspension, screen lock, and return on a device.
+- Validate `application_id`, `version_code`, icons, orientation, and ABI. Select minSdk/targetSdk when pinning the toolchain, according to current distribution requirements. Do not freeze store values without checking them.
+- Use debug APK for iteration. Release export reads keys from a secure path/environment. Do not copy passwords or keystores into the project, logs, template, or package. Signing/notarization require author credentials and are not performed in this documentation phase.
 
-## Aceptación end-to-end
+## End-to-end acceptance
 
-Crear starter en una ruta con espacios; ejecutar; empaquetar; mover artefacto a máquina limpia y jugar. Repetir con asteroides. Comparar manifest/checksums para builds equivalentes, normalizando timestamps y orden; no prometer identidad binaria si firma/herramientas introducen variación. Android añade instalación, touch, pausa, audio y AAB. Una plataforma solo aparece como soportada tras cerrar ese recorrido.
+Create starter in a path with spaces. Run, package, move the artifact to a clean machine, and play. Repeat with asteroids. Compare manifests/checksums for equivalent builds, normalizing timestamps and order. Do not promise binary identity if signing or tools introduce variation. Android adds installation, touch, pause, audio, and AAB checks. Mark a platform supported only after this flow passes.

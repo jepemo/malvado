@@ -15,6 +15,7 @@
 
 #include "malvado/malvado.h"
 #include "clock.h"
+#include "process.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 struct MvContext {
     MalvadoClock clock;
     uint64_t ticks;
+    MvProcesses *processes;
 };
 
 MvContext *
@@ -38,14 +40,24 @@ mv_context_create(double ticks_per_second, unsigned max_steps)
         return NULL;
     }
     ctx->ticks = 0;
+    ctx->processes = mv_processes_create(ctx);
+    if (!ctx->processes) {
+        free(ctx);
+        return NULL;
+    }
     return ctx;
 }
 
 void
 mv_context_destroy(MvContext *ctx)
 {
-    free(ctx);
+    if (ctx && mv_processes_can_destroy(ctx->processes)) {
+        mv_processes_destroy(ctx->processes);
+        free(ctx);
+    }
 }
+
+MvProcesses *mv_context_processes(MvContext *ctx) { return ctx ? ctx->processes : NULL; }
 
 MvResult
 mv_context_advance(MvContext *ctx, double elapsed_seconds, unsigned *steps)

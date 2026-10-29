@@ -1,86 +1,86 @@
-# CI, documentación y versiones con GitHub Actions
+# CI, documentation, and versions with GitHub Actions
 
-Estado: workflow inicial implementado y ejecutado en GitHub el 2026-10-29. El objetivo es detectar fallos al proponer cambios, generar binarios verificables y publicar documentación y versiones cuando estén listas. No se crea ni publica ninguna release en esta fase.
+Status: initial workflow implemented and run on GitHub on 2026-10-29. The goal is to detect failures in proposed changes, produce verifiable binaries, and publish documentation and versions when ready. This phase does not create or publish a release.
 
-## Qué se ejecuta y cuándo
+## What runs and when
 
-| Workflow propuesto | Cuándo | Trabajo | Resultado |
+| Proposed workflow | When | Work | Result |
 | --- | --- | --- | --- |
-| `ci.yml` | PR y push a rama principal; ejecución manual | Compilar, CTest, comprobaciones de código y documentación | Checks visibles; logs y artefactos de diagnóstico ante fallos |
-| `docs.yml` | PR y push a rama principal; manual | Regenerar catálogo, comprobar enlaces y construir sitio | PR valida; rama principal puede publicar Pages tras configurar el repositorio |
-| `release.yml` | Manual para preparar candidato; tag `v*` para automatizar tras validar el proceso | Compilar, probar, empaquetar, calcular hashes y preparar release | Artefactos por plataforma y draft release para revisión |
-| `nightly.yml` | Manual o programado cuando sea útil | Sanitizers, pruebas lentas y más combinaciones | Diagnóstico adicional; no sustituye a CI de PR |
+| `ci.yml` | PR, push to main branch, manual | Build, CTest, code and documentation checks | Visible checks; logs and diagnostic artifacts on failure |
+| `docs.yml` | PR, push to main branch, manual | Regenerate catalog, check links, build site | PR validation; main can publish Pages after repository configuration |
+| `release.yml` | Manual candidate preparation; `v*` tag after process validation | Build, test, package, hash, prepare release | Platform artifacts and draft release for review |
+| `nightly.yml` | Manual or scheduled when useful | Sanitizers, slow tests, more combinations | Additional diagnostics; does not replace PR CI |
 
-La publicación requiere configurar permisos y Pages en GitHub; el mero hecho de escribir los workflows no configura ni publica el sitio. Los PR externos se ejecutan sin secretos de firma o despliegue. Usar nombres de checks estables para protección de rama cuando el repositorio lo permita.
+Publishing requires GitHub permissions and Pages configuration. Writing workflows alone does not configure or publish a site. External PRs run without signing or deployment secrets. Use stable check names for branch protection where available.
 
-El archivo `.github/workflows/ci.yml` contiene la matriz macOS/Linux, la comprobación del catálogo, un job de sanitizers y análisis estático, y la prueba gráfica Linux con Xvfb. Los siete jobs pasaron en [GitHub Actions para el commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows se valida en alpha.6.
+`.github/workflows/ci.yml` has a macOS/Linux matrix, catalog verification, sanitizers and static analysis, and a Linux Xvfb graphics test. All seven earlier jobs passed in [GitHub Actions for commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows is validated in alpha.6. The link does not validate later changes.
 
-## CI inicial: alpha.1
+## Initial CI: alpha.1
 
-1. **Linux y macOS:** configurar CMake con versiones/toolchains documentados, compilar y ejecutar `ctest --output-on-failure`. Instalar las dependencias de sistema para raylib. Windows se incorpora y valida en alpha.6; sus resultados no bloquean las alphas anteriores.
-2. **Raylib/Lua:** CMake descarga Lua 5.4.8 y raylib 5.5 en el directorio de build y verifica sus hashes SHA-256. Cachear la descarga cuando sea posible, sin omitir la verificación. Limitar el análisis de estilo al código del proyecto, excluyendo `vendor/` y `_deps/`.
-3. **Estática y estilo:** habilitar advertencias del compilador para `src/`, incorporar `clang-format --dry-run --Werror` cuando exista configuración aplicada al código y después `clang-tidy` sobre `compile_commands.json` con un conjunto acordado de reglas. Añadir `luacheck` para ejemplos y pruebas Lua cuando exista configuración. Las advertencias y excepciones conocidas se documentan; no presentar una herramienta aún no configurada como check ya operativo.
-4. **Pruebas de memoria:** ASan/UBSan en una configuración de Linux compatible al ampliar tests de procesos; separar restricciones de plataforma. Añadir escenarios de creación/baja, errores y cleanup de corutinas.
-5. **Documentación:** descargar las fuentes fijadas con `python3 docs/tools/fetch_api_sources.py`, ejecutar `python3 docs/tools/catalog_api.py`, comparar los archivos generados con el repositorio y fallar si difieren; ambos comprueban los hashes de las fuentes. Validar enlaces internos y construcción del sitio cuando exista el generador. Comprobar los archivos generados también si todavía están sin seguimiento en la fase inicial.
-6. **Ejemplo gráfico:** el test headless no demuestra que se abra una ventana. Añadir smoke gráfico en runners adecuados, por ejemplo Linux con servidor virtual, y pruebas en sistemas reales. La aceptación de macOS y audio/entrada se registra aparte cuando no sea fiable automatizarla; Android y Windows se validan en alpha.6.
+1. **Linux and macOS:** configure CMake with documented versions/toolchains, build, and run `ctest --output-on-failure`. Install raylib system dependencies. Add and validate Windows in alpha.6; it does not block earlier alphas.
+2. **Raylib/Lua:** CMake downloads Lua 5.4.8 and raylib 5.5 into the build directory and verifies SHA-256 hashes. Cache downloads where useful without skipping verification. Limit style checks to project code; exclude `vendor/` and `_deps/`.
+3. **Static checks and style:** enable compiler warnings for `src/`. Add `clang-format --dry-run --Werror` when configuration is applied, then `clang-tidy` on `compile_commands.json` with agreed rules. Add `luacheck` for Lua examples and tests when configured. Document known warnings and exceptions. Do not describe an unconfigured tool as an active check.
+4. **Memory tests:** use ASan/UBSan in a compatible Linux configuration as process tests expand. Record platform limits. Add creation/removal, error, and coroutine cleanup cases.
+5. **Documentation:** download pinned sources with `python3 docs/tools/fetch_api_sources.py`, run `python3 docs/tools/catalog_api.py`, compare generated files with the repository, and fail on differences. Both commands check source hashes. Validate internal links and site build when a generator exists. Also check generated files if they are initially untracked.
+6. **Graphics example:** headless tests do not prove that a window opens. Add bounded graphics smoke tests on suitable runners, such as Linux with a virtual display, and tests on real systems. Record macOS and audio/input acceptance separately when automation is unreliable. Validate Android and Windows in alpha.6.
 
-Matriz inicial recomendada: Linux x86_64 y macOS arm64; incorporar Windows x86_64 en alpha.6, con nombres explícitos de runner/arquitectura y versiones fijadas al implementar. Confirmar disponibilidad de runners para este repositorio; si una arquitectura no está disponible, dejar su check pendiente o usar un runner apropiado, sin etiquetar el destino como validado. No lanzar el hello interactivo indefinidamente en CI: añadir un modo smoke con salida automática.
+Recommended initial matrix: Linux x86_64 and macOS arm64; add Windows x86_64 in alpha.6. Use explicit runner/architecture names and pin versions during implementation. Confirm runner availability for this repository. If an architecture is unavailable, leave its check pending or use an appropriate runner; do not label the target validated. Do not run interactive hello indefinitely in CI; add an automatic-exit smoke mode.
 
-## Calidad de los checks
+## Check quality
 
-- Cada job falla ante una compilación, test o regeneración incorrecta; no ocultar fallos con `continue-on-error` en checks requeridos. Añadir límites de tiempo a tests y jobs para detectar procesos Lua que no ceden.
-- Compilar y probar en build limpio; directorios de build y cachés no se suben al repositorio. Guardar logs y resultados de tests en artefactos temporales de CI con retención acotada.
-- Cachear por OS, arquitectura, compilador, versiones y hash de dependencias. Una caché no es prueba de reproducibilidad y no reemplaza compilaciones limpias periódicas.
-- Formato y análisis para código propio; los archivos externos fijados conservan su formato y licencia. Versiones de herramientas y reglas se documentan y actualizan mediante PR.
-- Añadir checks de ejemplos, activos y GUI solo cuando se implementen; por ejemplo, generar un proyecto CLI y ejecutar su test de humo cuando exista la plantilla.
+- Each job fails on an incorrect build, test, or regeneration. Do not hide required failures with `continue-on-error`. Add timeouts to tests and jobs to detect Lua processes that do not yield.
+- Build and test cleanly. Do not commit build directories or caches. Retain CI diagnostic logs and test results as temporary artifacts with bounded retention.
+- Key caches by OS, architecture, compiler, dependency versions, and hashes. A cache is not proof of reproducibility and does not replace periodic clean builds.
+- Apply format and analysis to project code. Pinned external files retain their format and licenses. Document tool versions and rules, and update them through PRs.
+- Add example, asset, and GUI checks when implemented. For example, generate a CLI project and run its smoke test when a template exists.
 
-## Documentación de ambas APIs
+## Documentation for both APIs
 
-[Plan de documentación](api-documentation.md): exigir en cada PR que cambie una API pública que actualice sus firmas y fichas C/Lua correspondientes, y ejecutar ejemplos relacionados. El job de documentación construirá MkDocs en modo estricto, comprobará enlaces y nombres entre binding y definiciones Lua. La extracción automatizada de ejemplos y verificadores de firmas se implementarán y fijarán antes de afirmarlos como checks existentes; el build del sitio no sustituye las pruebas de ejemplos.
+The [documentation plan](api-documentation.md) requires each PR that changes a public API to update the corresponding C/Lua signatures and records and run related examples. The documentation job will build MkDocs in strict mode and check links and names between the binding and Lua definitions. Implement and pin example extraction and signature checkers before claiming they exist. A site build does not replace example tests.
 
-## Documentación y GitHub Pages
+## Documentation and GitHub Pages
 
-Markdown en `docs/` sigue siendo la fuente. Como se propone en [publicación](publishing.md), fijar MkDocs y usar inicialmente su tema por defecto al configurar el sitio. En PR se regenera el catálogo y se construye la documentación sin desplegar. En push a la rama principal, una vez configurado Pages, desplegar la documentación de desarrollo. Mantener documentación de versiones estables desde tags en `/2.0/` y desarrollo en `/dev/` cuando exista un sistema de versiones; definir la política de retención antes de borrar versiones publicadas.
+Markdown in `docs/` remains the source. As proposed in [publishing](publishing.md), pin MkDocs and initially use its default theme. PRs regenerate the catalog and build documentation without deploying. After Pages configuration, pushes to the main branch deploy development documentation. When versioning exists, keep stable documentation from tags under `/2.0/` and development under `/dev/`. Define retention before deleting published versions.
 
-[GitHub documenta](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) la construcción y despliegue con Actions. Un job de Pages necesita `pages: write` e `id-token: write`; concederlos solo al job de despliegue, no a PR. La generación de referencia Lua/C se incorpora cuando existan contrato propio y herramientas configuradas, sin convertir automáticamente los símbolos Bennu en API de Malvado.
+[GitHub documents](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) Actions builds and deployments. A Pages job needs `pages: write` and `id-token: write`; grant these only to the deployment job, not PRs. Add Lua/C reference generation when Malvado contracts and tools exist. Do not automatically turn Bennu symbols into the Malvado API.
 
-## Generación de versiones
+## Version generation
 
-La release debe representar una revisión exacta y superar CI. Al principio generar artefactos candidatos desde un workflow manual, revisar su instalación y luego crear un **draft release**; cuando el proceso sea fiable, permitir que un tag `v2.0.0-alpha.1` dispare el mismo pipeline. Alpha/beta son prereleases. La publicación del draft, firma de producción y cualquier subida a tiendas quedan sujetas al proceso de release acordado.
+A release must represent an exact revision and pass CI. Initially, generate candidate artifacts with a manual workflow, review installation, then create a **draft release**. Once reliable, allow a tag such as `v2.0.0-alpha.1` to trigger the same pipeline. Alpha and beta are prereleases. Draft publication, production signing, and store uploads follow the agreed release process.
 
-| Entrega | Primer artefacto previsto | Comprobación antes de etiquetar como soportado |
+| Delivery | First planned artifact | Check before claiming support |
 | --- | --- | --- |
-| Runtime desktop | Ejecutable/paquete para Linux x86_64, Windows x86_64 y macOS arm64 | CTest, arranque de ejemplo, dependencias incluidas y prueba en máquina limpia |
-| SDK/CLI | Herramienta y runtimes para los destinos disponibles | Proyecto nuevo → run → export → ejecutar paquete |
-| Android | APK debug para pruebas; APK firmado/AAB para release cuando exista exportador | Instalar y probar ciclo de vida/touch; validar AAB; configuración de firma aparte |
-| GUI | Paquetes de escritorio con su propia versión | Recorrido de proyecto, preview, ejecución y export; compatibilidad con runtime declarada |
+| Desktop runtime | Executable/package for Linux x86_64, Windows x86_64, macOS arm64 | CTest, example start, included dependencies, clean-machine test |
+| SDK/CLI | Tool and runtimes for available targets | New project → run → export → run package |
+| Android | Debug APK for tests; signed APK/AAB for release when exporter exists | Install, test lifecycle/touch, validate AAB; signing configuration separate |
+| GUI | Desktop packages with independent version | Project, preview, execution, and export flow; declared runtime compatibility |
 
-No fabricar binarios de destinos que todavía no están implementados. No confundir un binario de runner alpha con un juego exportado por `malvado-cli`. El pipeline guarda para cada candidato: tag/commit, versión, plataforma/arquitectura, toolchain, dependencias, licencias, checksum SHA-256 y notas de cambios. `CHANGELOG` describe únicamente lo entregado. Verificar que la versión del tag corresponde a los metadatos antes de empaquetar; no sobrescribir artefactos de una release existente.
+Do not create binaries for targets not implemented. A runner alpha binary is not a game exported by `malvado-cli`. For each candidate, record tag/commit, version, platform/architecture, toolchain, dependencies, licenses, SHA-256 checksum, and change notes. The changelog contains delivered changes only. Verify tag and metadata versions before packaging. Do not overwrite an existing release artifact.
 
-macOS necesita firma y notarización para distribución según el canal elegido; Android necesita claves para sus variantes firmadas. Mantener credenciales en secretos/entornos protegidos solo para jobs de release autorizados; CI ordinario no requiere claves. Primero distribuir artefactos de prueba sin declarar una experiencia de instalación validada. No prometer binarios idénticos entre builds firmadas: registrar insumos y comparar resultados reproducibles cuando sea viable.
+macOS distribution may require signing and notarization according to channel. Android signed variants need keys. Keep credentials in secrets/protected environments for authorized release jobs only; ordinary CI does not need keys. First distribute test artifacts without claiming validated installation. Do not promise identical signed binaries. Record inputs and compare reproducible outputs where possible.
 
-## Verificación del core C y binding Lua
+## Verify C core and Lua binding
 
-Añadir a alpha.2 un job limpio con Lua y raylib desactivados: compilar e instalar la biblioteca C con backend headless, compilar un juego C consumidor de las cabeceras instaladas y ejecutarlo. Confirmar que no se descargan ni enlazan Lua/raylib. En paralelo, compilar runner/binding oficial, ejecutar las pruebas Lua existentes y pruebas de paridad C/Lua y mixtas; correr sanitizers. El smoke gráfico C/Lua con raylib se valida por plataforma. No marcar estos checks como existentes hasta implementarlos. Detalles en [arquitectura C](../architecture/c-first.md).
+Alpha.2 requires a clean job with Lua and raylib disabled: build and install the C library with the headless backend, compile a C consumer against installed headers, and run it. Confirm that Lua/raylib are not downloaded or linked. Also build the official runner/binding, run existing Lua tests and C/Lua parity and mixed tests, and run sanitizers. Validate C/Lua raylib graphics smoke tests by platform. See [C architecture](../architecture/c-first.md).
 
-## Distribución y LuaRocks
+## Distribution and LuaRocks
 
-El [plan de distribución](distribution.md) define SDK, CLI, GUI y rock opcional. Un posible rock 2.0 requiere un módulo C cargable por Lua externo, instalación CMake y pruebas de ABI: el runner actual con Lua embebido no es ese módulo. No añadir un job de publicación de rock hasta tenerlo; después ejecutar lint, instalación y prueba en árboles limpios y revisar licencias antes de cualquier subida.
+The [distribution plan](distribution.md) defines the SDK, CLI, GUI, and optional rock. A 2.0 rock needs a C module loadable by external Lua, CMake installation, and ABI tests. The bundled-Lua runner is not that module. Do not add a rock publication job until it exists. Then run lint, installation, and clean-tree tests and review licenses before upload.
 
-## Permisos y dependencias de Actions
+## Actions permissions and dependencies
 
-En CI de PR usar `contents: read` o menos, sin secretos; no ejecutar código de PR no confiable con permisos de escritura. Jobs de publicación necesitan permisos mínimos y separados (`contents: write` para draft release; permisos de Pages solo para su deploy). Fijar las acciones externas a SHA de commit completo, procedente del repositorio original, y revisarlas periódicamente, como recomienda [GitHub](https://docs.github.com/en/actions/reference/security/secure-use). No poner credenciales en logs, artefactos o ejemplos.
+For PR CI, use `contents: read` or less and no secrets. Do not run untrusted PR code with write permissions. Publication jobs need separate minimum permissions: `contents: write` for draft releases and Pages permissions only for deployment. Pin external actions to full upstream commit SHAs and review them regularly, as [GitHub recommends](https://docs.github.com/en/actions/reference/security/secure-use). Do not put credentials in logs, artifacts, or examples.
 
-## Orden de adopción
+## Adoption order
 
-| Momento | Implementar | Puerta de aceptación |
+| Time | Implement | Acceptance gate |
 | --- | --- | --- |
-| Alpha.1 actual | `ci.yml`: builds desktop posibles, CTest headless, timeout, catálogo y avisos de compilador | PR de prueba muestra checks verificables en cada runner disponible; documentar faltantes |
-| Alpha.2 | Formato/análisis acordados; sanitizers y tests ampliados del scheduler | CI falla ante errores reales y publica logs útiles |
-| Alpha.3 | Smoke gráfico acotado y ejemplos de recursos; build del sitio | Ejemplos CI terminan automáticamente; documentación sin enlaces internos rotos |
-| Alpha.4 | Paquetes macOS/Linux y draft de candidato; pruebas de CLI de extremo a extremo | Artefactos instalados y ejecutados en hosts limpios; checksums correctos |
-| Alpha.6 | Build Android y validaciones APK/AAB; añadir Windows a CI y validar runtime, C/Lua, GUI si se distribuye, CLI y paquetes | Android: emulador/dispositivo y lifecycle; Windows: checks CI, prueba gráfica y ejecución en Windows limpio; firma release aparte |
-| Beta/2.0 | Pages versionado, automatización de tags y criterios de publicación | Candidato completo revisado, documentación y artefactos corresponden al mismo commit |
-| GUI | Jobs de build y smoke desktop al iniciar G0/G1 | CI cubre toolkit elegido y separa GUI de runtime |
+| Current alpha.1 | `ci.yml`: available desktop builds, headless CTest, timeouts, catalog, compiler warnings | Test PR shows verifiable checks on available runners; document gaps |
+| Alpha.2 | Agreed formatting/analysis; sanitizers and expanded scheduler tests | CI fails on real errors and provides useful logs |
+| Alpha.3 | Bounded graphics smoke tests and asset examples; site build | CI examples exit automatically; no broken internal documentation links |
+| Alpha.4 | macOS/Linux packages, draft candidate, end-to-end CLI tests | Artifacts installed and run on clean hosts; correct checksums |
+| Alpha.6 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, distributed GUI, CLI, packages | Android emulator/device and lifecycle; Windows CI, graphics test, and clean-machine execution; release signing separate |
+| Beta/2.0 | Versioned Pages, tag automation, publication criteria | Reviewed complete candidate; docs and artifacts match the same commit |
+| GUI | Desktop build and smoke jobs at G0/G1 | CI covers selected toolkit and separates GUI from runtime |
 
-El CI ayuda a decidir si una versión está lista; no sustituye la revisión de licencias ni las pruebas de distribución y experiencia gráfica en máquinas reales.
+CI helps decide whether a version is ready. It does not replace license review, distribution tests, or graphics experience tests on real machines.

@@ -1,8 +1,16 @@
 /*
- * Malvado - game development with Lua and processes.
- * Project created by Jeremías Pérez; Malvado contributors.
+ *  ______        _                _
+ * |  ___ \      | |              | |
+ * | | _ | | ____| |_   _ ____  _ | | ___
+ * | || || |/ _  | | | | / _  |/ || |/ _ \
+ * | || || ( ( | | |\ V ( ( | ( (_| | |_| |
+ * |_||_||_|\_||_|_| \_/ \_||_|\____|\___/
+ *
+ * malvado - A game engine for Lua, inspired by DIV Games Studio.
+ *
+ * Created by Jeremías Pérez and contributors.
  * SPDX-License-Identifier: Apache-2.0
- * See LICENSE and docs/development/licensing.md.
+ * See LICENSE for details.
  */
 
 #include "clock.h"

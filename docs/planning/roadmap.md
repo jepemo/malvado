@@ -1,106 +1,106 @@
-# Plan de migración de Malvado 2
+# Malvado 2 migration plan
 
-Estado: propuesta técnica; ninguna fase de implementación se da por terminada. Actualizado: 2026-10-29.
+Status: technical proposal. No implementation phase is declared complete. Updated: 2026-10-29.
 
-## Objetivo
+## Goal
 
-Sustituir LÖVE por raylib y trasladar a C el runtime, scheduler, datos de procesos, recursos, render, entrada, sonido, colisiones y funciones de la API. Crear una biblioteca de motor y API pública en C, usable por juegos C sin Lua. Incluir en el proyecto el binding Lua oficial y el runner con Lua embebido: los juegos Lua no requieren instalar Lua, LÖVE o LuaRocks. Incorporar `malvado-cli` para crear proyectos y exportar Linux, Windows, macOS y Android. Añadir `malvado-gui` como taller opcional de escritorio para proyectos, recursos e inspección de procesos, apoyado en los mismos servicios C.
+Replace LÖVE with raylib and move the runtime, scheduler, process data, assets, rendering, input, sound, collision, and API functions to C. Create an engine library and public C API usable by C games without Lua. Include the official Lua binding and a runner with bundled Lua. Lua games must not require installed Lua, LÖVE, or LuaRocks. Add `malvado-cli` to create projects and export to Linux, Windows, macOS, and Android. Add `malvado-gui` as an optional desktop workshop for projects, assets, and process inspection, using the same C services.
 
-Esta propuesta sustituye el antiguo plan que exigía «No C changes», bindings raylib de terceros y LuaRocks como vía principal. Se conserva en [history/PLAN-love-to-raylib-lua.md](../history/PLAN-love-to-raylib-lua.md).
+This proposal replaces the old plan that required “No C changes,” third-party raylib bindings, and LuaRocks as the main path. The old plan remains in [history/PLAN-love-to-raylib-lua.md](../history/PLAN-love-to-raylib-lua.md).
 
-## Punto de partida comprobado
+## Verified starting point
 
-- `malvado/core.lua` crea una coroutine por instancia, implementa `frame()` con `coroutine.yield()` y reanuda desde `love.draw`.
-- Los módulos llaman directamente a `love.graphics`, `love.window`, `love.timer`, `love.keyboard`, `love.mouse` y `love.filesystem`.
-- Se mezclan simulación y dibujo; la misma colección de procesos se reordena por `z`. La nueva arquitectura separará orden de ejecución y orden de dibujo.
-- `collision()` comprueba si el origen de otro proceso cae dentro de una caja; no es todavía una colisión completa entre sprites.
-- Hay hello world, menú demo, asteroides y benchmark. Asteroides y benchmark también llaman a `love.*` directamente: migrar solo la biblioteca no basta.
-- `load_fpg()` contiene trabajo experimental de ZIP; `fpg()` acepta directorios/spritesheets. No asumir soporte binario FPG clásico.
-- El rockspec declara `1.0.0-0` y Lua >= 5.1. Esto no prueba que exista una distribución 1.0 completa.
-- Hay discrepancias de licencia: LICENSE/rockspec indican Apache 2.0, mientras varios encabezados Lua indican GPLv3+. Resolver la procedencia antes de publicar; conservar los avisos mientras tanto.
+- `malvado/core.lua` creates a coroutine per instance, implements `frame()` with `coroutine.yield()`, and resumes from `love.draw`.
+- Modules directly call `love.graphics`, `love.window`, `love.timer`, `love.keyboard`, `love.mouse`, and `love.filesystem`.
+- Simulation and drawing are mixed; the same process collection is sorted by `z`. The new architecture separates execution order from draw order.
+- `collision()` checks whether another process origin is inside a box; it is not yet full sprite collision.
+- There are hello world, menu demo, asteroids, and benchmark examples. Asteroids and benchmark also call `love.*` directly, so migrating the library alone is not enough.
+- `load_fpg()` contains experimental ZIP work; `fpg()` accepts directories/spritesheets. Do not assume classic binary FPG support.
+- The rockspec declares `1.0.0-0` and Lua >= 5.1. This does not prove a complete 1.0 distribution exists.
+- License notices conflict: LICENSE/rockspec say Apache 2.0, while several Lua headers say GPLv3+. Resolve provenance before publishing; keep notices in the meantime.
 
-## Decisiones propuestas
+## Proposed decisions
 
-| Asunto | Propuesta | Razón |
+| Topic | Proposal | Reason |
 | --- | --- | --- |
-| Implementación | C11 + CMake; raylib detrás de adaptador C | Core nativo y builds de escritorio/Android |
-| Lenguaje de juegos | API C completa y binding Lua oficial, ambos de primera clase | Permitir juegos C sin VM y juegos Lua con runtime autónomo |
-| Versión Lua inicial | Evaluar Lua 5.4 como base conservadora; confirmar parche y soporte al fijar dependencias | API C de corutinas y limpieza disponibles; no prometer LuaJIT/5.1 |
-| Procesos | Scheduler C único; callbacks con estado para C y corutinas gestionadas por el binding Lua | Los dos lenguajes comparten ciclo de vida, señales y prioridades |
-| Referencia | BennuGD2 principal, BennuGD clásico histórico y DIV/Fénix como contraste | Inventarios verificables sin mezclar firmas de distintas generaciones |
-| Compatibilidad | Perfil Malvado antiguo y perfiles de familia DIV explícitos | Grados, escala, textos y temporización ya difieren |
-| Distribución | Ejecutable con Lua/raylib; módulo C de Lua opcional posterior | Evita dependencia del entorno del jugador |
-| Herramientas | `malvado-cli` en C, biblioteca de empaquetado compartida | Cumple prioridad C; lógica de proyectos reutilizable |
-| GUI | Taller de proyectos/recursos/procesos; evaluar ImGui+cimgui+adaptador raylib | C en servicios y core; C++ acotado a dependencias UI; raygui como alternativa C estricta |
-| Assets | PNG+JSON editable, FPG como compatibilidad y ZIP como contenedor | Preservar IDs/puntos sin crear otro binario gráfico propietario |
-| CI y releases | GitHub Actions para builds, pruebas, análisis, docs y artefactos por versión | Detectar regresiones por PR y generar candidatos verificables |
-| Documentación | APIs C y Lua con ejemplos ejecutables, Markdown y MkDocs en Pages | Dos referencias de primera clase, revisión en PR y búsqueda versionada |
+| Implementation | C11 + CMake; raylib behind a C adapter | Native core and desktop/Android builds |
+| Game languages | Full C API and official Lua binding, both first-class | C games without a VM and Lua games with a standalone runtime |
+| Initial Lua version | Evaluate Lua 5.4 as a conservative base; confirm patch and support when dependencies are pinned | C coroutine and cleanup APIs; do not promise LuaJIT/5.1 |
+| Processes | One C scheduler; stateful C callbacks and Lua coroutines managed by the binding | Languages share lifecycle, signals, and priorities |
+| Reference | BennuGD2 primary, classic BennuGD historical, DIV/Fénix for comparison | Verifiable inventories without mixing generation signatures |
+| Compatibility | Explicit legacy Malvado and DIV-family profiles | Degrees, scale, text, and timing already differ |
+| Distribution | Executable with Lua/raylib; optional C Lua module later | No dependency on the player's environment |
+| Tools | `malvado-cli` in C, shared packaging library | C-first services and reusable project logic |
+| GUI | Project/asset/process workshop; evaluate ImGui+cimgui+raylib adapter | C services/core; C++ limited to UI dependencies; raygui as a strict C alternative |
+| Assets | Editable PNG+JSON, FPG for compatibility, ZIP as container | Preserve IDs/points without a new proprietary graphics binary |
+| CI and releases | GitHub Actions for builds, tests, analysis, docs, and version artifacts | Detect PR regressions and create verifiable candidates |
+| Documentation | C and Lua APIs with runnable examples, Markdown, and MkDocs on Pages | Two first-class references, PR review, and versioned search |
 
-No reimplementar la VM de Lua. Lua ya está implementado en C. Tampoco usar threads del sistema para simular procesos DIV. La pila de un script Lua se conserva mediante la VM, aunque el scheduler sea C. El core C deberá ejecutarse sin Lua con procesos nativos de estado explícito; no se promete suspender arbitrariamente una pila C. Esto es un requisito aún pendiente, detallado en [arquitectura C y binding Lua](../architecture/c-first.md).
+Do not reimplement the Lua VM. Lua is already implemented in C. Do not use operating-system threads to simulate DIV processes. The Lua VM retains a script stack even with a C scheduler. The C core must run without Lua using native processes with explicit state. It does not promise arbitrary C stack suspension. See [C architecture and Lua binding](../architecture/c-first.md).
 
-## Fases y puertas de salida
+## Phases and exit gates
 
-| Fase / versión propuesta | Trabajo | Evidencia necesaria para cerrar |
+| Phase / proposed version | Work | Evidence required to close |
 | --- | --- | --- |
-| P0 / preparación | Resolver licencias; fijar fuentes, hashes y versiones Lua/raylib; medir ejemplos actuales; elegir comportamiento legacy | Matriz de API clasificada, capturas y trazas baseline, build de dependencias reproducible |
-| P1 / 2.0.0-alpha.1 | CMake, Lua incluido, contexto C, ventana raylib, runner, `process/frame`, hello y CI inicial de builds y CTest | Hello abre/cierra sin LÖVE ni Lua instalado en macOS y Linux; scheduler funciona headless |
-| P2 / 2.0.0-alpha.2 | Extraer scheduler, procesos, señales, mensajes y API pública C; conectar binding oficial Lua; inspección y documentación de ambas APIs | Juego C sin Lua, paridad C/Lua, ejemplos y contratos, trazas deterministas, referencias liberadas y pruebas de memoria |
-| P3 / 2.0.0-alpha.3 | Render/recursos PNG+JSON, entrada, texto y audio en API C y binding Lua; shim legacy; migrar los 4 ejemplos; preparar GUI G0 | Demos C/Lua equivalentes, sin `love.*`; imágenes comparables; benchmark documentado |
-| P4 / 2.0.0-alpha.4 | CLI, SDK C, runner Lua y paquetes de escritorio; habilita GUI G1 | Crear → jugar → exportar → ejecutar proyectos C y Lua en macOS y Linux; Windows pendiente de alpha.6 |
-| P5 / 2.0.0-alpha.5 | Compatibilidad esencial Bennu, scroll, regiones, primer importador FPG de variante fijada, adaptador Aseprite básico, colisiones y extras priorizados | Cada símbolo del perfil esencial tiene contrato, ejemplo y comprobación de semántica |
-| P6 / 2.0.0-alpha.6 | Export Android y validación completa Windows: runtime, API C/Lua, CLI y empaquetado | Android: APK y AAB, touch y lifecycle; Windows: CI, ejemplos C/Lua, CLI y paquetes en máquina limpia; resolver fallos antes de beta |
-| P7 / 2.0.0-beta.1 | Congelar API esencial, docs publicables, empaquetado y errores consistentes | Matriz de soporte sin ambigüedades, ejemplos completos y pruebas en OS soportados |
-| P8 / 2.0.0 | Estabilización y guía de migración | Criterios de beta cerrados, releases reproducibles y aceptación de juegos muestra |
-| 2.1+ | Ampliar familias y funciones históricas pendientes | Versiones por perfil; nunca declarar compatibilidad total sin completar su matriz |
+| P0 / preparation | Resolve licenses; pin Lua/raylib sources, hashes, and versions; measure current examples; select legacy behavior | Classified API matrix, baseline captures/traces, reproducible dependency build |
+| P1 / 2.0.0-alpha.1 | CMake, bundled Lua, C context, raylib window, runner, `process/frame`, hello, initial build/CTest CI | Hello opens/closes without LÖVE or installed Lua on macOS/Linux; scheduler works headless |
+| P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
+| P3 / 2.0.0-alpha.3 | PNG+JSON render/assets, input, text, audio in C and Lua; legacy shim; migrate four examples; prepare GUI G0 | Equivalent C/Lua demos without `love.*`, comparable images, documented benchmark |
+| P4 / 2.0.0-alpha.4 | CLI, C SDK, Lua runner, desktop packages; enable GUI G1 | Create → play → export → run C and Lua projects on macOS/Linux; Windows in alpha.6 |
+| P5 / 2.0.0-alpha.5 | Essential Bennu compatibility, scrolling, regions, first pinned-variant FPG importer, basic Aseprite adapter, collision, selected extras | Each essential-profile symbol has a contract, example, and semantic check |
+| P6 / 2.0.0-alpha.6 | Android export and full Windows validation: runtime, C/Lua API, CLI, packaging | Android APK/AAB, touch, lifecycle; Windows CI, C/Lua examples, CLI, clean-machine packages; fix failures before beta |
+| P7 / 2.0.0-beta.1 | Freeze essential API, publishable docs, packaging, consistent errors | Unambiguous support matrix, complete examples, supported-OS tests |
+| P8 / 2.0.0 | Stabilization and migration guide | Beta criteria complete, reproducible releases, accepted sample games |
+| 2.1+ | Expand pending historical families and functions | Versions by profile; never declare full compatibility without its completed matrix |
 
-Las alphas 1–5 se cierran con verificaciones de macOS y Linux; el prototipo, las pruebas y correcciones de Android y Windows se concentran en alpha.6 antes de beta. Ambas plataformas siguen siendo objetivos del producto, pero no se anuncian como soportadas hasta validarlas. La primera versión estable no queda bloqueada por CD-ROM, punteros crudos, publicidad o funciones históricas poco útiles; deben aparecer como pendientes o no soportadas, con motivo. El objetivo de investigar toda la API se mantiene separado de implementar todo en una sola entrega.
+Alphas 1–5 close with macOS and Linux verification. Android and Windows prototypes, tests, and fixes are concentrated in alpha.6 before beta. Both remain product targets but are not announced as supported before validation. The first stable version is not blocked by CD-ROM, raw pointers, advertising, or historical functions with little value. List them as pending or unsupported with a reason. Researching the full API is separate from implementing it in one delivery.
 
-## Documentación de APIs
+## API documentation
 
-C y Lua tendrán guías de inicio, referencia por módulo y ejemplos ejecutables equivalentes. Se propone Markdown en Git + MkDocs + GitHub Pages, con firmas C en cabeceras públicas y definiciones LuaCATS para el binding. Véase [plan de documentación](../development/api-documentation.md) para fuentes, CI y versionado. La documentación propuesta no está implementada todavía.
+C and Lua will have getting-started guides, module references, and equivalent runnable examples. The proposal uses Markdown in Git, MkDocs, and GitHub Pages, with C signatures in public headers and LuaCATS definitions for the binding. See the [documentation plan](../development/api-documentation.md) for sources, CI, and versioning. The proposed site is not implemented yet.
 
-## CI y publicación de versiones
+## CI and release publication
 
-[Plan de GitHub Actions](../development/ci.md): empezar en alpha.1 con builds y pruebas headless por plataforma disponible y verificación del catálogo; añadir análisis estático, sanitizers y smoke gráfico en fases posteriores. Preparar binarios de candidato y draft releases al existir empaquetado; documentar y publicar Pages mediante un job separado. Los checks actuales y las plataformas aún pendientes se indican explícitamente.
+The [GitHub Actions plan](../development/ci.md) starts in alpha.1 with available-platform builds, headless tests, and catalog verification. Add static analysis, sanitizers, and graphics smoke tests in later phases. Prepare candidate binaries and draft releases when packaging exists. Document and publish Pages through a separate job. State current checks and pending platforms explicitly.
 
-## Línea de herramientas gráficas
+## Graphics tools track
 
-Ver [malvado-gui](../specs/gui.md): G0 valida toolkit/DPI/tablas/árboles; G1 crea proyectos, abre editor externo, ejecuta y exporta; G2 inspecciona procesos y controla ticks; G3 edita metadatos/animaciones y reutiliza importadores FPG. GUI opcional, con versión propia y sin bloquear el runtime 2.0. Primera entrega con juego en proceso y ventana separados, sin IDE completo ni preview incrustada obligatoria.
+See [malvado-gui](../specs/gui.md). G0 validates toolkit/DPI/tables/trees. G1 creates projects, opens an external editor, runs, and exports. G2 inspects processes and controls ticks. G3 edits metadata/animations and reuses FPG importers. The GUI is optional, has its own version, and does not block runtime 2.0. The first delivery runs the game in a separate process and window; it does not require a full IDE or embedded preview.
 
-Los formatos y la distribución se concretan en [assets](../specs/assets.md): PNG+JSON durante desarrollo, FPG para interoperabilidad con alcance por variante y ZIP para transporte/distribución. Export FPG y ZIP montable por runtime son capacidades posteriores distintas del primer lector FPG.
+See [assets](../specs/assets.md) for formats and distribution: PNG+JSON during development, FPG interoperability by variant, and ZIP for transport/distribution. FPG export and runtime-mountable ZIP are later capabilities, separate from the first FPG reader.
 
-## Organización prevista del código
+## Proposed code layout
 
 ```text
-include/malvado/       API C y tipos opacos
-src/core/             procesos, scheduler, mensajes, reloj, recursos
-src/modules/          funciones de gráficos, texto, entrada, sonido, utilidades
-src/platform/raylib/   integración de ventana, GPU, audio y plataforma
-src/bindings/lua/     registro C de API y userdata
-src/tooling/          servicios C compartidos de proyectos, assets y exportación
-src/cli/              interfaz de comandos a esos servicios
-src/gui/              UI, preferencias y adaptador gráfico aislado
-src/debug/            snapshots/comandos y protocolo local opt-in
-lua/malvado/          fachada mínima y compatibilidad opcional
-build/_deps/          dependencias descargadas por CMake, ignoradas por Git
-cmake/                dependencias/toolchains
-platform/android/     plantilla Activity/Gradle/NDK
-examples/             juegos ejecutables y assets
-api/                  contrato propio de Malvado cuando se formalice
+include/malvado/       C API and opaque types
+src/core/              processes, scheduler, messages, clock, assets
+src/modules/           graphics, text, input, sound, and utility functions
+src/platform/raylib/   window, GPU, audio, and platform integration
+src/bindings/lua/      C API registration and userdata
+src/tooling/           shared C services for projects, assets, and export
+src/cli/               command interface to those services
+src/gui/               UI, preferences, and isolated graphics adapter
+src/debug/             snapshots/commands and opt-in local protocol
+lua/malvado/           minimal facade and optional compatibility
+build/_deps/           CMake-downloaded dependencies, ignored by Git
+cmake/                 dependencies/toolchains
+platform/android/      Activity/Gradle/NDK template
+examples/              runnable games and assets
+api/                   Malvado contract when formalized
 ```
 
-Esta estructura es propuesta; todavía no se crean directorios de código vacíos. La investigación queda en `docs/api`, con los originales externos aislados de la compilación.
+This layout is a proposal; do not create empty code directories for it. Research stays in `docs/api`, with external originals isolated from the build.
 
-## Riesgos y mitigación
+## Risks and mitigation
 
-- **Semántica de procesos:** especificarla antes de portar, con trazas de orden de ejecución y tiempos. No trasladar incidentalmente errores del core viejo al perfil nuevo.
-- **Datos entre Lua y C:** userdata con generación, ownership y referencias de registry; nunca punteros de memoria como identificadores públicos.
-- **Raylib no cubre toda la familia DIV:** FPG/MAP/FNT/PAL, colisión por máscara, scroll y Mode 7 necesitan lógica propia.
-- **Documentación histórica incompleta:** exportaciones prueban nombres y tipos, no nombres de argumentos ni comportamiento. Leer implementación y ejemplos antes de completar cada ficha.
-- **Alcance GUI:** validar primero el taller enfocado; no convertir la migración en un IDE completo. La dependencia C++ de ImGui queda fuera del runtime/CLI y juegos.
-- **Fidelidad de recursos:** conservar IDs, puntos, índices/paletas y offsets; PNG RGBA por sí solo no garantiza semántica histórica.
-- **Multiplataforma:** toolchains por destino, smoke tests nativos y SDK Android fijado; no prometer compilación cruzada universal desde un único equipo.
+- **Process semantics:** specify them before porting, with execution-order and timing traces. Do not carry old-core bugs into the new profile by accident.
+- **Data between Lua and C:** userdata with generation, ownership, and registry references; never use raw memory pointers as public IDs.
+- **Raylib does not cover the full DIV family:** FPG/MAP/FNT/PAL, mask collision, scroll, and Mode 7 need custom logic.
+- **Incomplete historical documentation:** exports prove names and types, not argument names or behavior. Read implementations and examples before completing each record.
+- **GUI scope:** validate the focused workshop first; do not turn migration into a full IDE. ImGui C++ dependencies stay outside runtime/CLI and games.
+- **Asset fidelity:** retain IDs, points, indexes/palettes, and offsets. PNG RGBA alone does not guarantee historical semantics.
+- **Multiplatform:** use target toolchains, native smoke tests, and a pinned Android SDK. Do not promise universal cross-compilation from one machine.
 
-## Siguiente implementación recomendada
+## Recommended next implementation
 
-Continuar alpha.2 con el [refactor C](../architecture/c-first.md): contexto y juego C sin Lua, scheduler nativo y binding Lua conectado al mismo scheduler. Conservar los tests y comportamientos Lua ya existentes y resolver también los requisitos abiertos de alpha.1 antes de cerrar. Ver [versiones](../versions/README.md) para checklist y [CLI](../specs/cli.md) para exportadores.
+Continue alpha.2 with the [C refactor](../architecture/c-first.md): a C context and game without Lua, native scheduler, and Lua binding connected to the same scheduler. Preserve existing Lua tests and behavior. Resolve open alpha.1 requirements before closing. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for exporters.

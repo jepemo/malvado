@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "malvado/malvado.h"
 
 typedef struct {
     int64_t id;
@@ -39,6 +40,8 @@ int malvado_debug_snapshot(MalvadoProcessInfo *out, size_t capacity,
 int malvado_debug_signal(int64_t id, const char *signal);
 int malvado_debug_pause(int paused);
 int malvado_debug_step(void);
+/* Borrowed context, valid only while the runner is active on its owner thread. */
+MvContext *malvado_debug_context(void);
 
 int malvado_run(int argc, char **argv);
 

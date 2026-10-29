@@ -1,3 +1,3 @@
-# Prioridad de procesos
+# Process priority
 
-Ejecuta `malvado-run --headless examples/scheduler/main.lua`. Aunque se cree después, el proceso de prioridad alta imprime primero en cada tick. Los empates siguen el orden de creación. Los cambios de prioridad realizados durante un tick se aplican en el siguiente.
+Run `malvado-run --headless examples/scheduler/main.lua`. The high-priority process prints first in each tick, although it was created later. Ties use creation order. Priority changes during a tick take effect on the next tick.

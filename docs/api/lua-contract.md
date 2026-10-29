@@ -1,41 +1,41 @@
-# Contrato inicial Lua de Malvado 2
+# Initial Malvado 2 Lua contract
 
-**Diseño propuesto, todavía no implementado.** Estos nombres pertenecen a Malvado; no son firmas oficiales de BennuGD. API principal: `local mv = require("malvado")`. No se exportan globales salvo activación del shim legacy.
+**Proposed design. Some parts are not yet implemented.** These are Malvado names, not official BennuGD signatures. Main API: `local mv = require("malvado")`. The normal import does not export globals. A legacy shim may enable them.
 
-| Firma propuesta | Contrato inicial | Realización |
+| Proposed signature | Initial contract | Implementation |
 | --- | --- | --- |
-| `mv.start(init, options?)` | Crea contexto/ventana y llama init una vez; ejecuta hasta cierre, exit o ausencia de procesos de juego | Runner/binding C |
-| `mv.process(fn)` → constructor | Define tipo de proceso; `fn(self)` corre en una coroutine de la VM | C |
-| `Constructor{...}` → pid | Instancia y copia campos; ejecuta en siguiente tick | C |
-| `mv.frame()` | Suspende hasta siguiente tick; error fuera de proceso | `lua_yield` desde C |
-| `mv.signal(pid, signal)` | Señal tipada; handle inexistente produce error en perfil moderno | C |
-| `mv.kill(pid)` | Alias de señal kill, sin árbol implícito en perfil moderno | C |
-| `mv.send(pid, value)` | Encola referencia Lua compartida; error por destino inválido o límite | C/registry |
-| `self:recv()` → value/nil | Desencola sin bloquear; no admitir nil como payload | C/registry |
-| `mv.set_proc(pid, values)` | Actualiza campos validados; campos de identidad no escribibles | C |
-| `mv.key(name)` → bool | Estado sostenido del tick; nombres documentados, adaptados por backend | C |
-| `mv.set_title(text)` | Cambia título; degradación documentada en Android | C/raylib |
-| `mv.clear_screen(r,g,b,a?)` | Configura fondo persistente; canales enteros 0–255, alpha 255 por defecto | C |
-| `mv.font(size,r?,g?,b?,a?)` → font | Fuente con ownership del contexto; color por defecto blanco | C |
-| `mv.write(font,x,y,text,align?)` → text_id | Texto persistente; align por defecto izquierda/superior | C |
-| `mv.change_text(id,text,x?,y?,font?)` | Cambia texto; argumentos omitidos conservan valor | C |
-| `mv.delete_text(id)` | Baja explícita; comportamiento de ID ya borrado por cerrar en P0 | C |
-| `mv.load_image(path)` → image | Asset relativo al proyecto, error de carga con ruta | C |
-| `mv.rand(min,max)` → integer | Rango inclusivo; RNG propio con algoritmo/semilla fijados | C |
-| `mv.time_seconds()` → number | Reloj monótono desde inicio; sustituye `love.timer.getTime` en demos | C |
-| `mv.exit(code?)` | Solicita cierre ordenado, code=0; termina proceso actual de forma controlada | C |
+| `mv.start(init, options?)` | Create a context/window and call init once; run until close, exit, or no game processes | C runner/binding |
+| `mv.process(fn)` → constructor | Define a process type; `fn(self)` runs in a VM coroutine | C |
+| `Constructor{...}` → pid | Create an instance and copy fields; run on the next tick | C |
+| `mv.frame()` | Yield until the next tick; error outside a process | `lua_yield` from C |
+| `mv.signal(pid, signal)` | Typed signal; an unknown handle is an error in the modern profile | C |
+| `mv.kill(pid)` | Kill signal alias; no implicit tree in the modern profile | C |
+| `mv.send(pid, value)` | Queue a value; error for an invalid target or a full queue | C/registry |
+| `self:recv()` → value/nil | Dequeue without blocking; nil is not a payload | C/registry |
+| `mv.set_proc(pid, values)` | Update validated fields; identity fields are read-only | C |
+| `mv.key(name)` → bool | Held state for the tick; documented names adapted by the backend | C |
+| `mv.set_title(text)` | Change the title; document reduced behavior on Android | C/raylib |
+| `mv.clear_screen(r,g,b,a?)` | Set a persistent background; integer channels 0–255, alpha defaults to 255 | C |
+| `mv.font(size,r?,g?,b?,a?)` → font | Context-owned font; color defaults to white | C |
+| `mv.write(font,x,y,text,align?)` → text_id | Persistent text; alignment defaults to top left | C |
+| `mv.change_text(id,text,x?,y?,font?)` | Change text; omitted arguments retain their values | C |
+| `mv.delete_text(id)` | Explicit removal; define behavior for an already deleted ID in P0 | C |
+| `mv.load_image(path)` → image | Asset relative to the project; load errors include the path | C |
+| `mv.rand(min,max)` → integer | Inclusive range; engine RNG with pinned algorithm and seed | C |
+| `mv.time_seconds()` → number | Monotonic time since startup; replaces `love.timer.getTime` in demos | C |
+| `mv.exit(code?)` | Request orderly shutdown, default code 0; end the current process in a controlled way | C |
 
-`options`: ventana con `width`, `height`, `title` y `tick_rate`; defaults 800×600, Malvado y 60. La definición de perfiles, empaquetado y configuración CLI se unificará antes de implementar para no mantener dos fuentes de defaults.
+`options` specifies `width`, `height`, `title`, and `tick_rate`. Defaults are 800×600, Malvado, and 60. Unify profiles, packaging, and CLI configuration before implementation so that defaults have one source.
 
-Propiedades iniciales: `id` read-only, `x/y/z=0`, `angle=0` en grados, `size=1`, `graph=nil`, `fps=0` (cada tick), más campos de usuario. Describir antes de P3 `file/fpg/fpgIndex`, dimensiones, ancla y unidades de `delta`: no asignarles semántica Bennu automáticamente. En el perfil nuevo `delta` será tiempo lógico en segundos entre activaciones; en legacy documentar el comportamiento anterior y la diferencia.
+Proposed initial properties: read-only `id`, `x/y/z=0`, `angle=0` in degrees, `size=1`, `graph=nil`, and `fps=0` (each tick), plus user fields. Before P3, define `file/fpg/fpgIndex`, dimensions, anchor, and `delta` units. Do not assign Bennu semantics automatically. In the new profile, `delta` will be logical seconds between activations. Document the previous behavior and the difference in the legacy profile.
 
-## Ejemplo básico propuesto
+## Proposed basic example
 
 ```lua
 local mv = require("malvado")
 local Hello = mv.process(function(self)
   local font = mv.font(40, 255, 255, 255)
-  local text = mv.write(font, self.x, self.y, "Hola, Malvado")
+  local text = mv.write(font, self.x, self.y, "Hello, Malvado")
   while not mv.key("escape") do
     mv.frame()
   end
@@ -45,9 +45,9 @@ end)
 mv.start(function()
   mv.clear_screen(25, 30, 45)
   Hello { x = 60, y = 80 }
-end, { width = 800, height = 600, title = "Mi juego" })
+end, { width = 800, height = 600, title = "My game" })
 ```
 
-## Shim legacy propuesto
+## Proposed legacy shim
 
-`require("malvado.compat.legacy").import_globals()` instala `process`, `frame`, `font`, `write`, `key`, etc. Solo para migración; no inyectar globales al importar el namespace normal. El constructor continúa devolviendo PID como el core actual. El shim adapta nombres/argumentos; el trabajo de runtime sigue en C. No emula el namespace `love` completo: reemplazar llamadas directas en los ejemplos.
+`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `key`, and other globals. Use it only for migration. The normal namespace import must not inject globals. The constructor still returns a PID, like the current core. The shim adapts names and arguments; runtime work remains in C. It does not emulate the full `love` namespace. Replace direct LÖVE calls in examples.

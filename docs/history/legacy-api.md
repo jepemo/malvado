@@ -1,4 +1,4 @@
-> **Documento histórico no verificado.** Algunas firmas son aproximadas o placeholders. Para planificar la nueva API, consultar [investigación](../api/research.md), [exportaciones reales](../api/inventory.md) y [contrato Lua propuesto](../api/lua-contract.md). No usar esta lista como contrato de compatibilidad.
+> **Unverified historical document.** Some signatures are approximate or placeholders. To plan the new API, see [research](../api/research.md), [actual exports](../api/inventory.md), and the [proposed Lua contract](../api/lua-contract.md). Do not use this list as a compatibility contract.
 
 # Modules and Functions Specification
 

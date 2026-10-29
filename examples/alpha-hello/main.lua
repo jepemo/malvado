@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local Hello = mv.process(function(self)
   local font = mv.font(40, 255, 255, 255)
-  local greeting = mv.write(font, self.x, self.y, "Hola, Malvado")
+  local greeting = mv.write(font, self.x, self.y, "Hello, Malvado")
   while not mv.key("escape") do
     mv.frame()
   end

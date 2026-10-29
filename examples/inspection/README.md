@@ -1,3 +1,3 @@
-# Inspección de procesos
+# Process inspection
 
-Ejecuta `malvado-run --headless examples/inspection/main.lua`. Un controlador crea un enemigo, consulta el número de tick y busca los procesos de ese tipo. La instantánea es una copia del estado observado en el momento de la llamada.
+Run `malvado-run --headless examples/inspection/main.lua`. A controller creates an enemy, reads the tick number, and finds processes of that type. The snapshot is a copy of the state at the time of the call.

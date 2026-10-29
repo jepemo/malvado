@@ -1,3 +1,3 @@
-# Árbol de procesos
+# Process tree
 
-Ejecuta `malvado-run --headless examples/process-tree/main.lua`. Un controlador crea un grupo con dos hijos, espera a que comiencen y detiene el grupo y sus descendientes con `kill_tree`.
+Run `malvado-run --headless examples/process-tree/main.lua`. A controller creates a group with two children, waits for them to start, and stops the group and its descendants with `kill_tree`.

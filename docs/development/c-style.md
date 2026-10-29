@@ -1,14 +1,14 @@
-# Estilo del código C
+# C code style
 
-Escribir código sencillo para que otra persona pueda entenderlo, modificarlo y depurarlo. Priorizar claridad y contratos explícitos sobre abstracciones preventivas o trucos de lenguaje.
+Write code that is easy to understand, change, and debug. Prefer clear code and explicit contracts to unnecessary abstractions or language tricks.
 
-- Funciones pequeñas con una responsabilidad clara; nombres concretos y consistentes con su ámbito. Mantener juntos los datos que comparten ciclo de vida.
-- Una operación importante por línea; evitar funciones enteras comprimidas, macros complejas y anidamiento innecesario. Retornar pronto ante errores.
-- Comentar invariantes, ownership y decisiones que no sean evidentes. Mantener los comentarios sincronizados con el comportamiento.
-- Hacer explícitos creación, destrucción, estados y errores; comprobar tamaños, límites y fallos de asignación. No ocultar efectos globales tras nombres ambiguos.
-- Incluir en cada archivo propio una cabecera con atribución e identificador `SPDX-License-Identifier: Apache-2.0` para código propio de Malvado 2; consultar la [licencia](licensing.md); mantener intactos los avisos de terceros.
-- Cabeceras con interfaz mínima; dependencias y detalles internos en archivos `.c`. Separar el código portátil de APIs de plataforma cuando tenga una responsabilidad real.
-- Seguir el formato local coherentemente: indentación de cuatro espacios, llaves legibles, líneas de longitud razonable y espacios entre funciones. No reformatear código de terceros en `vendor/`.
-- Las pruebas deben describir el comportamiento observable, especialmente errores, bordes y ciclos de vida, sin duplicar la implementación.
+- Give each small function one clear task. Use specific names that are consistent with their scope. Keep data with the same lifetime together.
+- Put one important operation on each line. Avoid compressed functions, complex macros, and unnecessary nesting. Return early on errors.
+- Document invariants, ownership, and decisions that are not obvious. Keep comments consistent with the code.
+- Make creation, destruction, states, and errors explicit. Check sizes, limits, and allocation failures. Do not hide global effects behind unclear names.
+- Start each Malvado C source and header file with the full ASCII logo header, attribution, and `SPDX-License-Identifier: Apache-2.0`, as in `src/main.c`. See [licensing](licensing.md). Keep third-party notices unchanged.
+- Keep header interfaces small. Put dependencies and internal details in `.c` files. Separate portable code from platform APIs when the separation has a clear purpose.
+- Follow the local format: four-space indentation, clear braces, reasonable line lengths, and blank lines between functions. Do not reformat third-party code in `vendor/`.
+- Test observable behavior, especially errors, boundary conditions, and object lifetimes. Do not duplicate the implementation in tests.
 
-El runtime de alpha.1 todavía tiene estado global y reúne scheduler, binding y dibujo: la separación prevista en el roadmap sigue pendiente. Este estilo orienta nuevas contribuciones y la refactorización gradual, sin afirmar que el código actual ya cumple todos los puntos.
+This guide applies to new contributions and gradual refactoring. It does not claim that all existing code follows these rules.

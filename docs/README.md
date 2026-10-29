@@ -1,55 +1,55 @@
-# Malvado: siguiente generación
+# Malvado: next generation
 
-Propuesta de migración, revisada el 29 de octubre de 2026. Estado: **primer corte del runtime C en desarrollo**; CLI y GUI están planificados.
+Migration proposal, revised on 29 October 2026. Status: **the C runtime is under development**; the CLI and GUI are planned.
 
-El motor actual usa Lua/LÖVE. La siguiente generación propone C + raylib, Lua incluido como interfaz principal, procesos cooperativos y herramientas para crear y distribuir juegos. La investigación se basa en el código de Malvado `24d02aba2b08f805a046aa04dcc2e29243eaa00f`.
+The current engine uses Lua/LÖVE. The next generation uses C and raylib, with Lua as the main interface, cooperative processes, and tools to create and distribute games. Research is based on Malvado commit `24d02aba2b08f805a046aa04dcc2e29243eaa00f`.
 
-## Lectura recomendada
+## Recommended reading
 
-1. [Plan y decisiones](planning/roadmap.md).
-2. [Arquitectura C/raylib/Lua y procesos](architecture/runtime.md) y [núcleo C y binding Lua oficial](architecture/c-first.md).
-3. [Investigación DIV/Fénix/BennuGD](api/research.md).
-4. [Inventario completo de exportaciones de los módulos de referencia](api/inventory.md), [catálogo JSON](api/catalog.json) y [procedencia](api/upstream.md).
-5. [Perfiles de compatibilidad y trabajo pendiente](api/compatibility.md).
-6. [Contrato inicial de la API Lua](api/lua-contract.md).
-7. [Ejemplos y criterios de aceptación](examples/README.md).
-8. [Diseño de malvado-cli y exportaciones](specs/cli.md).
-9. [malvado-gui: alcance, ImGui y herramientas inspiradas en DIV](specs/gui.md).
-10. [Recursos: FPG, PNG/JSON y paquetes ZIP](specs/assets.md).
-11. [Versiones propuestas](versions/README.md).
-12. [Documentación para GitHub](development/publishing.md).
-13. [CI, calidad y releases con GitHub Actions](development/ci.md).
-14. [Distribución del SDK, herramientas y LuaRocks](development/distribution.md).
-15. [Estilo C](development/c-style.md) y [licencias y atribución](development/licensing.md).
-16. [Documentación y ejemplos de las APIs C y Lua](development/api-documentation.md).
+1. [Roadmap and decisions](planning/roadmap.md).
+2. [C/raylib/Lua runtime and process architecture](architecture/runtime.md) and [C core and official Lua binding](architecture/c-first.md).
+3. [DIV/Fénix/BennuGD research](api/research.md).
+4. [Reference module export inventory](api/inventory.md), [JSON catalog](api/catalog.json), and [source provenance](api/upstream.md).
+5. [Compatibility profiles and remaining work](api/compatibility.md).
+6. [Initial Lua API contract](api/lua-contract.md).
+7. [Examples and acceptance criteria](examples/README.md).
+8. [malvado-cli and export design](specs/cli.md).
+9. [malvado-gui scope, ImGui, and DIV-inspired tools](specs/gui.md).
+10. [Assets: FPG, PNG/JSON, and ZIP packages](specs/assets.md).
+11. [Proposed versions](versions/README.md).
+12. [Documentation for GitHub](development/publishing.md).
+13. [CI, quality, and releases with GitHub Actions](development/ci.md).
+14. [SDK, tools, and LuaRocks distribution](development/distribution.md).
+15. [C style](development/c-style.md) and [licenses and attribution](development/licensing.md).
+16. [C and Lua API documentation and examples](development/api-documentation.md).
 
-[La lista histórica de API](history/legacy-api.md) es orientativa; no representa una especificación verificada ni la API nueva. Los planes anteriores quedan en [history](history/README.md). Los ejemplos anteriores dependen de LÖVE; el [primer corte C](versions/2.0.0-alpha.1.md) incluye un ejemplo propio.
+The [historical API list](history/legacy-api.md) is for guidance. It is not a verified specification or the new API. Earlier plans remain in [history](history/README.md). Earlier examples depend on LÖVE. The [initial C runtime](versions/2.0.0-alpha.1.md) has its own example.
 
-## Organización de la documentación
+## Documentation layout
 
-- `planning/`: roadmap y decisiones de entrega.
-- `specs/`: propuestas de producto para assets, CLI y GUI.
-- `architecture/`: diseño técnico del runtime.
-- `api/`: investigación, contrato propuesto, catálogo y fuentes fijadas.
-- `versions/`: hitos y estado de implementación por versión.
-- `development/`: CI, releases y publicación de la documentación.
-- `examples/`: planificación de ejemplos y aceptación.
-- `history/`: documentos sustituidos conservados para consulta.
-- `tools/`: generadores utilizados por la documentación.
+- `planning/`: roadmap and delivery decisions.
+- `specs/`: product proposals for assets, CLI, and GUI.
+- `architecture/`: runtime technical design.
+- `api/`: research, proposed contract, catalog, and pinned sources.
+- `versions/`: milestones and implementation status by version.
+- `development/`: CI, releases, and documentation publishing.
+- `examples/`: example plans and acceptance.
+- `history/`: superseded documents kept for reference.
+- `tools/`: documentation generators.
 
-Cada documento debe indicar si describe el comportamiento actual o una propuesta. Añadir documentos a la carpeta correspondiente y enlazarlos desde este índice.
+Each document must state whether it describes current behavior or a proposal. Put new documents in the applicable folder and link them from this index.
 
-## Organización del repositorio
+## Repository layout
 
-La raíz contiene los puntos de entrada y configuración; `src/` alberga el runtime C, `malvado/` el código Lua/LÖVE histórico, `examples/` juegos de ejemplo, `tests/` pruebas; CMake descarga las fuentes de las dependencias en el directorio de compilación ignorado por Git. Los módulos futuros se agruparán por responsabilidad según el [roadmap](planning/roadmap.md), sin mover código antes de tener una separación real.
+The root contains entry points and configuration. `src/` contains the C runtime, `malvado/` contains historical Lua/LÖVE code, `examples/` contains example games, and `tests/` contains tests. CMake downloads dependency source into the build directory, which Git ignores. Group future modules by responsibility according to the [roadmap](planning/roadmap.md). Do not move code before the separation exists.
 
-## Regenerar la referencia
+## Regenerate the reference
 
-Desde la raíz del repositorio, con Python 3.9 o posterior:
+From the repository root, with Python 3.9 or later:
 
 ```sh
 python3 docs/tools/fetch_api_sources.py
 python3 docs/tools/catalog_api.py
 ```
 
-La primera orden descarga las fuentes fijadas si faltan y verifica sus hashes; requiere red para la descarga, pero ninguna dependencia externa. El generador funciona sin red y comprueba los hashes antes de regenerar. La API de referencia y el contrato Lua son documentos distintos: una firma BennuGD no se transforma automáticamente en una firma Lua válida.
+The first command downloads missing pinned sources and verifies their hashes. It requires network access for downloads but no external packages. The generator runs offline and checks the hashes before regeneration. The reference API and Lua contract are separate documents. A BennuGD signature does not automatically become a valid Lua signature.

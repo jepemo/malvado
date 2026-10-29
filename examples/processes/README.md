@@ -1,3 +1,3 @@
-# Procesos y mensajes
+# Processes and messages
 
-Ejecuta `malvado-run --headless examples/processes/main.lua`. El padre crea un hijo, le envía una tabla y lo detiene; ambos terminan y el programa sale. El mensaje conserva la referencia a la tabla Lua compartida.
+Run `malvado-run --headless examples/processes/main.lua`. The parent creates a child, sends it a table, and stops it. Both processes end and the program exits. The message retains a reference to the shared Lua table.
