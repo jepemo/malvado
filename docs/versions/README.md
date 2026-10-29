@@ -3,7 +3,7 @@
 This page shows the release plan at a glance. Open a version to see its checklist, acceptance criteria, and related design documents. A checked item records verified work; it does not by itself mean the version is released. No 2.0 tag or release exists yet.
 
 - [ ] [Alpha.1](2.0.0-alpha.1.md) — **in progress**: C runtime, bundled Lua, raylib, and hello.
-- [ ] [Alpha.2](2.0.0-alpha.2.md) — **in validation**: shared C/Lua scheduler, processes, signals, messages, and inspection. Depends on alpha.1.
+- [ ] [Alpha.2](2.0.0-alpha.2.md) — **in validation**: shared C/Lua scheduler, processes, signals, messages, and inspection. CI passed; alpha.1 acceptance and contract review remain open.
 - [ ] [Alpha.3](2.0.0-alpha.3.md) — **planned**: graphics, input, text, audio, migrated examples, and GUI toolkit prototype G0.
 - [ ] [Alpha.4](2.0.0-alpha.4.md) — **planned**: CLI, C SDK, desktop C/Lua packages, and the basis for GUI G1.
 - [ ] [Alpha.5](2.0.0-alpha.5.md) — **planned**: essential Bennu profile, collision, and first asset importers.
