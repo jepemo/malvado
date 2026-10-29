@@ -89,7 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth xdotool
       - name: Configure and build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON
@@ -100,7 +100,7 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          ctest --test-dir build -R '^visual_(sleep_freeze|c_window|lua_hello)$' --output-on-failure
+          ctest --test-dir build -R '^visual_(sleep_freeze|c_window|lua_hello|hello_escape)$' --output-on-failure
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'

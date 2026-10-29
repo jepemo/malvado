@@ -152,6 +152,14 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_test(NAME visual_lua_hello COMMAND hello-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/examples/alpha-hello/main.lua)
   set_tests_properties(visual_lua_hello PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1")
   set_tests_properties(visual_sleep_freeze visual_c_window visual_lua_hello PROPERTIES TIMEOUT 15)
+  if(UNIX AND NOT APPLE)
+    find_program(MALVADO_XDOTOOL xdotool)
+    if(MALVADO_XDOTOOL)
+      add_test(NAME visual_hello_escape COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/hello_escape.sh
+        $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/alpha-hello/main.lua)
+      set_tests_properties(visual_hello_escape PROPERTIES TIMEOUT 15)
+    endif()
+  endif()
 endif()
 
 endif() # MALVADO_BUILD_LUA
