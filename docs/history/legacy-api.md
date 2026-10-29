@@ -1,3 +1,5 @@
+> **Documento histórico no verificado.** Algunas firmas son aproximadas o placeholders. Para planificar la nueva API, consultar [investigación](../api/research.md), [exportaciones reales](../api/inventory.md) y [contrato Lua propuesto](../api/lua-contract.md). No usar esta lista como contrato de compatibilidad.
+
 # Modules and Functions Specification
 
 This document describes modules and their functions in a format ready to implement.

@@ -9,7 +9,7 @@
  malvado - A game programming library with  "DIV Game Studio"-style
             processes for Lua/Love2D.
 
- Copyright (C) 2017-present Jeremies Pérez Morata
+ Copyright (C) 2017-present Jeremías Pérez
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

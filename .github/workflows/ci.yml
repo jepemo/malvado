@@ -1,0 +1,108 @@
+# Malvado 2; project created by Jeremías Pérez and contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14] # Windows se incorpora en alpha.6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+      - name: Test
+        run: ctest --test-dir build -C Debug --output-on-failure
+  c-core:
+    name: C core without Lua or raylib (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure without dependencies
+        run: >-
+          cmake -S . -B build-c -DCMAKE_BUILD_TYPE=Debug
+          -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF
+          -DCMAKE_INSTALL_LIBDIR=lib -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+      - name: Build and test
+        run: |
+          cmake --build build-c --parallel
+          ctest --test-dir build-c --output-on-failure
+          test ! -d build-c/_deps
+      - name: Test installed API from a C consumer
+        run: |
+          cmake --install build-c --prefix "$RUNNER_TEMP/malvado-sdk"
+          cc -I"$RUNNER_TEMP/malvado-sdk/include" examples/c/clock/main.c "$RUNNER_TEMP/malvado-sdk/lib/libmalvado_core.a" -lm -o "$RUNNER_TEMP/malvado-c-example"
+          "$RUNNER_TEMP/malvado-c-example"
+  sanitizers:
+    name: Address and undefined behavior sanitizers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev clang
+      - name: Configure
+        run: >-
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Static analysis of project C sources
+        run: |
+          for source in src/runner/runtime.c src/core/clock.c src/core/schedule.c; do
+            clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -Isrc -Ibuild/_deps/lua-src/src -Ibuild/_deps/raylib-src/src "$source"
+          done
+  visual:
+    name: Sleep and freeze rendering (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON
+          cmake --build build --parallel
+      - name: Test rendering
+        run: |
+          Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          ctest --test-dir build -R '^visual_sleep_freeze$' --output-on-failure
+        env:
+          DISPLAY: ':99'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+  docs:
+    name: Verify API catalog
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: python3 docs/tools/fetch_api_sources.py
+      - run: python3 docs/tools/catalog_api.py
+      - run: git diff --exit-code -- docs/api/catalog.json docs/api/inventory.md

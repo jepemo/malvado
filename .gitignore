@@ -1,1 +1,7 @@
 docs/website/build
+
+# Generated builds and locally downloaded dependencies
+/build/
+/build-*/
+/vendor/
+/docs/api/upstream/

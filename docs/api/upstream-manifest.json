@@ -1,0 +1,518 @@
+{
+  "schema_version": 1,
+  "consulted": "2026-10-29",
+  "sources": [
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/COPYING",
+      "local": "api/upstream/bennugd1/COPYING",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/COPYING",
+      "sha256": "4fdb9b8dd04dbb658c6f9f35de51521115a698f4b629da3dba92da72a89050aa"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "core/include/bgddl.h",
+      "local": "api/upstream/bennugd1/bgddl.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/core/include/bgddl.h",
+      "sha256": "a3ad28e5c6dd96c6e70456791cfa72d93e734d8dbd1eba5a9b3d60d0096b679a"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libblit/libblit_exports.h",
+      "local": "api/upstream/bennugd1/libblit_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libblit/libblit_exports.h",
+      "sha256": "8dc0e0caf97b403b4753ad907dd021f495cd0f3abebfef44f4ff931ebd43faa9"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libfont/libfont_exports.h",
+      "local": "api/upstream/bennugd1/libfont_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libfont/libfont_exports.h",
+      "sha256": "705926573359c0ea7c39ef9fcc3b9fa58b1e77b9ae1ec13bd20c7f12d8b2d7d4"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libgrbase/libgrbase_exports.h",
+      "local": "api/upstream/bennugd1/libgrbase_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libgrbase/libgrbase_exports.h",
+      "sha256": "e039aca4f8dbf0518f22449a3cf64f7aeadfd726dda143c7b0075668e38d8636"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libjoy/libjoy_exports.h",
+      "local": "api/upstream/bennugd1/libjoy_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libjoy/libjoy_exports.h",
+      "sha256": "758d350bfcadd8aba96f2b63436070a27dcb7b49da53a2c185d146f1e7835a1d"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libkey/libkey_exports.h",
+      "local": "api/upstream/bennugd1/libkey_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libkey/libkey_exports.h",
+      "sha256": "ec49c156d84ede3a576f237cfcfbdc3e81d504afea32224712cd42602db25cfd"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libmouse/libmouse_exports.h",
+      "local": "api/upstream/bennugd1/libmouse_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libmouse/libmouse_exports.h",
+      "sha256": "f61d78ce3ff09c5681d1d30409491497529a89bd6bab922faf3bfc90ad22a602"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/librender/librender_exports.h",
+      "local": "api/upstream/bennugd1/librender_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/librender/librender_exports.h",
+      "sha256": "2430c4eed9f057a3af1955c5636c90166e10be5c46151cb98a3d9da358bd6210"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libscroll/libscroll_exports.h",
+      "local": "api/upstream/bennugd1/libscroll_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libscroll/libscroll_exports.h",
+      "sha256": "5022baac5d526a0fb37242d6534cabc454f56945a585c9ffb3d3209f59d422e4"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libtext/libtext_exports.h",
+      "local": "api/upstream/bennugd1/libtext_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libtext/libtext_exports.h",
+      "sha256": "912718c85277c96100b498af1088e9dde4fa1b99b99a79656a5a46b595407be0"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libvideo/libvideo_exports.h",
+      "local": "api/upstream/bennugd1/libvideo_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libvideo/libvideo_exports.h",
+      "sha256": "fbac21ab3d3ef0a00977bc6ab3bfd7277c4c0ddf4a56cfca979bbb5a2e183a84"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/libwm/libwm_exports.h",
+      "local": "api/upstream/bennugd1/libwm_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/libwm/libwm_exports.h",
+      "sha256": "484b39fc382dcfb7ad9f9841ebce2891f3088c041e6adc61a2581194780a01c1"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_blendop/mod_blendop_exports.h",
+      "local": "api/upstream/bennugd1/mod_blendop_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_blendop/mod_blendop_exports.h",
+      "sha256": "a20269cf2f6ed8f55641ae3cb4fb830223844898a789fea5af4a9aa6a70296ed"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_cd/mod_cd_exports.h",
+      "local": "api/upstream/bennugd1/mod_cd_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_cd/mod_cd_exports.h",
+      "sha256": "b11a08634a6a2eb7397b935035acd28de8e65909304076c36d7f026fc66679e8"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_crypt/mod_crypt_exports.h",
+      "local": "api/upstream/bennugd1/mod_crypt_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_crypt/mod_crypt_exports.h",
+      "sha256": "641241af485545431afe842a82d3f11014f91f6ec2148745e238f479f5247da4"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_debug/mod_debug_exports.h",
+      "local": "api/upstream/bennugd1/mod_debug_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_debug/mod_debug_exports.h",
+      "sha256": "94428fe3e179ceb247de2d7b7276a95f8d28b5bb8809ff95faada5b02ecb9195"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_dir/mod_dir_exports.h",
+      "local": "api/upstream/bennugd1/mod_dir_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_dir/mod_dir_exports.h",
+      "sha256": "918760107d062534b0c4600a7f102ccaaa4989e77b10586911fd670f6e2f7edf"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_draw/mod_draw_exports.h",
+      "local": "api/upstream/bennugd1/mod_draw_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_draw/mod_draw_exports.h",
+      "sha256": "1f4f9a6c7f185ddb7992046d6741cf0ce254c6aa914d80694c1da44347abe336"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_effects/mod_effects_exports.h",
+      "local": "api/upstream/bennugd1/mod_effects_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_effects/mod_effects_exports.h",
+      "sha256": "b1b2d23f612141a5860e7403d546aa140ec76e98677c11546c65630797477aa8"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_file/mod_file_exports.h",
+      "local": "api/upstream/bennugd1/mod_file_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_file/mod_file_exports.h",
+      "sha256": "cc5af68658629b6828ff50aea25ad1b646927cbde1f1f0450a5043129aec1319"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_flic/mod_flic_exports.h",
+      "local": "api/upstream/bennugd1/mod_flic_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_flic/mod_flic_exports.h",
+      "sha256": "cc46fa75f422bbe4ef5c986a173953b7ea492fa975675ab43f1895952d440a9f"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_grproc/mod_grproc_exports.h",
+      "local": "api/upstream/bennugd1/mod_grproc_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_grproc/mod_grproc_exports.h",
+      "sha256": "f3560ca28c4cc2b67461b0568e76ecb464ccaf83dd8bb60b523faffae7fdf9ea"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_joy/mod_joy_exports.h",
+      "local": "api/upstream/bennugd1/mod_joy_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_joy/mod_joy_exports.h",
+      "sha256": "797e7e04bea88433393dd706a4976bff0f90e922004a1036d043f749f43b21c5"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_key/mod_key_exports.h",
+      "local": "api/upstream/bennugd1/mod_key_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_key/mod_key_exports.h",
+      "sha256": "91540a63f3f6cf0baceff3d8505ef11fa7fe23dc07f4a21a48a354c2ee0bf2ef"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_m7/mod_m7_exports.h",
+      "local": "api/upstream/bennugd1/mod_m7_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_m7/mod_m7_exports.h",
+      "sha256": "8ac8a458cf7f132900a25383c09246d08881a937116ad7d1c86b5a89e3987055"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_map/mod_map_exports.h",
+      "local": "api/upstream/bennugd1/mod_map_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/mod_map_exports.h",
+      "sha256": "49ac658fb93913cda360e83d2cc9f594c0ae112260a6882c805ff4e2145484b2"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_math/mod_math_exports.h",
+      "local": "api/upstream/bennugd1/mod_math_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_math/mod_math_exports.h",
+      "sha256": "a45f57cb393d060e7f8af6884777d5ad8fc96db8849f7565776ee6bb631ef45b"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_mathi/mod_mathi_exports.h",
+      "local": "api/upstream/bennugd1/mod_mathi_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_mathi/mod_mathi_exports.h",
+      "sha256": "cc6b89610b7cd99bf4a7effac84d9669cbafb4147c2799a72c2b9cfddd17a046"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_mem/mod_mem_exports.h",
+      "local": "api/upstream/bennugd1/mod_mem_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_mem/mod_mem_exports.h",
+      "sha256": "be6b3ca38d330be903738feef623b47369dba9a5b06f88ef61bf16e965aef269"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_mouse/mod_mouse_exports.h",
+      "local": "api/upstream/bennugd1/mod_mouse_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_mouse/mod_mouse_exports.h",
+      "sha256": "613505a4125c74aabc71317315f42488297564c8f42063a13c2e323d3652c860"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_path/mod_path_exports.h",
+      "local": "api/upstream/bennugd1/mod_path_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_path/mod_path_exports.h",
+      "sha256": "7c2d33de0ac74c137cd34137a4d4bceff0886b423343070a3e049867f829981b"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_proc/mod_proc_exports.h",
+      "local": "api/upstream/bennugd1/mod_proc_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_proc/mod_proc_exports.h",
+      "sha256": "8461bff0c6b220d1f3c8b4a58103eab16085fdfcd306200c1ce0398c6f488e26"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_rand/mod_rand_exports.h",
+      "local": "api/upstream/bennugd1/mod_rand_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_rand/mod_rand_exports.h",
+      "sha256": "23b8cf801e25ae28c97d39a6baac14526533f23fc138482db2c09a3df3db026f"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_regex/mod_regex_exports.h",
+      "local": "api/upstream/bennugd1/mod_regex_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_regex/mod_regex_exports.h",
+      "sha256": "0994c725e9063124683da66c50f0a45823a6f12e226ac4cdfc6ed955cce19902"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_say/mod_say_exports.h",
+      "local": "api/upstream/bennugd1/mod_say_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_say/mod_say_exports.h",
+      "sha256": "3e7181c0627671c6ee1d9b92f853b993db91e0181b7f88d6886396674da2725f"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_screen/mod_screen_exports.h",
+      "local": "api/upstream/bennugd1/mod_screen_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_screen/mod_screen_exports.h",
+      "sha256": "be7e222d671b17641e00403d8335d209cab0fb022b343a8925a363889e98cd7d"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_scroll/mod_scroll_exports.h",
+      "local": "api/upstream/bennugd1/mod_scroll_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_scroll/mod_scroll_exports.h",
+      "sha256": "3b122680a6ac25a7f007b8ac52bf085ce7f1008d73a2b156eb6bb9fd18020a5f"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_sort/mod_sort_exports.h",
+      "local": "api/upstream/bennugd1/mod_sort_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_sort/mod_sort_exports.h",
+      "sha256": "a6672f6bfcb55946cbb347e8740a4a3f4d725100b61c3b7a3be0121e3a29c4e9"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_sound/mod_sound_exports.h",
+      "local": "api/upstream/bennugd1/mod_sound_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_sound/mod_sound_exports.h",
+      "sha256": "1550bf2295e8aba34496742eb3b5dde61993ac37f132b252313f316f4d031eb8"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_string/mod_string_exports.h",
+      "local": "api/upstream/bennugd1/mod_string_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_string/mod_string_exports.h",
+      "sha256": "0cac8a51dbd20c4bb2b4fd3bb5c65ed26ef2c6833a43a51f6e6748a65aed6ce0"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_sys/mod_sys_exports.h",
+      "local": "api/upstream/bennugd1/mod_sys_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_sys/mod_sys_exports.h",
+      "sha256": "f0d234be3ed47b93ce85bfd6deb7e3c125d2833ee0b8fc98ea19ecab25e4d50c"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_text/mod_text_exports.h",
+      "local": "api/upstream/bennugd1/mod_text_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_text/mod_text_exports.h",
+      "sha256": "d1663edf493e53850fd4f404ae25ac8bef426c73d802cb589501b18e9cb99238"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_time/mod_time_exports.h",
+      "local": "api/upstream/bennugd1/mod_time_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_time/mod_time_exports.h",
+      "sha256": "a0c13af7e17ab1b585086d105795c3781a88691a3fe4c323e754289130fa396f"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_timers/mod_timers_exports.h",
+      "local": "api/upstream/bennugd1/mod_timers_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_timers/mod_timers_exports.h",
+      "sha256": "af34f83112c72d7fcd9b3b5fd8a9823fd4cfa4f180c8760b17f20768158ac140"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_video/mod_video_exports.h",
+      "local": "api/upstream/bennugd1/mod_video_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_video/mod_video_exports.h",
+      "sha256": "e9950fbfbb5ba1c92544249c09cd262a81a7ebd6f130232b48699dc2eca05157"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "modules/mod_wm/mod_wm_exports.h",
+      "local": "api/upstream/bennugd1/mod_wm_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_wm/mod_wm_exports.h",
+      "sha256": "338459d160150a9db1f3681025982f7c03d308b3977103984e59bc1a5fcfd2b4"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "core/bgdrtm/src/sysprocs.c",
+      "local": "api/upstream/bennugd1/sysprocs.c",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/core/bgdrtm/src/sysprocs.c",
+      "sha256": "6229b8dbed0b1921f2ad76d807a2cd2507e0ab07af5b471f405a37d6e674075b"
+    },
+    {
+      "engine": "bennugd1",
+      "commit": "d49f71891f38db9bbf08c0f6f0002007f564a03c",
+      "path": "core/bgdrtm/include/sysprocs_p.h",
+      "local": "api/upstream/bennugd1/sysprocs_p.h",
+      "url": "https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/core/bgdrtm/include/sysprocs_p.h",
+      "sha256": "52ca448c7fdffd342ed3477246661eb01e664dad4f554c96d8025cfc77ad2b46"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "LICENSE.md",
+      "local": "api/upstream/bennugd2/LICENSE.md",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/LICENSE.md",
+      "sha256": "10ef9ecf62a4d5b274077e5104e2c2b794bd15f60756278238e7b5883c5ea54e"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "core/include/bgddl.h",
+      "local": "api/upstream/bennugd2/bgddl.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/include/bgddl.h",
+      "sha256": "d3893195658355dcd8ef7171fcc412bb439ab5daf0c66ec18fba92ad71c25f3e"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "core/bgdrtm/instance.c",
+      "local": "api/upstream/bennugd2/instance.c",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/instance.c",
+      "sha256": "accf3c23011ce7bc44313b421f0317b007d82e8ed075a8ef2c40080feafee905"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libbggfx/libbggfx_exports.h",
+      "local": "api/upstream/bennugd2/libbggfx_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libbggfx/libbggfx_exports.h",
+      "sha256": "75563824b20a738a0f404713c0a7061abdb974c02b791e76e26d9b99a7767654"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libbginput/libbginput_exports.h",
+      "local": "api/upstream/bennugd2/libbginput_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libbginput/libbginput_exports.h",
+      "sha256": "bec2ec301c955b23921a9cdb8a42490234406fd3f594a14dbc0b93b300e17086"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_ads/libmod_ads_exports.h",
+      "local": "api/upstream/bennugd2/libmod_ads_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_ads/libmod_ads_exports.h",
+      "sha256": "86be1cded74a900c65f9ac461f4ad9fcd469c869c255a8671c92e878b9273b5b"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_debug/libmod_debug_exports.h",
+      "local": "api/upstream/bennugd2/libmod_debug_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_debug/libmod_debug_exports.h",
+      "sha256": "04284b907a18d08052810cb40df5c12169fdbd6f934b80b6b13aa403113d5217"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_gfx/libmod_gfx_exports.h",
+      "local": "api/upstream/bennugd2/libmod_gfx_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_gfx/libmod_gfx_exports.h",
+      "sha256": "53621f39184fdf5172c7dd9732a99bd6cbc5528f05809345c28bc7be63e985ed"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_iap/libmod_iap_exports.h",
+      "local": "api/upstream/bennugd2/libmod_iap_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_iap/libmod_iap_exports.h",
+      "sha256": "3bab60856ee69c258047003ff201c612159cba6c050544ffd33a61020633302d"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_input/libmod_input_exports.h",
+      "local": "api/upstream/bennugd2/libmod_input_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_input/libmod_input_exports.h",
+      "sha256": "83bf93c1c1d70846df9fa2f83ddad8c778a1b76561fde6addd07dfc766c5de72"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_misc/libmod_misc_exports.h",
+      "local": "api/upstream/bennugd2/libmod_misc_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_misc/libmod_misc_exports.h",
+      "sha256": "a9b3e93fdfc1a5f080597bdeaa818be5999625248bf1ce79c4df317232bb509c"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_net/libmod_net_exports.h",
+      "local": "api/upstream/bennugd2/libmod_net_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_net/libmod_net_exports.h",
+      "sha256": "869df85caba7227324970332262c614ce64261c7d83cd922137de855557cced0"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "modules/libmod_sound/libmod_sound_exports.h",
+      "local": "api/upstream/bennugd2/libmod_sound_exports.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_sound/libmod_sound_exports.h",
+      "sha256": "994e919d58a1bef60b036ab0305dab235d1860fa83e1142b1d8db0983e23ccd1"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "core/bgdrtm/sysprocs.c",
+      "local": "api/upstream/bennugd2/sysprocs.c",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/sysprocs.c",
+      "sha256": "7b6b43c834ce584d44b06cffc89d75151a24aafe36bd20cc90853a32be0be6a1"
+    },
+    {
+      "engine": "bennugd2",
+      "commit": "baf8dc1b744d47dae58fc20c139dd44656907911",
+      "path": "core/bgdrtm/sysprocs_p.h",
+      "local": "api/upstream/bennugd2/sysprocs_p.h",
+      "url": "https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/sysprocs_p.h",
+      "sha256": "b7fa486d606b87519bea2bb1e9ce57aa15358c98cbf2d7f15a7834b4e34aab51"
+    }
+  ]
+}
