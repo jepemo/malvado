@@ -33,7 +33,7 @@ Alpha.2 incluye documentación de contratos y ejemplos mínimos C y Lua; alpha.3
 
 ## CI por versión
 
-Alpha.1 incorpora builds CMake/CTest y comprobación de documentación en GitHub Actions; alpha.2 añade análisis y sanitizers; alpha.3, smoke gráfico y build del sitio; alpha.4, paquetes desktop y candidato de release; alpha.6, Android y la matriz/pruebas completas de Windows. Beta prepara Pages versionado y publicación revisada. Detalles y criterios de aceptación en [CI y releases](../development/ci.md). El workflow de builds, catálogo, sanitizers y prueba gráfica Linux está implementado; falta ejecutarlo en GitHub.
+Alpha.1 incorpora builds CMake/CTest y comprobación de documentación en GitHub Actions; alpha.2 añade análisis y sanitizers; alpha.3, smoke gráfico y build del sitio; alpha.4, paquetes desktop y candidato de release; alpha.6, Android y la matriz/pruebas completas de Windows. Beta prepara Pages versionado y publicación revisada. Detalles y criterios de aceptación en [CI y releases](../development/ci.md). El workflow de builds, catálogo, sanitizers y prueba gráfica Linux [pasó en GitHub](https://github.com/jepemo/malvado/actions/runs/40908427079).
 
 ## Línea opcional malvado-gui
 

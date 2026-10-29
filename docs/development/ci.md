@@ -1,6 +1,6 @@
 # CI, documentación y versiones con GitHub Actions
 
-Estado: workflow inicial implementado, pendiente de ejecución en GitHub. Consulta inicial: 2026-10-29. El objetivo es detectar fallos al proponer cambios, generar binarios verificables y publicar documentación y versiones cuando estén listas. No se crea ni publica ninguna release en esta fase.
+Estado: workflow inicial implementado y ejecutado en GitHub el 2026-10-29. El objetivo es detectar fallos al proponer cambios, generar binarios verificables y publicar documentación y versiones cuando estén listas. No se crea ni publica ninguna release en esta fase.
 
 ## Qué se ejecuta y cuándo
 
@@ -13,7 +13,7 @@ Estado: workflow inicial implementado, pendiente de ejecución en GitHub. Consul
 
 La publicación requiere configurar permisos y Pages en GitHub; el mero hecho de escribir los workflows no configura ni publica el sitio. Los PR externos se ejecutan sin secretos de firma o despliegue. Usar nombres de checks estables para protección de rama cuando el repositorio lo permita.
 
-El archivo `.github/workflows/ci.yml` contiene la matriz macOS/Linux, la comprobación del catálogo, un job de sanitizers y análisis estático, y la prueba gráfica Linux con Xvfb. Se ha probado localmente en macOS y en Linux ARM64, pero el workflow de GitHub y Windows todavía no están verificados.
+El archivo `.github/workflows/ci.yml` contiene la matriz macOS/Linux, la comprobación del catálogo, un job de sanitizers y análisis estático, y la prueba gráfica Linux con Xvfb. Los siete jobs pasaron en [GitHub Actions para el commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows se valida en alpha.6.
 
 ## CI inicial: alpha.1
 
