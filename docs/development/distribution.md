@@ -8,13 +8,9 @@ The main Malvado 2 channel will be a **downloadable SDK per platform**. It will 
 
 Evaluate an **optional** LuaRocks distribution for developers who already use Lua. This requires a tested C module that can load in an external interpreter. The current `malvado-run` has its own VM and registers `malvado` in it. This does not automatically make it a module that any `lua` can load. Do not advertise `luarocks install malvado` for 2.0 until that module and its rockspec work.
 
-## The 1.0 rockspec
+## Historical 1.0 rockspec
 
-`malvado-1.0.0-0.rockspec` at the root is valid and useful. `luarocks make` can find a rockspec in the current directory. Its [documentation](https://github.com/luarocks/luarocks/blob/main/docs/creating_a_rock.md) also permits an explicit file and states that its name must match the package and version. Rockspecs do not all have to be at the repository root.
-
-The current file points to `v1.0`, uses Lua modules in `malvado/`, requires Lua >= 5.1, and describes the LÖVE version. Its presence does not prove that the LuaRocks release exists or that its source/tag is currently accessible. See the [roadmap](../planning/roadmap.md) for review and the historical-code license conflict.
-
-**Keep it in place for now.** It is the only rockspec, and there is no reason to break the existing flow. When multiple real rockspecs exist, consider `packaging/luarocks/` and an explicit command such as `luarocks make packaging/luarocks/malvado-1.0.0-0.rockspec`. In CI, check code paths and `source.dir` from the root with the correct historical checkout. Do not move it only for appearance. Editing a published rockspec does not change the copy on the server.
+The historical 1.0 rockspec described the Lua/LÖVE engine and referred to files removed from the Malvado 2 tree. It remains available with that engine in the [historical revision](https://github.com/jepemo/malvado/tree/4670d8a). It does not describe or install Malvado 2. Removing it from the current tree does not change previously published packages.
 
 ## Products and channels
 

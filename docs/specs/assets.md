@@ -14,7 +14,7 @@ FPG is a graphics collection from the DIV family. It is not a single spritesheet
 
 The [consulted BennuGD2 implementation](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/modules/libmod_gfx/m_fpg.c) loads FPG, while its save wrapper is commented out in that revision. Treat FPG reading and writing as separate capabilities. Do not promise export because a historical variant had it.
 
-Current Malvado calls directories/spritesheets `fpg()` and has ZIP experiments in `malvado/map.lua`. This does not demonstrate binary FPG support. The legacy profile must distinguish that API from a real reader.
+The historical Malvado engine called directories/spritesheets `fpg()` and had ZIP experiments in `malvado/map.lua` in Git history. This does not demonstrate binary FPG support. The legacy profile must distinguish that API from a real reader.
 
 ## Options
 

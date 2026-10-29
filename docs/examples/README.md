@@ -1,6 +1,6 @@
 # Examples as an engine contract
 
-The new snippets below are proposals, not programs that all run on the current runtime. The original examples in `examples/` require LÖVE. Keep them until their replacements are verified. Keep reference traces and screenshots.
+The new snippets below are proposals, not programs that all run on the current runtime. The original examples in `examples/` require the historical LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep the examples until their replacements are verified. Keep reference traces and screenshots.
 
 ## First-class C and Lua examples
 

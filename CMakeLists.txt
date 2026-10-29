@@ -146,7 +146,12 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   target_link_libraries(visual-host-test PRIVATE malvado_lua_binding)
   add_test(NAME visual_sleep_freeze COMMAND visual-host-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/visual_probe.lua)
   add_test(NAME visual_c_window COMMAND example-c-window --smoke)
-  set_tests_properties(visual_sleep_freeze visual_c_window PROPERTIES TIMEOUT 15)
+  add_executable(hello-visual-test tests/hello_visual.c)
+  target_include_directories(hello-visual-test PRIVATE src)
+  target_link_libraries(hello-visual-test PRIVATE malvado_lua_binding)
+  add_test(NAME visual_lua_hello COMMAND hello-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/examples/alpha-hello/main.lua)
+  set_tests_properties(visual_lua_hello PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1")
+  set_tests_properties(visual_sleep_freeze visual_c_window visual_lua_hello PROPERTIES TIMEOUT 15)
 endif()
 
 endif() # MALVADO_BUILD_LUA

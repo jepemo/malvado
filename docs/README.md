@@ -2,7 +2,7 @@
 
 Migration proposal, revised on 29 October 2026. Status: **the C runtime is under development**; the CLI and GUI are planned.
 
-The current engine uses Lua/LÖVE. The next generation uses C and raylib, with Lua as the main interface, cooperative processes, and tools to create and distribute games. Research is based on Malvado commit `24d02aba2b08f805a046aa04dcc2e29243eaa00f`.
+The Malvado 2 runtime uses C and raylib, with Lua as the main interface, cooperative processes, and planned tools to create and distribute games. Research is based on Malvado commit `24d02aba2b08f805a046aa04dcc2e29243eaa00f`.
 
 ## Recommended reading
 
@@ -41,7 +41,7 @@ Each document must state whether it describes current behavior or a proposal. Pu
 
 ## Repository layout
 
-The root contains entry points and configuration. `src/` contains the C runtime, `malvado/` contains historical Lua/LÖVE code, `examples/` contains example games, and `tests/` contains tests. CMake downloads dependency source into the build directory, which Git ignores. Group future modules by responsibility according to the [roadmap](planning/roadmap.md). Do not move code before the separation exists.
+The root contains entry points and configuration. `src/` contains the C runtime, `examples/` contains example games, and `tests/` contains tests. The historical Lua/LÖVE engine is available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). CMake downloads dependency source into the build directory, which Git ignores. Group future modules by responsibility according to the [roadmap](planning/roadmap.md). Do not move code before the separation exists.
 
 ## Regenerate the reference
 

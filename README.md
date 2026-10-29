@@ -1,69 +1,28 @@
-# malvado
-A game programming library with  "DIV Game Studio"-style processes for Lua/Love2D
+# Malvado
 
-You can find the *malvado* documentation on the [Website](https://jepemo.github.io/malvado/)
+Malvado is a game engine inspired by DIV Games Studio. The new runtime is written in C, uses raylib, and includes Lua. You can create games in Lua or use the C API directly.
 
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Run Examples](#examples)
-  - [Hello World Example](#hello-world-example)
+> Malvado 2 is under development. The API and tools can still change.
 
-## Features
+## Try the Lua example
 
+You need CMake 3.20 or later, a C compiler, and network access for the first build. CMake downloads the pinned Lua and raylib sources and checks their hashes.
 
-
-## Getting Started
-
-### Installation
-* Install [Love2d](https://love2d.org/)
-* Install **Malvado**:
-```bash
-luarocks install malvado
-```
-For the documentation generation, if you download from github, you need [LDoc](https://github.com/stevedonovan/LDoc) and [Penlight](https://github.com/stevedonovan/Penlight) .
-
-### Run Examples
-```
-love examples/helloworld
-# or
-love examples/demo
-# or
-love examples/space_asteroids
-# or
-love examples/bench
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+./build/malvado-run examples/alpha-hello/main.lua
 ```
 
-### Hello World Example
+Close the window or press Escape to exit. See the [runtime guide](docs/versions/2.0.0-alpha.1.md) for build options and the [C process example](examples/c/processes/README.md) for a build without Lua or raylib.
 
-```lua
-require 'malvado'
+## Examples and documentation
 
--- Define (not run) one process
-HelloWorld = process(function(self)
-  -- Set background to grey
-  clear_screen(250, 250, 250)
+The examples in `examples/helloworld`, `examples/demo`, `examples/space_asteroids`, and `examples/bench` are kept as migration references. They use the old LÖVE engine and do not yet run on Malvado 2. To run the original versions, use the [last pre-migration source revision](https://github.com/jepemo/malvado/tree/4670d8a). Their migration is planned for [alpha.3](docs/versions/2.0.0-alpha.3.md).
 
-  -- Define global font (size, color (r, g, b))
-  local font = font(60, 0, 0, 0)
+Explore the [documentation index](docs/README.md), [version checklist](docs/versions/README.md), and [migration roadmap](docs/planning/roadmap.md) for current status and plans.
 
-  -- Write the "Hello world" text in the process position
-  write(font, self.x, self.y, self.text)
+## License
 
-  -- Runs until escape key is pressed
-  while not key("escape") do
-    -- Render the process
-    frame()
-  end
-end)
-
--- Start (main)
-malvado.start(function()
-  -- Set the title text of the window
-  set_title("Hello world")
-
-  -- Launch the background process
-  -- The application runs until there is no running process.
-  HelloWorld { x=240, y=280, text="Hello World" }
-end)
-```
+The Malvado 2 rewrite uses the [Apache License 2.0](LICENSE). Dependencies retain their own licenses. See [licenses and attribution](docs/development/licensing.md) for historical code and asset provenance.

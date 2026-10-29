@@ -17,7 +17,7 @@ This proposal replaces the old plan that required “No C changes,” third-part
 - There are hello world, menu demo, asteroids, and benchmark examples. Asteroids and benchmark also call `love.*` directly, so migrating the library alone is not enough.
 - `load_fpg()` contains experimental ZIP work; `fpg()` accepts directories/spritesheets. Do not assume classic binary FPG support.
 - The rockspec declares `1.0.0-0` and Lua >= 5.1. This does not prove a complete 1.0 distribution exists.
-- License notices conflict: LICENSE/rockspec say Apache 2.0, while several Lua headers say GPLv3+. Resolve provenance before publishing; keep notices in the meantime.
+- The historical Lua engine used GPLv3+ notices while its rockspec declared Apache 2.0. The owner selected Apache 2.0 for the rewrite. The historical engine and rockspec are removed from the current tree and remain in Git history with their notices. Review third-party asset provenance before release.
 
 ## Proposed decisions
 
