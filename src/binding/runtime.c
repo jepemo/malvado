@@ -1364,6 +1364,16 @@ start(lua_State *L)
 }
 
 static int
+time_seconds(lua_State *L)
+{
+    double seconds;
+    if (!mv_monotonic_time(&seconds))
+        return luaL_error(L, "monotonic clock unavailable");
+    lua_pushnumber(L, seconds);
+    return 1;
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
@@ -1380,6 +1390,7 @@ open_module(lua_State *L)
         {"status", process_status},
         {"send", send_message},
         {"start", start},
+        {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
         {"mouse_position", mouse_position},

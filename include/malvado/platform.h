@@ -101,6 +101,10 @@ void mv_window_end(void);
 double mv_platform_time(void);
 void mv_platform_wait(double seconds);
 
+/* Write monotonic elapsed-time clock seconds with an unspecified origin.
+ * Return 1 on success, or 0 without changing the output on failure. */
+int mv_monotonic_time(double *seconds);
+
 #ifdef __cplusplus
 }
 #endif

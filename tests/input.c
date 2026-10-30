@@ -13,6 +13,12 @@
  * See LICENSE for details.
  */
 
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#include <time.h>
+#else
+#include <windows.h>
+#endif
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
@@ -21,6 +27,17 @@
 int
 main(void)
 {
+    double before, after;
+    assert(!mv_monotonic_time(NULL));
+    assert(mv_monotonic_time(&before));
+#ifdef _WIN32
+    Sleep(30);
+#else
+    struct timespec delay = {0, 30000000};
+    assert(nanosleep(&delay, NULL) == 0);
+#endif
+    assert(mv_monotonic_time(&after));
+    assert(after - before >= 0.015);
     static const struct { const char *name; MvKey key; } cases[] = {
         {"escape", MV_KEY_ESCAPE}, {"space", MV_KEY_SPACE},
         {"left", MV_KEY_LEFT}, {"right", MV_KEY_RIGHT},

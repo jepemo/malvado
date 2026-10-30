@@ -42,6 +42,8 @@ The queue is shared by all processes and stays available across frames until rea
 
 `mv.frame()` yields until the next tick. It is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
 
+Use `mv.time_seconds()` to read a monotonic clock, including in headless mode. Its origin is unspecified. Subtract two readings to measure elapsed wall time; do not use it as a calendar time. It raises an error if the clock is unavailable. In C, `mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the output on failure.
+
 ## Process data
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process. The following fields belong to the engine and cannot be assigned:

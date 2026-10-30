@@ -22,7 +22,7 @@
 | `mv.delete_text(id)` | Explicit removal; define behavior for an already deleted ID in P0 | C |
 | `mv.load_image(path)` → image | Asset relative to the project; load errors include the path | C |
 | `mv.rand(min,max)` → integer | Inclusive range; engine RNG with pinned algorithm and seed | C |
-| `mv.time_seconds()` → number | Monotonic time since startup; replaces `love.timer.getTime` in demos | C |
+| `mv.time_seconds()` → number | Monotonic clock seconds with an unspecified origin; subtract two readings to measure elapsed time | C |
 | `mv.exit(code?)` | Request orderly shutdown, default code 0; end the current process in a controlled way | C |
 
 `options` specifies `width`, `height`, `title`, and `tick_rate`. Defaults are 800×600, Malvado, and 60. Unify profiles, packaging, and CLI configuration before implementation so that defaults have one source.
