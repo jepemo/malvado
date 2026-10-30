@@ -263,6 +263,9 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_test(NAME visual_demo COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/demo/main.lua)
   set_tests_properties(visual_demo PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1" TIMEOUT 15
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "demo smoke: four pages")
+  add_test(NAME visual_controller_monitor COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/controllers/main.lua)
+  set_tests_properties(visual_controller_monitor PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1" TIMEOUT 15
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "controller monitor smoke: four slots")
   add_test(NAME visual_c_game COMMAND example-c-timing-game --smoke)
   add_test(NAME visual_lua_game COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/timing-game/main.lua)
   set_tests_properties(visual_lua_game PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1")
