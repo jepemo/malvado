@@ -70,6 +70,7 @@ static MvStepResult lua_process_step(MvContext *ctx, MvProcessId id, void *user)
 static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
+typedef struct { MvImage *image; } LuaImage;
 
 MvContext *
 malvado_debug_context(void)
@@ -677,6 +678,64 @@ key(lua_State *L)
 }
 
 static int
+image_gc(lua_State *L)
+{
+    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
+    mv_image_destroy(image->image);
+    image->image = NULL;
+    return 0;
+}
+
+static int
+load_image(lua_State *L)
+{
+    size_t length;
+    const char *path = luaL_checklstring(L, 1, &length);
+    if (strlen(path) != length)
+        return luaL_error(L, "image path contains a zero byte");
+    if (!engine.window)
+        return luaL_error(L, "load_image requires an open window");
+    LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
+    image->image = NULL;
+    luaL_setmetatable(L, "malvado.image");
+    image->image = mv_image_load(path);
+    if (!image->image)
+        return luaL_error(L, "could not load PNG image: %s", path);
+    return 1;
+}
+
+static int
+image_size(lua_State *L)
+{
+    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
+    lua_pushinteger(L, mv_image_width(image->image));
+    lua_pushinteger(L, mv_image_height(image->image));
+    return 2;
+}
+
+static int
+draw_image(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.image");
+    luaL_checkinteger(L, 2);
+    luaL_checkinteger(L, 3);
+    if (!engine.active || L != engine.active_thread)
+        return luaL_error(L, "draw_image must be called inside a process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        return luaL_error(L, "draw_image must be called inside a live process");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
+    lua_createtable(L, 3, 0);
+    for (int i = 1; i <= 3; ++i) {
+        lua_pushvalue(L, i);
+        lua_seti(L, -2, i);
+    }
+    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
+    lua_pop(L, 1);
+    return 0;
+}
+
+static int
 text(lua_State *L)
 {
     const char *s = luaL_checkstring(L, 1);
@@ -957,15 +1016,21 @@ render(void)
         for (lua_Integer i = 1; i <= (lua_Integer)lua_rawlen(L, -1); i++) {
             lua_geti(L, -1, i);
             lua_geti(L, -1, 1);
-            const char *text = lua_tostring(L, -1);
             lua_geti(L, -2, 2);
             int x = lua_tointeger(L, -1);
             lua_geti(L, -3, 3);
             int y = lua_tointeger(L, -1);
-            lua_geti(L, -4, 4);
-            int size = lua_tointeger(L, -1);
-            mv_window_draw_text(text, x, y, size, (MvColor){255, 255, 255, 255});
-            lua_pop(L, 5);
+            LuaImage *image = luaL_testudata(L, -3, "malvado.image");
+            if (image) {
+                mv_image_draw(image->image, x, y);
+            } else {
+                const char *value = lua_tostring(L, -3);
+                lua_geti(L, -4, 4);
+                int size = lua_tointeger(L, -1);
+                mv_window_draw_text(value, x, y, size, (MvColor){255, 255, 255, 255});
+                lua_pop(L, 1);
+            }
+            lua_pop(L, 4);
         }
         lua_pop(L, 1);
     }
@@ -1075,6 +1140,9 @@ open_module(lua_State *L)
         {"clear_screen", clear_screen},
         {"key", key},
         {"draw_text", text},
+        {"load_image", load_image},
+        {"image_size", image_size},
+        {"draw_image", draw_image},
         {"font", font},
         {"write", write_text},
         {"change_text", change_text},
@@ -1087,6 +1155,12 @@ open_module(lua_State *L)
     lua_pushcfunction(L, self_newindex);
     lua_setfield(L, -2, "__newindex");
     lua_pushliteral(L, "malvado process");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.image");
+    lua_pushcfunction(L, image_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado image");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     lua_newtable(L);
@@ -1133,10 +1207,12 @@ malvado_run(int argc, char **argv)
     engine.context = NULL;
     for (size_t i = 0; i < engine.count; i++)
         cleanup(&engine.items[i]);
-    if (engine.window)
-        mv_window_close();
     free(engine.items);
+    engine.items = NULL;
+    engine.count = 0;
     lua_close(engine.L);
     engine.L = NULL;
+    if (engine.window)
+        mv_window_close();
     return engine.failed ? 1 : 0;
 }
