@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+#include <dirent.h>
+#include <errno.h>
+#endif
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -81,7 +85,10 @@ typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
 typedef struct { MvSound *sound; } LuaSound;
 typedef struct { MvMusic *music; } LuaMusic;
-typedef struct { int rows, columns; } LuaLegacySheet;
+typedef struct { int rows, columns, count, directory; } LuaLegacySheet;
+#ifndef _WIN32
+typedef struct { char **names; size_t count; } LuaDirectoryEntries;
+#endif
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; } LuaAtlas;
 #endif
@@ -1115,11 +1122,114 @@ draw_image_region(lua_State *L)
     return 0;
 }
 
+#ifndef _WIN32
+static int
+directory_entries_gc(lua_State *L)
+{
+    LuaDirectoryEntries *entries = luaL_checkudata(L, 1, "malvado.directory_entries");
+    for (size_t i = 0; i < entries->count; ++i)
+        free(entries->names[i]);
+    free(entries->names);
+    entries->names = NULL;
+    entries->count = 0;
+    return 0;
+}
+
+static int
+compare_names(const void *left, const void *right)
+{
+    return strcmp(*(const char *const *)left, *(const char *const *)right);
+}
+
+static int
+png_name(const char *name)
+{
+    size_t length = strlen(name);
+    return length > 4 && name[length - 4] == '.' &&
+           (name[length - 3] == 'p' || name[length - 3] == 'P') &&
+           (name[length - 2] == 'n' || name[length - 2] == 'N') &&
+           (name[length - 1] == 'g' || name[length - 1] == 'G');
+}
+
+static int
+legacy_directory(lua_State *L, const char *path)
+{
+    LuaDirectoryEntries *entries = lua_newuserdatauv(L, sizeof(*entries), 0);
+    *entries = (LuaDirectoryEntries){0};
+    luaL_setmetatable(L, "malvado.directory_entries");
+    entries->names = calloc(4096, sizeof(*entries->names));
+    if (!entries->names)
+        return luaL_error(L, "out of memory reading graphics directory");
+    DIR *directory = opendir(path);
+    if (!directory)
+        return luaL_error(L, "could not open graphics directory: %s", path);
+    int failure = 0;
+    for (;;) {
+        errno = 0;
+        struct dirent *entry = readdir(directory);
+        if (!entry) {
+            failure = errno != 0;
+            break;
+        }
+        if (!png_name(entry->d_name))
+            continue;
+        if (entries->count == 4096) {
+            failure = 1;
+            break;
+        }
+        size_t length = strlen(entry->d_name);
+        char *name = malloc(length + 1);
+        if (!name) {
+            failure = 1;
+            break;
+        }
+        memcpy(name, entry->d_name, length + 1);
+        entries->names[entries->count++] = name;
+    }
+    closedir(directory);
+    if (failure || entries->count == 0)
+        return luaL_error(L, "could not read PNG files from graphics directory: %s", path);
+    qsort(entries->names, entries->count, sizeof(*entries->names), compare_names);
+    lua_createtable(L, (int)entries->count, 0);
+    int images = lua_absindex(L, -1);
+    for (size_t i = 0; i < entries->count; ++i) {
+        const char *file = lua_pushfstring(L, "%s/%s", path, entries->names[i]);
+        LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
+        image->image = NULL;
+        luaL_setmetatable(L, "malvado.image");
+        image->image = mv_image_load(file);
+        if (!image->image)
+            return luaL_error(L, "could not load PNG image: %s", file);
+        lua_seti(L, images, (lua_Integer)i + 1);
+        lua_pop(L, 1);
+    }
+    LuaLegacySheet *sheet = lua_newuserdatauv(L, sizeof(*sheet), 1);
+    *sheet = (LuaLegacySheet){0, 0, (int)entries->count, 1};
+    luaL_setmetatable(L, "malvado.legacy_sheet");
+    lua_pushvalue(L, images);
+    lua_setiuservalue(L, -2, 1);
+    return 1;
+}
+#endif
+
 static int
 legacy_fpg(lua_State *L)
 {
+    size_t path_length;
+    const char *path = luaL_checklstring(L, 1, &path_length);
+    if (path_length == 0 || strlen(path) != path_length)
+        return luaL_error(L, "invalid graphics library path");
     size_t kind_length;
     const char *kind = luaL_optlstring(L, 2, "directory", &kind_length);
+    if (kind_length == 9 && memcmp(kind, "directory", 9) == 0) {
+        if (!engine.window)
+            return luaL_error(L, "fpg requires an open window");
+#ifdef _WIN32
+        return luaL_error(L, "legacy directory graphics are not supported on Windows");
+#else
+        return legacy_directory(L, path);
+#endif
+    }
     if (kind_length != 5 || memcmp(kind, "image", 5) != 0)
         return luaL_error(L, "legacy fpg supports only image sheets");
     lua_Integer rows = luaL_checkinteger(L, 3);
@@ -1133,7 +1243,7 @@ legacy_fpg(lua_State *L)
     if (columns > width || rows > height || width % columns != 0 || height % rows != 0)
         return luaL_error(L, "sheet dimensions must divide the image");
     LuaLegacySheet *sheet = lua_newuserdatauv(L, sizeof(*sheet), 1);
-    *sheet = (LuaLegacySheet){(int)rows, (int)columns};
+    *sheet = (LuaLegacySheet){(int)rows, (int)columns, 0, 0};
     luaL_setmetatable(L, "malvado.legacy_sheet");
     lua_pushvalue(L, -2);
     lua_setiuservalue(L, -2, 1);
@@ -1175,15 +1285,25 @@ legacy_frame(lua_State *L)
             lua_settop(L, 0);
             return lua_yield(L, 0);
         }
-        int rows = sheet->rows, columns = sheet->columns;
-        lua_getiuservalue(L, 3, 1);
-        LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
-        region_width = mv_image_width(image->image) / columns;
-        region_height = mv_image_height(image->image) / rows;
-        lua_Integer frame = index % ((lua_Integer)rows * columns);
-        x_source = (int)(frame % columns) * region_width;
-        y_source = (int)(frame / columns) * region_height;
-        sheet_image = 1;
+        if (sheet->directory) {
+            lua_Integer frame = index % sheet->count;
+            lua_getiuservalue(L, 3, 1);
+            lua_geti(L, -1, frame + 1);
+            lua_remove(L, -2);
+            LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+            region_width = mv_image_width(image->image);
+            region_height = mv_image_height(image->image);
+        } else {
+            int rows = sheet->rows, columns = sheet->columns;
+            lua_getiuservalue(L, 3, 1);
+            LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+            region_width = mv_image_width(image->image) / columns;
+            region_height = mv_image_height(image->image) / rows;
+            lua_Integer frame = index % ((lua_Integer)rows * columns);
+            x_source = (int)(frame % columns) * region_width;
+            y_source = (int)(frame / columns) * region_height;
+            sheet_image = 1;
+        }
     } else {
         lua_getfield(L, 2, "graph");
         if (lua_isnil(L, -1)) {
@@ -1891,6 +2011,14 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado legacy sheet");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+#ifndef _WIN32
+    luaL_newmetatable(L, "malvado.directory_entries");
+    lua_pushcfunction(L, directory_entries_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado directory entries");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+#endif
     luaL_newmetatable(L, "malvado.sound");
     lua_pushcfunction(L, sound_gc);
     lua_setfield(L, -2, "__gc");

@@ -32,10 +32,12 @@ check_frame(void *user)
     HelloCheck *check = user;
     Image image = LoadImageFromScreen();
     assert(image.data);
-    int top = check->migrated ? 300 : 80;
-    int left = check->migrated ? 400 : 60;
-    for (int y = top; y < top + 60 && y < image.height; ++y) {
-        for (int x = left; x < left + 340 && x < image.width; ++x) {
+    int top = (check->migrated ? 300 : 80) * image.height / GetScreenHeight();
+    int left = (check->migrated ? 400 : 60) * image.width / GetScreenWidth();
+    int bottom = top + 60 * image.height / GetScreenHeight();
+    int right = left + 340 * image.width / GetScreenWidth();
+    for (int y = top; y < bottom && y < image.height; ++y) {
+        for (int x = left; x < right && x < image.width; ++x) {
             Color color = GetImageColor(image, x, y);
             if (check->migrated ? (color.r < 80 && color.g < 80 && color.b < 80) :
                                   (color.r > 180 && color.g > 180 && color.b > 180))

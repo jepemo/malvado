@@ -26,11 +26,12 @@ check_pixels(void)
 {
     Image screen = LoadImageFromScreen();
     assert(screen.data);
-    Color red = GetImageColor(screen, 12, 12);
-    Color background = GetImageColor(screen, 30, 30);
-    Color green = GetImageColor(screen, 44, 40);
-    Color green_default = GetImageColor(screen, 26, 6);
-    Color outside = GetImageColor(screen, 50, 46);
+    int width = GetScreenWidth(), height = GetScreenHeight();
+    Color red = GetImageColor(screen, 12 * screen.width / width, 12 * screen.height / height);
+    Color background = GetImageColor(screen, 30 * screen.width / width, 30 * screen.height / height);
+    Color green = GetImageColor(screen, 44 * screen.width / width, 40 * screen.height / height);
+    Color green_default = GetImageColor(screen, 26 * screen.width / width, 6 * screen.height / height);
+    Color outside = GetImageColor(screen, 50 * screen.width / width, 46 * screen.height / height);
     assert(red.r > 240 && red.g < 10 && red.b < 10);
     assert(background.r < 10 && background.g < 10 && background.b < 10);
     assert(green.r < 10 && green.g > 240 && green.b < 10);

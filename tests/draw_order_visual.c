@@ -28,7 +28,9 @@ check_frame(void *user)
     Seen *seen = user;
     Image image = LoadImageFromScreen();
     assert(image.data);
-    Color pixel = GetImageColor(image, 12, 12);
+    int x = 12 * image.width / GetScreenWidth();
+    int y = 12 * image.height / GetScreenHeight();
+    Color pixel = GetImageColor(image, x, y);
     if (seen->strict)
         assert((pixel.r > 240 && pixel.g < 10) || (pixel.g > 240 && pixel.r < 10));
     if (pixel.r > 240 && pixel.g < 10) {

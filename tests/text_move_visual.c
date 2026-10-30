@@ -37,17 +37,18 @@ check_frame(void *user)
     for (int y = 0; y < image.height; ++y) {
         for (int x = 0; x < image.width; ++x) {
             Color pixel = GetImageColor(image, x, y);
-            if (x < 80 && pixel.r > 180 && pixel.g < 40 && pixel.b < 40)
+            int logical_x = x * width / image.width;
+            if (logical_x < 80 && pixel.r > 180 && pixel.g < 40 && pixel.b < 40)
                 seen->red = 1;
-            if (x >= 100 && pixel.g > 180 && pixel.r < 40 && pixel.b < 40)
+            if (logical_x >= 100 && pixel.g > 180 && pixel.r < 40 && pixel.b < 40)
                 seen->green = 1;
             if (pixel.b > 180 && pixel.r < 40 && pixel.g < 40) {
-                if (x < 120) seen->blue_left = 1;
-                if (x > 120) seen->blue_right = 1;
+                if (logical_x < 120) seen->blue_left = 1;
+                if (logical_x > 120) seen->blue_right = 1;
             }
             if (pixel.r > 180 && pixel.g > 180 && pixel.b < 40) {
-                assert(x <= 222);
-                if (x >= 160) seen->yellow = 1;
+                assert(logical_x <= 222);
+                if (logical_x >= 160) seen->yellow = 1;
             }
         }
     }
