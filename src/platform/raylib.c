@@ -16,15 +16,94 @@
 #include "malvado/platform.h"
 #include "raylib.h"
 #include "rlgl.h"
+#include <math.h>
 #include <stdlib.h>
 
 struct MvImage {
     Texture2D texture;
 };
+struct MvSound {
+    Sound sound;
+};
 
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
+
+int
+mv_audio_open(void)
+{
+    if (IsAudioDeviceReady())
+        return 1;
+    InitAudioDevice();
+    return IsAudioDeviceReady();
+}
+
+void
+mv_audio_close(void)
+{
+    if (IsAudioDeviceReady())
+        CloseAudioDevice();
+}
+
+MvSound *
+mv_sound_load(const char *path)
+{
+    if (!path || !IsAudioDeviceReady() || !IsFileExtension(path, ".wav"))
+        return NULL;
+    Sound loaded = LoadSound(path);
+    if (!IsSoundValid(loaded))
+        return NULL;
+    MvSound *sound = malloc(sizeof(*sound));
+    if (!sound) {
+        UnloadSound(loaded);
+        return NULL;
+    }
+    sound->sound = loaded;
+    return sound;
+}
+
+void
+mv_sound_destroy(MvSound *sound)
+{
+    if (!sound)
+        return;
+    UnloadSound(sound->sound);
+    free(sound);
+}
+
+int
+mv_sound_play(MvSound *sound)
+{
+    if (!sound || !IsAudioDeviceReady())
+        return 0;
+    PlaySound(sound->sound);
+    return 1;
+}
+
+int
+mv_sound_stop(MvSound *sound)
+{
+    if (!sound || !IsAudioDeviceReady())
+        return 0;
+    StopSound(sound->sound);
+    return 1;
+}
+
+int
+mv_sound_playing(const MvSound *sound)
+{
+    return sound && IsAudioDeviceReady() && IsSoundPlaying(sound->sound);
+}
+
+int
+mv_sound_set_volume(MvSound *sound, float volume)
+{
+    if (!sound || !IsAudioDeviceReady() || !isfinite(volume) || volume < 0 || volume > 1)
+        return 0;
+    SetSoundVolume(sound->sound, volume);
+    return 1;
+}
 
 int mv_window_open(int width, int height, const char *title)
 {

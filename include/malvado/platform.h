@@ -36,6 +36,7 @@ typedef enum {
 } MvKey;
 typedef enum { MV_MOUSE_LEFT = 1, MV_MOUSE_MIDDLE, MV_MOUSE_RIGHT } MvMouseButton;
 typedef struct MvImage MvImage;
+typedef struct MvSound MvSound;
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
     float x, y;
@@ -67,6 +68,19 @@ int mv_text_input_next(uint32_t *codepoint);
 /* Encode one Unicode scalar into up to four bytes. Return the byte count, or
  * 0 for an invalid scalar or NULL output. The bytes are not NUL-terminated. */
 size_t mv_utf8_encode(uint32_t codepoint, char output[4]);
+/* Audio and sound functions use the owner thread. Open the device before
+ * loading sounds. Destroy all sounds before closing the device. */
+int mv_audio_open(void);
+void mv_audio_close(void);
+/* Load a WAV file. Return an owned sound, or NULL on failure. */
+MvSound *mv_sound_load(const char *path);
+void mv_sound_destroy(MvSound *sound);
+/* Play restarts this sound. These functions return 0 for invalid arguments. */
+int mv_sound_play(MvSound *sound);
+int mv_sound_stop(MvSound *sound);
+int mv_sound_playing(const MvSound *sound);
+/* Volume must be finite and in the range 0 to 1. */
+int mv_sound_set_volume(MvSound *sound, float volume);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.

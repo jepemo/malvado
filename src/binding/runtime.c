@@ -57,7 +57,7 @@ typedef struct {
     MvContext *context;
     Process *items;
     size_t count, capacity;
-    int active, headless, started, failed, window;
+    int active, headless, started, failed, window, audio;
     int in_tick, paused, step_requested;
     lua_State *active_thread;
     lua_Integer active_id;
@@ -77,6 +77,7 @@ static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
+typedef struct { MvSound *sound; } LuaSound;
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; } LuaAtlas;
 #endif
@@ -723,6 +724,76 @@ text_input_next(lua_State *L)
 }
 
 static int
+sound_gc(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    mv_sound_destroy(sound->sound);
+    sound->sound = NULL;
+    return 0;
+}
+
+static int
+load_sound(lua_State *L)
+{
+    size_t length;
+    const char *path = luaL_checklstring(L, 1, &length);
+    if (strlen(path) != length)
+        return luaL_error(L, "sound path contains a zero byte");
+    if (engine.headless)
+        return luaL_error(L, "sound is not available in headless mode");
+    if (!engine.audio) {
+        if (!mv_audio_open())
+            return luaL_error(L, "could not open audio device");
+        engine.audio = 1;
+    }
+    LuaSound *sound = lua_newuserdatauv(L, sizeof(*sound), 0);
+    sound->sound = NULL;
+    luaL_setmetatable(L, "malvado.sound");
+    sound->sound = mv_sound_load(path);
+    if (!sound->sound)
+        return luaL_error(L, "could not load WAV sound: %s", path);
+    return 1;
+}
+
+static int
+play_sound(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    if (!mv_sound_play(sound->sound))
+        return luaL_error(L, "sound is not available");
+    return 0;
+}
+
+static int
+stop_sound(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    if (!mv_sound_stop(sound->sound))
+        return luaL_error(L, "sound is not available");
+    return 0;
+}
+
+static int
+sound_playing(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    lua_pushboolean(L, mv_sound_playing(sound->sound));
+    return 1;
+}
+
+static int
+sound_volume(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    lua_Number volume = luaL_checknumber(L, 2);
+    if (!isfinite(volume) || volume < 0 || volume > 1)
+        return luaL_error(L, "volume must be in 0..1");
+    if (!mv_sound_set_volume(sound->sound, (float)volume))
+        return luaL_error(L, "sound is not available");
+    return 0;
+}
+
+static int
 image_gc(lua_State *L)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
@@ -1314,6 +1385,11 @@ open_module(lua_State *L)
         {"mouse_position", mouse_position},
         {"mouse_button", mouse_button},
         {"text_input_next", text_input_next},
+        {"load_sound", load_sound},
+        {"play_sound", play_sound},
+        {"stop_sound", stop_sound},
+        {"sound_playing", sound_playing},
+        {"sound_volume", sound_volume},
         {"draw_text", text},
         {"load_image", load_image},
         {"image_size", image_size},
@@ -1341,6 +1417,12 @@ open_module(lua_State *L)
     lua_pushcfunction(L, image_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado image");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.sound");
+    lua_pushcfunction(L, sound_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado sound");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
 #ifdef MALVADO_BUILD_ASSETS
@@ -1400,6 +1482,8 @@ malvado_run(int argc, char **argv)
     engine.count = 0;
     lua_close(engine.L);
     engine.L = NULL;
+    if (engine.audio)
+        mv_audio_close();
     if (engine.window)
         mv_window_close();
     return engine.failed ? 1 : 0;

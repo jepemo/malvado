@@ -11,7 +11,7 @@ The Malvado 2 runtime uses C and raylib, with Lua as the main interface, coopera
 3. [DIV/Fénix/BennuGD research](api/research.md).
 4. [Reference module export inventory](api/inventory.md), [JSON catalog](api/catalog.json), and [source provenance](api/upstream.md).
 5. [Compatibility profiles and remaining work](api/compatibility.md).
-6. [C process contract](api/c-contract.md), [current Lua process guide](api/lua-processes.md), [PNG image guide](api/images.md), and [proposed Lua API](api/lua-contract.md).
+6. [C process contract](api/c-contract.md), [current Lua process guide](api/lua-processes.md), [images](api/images.md), [audio](api/audio.md), and [proposed Lua API](api/lua-contract.md).
 7. [Examples and acceptance criteria](examples/README.md).
 8. [malvado-cli and export design](specs/cli.md).
 9. [malvado-gui scope, ImGui, and DIV-inspired tools](specs/gui.md).

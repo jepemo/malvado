@@ -40,6 +40,14 @@ int mv_mouse_position(int *x, int *y)
 }
 int mv_mouse_down(MvMouseButton button) { (void)button; return 0; }
 int mv_text_input_next(uint32_t *codepoint) { (void)codepoint; return 0; }
+int mv_audio_open(void) { return 0; }
+void mv_audio_close(void) {}
+MvSound *mv_sound_load(const char *path) { (void)path; return NULL; }
+void mv_sound_destroy(MvSound *sound) { (void)sound; }
+int mv_sound_play(MvSound *sound) { (void)sound; return 0; }
+int mv_sound_stop(MvSound *sound) { (void)sound; return 0; }
+int mv_sound_playing(const MvSound *sound) { (void)sound; return 0; }
+int mv_sound_set_volume(MvSound *sound, float volume) { (void)sound; (void)volume; return 0; }
 void mv_window_begin(MvColor color) { (void)color; }
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color)
 {

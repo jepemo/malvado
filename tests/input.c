@@ -54,6 +54,12 @@ main(void)
     uint32_t codepoint = 123;
     assert(!mv_text_input_next(NULL));
     assert(!mv_text_input_next(&codepoint) && codepoint == 123);
+    assert(!mv_sound_load("tests/fixtures/silence.wav"));
+    assert(!mv_sound_play(NULL));
+    assert(!mv_sound_stop(NULL));
+    assert(!mv_sound_playing(NULL));
+    assert(!mv_sound_set_volume(NULL, 0.5f));
+    mv_sound_destroy(NULL);
     static const struct { uint32_t codepoint; const char *utf8; size_t length; } characters[] = {
         {0x7f, "\x7f", 1}, {0x80, "\xc2\x80", 2}, {0x7ff, "\xdf\xbf", 2},
         {0x800, "\xe0\xa0\x80", 3}, {0xffff, "\xef\xbf\xbf", 3},
