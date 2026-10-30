@@ -59,3 +59,5 @@ The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`
 In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_music_update` regularly, including when the rest of the game is idle. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
 
 Audio uses one process-wide device. Destroy every sound and stream before closing it.
+
+For a local device check, build the visual tests and run `MALVADO_REAL_AUDIO=1 ./build-visual/audio-visual-test tests/audio_visual.lua` from the repository root. The test uses silent WAV and OGG fixtures. It checks that a WAV loop is still playing after 0.75 seconds; it does not check audible output.

@@ -15,6 +15,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 #include "malvado/platform.h"
 #include "runner/runtime.h"
 
@@ -56,6 +57,15 @@ main(int argc, char **argv)
     assert(!mv_music_set_volume(music, NAN));
     assert(mv_music_play(music));
     assert(mv_music_update(music));
+    if (getenv("MALVADO_REAL_AUDIO")) {
+        double start, now;
+        assert(mv_monotonic_time(&start));
+        do {
+            assert(mv_music_update(music));
+            assert(mv_monotonic_time(&now));
+        } while (now - start < 0.75);
+        assert(mv_music_playing(music));
+    }
     assert(mv_music_pause(music));
     assert(!mv_music_playing(music));
     assert(mv_music_resume(music));
