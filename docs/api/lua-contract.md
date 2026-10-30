@@ -43,9 +43,10 @@ local Hello = mv.process(function(self)
 end)
 
 mv.start(function()
+  mv.set_title("My game")
   mv.clear_screen(25, 30, 45)
   Hello { x = 60, y = 80 }
-end, { width = 800, height = 600, title = "My game" })
+end)
 ```
 
 ## Legacy shim

@@ -15,6 +15,7 @@ local Hello = mv.process(function(self)
   mv.delete_text(greeting)
 end)
 mv.start(function()
+  mv.set_title("Malvado alpha")
   mv.clear_screen(25, 30, 45)
   Hello { x = 60, y = 80 }
-end, { width = 800, height = 600, title = "Malvado alpha" })
+end)

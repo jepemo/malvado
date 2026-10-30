@@ -19,6 +19,7 @@ local HelloWorld = mv.process(function(self)
 end)
 
 mv.start(function()
+  mv.set_title("Hello world")
   mv.clear_screen(250, 250, 250)
   HelloWorld { x = 400, y = 300, text = "Hello World" }
-end, { width = 800, height = 600, title = "Hello world" })
+end)
