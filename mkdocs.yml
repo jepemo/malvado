@@ -5,3 +5,4 @@ docs_dir: docs/site
 site_dir: build/site
 nav:
   - Home: index.md
+  - Get started: getting-started.md

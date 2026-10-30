@@ -1,6 +1,6 @@
 # C and Lua API documentation
 
-Status: an initial MkDocs site is available. Full references and publication remain planned. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
+Status: the initial MkDocs site is published. Full references remain planned. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
 
 ## Recommendation: Markdown + MkDocs + GitHub Pages
 
@@ -41,7 +41,7 @@ docs/site/guides/                 shared tutorials and recipes
 docs/site/migration/              migration and compatibility
 ```
 
-`docs/site/` contains the public site sources. The site output is in `build/site/`. This prevents MkDocs from copying `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. The proposed reference directories do not exist yet.
+`docs/site/` contains the public site sources. The site output is in `build/site/`. This prevents MkDocs from copying `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. The reference directories do not exist yet. The first getting-started page is `docs/site/getting-started.md`.
 
 ## Source of truth by language
 
