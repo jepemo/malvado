@@ -10,7 +10,10 @@ This page shows the release plan at a glance. Open a version to see its checklis
 - [ ] [Alpha.6](2.0.0-alpha.6.md) — **planned**: Android prototype/export and full Windows validation.
 - [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: freeze the essential API and complete its documentation.
 - [ ] [2.0.0](2.0.0.md) — **planned**: stable essential profile and accepted exporters.
-- [ ] [2.1 and later](../planning/roadmap.md) — **planned**: extended families, more FPG variants, FPG export, and mountable ZIP.
+- [ ] [2.1.0-alpha.1–alpha.3](../specs/graphics-modes.md) — **proposed**: separate Mode 7, Mode 9, and Mode 8 MVPs after stable 2.0.
+- [ ] [2.1.0-beta.1 and 2.1.0](../specs/graphics-modes.md) — **proposed**: stabilize the modes selected for release.
+- [ ] [2.1 and later](../planning/roadmap.md) — **planned**: extended families, more FPG variants, FPG export, and mountable ZIP. These remain independently scheduled.
+- [ ] [2.2 and later](../specs/graphics-modes.md) — **candidates**: advanced graphics styles and compatibility research.
 
 ## CLI and GUI
 
