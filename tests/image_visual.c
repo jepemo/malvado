@@ -25,8 +25,14 @@ check_pixels(void)
     assert(screen.data);
     Color red = GetImageColor(screen, 12, 12);
     Color background = GetImageColor(screen, 30, 30);
+    Color green = GetImageColor(screen, 44, 40);
+    Color green_default = GetImageColor(screen, 26, 6);
+    Color outside = GetImageColor(screen, 50, 46);
     assert(red.r > 240 && red.g < 10 && red.b < 10);
     assert(background.r < 10 && background.g < 10 && background.b < 10);
+    assert(green.r < 10 && green.g > 240 && green.b < 10);
+    assert(green_default.r < 10 && green_default.g > 240 && green_default.b < 10);
+    assert(outside.r < 10 && outside.g < 10 && outside.b < 10);
     UnloadImage(screen);
 }
 
@@ -48,8 +54,17 @@ main(int argc, char **argv)
     assert(!mv_image_load("tests/fixtures/red.txt"));
     MvImage *image = mv_image_load("tests/fixtures/red.png");
     assert(image && mv_image_width(image) == 8 && mv_image_height(image) == 8);
+    MvImageRegion region = {4, 0, 4, 8};
+    MvImageTransform transform = {50, 40, 2, 4, 2, 90};
+    assert(mv_image_region_valid(image, region, transform));
+    assert(!mv_image_region_valid(image, (MvImageRegion){7, 0, 2, 1}, transform));
+    assert(!mv_image_region_valid(image, region, (MvImageTransform){0, 0, 0, 0, 0, 0}));
+    assert(!mv_image_region_valid(NULL, region, transform));
     mv_window_begin((MvColor){0, 0, 0, 255});
     mv_image_draw(image, 10, 10);
+    assert(mv_image_draw_region(image, region, (MvImageTransform){25, 5, 0, 0, 1, 0}));
+    assert(mv_image_draw_region(image, region, transform));
+    assert(!mv_image_draw_region(image, (MvImageRegion){0, 0, 9, 8}, transform));
     mv_window_flush();
     check_pixels();
     mv_window_end();

@@ -93,6 +93,19 @@ mv_image_draw(const MvImage *image, int x, int y)
     if (image)
         DrawTexture(image->texture, x, y, WHITE);
 }
+
+int
+mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransform transform)
+{
+    if (!mv_image_region_valid(image, region, transform))
+        return 0;
+    Rectangle source = {(float)region.x, (float)region.y, (float)region.width, (float)region.height};
+    Rectangle destination = {transform.x, transform.y,
+                             region.width * transform.scale, region.height * transform.scale};
+    Vector2 pivot = {transform.pivot_x * transform.scale, transform.pivot_y * transform.scale};
+    DrawTexturePro(image->texture, source, destination, pivot, transform.rotation, WHITE);
+    return 1;
+}
 void mv_window_flush(void) { rlDrawRenderBatchActive(); }
 void mv_window_end(void) { EndDrawing(); }
 double mv_platform_time(void) { return GetTime(); }

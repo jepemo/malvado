@@ -14,6 +14,9 @@
  */
 
 #include <stdint.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -736,6 +739,61 @@ draw_image(lua_State *L)
 }
 
 static int
+region_integer(lua_State *L, int index)
+{
+    lua_Integer value = luaL_checkinteger(L, index);
+    if (value < 0 || value > INT_MAX)
+        luaL_argerror(L, index, "expected a non-negative integer within range");
+    return (int)value;
+}
+
+static float
+region_number(lua_State *L, int index, lua_Number fallback)
+{
+    lua_Number value = index <= 3 ? luaL_checknumber(L, index) : luaL_optnumber(L, index, fallback);
+    if (!isfinite(value) || value < -FLT_MAX || value > FLT_MAX)
+        luaL_argerror(L, index, "expected a finite number within range");
+    return (float)value;
+}
+
+static int
+draw_image_region(lua_State *L)
+{
+    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
+    MvImageTransform transform = {
+        region_number(L, 2, 0), region_number(L, 3, 0),
+        region_number(L, 8, 0), region_number(L, 9, 0),
+        region_number(L, 10, 1), region_number(L, 11, 0)
+    };
+    MvImageRegion region = {
+        region_integer(L, 4), region_integer(L, 5),
+        region_integer(L, 6), region_integer(L, 7)
+    };
+    if (!mv_image_region_valid(image->image, region, transform))
+        return luaL_error(L, "invalid image region or transform");
+    if (!engine.active || L != engine.active_thread)
+        return luaL_error(L, "draw_image_region must be called inside a process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        return luaL_error(L, "draw_image_region must be called inside a live process");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
+    lua_createtable(L, 11, 0);
+    lua_pushvalue(L, 1);
+    lua_seti(L, -2, 1);
+    const lua_Number values[] = {
+        transform.x, transform.y, region.x, region.y, region.width, region.height,
+        transform.pivot_x, transform.pivot_y, transform.scale, transform.rotation
+    };
+    for (int i = 0; i < 10; ++i) {
+        lua_pushnumber(L, values[i]);
+        lua_seti(L, -2, i + 2);
+    }
+    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
+    lua_pop(L, 1);
+    return 0;
+}
+
+static int
 text(lua_State *L)
 {
     const char *s = luaL_checkstring(L, 1);
@@ -1004,6 +1062,22 @@ tick(void)
 }
 
 static void
+render_image_region(lua_State *L, int command, LuaImage *image)
+{
+    lua_Number values[10];
+    for (int i = 0; i < 10; ++i) {
+        lua_geti(L, command, i + 2);
+        values[i] = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
+    MvImageRegion region = {(int)values[2], (int)values[3], (int)values[4], (int)values[5]};
+    MvImageTransform transform = {(float)values[0], (float)values[1],
+                                  (float)values[6], (float)values[7],
+                                  (float)values[8], (float)values[9]};
+    (void)mv_image_draw_region(image->image, region, transform);
+}
+
+static void
 render(void)
 {
     lua_State *L = engine.L;
@@ -1017,17 +1091,19 @@ render(void)
             lua_geti(L, -1, i);
             lua_geti(L, -1, 1);
             lua_geti(L, -2, 2);
-            int x = lua_tointeger(L, -1);
             lua_geti(L, -3, 3);
-            int y = lua_tointeger(L, -1);
             LuaImage *image = luaL_testudata(L, -3, "malvado.image");
-            if (image) {
-                mv_image_draw(image->image, x, y);
+            int command = lua_absindex(L, -4);
+            if (image && lua_rawlen(L, command) == 11) {
+                render_image_region(L, command, image);
+            } else if (image) {
+                mv_image_draw(image->image, (int)lua_tointeger(L, -2), (int)lua_tointeger(L, -1));
             } else {
                 const char *value = lua_tostring(L, -3);
                 lua_geti(L, -4, 4);
                 int size = lua_tointeger(L, -1);
-                mv_window_draw_text(value, x, y, size, (MvColor){255, 255, 255, 255});
+                mv_window_draw_text(value, (int)lua_tointeger(L, -3), (int)lua_tointeger(L, -2),
+                                    size, (MvColor){255, 255, 255, 255});
                 lua_pop(L, 1);
             }
             lua_pop(L, 4);
@@ -1143,6 +1219,7 @@ open_module(lua_State *L)
         {"load_image", load_image},
         {"image_size", image_size},
         {"draw_image", draw_image},
+        {"draw_image_region", draw_image_region},
         {"font", font},
         {"write", write_text},
         {"change_text", change_text},

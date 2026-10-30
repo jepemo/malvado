@@ -22,6 +22,12 @@ extern "C" {
 
 typedef struct { unsigned char r, g, b, a; } MvColor;
 typedef struct MvImage MvImage;
+typedef struct { int x, y, width, height; } MvImageRegion;
+typedef struct {
+    float x, y;
+    float pivot_x, pivot_y;
+    float scale, rotation;
+} MvImageTransform;
 
 /* The raylib adapter owns one window and is used on the main thread. */
 int mv_window_open(int width, int height, const char *title);
@@ -39,6 +45,11 @@ int mv_image_width(const MvImage *image);
 int mv_image_height(const MvImage *image);
 /* Draw the image at its top-left position between begin and end. */
 void mv_image_draw(const MvImage *image, int x, int y);
+/* Region and pivot use source pixels. Position uses window pixels; rotation
+ * is clockwise in degrees. Scale must be positive. Returns 1 if valid. */
+int mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTransform transform);
+/* Draw between begin and end. Returns 0 for invalid arguments. */
+int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransform transform);
 void mv_window_flush(void);
 void mv_window_end(void);
 double mv_platform_time(void);

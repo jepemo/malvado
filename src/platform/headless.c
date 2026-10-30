@@ -42,6 +42,11 @@ void mv_image_draw(const MvImage *image, int x, int y)
 {
     (void)image; (void)x; (void)y;
 }
+int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransform transform)
+{
+    (void)image; (void)region; (void)transform;
+    return 0;
+}
 void mv_window_flush(void) {}
 void mv_window_end(void) {}
 double mv_platform_time(void) { return (double)clock() / CLOCKS_PER_SEC; }
