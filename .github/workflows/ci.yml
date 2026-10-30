@@ -79,7 +79,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
       - name: Static analysis of project C sources
         run: |
-          for source in src/binding/runtime.c src/platform/raylib.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c; do
+          for source in src/binding/runtime.c src/platform/raylib.c src/platform/headless.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c; do
             clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -Iinclude -Isrc -Ibuild/_deps/lua-src/src -Ibuild/_deps/raylib-src/src "$source"
           done
   visual:

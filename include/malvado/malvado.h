@@ -74,9 +74,11 @@ MvResult mv_process_receive(MvContext *ctx, MvProcessId id, MvMessage *message);
 MvResult mv_process_message_count(MvContext *ctx, MvProcessId id, size_t *count);
 void mv_message_release(MvMessage *message);
 
-/** A successful spawn transfers ownership of user to the context. The optional
- * destructor is called once on termination or context destruction. Failed spawn
- * leaves ownership with the caller. parent=0 creates a root process. */
+/** The process retains user until removal. If destroy is provided, a successful
+ * spawn transfers responsibility for user to that destructor, which is called
+ * once on removal or context destruction. Otherwise the caller must keep user
+ * valid for the process lifetime. On failure the caller retains responsibility
+ * for user and id is unchanged. parent=0 creates a root process. */
 MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
                           MvProcessId *id);

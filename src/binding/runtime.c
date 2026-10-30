@@ -833,16 +833,16 @@ cleanup(Process *p)
     luaL_unref(engine.L, LUA_REGISTRYINDEX, draw_ref);
 }
 
-static MvStepResult
-lua_process_step(MvContext *ctx, MvProcessId id, void *user)
+static int
+lua_process_step_protected(lua_State *L)
 {
-    (void)ctx;
-    (void)user;
+    MvProcessId id = (MvProcessId)lua_tointeger(L, 1);
     sync_processes();
     Process *process = find_process((lua_Integer)id);
-    if (!process)
-        return MV_STEP_ERROR;
-    lua_State *L = engine.L;
+    if (!process) {
+        lua_pushinteger(L, MV_STEP_ERROR);
+        return 1;
+    }
     lua_State *co = process->thread;
     int draw_ref = process->draw_ref;
     int first = process->first;
@@ -862,11 +862,42 @@ lua_process_step(MvContext *ctx, MvProcessId id, void *user)
         fprintf(stderr, "%s\n", lua_tostring(L, -1));
         lua_pop(L, 1);
         engine.failed = 1;
-        return MV_STEP_ERROR;
+        lua_pushinteger(L, MV_STEP_ERROR);
+        return 1;
     }
     if (results)
         lua_pop(co, results);
-    return status == LUA_OK ? MV_STEP_DONE : MV_STEP_YIELD;
+    lua_pushinteger(L, status == LUA_OK ? MV_STEP_DONE : MV_STEP_YIELD);
+    return 1;
+}
+
+static MvStepResult
+lua_process_step(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)ctx;
+    (void)user;
+    lua_State *L = engine.L;
+    if (!lua_checkstack(L, 2)) {
+        fprintf(stderr, "Unable to prepare Lua process callback\n");
+        engine.failed = 1;
+        return MV_STEP_ERROR;
+    }
+    /* Keep Lua allocation errors inside a protected call, not across the core. */
+    lua_pushcfunction(L, lua_process_step_protected);
+    lua_pushinteger(L, (lua_Integer)id);
+    if (lua_pcall(L, 1, 1, 0) != LUA_OK) {
+        const char *error = lua_tostring(L, -1);
+        fprintf(stderr, "Lua process callback failed: %s\n", error ? error : "unknown error");
+        lua_pop(L, 1);
+        engine.active = 0;
+        engine.active_thread = NULL;
+        engine.active_id = 0;
+        engine.failed = 1;
+        return MV_STEP_ERROR;
+    }
+    MvStepResult result = (MvStepResult)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    return result;
 }
 
 static void
@@ -1062,6 +1093,10 @@ open_module(lua_State *L)
 int
 malvado_run(int argc, char **argv)
 {
+    if (engine.context || engine.L) {
+        fprintf(stderr, "A Malvado runner is already active\n");
+        return 2;
+    }
     memset(&engine, 0, sizeof(engine));
     int index = 1;
     if (argc > 1 && strcmp(argv[1], "--headless") == 0) {
@@ -1079,6 +1114,7 @@ malvado_run(int argc, char **argv)
     engine.L = luaL_newstate();
     if (!engine.L) {
         mv_context_destroy(engine.context);
+        engine.context = NULL;
         return 1;
     }
     luaL_openlibs(engine.L);
