@@ -285,6 +285,9 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
       add_test(NAME visual_migrated_hello_escape COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/hello_escape.sh
         $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/helloworld/main.lua "Hello world")
       set_tests_properties(visual_migrated_hello_escape PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
+      add_test(NAME visual_window_title COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/hello_escape.sh
+        $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/title_visual.lua "Updated title")
+      set_tests_properties(visual_window_title PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
       add_test(NAME visual_benchmark_keys COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/benchmark_keys.sh
         $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/bench/main.lua)
       set_tests_properties(visual_benchmark_keys PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE

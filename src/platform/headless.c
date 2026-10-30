@@ -26,6 +26,7 @@ int mv_window_open(int width, int height, const char *title)
     return 0;
 }
 void mv_window_close(void) {}
+int mv_window_set_title(const char *title) { (void)title; return 0; }
 int mv_window_should_close(void) { return 1; }
 int mv_window_escape_down(void) { return 0; }
 int mv_window_space_down(void) { return 0; }

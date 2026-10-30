@@ -53,6 +53,8 @@ typedef struct {
 
 /* The raylib adapter owns one window and is used on the main thread. */
 int mv_window_open(int width, int height, const char *title);
+/* Set the window title. Return 0 for NULL or when no window is open. */
+int mv_window_set_title(const char *title);
 void mv_window_close(void);
 int mv_window_should_close(void);
 int mv_window_escape_down(void);

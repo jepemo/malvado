@@ -28,6 +28,7 @@ int
 main(void)
 {
     double before, after;
+    assert(!mv_window_set_title(NULL) && !mv_window_set_title("No window"));
     assert(!mv_monotonic_time(NULL));
     assert(mv_monotonic_time(&before));
 #ifdef _WIN32

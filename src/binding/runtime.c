@@ -660,6 +660,18 @@ frame(lua_State *L)
 }
 
 static int
+set_title(lua_State *L)
+{
+    size_t length;
+    const char *title = luaL_checklstring(L, 1, &length);
+    if (strlen(title) != length)
+        return luaL_error(L, "title contains a zero byte");
+    if (!engine.window || !mv_window_set_title(title))
+        return luaL_error(L, "window is not available");
+    return 0;
+}
+
+static int
 clear_screen(lua_State *L)
 {
     int r = luaL_checkinteger(L, 1);
@@ -1551,6 +1563,7 @@ open_module(lua_State *L)
         {"status", process_status},
         {"send", send_message},
         {"start", start},
+        {"set_title", set_title},
         {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
@@ -1635,7 +1648,7 @@ open_module(lua_State *L)
 
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
-    "key", "clear_screen", "load_image", "time_seconds", NULL
+    "key", "clear_screen", "set_title", "load_image", "time_seconds", NULL
 };
 
 static int

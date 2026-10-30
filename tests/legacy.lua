@@ -13,6 +13,7 @@ key = nil
 legacy.import_globals()
 legacy.import_globals()
 assert(process == mv.process and frame == mv.frame and key == mv.key)
+assert(set_title == mv.set_title and not pcall(set_title, "Headless"))
 
 local ran = false
 local task = process(function()

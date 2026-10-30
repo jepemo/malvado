@@ -259,6 +259,15 @@ int mv_window_open(int width, int height, const char *title)
     SetTargetFPS(60);
     return 1;
 }
+int
+mv_window_set_title(const char *title)
+{
+    if (!title || !IsWindowReady())
+        return 0;
+    SetWindowTitle(title);
+    return 1;
+}
+
 void mv_window_close(void)
 {
     if (IsWindowReady()) CloseWindow();
