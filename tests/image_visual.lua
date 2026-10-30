@@ -41,6 +41,14 @@ local worker = mv.process(function()
     else
         mv.draw_image_region(image, 50, 40, 4, 0, 4, 8, 2, 4, 2, 90)
     end
+    mv.set_color(0, 0, 255)
+    mv.draw_box(2, 30, 10, 36)
+    mv.set_color(255, 255, 0, 128)
+    mv.draw_rect(15, 45, 25, 55)
+    mv.set_color(0, 255, 255)
+    mv.draw_fcircle(35, 50, 4)
+    mv.set_color(255, 0, 255)
+    mv.draw_circle(55, 15, 4)
     atlas = nil
     image = nil
     collectgarbage("collect")

@@ -123,6 +123,10 @@ void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Return the built-in font width in pixels, or 0 for invalid input or no window. */
 int mv_window_text_width(const char *text, int size);
+/* Draw a rectangle or circle between begin and end. Filled must be 0 or 1.
+ * Return 0 for invalid geometry, an invalid flag, or no window. */
+int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color);
+int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.
  * The caller owns the image and must destroy it before closing the window. */
 MvImage *mv_image_load(const char *path);

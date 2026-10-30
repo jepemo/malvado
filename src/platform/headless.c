@@ -78,6 +78,16 @@ void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color
     (void)text; (void)x; (void)y; (void)size; (void)color;
 }
 int mv_window_text_width(const char *text, int size) { (void)text; (void)size; return 0; }
+int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color)
+{
+    (void)x; (void)y; (void)width; (void)height; (void)filled; (void)color;
+    return 0;
+}
+int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color)
+{
+    (void)x; (void)y; (void)radius; (void)filled; (void)color;
+    return 0;
+}
 MvImage *mv_image_load(const char *path) { (void)path; return NULL; }
 void mv_image_destroy(MvImage *image) { (void)image; }
 int mv_image_width(const MvImage *image) { (void)image; return 0; }

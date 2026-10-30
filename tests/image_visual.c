@@ -14,6 +14,7 @@
  */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include "malvado/platform.h"
 #include "raylib.h"
@@ -80,6 +81,15 @@ main(int argc, char **argv)
     assert(mv_image_draw_region(image, region, (MvImageTransform){25, 5, 0, 0, 1, 0}));
     assert(mv_image_draw_region(image, region, transform));
     assert(!mv_image_draw_region(image, (MvImageRegion){0, 0, 9, 8}, transform));
+    assert(mv_window_draw_box(2, 30, 8, 6, 1, (MvColor){0, 0, 255, 255}));
+    assert(mv_window_draw_box(15, 45, 10, 10, 0, (MvColor){255, 255, 0, 128}));
+    assert(mv_window_draw_circle(35, 50, 4, 1, (MvColor){0, 255, 255, 255}));
+    assert(mv_window_draw_circle(55, 15, 4, 0, (MvColor){255, 0, 255, 255}));
+    assert(!mv_window_draw_box(0, 0, 0, 2, 1, (MvColor){0}));
+    assert(!mv_window_draw_box(INT_MAX, 0, 2, 1, 1, (MvColor){0}));
+    assert(!mv_window_draw_box(0, 0, 1, 1, 2, (MvColor){0}));
+    assert(!mv_window_draw_circle(0, 0, -1, 1, (MvColor){0}));
+    assert(!mv_window_draw_circle(INT_MIN, 0, 1, 1, (MvColor){0}));
     mv_window_flush();
     check_pixels();
     reference = LoadImageFromScreen();

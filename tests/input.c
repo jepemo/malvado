@@ -34,6 +34,8 @@ main(void)
     assert(!mv_window_size(&width, NULL) && width == 1);
     assert(!mv_window_size(&width, &height) && width == 0 && height == 0);
     assert(mv_window_text_width("Text", 20) == 0);
+    assert(!mv_window_draw_box(0, 0, 1, 1, 1, (MvColor){255, 255, 255, 255}));
+    assert(!mv_window_draw_circle(0, 0, 1, 1, (MvColor){255, 255, 255, 255}));
     assert(!mv_monotonic_time(NULL));
     assert(mv_monotonic_time(&before));
 #ifdef _WIN32

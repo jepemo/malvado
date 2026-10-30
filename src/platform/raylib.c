@@ -17,6 +17,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include <math.h>
+#include <limits.h>
 #include <stdlib.h>
 
 struct MvImage {
@@ -431,6 +432,35 @@ mv_window_text_width(const char *text, int size)
     if (!text || size < 1 || !IsWindowReady())
         return 0;
     return MeasureText(text, size);
+}
+
+int
+mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color)
+{
+    if (!IsWindowReady() || width <= 0 || height <= 0 || (filled != 0 && filled != 1) ||
+        (int64_t)x + width > INT_MAX || (int64_t)y + height > INT_MAX)
+        return 0;
+    Color c = {color.r, color.g, color.b, color.a};
+    if (filled)
+        DrawRectangle(x, y, width, height, c);
+    else
+        DrawRectangleLines(x, y, width, height, c);
+    return 1;
+}
+
+int
+mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color)
+{
+    if (!IsWindowReady() || radius <= 0 || (filled != 0 && filled != 1) ||
+        (int64_t)x + radius > INT_MAX || (int64_t)x - radius < INT_MIN ||
+        (int64_t)y + radius > INT_MAX || (int64_t)y - radius < INT_MIN)
+        return 0;
+    Color c = {color.r, color.g, color.b, color.a};
+    if (filled)
+        DrawCircle(x, y, (float)radius, c);
+    else
+        DrawCircleLines(x, y, (float)radius, c);
+    return 1;
 }
 
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor c)

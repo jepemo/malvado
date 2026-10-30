@@ -72,6 +72,7 @@ typedef struct {
     lua_Integer tick_number;
     lua_Integer next_text_id;
     MvColor background;
+    MvColor draw_color;
 } Engine;
 static Engine engine;
 static MalvadoDebugHook debug_hook;
@@ -691,6 +692,66 @@ frame(lua_State *L)
     if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
         return luaL_error(L, "frame() must be called inside a process");
     return lua_yield(L, 0);
+}
+
+static int
+set_color(lua_State *L)
+{
+    lua_Integer values[4];
+    for (int i = 0; i < 4; ++i) {
+        values[i] = i == 3 ? luaL_optinteger(L, i + 1, 255) : luaL_checkinteger(L, i + 1);
+        if (values[i] < 0 || values[i] > 255)
+            return luaL_error(L, "color must be in 0..255");
+    }
+    engine.draw_color = (MvColor){values[0], values[1], values[2], values[3]};
+    return 0;
+}
+
+static int
+draw_primitive(lua_State *L)
+{
+    int type = (int)lua_tointeger(L, lua_upvalueindex(1));
+    int count = type <= 2 ? 4 : 3;
+    int64_t values[4] = {0};
+    for (int i = 0; i < count; ++i) {
+        lua_Integer value = luaL_checkinteger(L, i + 1);
+        if (value < INT_MIN || value > INT_MAX)
+            return luaL_error(L, "primitive coordinate is outside the supported range");
+        values[i] = (int64_t)value;
+    }
+    if (type <= 2) {
+        values[2] -= values[0];
+        values[3] -= values[1];
+        if (values[2] <= 0 || values[2] > INT_MAX || values[3] <= 0 || values[3] > INT_MAX)
+            return luaL_error(L, "invalid rectangle");
+    } else if (values[2] <= 0 || values[0] + values[2] > INT_MAX ||
+               values[0] - values[2] < INT_MIN || values[1] + values[2] > INT_MAX ||
+               values[1] - values[2] < INT_MIN) {
+        return luaL_error(L, "invalid circle");
+    }
+    if (!engine.active || L != engine.active_thread)
+        return luaL_error(L, "drawing must be called inside a process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        return luaL_error(L, "drawing must be called inside a live process");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
+    lua_createtable(L, 9, 0);
+    lua_pushinteger(L, type);
+    lua_seti(L, -2, 1);
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, (lua_Integer)values[i]);
+        lua_seti(L, -2, i + 2);
+    }
+    const unsigned char channels[] = {
+        engine.draw_color.r, engine.draw_color.g, engine.draw_color.b, engine.draw_color.a
+    };
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, channels[i]);
+        lua_seti(L, -2, i + 6);
+    }
+    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
+    lua_pop(L, 1);
+    return 0;
 }
 
 static int
@@ -1735,6 +1796,22 @@ tick(void)
 }
 
 static void
+render_primitive(lua_State *L, int command)
+{
+    int values[9];
+    for (int i = 0; i < 9; ++i) {
+        lua_geti(L, command, i + 1);
+        values[i] = (int)lua_tointeger(L, -1);
+        lua_pop(L, 1);
+    }
+    MvColor color = {values[5], values[6], values[7], values[8]};
+    if (values[0] <= 2)
+        (void)mv_window_draw_box(values[1], values[2], values[3], values[4], values[0] == 1, color);
+    else
+        (void)mv_window_draw_circle(values[1], values[2], values[3], values[0] == 3, color);
+}
+
+static void
 render_image_region(lua_State *L, int command, LuaImage *image)
 {
     lua_Number values[10];
@@ -1808,7 +1885,9 @@ render(void)
             lua_geti(L, -3, 3);
             LuaImage *image = luaL_testudata(L, -3, "malvado.image");
             int command = lua_absindex(L, -4);
-            if (image && lua_rawlen(L, command) == 11) {
+            if (lua_isinteger(L, -3)) {
+                render_primitive(L, command);
+            } else if (image && lua_rawlen(L, command) == 11) {
                 render_image_region(L, command, image);
             } else if (image) {
                 mv_image_draw(image->image, (int)lua_tointeger(L, -2), (int)lua_tointeger(L, -1));
@@ -1956,6 +2035,7 @@ open_module(lua_State *L)
         {"start", start},
         {"set_title", set_title},
         {"window_size", window_size},
+        {"set_color", set_color},
         {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
@@ -2042,6 +2122,12 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    static const char *const primitives[] = {"draw_box", "draw_rect", "draw_fcircle", "draw_circle"};
+    for (size_t i = 0; i < sizeof(primitives) / sizeof(primitives[0]); ++i) {
+        lua_pushinteger(L, (lua_Integer)i + 1);
+        lua_pushcclosure(L, draw_primitive, 1);
+        lua_setfield(L, -2, primitives[i]);
+    }
     lua_getglobal(L, "math");
     lua_getfield(L, -1, "random");
     lua_remove(L, -2);
@@ -2067,7 +2153,8 @@ open_module(lua_State *L)
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
     "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
-    "load_image", "time_seconds", "rand", "fpg", NULL
+    "load_image", "time_seconds", "rand", "fpg", "set_color", "draw_box",
+    "draw_rect", "draw_fcircle", "draw_circle", NULL
 };
 
 static void
@@ -2126,6 +2213,7 @@ malvado_run(int argc, char **argv)
         return 2;
     }
     engine.background = (MvColor){0, 0, 0, 255};
+    engine.draw_color = (MvColor){255, 255, 255, 255};
     engine.context = mv_context_create(60, 5);
     if (!engine.context)
         return 1;
