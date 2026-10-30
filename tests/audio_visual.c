@@ -19,6 +19,20 @@
 #include "malvado/platform.h"
 #include "runner/runtime.h"
 
+static void
+check_loop(MvMusic *music)
+{
+    if (!getenv("MALVADO_REAL_AUDIO"))
+        return;
+    double start, now;
+    assert(mv_monotonic_time(&start));
+    do {
+        assert(mv_music_update(music));
+        assert(mv_monotonic_time(&now));
+    } while (now - start < 0.75);
+    assert(mv_music_playing(music));
+}
+
 int
 main(int argc, char **argv)
 {
@@ -57,23 +71,16 @@ main(int argc, char **argv)
     assert(!mv_music_set_volume(music, NAN));
     assert(mv_music_play(music));
     assert(mv_music_update(music));
-    if (getenv("MALVADO_REAL_AUDIO")) {
-        double start, now;
-        assert(mv_monotonic_time(&start));
-        do {
-            assert(mv_music_update(music));
-            assert(mv_monotonic_time(&now));
-        } while (now - start < 0.75);
-        assert(mv_music_playing(music));
-    }
+    check_loop(music);
     assert(mv_music_pause(music));
     assert(!mv_music_playing(music));
     assert(mv_music_resume(music));
     assert(mv_music_stop(music));
     assert(!mv_music_playing(music));
     mv_music_destroy(music);
-    music = mv_music_load("tests/fixtures/silence.ogg", 0);
+    music = mv_music_load("tests/fixtures/silence.ogg", 1);
     assert(music && mv_music_play(music) && mv_music_update(music));
+    check_loop(music);
     assert(mv_music_stop(music));
     mv_music_destroy(music);
     mv_audio_close();

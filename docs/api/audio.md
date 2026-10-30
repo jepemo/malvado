@@ -60,4 +60,4 @@ In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the au
 
 Audio uses one process-wide device. Destroy every sound and stream before closing it.
 
-For a local device check, build the visual tests and run `MALVADO_REAL_AUDIO=1 ./build-visual/audio-visual-test tests/audio_visual.lua` from the repository root. The test uses silent WAV and OGG fixtures. It checks that a WAV loop is still playing after 0.75 seconds; it does not check audible output.
+For a local device check, build the visual tests and run `MALVADO_REAL_AUDIO=1 ./build-visual/audio-visual-test tests/audio_visual.lua` from the repository root. The test uses silent WAV and OGG fixtures. It checks that both loops are still playing after 0.75 seconds; it does not check audible output.
