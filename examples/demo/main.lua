@@ -7,7 +7,7 @@ local input_test = os.getenv("MALVADO_INPUT_TEST") == "1"
 local images = { cats = {} }
 local names = { "Sprites", "Keyboard", "Texts", "Fade" }
 local selected, page = 1, 0
-local ticks, text, fade = 0, "", 0
+local ticks, text = 0, ""
 local previous = {}
 local visits = {}
 
@@ -52,8 +52,8 @@ local function draw_page()
   elseif page == 3 then
     mv.draw_text("This is animated text", 800 - (ticks * 3 % 1100), 300, 40)
   elseif page == 4 then
-    mv.draw_text("Press Space to fade the background", 100, 220, 28)
-    mv.draw_text("Fade level: " .. fade, 100, 280, 24)
+    mv.draw_text("Press Space to fade the screen", 100, 220, 28)
+    mv.draw_text(mv.fade_active() and "Fade in progress" or "Ready", 100, 280, 24)
   end
 end
 
@@ -79,8 +79,9 @@ local Demo = mv.process(function()
       previous.mouse = mouse
     elseif escape then
       page = 0
-    elseif page == 4 and pressed("space") and fade == 0 then
-      fade = 120
+    elseif page == 4 and pressed("space") and not mv.fade_active() then
+      mv.fade_off()
+      mv.fade_on()
     end
 
     if smoke then
@@ -91,11 +92,7 @@ local Demo = mv.process(function()
         return
       end
     end
-    if fade > 0 then
-      local value = math.floor(255 * math.abs(fade - 60) / 60)
-      mv.clear_screen(value, value, value)
-      fade = fade - 1
-    elseif page == 1 then
+    if page == 1 then
       mv.clear_screen(100, 60, 100)
     else
       mv.clear_screen(0, 0, 0)

@@ -43,6 +43,8 @@ typedef enum {
     PROCESS_KILLED
 } ProcessState;
 
+typedef struct { MvColor target; unsigned ticks; } FadeRequest;
+
 typedef struct {
     lua_Integer id;
     lua_Integer type_id;
@@ -73,6 +75,9 @@ typedef struct {
     lua_Integer next_text_id;
     MvColor background;
     MvColor draw_color;
+    MvFade fade;
+    FadeRequest fade_queue[16];
+    unsigned fade_head, fade_count;
 } Engine;
 static Engine engine;
 static MalvadoDebugHook debug_hook;
@@ -692,6 +697,75 @@ frame(lua_State *L)
     if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
         return luaL_error(L, "frame() must be called inside a process");
     return lua_yield(L, 0);
+}
+
+static int
+queue_fade(lua_State *L, MvColor color, unsigned ticks)
+{
+    if (!mv_fade_active(&engine.fade) && engine.fade_count == 0) {
+        (void)mv_fade_start(&engine.fade, color, ticks);
+        return 0;
+    }
+    if (engine.fade_count == 16)
+        return luaL_error(L, "fade queue is full");
+    unsigned index = (engine.fade_head + engine.fade_count) % 16;
+    engine.fade_queue[index] = (FadeRequest){color, ticks};
+    ++engine.fade_count;
+    return 0;
+}
+
+static void
+advance_fade(void)
+{
+    (void)mv_fade_step(&engine.fade);
+    while (!mv_fade_active(&engine.fade) && engine.fade_count > 0) {
+        FadeRequest request = engine.fade_queue[engine.fade_head];
+        engine.fade_head = (engine.fade_head + 1) % 16;
+        --engine.fade_count;
+        (void)mv_fade_start(&engine.fade, request.target, request.ticks);
+    }
+}
+
+static int
+fade_to(lua_State *L)
+{
+    lua_Integer values[5];
+    for (int i = 0; i < 5; ++i) {
+        values[i] = luaL_checkinteger(L, i + 1);
+        lua_Integer limit = i == 4 ? 1000000 : 255;
+        if (values[i] < 0 || values[i] > limit)
+            return luaL_error(L, "invalid fade color or duration");
+    }
+    return queue_fade(L, (MvColor){values[0], values[1], values[2], values[3]},
+                      (unsigned)values[4]);
+}
+
+static int
+fade_switch(lua_State *L)
+{
+    lua_Integer ticks = luaL_optinteger(L, 1, 16);
+    if (ticks < 0 || ticks > 1000000)
+        return luaL_error(L, "invalid fade duration");
+    int opaque = lua_toboolean(L, lua_upvalueindex(1));
+    return queue_fade(L, (MvColor){0, 0, 0, opaque ? 255 : 0}, (unsigned)ticks);
+}
+
+static int
+fade_active(lua_State *L)
+{
+    lua_pushboolean(L, mv_fade_active(&engine.fade) || engine.fade_count != 0);
+    return 1;
+}
+
+static int
+fade_color(lua_State *L)
+{
+    MvColor color = engine.fade.current;
+    lua_pushinteger(L, color.r);
+    lua_pushinteger(L, color.g);
+    lua_pushinteger(L, color.b);
+    lua_pushinteger(L, color.a);
+    return 4;
 }
 
 static int
@@ -1772,6 +1846,7 @@ tick(void)
     engine.in_tick = 1;
     engine.tick_number++;
     MvResult result = mv_process_tick(engine.context);
+    advance_fade();
     sync_processes();
     if (result != MV_OK) {
         if (!engine.failed)
@@ -1904,6 +1979,11 @@ render(void)
         lua_pop(L, 1);
     }
     render_texts(L);
+    if (engine.fade.current.a != 0) {
+        int width, height;
+        if (mv_window_size(&width, &height))
+            (void)mv_window_draw_box(0, 0, width, height, 1, engine.fade.current);
+    }
     free(order);
     if (debug_frame_hook) {
         mv_window_flush();
@@ -2036,6 +2116,9 @@ open_module(lua_State *L)
         {"set_title", set_title},
         {"window_size", window_size},
         {"set_color", set_color},
+        {"fade_to", fade_to},
+        {"fade_active", fade_active},
+        {"fade_color", fade_color},
         {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
@@ -2122,6 +2205,12 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_pushboolean(L, 1);
+    lua_pushcclosure(L, fade_switch, 1);
+    lua_setfield(L, -2, "fade_off");
+    lua_pushboolean(L, 0);
+    lua_pushcclosure(L, fade_switch, 1);
+    lua_setfield(L, -2, "fade_on");
     static const char *const primitives[] = {"draw_box", "draw_rect", "draw_fcircle", "draw_circle"};
     for (size_t i = 0; i < sizeof(primitives) / sizeof(primitives[0]); ++i) {
         lua_pushinteger(L, (lua_Integer)i + 1);
@@ -2154,7 +2243,7 @@ static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
     "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
     "load_image", "time_seconds", "rand", "fpg", "set_color", "draw_box",
-    "draw_rect", "draw_fcircle", "draw_circle", NULL
+    "draw_rect", "draw_fcircle", "draw_circle", "fade_off", "fade_on", NULL
 };
 
 static void

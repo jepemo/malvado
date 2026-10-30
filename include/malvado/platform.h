@@ -24,6 +24,16 @@ extern "C" {
 #endif
 
 typedef struct { unsigned char r, g, b, a; } MvColor;
+typedef struct {
+    MvColor current, start, target;
+    unsigned duration, elapsed;
+} MvFade;
+/* Initialize to {0}. Start a transition from the current color. Duration is
+ * 0..1000000 ticks; zero changes the color immediately. Return 0 on invalid
+ * input without changing the state. Step once per tick and draw current. */
+int mv_fade_start(MvFade *fade, MvColor target, unsigned ticks);
+int mv_fade_step(MvFade *fade);
+int mv_fade_active(const MvFade *fade);
 typedef enum {
     MV_KEY_0 = '0', MV_KEY_1, MV_KEY_2, MV_KEY_3, MV_KEY_4,
     MV_KEY_5, MV_KEY_6, MV_KEY_7, MV_KEY_8, MV_KEY_9,

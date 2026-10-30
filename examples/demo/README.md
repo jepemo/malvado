@@ -5,7 +5,7 @@ Choose a section with the arrow keys and **Enter**, or click an option. Press **
 - **Sprites:** shows two animated images.
 - **Keyboard:** displays typed text.
 - **Texts:** moves text across the screen.
-- **Fade:** press **Space** to fade the background out and in.
+- **Fade:** press **Space** to fade the screen out and in.
 
 Build Malvado and run this command from the repository root:
 

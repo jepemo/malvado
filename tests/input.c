@@ -36,6 +36,16 @@ main(void)
     assert(mv_window_text_width("Text", 20) == 0);
     assert(!mv_window_draw_box(0, 0, 1, 1, 1, (MvColor){255, 255, 255, 255}));
     assert(!mv_window_draw_circle(0, 0, 1, 1, (MvColor){255, 255, 255, 255}));
+    MvFade fade = {0};
+    assert(!mv_fade_start(NULL, (MvColor){0}, 1));
+    assert(mv_fade_start(&fade, (MvColor){20, 40, 80, 255}, 4));
+    assert(mv_fade_active(&fade) && mv_fade_step(&fade));
+    assert(fade.current.r == 5 && fade.current.a == 63);
+    for (int i = 0; i < 3; ++i) assert(mv_fade_step(&fade));
+    assert(!mv_fade_active(&fade) && !mv_fade_step(&fade));
+    assert(fade.current.r == 20 && fade.current.a == 255);
+    assert(!mv_fade_start(&fade, (MvColor){0}, 1000001) && fade.current.a == 255);
+    assert(mv_fade_start(&fade, (MvColor){0}, 0) && fade.current.a == 0);
     assert(!mv_monotonic_time(NULL));
     assert(mv_monotonic_time(&before));
 #ifdef _WIN32
