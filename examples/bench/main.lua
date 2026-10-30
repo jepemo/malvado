@@ -1,56 +1,61 @@
-package.path = package.path .. ";./?/init.lua"
-require 'malvado'
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
 
-local exit_bench = false
-local color_fpg = fpg("assets/colours")
-local font_texts = font(20)
+local mv = require("malvado")
+local images = {}
+local stopping = false
+local smoke = os.getenv("MALVADO_SMOKE") == "1"
+local worker_ticks = 0
 
-BenchProcess = process(function(self)
-  self.fpg = color_fpg
-  self.fpgIndex = 1
-
-  local margin = 50
-
-  self.x = rand(margin, get_screen_width()-margin)
-  self.y = rand(margin, get_screen_height()-margin)
-
-  while not exit_bench do
-    self.fpgIndex = self.fpgIndex + 1
-    frame()
+local BenchProcess = mv.process(function(self)
+  local frame = 1
+  while not stopping do
+    mv.draw_image(images[frame], self.x, self.y)
+    worker_ticks = worker_ticks + 1
+    frame = frame % #images + 1
+    mv.frame()
   end
 end)
 
-Benchmark = process(function(self)
-  write(font_texts, (get_screen_width() / 2)-60, get_screen_height() / 2, "Press spacebar")
+local Benchmark = mv.process(function()
+  local font = mv.font(20)
+  local prompt = mv.write(font, 300, 300, "Hold Space to add processes")
+  local count_text = mv.write(font, 10, 10, "Processes: 0")
+  local time_text = mv.write(font, 430, 10, "Tick interval: 0 ms")
+  local count = 0
+  local ticks = 0
+  local previous = mv.time_seconds()
 
-  local num_procs = 0
-  local start = 0
-  local millis_frames = 0
-
-  local tp = write(font_texts, 0, 0, ("Num. Procs: " .. tostring(num_procs)))
-  local tm = write(font_texts, get_screen_width() - 350, 0, ("Millis frames: " .. millis_frames))
-
-  while not key("escape") do
-    millis_frames = love.timer.getTime() - start
-
-    change_text(tp, "Num. Procs: " .. tostring(num_procs))
-    change_text(tm, "Millis frames: " .. millis_frames)
-
-    start = love.timer.getTime()
-
-    if key("space") then
-      BenchProcess {}
-      num_procs = num_procs + 1
+  while not mv.key("escape") do
+    local now = mv.time_seconds()
+    mv.change_text(time_text, string.format("Tick interval: %.2f ms", (now - previous) * 1000))
+    previous = now
+    if mv.key("space") or (smoke and ticks < 3) then
+      BenchProcess { x = math.random(50, 750), y = math.random(50, 550) }
+      count = count + 1
+      mv.change_text(count_text, "Processes: " .. count)
     end
-
-    frame()
+    ticks = ticks + 1
+    if smoke and ticks == 5 then
+      assert(count == 3 and worker_ticks > 0)
+      print("benchmark smoke: 3 processes ran")
+      break
+    end
+    mv.frame()
   end
 
-  exit_bench = true
+  print("benchmark stopped: " .. count .. " processes")
+  stopping = true
+  mv.delete_text(prompt)
+  mv.delete_text(count_text)
+  mv.delete_text(time_text)
 end)
 
--- Start
-malvado.start(function()
-  set_title('Benchmark')
-  Benchmark {}
-end, true)
+mv.start(function()
+  math.randomseed(1)
+  for i = 0, 8 do
+    images[i + 1] = mv.load_image(string.format("examples/bench/assets/colours/%03d.png", i))
+  end
+  mv.clear_screen(0, 0, 0)
+  Benchmark()
+end, { width = 800, height = 600, title = "Benchmark" })
