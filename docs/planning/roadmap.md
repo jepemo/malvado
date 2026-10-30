@@ -1,6 +1,6 @@
 # Malvado 2 migration plan
 
-Status: technical proposal. [Alpha.1](../versions/2.0.0-alpha.1.md) is complete; later phases remain in development or planned. Updated: 2026-10-29.
+Status: technical proposal. [Alpha.1](../versions/2.0.0-alpha.1.md) and [alpha.2](../versions/2.0.0-alpha.2.md) are complete; later phases are planned. Updated: 2026-10-30.
 
 ## Goal
 
@@ -103,4 +103,4 @@ This layout is a proposal; do not create empty code directories for it. Research
 
 ## Recommended next implementation
 
-Continue alpha.2 with the [C refactor](../architecture/c-first.md): review the C and Lua contracts, shared scheduler, tests, and documentation. Preserve existing Lua behavior. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for exporters.
+Continue with [alpha.3](../versions/2.0.0-alpha.3.md): graphics, assets, input, text, audio, and migration of the four historical examples. Preserve the C and Lua process behavior verified in alpha.2. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.

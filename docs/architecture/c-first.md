@@ -1,10 +1,10 @@
 # C architecture and official Lua binding
 
-Status: C core, Lua binding, and backends are separate and under validation. This decision extends and clarifies the [roadmap](../planning/roadmap.md). A game must be able to use Malvado directly from C. Lua is the official in-repository binding and receives the same level of support.
+Status: C core, Lua binding, and backends are separate and validated for alpha.2. This decision extends and clarifies the [roadmap](../planning/roadmap.md). A game must be able to use Malvado directly from C. Lua is the official in-repository binding and receives the same level of support.
 
 ## Current state
 
-`malvado_core` has an opaque C context, clock, scheduler, and process queues. `src/binding/runtime.c` adapts Lua coroutines to the scheduler and retains Lua references. `src/platform/` implements the raylib and headless backends. The runner links the binding. `include/malvado/malvado.h` exposes the initial C operations. `runtime.h` provides diagnostic hooks. CTest includes C, Lua, and mixed tests, plus a C window example. The API and current changes remain under validation.
+`malvado_core` has an opaque C context, clock, scheduler, and process queues. `src/binding/runtime.c` adapts Lua coroutines to the scheduler and retains Lua references. `src/platform/` implements the raylib and headless backends. The runner links the binding. `include/malvado/malvado.h` exposes the initial C operations. `runtime.h` provides diagnostic hooks. CTest includes C, Lua, and mixed tests, plus a playable C/Lua example. The API is experimental and does not yet guarantee ABI stability.
 
 ## Layers and dependencies
 
