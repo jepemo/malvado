@@ -82,6 +82,7 @@ main(void)
     assert(!mv_text_input_next(NULL));
     assert(!mv_text_input_next(&codepoint) && codepoint == 123);
     assert(!mv_sound_load("tests/fixtures/silence.wav"));
+    assert(!mv_sound_clone(NULL));
     assert(!mv_sound_play(NULL));
     assert(!mv_sound_stop(NULL));
     assert(!mv_sound_pause(NULL));

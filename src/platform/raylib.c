@@ -22,8 +22,14 @@
 struct MvImage {
     Texture2D texture;
 };
+typedef struct {
+    Sound original;
+    size_t references;
+} SharedSound;
 struct MvSound {
     Sound sound;
+    SharedSound *shared;
+    int alias;
 };
 struct MvMusic {
     Music stream;
@@ -92,12 +98,36 @@ mv_sound_load(const char *path)
     if (!IsSoundValid(loaded))
         return NULL;
     MvSound *sound = malloc(sizeof(*sound));
-    if (!sound) {
+    SharedSound *shared = malloc(sizeof(*shared));
+    if (!sound || !shared) {
+        free(sound);
+        free(shared);
         UnloadSound(loaded);
         return NULL;
     }
     sound->sound = loaded;
+    sound->shared = shared;
+    sound->alias = 0;
+    *shared = (SharedSound){loaded, 1};
     return sound;
+}
+
+MvSound *
+mv_sound_clone(const MvSound *sound)
+{
+    if (!sound || !IsAudioDeviceReady() || sound->shared->references == SIZE_MAX)
+        return NULL;
+    MvSound *copy = malloc(sizeof(*copy));
+    if (!copy)
+        return NULL;
+    Sound alias = LoadSoundAlias(sound->shared->original);
+    if (!IsSoundValid(alias)) {
+        free(copy);
+        return NULL;
+    }
+    sound->shared->references++;
+    *copy = (MvSound){alias, sound->shared, 1};
+    return copy;
 }
 
 void
@@ -105,7 +135,15 @@ mv_sound_destroy(MvSound *sound)
 {
     if (!sound)
         return;
-    UnloadSound(sound->sound);
+    SharedSound *shared = sound->shared;
+    if (sound->alias)
+        UnloadSoundAlias(sound->sound);
+    else
+        StopSound(sound->sound);
+    if (--shared->references == 0) {
+        UnloadSound(shared->original);
+        free(shared);
+    }
     free(sound);
 }
 

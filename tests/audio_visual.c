@@ -40,7 +40,14 @@ main(int argc, char **argv)
     assert(mv_sound_resume(sound));
     assert(mv_sound_stop(sound));
     assert(!mv_sound_playing(sound));
+    MvSound *copy = mv_sound_clone(sound);
+    assert(copy && mv_sound_play(sound) && mv_sound_play(copy));
     mv_sound_destroy(sound);
+    assert(mv_sound_stop(copy) && mv_sound_play(copy));
+    MvSound *second_copy = mv_sound_clone(copy);
+    assert(second_copy && mv_sound_play(second_copy));
+    mv_sound_destroy(copy);
+    mv_sound_destroy(second_copy);
     assert(!mv_music_load("tests/fixtures/silence.wav", 2));
     assert(!mv_music_load("tests/fixtures/missing.wav", 0));
     MvMusic *music = mv_music_load("tests/fixtures/silence.wav", 1);

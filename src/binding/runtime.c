@@ -812,6 +812,19 @@ load_sound(lua_State *L)
 }
 
 static int
+clone_sound(lua_State *L)
+{
+    LuaSound *source = luaL_checkudata(L, 1, "malvado.sound");
+    LuaSound *copy = lua_newuserdatauv(L, sizeof(*copy), 0);
+    copy->sound = NULL;
+    luaL_setmetatable(L, "malvado.sound");
+    copy->sound = mv_sound_clone(source->sound);
+    if (!copy->sound)
+        return luaL_error(L, "could not create sound instance");
+    return 1;
+}
+
+static int
 play_sound(lua_State *L)
 {
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
@@ -1574,6 +1587,7 @@ open_module(lua_State *L)
         {"pad_axis", pad_axis},
         {"text_input_next", text_input_next},
         {"load_sound", load_sound},
+        {"clone_sound", clone_sound},
         {"play_sound", play_sound},
         {"stop_sound", stop_sound},
         {"pause_sound", pause_sound},

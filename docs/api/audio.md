@@ -21,6 +21,8 @@ end
 
 Paths are relative to the working directory. Volume ranges from zero to one. Loading fails if the file is not a valid WAV or the audio device cannot open. Audio is not available in headless mode. Keep a reference to a sound while it plays. Lua releases sounds when they are no longer used or when the runner closes.
 
+To play overlapping instances of one effect, use `local another = mv.clone_sound(sound)`. Each instance has independent playback and volume. They share the sample data, which stays alive until all instances are released. Keep a Lua reference to each instance while it plays. In C, `mv_sound_clone(sound)` returns an owned instance or `NULL`; destroy each instance with `mv_sound_destroy`.
+
 ## C
 
 Include `malvado/platform.h` and link the raylib platform library. Open the audio device before loading sounds. Destroy all sounds before closing the device:
@@ -56,4 +58,4 @@ The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`
 
 In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_music_update` regularly, including when the rest of the game is idle. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
 
-Audio uses one process-wide device. Destroy every sound and stream before closing it. Multiple simultaneous instances of the same sound are not supported yet.
+Audio uses one process-wide device. Destroy every sound and stream before closing it.

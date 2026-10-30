@@ -90,6 +90,9 @@ int mv_audio_open(void);
 void mv_audio_close(void);
 /* Load a WAV file. Return an owned sound, or NULL on failure. */
 MvSound *mv_sound_load(const char *path);
+/* Create an independent playback instance that shares the sound data.
+ * Each instance is owned and must be destroyed before closing the device. */
+MvSound *mv_sound_clone(const MvSound *sound);
 void mv_sound_destroy(MvSound *sound);
 /* Play restarts this sound. These functions return 0 for invalid arguments. */
 int mv_sound_play(MvSound *sound);

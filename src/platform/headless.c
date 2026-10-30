@@ -47,6 +47,7 @@ int mv_text_input_next(uint32_t *codepoint) { (void)codepoint; return 0; }
 int mv_audio_open(void) { return 0; }
 void mv_audio_close(void) {}
 MvSound *mv_sound_load(const char *path) { (void)path; return NULL; }
+MvSound *mv_sound_clone(const MvSound *sound) { (void)sound; return NULL; }
 void mv_sound_destroy(MvSound *sound) { (void)sound; }
 int mv_sound_play(MvSound *sound) { (void)sound; return 0; }
 int mv_sound_stop(MvSound *sound) { (void)sound; return 0; }
