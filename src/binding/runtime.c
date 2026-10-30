@@ -1450,6 +1450,39 @@ open_module(lua_State *L)
     return 1;
 }
 
+static const char *const legacy_names[] = {
+    "process", "frame", "font", "write", "change_text", "delete_text",
+    "key", "clear_screen", "load_image", "time_seconds", NULL
+};
+
+static int
+legacy_import_globals(lua_State *L)
+{
+    for (size_t i = 0; legacy_names[i]; ++i) {
+        lua_getglobal(L, legacy_names[i]);
+        lua_getfield(L, lua_upvalueindex(1), legacy_names[i]);
+        int allowed = lua_isnil(L, -2) || lua_rawequal(L, -1, -2);
+        lua_pop(L, 2);
+        if (!allowed)
+            return luaL_error(L, "global already exists: %s", legacy_names[i]);
+    }
+    for (size_t i = 0; legacy_names[i]; ++i) {
+        lua_getfield(L, lua_upvalueindex(1), legacy_names[i]);
+        lua_setglobal(L, legacy_names[i]);
+    }
+    return 0;
+}
+
+static int
+open_legacy_module(lua_State *L)
+{
+    lua_newtable(L);
+    luaL_requiref(L, "malvado", open_module, 0);
+    lua_pushcclosure(L, legacy_import_globals, 1);
+    lua_setfield(L, -2, "import_globals");
+    return 1;
+}
+
 int
 malvado_run(int argc, char **argv)
 {
@@ -1479,6 +1512,8 @@ malvado_run(int argc, char **argv)
     }
     luaL_openlibs(engine.L);
     luaL_requiref(engine.L, "malvado", open_module, 0);
+    lua_pop(engine.L, 1);
+    luaL_requiref(engine.L, "malvado.compat.legacy", open_legacy_module, 0);
     lua_pop(engine.L, 1);
     if (luaL_loadfile(engine.L, argv[index]) != LUA_OK || lua_pcall(engine.L, 0, 0, 0) != LUA_OK) {
         fprintf(stderr, "%s\n", lua_tostring(engine.L, -1));

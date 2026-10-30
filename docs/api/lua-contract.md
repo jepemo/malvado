@@ -48,6 +48,6 @@ mv.start(function()
 end, { width = 800, height = 600, title = "My game" })
 ```
 
-## Proposed legacy shim
+## Legacy shim
 
-`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `key`, and other globals. Use it only for migration. The normal namespace import must not inject globals. The constructor still returns a PID, like the current core. The shim adapts names and arguments; runtime work remains in C. It does not emulate the full `love` namespace. Replace direct LÖVE calls in examples.
+`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `load_image`, and `time_seconds` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a PID, like the current core. These names use the current API contracts; this first shim does not implement the historical `fpg`, `set_title`, process graphics fields, or the `love` namespace.
