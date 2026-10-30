@@ -22,6 +22,7 @@
 
 typedef struct {
     int seen;
+    int stopped;
 } HelloCheck;
 
 static void
@@ -42,12 +43,13 @@ check_frame(void *user)
         }
     }
     UnloadImage(image);
-    if (check->seen) {
+    if (check->seen && !check->stopped) {
         MalvadoProcessInfo process;
         size_t total;
         int64_t tick;
         assert(malvado_debug_snapshot(&process, 1, &total, &tick));
         assert(total == 1 && malvado_debug_signal(process.id, "kill"));
+        check->stopped = 1;
     }
 }
 

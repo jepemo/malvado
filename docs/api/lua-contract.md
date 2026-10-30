@@ -25,26 +25,25 @@
 | `mv.time_seconds()` → number | Monotonic clock seconds with an unspecified origin; subtract two readings to measure elapsed time | C |
 | `mv.exit(code?)` | Request orderly shutdown, default code 0; end the current process in a controlled way | C |
 
-`options` specifies `width`, `height`, `title`, and `tick_rate`. Defaults are 800×600, Malvado, and 60. Unify profiles, packaging, and CLI configuration before implementation so that defaults have one source.
+`options` can specify `width`, `height`, and `title`. Defaults are 800×600 and Malvado. The current logical tick rate is 60 Hz.
 
 Current process fields include read-only `id` and `delta`, `x/y/z=0`, `angle=0` in degrees, `size=1`, and `fps=0` (each tick), plus user fields. `delta` is logical seconds between activations and is 0 on the first activation; it includes ticks spent sleeping or frozen. The historical engine used the latest render-frame duration for processes with a nonzero `fps`, so code that relies on that behavior can move differently. Before P3, define any remaining `file/fpg/fpgIndex`, dimension, and anchor behavior. Do not assign Bennu semantics automatically.
 
 ## Proposed basic example
 
 ```lua
-local mv = require("malvado")
-local Hello = mv.process(function(self)
-  local font = mv.font(40, 255, 255, 255)
-  local text = mv.write(font, self.x, self.y, "Hello, Malvado")
-  while not mv.key("escape") do
-    mv.frame()
+require("malvado").import_globals()
+local Hello = process(function(self)
+  local greeting_font = font(40, 255, 255, 255)
+  write(greeting_font, self.x, self.y, "Hello, Malvado")
+  while not key("escape") do
+    frame()
   end
-  mv.delete_text(text)
 end)
 
-mv.start(function()
-  mv.set_title("My game")
-  mv.clear_screen(25, 30, 45)
+start(function()
+  set_title("My game")
+  clear_screen(25, 30, 45)
   Hello { x = 60, y = 80 }
 end)
 ```

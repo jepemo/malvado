@@ -1,24 +1,26 @@
 # Lua processes
 
-Processes let your game run several tasks together. Each task keeps its Lua state when it calls `mv.frame()`. Here is a small process that runs for three ticks:
+Processes let your game run several tasks together. Each task keeps its Lua state when it calls `frame()`. Here is a small process that runs for three ticks:
 
 ```lua
-local mv = require("malvado")
+require("malvado").import_globals()
 
-local Counter = mv.process(function(self)
+local Counter = process(function(self)
   while self.remaining > 0 do
     print(self.remaining)
     self.remaining = self.remaining - 1
-    if self.remaining > 0 then mv.frame() end
+    if self.remaining > 0 then frame() end
   end
 end)
 
-mv.start(function()
+start(function()
   Counter({remaining = 3})
 end)
 ```
 
 Run the [complete C and Lua examples](../../examples/c/processes/README.md), or try the [parity example](../../examples/c/parity/README.md) to compare their output. This page describes the current alpha.2 process API. For future graphics and other planned functions, see the [proposed Lua API](lua-contract.md).
+
+`import_globals()` adds the modern Malvado functions to the Lua global environment. It checks all names before it adds any. If a name already has a different value, it raises an error and adds nothing. You can call it again when the installed functions are unchanged. Global names can still be shadowed by local variables; choose distinct local names. To avoid global names, use `local mv = require("malvado")` and call functions as `mv.process`, `mv.frame`, and `mv.start`. Both forms use the same API.
 
 ## Start and stop
 

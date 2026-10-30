@@ -1,51 +1,51 @@
 -- Malvado 2; project created by Jeremías Pérez and contributors.
 -- SPDX-License-Identifier: Apache-2.0
 
-local mv = require("malvado")
+require("malvado").import_globals()
 local images = {}
 local stopping = false
 
-local BenchProcess = mv.process(function(self)
-  local frame = 1
+local BenchProcess = process(function(self)
+  local image_index = 1
   while not stopping do
-    mv.draw_image(images[frame], self.x, self.y)
-    frame = frame % #images + 1
-    mv.frame()
+    draw_image(images[image_index], self.x, self.y)
+    image_index = image_index % #images + 1
+    frame()
   end
 end)
 
-local Benchmark = mv.process(function()
-  local font = mv.font(20)
-  local prompt = mv.write(font, 300, 300, "Hold Space to add processes")
-  local count_text = mv.write(font, 10, 10, "Processes: 0")
-  local time_text = mv.write(font, 430, 10, "Tick interval: 0 ms")
+local Benchmark = process(function()
+  local font = font(20)
+  local prompt = write(font, 300, 300, "Hold Space to add processes")
+  local count_text = write(font, 10, 10, "Processes: 0")
+  local time_text = write(font, 430, 10, "Tick interval: 0 ms")
   local count = 0
-  local previous = mv.time_seconds()
+  local previous = time_seconds()
 
-  while not mv.key("escape") do
-    local now = mv.time_seconds()
-    mv.change_text(time_text, string.format("Tick interval: %.2f ms", (now - previous) * 1000))
+  while not key("escape") do
+    local now = time_seconds()
+    change_text(time_text, string.format("Tick interval: %.2f ms", (now - previous) * 1000))
     previous = now
-    if mv.key("space") then
+    if key("space") then
       BenchProcess { x = math.random(50, 750), y = math.random(50, 550) }
       count = count + 1
-      mv.change_text(count_text, "Processes: " .. count)
+      change_text(count_text, "Processes: " .. count)
     end
-    mv.frame()
+    frame()
   end
 
   print("benchmark stopped: " .. count .. " processes")
   stopping = true
-  mv.delete_text(prompt)
-  mv.delete_text(count_text)
-  mv.delete_text(time_text)
+  delete_text(prompt)
+  delete_text(count_text)
+  delete_text(time_text)
 end)
 
-mv.start(function()
+start(function()
   math.randomseed(1)
   for i = 0, 8 do
-    images[i + 1] = mv.load_image(string.format("examples/bench/assets/colours/%03d.png", i))
+    images[i + 1] = load_image(string.format("examples/bench/assets/colours/%03d.png", i))
   end
-  mv.clear_screen(0, 0, 0)
+  clear_screen(0, 0, 0)
   Benchmark()
 end, { width = 800, height = 600, title = "Benchmark" })

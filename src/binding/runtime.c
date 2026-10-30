@@ -2199,6 +2199,32 @@ random_range(lua_State *L)
 }
 
 static int
+import_globals(lua_State *L)
+{
+    for (int pass = 0; pass < 2; ++pass) {
+        lua_pushnil(L);
+        while (lua_next(L, lua_upvalueindex(1)) != 0) {
+            const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tostring(L, -2) : NULL;
+            if (name && strcmp(name, "import_globals") != 0 &&
+                strcmp(name, "legacy_fpg") != 0 && lua_isfunction(L, -1)) {
+                if (pass == 0) {
+                    lua_getglobal(L, name);
+                    int allowed = lua_isnil(L, -1) || lua_rawequal(L, -1, -2);
+                    lua_pop(L, 1);
+                    if (!allowed)
+                        return luaL_error(L, "global already exists: %s", name);
+                } else {
+                    lua_pushvalue(L, -1);
+                    lua_setglobal(L, name);
+                }
+            }
+            lua_pop(L, 1);
+        }
+    }
+    return 0;
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
@@ -2345,6 +2371,9 @@ open_module(lua_State *L)
     lua_pushinteger(L, 1);
     lua_pushcclosure(L, legacy_screen_dimension, 1);
     lua_setfield(L, -2, "get_screen_height");
+    lua_pushvalue(L, -1);
+    lua_pushcclosure(L, import_globals, 1);
+    lua_setfield(L, -2, "import_globals");
     return 1;
 }
 

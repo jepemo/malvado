@@ -1,7 +1,7 @@
 -- Malvado 2; project created by Jeremías Pérez and contributors.
 -- SPDX-License-Identifier: Apache-2.0
 
-local mv = require("malvado")
+local start = require("malvado").start
 require("malvado.compat.legacy").import_globals()
 local library
 
@@ -15,7 +15,7 @@ local Cat = process(function(self)
   end
 end)
 
-mv.start(function()
+start(function()
   library = fpg("examples/demo/assets/cat")
   clear_screen(25, 30, 45)
   Cat {x = 400, y = 300}

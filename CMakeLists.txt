@@ -189,6 +189,8 @@ add_test(NAME lua_monotonic_time COMMAND malvado-run --headless ${CMAKE_CURRENT_
 set_tests_properties(lua_monotonic_time PROPERTIES TIMEOUT 15)
 add_test(NAME lua_legacy_globals COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/legacy.lua)
 set_tests_properties(lua_legacy_globals PROPERTIES TIMEOUT 15)
+add_test(NAME lua_import_globals COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/import_globals.lua)
+set_tests_properties(lua_import_globals PROPERTIES TIMEOUT 15)
 add_test(NAME lua_controllers COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/controllers.lua)
 set_tests_properties(lua_controllers PROPERTIES TIMEOUT 15)
 add_test(NAME lua_cadence COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/cadence.lua)

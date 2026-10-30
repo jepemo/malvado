@@ -1,7 +1,7 @@
 -- Malvado 2; project created by Jeremías Pérez and contributors.
 -- SPDX-License-Identifier: Apache-2.0
 
-local mv = require("malvado")
+require("malvado").import_globals()
 local width, height = 800, 600
 local images, stars = {}, {}
 local game
@@ -16,8 +16,8 @@ local function hit(a, b, radius)
 end
 
 local function sprite(image, x, y, scale, angle)
-  local w, h = mv.image_size(image)
-  mv.draw_image_region(image, x, y, 0, 0, w, h, w / 2, h / 2, scale, angle)
+  local w, h = image_size(image)
+  draw_image_region(image, x, y, 0, 0, w, h, w / 2, h / 2, scale, angle)
 end
 
 local function new_game()
@@ -45,14 +45,14 @@ end
 local function update()
   local ship = game.ship
   if ship.alive then
-    if mv.key("left") then ship.angle = ship.angle - 4 end
-    if mv.key("right") then ship.angle = ship.angle + 4 end
-    if mv.key("up") then
+    if key("left") then ship.angle = ship.angle - 4 end
+    if key("right") then ship.angle = ship.angle + 4 end
+    if key("up") then
       local angle = math.rad(ship.angle - 90)
       ship.x = wrap(ship.x + math.cos(angle) * 3, width)
       ship.y = wrap(ship.y + math.sin(angle) * 3, height)
     end
-    local pressed = mv.key("space")
+    local pressed = key("space")
     if pressed and not game.firing then fire() end
     game.firing = pressed
   end
@@ -84,39 +84,39 @@ local function update()
 end
 
 local function draw()
-  for _, star in ipairs(stars) do mv.draw_text(".", star.x, star.y, 10) end
+  for _, star in ipairs(stars) do draw_text(".", star.x, star.y, 10) end
   for _, asteroid in ipairs(game.asteroids) do
     sprite(images.asteroid, asteroid.x, asteroid.y, 0.3, asteroid.angle)
   end
   for _, laser in ipairs(game.lasers) do sprite(images.laser, laser.x, laser.y, 1, 0) end
   if game.ship.alive then sprite(images.ship, game.ship.x, game.ship.y, 0.1, game.ship.angle) end
-  mv.draw_text("Score: " .. game.score, 10, 10, 20)
+  draw_text("Score: " .. game.score, 10, 10, 20)
   if not game.ship.alive then
-    mv.draw_text("Game over - press R to restart", 220, 270, 24)
+    draw_text("Game over - press R to restart", 220, 270, 24)
   elseif #game.asteroids == 0 then
-    mv.draw_text("You win - press R to restart", 220, 270, 24)
+    draw_text("You win - press R to restart", 220, 270, 24)
   end
 end
 
-local Game = mv.process(function()
+local Game = process(function()
   local restart_down = false
   new_game()
-  while not mv.key("escape") do
+  while not key("escape") do
     update()
-    local restart = mv.key("r")
+    local restart = key("r")
     if restart and not restart_down and (not game.ship.alive or #game.asteroids == 0) then new_game() end
     restart_down = restart
     draw()
-    mv.frame()
+    frame()
   end
 end)
 
-mv.start(function()
+start(function()
   math.randomseed(1)
   for i = 1, 100 do stars[i] = { x = math.random(5, width - 5), y = math.random(5, height - 5) } end
-  images.ship = mv.load_image("examples/space_asteroids/spaceship.png")
-  images.asteroid = mv.load_image("examples/space_asteroids/asteroid.png")
-  images.laser = mv.load_image("examples/space_asteroids/laser.png")
-  mv.clear_screen(0, 0, 0)
+  images.ship = load_image("examples/space_asteroids/spaceship.png")
+  images.asteroid = load_image("examples/space_asteroids/asteroid.png")
+  images.laser = load_image("examples/space_asteroids/laser.png")
+  clear_screen(0, 0, 0)
   Game()
 end, { width = width, height = height, title = "Space Asteroids" })
