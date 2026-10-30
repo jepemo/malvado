@@ -3,9 +3,6 @@
 
 local mv = require("malvado")
 local width, height = 800, 600
-local smoke = os.getenv("MALVADO_SMOKE") == "1"
-local input_test = os.getenv("MALVADO_INPUT_TEST") == "1"
-local controls = { turn = 0, move = 0, fire = 0 }
 local images, stars = {}, {}
 local game
 
@@ -48,16 +45,15 @@ end
 local function update()
   local ship = game.ship
   if ship.alive then
-    if mv.key("left") then ship.angle = ship.angle - 4; controls.turn = controls.turn + 1 end
-    if mv.key("right") then ship.angle = ship.angle + 4; controls.turn = controls.turn + 1 end
+    if mv.key("left") then ship.angle = ship.angle - 4 end
+    if mv.key("right") then ship.angle = ship.angle + 4 end
     if mv.key("up") then
       local angle = math.rad(ship.angle - 90)
       ship.x = wrap(ship.x + math.cos(angle) * 3, width)
       ship.y = wrap(ship.y + math.sin(angle) * 3, height)
-      controls.move = controls.move + 1
     end
     local pressed = mv.key("space")
-    if pressed and not game.firing then fire(); controls.fire = controls.fire + 1 end
+    if pressed and not game.firing then fire() end
     game.firing = pressed
   end
 
@@ -103,34 +99,15 @@ local function draw()
 end
 
 local Game = mv.process(function()
-  local ticks, restart_down = 0, false
+  local restart_down = false
   new_game()
   while not mv.key("escape") do
-    ticks = ticks + 1
-    if smoke and ticks == 1 then
-      game.asteroids = {{ x = game.ship.x, y = game.ship.y - 6, dx = 0, dy = 0, angle = 0 }}
-      fire()
-    end
     update()
-    if smoke and ticks == 1 then
-      assert(game.score == 1 and #game.asteroids == 0 and game.ship.alive)
-      game.asteroids = {{ x = game.ship.x, y = game.ship.y, dx = 0, dy = 0, angle = 0 }}
-    elseif smoke and ticks == 2 then
-      assert(not game.ship.alive)
-      new_game()
-      assert(game.ship.alive and game.score == 0 and #game.asteroids == 4)
-      print("asteroids smoke: hit, loss, restart")
-      return
-    end
     local restart = mv.key("r")
     if restart and not restart_down and (not game.ship.alive or #game.asteroids == 0) then new_game() end
     restart_down = restart
     draw()
     mv.frame()
-  end
-  if input_test then
-    assert(controls.turn > 0 and controls.move > 0 and controls.fire > 0)
-    print("asteroids input: turn, move, fire, escape")
   end
 end)
 

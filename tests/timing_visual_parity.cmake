@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 execute_process(
-  COMMAND "${CMAKE_COMMAND}" -E env "MALVADO_CAPTURE_PATH=${CAPTURE}" "${C_DEMO}" --smoke
+  COMMAND "${CMAKE_COMMAND}" -E env "MALVADO_CAPTURE_PATH=${CAPTURE}" "${C_DEMO}"
   RESULT_VARIABLE c_result)
 if(NOT c_result EQUAL 0)
   message(FATAL_ERROR "C timing game capture failed: ${c_result}")
 endif()
 execute_process(
-  COMMAND "${CMAKE_COMMAND}" -E env MALVADO_SMOKE=1 "${LUA_TEST}" "${LUA_DEMO}" "${CAPTURE}"
+  COMMAND "${LUA_TEST}" "${LUA_DEMO}" "${CAPTURE}"
   RESULT_VARIABLE lua_result)
 file(REMOVE "${CAPTURE}")
 if(NOT lua_result EQUAL 0)

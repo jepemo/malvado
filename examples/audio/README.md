@@ -10,4 +10,4 @@ Build Malvado and run this command from the repository root:
 
 Press **1** and **2** close together to play two independent effects. Press **Space** to start or stop a repeating stream. Press **Escape** to exit. The audio device and a display are required.
 
-For an automated check, set `MALVADO_SMOKE=1`. This mode plays the effects, starts the loop, and exits. The tone file was generated for this example and contains no third-party audio.
+The tone file was generated for this example and contains no third-party audio.

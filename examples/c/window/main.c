@@ -15,7 +15,6 @@
 
 #include "malvado/malvado.h"
 #include "malvado/platform.h"
-#include <string.h>
 
 typedef struct { int ticks; } Game;
 
@@ -30,9 +29,8 @@ step(MvContext *ctx, MvProcessId id, void *user)
 }
 
 int
-main(int argc, char **argv)
+main(void)
 {
-    int smoke = argc == 2 && strcmp(argv[1], "--smoke") == 0;
     MvContext *ctx = mv_context_create(60, 5);
     if (!ctx) return 1;
     if (!mv_window_open(640, 360, "Malvado C")) {
@@ -42,7 +40,7 @@ main(int argc, char **argv)
     Game game = {0};
     MvProcessId id;
     int ok = mv_process_spawn(ctx, 0, 0, step, NULL, &game, &id) == MV_OK;
-    while (ok && !mv_window_should_close() && (!smoke || game.ticks < 3)) {
+    while (ok && !mv_window_should_close()) {
         ok = mv_process_tick(ctx) == MV_OK;
         mv_window_begin((MvColor){25, 27, 40, 255});
         mv_window_draw_text("Hello, Malvado C", 40, 40, 30, (MvColor){255, 255, 255, 255});

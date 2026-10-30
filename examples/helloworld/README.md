@@ -8,6 +8,6 @@ Build Malvado, then run:
 ./build/malvado-run examples/helloworld/main.lua
 ```
 
-For an automated graphics check, set `MALVADO_SMOKE=1`. The example closes after three ticks. It requires a display or virtual display.
+The example requires a display or virtual display.
 
 This version uses the Malvado 2 Lua API. The [original example](https://github.com/jepemo/malvado/blob/4670d8a/examples/helloworld/main.lua) used LÖVE and global functions.

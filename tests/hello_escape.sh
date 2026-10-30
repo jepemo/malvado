@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set -eu
-unset MALVADO_SMOKE
 "$1" "$2" &
 pid=$!
 trap 'kill "$pid" 2>/dev/null || true' EXIT

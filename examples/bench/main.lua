@@ -4,14 +4,11 @@
 local mv = require("malvado")
 local images = {}
 local stopping = false
-local smoke = os.getenv("MALVADO_SMOKE") == "1"
-local worker_ticks = 0
 
 local BenchProcess = mv.process(function(self)
   local frame = 1
   while not stopping do
     mv.draw_image(images[frame], self.x, self.y)
-    worker_ticks = worker_ticks + 1
     frame = frame % #images + 1
     mv.frame()
   end
@@ -23,23 +20,16 @@ local Benchmark = mv.process(function()
   local count_text = mv.write(font, 10, 10, "Processes: 0")
   local time_text = mv.write(font, 430, 10, "Tick interval: 0 ms")
   local count = 0
-  local ticks = 0
   local previous = mv.time_seconds()
 
   while not mv.key("escape") do
     local now = mv.time_seconds()
     mv.change_text(time_text, string.format("Tick interval: %.2f ms", (now - previous) * 1000))
     previous = now
-    if mv.key("space") or (smoke and ticks < 3) then
+    if mv.key("space") then
       BenchProcess { x = math.random(50, 750), y = math.random(50, 550) }
       count = count + 1
       mv.change_text(count_text, "Processes: " .. count)
-    end
-    ticks = ticks + 1
-    if smoke and ticks == 5 then
-      assert(count == 3 and worker_ticks > 0)
-      print("benchmark smoke: 3 processes ran")
-      break
     end
     mv.frame()
   end

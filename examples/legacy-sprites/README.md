@@ -8,4 +8,4 @@ On macOS or Linux, build Malvado and run this command from the repository root:
 ./build/malvado-run examples/legacy-sprites/main.lua
 ```
 
-The example uses the cat images from `examples/demo/assets/cat`. For an automated window check, set `MALVADO_SMOKE=1`. It exits after four process activations. Directory `fpg` mode is not yet supported on Windows. See the [legacy contract](../../docs/api/lua-contract.md#legacy-shim) for the supported subset and limits.
+The example uses the cat images from `examples/demo/assets/cat`. Directory `fpg` mode is not yet supported on Windows. See the [legacy contract](../../docs/api/lua-contract.md#legacy-shim) for the supported subset and limits.

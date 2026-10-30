@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set -eu
-unset MALVADO_SMOKE
 output=$(mktemp)
 "$1" "$2" > "$output" 2>&1 &
 pid=$!

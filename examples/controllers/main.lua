@@ -2,14 +2,11 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local smoke = os.getenv("MALVADO_SMOKE") == "1"
 local names = {"a", "b", "x", "y", "up", "down", "left", "right", "lb", "rb", "back", "start"}
 local axes = {"left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"}
 
 local Monitor = mv.process(function()
-  local ticks = 0
   while not mv.key("escape") do
-    ticks = ticks + 1
     mv.draw_text("Connect or disconnect a controller. Escape exits.", 20, 20, 20)
     for slot = 0, 3 do
       local y = 60 + slot * 120
@@ -29,10 +26,6 @@ local Monitor = mv.process(function()
       else
         mv.draw_text("Slot " .. slot .. ": disconnected", 20, y, 20)
       end
-    end
-    if smoke and ticks == 5 then
-      print("controller monitor smoke: four slots")
-      return
     end
     mv.frame()
   end

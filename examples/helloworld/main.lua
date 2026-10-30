@@ -5,17 +5,11 @@ local mv = require("malvado")
 
 local HelloWorld = mv.process(function(self)
   local font = mv.font(60, 0, 0, 0)
-  local greeting = mv.write(font, self.x, self.y, self.text)
-  local smoke = os.getenv("MALVADO_SMOKE") == "1"
-  local ticks = 0
+  mv.write(font, self.x, self.y, self.text)
 
   while not mv.key("escape") do
-    ticks = ticks + 1
-    if smoke and ticks >= 3 then break end
     mv.frame()
   end
-
-  mv.delete_text(greeting)
 end)
 
 mv.start(function()

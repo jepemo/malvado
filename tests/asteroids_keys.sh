@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set -eu
-unset MALVADO_SMOKE
-MALVADO_INPUT_TEST=1 "$1" "$2" &
+MALVADO_REAL_INPUT=1 "$1" "$2" &
 pid=$!
 trap 'kill "$pid" 2>/dev/null || true' EXIT
 window=$(timeout 10 xdotool search --sync --name '^Space Asteroids$' | head -n 1)

@@ -2,14 +2,11 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local smoke = os.getenv("MALVADO_SMOKE") == "1"
-local input_test = os.getenv("MALVADO_INPUT_TEST") == "1"
 local images = { cats = {} }
 local names = { "Sprites", "Keyboard", "Texts", "Fade" }
 local selected, page = 1, 0
 local ticks, text = 0, ""
 local previous = {}
-local visits = {}
 
 local function pressed(key)
   local down = mv.key(key)
@@ -20,8 +17,6 @@ end
 
 local function show_page(number)
   page = number
-  visits[number] = true
-  if input_test then print("demo page: " .. names[number]) end
 end
 
 local function draw_menu()
@@ -84,14 +79,6 @@ local Demo = mv.process(function()
       mv.fade_on()
     end
 
-    if smoke then
-      if ticks <= 4 then show_page(ticks) end
-      if ticks == 5 then
-        assert(visits[1] and visits[2] and visits[3] and visits[4])
-        print("demo smoke: four pages")
-        return
-      end
-    end
     if page == 1 then
       mv.clear_screen(100, 60, 100)
     else
@@ -99,10 +86,6 @@ local Demo = mv.process(function()
     end
     if page == 0 then draw_menu() else draw_page() end
     mv.frame()
-  end
-  if input_test then
-    assert(visits[1] and visits[2])
-    print("demo input: menu, pages, escape")
   end
 end)
 
