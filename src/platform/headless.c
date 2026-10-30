@@ -78,6 +78,18 @@ void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color
     (void)text; (void)x; (void)y; (void)size; (void)color;
 }
 int mv_window_text_width(const char *text, int size) { (void)text; (void)size; return 0; }
+MvFont *mv_font_load(const char *path, int base_size) { (void)path; (void)base_size; return NULL; }
+void mv_font_destroy(MvFont *font) { (void)font; }
+int mv_font_text_width(const MvFont *font, const char *text, int size)
+{
+    (void)font; (void)text; (void)size;
+    return 0;
+}
+int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color)
+{
+    (void)font; (void)text; (void)x; (void)y; (void)size; (void)color;
+    return 0;
+}
 int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color)
 {
     (void)x; (void)y; (void)width; (void)height; (void)filled; (void)color;

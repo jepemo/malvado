@@ -2,6 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
+assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24))
 local id
 local task = mv.process(function()
   assert(mv.font(24)[1] == 255)

@@ -57,6 +57,7 @@ typedef enum {
 typedef struct MvImage MvImage;
 typedef struct MvSound MvSound;
 typedef struct MvMusic MvMusic;
+typedef struct MvFont MvFont;
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
     float x, y;
@@ -133,6 +134,13 @@ void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Return the built-in font width in pixels, or 0 for invalid input or no window. */
 int mv_window_text_width(const char *text, int size);
+/* Load a TTF/OTF font after opening a window. The caller owns the font and
+ * must destroy it before closing the window. The initial glyph set covers
+ * printable ASCII and Latin-1. Base size must be in 1..256. */
+MvFont *mv_font_load(const char *path, int base_size);
+void mv_font_destroy(MvFont *font);
+int mv_font_text_width(const MvFont *font, const char *text, int size);
+int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);
 /* Draw a rectangle or circle between begin and end. Filled must be 0 or 1.
  * Return 0 for invalid geometry, an invalid flag, or no window. */
 int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color);

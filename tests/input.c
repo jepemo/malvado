@@ -34,6 +34,10 @@ main(void)
     assert(!mv_window_size(&width, NULL) && width == 1);
     assert(!mv_window_size(&width, &height) && width == 0 && height == 0);
     assert(mv_window_text_width("Text", 20) == 0);
+    assert(!mv_font_load("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24));
+    assert(!mv_font_text_width(NULL, "Text", 20));
+    assert(!mv_font_draw(NULL, "Text", 0, 0, 20, (MvColor){255, 255, 255, 255}));
+    mv_font_destroy(NULL);
     assert(!mv_window_draw_box(0, 0, 1, 1, 1, (MvColor){255, 255, 255, 255}));
     assert(!mv_window_draw_circle(0, 0, 1, 1, (MvColor){255, 255, 255, 255}));
     MvFade fade = {0};

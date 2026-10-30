@@ -93,6 +93,7 @@ typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
 typedef struct { MvSound *sound; } LuaSound;
 typedef struct { MvMusic *music; } LuaMusic;
+typedef struct { MvFont *font; } LuaFont;
 typedef struct { int rows, columns, count, directory; } LuaLegacySheet;
 #ifndef _WIN32
 typedef struct { char **names; size_t count; } LuaDirectoryEntries;
@@ -1598,6 +1599,49 @@ text(lua_State *L)
 }
 /* The Lua state owns text objects and fonts until they are deleted or closed. */
 static int
+font_gc(lua_State *L)
+{
+    LuaFont *font = luaL_checkudata(L, 1, "malvado.font");
+    mv_font_destroy(font->font);
+    font->font = NULL;
+    return 0;
+}
+
+static int
+load_font(lua_State *L)
+{
+    size_t length;
+    const char *path = luaL_checklstring(L, 1, &length);
+    lua_Integer size = luaL_checkinteger(L, 2);
+    if (strlen(path) != length || size < 1 || size > 256)
+        return luaL_error(L, "invalid font path or size");
+    lua_Integer channels[4];
+    for (int i = 0; i < 4; ++i) {
+        channels[i] = luaL_optinteger(L, i + 3, 255);
+        if (channels[i] < 0 || channels[i] > 255)
+            return luaL_error(L, "color must be in 0..255");
+    }
+    if (!engine.window)
+        return luaL_error(L, "load_font requires an open window");
+    LuaFont *font = lua_newuserdatauv(L, sizeof(*font), 0);
+    font->font = NULL;
+    luaL_setmetatable(L, "malvado.font");
+    font->font = mv_font_load(path, (int)size);
+    if (!font->font)
+        return luaL_error(L, "could not load TTF or OTF font: %s", path);
+    lua_createtable(L, 4, 2);
+    lua_pushvalue(L, -2);
+    lua_setfield(L, -2, "resource");
+    lua_pushinteger(L, size);
+    lua_setfield(L, -2, "size");
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, channels[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    return 1;
+}
+
+static int
 font(lua_State *L)
 {
     lua_Integer size = luaL_checkinteger(L, 1);
@@ -1725,6 +1769,10 @@ render_texts(lua_State *L)
         lua_getfield(L, -3, "y");
         int y = (int)lua_tointeger(L, -1);
         lua_getfield(L, -4, "font");
+        lua_getfield(L, -1, "resource");
+        LuaFont *custom = luaL_testudata(L, -1, "malvado.font");
+        MvFont *resource = custom ? custom->font : NULL;
+        lua_pop(L, 1);
         lua_getfield(L, -1, "size");
         int size = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
@@ -1737,14 +1785,17 @@ render_texts(lua_State *L)
         }
         lua_getfield(L, -5, "align");
         const char *align = lua_tostring(L, -1);
-        int width = mv_window_text_width(text, size);
+        int width = resource ? mv_font_text_width(resource, text, size) : mv_window_text_width(text, size);
         int64_t offset = strcmp(align, "center") == 0 ? width / 2 :
                          strcmp(align, "right") == 0 ? width : 0;
         int64_t aligned_x = (int64_t)x - offset;
         if (aligned_x < INT_MIN) aligned_x = INT_MIN;
         if (aligned_x > INT_MAX) aligned_x = INT_MAX;
         lua_pop(L, 1);
-        mv_window_draw_text(text, (int)aligned_x, y, size, c);
+        if (resource)
+            (void)mv_font_draw(resource, text, (int)aligned_x, y, size, c);
+        else
+            mv_window_draw_text(text, (int)aligned_x, y, size, c);
         lua_pop(L, 5);
     }
     lua_pop(L, 1);
@@ -2178,6 +2229,7 @@ open_module(lua_State *L)
         {"draw_sprite", draw_sprite},
 #endif
         {"font", font},
+        {"load_font", load_font},
         {"write", write_text},
         {"change_text", change_text},
         {"delete_text", delete_text},
@@ -2195,6 +2247,12 @@ open_module(lua_State *L)
     lua_pushcfunction(L, image_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado image");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.font");
+    lua_pushcfunction(L, font_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado font");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.legacy_sheet");

@@ -56,6 +56,12 @@ Use `mv.rand(min, max)` for an integer in the inclusive range. Both limits must 
 
 For persistent text, `mv.write(font, x, y, text, align)` returns an ID. Alignment is `"left"` (the default), `"center"`, or `"right"`; `x` is the matching horizontal anchor. Use `mv.change_text(id, text, x, y, font)` to change the text, position, or font. The last three arguments are optional; pass `nil` to keep a value. Use `mv.delete_text(id)` to remove it. Positions are window pixels from the top-left corner. `mv.font(size, r, g, b, a)` creates a font description using the built-in font; color channels default to 255. In C, `mv_window_text_width(text, size)` returns the built-in font width in pixels, or zero for invalid input or without a window.
 
+To use a TTF or OTF file with persistent text, call `mv.load_font(path, size, r, g, b, a)` after the window opens. The size is an integer from 1 to 256 and the optional color channels default to 255. Pass the returned font to `mv.write` or `mv.change_text`. Keep the font description unchanged; the text keeps its font resource alive until the text is removed or the runner closes. Loading fails without a window or if the font cannot be loaded.
+
+The first font loader prepares printable ASCII and Latin-1 code points. A glyph also needs to exist in the font file. Characters outside that set are not supported by this loader yet. The built-in font has its own smaller glyph set. `mv.draw_text` uses the built-in font.
+
+In C, open a window and call `mv_font_load(path, base_size)`. Use `mv_font_text_width` and `mv_font_draw` with a size from 1 to 1024. They return 0 for invalid arguments or without a window; an empty string can also have zero width. Destroy every font with `mv_font_destroy` before closing the window.
+
 ## Process data
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.

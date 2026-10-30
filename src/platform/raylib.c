@@ -35,6 +35,9 @@ struct MvSound {
 struct MvMusic {
     Music stream;
 };
+struct MvFont {
+    Font font;
+};
 
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
@@ -432,6 +435,64 @@ mv_window_text_width(const char *text, int size)
     if (!text || size < 1 || !IsWindowReady())
         return 0;
     return MeasureText(text, size);
+}
+
+MvFont *
+mv_font_load(const char *path, int base_size)
+{
+    if (!path || !IsWindowReady() || base_size < 1 || base_size > 256 ||
+        (!IsFileExtension(path, ".ttf") && !IsFileExtension(path, ".otf")))
+        return NULL;
+    int codepoints[191];
+    int count = 0;
+    for (int codepoint = 32; codepoint <= 126; ++codepoint)
+        codepoints[count++] = codepoint;
+    for (int codepoint = 160; codepoint <= 255; ++codepoint)
+        codepoints[count++] = codepoint;
+    Font loaded = LoadFontEx(path, base_size, codepoints, count);
+    if (!IsFontValid(loaded) || loaded.texture.id == 0 ||
+        loaded.texture.id == GetFontDefault().texture.id) {
+        if (loaded.texture.id != GetFontDefault().texture.id)
+            UnloadFont(loaded);
+        return NULL;
+    }
+    MvFont *font = malloc(sizeof(*font));
+    if (!font) {
+        UnloadFont(loaded);
+        return NULL;
+    }
+    font->font = loaded;
+    return font;
+}
+
+void
+mv_font_destroy(MvFont *font)
+{
+    if (!font)
+        return;
+    UnloadFont(font->font);
+    free(font);
+}
+
+int
+mv_font_text_width(const MvFont *font, const char *text, int size)
+{
+    if (!font || !text || !IsWindowReady() || size < 1 || size > 1024)
+        return 0;
+    float width = MeasureTextEx(font->font, text, (float)size, size / 10.0f).x;
+    if (!isfinite(width) || width < 0 || (double)width > INT_MAX)
+        return 0;
+    return (int)ceilf(width);
+}
+
+int
+mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color)
+{
+    if (!font || !text || !IsWindowReady() || size < 1 || size > 1024)
+        return 0;
+    DrawTextEx(font->font, text, (Vector2){(float)x, (float)y}, (float)size, size / 10.0f,
+               (Color){color.r, color.g, color.b, color.a});
+    return 1;
 }
 
 int
