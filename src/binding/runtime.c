@@ -49,7 +49,7 @@ typedef struct {
     lua_Integer parent_id;
     lua_Integer priority;
     ProcessState state;
-    int cadence_accumulator;
+    MvCadence cadence;
     int first;
     int alive;
 } Process;
@@ -1390,15 +1390,9 @@ lua_process_step_protected(lua_State *L)
         lua_pushinteger(L, MV_STEP_ERROR);
         return 1;
     }
-    if (!process->first && fps > 0 && fps < 60) {
-        process->cadence_accumulator += (int)fps;
-        if (process->cadence_accumulator < 60) {
-            lua_pushinteger(L, MV_STEP_YIELD);
-            return 1;
-        }
-        process->cadence_accumulator -= 60;
-    } else {
-        process->cadence_accumulator = 0;
+    if (!process->first && mv_cadence_step(&process->cadence, (unsigned)fps) == 0) {
+        lua_pushinteger(L, MV_STEP_YIELD);
+        return 1;
     }
     lua_State *co = process->thread;
     int draw_ref = process->draw_ref;

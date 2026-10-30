@@ -25,6 +25,13 @@ extern "C" {
 
 typedef struct MvContext MvContext;
 
+/* Cadence for a 60-tick-per-second scheduler. Initialize to {0}. Run the
+ * first activation yourself, then call once per eligible tick. A rate of 0
+ * or 60 runs every tick. Return 1 when due, 0 when not due, or -1 for an
+ * invalid rate, state, or pointer. Invalid calls do not change the state. */
+typedef struct { unsigned phase; } MvCadence;
+int mv_cadence_step(MvCadence *cadence, unsigned fps);
+
 typedef enum {
     MV_OK = 0,
     MV_INVALID_ARGUMENT,

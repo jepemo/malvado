@@ -14,7 +14,24 @@
  */
 
 #include "schedule.h"
+#include "malvado/malvado.h"
 #include <stdlib.h>
+
+int
+mv_cadence_step(MvCadence *cadence, unsigned fps)
+{
+    if (!cadence || cadence->phase >= 60 || fps > 60)
+        return -1;
+    if (fps == 0 || fps == 60) {
+        cadence->phase = 0;
+        return 1;
+    }
+    cadence->phase += fps;
+    if (cadence->phase < 60)
+        return 0;
+    cadence->phase -= 60;
+    return 1;
+}
 
 static int
 compare_items(const void *a, const void *b)
