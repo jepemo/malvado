@@ -7,7 +7,8 @@ unset MALVADO_SMOKE
 "$1" "$2" &
 pid=$!
 trap 'kill "$pid" 2>/dev/null || true' EXIT
-window=$(timeout 10 xdotool search --sync --name '^Malvado alpha$' | head -n 1)
+title=${3:-Malvado alpha}
+window=$(timeout 10 xdotool search --sync --name "^${title}$" | head -n 1)
 xdotool windowfocus --sync "$window"
 xdotool keydown Escape
 sleep 0.3

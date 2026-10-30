@@ -20,7 +20,7 @@ CMake also works without mise. To use local source trees instead of downloads, p
 
 ## Examples and documentation
 
-The examples in `examples/helloworld`, `examples/demo`, `examples/space_asteroids`, and `examples/bench` are kept as migration references. They use the old LÖVE engine and do not yet run on Malvado 2. To run the original versions, use the [last pre-migration source revision](https://github.com/jepemo/malvado/tree/4670d8a). Their migration is planned for [alpha.3](docs/versions/2.0.0-alpha.3.md).
+Try the migrated [Hello World](examples/helloworld/README.md) example with Malvado 2. The `demo`, `space_asteroids`, and `bench` examples still use the old LÖVE engine. To run their original versions, use the [last pre-migration source revision](https://github.com/jepemo/malvado/tree/4670d8a). Their migration is planned for [alpha.3](docs/versions/2.0.0-alpha.3.md).
 
 Explore the [documentation index](docs/README.md), [version checklist](docs/versions/README.md), and [migration roadmap](docs/planning/roadmap.md) for current status and plans.
 

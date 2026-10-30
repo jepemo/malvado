@@ -1,6 +1,6 @@
 # Examples as an engine contract
 
-The new snippets below are proposals, not programs that all run on the current runtime. The original examples in `examples/` require the historical LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep the examples until their replacements are verified. Keep reference traces and screenshots.
+The new snippets below are proposals, not programs that all run on the current runtime. The [Hello World example](../../examples/helloworld/README.md) runs on Malvado 2. The other historical examples require the LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep the examples until their replacements are verified. Keep reference traces and screenshots.
 
 ## First-class C and Lua examples
 
@@ -10,7 +10,7 @@ Each shared engine capability will have a C example that uses the public API and
 
 | Current example | Behavior to retain | Required work |
 | --- | --- | --- |
-| `examples/helloworld/main.lua` | Process constructor, font, text, Escape, and automatic shutdown | Namespace/legacy shim, C fonts, and runner |
+| `examples/helloworld/main.lua` | Process constructor, font, text, Escape, and automatic shutdown | Migrated to the Malvado 2 Lua API |
 | `examples/demo/main.lua` | Menu, spritesheets, keyboard, text, and fades | Persistent resources, animation, z, and per-process cadence |
 | `examples/space_asteroids/main.lua` | Complete game, movement, bullets, and collision | Remove `love.math.random`/`love.graphics.points`; map input and graphics |
 | `examples/bench/main.lua` | Process creation, load, and timing | Replace `love.timer.getTime`; separate VM, scheduler, and render costs |

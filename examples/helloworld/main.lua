@@ -1,30 +1,24 @@
-package.path = package.path .. ";./?/init.lua"
-require 'malvado'
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
 
--- Define (not run) one process
-HelloWorld = process(function(self)
-  -- Set background to grey
-  clear_screen(250, 250, 250)
+local mv = require("malvado")
 
-  -- Define global font (size, color (r, g, b))
-  local font = font(60, 0, 0, 0)
+local HelloWorld = mv.process(function(self)
+  local font = mv.font(60, 0, 0, 0)
+  local greeting = mv.write(font, self.x, self.y, self.text)
+  local smoke = os.getenv("MALVADO_SMOKE") == "1"
+  local ticks = 0
 
-  -- Write the "Hello world" text in the process position
-  write(font, self.x, self.y, self.text)
-
-  -- Runs until escape key is pressed
-  while not key("escape") do
-    -- Render the process
-    frame()
+  while not mv.key("escape") do
+    ticks = ticks + 1
+    if smoke and ticks >= 3 then break end
+    mv.frame()
   end
+
+  mv.delete_text(greeting)
 end)
 
--- Start (main)
-malvado.start(function()
-  -- Set the title text of the window
-  set_title("Hello world")
-
-  -- Launch the background process
-  -- The application runs until there is no running process.
-  HelloWorld { x=400, y=300, text="Hello World" }
-end, true)
+mv.start(function()
+  mv.clear_screen(250, 250, 250)
+  HelloWorld { x = 400, y = 300, text = "Hello World" }
+end, { width = 800, height = 600, title = "Hello world" })
