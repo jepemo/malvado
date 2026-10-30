@@ -69,3 +69,17 @@ run = "ctest --test-dir build-visual -C Debug -R '^visual_' --output-on-failure"
 [tasks.catalog]
 description = "Download pinned API sources and regenerate the catalog"
 run = ["python3 docs/tools/fetch_api_sources.py", "python3 docs/tools/catalog_api.py"]
+
+[tasks.configure-g0]
+description = "Configure the experimental raygui prototype"
+run = "cmake -S . -B build-g0 -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_GUI_G0=ON -DMALVADO_VISUAL_TESTS=ON"
+
+[tasks.build-g0]
+description = "Build the experimental raygui prototype"
+depends = ["configure-g0"]
+run = "cmake --build build-g0 --config Debug --target gui-g0-raygui --parallel"
+
+[tasks.test-g0]
+description = "Smoke test the raygui prototype (requires a display)"
+depends = ["build-g0"]
+run = "ctest --test-dir build-g0 -C Debug -R '^visual_gui_g0$' --output-on-failure"

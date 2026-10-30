@@ -88,6 +88,7 @@ jobs:
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
           mise run test-visual
+          mise run test-g0
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
