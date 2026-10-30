@@ -49,16 +49,17 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P4 / 2.0.0-alpha.4 | CLI, C SDK, Lua runner, desktop packages; enable GUI G1 | Create → play → export → run C and Lua projects on macOS/Linux; Windows in alpha.6 |
 | P5 / 2.0.0-alpha.5 | Essential Bennu compatibility, scrolling, regions, first pinned-variant FPG importer, basic Aseprite adapter, collision, selected extras | Each essential-profile symbol has a contract, example, and semantic check |
 | P6 / 2.0.0-alpha.6 | Android export and full Windows validation: runtime, C/Lua API, CLI, packaging | Android APK/AAB, touch, lifecycle; Windows CI, C/Lua examples, CLI, clean-machine packages; fix failures before beta |
-| P7 / 2.0.0-beta.1 | Freeze essential API, publishable docs, packaging, consistent errors | Unambiguous support matrix, complete examples, supported-OS tests |
-| P8 / 2.0.0 | Stabilization and migration guide | Beta criteria complete, reproducible releases, accepted sample games |
-| 2.1.0-alpha.1–alpha.3 | Optional Mode 7, Mode 9, and Mode 8 MVPs, in that order | Separate C/Lua examples, headless and graphics tests, lifecycle and 2D regression checks for each mode |
-| 2.1.0-beta.1 / 2.1.0 | Stabilize the graphics modes selected for release | Published contracts, supported-platform evidence, and verified examples; defer incomplete modes |
+| P7 / 2.0.0-alpha.7 | Mode 7 MVP: perspective floor and sprites | C/Lua examples, lifecycle, headless math, visual and 2D regression tests |
+| P8 / 2.0.0-alpha.8 | Mode 9 MVP: 3D scene and sprites | C/Lua examples, lifecycle, depth and 2D overlay tests |
+| P9 / 2.0.0-alpha.9 | Mode 8 MVP: sectors and basic collision | C/Lua examples, sector and collision tests, connected-room visual test |
+| P10 / 2.0.0-beta.1 | Freeze essential API, publishable docs, packaging, consistent errors | Unambiguous support matrix, complete examples, supported-OS tests, and verified graphics-mode MVPs |
+| P11 / 2.0.0 | Stabilization and migration guide | Beta criteria complete, reproducible releases, accepted sample games |
 | 2.1+ | Expand pending historical families and functions, more FPG variants, FPG export, and mountable ZIP | Schedule independently by profile and evidence; do not claim full compatibility without its completed matrix |
 | 2.2+ | Candidate advanced graphics styles and compatibility research | Schedule separately after MVP feedback and tests |
 
 Alphas 1–5 close with macOS and Linux verification. Android and Windows prototypes, tests, and fixes are concentrated in alpha.6 before beta. Both remain product targets but are not announced as supported before validation. The first stable version is not blocked by CD-ROM, raw pointers, advertising, or historical functions with little value. List them as pending or unsupported with a reason. Researching the full API is separate from implementing it in one delivery.
 
-The graphics-mode milestones are a proposed 2.1 track after stable 2.0. They do not add a gate to alpha.3 or change the essential 2.0 scope. Architecture review can happen earlier without delaying that scope. Mode 8 may reuse the Mode 9 renderer; verify this with a prototype. See the [graphics modes proposal](../specs/graphics-modes.md).
+The three graphics-mode MVPs are part of the 2.0 release scope and have separate alphas before beta. They do not add implementation work to alpha.3. Mode 8 may reuse the Mode 9 renderer; verify this with a prototype. Validate the new modes on the supported platforms from alpha.6 before beta. See the [graphics modes proposal](../specs/graphics-modes.md).
 
 ## API documentation
 
