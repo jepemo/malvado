@@ -36,7 +36,9 @@ mv_pad_button_from_name(const char *name, MvPadButton *button)
 int
 mv_pad_axis_from_name(const char *name, MvPadAxis *axis)
 {
-    static const char *const names[] = {"left_x", "left_y", "right_x", "right_y"};
+    static const char *const names[] = {
+        "left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"
+    };
     if (!name || !axis)
         return 0;
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {

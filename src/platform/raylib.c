@@ -65,12 +65,18 @@ float
 mv_pad_axis(int slot, MvPadAxis axis)
 {
     static const int axes[] = { GAMEPAD_AXIS_LEFT_X, GAMEPAD_AXIS_LEFT_Y,
-                                GAMEPAD_AXIS_RIGHT_X, GAMEPAD_AXIS_RIGHT_Y };
+                                GAMEPAD_AXIS_RIGHT_X, GAMEPAD_AXIS_RIGHT_Y,
+                                GAMEPAD_AXIS_LEFT_TRIGGER, GAMEPAD_AXIS_RIGHT_TRIGGER };
     if ((int)axis < 0 || (size_t)axis >= sizeof(axes) / sizeof(axes[0]) || !mv_pad_connected(slot))
         return 0;
     if (GetGamepadAxisCount(slot) <= axes[axis])
         return 0;
-    return GetGamepadAxisMovement(slot, axes[axis]);
+    float value = GetGamepadAxisMovement(slot, axes[axis]);
+    if (!isfinite(value))
+        return 0;
+    if (value < -1) value = -1;
+    if (value > 1) value = 1;
+    return axis == MV_PAD_LEFT_TRIGGER || axis == MV_PAD_RIGHT_TRIGGER ? (value + 1) / 2 : value;
 }
 
 int

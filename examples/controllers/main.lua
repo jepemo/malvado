@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local smoke = os.getenv("MALVADO_SMOKE") == "1"
 local names = {"a", "b", "x", "y", "up", "down", "left", "right", "lb", "rb", "back", "start"}
-local axes = {"left_x", "left_y", "right_x", "right_y"}
+local axes = {"left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"}
 
 local Monitor = mv.process(function()
   local ticks = 0
@@ -24,7 +24,8 @@ local Monitor = mv.process(function()
         end
         mv.draw_text("Slot " .. slot .. ": connected", 20, y, 20)
         mv.draw_text("Buttons: " .. table.concat(held, " "), 20, y + 25, 18)
-        mv.draw_text(table.concat(values, "  "), 20, y + 50, 18)
+        mv.draw_text(table.concat(values, "  ", 1, 4), 20, y + 50, 18)
+        mv.draw_text(table.concat(values, "  ", 5, 6), 20, y + 75, 18)
       else
         mv.draw_text("Slot " .. slot .. ": disconnected", 20, y, 20)
       end

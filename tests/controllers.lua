@@ -7,7 +7,7 @@ for slot = 0, 3 do
   for _, button in ipairs({"a", "b", "x", "y", "up", "down", "left", "right", "lb", "rb", "back", "start"}) do
     assert(not mv.pad_button(slot, button))
   end
-  for _, axis in ipairs({"left_x", "left_y", "right_x", "right_y"}) do
+  for _, axis in ipairs({"left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"}) do
     assert(mv.pad_axis(slot, axis) == 0)
   end
 end

@@ -40,7 +40,10 @@ typedef enum {
     MV_PAD_UP, MV_PAD_DOWN, MV_PAD_LEFT, MV_PAD_RIGHT,
     MV_PAD_LB, MV_PAD_RB, MV_PAD_BACK, MV_PAD_START
 } MvPadButton;
-typedef enum { MV_PAD_LEFT_X, MV_PAD_LEFT_Y, MV_PAD_RIGHT_X, MV_PAD_RIGHT_Y } MvPadAxis;
+typedef enum {
+    MV_PAD_LEFT_X, MV_PAD_LEFT_Y, MV_PAD_RIGHT_X, MV_PAD_RIGHT_Y,
+    MV_PAD_LEFT_TRIGGER, MV_PAD_RIGHT_TRIGGER
+} MvPadAxis;
 typedef struct MvImage MvImage;
 typedef struct MvSound MvSound;
 typedef struct MvMusic MvMusic;
