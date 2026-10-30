@@ -52,6 +52,9 @@ main(int argc, char **argv)
     assert(mv_window_open(200, 80, "C font test"));
     assert(!mv_font_load("tests/fixtures/fonts/missing.ttf", 24));
     assert(!mv_font_load(path, 0));
+    MvFont *otf = mv_font_load("tests/fixtures/fonts/SourceCodePro-Regular.otf", 24);
+    assert(otf && mv_font_text_width(otf, "OpenType", 24) > 0);
+    mv_font_destroy(otf);
     MvFont *basic = mv_font_load(path, 24);
     assert(basic && mv_font_text_width(basic, "Café", 24) > 0);
     uint32_t glyphs[192];

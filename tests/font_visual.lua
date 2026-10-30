@@ -9,6 +9,10 @@ mv.start(function()
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/missing.ttf", 24))
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 0))
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 256))
+  local otf = mv.load_font("tests/fixtures/fonts/SourceCodePro-Regular.otf", 24)
+  assert(otf)
+  otf = nil
+  collectgarbage("collect")
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, nil, nil, nil, nil, "\xed\xa0\x80"))
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, nil, nil, nil, nil, "\0"))
   local too_many = {}
