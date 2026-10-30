@@ -225,6 +225,9 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_test(NAME visual_benchmark COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/bench/main.lua)
   set_tests_properties(visual_benchmark PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1" TIMEOUT 15
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "benchmark smoke: 3 processes ran")
+  add_test(NAME visual_asteroids COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/space_asteroids/main.lua)
+  set_tests_properties(visual_asteroids PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1" TIMEOUT 15
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "asteroids smoke: hit, loss, restart")
   add_test(NAME visual_c_game COMMAND example-c-timing-game --smoke)
   add_test(NAME visual_lua_game COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/timing-game/main.lua)
   set_tests_properties(visual_lua_game PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1")
@@ -273,6 +276,10 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
       add_test(NAME visual_benchmark_keys COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/benchmark_keys.sh
         $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/bench/main.lua)
       set_tests_properties(visual_benchmark_keys PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      add_test(NAME visual_asteroids_keys COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/asteroids_keys.sh
+        $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/space_asteroids/main.lua)
+      set_tests_properties(visual_asteroids_keys PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
   endif()

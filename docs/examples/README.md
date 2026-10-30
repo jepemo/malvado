@@ -1,6 +1,6 @@
 # Examples as an engine contract
 
-The new snippets below are proposals, not programs that all run on the current runtime. [Hello World](../../examples/helloworld/README.md) and the [benchmark](../../examples/bench/README.md) run on Malvado 2. The other historical examples require the LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep the examples until their replacements are verified. Keep reference traces and screenshots.
+The new snippets below are proposals, not programs that all run on the current runtime. [Hello World](../../examples/helloworld/README.md), [Space Asteroids](../../examples/space_asteroids/README.md), and the [benchmark](../../examples/bench/README.md) run on Malvado 2. The historical demo requires the LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep reference traces and screenshots.
 
 ## First-class C and Lua examples
 
@@ -12,7 +12,7 @@ Each shared engine capability will have a C example that uses the public API and
 | --- | --- | --- |
 | `examples/helloworld/main.lua` | Process constructor, font, text, Escape, and automatic shutdown | Migrated to the Malvado 2 Lua API |
 | `examples/demo/main.lua` | Menu, spritesheets, keyboard, text, and fades | Persistent resources, animation, z, and per-process cadence |
-| `examples/space_asteroids/main.lua` | Complete game, movement, bullets, and collision | Remove `love.math.random`/`love.graphics.points`; map input and graphics |
+| `examples/space_asteroids/main.lua` | Complete game, movement, bullets, and collision | Migrated; test interactive controls on supported targets |
 | `examples/bench/main.lua` | Process creation, load, and timing | Migrated; separate VM, scheduler, and render costs remain pending |
 
 Compare benchmarks on the same machine with the same process count, resources, VSync, and target FPS. Measure CPU per tick, render time, memory, and process creation/removal cost. Fix the random seed and publish the results. Do not promise a speedup before measurement.
