@@ -665,9 +665,14 @@ static int
 key(lua_State *L)
 {
     const char *s = luaL_checkstring(L, 1);
-    if (strcmp(s, "escape") != 0)
+    int pressed;
+    if (strcmp(s, "escape") == 0)
+        pressed = !engine.headless && mv_window_escape_down();
+    else if (strcmp(s, "space") == 0)
+        pressed = !engine.headless && mv_window_space_down();
+    else
         return luaL_error(L, "unsupported key: %s", s);
-    lua_pushboolean(L, !engine.headless && mv_window_escape_down());
+    lua_pushboolean(L, pressed);
     return 1;
 }
 

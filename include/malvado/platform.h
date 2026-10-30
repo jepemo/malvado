@@ -27,6 +27,7 @@ int mv_window_open(int width, int height, const char *title);
 void mv_window_close(void);
 int mv_window_should_close(void);
 int mv_window_escape_down(void);
+int mv_window_space_down(void);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 void mv_window_flush(void);

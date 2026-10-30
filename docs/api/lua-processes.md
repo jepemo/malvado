@@ -26,6 +26,8 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 `mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado-run --headless game.lua`. A headless game must end its processes to exit.
 
+The current `mv.key(name)` supports `"space"` and `"escape"`. It returns whether the key is held. In headless mode both return false. Other names raise an error. Try both in the [C and Lua timing game](../../examples/c/timing-game/README.md).
+
 `mv.frame()` yields until the next tick. It is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
 
 ## Process data

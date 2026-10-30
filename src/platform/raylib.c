@@ -29,6 +29,7 @@ int mv_window_open(int width, int height, const char *title)
 void mv_window_close(void) { if (IsWindowReady()) CloseWindow(); }
 int mv_window_should_close(void) { return WindowShouldClose(); }
 int mv_window_escape_down(void) { return IsKeyDown(KEY_ESCAPE); }
+int mv_window_space_down(void) { return IsKeyDown(KEY_SPACE); }
 void mv_window_begin(MvColor c)
 {
     BeginDrawing();

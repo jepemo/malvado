@@ -100,7 +100,7 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          ctest --test-dir build -R '^visual_(sleep_freeze|c_window|lua_hello|hello_escape)$' --output-on-failure
+          ctest --test-dir build -R '^visual_(sleep_freeze|c_window|lua_hello|hello_escape|c_game|lua_game)$' --output-on-failure
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
