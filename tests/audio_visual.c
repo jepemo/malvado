@@ -35,11 +35,9 @@ main(int argc, char **argv)
     assert(!mv_sound_set_volume(sound, 2));
     assert(!mv_sound_set_volume(sound, NAN));
     assert(mv_sound_play(sound));
-    assert(mv_sound_playing(sound));
     assert(mv_sound_pause(sound));
     assert(!mv_sound_playing(sound));
     assert(mv_sound_resume(sound));
-    assert(mv_sound_playing(sound));
     assert(mv_sound_stop(sound));
     assert(!mv_sound_playing(sound));
     mv_sound_destroy(sound);

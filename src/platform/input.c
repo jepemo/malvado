@@ -17,6 +17,38 @@
 #include "malvado/platform.h"
 
 int
+mv_pad_button_from_name(const char *name, MvPadButton *button)
+{
+    static const char *const names[] = {
+        "a", "b", "x", "y", "up", "down", "left", "right", "lb", "rb", "back", "start"
+    };
+    if (!name || !button)
+        return 0;
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+        if (strcmp(name, names[i]) == 0) {
+            *button = (MvPadButton)i;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int
+mv_pad_axis_from_name(const char *name, MvPadAxis *axis)
+{
+    static const char *const names[] = {"left_x", "left_y", "right_x", "right_y"};
+    if (!name || !axis)
+        return 0;
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+        if (strcmp(name, names[i]) == 0) {
+            *axis = (MvPadAxis)i;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int
 mv_key_from_name(const char *name, MvKey *key)
 {
     static const struct { const char *name; MvKey key; } named[] = {

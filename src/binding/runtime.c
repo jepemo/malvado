@@ -708,6 +708,49 @@ mouse_button(lua_State *L)
 }
 
 static int
+pad_slot(lua_State *L)
+{
+    lua_Integer slot = luaL_checkinteger(L, 1);
+    if (slot < 0 || slot > 3)
+        luaL_error(L, "controller slot must be in 0..3");
+    return (int)slot;
+}
+
+static int
+pad_connected(lua_State *L)
+{
+    int slot = pad_slot(L);
+    lua_pushboolean(L, !engine.headless && mv_pad_connected(slot));
+    return 1;
+}
+
+static int
+pad_button(lua_State *L)
+{
+    int slot = pad_slot(L);
+    size_t length;
+    const char *name = luaL_checklstring(L, 2, &length);
+    MvPadButton button;
+    if (strlen(name) != length || !mv_pad_button_from_name(name, &button))
+        return luaL_error(L, "unsupported controller button");
+    lua_pushboolean(L, !engine.headless && mv_pad_button_down(slot, button));
+    return 1;
+}
+
+static int
+pad_axis(lua_State *L)
+{
+    int slot = pad_slot(L);
+    size_t length;
+    const char *name = luaL_checklstring(L, 2, &length);
+    MvPadAxis axis;
+    if (strlen(name) != length || !mv_pad_axis_from_name(name, &axis))
+        return luaL_error(L, "unsupported controller axis");
+    lua_pushnumber(L, engine.headless ? 0 : mv_pad_axis(slot, axis));
+    return 1;
+}
+
+static int
 text_input_next(lua_State *L)
 {
     uint32_t codepoint;
@@ -1413,6 +1456,9 @@ open_module(lua_State *L)
         {"key", key},
         {"mouse_position", mouse_position},
         {"mouse_button", mouse_button},
+        {"pad_connected", pad_connected},
+        {"pad_button", pad_button},
+        {"pad_axis", pad_axis},
         {"text_input_next", text_input_next},
         {"load_sound", load_sound},
         {"play_sound", play_sound},

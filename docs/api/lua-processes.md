@@ -34,6 +34,10 @@ Use `local x, y = mv.mouse_position()` for the pointer position in window pixels
 
 In C, `mv_mouse_position(&x, &y)` writes the position and returns 1 when a window is open. Without a window it writes zeros and returns 0. If either pointer is `NULL`, it returns 0 without writing. `mv_mouse_down(MV_MOUSE_LEFT)` checks a held button. `mv_mouse_button_from_name` converts the same names to `MvMouseButton` values. These functions use the window thread.
 
+For a controller, use `mv.pad_connected(slot)`, `mv.pad_button(slot, name)`, and `mv.pad_axis(slot, name)`. Slots are 0 to 3 and can change when a controller disconnects. Button names are `a`, `b`, `x`, `y`, `up`, `down`, `left`, `right`, `lb`, `rb`, `back`, and `start`. Axis names are `left_x`, `left_y`, `right_x`, and `right_y`. Stick axes report values from -1 to 1 without a dead zone. Invalid slots or names raise an error. A disconnected controller or headless mode gives false for buttons and zero for axes. Events update after each frame. Actual mappings depend on the operating system and controller; physical-device testing remains pending.
+
+In C, use `mv_pad_connected`, `mv_pad_button_down`, and `mv_pad_axis` with the `MvPadButton` and `MvPadAxis` enums. The name conversion functions return 0 for invalid input without changing the output. Invalid slots or controls, a disconnected controller, and no window return zero. Use these functions on the window thread.
+
 For typed text, call `mv.text_input_next()` until it returns `nil`. Each call removes one character from the shared queue and returns it as a UTF-8 string. This is separate from `mv.key`: it follows the operating system's text input and can return characters with more than one byte. In headless mode it always returns `nil`.
 
 In C, `mv_text_input_next(&codepoint)` removes one Unicode scalar and returns 1, or returns 0 without changing the value when there is no character. `mv_utf8_encode(codepoint, bytes)` writes up to four UTF-8 bytes and returns their count. The output is not NUL-terminated. Both APIs use the window thread.

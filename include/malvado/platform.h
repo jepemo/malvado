@@ -35,6 +35,12 @@ typedef enum {
     MV_KEY_UP, MV_KEY_DOWN, MV_KEY_ENTER, MV_KEY_TAB, MV_KEY_BACKSPACE
 } MvKey;
 typedef enum { MV_MOUSE_LEFT = 1, MV_MOUSE_MIDDLE, MV_MOUSE_RIGHT } MvMouseButton;
+typedef enum {
+    MV_PAD_A, MV_PAD_B, MV_PAD_X, MV_PAD_Y,
+    MV_PAD_UP, MV_PAD_DOWN, MV_PAD_LEFT, MV_PAD_RIGHT,
+    MV_PAD_LB, MV_PAD_RB, MV_PAD_BACK, MV_PAD_START
+} MvPadButton;
+typedef enum { MV_PAD_LEFT_X, MV_PAD_LEFT_Y, MV_PAD_RIGHT_X, MV_PAD_RIGHT_Y } MvPadAxis;
 typedef struct MvImage MvImage;
 typedef struct MvSound MvSound;
 typedef struct { int x, y, width, height; } MvImageRegion;
@@ -61,6 +67,13 @@ int mv_mouse_button_from_name(const char *name, MvMouseButton *button);
 int mv_mouse_position(int *x, int *y);
 /* Return 1 while the button is held, or 0 for an invalid button or no window. */
 int mv_mouse_down(MvMouseButton button);
+/* Slots are 0 through 3. Input is updated when the window processes events.
+ * A disconnected device, invalid input, or no window gives zero. */
+int mv_pad_connected(int slot);
+int mv_pad_button_down(int slot, MvPadButton button);
+float mv_pad_axis(int slot, MvPadAxis axis);
+int mv_pad_button_from_name(const char *name, MvPadButton *button);
+int mv_pad_axis_from_name(const char *name, MvPadAxis *axis);
 /* Remove one Unicode scalar from the shared text queue. Return 1 on success.
  * Return 0 without changing *codepoint if the queue is empty or the pointer
  * is NULL. The queue holds 256 characters and drops new characters when full. */

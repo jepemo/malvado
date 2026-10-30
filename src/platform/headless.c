@@ -39,6 +39,9 @@ int mv_mouse_position(int *x, int *y)
     return 0;
 }
 int mv_mouse_down(MvMouseButton button) { (void)button; return 0; }
+int mv_pad_connected(int slot) { (void)slot; return 0; }
+int mv_pad_button_down(int slot, MvPadButton button) { (void)slot; (void)button; return 0; }
+float mv_pad_axis(int slot, MvPadAxis axis) { (void)slot; (void)axis; return 0; }
 int mv_text_input_next(uint32_t *codepoint) { (void)codepoint; return 0; }
 int mv_audio_open(void) { return 0; }
 void mv_audio_close(void) {}

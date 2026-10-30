@@ -31,6 +31,40 @@ static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
 
 int
+mv_pad_connected(int slot)
+{
+    return slot >= 0 && slot < 4 && IsWindowReady() && IsGamepadAvailable(slot);
+}
+
+int
+mv_pad_button_down(int slot, MvPadButton button)
+{
+    static const int buttons[] = {
+        GAMEPAD_BUTTON_RIGHT_FACE_DOWN, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
+        GAMEPAD_BUTTON_RIGHT_FACE_LEFT, GAMEPAD_BUTTON_RIGHT_FACE_UP,
+        GAMEPAD_BUTTON_LEFT_FACE_UP, GAMEPAD_BUTTON_LEFT_FACE_DOWN,
+        GAMEPAD_BUTTON_LEFT_FACE_LEFT, GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
+        GAMEPAD_BUTTON_LEFT_TRIGGER_1, GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
+        GAMEPAD_BUTTON_MIDDLE_LEFT, GAMEPAD_BUTTON_MIDDLE_RIGHT
+    };
+    if ((int)button < 0 || (size_t)button >= sizeof(buttons) / sizeof(buttons[0]) || !mv_pad_connected(slot))
+        return 0;
+    return IsGamepadButtonDown(slot, buttons[button]);
+}
+
+float
+mv_pad_axis(int slot, MvPadAxis axis)
+{
+    static const int axes[] = { GAMEPAD_AXIS_LEFT_X, GAMEPAD_AXIS_LEFT_Y,
+                                GAMEPAD_AXIS_RIGHT_X, GAMEPAD_AXIS_RIGHT_Y };
+    if ((int)axis < 0 || (size_t)axis >= sizeof(axes) / sizeof(axes[0]) || !mv_pad_connected(slot))
+        return 0;
+    if (GetGamepadAxisCount(slot) <= axes[axis])
+        return 0;
+    return GetGamepadAxisMovement(slot, axes[axis]);
+}
+
+int
 mv_audio_open(void)
 {
     if (IsAudioDeviceReady())

@@ -64,6 +64,15 @@ main(void)
     assert(!mv_mouse_button_from_name(NULL, &button));
     assert(!mv_mouse_button_from_name("left", NULL));
     assert(!mv_mouse_down(MV_MOUSE_LEFT) && !mv_mouse_down((MvMouseButton)-1));
+    MvPadButton pad_button = MV_PAD_A;
+    MvPadAxis pad_axis = MV_PAD_LEFT_X;
+    assert(mv_pad_button_from_name("start", &pad_button) && pad_button == MV_PAD_START);
+    assert(!mv_pad_button_from_name("invalid", &pad_button) && pad_button == MV_PAD_START);
+    assert(mv_pad_axis_from_name("right_y", &pad_axis) && pad_axis == MV_PAD_RIGHT_Y);
+    assert(!mv_pad_axis_from_name("invalid", &pad_axis) && pad_axis == MV_PAD_RIGHT_Y);
+    assert(!mv_pad_connected(-1) && !mv_pad_connected(4) && !mv_pad_connected(0));
+    assert(!mv_pad_button_down(0, MV_PAD_A) && !mv_pad_button_down(-1, (MvPadButton)-1));
+    assert(mv_pad_axis(0, MV_PAD_LEFT_X) == 0 && mv_pad_axis(-1, (MvPadAxis)-1) == 0);
     int x = 23, y = 42;
     assert(!mv_mouse_position(NULL, &y) && y == 42);
     assert(!mv_mouse_position(&x, NULL) && x == 23);
