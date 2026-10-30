@@ -1703,6 +1703,20 @@ time_seconds(lua_State *L)
 }
 
 static int
+random_range(lua_State *L)
+{
+    lua_Integer minimum = luaL_checkinteger(L, 1);
+    lua_Integer maximum = luaL_checkinteger(L, 2);
+    if (minimum > maximum)
+        return luaL_error(L, "minimum must not exceed maximum");
+    lua_pushvalue(L, lua_upvalueindex(1));
+    lua_pushinteger(L, minimum);
+    lua_pushinteger(L, maximum);
+    lua_call(L, 2, 1);
+    return 1;
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
@@ -1794,6 +1808,11 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_getglobal(L, "math");
+    lua_getfield(L, -1, "random");
+    lua_remove(L, -2);
+    lua_pushcclosure(L, random_range, 1);
+    lua_setfield(L, -2, "rand");
     static const char *const music_actions[] = {
         "play_music", "update_music", "stop_music", "pause_music", "resume_music"
     };
@@ -1814,7 +1833,7 @@ open_module(lua_State *L)
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
     "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
-    "load_image", "time_seconds", NULL
+    "load_image", "time_seconds", "rand", NULL
 };
 
 static int

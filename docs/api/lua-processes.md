@@ -52,6 +52,8 @@ The queue is shared by all processes and stays available across frames until rea
 
 Use `mv.time_seconds()` to read a monotonic clock, including in headless mode. Its origin is unspecified. Subtract two readings to measure elapsed wall time; do not use it as a calendar time. It raises an error if the clock is unavailable. In C, `mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the output on failure.
 
+Use `mv.rand(min, max)` for an integer in the inclusive range. Both limits must be integers and `min` must not exceed `max`. It uses Lua's `math.random` generator; use `math.randomseed` when you need a repeatable sequence. This is not a shared C/Lua random stream.
+
 For persistent text, `mv.write(font, x, y, text, align)` returns an ID. Alignment is `"left"` (the default), `"center"`, or `"right"`; `x` is the matching horizontal anchor. Use `mv.change_text(id, text, x, y, font)` to change the text, position, or font. The last three arguments are optional; pass `nil` to keep a value. Use `mv.delete_text(id)` to remove it. Positions are window pixels from the top-left corner. `mv.font(size, r, g, b, a)` creates a font description using the built-in font; color channels default to 255. In C, `mv_window_text_width(text, size)` returns the built-in font width in pixels, or zero for invalid input or without a window.
 
 ## Process data

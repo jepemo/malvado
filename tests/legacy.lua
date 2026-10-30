@@ -15,6 +15,13 @@ legacy.import_globals()
 legacy.import_globals()
 assert(process == mv.process and frame == mv.frame and key == mv.key)
 assert(set_title == mv.set_title and not pcall(set_title, "Headless"))
+math.randomseed(42)
+local value = rand(-5, 5)
+math.randomseed(42)
+assert(value == math.random(-5, 5))
+assert(rand(7, 7) == 7)
+assert(not pcall(rand, 2, 1))
+assert(not pcall(rand, 0.5, 2))
 
 local ran = false
 local task = process(function()

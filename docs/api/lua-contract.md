@@ -21,7 +21,7 @@
 | `mv.change_text(id,text,x?,y?,font?)` | Change text; omitted arguments retain their values | C |
 | `mv.delete_text(id)` | Explicit removal; define behavior for an already deleted ID in P0 | C |
 | `mv.load_image(path)` → image | Asset relative to the project; load errors include the path | C |
-| `mv.rand(min,max)` → integer | Inclusive range; engine RNG with pinned algorithm and seed | C |
+| `mv.rand(min,max)` → integer | Inclusive range; uses Lua's random generator and `math.randomseed` | Lua standard generator |
 | `mv.time_seconds()` → number | Monotonic clock seconds with an unspecified origin; subtract two readings to measure elapsed time | C |
 | `mv.exit(code?)` | Request orderly shutdown, default code 0; end the current process in a controlled way | C |
 
@@ -50,4 +50,4 @@ end, { width = 800, height = 600, title = "My game" })
 
 ## Legacy shim
 
-`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `set_title`, `get_screen_width`, `get_screen_height`, `load_image`, and `time_seconds` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a PID, like the current core. These names use the current API contracts; this first shim does not implement the historical `fpg`, process graphics fields, or the `love` namespace.
+`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `set_title`, `get_screen_width`, `get_screen_height`, `load_image`, `time_seconds`, and `rand` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a PID, like the current core. These names use the current API contracts; this first shim does not implement the historical `fpg`, process graphics fields, or the `love` namespace.
