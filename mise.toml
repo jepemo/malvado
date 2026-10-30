@@ -91,9 +91,9 @@ run = "cmake -S . -B build-g0 -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_GUI_G0=ON
 [tasks.build-g0]
 description = "Build the experimental GUI prototypes"
 depends = ["configure-g0"]
-run = "cmake --build build-g0 --config Debug --target gui-g0-raygui gui-g0-imgui --parallel"
+run = "cmake --build build-g0 --config Debug --target gui-g0-raygui gui-g0-imgui gui-g0-imgui-raylib --parallel"
 
 [tasks.test-g0]
 description = "Smoke test the GUI prototypes (requires a display)"
 depends = ["build-g0"]
-run = "ctest --test-dir build-g0 -C Debug -R '^visual_(gui|imgui)_g0$' --output-on-failure"
+run = "ctest --test-dir build-g0 -C Debug -R '^visual_(gui|imgui|imgui_raylib)_g0$' --output-on-failure"
