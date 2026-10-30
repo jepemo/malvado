@@ -81,6 +81,7 @@ typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
 typedef struct { MvSound *sound; } LuaSound;
 typedef struct { MvMusic *music; } LuaMusic;
+typedef struct { int rows, columns; } LuaLegacySheet;
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; } LuaAtlas;
 #endif
@@ -1114,6 +1115,106 @@ draw_image_region(lua_State *L)
     return 0;
 }
 
+static int
+legacy_fpg(lua_State *L)
+{
+    size_t kind_length;
+    const char *kind = luaL_optlstring(L, 2, "directory", &kind_length);
+    if (kind_length != 5 || memcmp(kind, "image", 5) != 0)
+        return luaL_error(L, "legacy fpg supports only image sheets");
+    lua_Integer rows = luaL_checkinteger(L, 3);
+    lua_Integer columns = luaL_checkinteger(L, 4);
+    if (rows < 1 || rows > INT_MAX || columns < 1 || columns > INT_MAX)
+        return luaL_error(L, "invalid sheet dimensions");
+    load_image(L);
+    LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+    int width = mv_image_width(image->image);
+    int height = mv_image_height(image->image);
+    if (columns > width || rows > height || width % columns != 0 || height % rows != 0)
+        return luaL_error(L, "sheet dimensions must divide the image");
+    LuaLegacySheet *sheet = lua_newuserdatauv(L, sizeof(*sheet), 1);
+    *sheet = (LuaLegacySheet){(int)rows, (int)columns};
+    luaL_setmetatable(L, "malvado.legacy_sheet");
+    lua_pushvalue(L, -2);
+    lua_setiuservalue(L, -2, 1);
+    return 1;
+}
+
+static lua_Number
+legacy_number(lua_State *L, int table, const char *name, lua_Number fallback)
+{
+    lua_getfield(L, table, name);
+    lua_Number value = lua_isnil(L, -1) ? fallback : luaL_checknumber(L, -1);
+    lua_pop(L, 1);
+    if (!isfinite(value))
+        luaL_error(L, "legacy graphic fields must be finite");
+    return value;
+}
+
+static int
+legacy_frame(lua_State *L)
+{
+    if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
+        return luaL_error(L, "frame() must be called inside a process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        return luaL_error(L, "frame() must be called inside a live process");
+    int self_ref = process->self_ref;
+    lua_settop(L, 0);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+    lua_getiuservalue(L, 1, 1);
+    lua_getfield(L, 2, "fpg");
+    int x_source = 0, y_source = 0, region_width, region_height;
+    int sheet_image = 0;
+    if (!lua_isnil(L, 3)) {
+        LuaLegacySheet *sheet = luaL_checkudata(L, 3, "malvado.legacy_sheet");
+        lua_getfield(L, 2, "fpgIndex");
+        lua_Integer index = lua_isnil(L, -1) ? -1 : luaL_checkinteger(L, -1);
+        lua_pop(L, 1);
+        if (index < 0) {
+            lua_settop(L, 0);
+            return lua_yield(L, 0);
+        }
+        int rows = sheet->rows, columns = sheet->columns;
+        lua_getiuservalue(L, 3, 1);
+        LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+        region_width = mv_image_width(image->image) / columns;
+        region_height = mv_image_height(image->image) / rows;
+        lua_Integer frame = index % ((lua_Integer)rows * columns);
+        x_source = (int)(frame % columns) * region_width;
+        y_source = (int)(frame / columns) * region_height;
+        sheet_image = 1;
+    } else {
+        lua_getfield(L, 2, "graph");
+        if (lua_isnil(L, -1)) {
+            lua_settop(L, 0);
+            return lua_yield(L, 0);
+        }
+        LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+        region_width = mv_image_width(image->image);
+        region_height = mv_image_height(image->image);
+    }
+    lua_Number x = legacy_number(L, 2, "x", 0);
+    lua_Number y = legacy_number(L, 2, "y", 0);
+    lua_Number angle = legacy_number(L, 2, "angle", 0);
+    lua_Number scale = legacy_number(L, 2, "size", 1);
+    lua_replace(L, 1);
+    lua_settop(L, 1);
+    lua_pushnumber(L, x);
+    lua_pushnumber(L, y);
+    lua_pushinteger(L, x_source);
+    lua_pushinteger(L, y_source);
+    lua_pushinteger(L, region_width);
+    lua_pushinteger(L, region_height);
+    lua_pushnumber(L, sheet_image ? 0 : region_width / 2.0);
+    lua_pushnumber(L, sheet_image ? 0 : region_height / 2.0);
+    lua_pushnumber(L, scale);
+    lua_pushnumber(L, angle);
+    draw_image_region(L);
+    lua_settop(L, 0);
+    return lua_yield(L, 0);
+}
+
 #ifdef MALVADO_BUILD_ASSETS
 static int
 atlas_gc(lua_State *L)
@@ -1760,6 +1861,7 @@ open_module(lua_State *L)
         {"image_size", image_size},
         {"draw_image", draw_image},
         {"draw_image_region", draw_image_region},
+        {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
         {"load_atlas", load_atlas},
         {"animation_frame", animation_frame},
@@ -1783,6 +1885,10 @@ open_module(lua_State *L)
     lua_pushcfunction(L, image_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado image");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.legacy_sheet");
+    lua_pushliteral(L, "malvado legacy sheet");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.sound");
@@ -1833,22 +1939,31 @@ open_module(lua_State *L)
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
     "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
-    "load_image", "time_seconds", "rand", NULL
+    "load_image", "time_seconds", "rand", "fpg", NULL
 };
+
+static void
+legacy_global_value(lua_State *L, const char *name)
+{
+    if (strcmp(name, "frame") == 0)
+        lua_pushvalue(L, lua_upvalueindex(2));
+    else
+        lua_getfield(L, lua_upvalueindex(1), strcmp(name, "fpg") == 0 ? "legacy_fpg" : name);
+}
 
 static int
 legacy_import_globals(lua_State *L)
 {
     for (size_t i = 0; legacy_names[i]; ++i) {
         lua_getglobal(L, legacy_names[i]);
-        lua_getfield(L, lua_upvalueindex(1), legacy_names[i]);
+        legacy_global_value(L, legacy_names[i]);
         int allowed = lua_isnil(L, -2) || lua_rawequal(L, -1, -2);
         lua_pop(L, 2);
         if (!allowed)
             return luaL_error(L, "global already exists: %s", legacy_names[i]);
     }
     for (size_t i = 0; legacy_names[i]; ++i) {
-        lua_getfield(L, lua_upvalueindex(1), legacy_names[i]);
+        legacy_global_value(L, legacy_names[i]);
         lua_setglobal(L, legacy_names[i]);
     }
     return 0;
@@ -1859,7 +1974,8 @@ open_legacy_module(lua_State *L)
 {
     lua_newtable(L);
     luaL_requiref(L, "malvado", open_module, 0);
-    lua_pushcclosure(L, legacy_import_globals, 1);
+    lua_pushcfunction(L, legacy_frame);
+    lua_pushcclosure(L, legacy_import_globals, 2);
     lua_setfield(L, -2, "import_globals");
     return 1;
 }
