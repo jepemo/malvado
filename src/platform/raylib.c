@@ -404,6 +404,14 @@ void mv_window_begin(MvColor c)
     BeginDrawing();
     ClearBackground((Color){c.r, c.g, c.b, c.a});
 }
+int
+mv_window_text_width(const char *text, int size)
+{
+    if (!text || size < 1 || !IsWindowReady())
+        return 0;
+    return MeasureText(text, size);
+}
+
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor c)
 {
     DrawText(text, x, y, size, (Color){c.r, c.g, c.b, c.a});

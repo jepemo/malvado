@@ -18,14 +18,18 @@
 #endif
 #include <assert.h>
 #include "raylib.h"
+#include "malvado/platform.h"
 #include "runner/runtime.h"
 
-typedef struct { int red, green; } Seen;
+typedef struct { int red, green, blue_left, blue_right, yellow; } Seen;
 
 static void
 check_frame(void *user)
 {
     Seen *seen = user;
+    assert(mv_window_text_width("MMMM", 24) > 0);
+    assert(mv_window_text_width(NULL, 24) == 0);
+    assert(mv_window_text_width("Text", 0) == 0);
     Image image = LoadImageFromScreen();
     assert(image.data);
     for (int y = 0; y < image.height; ++y) {
@@ -35,6 +39,14 @@ check_frame(void *user)
                 seen->red = 1;
             if (x >= 100 && pixel.g > 180 && pixel.r < 40 && pixel.b < 40)
                 seen->green = 1;
+            if (pixel.b > 180 && pixel.r < 40 && pixel.g < 40) {
+                if (x < 120) seen->blue_left = 1;
+                if (x > 120) seen->blue_right = 1;
+            }
+            if (pixel.r > 180 && pixel.g > 180 && pixel.b < 40) {
+                assert(x <= 222);
+                if (x >= 160) seen->yellow = 1;
+            }
         }
     }
     UnloadImage(image);
@@ -49,6 +61,6 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(check_frame, &seen);
     int result = malvado_run(2, args);
     malvado_debug_set_frame_hook(NULL, NULL);
-    assert(result == 0 && seen.red && seen.green);
+    assert(result == 0 && seen.red && seen.green && seen.blue_left && seen.blue_right && seen.yellow);
     return 0;
 }

@@ -1183,8 +1183,13 @@ write_text(lua_State *L)
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
     const char *text = luaL_checkstring(L, 4);
+    size_t align_length;
+    const char *align = luaL_optlstring(L, 5, "left", &align_length);
+    if (strlen(align) != align_length ||
+        (strcmp(align, "left") && strcmp(align, "center") && strcmp(align, "right")))
+        return luaL_error(L, "alignment must be left, center, or right");
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
-    lua_createtable(L, 0, 5);
+    lua_createtable(L, 0, 6);
     lua_pushstring(L, text);
     lua_setfield(L, -2, "text");
     lua_pushinteger(L, x);
@@ -1193,6 +1198,8 @@ write_text(lua_State *L)
     lua_setfield(L, -2, "y");
     lua_pushvalue(L, 1);
     lua_setfield(L, -2, "font");
+    lua_pushstring(L, align);
+    lua_setfield(L, -2, "align");
     lua_Integer id = ++engine.next_text_id;
     lua_seti(L, -2, id);
     lua_pop(L, 1);
@@ -1280,7 +1287,16 @@ render_texts(lua_State *L)
             *channels[i] = (unsigned char)lua_tointeger(L, -1);
             lua_pop(L, 1);
         }
-        mv_window_draw_text(text, x, y, size, c);
+        lua_getfield(L, -5, "align");
+        const char *align = lua_tostring(L, -1);
+        int width = mv_window_text_width(text, size);
+        int64_t offset = strcmp(align, "center") == 0 ? width / 2 :
+                         strcmp(align, "right") == 0 ? width : 0;
+        int64_t aligned_x = (int64_t)x - offset;
+        if (aligned_x < INT_MIN) aligned_x = INT_MIN;
+        if (aligned_x > INT_MAX) aligned_x = INT_MAX;
+        lua_pop(L, 1);
+        mv_window_draw_text(text, (int)aligned_x, y, size, c);
         lua_pop(L, 5);
     }
     lua_pop(L, 1);
