@@ -29,7 +29,7 @@ invalid(const char *json)
 int
 main(int argc, char **argv)
 {
-    assert(argc == 2);
+    assert(argc == 3);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
     char buffer[2048];
@@ -49,6 +49,24 @@ main(int argc, char **argv)
     mv_atlas_destroy(atlas);
     mv_atlas_destroy(NULL);
 
+    file = fopen(argv[2], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer), file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    atlas = mv_atlas_parse(buffer, length, 8, 8, &error);
+    assert(atlas && !error);
+    int frame = -1;
+    assert(mv_atlas_animation_frame(atlas, "flash", 0, 1, &frame) && frame == 7);
+    assert(mv_atlas_animation_frame(atlas, "flash", 99, 1, &frame) && frame == 7);
+    assert(mv_atlas_animation_frame(atlas, "flash", 100, 1, &frame) && frame == 42);
+    assert(mv_atlas_animation_frame(atlas, "flash", 300, 1, &frame) && frame == 7);
+    assert(mv_atlas_animation_frame(atlas, "flash", UINT64_MAX, 0, &frame) && frame == 42);
+    assert(!mv_atlas_animation_frame(atlas, "missing", 0, 1, &frame) && frame == 42);
+    assert(!mv_atlas_animation_frame(atlas, "flash", 0, 2, &frame) && frame == 42);
+    assert(!mv_atlas_animation_frame(atlas, "flash", 0, 1, NULL));
+    mv_atlas_destroy(atlas);
+
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
@@ -59,6 +77,11 @@ main(int argc, char **argv)
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1},{\"id\":1,\"name\":\"b\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1},{\"id\":2,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a\\u0000.png\",\"sprites\":[]}");
+    invalid("{\"schema\":2,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}],\"animations\":[{\"name\":\"run\",\"frames\":[{\"sprite\":2,\"duration_ms\":10}]}]}");
+    invalid("{\"schema\":2,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}],\"animations\":[{\"name\":\"run\",\"frames\":[{\"sprite\":1,\"duration_ms\":0}]}]}");
+    invalid("{\"schema\":2,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}],\"animations\":[{\"name\":\"run\",\"frames\":[{\"sprite\":1,\"duration_ms\":1}]},{\"name\":\"run\",\"frames\":[{\"sprite\":1,\"duration_ms\":1}]}]}");
+    invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}],\"animations\":[]}");
+    invalid("{\"schema\":2,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}],\"animations\":[{\"name\":\"run\",\"frames\":[{\"sprite\":1,\"duration_ms\":1,\"extra\":0}]}]}");
     assert(!mv_atlas_parse(buffer, length, 3, 8, &error));
     assert(!mv_atlas_parse(buffer, 1024 * 1024 + 1, 8, 8, &error));
     return 0;

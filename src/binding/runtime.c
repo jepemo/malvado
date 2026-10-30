@@ -1111,6 +1111,25 @@ load_atlas(lua_State *L)
 }
 
 static int
+animation_frame(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    size_t length;
+    const char *name = luaL_checklstring(L, 2, &length);
+    lua_Integer elapsed = luaL_checkinteger(L, 3);
+    if (strlen(name) != length || elapsed < 0)
+        return luaL_error(L, "invalid animation name or elapsed time");
+    if (!lua_isnoneornil(L, 4) && !lua_isboolean(L, 4))
+        return luaL_error(L, "loop must be a boolean");
+    int loop = lua_isnoneornil(L, 4) ? 1 : lua_toboolean(L, 4);
+    int id;
+    if (!mv_atlas_animation_frame(atlas->atlas, name, (uint64_t)elapsed, loop, &id))
+        return luaL_error(L, "unknown animation");
+    lua_pushinteger(L, id);
+    return 1;
+}
+
+static int
 draw_sprite(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
@@ -1677,6 +1696,7 @@ open_module(lua_State *L)
         {"draw_image_region", draw_image_region},
 #ifdef MALVADO_BUILD_ASSETS
         {"load_atlas", load_atlas},
+        {"animation_frame", animation_frame},
         {"draw_sprite", draw_sprite},
 #endif
         {"font", font},

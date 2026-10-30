@@ -81,7 +81,7 @@ An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
 }
 ```
 
-All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. This first schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields and duplicate keys. Aseprite JSON and animation metadata are not supported yet.
+All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. The schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields and duplicate keys. Aseprite JSON is not supported yet.
 
 Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Paths are relative to the working directory:
 
@@ -96,3 +96,22 @@ local atlas = mv.load_atlas(image, json)
 Inside a process, call `mv.draw_sprite(atlas, 10, 120, 80, 2, 90)` before `frame`. The last two arguments are optional: scale defaults to one and rotation to zero. The atlas keeps its image alive while it is in use. An unknown ID or invalid metadata raises an error.
 
 For C, include `malvado/atlas.h` and link `malvado_assets`. Pass the JSON bytes and image dimensions to `mv_atlas_parse`. Use `mv_atlas_find` to get a sprite's region and pivot, then draw it with `mv_image_draw_region`. The atlas owns its metadata; destroy it with `mv_atlas_destroy`. Its image path is available through `mv_atlas_image`; load that file yourself. The C parser does not need a window. To build it without Lua or raylib, configure with `-DMALVADO_BUILD_ASSETS=ON` and provide cJSON. The default C-only build keeps this optional library disabled.
+
+## Animate an atlas
+
+Schema 2 adds named animation sequences. Each frame refers to a sprite ID and gives its duration in milliseconds. For example, add this array to a schema 2 atlas that defines sprites 7 and 42:
+
+```json
+"animations": [
+  {"name": "flash", "frames": [
+    {"sprite": 7, "duration_ms": 100},
+    {"sprite": 42, "duration_ms": 200}
+  ]}
+]
+```
+
+Schema 2 requires at least one animation. Names must be unique. Each animation needs at least one frame; the atlas can contain up to 256 animations and 4096 frames in total. Durations are integers from 1 to 3,600,000 ms. Unknown fields, duplicate names, and unknown sprite IDs are errors. Schema 1 remains unchanged.
+
+Use `mv.animation_frame(atlas, "flash", elapsed_ms, loop)` to find the current sprite ID, then pass it to `mv.draw_sprite`. The elapsed time is a non-negative integer. `loop` defaults to `true`. If it is `false`, the last frame remains selected after the animation ends. A missing name or invalid argument raises an error. The caller controls time and playback state.
+
+In C, `mv_atlas_animation_frame(atlas, name, elapsed_ms, loop, &id)` returns 1 on success. It returns 0 without changing `id` for an invalid argument or unknown animation. `loop` is 0 or 1. The atlas owns the sequence data.

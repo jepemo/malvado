@@ -13,6 +13,16 @@ local worker = mv.process(function()
     local atlas
     if mv.load_atlas then
         atlas = mv.load_atlas(image, json)
+        local animated_file = assert(io.open("tests/fixtures/animated-atlas.json", "rb"))
+        local animated_json = animated_file:read("a")
+        animated_file:close()
+        local animated = mv.load_atlas(image, animated_json)
+        assert(mv.animation_frame(animated, "flash", 99) == 7)
+        assert(mv.animation_frame(animated, "flash", 100) == 42)
+        assert(mv.animation_frame(animated, "flash", 300) == 7)
+        assert(mv.animation_frame(animated, "flash", 300, false) == 42)
+        assert(not pcall(mv.animation_frame, animated, "flash", -1))
+        assert(not pcall(mv.animation_frame, animated, "missing", 0))
         assert(not pcall(mv.load_atlas, image, "{}"))
         assert(not pcall(mv.draw_sprite, atlas, 99, 0, 0))
     end

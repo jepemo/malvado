@@ -30,7 +30,7 @@ typedef struct {
     int pivot_x, pivot_y;
 } MvAtlasSprite;
 
-/* Parse a schema 1 atlas and validate regions against the image dimensions.
+/* Parse a schema 1 or 2 atlas and validate regions against the image dimensions.
  * The JSON buffer is borrowed only during this call. The optional error is a
  * static message. The caller owns the result and must destroy it. */
 MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, const char **error);
@@ -39,6 +39,10 @@ const char *mv_atlas_image(const MvAtlas *atlas);
 size_t mv_atlas_count(const MvAtlas *atlas);
 /* Return 1 and copy a sprite on success, or 0 if the ID is not present. */
 int mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite);
+/* Find a frame by elapsed milliseconds. Loop must be 0 or 1. Non-looping
+ * animations hold their last frame. On failure, the output is unchanged. */
+int mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,
+                             int loop, int *sprite_id);
 
 #ifdef __cplusplus
 }

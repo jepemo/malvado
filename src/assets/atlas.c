@@ -20,10 +20,20 @@
 #include "cJSON.h"
 #include "malvado/atlas.h"
 
+typedef struct { int sprite_id, duration_ms; } AnimationFrame;
+typedef struct {
+    char *name;
+    AnimationFrame *frames;
+    size_t count;
+    uint64_t duration_ms;
+} Animation;
+
 struct MvAtlas {
     char *image;
     MvAtlasSprite *sprites;
     size_t count;
+    Animation *animations;
+    size_t animation_count;
 };
 
 static int
@@ -136,6 +146,11 @@ mv_atlas_destroy(MvAtlas *atlas)
         return;
     for (size_t i = 0; i < atlas->count; ++i)
         free((void *)atlas->sprites[i].name);
+    for (size_t i = 0; i < atlas->animation_count; ++i) {
+        free(atlas->animations[i].name);
+        free(atlas->animations[i].frames);
+    }
+    free(atlas->animations);
     free(atlas->sprites);
     free(atlas->image);
     free(atlas);
@@ -144,7 +159,9 @@ mv_atlas_destroy(MvAtlas *atlas)
 MvAtlas *
 mv_atlas_parse(const char *json, size_t length, int width, int height, const char **error)
 {
-    static const char *const root_fields[] = {"schema", "kind", "image", "sprites"};
+    static const char *const root_fields[] = {"schema", "kind", "image", "sprites", "animations"};
+    static const char *const animation_fields[] = {"name", "frames"};
+    static const char *const frame_fields[] = {"sprite", "duration_ms"};
     static const char *const sprite_fields[] = {
         "id", "name", "x", "y", "width", "height", "pivot_x", "pivot_y"
     };
@@ -173,8 +190,10 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
     int schema;
     const cJSON *kind = cJSON_GetObjectItemCaseSensitive(root, "kind");
     const cJSON *sprites = cJSON_GetObjectItemCaseSensitive(root, "sprites");
-    if (!object_fields(root, root_fields, 4) ||
-        !integer_field(root, "schema", 1, 1, &schema) ||
+    const cJSON *animations = cJSON_GetObjectItemCaseSensitive(root, "animations");
+    if (!object_fields(root, root_fields, 5) ||
+        !integer_field(root, "schema", 1, 2, &schema) ||
+        (schema == 1 && animations) || (schema == 2 && !cJSON_IsArray(animations)) ||
         !cJSON_IsString(kind) || strcmp(kind->valuestring, "graphics-library") != 0 ||
         !cJSON_IsArray(sprites))
         goto fail;
@@ -212,6 +231,45 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
                 goto fail;
         }
     }
+    if (schema == 2) {
+        int animation_count = cJSON_GetArraySize(animations);
+        if (animation_count < 1 || animation_count > 256)
+            goto fail;
+        atlas->animations = calloc((size_t)animation_count, sizeof(*atlas->animations));
+        if (!atlas->animations)
+            goto fail;
+        size_t total_frames = 0;
+        const cJSON *entry;
+        cJSON_ArrayForEach(entry, animations) {
+            Animation *animation = &atlas->animations[atlas->animation_count++];
+            const cJSON *frames = cJSON_GetObjectItemCaseSensitive(entry, "frames");
+            if (!object_fields(entry, animation_fields, 2) || !cJSON_IsArray(frames))
+                goto fail;
+            int frame_count = cJSON_GetArraySize(frames);
+            if (frame_count < 1 || (size_t)frame_count > 4096 - total_frames)
+                goto fail;
+            total_frames += (size_t)frame_count;
+            animation->name = copy_text(cJSON_GetObjectItemCaseSensitive(entry, "name"), 127);
+            animation->frames = calloc((size_t)frame_count, sizeof(*animation->frames));
+            if (!animation->name || !animation->frames)
+                goto fail;
+            for (size_t i = 0; i + 1 < atlas->animation_count; ++i)
+                if (strcmp(atlas->animations[i].name, animation->name) == 0)
+                    goto fail;
+            const cJSON *frame;
+            cJSON_ArrayForEach(frame, frames) {
+                AnimationFrame *current = &animation->frames[animation->count];
+                MvAtlasSprite sprite;
+                if (!object_fields(frame, frame_fields, 2) ||
+                    !integer_field(frame, "sprite", 1, INT_MAX, &current->sprite_id) ||
+                    !integer_field(frame, "duration_ms", 1, 3600000, &current->duration_ms) ||
+                    !mv_atlas_find(atlas, current->sprite_id, &sprite))
+                    goto fail;
+                animation->duration_ms += (uint64_t)current->duration_ms;
+                ++animation->count;
+            }
+        }
+    }
     cJSON_Delete(root);
     if (error)
         *error = NULL;
@@ -243,6 +301,33 @@ mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite)
         if (atlas->sprites[i].id == id) {
             *sprite = atlas->sprites[i];
             return 1;
+        }
+    }
+    return 0;
+}
+
+int
+mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,
+                         int loop, int *sprite_id)
+{
+    if (!atlas || !name || !sprite_id || (loop != 0 && loop != 1))
+        return 0;
+    for (size_t i = 0; i < atlas->animation_count; ++i) {
+        const Animation *animation = &atlas->animations[i];
+        if (strcmp(animation->name, name) != 0)
+            continue;
+        if (loop)
+            elapsed_ms %= animation->duration_ms;
+        else if (elapsed_ms >= animation->duration_ms) {
+            *sprite_id = animation->frames[animation->count - 1].sprite_id;
+            return 1;
+        }
+        for (size_t j = 0; j < animation->count; ++j) {
+            if (elapsed_ms < (uint64_t)animation->frames[j].duration_ms) {
+                *sprite_id = animation->frames[j].sprite_id;
+                return 1;
+            }
+            elapsed_ms -= (uint64_t)animation->frames[j].duration_ms;
         }
     }
     return 0;
