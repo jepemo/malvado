@@ -457,6 +457,10 @@ self_index(lua_State *L)
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_rawget(L, -2);
+    if (key && strcmp(key, "z") == 0 && lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_pushnumber(L, 0);
+    }
     return 1;
 }
 
@@ -468,6 +472,9 @@ self_newindex(lua_State *L)
     if (key && (!strcmp(key, "id") || !strcmp(key, "parent") ||
                 !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "recv")))
         return luaL_error(L, "process field is read-only");
+    if (key && strcmp(key, "z") == 0 &&
+        (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
+        return luaL_error(L, "z must be a finite number");
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
@@ -480,6 +487,14 @@ create_process(lua_State *L)
 {
     if (!lua_isnoneornil(L, 1))
         luaL_checktype(L, 1, LUA_TTABLE);
+    if (lua_istable(L, 1)) {
+        lua_pushliteral(L, "z");
+        lua_rawget(L, 1);
+        if (!lua_isnil(L, -1) &&
+            (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
+            return luaL_error(L, "z must be a finite number");
+        lua_pop(L, 1);
+    }
     if (engine.next_process_id == LUA_MAXINTEGER)
         return luaL_error(L, "process ID space exhausted");
     if (engine.count == engine.capacity) {
@@ -1446,13 +1461,54 @@ render_image_region(lua_State *L, int command, LuaImage *image)
     (void)mv_image_draw_region(image->image, region, transform);
 }
 
+typedef struct {
+    size_t slot;
+    lua_Number z;
+} DrawOrder;
+
+static int
+compare_draw_order(const void *a, const void *b)
+{
+    const DrawOrder *left = a;
+    const DrawOrder *right = b;
+    if (left->z < right->z) return -1;
+    if (left->z > right->z) return 1;
+    return (left->slot > right->slot) - (left->slot < right->slot);
+}
+
 static void
 render(void)
 {
     lua_State *L = engine.L;
+    if (!lua_checkstack(L, 3)) {
+        engine.failed = 1;
+        return;
+    }
+    size_t count = engine.count;
+    if (count > SIZE_MAX / sizeof(DrawOrder)) {
+        engine.failed = 1;
+        return;
+    }
+    DrawOrder *order = count ? malloc(count * sizeof(*order)) : NULL;
+    if (count && !order) {
+        fprintf(stderr, "Unable to allocate draw order\n");
+        engine.failed = 1;
+        return;
+    }
+    for (size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, engine.items[i].self_ref);
+        lua_getiuservalue(L, -1, 1);
+        lua_pushliteral(L, "z");
+        lua_rawget(L, -2);
+        lua_Number z = lua_type(L, -1) == LUA_TNUMBER ? lua_tonumber(L, -1) : 0;
+        order[i] = (DrawOrder){i, isfinite(z) ? z : 0};
+        lua_pop(L, 3);
+    }
+    if (count > 1)
+        qsort(order, count, sizeof(*order), compare_draw_order);
     mv_window_begin(engine.background);
-    for (size_t p = 0; p < engine.count; p++) {
-        Process *process = &engine.items[p];
+    for (size_t p = 0; p < count; p++) {
+        Process *process = &engine.items[order[p].slot];
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
         lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
@@ -1480,6 +1536,7 @@ render(void)
         lua_pop(L, 1);
     }
     render_texts(L);
+    free(order);
     if (debug_frame_hook) {
         mv_window_flush();
         debug_frame_hook(debug_frame_user);
