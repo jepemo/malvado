@@ -74,6 +74,8 @@ main(void)
     assert(!mv_sound_load("tests/fixtures/silence.wav"));
     assert(!mv_sound_play(NULL));
     assert(!mv_sound_stop(NULL));
+    assert(!mv_sound_pause(NULL));
+    assert(!mv_sound_resume(NULL));
     assert(!mv_sound_playing(NULL));
     assert(!mv_sound_set_volume(NULL, 0.5f));
     mv_sound_destroy(NULL);

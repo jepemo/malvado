@@ -774,6 +774,24 @@ stop_sound(lua_State *L)
 }
 
 static int
+pause_sound(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    if (!mv_sound_pause(sound->sound))
+        return luaL_error(L, "sound is not available");
+    return 0;
+}
+
+static int
+resume_sound(lua_State *L)
+{
+    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
+    if (!mv_sound_resume(sound->sound))
+        return luaL_error(L, "sound is not available");
+    return 0;
+}
+
+static int
 sound_playing(lua_State *L)
 {
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
@@ -1399,6 +1417,8 @@ open_module(lua_State *L)
         {"load_sound", load_sound},
         {"play_sound", play_sound},
         {"stop_sound", stop_sound},
+        {"pause_sound", pause_sound},
+        {"resume_sound", resume_sound},
         {"sound_playing", sound_playing},
         {"sound_volume", sound_volume},
         {"draw_text", text},

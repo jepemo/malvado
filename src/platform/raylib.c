@@ -91,6 +91,24 @@ mv_sound_stop(MvSound *sound)
 }
 
 int
+mv_sound_pause(MvSound *sound)
+{
+    if (!sound || !IsAudioDeviceReady())
+        return 0;
+    PauseSound(sound->sound);
+    return 1;
+}
+
+int
+mv_sound_resume(MvSound *sound)
+{
+    if (!sound || !IsAudioDeviceReady())
+        return 0;
+    ResumeSound(sound->sound);
+    return 1;
+}
+
+int
 mv_sound_playing(const MvSound *sound)
 {
     return sound && IsAudioDeviceReady() && IsSoundPlaying(sound->sound);

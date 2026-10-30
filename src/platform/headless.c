@@ -46,6 +46,8 @@ MvSound *mv_sound_load(const char *path) { (void)path; return NULL; }
 void mv_sound_destroy(MvSound *sound) { (void)sound; }
 int mv_sound_play(MvSound *sound) { (void)sound; return 0; }
 int mv_sound_stop(MvSound *sound) { (void)sound; return 0; }
+int mv_sound_pause(MvSound *sound) { (void)sound; return 0; }
+int mv_sound_resume(MvSound *sound) { (void)sound; return 0; }
 int mv_sound_playing(const MvSound *sound) { (void)sound; return 0; }
 int mv_sound_set_volume(MvSound *sound, float volume) { (void)sound; (void)volume; return 0; }
 void mv_window_begin(MvColor color) { (void)color; }

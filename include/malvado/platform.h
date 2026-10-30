@@ -78,6 +78,8 @@ void mv_sound_destroy(MvSound *sound);
 /* Play restarts this sound. These functions return 0 for invalid arguments. */
 int mv_sound_play(MvSound *sound);
 int mv_sound_stop(MvSound *sound);
+int mv_sound_pause(MvSound *sound);
+int mv_sound_resume(MvSound *sound);
 int mv_sound_playing(const MvSound *sound);
 /* Volume must be finite and in the range 0 to 1. */
 int mv_sound_set_volume(MvSound *sound, float volume);

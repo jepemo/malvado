@@ -13,6 +13,8 @@ local sound = mv.load_sound("jump.wav")
 mv.sound_volume(sound, 0.5)
 mv.play_sound(sound)
 if mv.sound_playing(sound) then
+    mv.pause_sound(sound)
+    mv.resume_sound(sound)
     mv.stop_sound(sound)
 end
 ```
@@ -37,6 +39,6 @@ if (mv_audio_open()) {
 }
 ```
 
-`mv_audio_open` returns 1 on success. It is safe to call it again while the device is open. `mv_sound_load` returns `NULL` on failure. `mv_sound_play`, `mv_sound_stop`, and `mv_sound_set_volume` return 1 on success or 0 for invalid arguments or a closed device. `mv_sound_playing` returns 1 while the sound is playing and 0 otherwise. `mv_sound_destroy(NULL)` and `mv_audio_close()` on a closed device are safe. Use audio functions on the device owner thread.
+`mv_audio_open` returns 1 on success. It is safe to call it again while the device is open. `mv_sound_load` returns `NULL` on failure. `mv_sound_play`, `mv_sound_stop`, `mv_sound_pause`, `mv_sound_resume`, and `mv_sound_set_volume` return 1 on success or 0 for invalid arguments or a closed device. Pause and resume keep the current playback position. `mv_sound_playing` returns 1 while the sound is playing and 0 while paused or stopped. `mv_sound_destroy(NULL)` and `mv_audio_close()` on a closed device are safe. Use audio functions on the device owner thread.
 
 Audio uses one process-wide device. Destroy every sound before closing it. Music streaming, looping, and multiple simultaneous instances of the same sound are not supported yet.
