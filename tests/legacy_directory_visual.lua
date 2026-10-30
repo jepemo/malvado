@@ -8,7 +8,9 @@ local task = process(function(self)
   self.fpg = library
   self.x, self.y = 14, 14
   self.fpgIndex = 0
-  for _ = 1, 15 do frame() end
+  frame()
+  assert(self.width == 8 and self.height == 8)
+  for _ = 1, 14 do frame() end
   self.fpgIndex = 3
   for _ = 1, 20 do frame() end
 end)

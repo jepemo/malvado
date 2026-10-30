@@ -56,6 +56,8 @@ typedef struct {
     lua_Integer priority;
     ProcessState state;
     MvCadence cadence;
+    lua_Integer last_activation_tick;
+    double delta;
     int first;
     int alive;
 } Process;
@@ -456,6 +458,13 @@ self_index(lua_State *L)
         lua_pushinteger(L, priority);
         return 1;
     }
+    if (key && strcmp(key, "delta") == 0) {
+        Process *process = find_process(self->id);
+        if (!process)
+            return luaL_error(L, "process is no longer alive");
+        lua_pushnumber(L, process->delta);
+        return 1;
+    }
     if (key && strcmp(key, "status") == 0) {
         MvProcessStatus status;
         static const char *names[] = {"running", "sleeping", "frozen"};
@@ -473,9 +482,14 @@ self_index(lua_State *L)
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_rawget(L, -2);
-    if (key && (!strcmp(key, "z") || !strcmp(key, "fps")) && lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-        lua_pushinteger(L, 0);
+    if (key && lua_isnil(L, -1)) {
+        int zero = !strcmp(key, "x") || !strcmp(key, "y") || !strcmp(key, "z") ||
+                   !strcmp(key, "angle") || !strcmp(key, "fps") ||
+                   !strcmp(key, "width") || !strcmp(key, "height");
+        if (zero || !strcmp(key, "size")) {
+            lua_pop(L, 1);
+            lua_pushinteger(L, zero ? 0 : 1);
+        }
     }
     return 1;
 }
@@ -486,7 +500,8 @@ self_newindex(lua_State *L)
     luaL_checkudata(L, 1, "malvado.process");
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && (!strcmp(key, "id") || !strcmp(key, "parent") ||
-                !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "recv")))
+                !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "recv") ||
+                !strcmp(key, "delta")))
         return luaL_error(L, "process field is read-only");
     if (key && strcmp(key, "z") == 0 &&
         (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
@@ -1417,6 +1432,10 @@ legacy_frame(lua_State *L)
         lua_Integer index = lua_isnil(L, -1) ? -1 : luaL_checkinteger(L, -1);
         lua_pop(L, 1);
         if (index < 0) {
+            lua_pushinteger(L, 0);
+            lua_setfield(L, 2, "width");
+            lua_pushinteger(L, 0);
+            lua_setfield(L, 2, "height");
             lua_settop(L, 0);
             return lua_yield(L, 0);
         }
@@ -1453,6 +1472,12 @@ legacy_frame(lua_State *L)
     lua_Number y = legacy_number(L, 2, "y", 0);
     lua_Number angle = legacy_number(L, 2, "angle", 0);
     lua_Number scale = legacy_number(L, 2, "size", 1);
+    if (scale <= 0 || scale > FLT_MAX)
+        return luaL_error(L, "legacy graphic size must be positive and finite");
+    lua_pushnumber(L, sheet_image ? 0 : region_width * scale);
+    lua_setfield(L, 2, "width");
+    lua_pushnumber(L, sheet_image ? 0 : region_height * scale);
+    lua_setfield(L, 2, "height");
     lua_replace(L, 1);
     lua_settop(L, 1);
     lua_pushnumber(L, x);
@@ -1776,6 +1801,8 @@ lua_process_step_protected(lua_State *L)
     lua_State *co = process->thread;
     int draw_ref = process->draw_ref;
     int first = process->first;
+    process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
+    process->last_activation_tick = engine.tick_number;
     process->first = 0;
     lua_newtable(L);
     lua_rawseti(L, LUA_REGISTRYINDEX, draw_ref);

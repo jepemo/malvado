@@ -3,9 +3,12 @@ local P = mv.process(function(self)
     assert(type(self) == "userdata")
     assert(self.id > 0 and self.parent == nil and self.priority == 0)
     assert(self.status == "running")
+    assert(self.x == 0 and self.y == 0 and self.z == 0 and self.angle == 0)
+    assert(self.size == 1 and self.width == 0 and self.height == 0 and self.fps == 0)
     self.value = 2
     assert(self.value == 2)
-    for _, field in ipairs({"id", "parent", "priority", "status", "recv"}) do
+    assert(self.delta == 0)
+    for _, field in ipairs({"id", "parent", "priority", "status", "recv", "delta"}) do
         assert(not pcall(function() self[field] = 5 end))
     end
     assert(not pcall(rawset, self, "id", 5))

@@ -58,11 +58,16 @@ For persistent text, `mv.write(font, x, y, text, align)` returns an ID. Alignmen
 
 ## Process data
 
-Use `self` for your game fields, such as `self.remaining`. These fields are local to the process. The following fields belong to the engine and cannot be assigned:
+Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.
+
+The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. Only `z` and `fps` affect modern process drawing and scheduling automatically. The legacy `frame` also uses the graphic fields described in the [compatibility guide](lua-contract.md#legacy-shim).
+
+The following fields belong to the engine and cannot be assigned:
 
 - `self.id`: this process ID.
 - `self.parent`: the creator's ID, or `nil`. It keeps the original ID even if the parent later ends.
 - `self.priority`: the current scheduler priority.
+- `self.delta`: logical seconds since this process's previous activation, or 0 on its first activation. It includes ticks spent sleeping or frozen.
 - `self.status`: `"running"`, `"sleeping"`, `"frozen"`, or `nil` after termination.
 - `self.recv`: the message-receive method.
 

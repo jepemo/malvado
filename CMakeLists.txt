@@ -193,6 +193,8 @@ add_test(NAME lua_controllers COMMAND malvado-run --headless ${CMAKE_CURRENT_SOU
 set_tests_properties(lua_controllers PROPERTIES TIMEOUT 15)
 add_test(NAME lua_cadence COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/cadence.lua)
 set_tests_properties(lua_cadence PROPERTIES TIMEOUT 15)
+add_test(NAME lua_delta_sleep COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/delta_sleep.lua)
+set_tests_properties(lua_delta_sleep PROPERTIES TIMEOUT 15)
 add_test(NAME lua_primitives COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/primitives.lua)
 set_tests_properties(lua_primitives PROPERTIES TIMEOUT 15)
 add_test(NAME lua_fade COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/fade.lua)

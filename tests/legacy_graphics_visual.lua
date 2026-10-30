@@ -7,11 +7,15 @@ local image, sheet
 local task = process(function(self)
   self.graph = image
   self.x, self.y = 14, 14
-  for _ = 1, 15 do frame() end
+  frame()
+  assert(self.width == 8 and self.height == 8)
+  for _ = 1, 14 do frame() end
   self.fpg = sheet
   self.fpgIndex = 3
   self.x, self.y = 10, 10
-  for _ = 1, 20 do frame() end
+  frame()
+  assert(self.width == 0 and self.height == 0)
+  for _ = 1, 19 do frame() end
 end)
 mv.start(function()
   image = load_image("tests/fixtures/red.png")
