@@ -4,6 +4,7 @@
 local mv = require("malvado")
 local legacy = require("malvado.compat.legacy")
 assert(process == nil and frame == nil)
+assert(not pcall(mv.window_size))
 
 key = "existing value"
 local ok, message = pcall(legacy.import_globals)
@@ -21,5 +22,10 @@ local task = process(function()
   frame()
   ran = true
 end)
-mv.start(function() task() end)
+mv.start(function()
+  local width, height = mv.window_size()
+  assert(width == 321 and height == 234)
+  assert(get_screen_width() == width and get_screen_height() == height)
+  task()
+end, {width = 321, height = 234})
 assert(ran)

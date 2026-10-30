@@ -28,6 +28,8 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 Call `mv.set_title(title)` after the window opens to change its title. It reports an error without a window or if the title contains a zero byte. In C, `mv_window_set_title(title)` returns 1 on success, or 0 for a null title or no window.
 
+After `start` begins, `mv.window_size()` returns the current width and height in logical pixels. In headless mode it returns the configured size. In C, `mv_window_size(&width, &height)` returns 1 for an open window. Without a window it returns 0 and writes zeros; a null pointer returns 0 without writing.
+
 `mv.key(name)` returns whether a key is held. Use lowercase letters `"a"` to `"z"`, digits `"0"` to `"9"`, `"left"`, `"right"`, `"up"`, `"down"`, `"space"`, `"escape"`, `"enter"`, `"tab"`, or `"backspace"`. Names are case-sensitive. Other names raise an error. In headless mode all supported keys return false. Try `"space"` and `"escape"` in the [C and Lua timing game](../../examples/c/timing-game/README.md).
 
 The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. Both functions use the window thread.

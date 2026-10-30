@@ -312,6 +312,21 @@ mv_window_set_title(const char *title)
     return 1;
 }
 
+int
+mv_window_size(int *width, int *height)
+{
+    if (!width || !height)
+        return 0;
+    if (!IsWindowReady()) {
+        *width = 0;
+        *height = 0;
+        return 0;
+    }
+    *width = GetScreenWidth();
+    *height = GetScreenHeight();
+    return 1;
+}
+
 void mv_window_close(void)
 {
     if (IsWindowReady()) CloseWindow();

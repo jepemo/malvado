@@ -58,6 +58,9 @@ typedef struct {
 int mv_window_open(int width, int height, const char *title);
 /* Set the window title. Return 0 for NULL or when no window is open. */
 int mv_window_set_title(const char *title);
+/* Write window dimensions in logical pixels. Return 0 and write zeros when
+ * no window is open, or return 0 without writing for a NULL output pointer. */
+int mv_window_size(int *width, int *height);
 void mv_window_close(void);
 int mv_window_should_close(void);
 int mv_window_escape_down(void);

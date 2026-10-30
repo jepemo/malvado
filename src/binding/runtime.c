@@ -60,6 +60,7 @@ typedef struct {
     size_t count, capacity;
     int active, headless, started, failed, window, audio;
     int in_tick, paused, step_requested;
+    int width, height;
     lua_State *active_thread;
     lua_Integer active_id;
     lua_Integer next_process_id;
@@ -682,6 +683,28 @@ frame(lua_State *L)
     if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
         return luaL_error(L, "frame() must be called inside a process");
     return lua_yield(L, 0);
+}
+
+static int
+window_size(lua_State *L)
+{
+    if (!engine.started || engine.width <= 0 || engine.height <= 0)
+        return luaL_error(L, "window size is not available before start");
+    int width = engine.width, height = engine.height;
+    if (engine.window && !mv_window_size(&width, &height))
+        return luaL_error(L, "window is not available");
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    return 2;
+}
+
+static int
+legacy_screen_dimension(lua_State *L)
+{
+    int dimension = (int)lua_tointeger(L, lua_upvalueindex(1));
+    window_size(L);
+    lua_pushvalue(L, dimension == 0 ? -2 : -1);
+    return 1;
 }
 
 static int
@@ -1611,6 +1634,8 @@ start(lua_State *L)
     }
     if (w <= 0 || h <= 0)
         return luaL_error(L, "window dimensions must be positive");
+    engine.width = w;
+    engine.height = h;
     if (!engine.headless) {
         if (!mv_window_open(w, h, title))
             return luaL_error(L, "could not open window");
@@ -1695,6 +1720,7 @@ open_module(lua_State *L)
         {"send", send_message},
         {"start", start},
         {"set_title", set_title},
+        {"window_size", window_size},
         {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
@@ -1776,12 +1802,19 @@ open_module(lua_State *L)
         lua_pushcclosure(L, music_action, 1);
         lua_setfield(L, -2, music_actions[i]);
     }
+    lua_pushinteger(L, 0);
+    lua_pushcclosure(L, legacy_screen_dimension, 1);
+    lua_setfield(L, -2, "get_screen_width");
+    lua_pushinteger(L, 1);
+    lua_pushcclosure(L, legacy_screen_dimension, 1);
+    lua_setfield(L, -2, "get_screen_height");
     return 1;
 }
 
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
-    "key", "clear_screen", "set_title", "load_image", "time_seconds", NULL
+    "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
+    "load_image", "time_seconds", NULL
 };
 
 static int

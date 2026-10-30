@@ -27,6 +27,8 @@ static void
 check_frame(void *user)
 {
     Seen *seen = user;
+    int width, height;
+    assert(mv_window_size(&width, &height) && width == 240 && height == 100);
     assert(mv_window_text_width("MMMM", 24) > 0);
     assert(mv_window_text_width(NULL, 24) == 0);
     assert(mv_window_text_width("Text", 0) == 0);

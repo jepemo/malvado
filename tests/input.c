@@ -29,6 +29,10 @@ main(void)
 {
     double before, after;
     assert(!mv_window_set_title(NULL) && !mv_window_set_title("No window"));
+    int width = 1, height = 2;
+    assert(!mv_window_size(NULL, &height) && height == 2);
+    assert(!mv_window_size(&width, NULL) && width == 1);
+    assert(!mv_window_size(&width, &height) && width == 0 && height == 0);
     assert(mv_window_text_width("Text", 20) == 0);
     assert(!mv_monotonic_time(NULL));
     assert(mv_monotonic_time(&before));

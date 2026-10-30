@@ -27,6 +27,14 @@ int mv_window_open(int width, int height, const char *title)
 }
 void mv_window_close(void) {}
 int mv_window_set_title(const char *title) { (void)title; return 0; }
+int mv_window_size(int *width, int *height)
+{
+    if (!width || !height)
+        return 0;
+    *width = 0;
+    *height = 0;
+    return 0;
+}
 int mv_window_should_close(void) { return 1; }
 int mv_window_escape_down(void) { return 0; }
 int mv_window_space_down(void) { return 0; }
