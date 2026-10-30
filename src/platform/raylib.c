@@ -33,8 +33,35 @@ int mv_window_open(int width, int height, const char *title)
 }
 void mv_window_close(void) { if (IsWindowReady()) CloseWindow(); }
 int mv_window_should_close(void) { return WindowShouldClose(); }
-int mv_window_escape_down(void) { return IsKeyDown(KEY_ESCAPE); }
-int mv_window_space_down(void) { return IsKeyDown(KEY_SPACE); }
+int mv_window_escape_down(void) { return mv_key_down(MV_KEY_ESCAPE); }
+int mv_window_space_down(void) { return mv_key_down(MV_KEY_SPACE); }
+
+int
+mv_key_down(MvKey key)
+{
+    if (!IsWindowReady())
+        return 0;
+    int code;
+    if (key >= MV_KEY_A && key <= MV_KEY_Z)
+        code = KEY_A + (key - MV_KEY_A);
+    else if (key >= MV_KEY_0 && key <= MV_KEY_9)
+        code = KEY_ZERO + (key - MV_KEY_0);
+    else {
+        switch (key) {
+        case MV_KEY_ESCAPE: code = KEY_ESCAPE; break;
+        case MV_KEY_SPACE: code = KEY_SPACE; break;
+        case MV_KEY_LEFT: code = KEY_LEFT; break;
+        case MV_KEY_RIGHT: code = KEY_RIGHT; break;
+        case MV_KEY_UP: code = KEY_UP; break;
+        case MV_KEY_DOWN: code = KEY_DOWN; break;
+        case MV_KEY_ENTER: code = KEY_ENTER; break;
+        case MV_KEY_TAB: code = KEY_TAB; break;
+        case MV_KEY_BACKSPACE: code = KEY_BACKSPACE; break;
+        default: return 0;
+        }
+    }
+    return IsKeyDown(code);
+}
 void mv_window_begin(MvColor c)
 {
     BeginDrawing();

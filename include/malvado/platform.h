@@ -21,6 +21,16 @@ extern "C" {
 #endif
 
 typedef struct { unsigned char r, g, b, a; } MvColor;
+typedef enum {
+    MV_KEY_0 = '0', MV_KEY_1, MV_KEY_2, MV_KEY_3, MV_KEY_4,
+    MV_KEY_5, MV_KEY_6, MV_KEY_7, MV_KEY_8, MV_KEY_9,
+    MV_KEY_A = 'A', MV_KEY_B, MV_KEY_C, MV_KEY_D, MV_KEY_E, MV_KEY_F,
+    MV_KEY_G, MV_KEY_H, MV_KEY_I, MV_KEY_J, MV_KEY_K, MV_KEY_L, MV_KEY_M,
+    MV_KEY_N, MV_KEY_O, MV_KEY_P, MV_KEY_Q, MV_KEY_R, MV_KEY_S, MV_KEY_T,
+    MV_KEY_U, MV_KEY_V, MV_KEY_W, MV_KEY_X, MV_KEY_Y, MV_KEY_Z,
+    MV_KEY_ESCAPE = 256, MV_KEY_SPACE, MV_KEY_LEFT, MV_KEY_RIGHT,
+    MV_KEY_UP, MV_KEY_DOWN, MV_KEY_ENTER, MV_KEY_TAB, MV_KEY_BACKSPACE
+} MvKey;
 typedef struct MvImage MvImage;
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
@@ -35,6 +45,10 @@ void mv_window_close(void);
 int mv_window_should_close(void);
 int mv_window_escape_down(void);
 int mv_window_space_down(void);
+/* Parse a supported lowercase key name. Return 1 on success. */
+int mv_key_from_name(const char *name, MvKey *key);
+/* Return 1 while the key is held. Return 0 for an unsupported key or no window. */
+int mv_key_down(MvKey key);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.

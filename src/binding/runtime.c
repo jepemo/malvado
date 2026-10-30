@@ -674,15 +674,12 @@ clear_screen(lua_State *L)
 static int
 key(lua_State *L)
 {
-    const char *s = luaL_checkstring(L, 1);
-    int pressed;
-    if (strcmp(s, "escape") == 0)
-        pressed = !engine.headless && mv_window_escape_down();
-    else if (strcmp(s, "space") == 0)
-        pressed = !engine.headless && mv_window_space_down();
-    else
+    size_t length;
+    const char *s = luaL_checklstring(L, 1, &length);
+    MvKey parsed;
+    if (strlen(s) != length || !mv_key_from_name(s, &parsed))
         return luaL_error(L, "unsupported key: %s", s);
-    lua_pushboolean(L, pressed);
+    lua_pushboolean(L, !engine.headless && mv_key_down(parsed));
     return 1;
 }
 

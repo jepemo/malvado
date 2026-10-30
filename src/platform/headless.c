@@ -29,6 +29,7 @@ void mv_window_close(void) {}
 int mv_window_should_close(void) { return 1; }
 int mv_window_escape_down(void) { return 0; }
 int mv_window_space_down(void) { return 0; }
+int mv_key_down(MvKey key) { (void)key; return 0; }
 void mv_window_begin(MvColor color) { (void)color; }
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color)
 {
