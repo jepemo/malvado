@@ -14,9 +14,12 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
 #include "malvado/platform.h"
 #include "raylib.h"
 #include "runner/runtime.h"
+
+static Image reference;
 
 static void
 check_pixels(void)
@@ -41,6 +44,17 @@ check_frame(void *user)
 {
     int *frames = user;
     check_pixels();
+    Image screen = LoadImageFromScreen();
+    assert(screen.data && screen.width == reference.width && screen.height == reference.height);
+    for (int y = 0; y < screen.height; ++y) {
+        for (int x = 0; x < screen.width; ++x) {
+            Color a = GetImageColor(reference, x, y);
+            Color b = GetImageColor(screen, x, y);
+            assert(abs((int)a.r - b.r) <= 2 && abs((int)a.g - b.g) <= 2 &&
+                   abs((int)a.b - b.b) <= 2);
+        }
+    }
+    UnloadImage(screen);
     ++*frames;
 }
 
@@ -67,6 +81,8 @@ main(int argc, char **argv)
     assert(!mv_image_draw_region(image, (MvImageRegion){0, 0, 9, 8}, transform));
     mv_window_flush();
     check_pixels();
+    reference = LoadImageFromScreen();
+    assert(reference.data);
     mv_window_end();
     mv_image_destroy(image);
     mv_image_destroy(NULL);
@@ -78,5 +94,6 @@ main(int argc, char **argv)
     int status = malvado_run(2, args);
     malvado_debug_set_frame_hook(NULL, NULL);
     assert(status == 0 && frames > 0);
+    UnloadImage(reference);
     return 0;
 }
