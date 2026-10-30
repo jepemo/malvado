@@ -24,6 +24,9 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "malvado/platform.h"
+#ifdef MALVADO_BUILD_ASSETS
+#include "malvado/atlas.h"
+#endif
 #include "core/clock.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
@@ -74,6 +77,9 @@ static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
+#ifdef MALVADO_BUILD_ASSETS
+typedef struct { MvAtlas *atlas; } LuaAtlas;
+#endif
 
 MvContext *
 malvado_debug_context(void)
@@ -793,6 +799,60 @@ draw_image_region(lua_State *L)
     return 0;
 }
 
+#ifdef MALVADO_BUILD_ASSETS
+static int
+atlas_gc(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    mv_atlas_destroy(atlas->atlas);
+    atlas->atlas = NULL;
+    return 0;
+}
+
+static int
+load_atlas(lua_State *L)
+{
+    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
+    size_t length;
+    const char *json = luaL_checklstring(L, 2, &length);
+    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 1);
+    atlas->atlas = NULL;
+    luaL_setmetatable(L, "malvado.atlas");
+    const char *error = NULL;
+    atlas->atlas = mv_atlas_parse(json, length, mv_image_width(image->image),
+                                  mv_image_height(image->image), &error);
+    if (!atlas->atlas)
+        return luaL_error(L, "%s", error);
+    lua_pushvalue(L, 1);
+    lua_setiuservalue(L, -2, 1);
+    return 1;
+}
+
+static int
+draw_sprite(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Number x = luaL_checknumber(L, 3);
+    lua_Number y = luaL_checknumber(L, 4);
+    lua_Number scale = luaL_optnumber(L, 5, 1);
+    lua_Number rotation = luaL_optnumber(L, 6, 0);
+    MvAtlasSprite sprite;
+    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
+        return luaL_error(L, "unknown sprite id");
+    lua_getiuservalue(L, 1, 1);
+    lua_replace(L, 1);
+    lua_settop(L, 1);
+    const lua_Number values[] = {
+        x, y, sprite.region.x, sprite.region.y, sprite.region.width, sprite.region.height,
+        sprite.pivot_x, sprite.pivot_y, scale, rotation
+    };
+    for (int i = 0; i < 10; ++i)
+        lua_pushnumber(L, values[i]);
+    return draw_image_region(L);
+}
+#endif
+
 static int
 text(lua_State *L)
 {
@@ -1220,6 +1280,10 @@ open_module(lua_State *L)
         {"image_size", image_size},
         {"draw_image", draw_image},
         {"draw_image_region", draw_image_region},
+#ifdef MALVADO_BUILD_ASSETS
+        {"load_atlas", load_atlas},
+        {"draw_sprite", draw_sprite},
+#endif
         {"font", font},
         {"write", write_text},
         {"change_text", change_text},
@@ -1240,6 +1304,14 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado image");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+#ifdef MALVADO_BUILD_ASSETS
+    luaL_newmetatable(L, "malvado.atlas");
+    lua_pushcfunction(L, atlas_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado atlas");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+#endif
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);

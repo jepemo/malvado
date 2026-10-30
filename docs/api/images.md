@@ -64,4 +64,33 @@ if (!mv_image_draw_region(image, region, transform)) {
 }
 ```
 
-JSON atlas metadata remains planned for alpha.3.
+## Use an atlas
+
+An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
+
+```json
+{
+  "schema": 1,
+  "kind": "graphics-library",
+  "image": "sprites.png",
+  "sprites": [
+    {"id": 10, "name": "ship", "x": 0, "y": 0, "width": 16, "height": 24, "pivot_x": 8, "pivot_y": 12}
+  ]
+}
+```
+
+All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. This first schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields and duplicate keys. Aseprite JSON and animation metadata are not supported yet.
+
+Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Paths are relative to the working directory:
+
+```lua
+local image = mv.load_image("sprites.png")
+local file = assert(io.open("atlas.json", "rb"))
+local json = file:read("a")
+file:close()
+local atlas = mv.load_atlas(image, json)
+```
+
+Inside a process, call `mv.draw_sprite(atlas, 10, 120, 80, 2, 90)` before `frame`. The last two arguments are optional: scale defaults to one and rotation to zero. The atlas keeps its image alive while it is in use. An unknown ID or invalid metadata raises an error.
+
+For C, include `malvado/atlas.h` and link `malvado_assets`. Pass the JSON bytes and image dimensions to `mv_atlas_parse`. Use `mv_atlas_find` to get a sprite's region and pivot, then draw it with `mv_image_draw_region`. The atlas owns its metadata; destroy it with `mv_atlas_destroy`. Its image path is available through `mv_atlas_image`; load that file yourself. The C parser does not need a window. To build it without Lua or raylib, configure with `-DMALVADO_BUILD_ASSETS=ON` and provide cJSON. The default C-only build keeps this optional library disabled.

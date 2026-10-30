@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "kind": "graphics-library",
+  "image": "red.png",
+  "sprites": [
+    {"id": 7, "name": "red", "x": 0, "y": 0, "width": 4, "height": 8},
+    {"id": 42, "name": "green", "x": 4, "y": 0, "width": 4, "height": 8, "pivot_x": 2, "pivot_y": 4}
+  ]
+}

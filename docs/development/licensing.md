@@ -8,6 +8,6 @@ The old Lua/LÖVE engine had GPL-3.0-or-later notices while its 1.0 rockspec dec
 
 ## Dependencies and references
 
-Lua downloaded during the build retains its MIT license. Raylib and its dependencies retain their own licenses. The BennuGD files in `docs/api/upstream/` are reference material and retain their original notices. Do not add Apache headers to external files or remove their notices. Distributions of the runtime, SDK, and games must include the notices and license texts required by the dependencies they contain.
+Lua and cJSON downloaded during the build retain their MIT licenses. cJSON is copyright Dave Gamble and cJSON contributors; its license is installed with the assets library. Raylib and its dependencies retain their own licenses. The BennuGD files in `docs/api/upstream/` are reference material and retain their original notices. Do not add Apache headers to external files or remove their notices. Distributions of the runtime, SDK, and games must include the notices and license texts required by the dependencies they contain.
 
 Before each release, review the origin and license of all assets, historical examples, and new dependencies. Distributions and any future 2.0 rockspec must state the scope of Apache 2.0 and include the applicable third-party notices.
