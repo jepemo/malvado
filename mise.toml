@@ -1,0 +1,71 @@
+# Malvado 2; project created by Jeremías Pérez and contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+[tools]
+cmake = "3.31.6"
+python = "3.11.16"
+
+[tasks.configure]
+description = "Configure the standard debug build"
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug"
+
+[tasks.build]
+description = "Build the runtime and examples"
+depends = ["configure"]
+run = "cmake --build build --config Debug --parallel"
+
+[tasks.test]
+description = "Build and run the standard tests"
+depends = ["build"]
+run = "ctest --test-dir build -C Debug --output-on-failure"
+
+[tasks.hello]
+description = "Build and run the Lua hello example (requires a display)"
+depends = ["build"]
+run = "./build/malvado-run examples/alpha-hello/main.lua"
+
+[tasks.configure-c]
+description = "Configure the C-only build without dependency downloads"
+run = "cmake -S . -B build-c -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF -DCMAKE_INSTALL_LIBDIR=lib -DFETCHCONTENT_FULLY_DISCONNECTED=ON"
+
+[tasks.build-c]
+description = "Build the C-only runtime and examples"
+depends = ["configure-c"]
+run = "cmake --build build-c --config Debug --parallel"
+
+[tasks.test-c]
+description = "Build and test the C-only runtime"
+depends = ["build-c"]
+run = "ctest --test-dir build-c -C Debug --output-on-failure"
+
+[tasks.configure-headless]
+description = "Configure the Lua build without graphics"
+run = "cmake -S . -B build-lua-headless -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_RAYLIB=OFF"
+
+[tasks.build-headless]
+description = "Build the Lua headless runtime"
+depends = ["configure-headless"]
+run = "cmake --build build-lua-headless --config Debug --parallel"
+
+[tasks.test-headless]
+description = "Build and test the Lua headless runtime"
+depends = ["build-headless"]
+run = "ctest --test-dir build-lua-headless -C Debug --output-on-failure"
+
+[tasks.configure-visual]
+description = "Configure graphics smoke tests"
+run = "cmake -S . -B build-visual -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON"
+
+[tasks.build-visual]
+description = "Build graphics smoke tests"
+depends = ["configure-visual"]
+run = "cmake --build build-visual --config Debug --parallel"
+
+[tasks.test-visual]
+description = "Run graphics smoke tests (requires a display or virtual display)"
+depends = ["build-visual"]
+run = "ctest --test-dir build-visual -C Debug -R '^visual_' --output-on-failure"
+
+[tasks.catalog]
+description = "Download pinned API sources and regenerate the catalog"
+run = ["python3 docs/tools/fetch_api_sources.py", "python3 docs/tools/catalog_api.py"]

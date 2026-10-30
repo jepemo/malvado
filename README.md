@@ -6,16 +6,17 @@ Malvado is a game engine inspired by DIV Games Studio. The new runtime is writte
 
 ## Try the Lua example
 
-You need CMake 3.20 or later, a C compiler, and network access for the first build. CMake downloads the pinned Lua and raylib sources and checks their hashes.
+Install [mise](https://mise.jdx.dev/getting-started.html) and a C compiler. On Linux, you also need the X11 and OpenGL development packages listed in [CI](.github/workflows/ci.yml). The first setup needs network access. CMake downloads the pinned Lua and raylib sources and checks their hashes.
 
 ```sh
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build --output-on-failure
-./build/malvado-run examples/alpha-hello/main.lua
+mise install
+mise run test
+mise run hello
 ```
 
-Close the window or press Escape to exit. See the [runtime guide](docs/versions/2.0.0-alpha.1.md) for build options and the [C process example](examples/c/processes/README.md) for a build without Lua or raylib.
+Close the window or press Escape to exit. Run `mise tasks` to see all commands. `mise run test-c` tests the C core without downloading Lua or raylib. `mise run test-headless` tests Lua without a graphics backend. `mise run test-visual` needs a display or virtual display.
+
+CMake also works without mise. To use local source trees instead of downloads, pass `-DFETCHCONTENT_SOURCE_DIR_LUA=/path/to/lua` and `-DFETCHCONTENT_SOURCE_DIR_RAYLIB=/path/to/raylib` when you configure CMake. See the [runtime guide](docs/versions/2.0.0-alpha.1.md) for build options and the [C process example](examples/c/processes/README.md) for a build without Lua or raylib.
 
 ## Examples and documentation
 

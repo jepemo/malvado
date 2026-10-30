@@ -45,7 +45,7 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P0 / preparation | Resolve licenses; pin Lua/raylib sources, hashes, and versions; measure current examples; select legacy behavior | Classified API matrix, baseline captures/traces, reproducible dependency build |
 | P1 / 2.0.0-alpha.1 | CMake, bundled Lua, C context, raylib window, runner, `process/frame`, hello, initial build/CTest CI | Hello opens/closes without LÖVE or installed Lua on macOS/Linux; scheduler works headless |
 | P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
-| P3 / 2.0.0-alpha.3 | PNG+JSON render/assets, input, text, audio in C and Lua; legacy shim; migrate four examples; prepare GUI G0 | Equivalent C/Lua demos without `love.*`, comparable images, documented benchmark |
+| P3 / 2.0.0-alpha.3 | PNG+JSON render/assets, input, text, audio in C and Lua; legacy shim; migrate four examples; add mise development workflows; prepare GUI G0 | Equivalent C/Lua demos without `love.*`, comparable images, documented benchmark, verified mise workflows on macOS/Linux |
 | P4 / 2.0.0-alpha.4 | CLI, C SDK, Lua runner, desktop packages; enable GUI G1 | Create → play → export → run C and Lua projects on macOS/Linux; Windows in alpha.6 |
 | P5 / 2.0.0-alpha.5 | Essential Bennu compatibility, scrolling, regions, first pinned-variant FPG importer, basic Aseprite adapter, collision, selected extras | Each essential-profile symbol has a contract, example, and semantic check |
 | P6 / 2.0.0-alpha.6 | Android export and full Windows validation: runtime, C/Lua API, CLI, packaging | Android APK/AAB, touch, lifecycle; Windows CI, C/Lua examples, CLI, clean-machine packages; fix failures before beta |
@@ -103,4 +103,4 @@ This layout is a proposal; do not create empty code directories for it. Research
 
 ## Recommended next implementation
 
-Continue with [alpha.3](../versions/2.0.0-alpha.3.md): graphics, assets, input, text, audio, and migration of the four historical examples. Preserve the C and Lua process behavior verified in alpha.2. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.
+Continue with [alpha.3](../versions/2.0.0-alpha.3.md): graphics, assets, input, text, audio, mise development workflows, and migration of the four historical examples. Preserve the C and Lua process behavior verified in alpha.2. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.

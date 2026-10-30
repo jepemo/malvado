@@ -19,20 +19,14 @@ jobs:
         os: [ubuntu-24.04, macos-14] # Windows is added in alpha.6
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-      - name: Build
-        run: cmake --build build --config Debug --parallel
-      - name: Test
-        run: ctest --test-dir build -C Debug --output-on-failure
+      - name: Build and test
+        run: mise run test
       - name: Test Lua with headless backend
-        run: |
-          cmake -S . -B build-lua-headless -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_RAYLIB=OFF
-          cmake --build build-lua-headless --parallel
-          ctest --test-dir build-lua-headless --output-on-failure
+        run: mise run test-headless
   c-core:
     name: C core without Lua or raylib (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -43,15 +37,10 @@ jobs:
         os: [ubuntu-24.04, macos-14]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Configure without dependencies
-        run: >-
-          cmake -S . -B build-c -DCMAKE_BUILD_TYPE=Debug
-          -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF
-          -DCMAKE_INSTALL_LIBDIR=lib -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Build and test
         run: |
-          cmake --build build-c --parallel
-          ctest --test-dir build-c --output-on-failure
+          mise run test-c
           test ! -d build-c/_deps
       - name: Test installed API from a C consumer
         run: |
@@ -66,6 +55,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev clang
       - name: Configure
@@ -88,19 +78,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth xdotool
-      - name: Configure and build
-        run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON
-          cmake --build build --parallel
       - name: Test rendering
         run: |
           Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          ctest --test-dir build -R '^visual_(sleep_freeze|c_window|lua_hello|hello_escape|c_game|lua_game)$' --output-on-failure
+          mise run test-visual
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -110,6 +97,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: python3 docs/tools/fetch_api_sources.py
-      - run: python3 docs/tools/catalog_api.py
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - run: mise run catalog
       - run: git diff --exit-code -- docs/api/catalog.json docs/api/inventory.md
