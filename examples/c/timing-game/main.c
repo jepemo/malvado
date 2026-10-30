@@ -17,6 +17,10 @@
 #include "malvado/platform.h"
 #include <stdio.h>
 #include <string.h>
+#ifdef MALVADO_PARITY_CAPTURE
+#include <stdlib.h>
+#include "raylib.h"
+#endif
 
 typedef struct {
     unsigned ticks, elapsed, stopped_at;
@@ -51,6 +55,10 @@ main(int argc, char **argv)
     }
     MvProcessId id;
     int ok = mv_process_spawn(ctx, 0, 0, game_step, NULL, &game, &id) == MV_OK;
+#ifdef MALVADO_PARITY_CAPTURE
+    int captured = 0;
+    const char *capture_path = getenv("MALVADO_CAPTURE_PATH");
+#endif
     if (ok)
         ok = mv_process_tick(ctx) == MV_OK;
     double last = mv_platform_time();
@@ -66,6 +74,16 @@ main(int argc, char **argv)
             snprintf(text, sizeof(text), "Difference: %.2f seconds. Press ESC to exit.", difference);
             mv_window_draw_text(text, 30, 160, 20, (MvColor){255, 255, 255, 255});
         }
+#ifdef MALVADO_PARITY_CAPTURE
+        if (capture_path && !captured && game.stopped_at == 5) {
+            mv_window_flush();
+            Image image = LoadImageFromScreen();
+            captured = image.data && ExportImage(image, capture_path);
+            UnloadImage(image);
+            if (!captured)
+                ok = 0;
+        }
+#endif
         mv_window_end();
         double now = mv_platform_time();
         unsigned steps = 0;
@@ -76,5 +94,9 @@ main(int argc, char **argv)
     }
     mv_window_close();
     mv_context_destroy(ctx);
+#ifdef MALVADO_PARITY_CAPTURE
+    if (capture_path && !captured)
+        ok = 0;
+#endif
     return ok && (!game.smoke || game.stopped_at) ? 0 : 1;
 }

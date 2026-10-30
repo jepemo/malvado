@@ -266,6 +266,19 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_test(NAME visual_c_game COMMAND example-c-timing-game --smoke)
   add_test(NAME visual_lua_game COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/timing-game/main.lua)
   set_tests_properties(visual_lua_game PROPERTIES ENVIRONMENT "MALVADO_SMOKE=1")
+  add_executable(timing-capture-test examples/c/timing-game/main.c)
+  target_compile_definitions(timing-capture-test PRIVATE MALVADO_PARITY_CAPTURE)
+  target_link_libraries(timing-capture-test PRIVATE malvado_core malvado_platform_raylib)
+  add_executable(timing-parity-test tests/timing_visual_parity.c)
+  target_include_directories(timing-parity-test PRIVATE src)
+  target_link_libraries(timing-parity-test PRIVATE malvado_lua_binding)
+  add_test(NAME visual_timing_parity COMMAND ${CMAKE_COMMAND}
+    -DC_DEMO=$<TARGET_FILE:timing-capture-test>
+    -DLUA_TEST=$<TARGET_FILE:timing-parity-test>
+    -DLUA_DEMO=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/timing-game/main.lua
+    -DCAPTURE=${CMAKE_CURRENT_BINARY_DIR}/timing-parity.png
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/timing_visual_parity.cmake)
+  set_tests_properties(visual_timing_parity PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
   set_tests_properties(visual_sleep_freeze visual_c_window visual_lua_hello visual_c_game visual_lua_game PROPERTIES TIMEOUT 15)
   add_executable(image-visual-test tests/image_visual.c)
   target_include_directories(image-visual-test PRIVATE src)
