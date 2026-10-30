@@ -1187,7 +1187,8 @@ static int
 lua_process_step_protected(lua_State *L)
 {
     MvProcessId id = (MvProcessId)lua_tointeger(L, 1);
-    sync_processes();
+    /* The core calls only runnable processes. Synchronize all cached states
+     * after the tick and after signals, rather than on every Lua resume. */
     Process *process = find_process((lua_Integer)id);
     if (!process) {
         lua_pushinteger(L, MV_STEP_ERROR);

@@ -158,6 +158,8 @@ add_test(NAME lua_legacy_globals COMMAND malvado-run --headless ${CMAKE_CURRENT_
 set_tests_properties(lua_legacy_globals PROPERTIES TIMEOUT 15)
 add_test(NAME lua_controllers COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/controllers.lua)
 set_tests_properties(lua_controllers PROPERTIES TIMEOUT 15)
+add_test(NAME process_benchmark_smoke COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/processes.lua)
+set_tests_properties(process_benchmark_smoke PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "processes=100 yields_per_process=60")
 set_tests_properties(lua_process_example PROPERTIES PASS_REGULAR_EXPRESSION "tick: 3" TIMEOUT 15)
 add_test(NAME scheduler COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/scheduler.lua)
 add_test(NAME error_propagation COMMAND ${CMAKE_COMMAND}
