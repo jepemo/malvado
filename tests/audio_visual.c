@@ -55,6 +55,10 @@ main(int argc, char **argv)
     assert(mv_music_stop(music));
     assert(!mv_music_playing(music));
     mv_music_destroy(music);
+    music = mv_music_load("tests/fixtures/silence.ogg", 0);
+    assert(music && mv_music_play(music) && mv_music_update(music));
+    assert(mv_music_stop(music));
+    mv_music_destroy(music);
     mv_audio_close();
     mv_audio_close();
 
