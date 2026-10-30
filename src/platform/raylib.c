@@ -62,6 +62,36 @@ mv_key_down(MvKey key)
     }
     return IsKeyDown(code);
 }
+
+int
+mv_mouse_position(int *x, int *y)
+{
+    if (!x || !y)
+        return 0;
+    if (!IsWindowReady()) {
+        *x = 0;
+        *y = 0;
+        return 0;
+    }
+    *x = GetMouseX();
+    *y = GetMouseY();
+    return 1;
+}
+
+int
+mv_mouse_down(MvMouseButton button)
+{
+    if (!IsWindowReady())
+        return 0;
+    int code;
+    switch (button) {
+    case MV_MOUSE_LEFT: code = MOUSE_BUTTON_LEFT; break;
+    case MV_MOUSE_MIDDLE: code = MOUSE_BUTTON_MIDDLE; break;
+    case MV_MOUSE_RIGHT: code = MOUSE_BUTTON_RIGHT; break;
+    default: return 0;
+    }
+    return IsMouseButtonDown(code);
+}
 void mv_window_begin(MvColor c)
 {
     BeginDrawing();

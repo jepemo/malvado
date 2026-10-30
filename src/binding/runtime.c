@@ -684,6 +684,29 @@ key(lua_State *L)
 }
 
 static int
+mouse_position(lua_State *L)
+{
+    int x = 0, y = 0;
+    if (!engine.headless)
+        (void)mv_mouse_position(&x, &y);
+    lua_pushinteger(L, x);
+    lua_pushinteger(L, y);
+    return 2;
+}
+
+static int
+mouse_button(lua_State *L)
+{
+    size_t length;
+    const char *name = luaL_checklstring(L, 1, &length);
+    MvMouseButton button;
+    if (strlen(name) != length || !mv_mouse_button_from_name(name, &button))
+        return luaL_error(L, "unsupported mouse button: %s", name);
+    lua_pushboolean(L, !engine.headless && mv_mouse_down(button));
+    return 1;
+}
+
+static int
 image_gc(lua_State *L)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
@@ -1272,6 +1295,8 @@ open_module(lua_State *L)
         {"start", start},
         {"clear_screen", clear_screen},
         {"key", key},
+        {"mouse_position", mouse_position},
+        {"mouse_button", mouse_button},
         {"draw_text", text},
         {"load_image", load_image},
         {"image_size", image_size},

@@ -38,5 +38,17 @@ main(void)
     assert(!mv_key_from_name(NULL, &unchanged));
     assert(!mv_key_from_name("left", NULL));
     assert(!mv_key_down((MvKey)-1));
+    MvMouseButton button = MV_MOUSE_LEFT;
+    assert(mv_mouse_button_from_name("left", &button) && button == MV_MOUSE_LEFT);
+    assert(mv_mouse_button_from_name("middle", &button) && button == MV_MOUSE_MIDDLE);
+    assert(mv_mouse_button_from_name("right", &button) && button == MV_MOUSE_RIGHT);
+    assert(!mv_mouse_button_from_name("other", &button) && button == MV_MOUSE_RIGHT);
+    assert(!mv_mouse_button_from_name(NULL, &button));
+    assert(!mv_mouse_button_from_name("left", NULL));
+    assert(!mv_mouse_down(MV_MOUSE_LEFT) && !mv_mouse_down((MvMouseButton)-1));
+    int x = 23, y = 42;
+    assert(!mv_mouse_position(NULL, &y) && y == 42);
+    assert(!mv_mouse_position(&x, NULL) && x == 23);
+    assert(!mv_mouse_position(&x, &y) && x == 0 && y == 0);
     return 0;
 }

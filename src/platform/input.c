@@ -45,3 +45,19 @@ mv_key_from_name(const char *name, MvKey *key)
     }
     return 0;
 }
+
+int
+mv_mouse_button_from_name(const char *name, MvMouseButton *button)
+{
+    if (!name || !button)
+        return 0;
+    if (strcmp(name, "left") == 0)
+        *button = MV_MOUSE_LEFT;
+    else if (strcmp(name, "middle") == 0)
+        *button = MV_MOUSE_MIDDLE;
+    else if (strcmp(name, "right") == 0)
+        *button = MV_MOUSE_RIGHT;
+    else
+        return 0;
+    return 1;
+}

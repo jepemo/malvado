@@ -31,6 +31,7 @@ typedef enum {
     MV_KEY_ESCAPE = 256, MV_KEY_SPACE, MV_KEY_LEFT, MV_KEY_RIGHT,
     MV_KEY_UP, MV_KEY_DOWN, MV_KEY_ENTER, MV_KEY_TAB, MV_KEY_BACKSPACE
 } MvKey;
+typedef enum { MV_MOUSE_LEFT = 1, MV_MOUSE_MIDDLE, MV_MOUSE_RIGHT } MvMouseButton;
 typedef struct MvImage MvImage;
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
@@ -49,6 +50,13 @@ int mv_window_space_down(void);
 int mv_key_from_name(const char *name, MvKey *key);
 /* Return 1 while the key is held. Return 0 for an unsupported key or no window. */
 int mv_key_down(MvKey key);
+/* Parse "left", "middle", or "right". Return 1 on success. */
+int mv_mouse_button_from_name(const char *name, MvMouseButton *button);
+/* Write window-relative pixel coordinates. Return 0 and write zeros if no
+ * window is open. Return 0 without writing if either pointer is NULL. */
+int mv_mouse_position(int *x, int *y);
+/* Return 1 while the button is held, or 0 for an invalid button or no window. */
+int mv_mouse_down(MvMouseButton button);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.

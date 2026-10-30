@@ -9,5 +9,13 @@ local process = mv.process(function()
     for _, name in ipairs({"unknown", "", "A", "10", "space\0x"}) do
         assert(not pcall(mv.key, name))
     end
+    local x, y = mv.mouse_position()
+    assert(x == 0 and y == 0)
+    for _, name in ipairs({"left", "middle", "right"}) do
+        assert(not mv.mouse_button(name))
+    end
+    for _, name in ipairs({"other", "Left", "left\0x"}) do
+        assert(not pcall(mv.mouse_button, name))
+    end
 end)
 mv.start(function() process() end)
