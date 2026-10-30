@@ -78,6 +78,7 @@ static void lua_process_destroy(void *user);
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { MvImage *image; } LuaImage;
 typedef struct { MvSound *sound; } LuaSound;
+typedef struct { MvMusic *music; } LuaMusic;
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; } LuaAtlas;
 #endif
@@ -855,6 +856,79 @@ sound_volume(lua_State *L)
 }
 
 static int
+music_gc(lua_State *L)
+{
+    LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
+    mv_music_destroy(music->music);
+    music->music = NULL;
+    return 0;
+}
+
+static int
+load_music(lua_State *L)
+{
+    size_t length;
+    const char *path = luaL_checklstring(L, 1, &length);
+    if (strlen(path) != length)
+        return luaL_error(L, "music path contains a zero byte");
+    if (!lua_isnoneornil(L, 2) && !lua_isboolean(L, 2))
+        return luaL_error(L, "loop must be a boolean");
+    int loop = lua_isnoneornil(L, 2) ? 0 : lua_toboolean(L, 2);
+    if (engine.headless)
+        return luaL_error(L, "music is not available in headless mode");
+    if (!engine.audio) {
+        if (!mv_audio_open())
+            return luaL_error(L, "could not open audio device");
+        engine.audio = 1;
+    }
+    LuaMusic *music = lua_newuserdatauv(L, sizeof(*music), 0);
+    music->music = NULL;
+    luaL_setmetatable(L, "malvado.music");
+    music->music = mv_music_load(path, loop);
+    if (!music->music)
+        return luaL_error(L, "could not load music: %s", path);
+    return 1;
+}
+
+static int
+music_action(lua_State *L)
+{
+    LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
+    int action = (int)lua_tointeger(L, lua_upvalueindex(1));
+    int ok = 0;
+    switch (action) {
+    case 0: ok = mv_music_play(music->music); break;
+    case 1: ok = mv_music_update(music->music); break;
+    case 2: ok = mv_music_stop(music->music); break;
+    case 3: ok = mv_music_pause(music->music); break;
+    case 4: ok = mv_music_resume(music->music); break;
+    }
+    if (!ok)
+        return luaL_error(L, "music is not available");
+    return 0;
+}
+
+static int
+music_playing(lua_State *L)
+{
+    LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
+    lua_pushboolean(L, mv_music_playing(music->music));
+    return 1;
+}
+
+static int
+music_volume(lua_State *L)
+{
+    LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
+    lua_Number volume = luaL_checknumber(L, 2);
+    if (!isfinite(volume) || volume < 0 || volume > 1)
+        return luaL_error(L, "volume must be in 0..1");
+    if (!mv_music_set_volume(music->music, (float)volume))
+        return luaL_error(L, "music is not available");
+    return 0;
+}
+
+static int
 image_gc(lua_State *L)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
@@ -1493,6 +1567,9 @@ open_module(lua_State *L)
         {"resume_sound", resume_sound},
         {"sound_playing", sound_playing},
         {"sound_volume", sound_volume},
+        {"load_music", load_music},
+        {"music_playing", music_playing},
+        {"music_volume", music_volume},
         {"draw_text", text},
         {"load_image", load_image},
         {"image_size", image_size},
@@ -1528,6 +1605,12 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado sound");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.music");
+    lua_pushcfunction(L, music_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado music");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
 #ifdef MALVADO_BUILD_ASSETS
     luaL_newmetatable(L, "malvado.atlas");
     lua_pushcfunction(L, atlas_gc);
@@ -1539,6 +1622,14 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    static const char *const music_actions[] = {
+        "play_music", "update_music", "stop_music", "pause_music", "resume_music"
+    };
+    for (size_t i = 0; i < sizeof(music_actions) / sizeof(music_actions[0]); ++i) {
+        lua_pushinteger(L, (lua_Integer)i);
+        lua_pushcclosure(L, music_action, 1);
+        lua_setfield(L, -2, music_actions[i]);
+    }
     return 1;
 }
 

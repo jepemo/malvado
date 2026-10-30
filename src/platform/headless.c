@@ -53,6 +53,15 @@ int mv_sound_pause(MvSound *sound) { (void)sound; return 0; }
 int mv_sound_resume(MvSound *sound) { (void)sound; return 0; }
 int mv_sound_playing(const MvSound *sound) { (void)sound; return 0; }
 int mv_sound_set_volume(MvSound *sound, float volume) { (void)sound; (void)volume; return 0; }
+MvMusic *mv_music_load(const char *path, int loop) { (void)path; (void)loop; return NULL; }
+void mv_music_destroy(MvMusic *music) { (void)music; }
+int mv_music_play(MvMusic *music) { (void)music; return 0; }
+int mv_music_update(MvMusic *music) { (void)music; return 0; }
+int mv_music_stop(MvMusic *music) { (void)music; return 0; }
+int mv_music_pause(MvMusic *music) { (void)music; return 0; }
+int mv_music_resume(MvMusic *music) { (void)music; return 0; }
+int mv_music_playing(const MvMusic *music) { (void)music; return 0; }
+int mv_music_set_volume(MvMusic *music, float volume) { (void)music; (void)volume; return 0; }
 void mv_window_begin(MvColor color) { (void)color; }
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color)
 {

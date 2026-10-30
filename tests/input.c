@@ -88,6 +88,11 @@ main(void)
     assert(!mv_sound_playing(NULL));
     assert(!mv_sound_set_volume(NULL, 0.5f));
     mv_sound_destroy(NULL);
+    assert(!mv_music_load("tests/fixtures/silence.wav", 1));
+    assert(!mv_music_play(NULL) && !mv_music_update(NULL) && !mv_music_stop(NULL));
+    assert(!mv_music_pause(NULL) && !mv_music_resume(NULL) && !mv_music_playing(NULL));
+    assert(!mv_music_set_volume(NULL, 0.5f));
+    mv_music_destroy(NULL);
     static const struct { uint32_t codepoint; const char *utf8; size_t length; } characters[] = {
         {0x7f, "\x7f", 1}, {0x80, "\xc2\x80", 2}, {0x7ff, "\xdf\xbf", 2},
         {0x800, "\xe0\xa0\x80", 3}, {0xffff, "\xef\xbf\xbf", 3},

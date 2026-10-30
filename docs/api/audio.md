@@ -41,4 +41,19 @@ if (mv_audio_open()) {
 
 `mv_audio_open` returns 1 on success. It is safe to call it again while the device is open. `mv_sound_load` returns `NULL` on failure. `mv_sound_play`, `mv_sound_stop`, `mv_sound_pause`, `mv_sound_resume`, and `mv_sound_set_volume` return 1 on success or 0 for invalid arguments or a closed device. Pause and resume keep the current playback position. `mv_sound_playing` returns 1 while the sound is playing and 0 while paused or stopped. `mv_sound_destroy(NULL)` and `mv_audio_close()` on a closed device are safe. Use audio functions on the device owner thread.
 
-Audio uses one process-wide device. Destroy every sound before closing it. Music streaming, looping, and multiple simultaneous instances of the same sound are not supported yet.
+## Stream music
+
+Load a WAV or OGG stream and update it regularly while it plays. This example loops the track:
+
+```lua
+local music = mv.load_music("music.ogg", true)
+mv.play_music(music)
+-- In a process, call this before each mv.frame():
+mv.update_music(music)
+```
+
+The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`, `mv.stop_music`, `mv.music_playing`, and `mv.music_volume` to control the stream. Volume is from zero to one. Keep a reference to the music while it plays. The runner releases it when it is no longer used or when it closes. Audio is unavailable in headless mode.
+
+In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_music_update` regularly, including when the rest of the game is idle. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
+
+Audio uses one process-wide device. Destroy every sound and stream before closing it. Multiple simultaneous instances of the same sound are not supported yet.

@@ -43,6 +43,7 @@ typedef enum {
 typedef enum { MV_PAD_LEFT_X, MV_PAD_LEFT_Y, MV_PAD_RIGHT_X, MV_PAD_RIGHT_Y } MvPadAxis;
 typedef struct MvImage MvImage;
 typedef struct MvSound MvSound;
+typedef struct MvMusic MvMusic;
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
     float x, y;
@@ -96,6 +97,17 @@ int mv_sound_resume(MvSound *sound);
 int mv_sound_playing(const MvSound *sound);
 /* Volume must be finite and in the range 0 to 1. */
 int mv_sound_set_volume(MvSound *sound, float volume);
+/* Streams require regular updates on the audio owner thread. Destroy each
+ * stream before closing the device. The loop argument must be 0 or 1. */
+MvMusic *mv_music_load(const char *path, int loop);
+void mv_music_destroy(MvMusic *music);
+int mv_music_play(MvMusic *music);
+int mv_music_update(MvMusic *music);
+int mv_music_stop(MvMusic *music);
+int mv_music_pause(MvMusic *music);
+int mv_music_resume(MvMusic *music);
+int mv_music_playing(const MvMusic *music);
+int mv_music_set_volume(MvMusic *music, float volume);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.

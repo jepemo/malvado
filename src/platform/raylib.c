@@ -25,6 +25,9 @@ struct MvImage {
 struct MvSound {
     Sound sound;
 };
+struct MvMusic {
+    Music stream;
+};
 
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
@@ -154,6 +157,94 @@ mv_sound_set_volume(MvSound *sound, float volume)
     if (!sound || !IsAudioDeviceReady() || !isfinite(volume) || volume < 0 || volume > 1)
         return 0;
     SetSoundVolume(sound->sound, volume);
+    return 1;
+}
+
+MvMusic *
+mv_music_load(const char *path, int loop)
+{
+    if (!path || !IsAudioDeviceReady() || (loop != 0 && loop != 1) ||
+        (!IsFileExtension(path, ".wav") && !IsFileExtension(path, ".ogg")))
+        return NULL;
+    Music stream = LoadMusicStream(path);
+    if (!IsMusicValid(stream))
+        return NULL;
+    MvMusic *music = malloc(sizeof(*music));
+    if (!music) {
+        UnloadMusicStream(stream);
+        return NULL;
+    }
+    stream.looping = loop != 0;
+    music->stream = stream;
+    return music;
+}
+
+void
+mv_music_destroy(MvMusic *music)
+{
+    if (!music)
+        return;
+    UnloadMusicStream(music->stream);
+    free(music);
+}
+
+int
+mv_music_play(MvMusic *music)
+{
+    if (!music || !IsAudioDeviceReady())
+        return 0;
+    PlayMusicStream(music->stream);
+    return 1;
+}
+
+int
+mv_music_update(MvMusic *music)
+{
+    if (!music || !IsAudioDeviceReady())
+        return 0;
+    UpdateMusicStream(music->stream);
+    return 1;
+}
+
+int
+mv_music_stop(MvMusic *music)
+{
+    if (!music || !IsAudioDeviceReady())
+        return 0;
+    StopMusicStream(music->stream);
+    return 1;
+}
+
+int
+mv_music_pause(MvMusic *music)
+{
+    if (!music || !IsAudioDeviceReady())
+        return 0;
+    PauseMusicStream(music->stream);
+    return 1;
+}
+
+int
+mv_music_resume(MvMusic *music)
+{
+    if (!music || !IsAudioDeviceReady())
+        return 0;
+    ResumeMusicStream(music->stream);
+    return 1;
+}
+
+int
+mv_music_playing(const MvMusic *music)
+{
+    return music && IsAudioDeviceReady() && IsMusicStreamPlaying(music->stream);
+}
+
+int
+mv_music_set_volume(MvMusic *music, float volume)
+{
+    if (!music || !IsAudioDeviceReady() || !isfinite(volume) || volume < 0 || volume > 1)
+        return 0;
+    SetMusicVolume(music->stream, volume);
     return 1;
 }
 

@@ -41,6 +41,20 @@ main(int argc, char **argv)
     assert(mv_sound_stop(sound));
     assert(!mv_sound_playing(sound));
     mv_sound_destroy(sound);
+    assert(!mv_music_load("tests/fixtures/silence.wav", 2));
+    assert(!mv_music_load("tests/fixtures/missing.wav", 0));
+    MvMusic *music = mv_music_load("tests/fixtures/silence.wav", 1);
+    assert(music);
+    assert(mv_music_set_volume(music, 0.5f));
+    assert(!mv_music_set_volume(music, NAN));
+    assert(mv_music_play(music));
+    assert(mv_music_update(music));
+    assert(mv_music_pause(music));
+    assert(!mv_music_playing(music));
+    assert(mv_music_resume(music));
+    assert(mv_music_stop(music));
+    assert(!mv_music_playing(music));
+    mv_music_destroy(music);
     mv_audio_close();
     mv_audio_close();
 
