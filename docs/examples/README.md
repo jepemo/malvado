@@ -1,6 +1,6 @@
 # Examples as an engine contract
 
-The new snippets below are proposals, not programs that all run on the current runtime. [Hello World](../../examples/helloworld/README.md), [Space Asteroids](../../examples/space_asteroids/README.md), and the [benchmark](../../examples/bench/README.md) run on Malvado 2. The historical demo requires the LÖVE engine, available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep reference traces and screenshots.
+The new snippets below are proposals, not programs that all run on the current runtime. [Hello World](../../examples/helloworld/README.md), the [demo](../../examples/demo/README.md), [Space Asteroids](../../examples/space_asteroids/README.md), and the [benchmark](../../examples/bench/README.md) run on Malvado 2. The original versions are available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep reference traces and screenshots.
 
 ## First-class C and Lua examples
 
@@ -11,7 +11,7 @@ Each shared engine capability will have a C example that uses the public API and
 | Current example | Behavior to retain | Required work |
 | --- | --- | --- |
 | `examples/helloworld/main.lua` | Process constructor, font, text, Escape, and automatic shutdown | Migrated to the Malvado 2 Lua API |
-| `examples/demo/main.lua` | Menu, spritesheets, keyboard, text, and fades | Persistent resources, animation, z, and per-process cadence |
+| `examples/demo/main.lua` | Menu, spritesheets, keyboard, text, and fades | Migrated; verify the controls and presentation on supported targets |
 | `examples/space_asteroids/main.lua` | Complete game, movement, bullets, and collision | Migrated; test interactive controls on supported targets |
 | `examples/bench/main.lua` | Process creation, load, and timing | Migrated; separate VM, scheduler, and render costs remain pending |
 

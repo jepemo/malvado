@@ -1,231 +1,117 @@
-package.path = package.path .. ";./?/init.lua"
-require 'malvado'
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
 
-local selected_menu = 1
+local mv = require("malvado")
+local smoke = os.getenv("MALVADO_SMOKE") == "1"
+local input_test = os.getenv("MALVADO_INPUT_TEST") == "1"
+local images = { cats = {} }
+local names = { "Sprites", "Keyboard", "Texts", "Fade" }
+local selected, page = 1, 0
+local ticks, text, fade = 0, "", 0
+local previous = {}
+local visits = {}
 
--- Options
-local OPTIONS = {
-  [1] = { text = "Back" },
-  [2] = { text = "Sprites" },
-  [3] = { text = "KeyBoard" },
-  [4] = { text = "Texts" },
-  [5] = { text = "Fade" }
-}
+local function pressed(key)
+  local down = mv.key(key)
+  local result = down and not previous[key]
+  previous[key] = down
+  return result
+end
 
-SpriteExample1 = process(function(self)
-  self.fpg = fpg("assets/cat")
-  self.fpgIndex = 0
-  self.x = get_screen_width() / 2
-  self.y = get_screen_height() / 2
-  self.size = 1.5
-  self.fps = 15
+local function show_page(number)
+  page = number
+  visits[number] = true
+  if input_test then print("demo page: " .. names[number]) end
+end
 
-  local num_frames = 6
+local function draw_menu()
+  mv.draw_text("Malvado demo", 280, 65, 36)
+  mv.draw_text("Choose with arrows and Enter, or click an option", 130, 120, 20)
+  for i, name in ipairs(names) do
+    local marker = i == selected and "> " or "  "
+    mv.draw_text(marker .. name, 300, 150 + i * 70, 32)
+  end
+end
+
+local function draw_page()
+  mv.draw_text(names[page] .. " - Escape: menu", 20, 20, 24)
+  if page == 1 then
+    local cat = images.cats[(math.floor(ticks / 4) % 6) + 1]
+    mv.draw_image(cat, 100 + (ticks * 2 % 550), 310)
+    local index = 7 + (math.floor(ticks / 4) % 7)
+    local sx, sy = (index % 8) * 80, math.floor(index / 8) * 94
+    mv.draw_image_region(images.hero, 300, 150, sx, sy, 80, 94, 0, 0, 2, 0)
+  elseif page == 2 then
+    local character = mv.text_input_next()
+    while character do
+      text = text .. character
+      character = mv.text_input_next()
+    end
+    mv.draw_text("Type text:", 100, 200, 30)
+    mv.draw_text(text, 100, 250, 30)
+  elseif page == 3 then
+    mv.draw_text("This is animated text", 800 - (ticks * 3 % 1100), 300, 40)
+  elseif page == 4 then
+    mv.draw_text("Press Space to fade the background", 100, 220, 28)
+    mv.draw_text("Fade level: " .. fade, 100, 280, 24)
+  end
+end
+
+local Demo = mv.process(function()
   while true do
-    if selected_menu == 2 then
-      self.fpgIndex = self.fpgIndex+1
-      if self.fpgIndex > num_frames then
-        self.fpgIndex = 1
+    ticks = ticks + 1
+    local escape = pressed("escape")
+    if page == 0 then
+      if escape then break end
+      if pressed("up") then selected = (selected + 2) % 4 + 1 end
+      if pressed("down") then selected = selected % 4 + 1 end
+      if pressed("enter") then show_page(selected) end
+      local mouse = mv.mouse_button("left")
+      if mouse and not previous.mouse then
+        local x, y = mv.mouse_position()
+        if x >= 280 and x < 550 then
+          for i = 1, #names do
+            local top = 150 + i * 70
+            if y >= top and y < top + 40 then selected = i; show_page(i) end
+          end
+        end
       end
+      previous.mouse = mouse
+    elseif escape then
+      page = 0
+    elseif page == 4 and pressed("space") and fade == 0 then
+      fade = 120
+    end
 
-      self.x = self.x - 4
-      if self.x < 0 then
-        self.x = get_screen_width()
+    if smoke then
+      if ticks <= 4 then show_page(ticks) end
+      if ticks == 5 then
+        assert(visits[1] and visits[2] and visits[3] and visits[4])
+        print("demo smoke: four pages")
+        return
       end
+    end
+    if fade > 0 then
+      local value = math.floor(255 * math.abs(fade - 60) / 60)
+      mv.clear_screen(value, value, value)
+      fade = fade - 1
+    elseif page == 1 then
+      mv.clear_screen(100, 60, 100)
     else
-      self.fpgIndex = -1
+      mv.clear_screen(0, 0, 0)
     end
-
-    frame()
+    if page == 0 then draw_menu() else draw_page() end
+    mv.frame()
+  end
+  if input_test then
+    assert(visits[1] and visits[2])
+    print("demo input: menu, pages, escape")
   end
 end)
 
-SpriteExample2 = process(function(self)
-  self.fpg = fpg("assets/hero_spritesheet.png", "image", 5, 8)
-  self.size = 2
-  self.x = get_screen_width() / 2
-  self.y = (get_screen_height() / 2) - (self.height * self.size) - 125
-  self.z = 10
-  self.fps = 15
-
-  clear_screen(255, 255, 255)
-
-  local ini_run  = 8
-  local end_run = 14
-
-  self.fpgIndex = ini_run
-  while true do
-    if selected_menu == 2 then
-      self.fpgIndex = self.fpgIndex+1
-      if self.fpgIndex > end_run then
-        self.fpgIndex = ini_run
-      end
-
-      self.x = self.x + 4
-      if self.x > get_screen_width() then
-        self.x = 0
-      end
-    else
-      self.fpgIndex = -1
-    end
-
-    frame()
-  end
-end)
-
-KeyBoardExample = process(function(self)
-
-  local hfont = 50
-
-  local font_show = font(hfont, 255, 255, 255, 255)
-  local font_hide = font(hfont, 0,   0,   0,   0)
-
-  local x = get_screen_width() / 3
-  local y1 = get_screen_height() / 2
-  local y2 = get_screen_height() / 2 + hfont
-  local text = ""
-
-  local t1 = write(font_show, x, y1, "Press any key")
-  local t2 = write(font_show, x, y1, text)
-
-  while true do
-    if selected_menu == 3 then
-      print(scan_code)
-      if scan_code ~= "escape" then
-        text = "" .. scan_code
-      end
-
-      change_text(t1, "Press any key", x, y1, font_show)
-      change_text(t2, text, x, y2, font_show)
-    else
-      change_text(t1, "", x, y1, font_hide)
-      change_text(t2, "", x, y2, font_hide)
-    end
-
-    frame()
-  end
-end)
-
-TextExample = process(function(self)
-  self.fps = 15
-  local font_show = font(50, 255, 255, 255, 255)
-  local font_hide = font(50, 0,   0,   0,   0)
-
-  local x = get_screen_width() / 2
-  local y = get_screen_height() / 2
-  local text = "This is a animated text"
-
-  local t1 = write(font_show, x, y, text)
-
-  while true do
-    if selected_menu == 4 then
-      change_text(t1, text, x, y, font_show)
-    else
-      change_text(t1, text, x, y, font_hide)
-    end
-
-    x = x - 10
-    if x < 0 then
-      x = get_screen_width()
-    end
-
-    frame()
-  end
-end)
-
-FadeExample = process(function(self)
-  local r = get_screen_height() / 5
-  local x = get_screen_width() / 2
-  local y = get_screen_height() / 2
-  local entra = 0
-
-  while true do
-    if selected_menu == 5 then
-      set_color(255, 128, 0)
-      draw_fcircle(x, y, r)
-
-      if key("space") and entra == 0 then
-        entra = 1
-        fade_off()
-        fade_on()
-      end
-
-      if not key("space") then entra = 0 end
-    end
-
-    frame()
-  end
-end)
-
-MenuOption = process (function(self)
-  self.x = get_screen_width() / 5
-  self.width = (get_screen_width() / 5) * 3
-  self.z = 10
-
-  local fontSize = 60
-  local textYPos = fontSize / 3
-  local textXPos = fontSize * 1.5
-
-  local font_show = font(fontSize, 255, 255, 255, 255)
-  local font_hide = font(fontSize, 0,   0,   0,   0)
-
-  local idtext = write(font_show, self.x+textXPos, self.y+textYPos, self.text)
-
-  while true do
-    if (selected_menu == 1 and self.option > 1)
-      or (selected_menu > 1 and self.option == 1) then
-
-      change_text(idtext, self.text, self.x+textXPos, self.y+textYPos, font_show)
-
-      set_color(161, 70, 70)
-      draw_box(self.x, self.y, self.x + self.width+3, self.y + self.height+3)
-      set_color(172, 83, 83)
-      draw_box(self.x, self.y, self.x + self.width, self.y + self.height)
-
-      if (self:collision('mouse') and mouse.left) then
-        selected_menu = self.option
-        print('[' .. self.text .. '] Change to: ' .. self.option)
-      end
-    else
-      change_text(idtext, self.text, self.x+textXPos, self.y+textYPos, font_hide)
-    end
-
-    frame()
-  end
-end)
-
-Menu = process(function(self)
-  local yini = 5
-  local h = (get_screen_height() / tlen(OPTIONS)) - 10
-
-  -- Menu options
-  for ind, obj in ipairs(OPTIONS) do
-    MenuOption { text = obj.text, y = yini+(h * (ind-1))+(10 * (ind-1)), height = h, option = ind, parent=self }
-  end
-
-  SpriteExample1 { parent = self }
-  SpriteExample2 { parent = self }
-  KeyBoardExample { parent = self}
-  FadeExample { parent = self }
-  TextExample { parent = self}
-
-  while not key("escape") do
-    if (selected_menu == 2) then
-      clear_screen(164, 117, 160)
-    else
-      clear_screen(0, 0, 0)
-    end
-
-    frame()
-  end
-end)
-
--- Start
-malvado.start(function()
-  set_title('Malvad0 Dem0')
-
-  mouse.graph = load_image("cursor.png")
-  mouse.angle = -45
-
-  Menu {}
-end, true)
+mv.start(function()
+  for i = 1, 6 do images.cats[i] = mv.load_image("examples/demo/assets/cat/c" .. i .. ".png") end
+  images.hero = mv.load_image("examples/demo/assets/hero_spritesheet.png")
+  mv.clear_screen(0, 0, 0)
+  Demo()
+end, { width = 800, height = 600, title = "Malvado Demo" })
