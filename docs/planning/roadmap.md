@@ -57,7 +57,7 @@ Alphas 1–5 close with macOS and Linux verification. Android and Windows protot
 
 ## API documentation
 
-C and Lua will have getting-started guides, module references, and equivalent runnable examples. The proposal uses Markdown in Git, MkDocs, and GitHub Pages, with C signatures in public headers and LuaCATS definitions for the binding. See the [documentation plan](../development/api-documentation.md) for sources, CI, and versioning. The proposed site is not implemented yet.
+C and Lua will have getting-started guides, module references, and equivalent runnable examples. The initial site uses Markdown in Git, MkDocs, and GitHub Pages. The plan uses C signatures in public headers and LuaCATS definitions for the binding. See the [documentation plan](../development/api-documentation.md) for sources, CI, and versioning. Full site references remain pending.
 
 ## CI and release publication
 

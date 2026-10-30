@@ -83,7 +83,7 @@ python3 -m mkdocs serve
 
 CI builds the site in strict mode. The first page links to the existing guides on GitHub. Signature checks and complete C and Lua references remain planned. A site build does not test external links or replace example tests.
 
-Deploy Pages only from the configured workflow and publication environment. PRs build but do not deploy. When versioning exists, put development docs at `/dev/` and stable docs by minor at `/2.0/`. Identify commit/version and link the relevant examples. Define retention before replacing versions. Publication requires Pages configuration and permissions. This plan does not change external configuration or publish a site.
+The Pages workflow deploys from `master` to the publication environment. PRs build but do not deploy. The initial site is at the root, and the previous documentation is under `/legacy/`. When versioning exists, put development docs at `/dev/` and stable docs by minor at `/2.0/`. Identify commit/version and link the relevant examples. Define retention before replacing versions.
 
 ## Milestones and criteria
 
