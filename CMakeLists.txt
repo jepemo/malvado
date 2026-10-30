@@ -284,6 +284,10 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
     add_test(NAME visual_audio COMMAND audio-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/audio_visual.lua)
     set_tests_properties(visual_audio PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       ENVIRONMENT "ALSA_CONFIG_PATH=${CMAKE_CURRENT_SOURCE_DIR}/tests/alsa-null.conf")
+    add_test(NAME visual_audio_demo COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/examples/audio/main.lua)
+    set_tests_properties(visual_audio_demo PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      ENVIRONMENT "ALSA_CONFIG_PATH=${CMAKE_CURRENT_SOURCE_DIR}/tests/alsa-null.conf;MALVADO_SMOKE=1"
+      PASS_REGULAR_EXPRESSION "audio demo smoke: effects and loop")
     find_program(MALVADO_XDOTOOL xdotool)
     if(MALVADO_XDOTOOL)
       add_executable(keys-visual-test tests/keys_visual.c)

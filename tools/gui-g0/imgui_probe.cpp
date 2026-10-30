@@ -42,6 +42,7 @@ main(int argc, char **argv)
     glfwSwapInterval(1);
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImGui::GetIO().IniFilename = nullptr;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 #ifdef __APPLE__
