@@ -1,0 +1,7 @@
+site_name: Malvado
+site_description: Documentation for the Malvado game runtime
+repo_url: https://github.com/jepemo/malvado
+docs_dir: docs/site
+site_dir: build/site
+nav:
+  - Home: index.md

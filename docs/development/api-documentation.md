@@ -1,6 +1,6 @@
 # C and Lua API documentation
 
-Status: planning decision, not an implemented documentation system. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
+Status: an initial MkDocs site is available. Full references and publication remain planned. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
 
 ## Recommendation: Markdown + MkDocs + GitHub Pages
 
@@ -26,7 +26,7 @@ Sources: [Doxygen C comments](https://www.doxygen.nl/manual/docblocks.html), [LD
 
 ```text
 README.md                         short entry point, installation, links
-mkdocs.yml                        future site configuration
+mkdocs.yml                        site configuration
 requirements-docs.txt             pinned MkDocs version
 include/malvado/*.h               C API declarations and comments
 bindings/lua/definitions/         annotated .lua definitions for tooling only
@@ -41,7 +41,7 @@ docs/site/guides/                 shared tutorials and recipes
 docs/site/migration/              migration and compatibility
 ```
 
-`docs/site/` is a proposal for **public site sources**. Configure `docs_dir: docs/site` and a Git-ignored output directory. This prevents MkDocs from accidentally copying or publishing `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. Keep them separate from the Malvado API reference. The final binding path must match the implemented architecture; do not create empty directories only for this proposal.
+`docs/site/` contains the public site sources. The site output is in `build/site/`. This prevents MkDocs from copying `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. The proposed reference directories do not exist yet.
 
 ## Source of truth by language
 
@@ -73,7 +73,7 @@ Headless examples must terminate automatically in CI. Graphics examples can use 
 
 ## Build, CI, and publication
 
-When documentation is implemented:
+To build or preview the site:
 
 ```sh
 python3 -m pip install -r requirements-docs.txt
@@ -81,7 +81,7 @@ python3 -m mkdocs build --strict
 python3 -m mkdocs serve
 ```
 
-These are target commands. `mkdocs.yml`, `requirements-docs.txt`, and `docs/site/` do not exist yet. Build outside the source directory and check output in PRs. Add pinned dependencies, strict build, internal links, signature/symbol checks, and C/Lua examples to CI. If external links are checked, run that separately or handle temporary network failures. Do not check names alone: test results, errors, and ownership, and review pages with API changes.
+CI builds the site in strict mode. The first page links to the existing guides on GitHub. Signature checks and complete C and Lua references remain planned. A site build does not test external links or replace example tests.
 
 Deploy Pages only from the configured workflow and publication environment. PRs build but do not deploy. When versioning exists, put development docs at `/dev/` and stable docs by minor at `/2.0/`. Identify commit/version and link the relevant examples. Define retention before replacing versions. Publication requires Pages configuration and permissions. This plan does not change external configuration or publish a site.
 

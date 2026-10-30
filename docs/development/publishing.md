@@ -6,9 +6,9 @@ See [CI and GitHub Actions](ci.md) for workflows, permissions, and release gener
 
 Use **Markdown in `docs/` as the source**. Review it in the same PRs as the code. Publish a static GitHub Pages site when the first runnable cut exists. Do not use GitHub Wiki as the main source: it separates documentation from engine versioning and changes.
 
-Use MkDocs with its default theme and pin its version during implementation. Put public sources in `docs/site/`. Keep plans and historical snapshots outside the published directory. Documentation must remain readable directly on GitHub without a build. This phase does not install or publish a site.
+Use MkDocs with its default theme. Public site sources are in `docs/site/`. Keep plans and historical snapshots outside the published directory. Documentation must remain readable directly on GitHub without a build.
 
-GitHub supports [static generators through Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). The future workflow must validate and build on PRs and deploy only from the configured branch or release. Adding these documents does not enable automatic deployment.
+GitHub supports [static generators through Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). CI builds the site on pull requests. The Pages workflow builds and deploys from `master`, without a publishing branch. It keeps the previous `gh-pages` documentation under `/legacy/`. Select GitHub Actions as the Pages source in repository settings before deployment.
 
 ## Related references
 
