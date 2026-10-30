@@ -1120,12 +1120,37 @@ change_text(lua_State *L)
 {
     lua_Integer id = luaL_checkinteger(L, 1);
     const char *text = luaL_checkstring(L, 2);
+    int has_x = !lua_isnoneornil(L, 3);
+    int has_y = !lua_isnoneornil(L, 4);
+    int has_font = !lua_isnoneornil(L, 5);
+    lua_Integer x = has_x ? luaL_checkinteger(L, 3) : 0;
+    lua_Integer y = has_y ? luaL_checkinteger(L, 4) : 0;
+    if (has_font) {
+        luaL_checktype(L, 5, LUA_TTABLE);
+        lua_getfield(L, 5, "size");
+        lua_Integer size = luaL_checkinteger(L, -1);
+        lua_pop(L, 1);
+        if (size < 1 || size > 1024)
+            return luaL_error(L, "invalid font");
+    }
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     lua_geti(L, -1, id);
     if (lua_isnil(L, -1))
         return luaL_error(L, "unknown text id");
     lua_pushstring(L, text);
     lua_setfield(L, -2, "text");
+    if (has_x) {
+        lua_pushinteger(L, x);
+        lua_setfield(L, -2, "x");
+    }
+    if (has_y) {
+        lua_pushinteger(L, y);
+        lua_setfield(L, -2, "y");
+    }
+    if (has_font) {
+        lua_pushvalue(L, 5);
+        lua_setfield(L, -2, "font");
+    }
     return 0;
 }
 

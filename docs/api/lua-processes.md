@@ -48,6 +48,8 @@ The queue is shared by all processes and stays available across frames until rea
 
 Use `mv.time_seconds()` to read a monotonic clock, including in headless mode. Its origin is unspecified. Subtract two readings to measure elapsed wall time; do not use it as a calendar time. It raises an error if the clock is unavailable. In C, `mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the output on failure.
 
+For persistent text, `mv.write(font, x, y, text)` returns an ID. Use `mv.change_text(id, text, x, y, font)` to change it. The last three arguments are optional; pass `nil` to keep a value. Use `mv.delete_text(id)` to remove it. Positions are window pixels from the top-left corner. `mv.font(size, r, g, b, a)` creates a font description using the built-in font; color channels default to 255.
+
 ## Process data
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process. The following fields belong to the engine and cannot be assigned:
