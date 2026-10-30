@@ -14,7 +14,7 @@ The process count must be an integer from 1 to 1000. The default is 100. Run on 
 
 ## Baseline
 
-On 2026-10-30, a debug build on macOS 26.6.2, Apple M2 Pro, and Apple Clang 21.0.0 ran 100 workers with 60 yields each. Three runs after removing a full-state synchronization before every Lua resume gave:
+On 2026-10-30, a debug build on macOS 26.6.2, Apple M2 Pro, and Apple Clang 21.0.0 ran 100 workers with 60 yields each. Three runs after removing a full-state synchronization before every Lua resume (commit `3bb4ca9`, before later cadence changes) gave:
 
 | Run | Creation (ms) | Completion (ms) |
 | --- | ---: | ---: |

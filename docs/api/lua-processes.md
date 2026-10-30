@@ -46,7 +46,7 @@ In C, `mv_text_input_next(&codepoint)` removes one Unicode scalar and returns 1,
 
 The queue is shared by all processes and stays available across frames until read. It holds up to 256 characters and drops new characters when full. The window backend also has a per-frame event limit, so very large bursts can lose input. Closing the window clears the queue. Control keys such as Backspace are checked separately with `mv.key`.
 
-`mv.frame()` yields until the next tick. It is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
+`mv.frame()` yields until the next activation. By default this is the next tick. Set `self.fps` to an integer from 1 to 60 to limit that process to the requested number of activations per 60 simulation ticks; set it to 0 for every tick. The first activation is immediate when the scheduler starts the process. Fractional tick intervals alternate as needed, without cumulative drift. Changes take effect after the current activation. While a process is sleeping or frozen, its cadence does not advance. Its last drawing remains visible between activations. `frame` is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
 
 Use `mv.time_seconds()` to read a monotonic clock, including in headless mode. Its origin is unspecified. Subtract two readings to measure elapsed wall time; do not use it as a calendar time. It raises an error if the clock is unavailable. In C, `mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the output on failure.
 

@@ -49,6 +49,7 @@ typedef struct {
     lua_Integer parent_id;
     lua_Integer priority;
     ProcessState state;
+    int cadence_accumulator;
     int first;
     int alive;
 } Process;
@@ -457,9 +458,9 @@ self_index(lua_State *L)
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_rawget(L, -2);
-    if (key && strcmp(key, "z") == 0 && lua_isnil(L, -1)) {
+    if (key && (!strcmp(key, "z") || !strcmp(key, "fps")) && lua_isnil(L, -1)) {
         lua_pop(L, 1);
-        lua_pushnumber(L, 0);
+        lua_pushinteger(L, 0);
     }
     return 1;
 }
@@ -475,6 +476,9 @@ self_newindex(lua_State *L)
     if (key && strcmp(key, "z") == 0 &&
         (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
         return luaL_error(L, "z must be a finite number");
+    if (key && strcmp(key, "fps") == 0 &&
+        (!lua_isinteger(L, 3) || lua_tointeger(L, 3) < 0 || lua_tointeger(L, 3) > 60))
+        return luaL_error(L, "fps must be an integer in 0..60");
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
@@ -493,6 +497,12 @@ create_process(lua_State *L)
         if (!lua_isnil(L, -1) &&
             (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
             return luaL_error(L, "z must be a finite number");
+        lua_pop(L, 1);
+        lua_pushliteral(L, "fps");
+        lua_rawget(L, 1);
+        if (!lua_isnil(L, -1) &&
+            (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 60))
+            return luaL_error(L, "fps must be an integer in 0..60");
         lua_pop(L, 1);
     }
     if (engine.next_process_id == LUA_MAXINTEGER)
@@ -1367,6 +1377,28 @@ lua_process_step_protected(lua_State *L)
     if (!process) {
         lua_pushinteger(L, MV_STEP_ERROR);
         return 1;
+    }
+    int self_ref = process->self_ref;
+    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+    lua_getiuservalue(L, -1, 1);
+    lua_pushliteral(L, "fps");
+    lua_rawget(L, -2);
+    lua_Integer fps = lua_isinteger(L, -1) ? lua_tointeger(L, -1) : 0;
+    lua_pop(L, 3);
+    process = find_process((lua_Integer)id);
+    if (!process) {
+        lua_pushinteger(L, MV_STEP_ERROR);
+        return 1;
+    }
+    if (!process->first && fps > 0 && fps < 60) {
+        process->cadence_accumulator += (int)fps;
+        if (process->cadence_accumulator < 60) {
+            lua_pushinteger(L, MV_STEP_YIELD);
+            return 1;
+        }
+        process->cadence_accumulator -= 60;
+    } else {
+        process->cadence_accumulator = 0;
     }
     lua_State *co = process->thread;
     int draw_ref = process->draw_ref;
