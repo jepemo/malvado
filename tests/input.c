@@ -126,10 +126,22 @@ main(void)
     for (size_t i = 0; i < sizeof(characters) / sizeof(characters[0]); ++i) {
         size_t length = mv_utf8_encode(characters[i].codepoint, output);
         assert(length == characters[i].length && memcmp(output, characters[i].utf8, length) == 0);
+        uint32_t decoded = 0;
+        assert(mv_utf8_decode(output, length, &decoded) == length && decoded == characters[i].codepoint);
     }
     assert(!mv_utf8_encode(0xd800, output));
     assert(!mv_utf8_encode(0xdfff, output));
     assert(!mv_utf8_encode(0x110000, output));
     assert(!mv_utf8_encode(65, NULL));
+    uint32_t unchanged_codepoint = 42;
+    uint32_t zero = 42;
+    assert(mv_utf8_decode("\0", 1, &zero) == 1 && zero == 0);
+    assert(!mv_utf8_decode("\xc0\x80", 2, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode("\xed\xa0\x80", 3, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode("\xf4\x90\x80\x80", 4, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode("\xe2\x82", 2, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode("\xe2\x41\x80", 3, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode(NULL, 1, &unchanged_codepoint) && unchanged_codepoint == 42);
+    assert(!mv_utf8_decode("A", 1, NULL));
     return 0;
 }

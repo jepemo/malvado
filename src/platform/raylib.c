@@ -440,16 +440,41 @@ mv_window_text_width(const char *text, int size)
 MvFont *
 mv_font_load(const char *path, int base_size)
 {
+    uint32_t codepoints[191];
+    size_t count = 0;
+    for (uint32_t codepoint = 32; codepoint <= 126; ++codepoint)
+        codepoints[count++] = codepoint;
+    for (uint32_t codepoint = 160; codepoint <= 255; ++codepoint)
+        codepoints[count++] = codepoint;
+    return mv_font_load_codepoints(path, base_size, codepoints, count);
+}
+
+MvFont *
+mv_font_load_codepoints(const char *path, int base_size, const uint32_t *codepoints, size_t count)
+{
     if (!path || !IsWindowReady() || base_size < 1 || base_size > 256 ||
+        !codepoints || count == 0 || count > 1024 ||
         (!IsFileExtension(path, ".ttf") && !IsFileExtension(path, ".otf")))
         return NULL;
-    int codepoints[191];
-    int count = 0;
-    for (int codepoint = 32; codepoint <= 126; ++codepoint)
-        codepoints[count++] = codepoint;
-    for (int codepoint = 160; codepoint <= 255; ++codepoint)
-        codepoints[count++] = codepoint;
-    Font loaded = LoadFontEx(path, base_size, codepoints, count);
+    int *glyphs = malloc(count * sizeof(*glyphs));
+    if (!glyphs)
+        return NULL;
+    for (size_t i = 0; i < count; ++i) {
+        uint32_t value = codepoints[i];
+        if (value == 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff)) {
+            free(glyphs);
+            return NULL;
+        }
+        for (size_t j = 0; j < i; ++j) {
+            if (codepoints[j] == value) {
+                free(glyphs);
+                return NULL;
+            }
+        }
+        glyphs[i] = (int)value;
+    }
+    Font loaded = LoadFontEx(path, base_size, glyphs, (int)count);
+    free(glyphs);
     if (!IsFontValid(loaded) || loaded.texture.id == 0 ||
         loaded.texture.id == GetFontDefault().texture.id) {
         if (loaded.texture.id != GetFontDefault().texture.id)

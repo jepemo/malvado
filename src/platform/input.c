@@ -97,6 +97,44 @@ mv_mouse_button_from_name(const char *name, MvMouseButton *button)
 }
 
 size_t
+mv_utf8_decode(const char *input, size_t length, uint32_t *codepoint)
+{
+    if (!input || !codepoint || length == 0)
+        return 0;
+    const unsigned char *bytes = (const unsigned char *)input;
+    uint32_t value;
+    size_t count;
+    if (bytes[0] <= 0x7f) {
+        value = bytes[0];
+        count = 1;
+    } else if (bytes[0] >= 0xc2 && bytes[0] <= 0xdf) {
+        value = bytes[0] & 0x1f;
+        count = 2;
+    } else if (bytes[0] >= 0xe0 && bytes[0] <= 0xef) {
+        value = bytes[0] & 0x0f;
+        count = 3;
+    } else if (bytes[0] >= 0xf0 && bytes[0] <= 0xf4) {
+        value = bytes[0] & 0x07;
+        count = 4;
+    } else {
+        return 0;
+    }
+    if (length < count)
+        return 0;
+    for (size_t i = 1; i < count; ++i) {
+        if ((bytes[i] & 0xc0) != 0x80)
+            return 0;
+        value = (value << 6) | (bytes[i] & 0x3f);
+    }
+    if ((count == 2 && value < 0x80) || (count == 3 && value < 0x800) ||
+        (count == 4 && value < 0x10000) || value > 0x10ffff ||
+        (value >= 0xd800 && value <= 0xdfff))
+        return 0;
+    *codepoint = value;
+    return count;
+}
+
+size_t
 mv_utf8_encode(uint32_t codepoint, char output[4])
 {
     if (!output || codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff))

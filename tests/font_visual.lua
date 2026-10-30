@@ -9,8 +9,13 @@ mv.start(function()
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/missing.ttf", 24))
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 0))
   assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 256))
-  local font = mv.load_font("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 255, 255, 255)
-  mv.write(font, 100, 20, "Café", "center")
+  assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, nil, nil, nil, nil, "\xed\xa0\x80"))
+  assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, nil, nil, nil, nil, "\0"))
+  local too_many = {}
+  for codepoint = 0x100, 0x441 do too_many[#too_many + 1] = utf8.char(codepoint) end
+  assert(not pcall(mv.load_font, "tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, nil, nil, nil, nil, table.concat(too_many)))
+  local font = mv.load_font("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 255, 255, 255, 255, "ΩΩ")
+  mv.write(font, 100, 20, "Café Ω", "center")
   font = nil
   collectgarbage("collect")
   worker()

@@ -101,6 +101,9 @@ int mv_text_input_next(uint32_t *codepoint);
 /* Encode one Unicode scalar into up to four bytes. Return the byte count, or
  * 0 for an invalid scalar or NULL output. The bytes are not NUL-terminated. */
 size_t mv_utf8_encode(uint32_t codepoint, char output[4]);
+/* Decode one Unicode scalar. Return bytes consumed, or 0 for invalid input
+ * without changing the output. The input need not be NUL-terminated. */
+size_t mv_utf8_decode(const char *input, size_t length, uint32_t *codepoint);
 /* Audio and sound functions use the owner thread. Open the device before
  * loading sounds. Destroy all sounds before closing the device. */
 int mv_audio_open(void);
@@ -138,6 +141,10 @@ int mv_window_text_width(const char *text, int size);
  * must destroy it before closing the window. The initial glyph set covers
  * printable ASCII and Latin-1. Base size must be in 1..256. */
 MvFont *mv_font_load(const char *path, int base_size);
+/* Load 1..1024 distinct Unicode scalars as the font glyph set. Code point 0
+ * and surrogate values are invalid. The input array is borrowed. */
+MvFont *mv_font_load_codepoints(const char *path, int base_size,
+                                const uint32_t *codepoints, size_t count);
 void mv_font_destroy(MvFont *font);
 int mv_font_text_width(const MvFont *font, const char *text, int size);
 int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);

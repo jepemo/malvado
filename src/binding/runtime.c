@@ -1621,12 +1621,36 @@ load_font(lua_State *L)
         if (channels[i] < 0 || channels[i] > 255)
             return luaL_error(L, "color must be in 0..255");
     }
+    uint32_t glyphs[1024];
+    size_t count = 0;
+    for (uint32_t codepoint = 32; codepoint <= 126; ++codepoint)
+        glyphs[count++] = codepoint;
+    for (uint32_t codepoint = 160; codepoint <= 255; ++codepoint)
+        glyphs[count++] = codepoint;
+    if (!lua_isnoneornil(L, 7)) {
+        size_t extra_length;
+        const char *extra = luaL_checklstring(L, 7, &extra_length);
+        for (size_t offset = 0; offset < extra_length;) {
+            uint32_t codepoint;
+            size_t bytes = mv_utf8_decode(extra + offset, extra_length - offset, &codepoint);
+            if (!bytes || codepoint == 0)
+                return luaL_error(L, "invalid UTF-8 in font glyph list");
+            offset += bytes;
+            size_t i = 0;
+            while (i < count && glyphs[i] != codepoint) ++i;
+            if (i == count) {
+                if (count == sizeof(glyphs) / sizeof(glyphs[0]))
+                    return luaL_error(L, "too many font glyphs");
+                glyphs[count++] = codepoint;
+            }
+        }
+    }
     if (!engine.window)
         return luaL_error(L, "load_font requires an open window");
     LuaFont *font = lua_newuserdatauv(L, sizeof(*font), 0);
     font->font = NULL;
     luaL_setmetatable(L, "malvado.font");
-    font->font = mv_font_load(path, (int)size);
+    font->font = mv_font_load_codepoints(path, (int)size, glyphs, count);
     if (!font->font)
         return luaL_error(L, "could not load TTF or OTF font: %s", path);
     lua_createtable(L, 4, 2);

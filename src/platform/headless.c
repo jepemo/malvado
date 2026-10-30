@@ -79,6 +79,11 @@ void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color
 }
 int mv_window_text_width(const char *text, int size) { (void)text; (void)size; return 0; }
 MvFont *mv_font_load(const char *path, int base_size) { (void)path; (void)base_size; return NULL; }
+MvFont *mv_font_load_codepoints(const char *path, int base_size, const uint32_t *codepoints, size_t count)
+{
+    (void)path; (void)base_size; (void)codepoints; (void)count;
+    return NULL;
+}
 void mv_font_destroy(MvFont *font) { (void)font; }
 int mv_font_text_width(const MvFont *font, const char *text, int size)
 {

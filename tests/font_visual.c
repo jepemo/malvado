@@ -52,12 +52,48 @@ main(int argc, char **argv)
     assert(mv_window_open(200, 80, "C font test"));
     assert(!mv_font_load("tests/fixtures/fonts/missing.ttf", 24));
     assert(!mv_font_load(path, 0));
-    MvFont *font = mv_font_load(path, 24);
+    MvFont *basic = mv_font_load(path, 24);
+    assert(basic && mv_font_text_width(basic, "Café", 24) > 0);
+    uint32_t glyphs[192];
+    size_t count = 0;
+    for (uint32_t codepoint = 32; codepoint <= 126; ++codepoint) glyphs[count++] = codepoint;
+    for (uint32_t codepoint = 160; codepoint <= 255; ++codepoint) glyphs[count++] = codepoint;
+    glyphs[count++] = 0x03a9;
+    uint32_t invalid[] = {0xd800};
+    uint32_t duplicate[] = {65, 65};
+    assert(!mv_font_load_codepoints(path, 24, invalid, 1));
+    assert(!mv_font_load_codepoints(path, 24, duplicate, 2));
+    assert(!mv_font_load_codepoints(path, 24, NULL, 1));
+    MvFont *font = mv_font_load_codepoints(path, 24, glyphs, count);
     assert(font);
-    int width = mv_font_text_width(font, "Café", 24);
+    mv_window_begin((MvColor){0, 0, 0, 255});
+    assert(mv_font_draw(basic, "Ω", 20, 20, 24, (MvColor){255, 255, 255, 255}));
+    mv_window_flush();
+    Image fallback = LoadImageFromScreen();
+    assert(fallback.data);
+    mv_window_end();
+    mv_window_begin((MvColor){0, 0, 0, 255});
+    assert(mv_font_draw(font, "Ω", 20, 20, 24, (MvColor){255, 255, 255, 255}));
+    mv_window_flush();
+    Image selected = LoadImageFromScreen();
+    assert(selected.data && fallback.width == selected.width && fallback.height == selected.height);
+    int glyph_differences = 0;
+    for (int y = 0; y < selected.height; ++y) {
+        for (int x = 0; x < selected.width; ++x) {
+            Color a = GetImageColor(fallback, x, y);
+            Color b = GetImageColor(selected, x, y);
+            if (abs((int)a.r - b.r) > 2) ++glyph_differences;
+        }
+    }
+    assert(glyph_differences > 10);
+    UnloadImage(fallback);
+    UnloadImage(selected);
+    mv_window_end();
+    mv_font_destroy(basic);
+    int width = mv_font_text_width(font, "Café Ω", 24);
     assert(width > 0 && !mv_font_text_width(font, NULL, 24));
     mv_window_begin((MvColor){0, 0, 0, 255});
-    assert(mv_font_draw(font, "Café", 100 - width / 2, 20, 24, (MvColor){255, 255, 255, 255}));
+    assert(mv_font_draw(font, "Café Ω", 100 - width / 2, 20, 24, (MvColor){255, 255, 255, 255}));
     mv_window_flush();
     Comparison comparison = {LoadImageFromScreen(), 0};
     assert(comparison.reference.data);
