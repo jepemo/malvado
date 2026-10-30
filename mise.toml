@@ -38,6 +38,20 @@ description = "Build and test the C-only runtime"
 depends = ["build-c"]
 run = "ctest --test-dir build-c -C Debug --output-on-failure"
 
+[tasks.configure-c-assets]
+description = "Configure C atlas support without Lua or raylib"
+run = "cmake -S . -B build-c-assets -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF -DMALVADO_BUILD_ASSETS=ON"
+
+[tasks.build-c-assets]
+description = "Build C atlas support"
+depends = ["configure-c-assets"]
+run = "cmake --build build-c-assets --config Debug --parallel"
+
+[tasks.test-c-assets]
+description = "Test C atlas support without Lua or raylib"
+depends = ["build-c-assets"]
+run = "ctest --test-dir build-c-assets -C Debug --output-on-failure"
+
 [tasks.configure-headless]
 description = "Configure the Lua build without graphics"
 run = "cmake -S . -B build-lua-headless -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_RAYLIB=OFF"

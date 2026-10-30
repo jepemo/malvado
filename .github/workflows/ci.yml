@@ -49,6 +49,14 @@ jobs:
           "$RUNNER_TEMP/malvado-c-example"
           cc -I"$RUNNER_TEMP/malvado-sdk/include" examples/c/processes/main.c "$RUNNER_TEMP/malvado-sdk/lib/libmalvado_core.a" -lm -o "$RUNNER_TEMP/malvado-c-processes"
           "$RUNNER_TEMP/malvado-c-processes"
+  c-assets:
+    name: C atlas without Lua or raylib
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - run: mise run test-c-assets
   sanitizers:
     name: Address and undefined behavior sanitizers
     runs-on: ubuntu-24.04
