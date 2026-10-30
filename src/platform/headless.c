@@ -39,6 +39,7 @@ int mv_mouse_position(int *x, int *y)
     return 0;
 }
 int mv_mouse_down(MvMouseButton button) { (void)button; return 0; }
+int mv_text_input_next(uint32_t *codepoint) { (void)codepoint; return 0; }
 void mv_window_begin(MvColor color) { (void)color; }
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color)
 {

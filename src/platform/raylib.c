@@ -22,16 +22,27 @@ struct MvImage {
     Texture2D texture;
 };
 
+enum { TEXT_QUEUE_CAPACITY = 256 };
+static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
+static size_t text_head, text_count;
+
 int mv_window_open(int width, int height, const char *title)
 {
     if (width <= 0 || height <= 0 || !title || IsWindowReady()) return 0;
+    text_head = 0;
+    text_count = 0;
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
     return 1;
 }
-void mv_window_close(void) { if (IsWindowReady()) CloseWindow(); }
+void mv_window_close(void)
+{
+    if (IsWindowReady()) CloseWindow();
+    text_head = 0;
+    text_count = 0;
+}
 int mv_window_should_close(void) { return WindowShouldClose(); }
 int mv_window_escape_down(void) { return mv_key_down(MV_KEY_ESCAPE); }
 int mv_window_space_down(void) { return mv_key_down(MV_KEY_SPACE); }
@@ -91,6 +102,33 @@ mv_mouse_down(MvMouseButton button)
     default: return 0;
     }
     return IsMouseButtonDown(code);
+}
+
+int
+mv_text_input_next(uint32_t *codepoint)
+{
+    if (!codepoint || !IsWindowReady() || text_count == 0)
+        return 0;
+    *codepoint = text_queue[text_head];
+    text_head = (text_head + 1) % TEXT_QUEUE_CAPACITY;
+    --text_count;
+    return 1;
+}
+
+static void
+capture_text_input(void)
+{
+    int value;
+    while ((value = GetCharPressed()) != 0) {
+        uint32_t codepoint = (uint32_t)value;
+        if (codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff))
+            continue;
+        if (text_count < TEXT_QUEUE_CAPACITY) {
+            size_t end = (text_head + text_count) % TEXT_QUEUE_CAPACITY;
+            text_queue[end] = codepoint;
+            ++text_count;
+        }
+    }
 }
 void mv_window_begin(MvColor c)
 {
@@ -164,6 +202,10 @@ mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransfor
     return 1;
 }
 void mv_window_flush(void) { rlDrawRenderBatchActive(); }
-void mv_window_end(void) { EndDrawing(); }
+void mv_window_end(void)
+{
+    EndDrawing();
+    capture_text_input();
+}
 double mv_platform_time(void) { return GetTime(); }
 void mv_platform_wait(double seconds) { WaitTime(seconds); }

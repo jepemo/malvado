@@ -15,6 +15,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 #include "malvado/platform.h"
 
 int
@@ -50,5 +51,22 @@ main(void)
     assert(!mv_mouse_position(NULL, &y) && y == 42);
     assert(!mv_mouse_position(&x, NULL) && x == 23);
     assert(!mv_mouse_position(&x, &y) && x == 0 && y == 0);
+    uint32_t codepoint = 123;
+    assert(!mv_text_input_next(NULL));
+    assert(!mv_text_input_next(&codepoint) && codepoint == 123);
+    static const struct { uint32_t codepoint; const char *utf8; size_t length; } characters[] = {
+        {0x7f, "\x7f", 1}, {0x80, "\xc2\x80", 2}, {0x7ff, "\xdf\xbf", 2},
+        {0x800, "\xe0\xa0\x80", 3}, {0xffff, "\xef\xbf\xbf", 3},
+        {0x10000, "\xf0\x90\x80\x80", 4}, {0x10ffff, "\xf4\x8f\xbf\xbf", 4}
+    };
+    char output[4];
+    for (size_t i = 0; i < sizeof(characters) / sizeof(characters[0]); ++i) {
+        size_t length = mv_utf8_encode(characters[i].codepoint, output);
+        assert(length == characters[i].length && memcmp(output, characters[i].utf8, length) == 0);
+    }
+    assert(!mv_utf8_encode(0xd800, output));
+    assert(!mv_utf8_encode(0xdfff, output));
+    assert(!mv_utf8_encode(0x110000, output));
+    assert(!mv_utf8_encode(65, NULL));
     return 0;
 }

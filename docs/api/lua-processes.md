@@ -34,6 +34,12 @@ Use `local x, y = mv.mouse_position()` for the pointer position in window pixels
 
 In C, `mv_mouse_position(&x, &y)` writes the position and returns 1 when a window is open. Without a window it writes zeros and returns 0. If either pointer is `NULL`, it returns 0 without writing. `mv_mouse_down(MV_MOUSE_LEFT)` checks a held button. `mv_mouse_button_from_name` converts the same names to `MvMouseButton` values. These functions use the window thread.
 
+For typed text, call `mv.text_input_next()` until it returns `nil`. Each call removes one character from the shared queue and returns it as a UTF-8 string. This is separate from `mv.key`: it follows the operating system's text input and can return characters with more than one byte. In headless mode it always returns `nil`.
+
+In C, `mv_text_input_next(&codepoint)` removes one Unicode scalar and returns 1, or returns 0 without changing the value when there is no character. `mv_utf8_encode(codepoint, bytes)` writes up to four UTF-8 bytes and returns their count. The output is not NUL-terminated. Both APIs use the window thread.
+
+The queue is shared by all processes and stays available across frames until read. It holds up to 256 characters and drops new characters when full. The window backend also has a per-frame event limit, so very large bursts can lose input. Closing the window clears the queue. Control keys such as Backspace are checked separately with `mv.key`.
+
 `mv.frame()` yields until the next tick. It is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
 
 ## Process data

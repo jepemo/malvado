@@ -61,3 +61,30 @@ mv_mouse_button_from_name(const char *name, MvMouseButton *button)
         return 0;
     return 1;
 }
+
+size_t
+mv_utf8_encode(uint32_t codepoint, char output[4])
+{
+    if (!output || codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff))
+        return 0;
+    if (codepoint <= 0x7f) {
+        output[0] = (char)codepoint;
+        return 1;
+    }
+    if (codepoint <= 0x7ff) {
+        output[0] = (char)(0xc0 | (codepoint >> 6));
+        output[1] = (char)(0x80 | (codepoint & 0x3f));
+        return 2;
+    }
+    if (codepoint <= 0xffff) {
+        output[0] = (char)(0xe0 | (codepoint >> 12));
+        output[1] = (char)(0x80 | ((codepoint >> 6) & 0x3f));
+        output[2] = (char)(0x80 | (codepoint & 0x3f));
+        return 3;
+    }
+    output[0] = (char)(0xf0 | (codepoint >> 18));
+    output[1] = (char)(0x80 | ((codepoint >> 12) & 0x3f));
+    output[2] = (char)(0x80 | ((codepoint >> 6) & 0x3f));
+    output[3] = (char)(0x80 | (codepoint & 0x3f));
+    return 4;
+}

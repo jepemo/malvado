@@ -707,6 +707,22 @@ mouse_button(lua_State *L)
 }
 
 static int
+text_input_next(lua_State *L)
+{
+    uint32_t codepoint;
+    if (engine.headless || !mv_text_input_next(&codepoint)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    char bytes[4];
+    size_t length = mv_utf8_encode(codepoint, bytes);
+    if (!length)
+        return luaL_error(L, "invalid text input character");
+    lua_pushlstring(L, bytes, length);
+    return 1;
+}
+
+static int
 image_gc(lua_State *L)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
@@ -1297,6 +1313,7 @@ open_module(lua_State *L)
         {"key", key},
         {"mouse_position", mouse_position},
         {"mouse_button", mouse_button},
+        {"text_input_next", text_input_next},
         {"draw_text", text},
         {"load_image", load_image},
         {"image_size", image_size},

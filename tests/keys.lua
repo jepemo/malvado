@@ -17,5 +17,6 @@ local process = mv.process(function()
     for _, name in ipairs({"other", "Left", "left\0x"}) do
         assert(not pcall(mv.mouse_button, name))
     end
+    assert(mv.text_input_next() == nil)
 end)
 mv.start(function() process() end)

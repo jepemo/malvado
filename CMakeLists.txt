@@ -240,6 +240,13 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
       add_test(NAME visual_lua_mouse COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/mouse_visual.sh
         "Malvado Lua mouse" $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/mouse_visual.lua)
       set_tests_properties(visual_c_mouse visual_lua_mouse PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
+      add_executable(text-input-visual-test tests/text_input_visual.c)
+      target_link_libraries(text-input-visual-test PRIVATE malvado_platform_raylib)
+      add_test(NAME visual_c_text_input COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/text_input_visual.sh
+        "Malvado C text input" $<TARGET_FILE:text-input-visual-test>)
+      add_test(NAME visual_lua_text_input COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/text_input_visual.sh
+        "Malvado Lua text input" $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/text_input_visual.lua)
+      set_tests_properties(visual_c_text_input visual_lua_text_input PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
       add_test(NAME visual_hello_escape COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/hello_escape.sh
         $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/examples/alpha-hello/main.lua)
       set_tests_properties(visual_hello_escape PROPERTIES TIMEOUT 15)

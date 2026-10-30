@@ -16,6 +16,9 @@
 #ifndef MALVADO_PLATFORM_H
 #define MALVADO_PLATFORM_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +60,13 @@ int mv_mouse_button_from_name(const char *name, MvMouseButton *button);
 int mv_mouse_position(int *x, int *y);
 /* Return 1 while the button is held, or 0 for an invalid button or no window. */
 int mv_mouse_down(MvMouseButton button);
+/* Remove one Unicode scalar from the shared text queue. Return 1 on success.
+ * Return 0 without changing *codepoint if the queue is empty or the pointer
+ * is NULL. The queue holds 256 characters and drops new characters when full. */
+int mv_text_input_next(uint32_t *codepoint);
+/* Encode one Unicode scalar into up to four bytes. Return the byte count, or
+ * 0 for an invalid scalar or NULL output. The bytes are not NUL-terminated. */
+size_t mv_utf8_encode(uint32_t codepoint, char output[4]);
 void mv_window_begin(MvColor background);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.
