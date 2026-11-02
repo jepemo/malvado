@@ -40,6 +40,23 @@
 #include "build.h"
 #include "export.h"
 
+#ifndef MALVADO_VERSION_STRING
+#define MALVADO_VERSION_STRING "development"
+#endif
+
+static void
+print_help(FILE *output)
+{
+    fprintf(output, "Usage: malvado COMMAND [OPTIONS]\n\n"
+            "  new [--c] PATH       Create a Lua or C project\n"
+            "  build [PATH]         Build a C project\n"
+            "  run [--headless] [PATH]  Run a game\n"
+            "  check [PATH]         Check Lua syntax\n"
+            "  export [PATH]        Export a game for this host\n"
+            "  doctor               Show runtime capabilities\n"
+            "  --version            Show the version\n");
+}
+
 static int
 check_script(const char *path)
 {
@@ -304,6 +321,14 @@ new_project(const char *path, int native)
 int
 main(int argc, char **argv)
 {
+    if (argc == 2 && (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "help"))) {
+        print_help(stdout);
+        return 0;
+    }
+    if (argc == 2 && !strcmp(argv[1], "--version")) {
+        printf("malvado %s\n", MALVADO_VERSION_STRING);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "doctor") == 0) {
         printf("Lua: %s\n", LUA_RELEASE);
 #ifdef MALVADO_GRAPHICS_ENABLED
@@ -353,6 +378,6 @@ main(int argc, char **argv)
             return run_game(argv[0], argv[3], 1);
         }
     }
-    fprintf(stderr, "Usage: malvado new [--c] PATH | malvado build [PATH] | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
+    print_help(stderr);
     return 2;
 }

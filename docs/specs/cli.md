@@ -21,6 +21,8 @@ malvado gui
 
 `doctor` reports the Lua version, whether this build has graphics, and whether the local export launcher and license directory are present. It does not open a window or verify the graphics driver, individual licenses, target SDKs, or toolchains. It returns success after the report even when an optional capability is unavailable.
 
+Use `malvado --help` to list commands and `malvado --version` to show the client version.
+
 After building with Lua enabled, `cmake --install build --prefix /path/to/sdk` installs `malvado` in the SDK `bin` directory. Add that directory to `PATH` to use the short command. Full desktop packages and clean-machine validation remain pending.
 
 On macOS and Linux, an installed graphical SDK built with static libraries can make an initial local game folder:

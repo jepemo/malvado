@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.20)
-project(malvado VERSION 2.0.0 LANGUAGES C)
+include(cmake/version.cmake)
+project(malvado VERSION ${MALVADO_BASE_VERSION} LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 include(FetchContent)
 include(GNUInstallDirs)
@@ -142,6 +143,7 @@ if(MALVADO_BUILD_LUA)
   add_executable(malvado src/cli.c src/export.c src/build.c)
   target_include_directories(malvado PRIVATE src)
   target_link_libraries(malvado PRIVATE malvado_lua_binding)
+  target_compile_definitions(malvado PRIVATE MALVADO_VERSION_STRING="${MALVADO_VERSION_STRING}")
   if(MALVADO_BUILD_RAYLIB)
     target_compile_definitions(malvado PRIVATE MALVADO_GRAPHICS_ENABLED)
   endif()
