@@ -13,14 +13,20 @@
  * See LICENSE for details.
  */
 
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #define mkdir_project(path) _mkdir(path)
 #define remove_project(path) _rmdir(path)
 #else
+#include <dirent.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #define mkdir_project(path) mkdir(path, 0777)
@@ -45,6 +51,107 @@ check_script(const char *path)
         printf("Syntax OK: %s\n", path);
     lua_close(L);
     return result == LUA_OK ? 0 : 1;
+}
+
+static int check_directory(const char *path, unsigned depth, unsigned *files);
+
+static int
+check_entry(const char *directory, const char *name, int is_directory,
+            unsigned depth, unsigned *files)
+{
+    if (name[0] == '.')
+        return 0;
+    size_t length = strlen(directory) + strlen(name) + 2;
+    char *path = malloc(length);
+    if (!path) {
+        fprintf(stderr, "Out of memory\n");
+        return 1;
+    }
+    snprintf(path, length, "%s/%s", directory, name);
+    int result = 0;
+    if (is_directory) {
+        result = check_directory(path, depth + 1, files);
+    } else {
+        size_t name_length = strlen(name);
+        if (name_length >= 4 && strcmp(name + name_length - 4, ".lua") == 0) {
+            ++*files;
+            result = check_script(path);
+        }
+    }
+    free(path);
+    return result;
+}
+
+static int
+check_directory(const char *path, unsigned depth, unsigned *files)
+{
+    if (depth > 64) {
+        fprintf(stderr, "Directory nesting exceeds 64: %s\n", path);
+        return 1;
+    }
+    int failed = 0;
+#ifdef _WIN32
+    size_t length = strlen(path) + 3;
+    char *pattern = malloc(length);
+    if (!pattern) return 1;
+    snprintf(pattern, length, "%s/*", path);
+    WIN32_FIND_DATAA entry;
+    HANDLE handle = FindFirstFileA(pattern, &entry);
+    free(pattern);
+    if (handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Cannot read directory: %s\n", path);
+        return 1;
+    }
+    do {
+        if (!(entry.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+            failed |= check_entry(path, entry.cFileName,
+                (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0, depth, files);
+    } while (FindNextFileA(handle, &entry));
+    if (GetLastError() != ERROR_NO_MORE_FILES) failed = 1;
+    FindClose(handle);
+#else
+    DIR *directory = opendir(path);
+    if (!directory) {
+        perror(path);
+        return 1;
+    }
+    struct dirent *entry;
+    for (;;) {
+        errno = 0;
+        entry = readdir(directory);
+        if (!entry) {
+            if (errno != 0) { perror(path); failed = 1; }
+            break;
+        }
+        if (entry->d_name[0] == '.') continue;
+        size_t length = strlen(path) + strlen(entry->d_name) + 2;
+        char *full = malloc(length);
+        if (!full) { failed = 1; break; }
+        snprintf(full, length, "%s/%s", path, entry->d_name);
+        struct stat info;
+        if (lstat(full, &info) != 0) {
+            perror(full);
+            failed = 1;
+        } else if (S_ISREG(info.st_mode) || S_ISDIR(info.st_mode)) {
+            failed |= check_entry(path, entry->d_name, S_ISDIR(info.st_mode), depth, files);
+        }
+        free(full);
+    }
+    closedir(directory);
+#endif
+    return failed;
+}
+
+static int
+check_project(void)
+{
+    unsigned files = 0;
+    int failed = check_directory(".", 0, &files);
+    if (!files) {
+        fprintf(stderr, "No Lua files found\n");
+        return 1;
+    }
+    return failed ? 1 : 0;
 }
 
 static int
@@ -102,7 +209,7 @@ main(int argc, char **argv)
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
-        return check_script(argc == 3 ? argv[2] : "main.lua");
+        return argc == 3 ? check_script(argv[2]) : check_project();
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {
             char *args[] = {argv[0], "main.lua"};

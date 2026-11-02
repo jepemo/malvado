@@ -15,7 +15,7 @@ malvado gui
 
 `new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, or the specified file. Paths used by the game are relative to the current working directory. `run --headless [FILE]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
 
-`check` checks the syntax of one Lua source file without executing it. The default is `main.lua`. It does not check assets, dependencies, or runtime behavior yet.
+`check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. Pass a file to check only that file. It does not check assets, dependencies, or runtime behavior yet.
 
 Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
 

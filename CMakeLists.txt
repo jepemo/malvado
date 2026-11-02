@@ -43,8 +43,16 @@ target_include_directories(malvado_core PUBLIC
 if(UNIX)
   target_link_libraries(malvado_core PUBLIC m)
 endif()
-install(TARGETS malvado_core ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+set_target_properties(malvado_core PROPERTIES EXPORT_NAME core)
+install(TARGETS malvado_core EXPORT MalvadoTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY include/malvado DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT MalvadoTargets NAMESPACE Malvado:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(cmake/MalvadoConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
+install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado)
 
 add_executable(example-c-clock examples/c/clock/main.c)
 target_link_libraries(example-c-clock PRIVATE malvado_core)
@@ -144,6 +152,11 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
+  -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
+  -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-test -DCONFIG=$<CONFIG>
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
+set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)
 if(MALVADO_BUILD_RAYLIB)
   target_link_libraries(input-test PRIVATE malvado_platform_raylib)
