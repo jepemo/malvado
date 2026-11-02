@@ -1,12 +1,12 @@
 # Distribution: runtime, tools, and LuaRocks
 
-Status: proposal. No 2.0 package or tools have been published. This document distinguishes the distributed products and the work needed to test them.
+Status: in progress. No 2.0 release package has been published. This document distinguishes the distributed products and the work needed to test them.
 
 An initial local SDK archive can be built with `mise run package-sdk`. It writes a `.tar.gz` file and a SHA-256 checksum under `build/sdk-package/`. The task builds for the current host and refuses to overwrite an existing archive. It is a development artifact, not a validated release or a game export. Move or remove the previous output before running it again. See [alpha.4](../versions/2.0.0-alpha.4.md) for verification status.
 
 ## Proposed decision
 
-The main Malvado 2 channel will be a **downloadable SDK per platform**. It will include the C library and headers, Lua binding/runner, and, when available, `malvado-cli` and templates. The GUI will have a separate desktop download or optional SDK package. Exported Lua games include the runtime and Lua. C games include their native runtime without requiring Lua. Players do not need to install Lua or LuaRocks.
+The main Malvado 2 channel will be a **downloadable SDK per platform**. The development SDK includes C libraries and headers, the `malvado` client, and the Lua runtime. The client creates minimal C and Lua projects. The GUI will have a separate desktop download or optional SDK package. Exported Lua games include the runtime and Lua. C games include their native runtime without requiring Lua. Players do not need to install Lua or LuaRocks.
 
 Evaluate an **optional** LuaRocks distribution for developers who already use Lua. This requires a tested C module that can load in an external interpreter. The current `malvado-run` has its own VM and registers `malvado` in it. This does not automatically make it a module that any `lua` can load. Do not advertise `luarocks install malvado` for 2.0 until that module and its rockspec work.
 
@@ -19,9 +19,9 @@ The historical 1.0 rockspec described the Lua/LÖVE engine and referred to files
 | Product | Main channel | LuaRocks | Audience |
 | --- | --- | --- | --- |
 | Core and C API | SDK with headers and native library per platform | No LuaRocks or Lua required | C games and tools |
-| `malvado-run` / runtime | SDK or desktop binary with bundled Lua | Optional; define a separate package only if useful | Game players and developers |
+| Lua runtime | Bundled with the client and exported Lua games | Optional; define a separate package only if useful | Game players and developers |
 | Lua `malvado` binding | Included in runner | Optional rock with a C module for external Lua; design pending | Projects that already manage Lua/LuaRocks |
-| `malvado-cli` | SDK/release archive per platform | Possible separate rock later, after executable and dependency installation are validated | Project creators and exporters |
+| `malvado` client | SDK/release archive per platform | Possible separate rock later, after executable and dependency installation are validated | Project creators and exporters |
 | `malvado-gui` | Separate desktop app or optional SDK distribution | Not a priority; toolkit and native packaging make this path harder | Creators who prefer a GUI |
 | Exported game | Desktop ZIP/folder, Android APK/AAB | Not required for the player | Player |
 
