@@ -14,9 +14,17 @@
  */
 
 #if !defined(_WIN32) && defined(MALVADO_EXPORT_GRAPHICS)
+#ifdef __linux__
+#define _GNU_SOURCE
+#endif
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#endif
 #define _XOPEN_SOURCE 700
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <ftw.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +33,7 @@
 #include <unistd.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <sys/stdio.h>
 #endif
 #include "export.h"
 
@@ -35,6 +44,25 @@ join_path(const char *directory, const char *name)
     char *result = malloc(size);
     if (result) snprintf(result, size, "%s/%s", directory, name);
     return result;
+}
+
+static int
+remove_stage_entry(const char *path, const struct stat *info, int type, struct FTW *position)
+{
+    (void)info;
+    (void)type;
+    (void)position;
+    return remove(path);
+}
+
+static int
+publish_stage(const char *stage, const char *output)
+{
+#ifdef __APPLE__
+    return renamex_np(stage, output, RENAME_EXCL);
+#else
+    return renameat2(AT_FDCWD, stage, AT_FDCWD, output, RENAME_NOREPLACE);
+#endif
 }
 
 static int
@@ -296,9 +324,18 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     if (!copy_tree(".", NULL, 0, native)) {
         free(launcher); free(notices); return 1;
     }
-    if (mkdir(output, 0755) != 0) { perror(output); free(launcher); free(notices); return 1; }
-    char *contents = app ? join_path(output, "Contents") : NULL;
-    char *payload = app && contents ? join_path(contents, "MacOS") : (app ? NULL : strdup(output));
+    if (lstat(output, &info) == 0) {
+        fprintf(stderr, "Export destination already exists: %s\n", output);
+        free(launcher); free(notices); return 1;
+    }
+    if (errno != ENOENT) { perror(output); free(launcher); free(notices); return 1; }
+    char *stage = join_path(resolved_parent, ".malvado-export-XXXXXX");
+    if (!stage || !mkdtemp(stage)) {
+        if (stage) perror(stage);
+        free(stage); free(launcher); free(notices); return 1;
+    }
+    char *contents = app ? join_path(stage, "Contents") : NULL;
+    char *payload = app && contents ? join_path(contents, "MacOS") : (app ? NULL : strdup(stage));
     char *plist = app && contents ? join_path(contents, "Info.plist") : NULL;
     int ok = payload && (!app || (contents && plist && mkdir(contents, 0755) == 0 &&
                                   mkdir(payload, 0755) == 0 && write_bundle_info(plist, app_name, app_name_length, bundle_id)));
@@ -311,7 +348,15 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
              copy_tree(".", payload, 0, native);
     free(native_game); free(game); free(license_dir); free(plist); free(payload); free(contents);
     free(launcher); free(notices);
-    if (!ok) { fprintf(stderr, "Export incomplete; remove the new directory: %s\n", output); return 1; }
+    if (ok && chmod(stage, 0755) != 0) { perror(stage); ok = 0; }
+    if (ok && publish_stage(stage, output) != 0) { perror(output); ok = 0; }
+    if (!ok) {
+        if (nftw(stage, remove_stage_entry, 32, FTW_DEPTH | FTW_PHYS) != 0)
+            fprintf(stderr, "Cannot remove incomplete export: %s\n", stage);
+        free(stage);
+        return 1;
+    }
+    free(stage);
     printf("Exported game to %s\n", output);
     return 0;
 }
