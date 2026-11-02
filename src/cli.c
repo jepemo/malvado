@@ -338,9 +338,9 @@ main(int argc, char **argv)
 #endif
         int status = malvado_export_status();
         if (status == 2)
-            printf("Export: launcher and license directory found\n");
+            printf("Export: launchers and required licenses found\n");
         else if (status == 1)
-            printf("Export: launcher or license directory not found; install the SDK\n");
+            printf("Export: launchers or required licenses missing; install the SDK\n");
         else
             printf("Export: unavailable in this build\n");
         return 0;

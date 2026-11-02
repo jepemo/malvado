@@ -136,12 +136,25 @@ malvado_export_status(void)
     char executable[PATH_MAX];
     if (!executable_directory(executable, sizeof(executable))) return 1;
     char *launcher = join_path(executable, MALVADO_LAUNCHER_REL);
+    char *native_launcher = join_path(executable, MALVADO_NATIVE_LAUNCHER_REL);
     char *notices = join_path(executable, MALVADO_NOTICES_REL);
-    struct stat launcher_info, notices_info;
-    int ready = launcher && notices && stat(launcher, &launcher_info) == 0 && S_ISREG(launcher_info.st_mode) &&
-                stat(notices, &notices_info) == 0 && S_ISDIR(notices_info.st_mode) &&
-                access(launcher, R_OK) == 0 && access(notices, R_OK) == 0;
+    const char *required[] = {"LICENSE", "Lua-readme.html", "raylib-LICENSE",
+#ifdef MALVADO_HAS_ASSET_NOTICES
+        "cJSON-LICENSE",
+#endif
+    };
+    struct stat info;
+    int ready = launcher && native_launcher && notices &&
+                stat(launcher, &info) == 0 && S_ISREG(info.st_mode) && access(launcher, R_OK | X_OK) == 0 &&
+                stat(native_launcher, &info) == 0 && S_ISREG(info.st_mode) && access(native_launcher, R_OK | X_OK) == 0 &&
+                stat(notices, &info) == 0 && S_ISDIR(info.st_mode);
+    for (size_t i = 0; ready && i < sizeof(required) / sizeof(required[0]); ++i) {
+        char *notice = join_path(notices, required[i]);
+        ready = notice && stat(notice, &info) == 0 && S_ISREG(info.st_mode) && access(notice, R_OK) == 0;
+        free(notice);
+    }
     free(launcher);
+    free(native_launcher);
     free(notices);
     return ready ? 2 : 1;
 }
@@ -178,8 +191,8 @@ malvado_export(const char *output, int native)
     char *launcher = join_path(executable, native ? MALVADO_NATIVE_LAUNCHER_REL : MALVADO_LAUNCHER_REL);
     char *notices = join_path(executable, MALVADO_NOTICES_REL);
     if (!launcher || !notices) { free(launcher); free(notices); return 1; }
-    if (access(launcher, R_OK) != 0 || access(notices, R_OK) != 0) {
-        fprintf(stderr, "Export requires an installed SDK with a game launcher and licenses\n");
+    if (malvado_export_status() != 2) {
+        fprintf(stderr, "Export requires an installed SDK with game launchers and licenses\n");
         free(launcher); free(notices); return 1;
     }
     if (mkdir(output, 0755) != 0) { perror(output); free(launcher); free(notices); return 1; }
@@ -205,7 +218,7 @@ malvado_export_default(int native)
         return 1;
     }
     if (malvado_export_status() != 2) {
-        fprintf(stderr, "Export requires an installed SDK with a game launcher and licenses\n");
+        fprintf(stderr, "Export requires an installed SDK with game launchers and licenses\n");
         return 1;
     }
     if (lstat("dist", &info) != 0) {
