@@ -1,6 +1,6 @@
 # malvado-cli: projects and exporters
 
-Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. An initial `malvado new PATH` and `malvado run [FILE]` exist. Export, project metadata, and the other commands below remain proposals.
+Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [FILE]`, and `malvado check [FILE]` commands exist. Export, project metadata, and the other commands below remain proposals.
 
 ## Command name under review
 
@@ -14,6 +14,8 @@ malvado gui
 ```
 
 `new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, or the specified file. Paths used by the game are relative to the current working directory. `run --headless [FILE]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
+
+`check` checks the syntax of one Lua source file without executing it. The default is `main.lua`. It does not check assets, dependencies, or runtime behavior yet.
 
 Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
 

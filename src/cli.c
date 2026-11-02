@@ -26,7 +26,26 @@
 #define mkdir_project(path) mkdir(path, 0777)
 #define remove_project(path) rmdir(path)
 #endif
+#include "lua.h"
+#include "lauxlib.h"
 #include "runner/runtime.h"
+
+static int
+check_script(const char *path)
+{
+    lua_State *L = luaL_newstate();
+    if (!L) {
+        fprintf(stderr, "Cannot create Lua state\n");
+        return 1;
+    }
+    int result = luaL_loadfilex(L, path, "t");
+    if (result != LUA_OK)
+        fprintf(stderr, "%s\n", lua_tostring(L, -1));
+    else
+        printf("Syntax OK: %s\n", path);
+    lua_close(L);
+    return result == LUA_OK ? 0 : 1;
+}
 
 static int
 new_project(const char *path)
@@ -82,6 +101,8 @@ main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
+    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
+        return check_script(argc == 3 ? argv[2] : "main.lua");
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {
             char *args[] = {argv[0], "main.lua"};
@@ -100,6 +121,6 @@ main(int argc, char **argv)
             return malvado_run(3, args);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE]\n");
+    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE]\n");
     return 2;
 }
