@@ -4,6 +4,7 @@ Malvado is a game runtime with C and Lua APIs. Version 2 is in development.
 
 Start with [Get started](getting-started.md) to build Malvado and run your first example. Then explore these guides:
 
+- [SDK and projects](sdk.md)
 - [C API and processes](https://github.com/jepemo/malvado/blob/master/docs/api/c-contract.md)
 - [Lua API and processes](https://github.com/jepemo/malvado/blob/master/docs/api/lua-processes.md)
 - [Images and atlas sprites](https://github.com/jepemo/malvado/blob/master/docs/api/images.md)
