@@ -1,10 +1,10 @@
-# malvado-cli: projects and exporters
+# Malvado client: projects and exporters
 
 Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [PATH]`, `malvado check [PATH]`, `malvado doctor`, and local `malvado export [PATH]` commands exist. Project metadata and the other commands below remain proposals.
 
-## Command name under review
+## Command name
 
-Prefer one user-facing command, `malvado`, for common tasks. For example:
+Use one user-facing command, `malvado`, for common tasks. For example:
 
 ```sh
 malvado new my-game
@@ -35,24 +35,24 @@ Run this command from the project directory. It creates `dist/game`. You can als
 
 If a folder contains both `main.lua` and a C project, `run` and `export` select Lua. C project builds and exports are initially available on macOS and Linux with the installed graphical SDK.
 
-Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
+Define the remaining paths, project discovery, errors, packaging, and the relationship between the client, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. The commands and options in the target experience below are proposals unless described above.
 
 ## Target experience
 
 ```sh
-malvado-cli new my-game --template starter
+malvado new my-game --template starter
 cd my-game
-malvado-cli doctor
-malvado-cli run
-malvado-cli check
-malvado-cli export --target linux-x86_64 --output dist/linux
-malvado-cli export --target windows-x86_64 --output dist/windows
-malvado-cli export --target macos-arm64 --output dist/macos
-malvado-cli export --target android-arm64 --format apk --output dist/android
-malvado-cli export --target android-arm64 --format aab --release --output dist/android
+malvado doctor
+malvado run
+malvado check
+malvado export --target linux-x86_64 --output dist/linux
+malvado export --target windows-x86_64 --output dist/windows
+malvado export --target macos-arm64 --output dist/macos
+malvado export --target android-arm64 --format apk --output dist/android
+malvado export --target android-arm64 --format aab --release --output dist/android
 ```
 
-`malvado-cli --version` shows CLI, runtime, project-format, and pinned dependency versions. `export` uses a compatible target runtime and creates a game package with native executable and bundled Lua. It does not automatically convert Lua code to machine code. Initially, scripts are packaged Lua source. Optional bytecode requires control of VM version, architecture, and compatibility, and is not code protection.
+`malvado --version` shows CLI, runtime, project-format, and pinned dependency versions. `export` uses a compatible target runtime and creates a game package with native executable and bundled Lua. It does not automatically convert Lua code to machine code. Initially, scripts are packaged Lua source. Optional bytecode requires control of VM version, architecture, and compatibility, and is not code protection.
 
 The player receives the package and does not need CLI, Lua, LuaRocks, or LÖVE. Authors can export with prebuilt SDK runtimes or build them with documented toolchains.
 
@@ -127,9 +127,9 @@ The [GUI](gui.md) uses the same C project, configuration, template, job, validat
 See the [format decision](assets.md): PNG+JSON source, FPG/Aseprite adapters, and ZIP container. Proposed commands, not yet available:
 
 ```sh
-malvado-cli assets import --format fpg --input source.fpg --output assets/imported
-malvado-cli assets import --format aseprite-json --input sheet.json --output assets/animation
-malvado-cli assets export --format fpg --variant VARIANT --input assets/imported --output dist/graphics.fpg
+malvado assets import --format fpg --input source.fpg --output assets/imported
+malvado assets import --format aseprite-json --input sheet.json --output assets/animation
+malvado assets export --format fpg --variant VARIANT --input assets/imported --output dist/graphics.fpg
 ```
 
 Document the exact variant and limits during implementation. `assets import` does not renumber graphics and reports conversion and losses. FPG `assets export` is later and can reject unrepresentable data. A delivery ZIP is not necessarily mountable by the runtime. Android uses APK assets without an extra nested ZIP by default.
