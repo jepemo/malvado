@@ -53,6 +53,7 @@ print_help(FILE *output)
             "  run [--headless] [PATH]  Run a game\n"
             "  check [PATH]         Check Lua syntax\n"
             "  export [PATH]        Export a game for this host\n"
+            "  export --app [PATH]  Export a macOS app\n"
             "  doctor               Show runtime capabilities\n"
             "  --version            Show the version\n");
 }
@@ -385,10 +386,16 @@ main(int argc, char **argv)
         }
         return malvado_native_build();
     }
-    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "export") == 0) {
+    if (argc >= 2 && argc <= 4 && strcmp(argv[1], "export") == 0) {
+        int app = argc >= 3 && strcmp(argv[2], "--app") == 0;
+        if (argc == 4 && !app) { print_help(stderr); return 2; }
+#ifndef __APPLE__
+        if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
+#endif
         int native = !is_regular_file("main.lua") && malvado_native_project();
         if (native ? malvado_native_build() != 0 : check_project(".", 1) != 0) return 1;
-        return argc == 3 ? malvado_export(argv[2], native) : malvado_export_default(native);
+        if (app) return argc == 4 ? malvado_export(argv[3], native, 1) : malvado_export_default(native, 1);
+        return argc == 3 ? malvado_export(argv[2], native, 0) : malvado_export_default(native, 0);
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
         return argc == 2 ? check_project(".", 0) :

@@ -21,6 +21,9 @@
 int
 main(int argc, char **argv)
 {
+#ifdef __APPLE__
+    if (argc == 2 && strncmp(argv[1], "-psn_", 5) == 0) argc = 1;
+#endif
     if (argc > 2 || (argc == 2 && strcmp(argv[1], "--headless") != 0)) {
         fprintf(stderr, "Usage: game [--headless]\n");
         return 2;

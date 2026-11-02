@@ -15,8 +15,8 @@
 #ifndef MALVADO_EXPORT_H
 #define MALVADO_EXPORT_H
 #include <stddef.h>
-int malvado_export(const char *output, int native);
-int malvado_export_default(int native);
+int malvado_export(const char *output, int native, int app);
+int malvado_export_default(int native, int app);
 /* Return 2 if both launchers and required licenses are usable, 1 if they are
  * missing, or 0 if this build cannot export games. */
 int malvado_export_status(void);

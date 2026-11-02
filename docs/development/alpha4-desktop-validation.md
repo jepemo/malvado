@@ -52,6 +52,8 @@ cd ..
 
 Each run must open the game window. Close it before the next command. The export must contain `game`, `game-bin`, and a `licenses` directory.
 
+On macOS, create an application bundle in each project with `malvado export --app`. Open each `dist/game.app` in Finder and close the window. Keep the two bundles in separate directories.
+
 ## Test on the second computer
 
 Copy each complete `dist/game` directory to the second computer. Keep the C and Lua games in separate directories. For each game, open a terminal in its directory and run:
@@ -62,7 +64,9 @@ Copy each complete `dist/game` directory to the second computer. Keep the C and 
 
 Each game must open and close correctly without the SDK or an installed Lua interpreter. Record failures, including missing system libraries and graphics errors. Test input and audio with a game that uses them; the generated starter does not cover those features.
 
-This procedure does not establish a minimum operating system version. It does not verify a macOS app bundle, signing, notarization, or cross-platform exports.
+On macOS, also copy the complete application bundles to the second computer. Open each bundle in Finder and check that the window opens and closes. The initial bundles are not signed or notarized by Malvado. Record any macOS security messages.
+
+This procedure does not establish a minimum operating system version. It does not verify signing, notarization, or cross-platform exports.
 
 ## Optional Linux container check
 

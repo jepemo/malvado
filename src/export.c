@@ -161,9 +161,37 @@ malvado_export_status(void)
     return ready ? 2 : 1;
 }
 
-int
-malvado_export(const char *output, int native)
+static int
+write_bundle_info(const char *path)
 {
+    const char info[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+        "<plist version=\"1.0\"><dict>\n"
+        "<key>CFBundleExecutable</key><string>game</string>\n"
+        "<key>CFBundleIdentifier</key><string>org.malvado.game</string>\n"
+        "<key>CFBundleName</key><string>Malvado Game</string>\n"
+        "<key>CFBundlePackageType</key><string>APPL</string>\n"
+        "<key>CFBundleVersion</key><string>1</string>\n"
+        "<key>CFBundleShortVersionString</key><string>1.0</string>\n"
+        "<key>NSHighResolutionCapable</key><true/>\n"
+        "</dict></plist>\n";
+    FILE *file = fopen(path, "wx");
+    if (!file) { perror(path); return 0; }
+    int ok = fwrite(info, 1, sizeof(info) - 1, file) == sizeof(info) - 1;
+    if (fclose(file) != 0) ok = 0;
+    if (!ok) fprintf(stderr, "Cannot write %s\n", path);
+    return ok;
+}
+
+int
+malvado_export(const char *output, int native, int app)
+{
+#ifndef __APPLE__
+    if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
+#endif
+    if (app && (!output || strlen(output) < 4 || strcmp(output + strlen(output) - 4, ".app") != 0)) {
+        fprintf(stderr, "App export destination must end in .app\n"); return 1;
+    }
     char current[PATH_MAX], executable[PATH_MAX];
     if (!output || !*output || !realpath(".", current) || !executable_directory(executable, sizeof(executable))) {
         fprintf(stderr, "Cannot determine project or SDK location\n"); return 1;
@@ -201,20 +229,27 @@ malvado_export(const char *output, int native)
         free(launcher); free(notices); return 1;
     }
     if (mkdir(output, 0755) != 0) { perror(output); free(launcher); free(notices); return 1; }
-    char *game = join_path(output, "game"), *license_dir = join_path(output, "licenses");
-    char *native_game = native ? join_path(output, "game-bin") : NULL;
-    int ok = game && license_dir && (!native || native_game) && copy_file(launcher, game, 1) &&
+    char *contents = app ? join_path(output, "Contents") : NULL;
+    char *payload = app && contents ? join_path(contents, "MacOS") : (app ? NULL : strdup(output));
+    char *plist = app && contents ? join_path(contents, "Info.plist") : NULL;
+    int ok = payload && (!app || (contents && plist && mkdir(contents, 0755) == 0 &&
+                                  mkdir(payload, 0755) == 0 && write_bundle_info(plist)));
+    char *game = payload ? join_path(payload, "game") : NULL;
+    char *license_dir = payload ? join_path(payload, "licenses") : NULL;
+    char *native_game = native && payload ? join_path(payload, "game-bin") : NULL;
+    ok = ok && game && license_dir && (!native || native_game) && copy_file(launcher, game, 1) &&
              (!native || copy_file(".malvado/build/game", native_game, 1)) &&
              mkdir(license_dir, 0755) == 0 && copy_tree(notices, license_dir, 1, 0) &&
-             copy_tree(".", output, 0, native);
-    free(native_game); free(game); free(license_dir); free(launcher); free(notices);
+             copy_tree(".", payload, 0, native);
+    free(native_game); free(game); free(license_dir); free(plist); free(payload); free(contents);
+    free(launcher); free(notices);
     if (!ok) { fprintf(stderr, "Export incomplete; remove the new directory: %s\n", output); return 1; }
     printf("Exported game to %s\n", output);
     return 0;
 }
 
 int
-malvado_export_default(int native)
+malvado_export_default(int native, int app)
 {
     struct stat info;
     const char *entry = native ? "main.c" : "main.lua";
@@ -235,7 +270,7 @@ malvado_export_default(int native)
         fprintf(stderr, "dist must be a directory, not a link or file\n");
         return 1;
     }
-    return malvado_export("dist/game", native);
+    return malvado_export(app ? "dist/game.app" : "dist/game", native, app);
 }
 #else
 #include <stdio.h>
@@ -253,16 +288,17 @@ malvado_export_status(void)
     return 0;
 }
 int
-malvado_export(const char *output, int native)
+malvado_export(const char *output, int native, int app)
 {
     (void)output;
     (void)native;
+    (void)app;
     fprintf(stderr, "Game export requires a graphical macOS or Linux SDK\n");
     return 1;
 }
 int
-malvado_export_default(int native)
+malvado_export_default(int native, int app)
 {
-    return malvado_export(NULL, native);
+    return malvado_export(NULL, native, app);
 }
 #endif
