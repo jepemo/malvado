@@ -259,9 +259,9 @@ main(int argc, char **argv)
     }
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
-    if (argc == 3 && strcmp(argv[1], "export") == 0) {
+    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "export") == 0) {
         if (check_project(".", 1) != 0) return 1;
-        return malvado_export(argv[2]);
+        return argc == 3 ? malvado_export(argv[2]) : malvado_export_default();
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
         return argc == 2 ? check_project(".", 0) :
@@ -280,6 +280,6 @@ main(int argc, char **argv)
             return run_game(argv[0], argv[3], 1);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export PATH | malvado doctor\n");
+    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
     return 2;
 }

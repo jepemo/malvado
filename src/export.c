@@ -145,9 +145,13 @@ malvado_export(const char *output)
     if (!realpath(parent, resolved_parent)) { perror(parent); free(parent); return 1; }
     free(parent);
     size_t project_length = strlen(current);
-    if (!strcmp(current, "/") || (!strncmp(current, resolved_parent, project_length) &&
+    char *dist = join_path(current, "dist");
+    if (!dist) return 1;
+    int in_dist = !strcmp(dist, resolved_parent);
+    free(dist);
+    if (!strcmp(current, "/") || (!in_dist && !strncmp(current, resolved_parent, project_length) &&
         (resolved_parent[project_length] == '\0' || resolved_parent[project_length] == '/'))) {
-        fprintf(stderr, "Export destination must be outside the project directory\n"); return 1;
+        fprintf(stderr, "Export destination must be in dist or outside the project directory\n"); return 1;
     }
     struct stat info;
     if (lstat("main.lua", &info) != 0 || !S_ISREG(info.st_mode)) {
@@ -170,6 +174,30 @@ malvado_export(const char *output)
     printf("Exported game to %s\n", output);
     return 0;
 }
+
+int
+malvado_export_default(void)
+{
+    struct stat info;
+    if (lstat("main.lua", &info) != 0 || !S_ISREG(info.st_mode)) {
+        fprintf(stderr, "Project needs a regular main.lua file\n");
+        return 1;
+    }
+    if (malvado_export_status() != 2) {
+        fprintf(stderr, "Export requires an installed SDK with a game launcher and licenses\n");
+        return 1;
+    }
+    if (lstat("dist", &info) != 0) {
+        if (errno != ENOENT || mkdir("dist", 0755) != 0) {
+            perror("dist");
+            return 1;
+        }
+    } else if (!S_ISDIR(info.st_mode)) {
+        fprintf(stderr, "dist must be a directory, not a link or file\n");
+        return 1;
+    }
+    return malvado_export("dist/game");
+}
 #else
 #include <stdio.h>
 #include "export.h"
@@ -184,5 +212,10 @@ malvado_export(const char *output)
     (void)output;
     fprintf(stderr, "Game export requires a graphical macOS or Linux SDK\n");
     return 1;
+}
+int
+malvado_export_default(void)
+{
+    return malvado_export(NULL);
 }
 #endif

@@ -1,6 +1,6 @@
 # malvado-cli: projects and exporters
 
-Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [FILE]`, `malvado check [FILE]`, `malvado doctor`, and local `malvado export PATH` commands exist. Project metadata and the other commands below remain proposals.
+Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [PATH]`, `malvado check [PATH]`, `malvado doctor`, and local `malvado export [PATH]` commands exist. Project metadata and the other commands below remain proposals.
 
 ## Command name under review
 
@@ -24,10 +24,10 @@ After building with Lua enabled, `cmake --install build --prefix /path/to/sdk` i
 On macOS and Linux, an installed graphical SDK built with static libraries can make an initial local game folder:
 
 ```sh
-malvado export ../my-game-export
+malvado export
 ```
 
-Run this command from the project directory. The destination must not exist and must be outside the project directory. The folder contains `game`, the project files, and engine dependency licenses. Run `game` to start `main.lua`. Before copying, the exporter checks the syntax of all included Lua files. It skips hidden entries and directories named `build` or `dist`; it rejects symbolic links and special files. The project root cannot contain entries named `game` or `licenses`. If copying fails, the new destination can be incomplete; remove it before trying again. The export targets the current host and still needs clean-machine validation. It does not create a macOS app bundle, cross-compile, or validate all dependencies.
+Run this command from the project directory. It creates `dist/game`. You can also pass a destination outside the project, for example `malvado export ../my-game-export`. The destination must not exist. The folder contains `game`, the project files, and engine dependency licenses. Run `game` to start `main.lua`. Before copying, the exporter checks the syntax of all included Lua files. It skips hidden entries and directories named `build` or `dist`; it rejects symbolic links and special files. The project root cannot contain entries named `game` or `licenses`. If copying fails, the new destination can be incomplete; remove it before trying again. The export targets the current host and still needs clean-machine validation. It does not create a macOS app bundle, cross-compile, or validate all dependencies.
 
 Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
 
