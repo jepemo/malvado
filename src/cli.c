@@ -37,6 +37,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "runner/runtime.h"
+#include "build.h"
 #include "export.h"
 
 static int
@@ -160,6 +161,18 @@ is_directory(const char *path)
 }
 
 static int
+is_regular_file(const char *path)
+{
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+#else
+    struct stat info;
+    return stat(path, &info) == 0 && S_ISREG(info.st_mode);
+#endif
+}
+
+static int
 check_project(const char *path, int for_export)
 {
     unsigned files = 0;
@@ -180,6 +193,13 @@ run_game(char *program, char *path, int headless)
             return 1;
         }
         path = "main.lua";
+    }
+    if (!strcmp(path, "main.lua") && !is_regular_file(path) && malvado_native_project()) {
+        if (headless) {
+            fprintf(stderr, "Headless mode is not available for C projects\n");
+            return 2;
+        }
+        return malvado_native_run();
     }
     if (headless) {
         char *args[] = {program, "--headless", path};
@@ -304,9 +324,17 @@ main(int argc, char **argv)
         return new_project(argv[2], 0);
     if (argc == 4 && strcmp(argv[1], "new") == 0 && strcmp(argv[2], "--c") == 0)
         return new_project(argv[3], 1);
+    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "build") == 0) {
+        if (argc == 3 && change_directory(argv[2]) != 0) {
+            perror(argv[2]);
+            return 1;
+        }
+        return malvado_native_build();
+    }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "export") == 0) {
-        if (check_project(".", 1) != 0) return 1;
-        return argc == 3 ? malvado_export(argv[2]) : malvado_export_default();
+        int native = !is_regular_file("main.lua") && malvado_native_project();
+        if (native ? malvado_native_build() != 0 : check_project(".", 1) != 0) return 1;
+        return argc == 3 ? malvado_export(argv[2], native) : malvado_export_default(native);
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
         return argc == 2 ? check_project(".", 0) :
@@ -325,6 +353,6 @@ main(int argc, char **argv)
             return run_game(argv[0], argv[3], 1);
         }
     }
-    fprintf(stderr, "Usage: malvado new [--c] PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
+    fprintf(stderr, "Usage: malvado new [--c] PATH | malvado build [PATH] | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
     return 2;
 }

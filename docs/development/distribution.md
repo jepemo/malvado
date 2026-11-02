@@ -41,4 +41,4 @@ To avoid unexpected updates to existing games, versions 1.x and 2.x must declare
 
 Runtime and CLI use the proposed coordinated versions. GUI has its own version and compatibility matrix. Release artifacts record OS, architecture, runtime/Lua/raylib versions, hashes, and notices. When a rock exists, generate its rockspec from a pinned tag and run `luarocks lint` and `luarocks make` in temporary trees on each supported platform. Test the source artifact (`luarocks pack`). If binary rocks are published, test them by platform and Lua ABI. Publish to LuaRocks only after these tests and license resolution, as part of the release process. Upload requires an account and credentials and is separate from CI candidate generation.
 
-No 2.0 rockspec, LuaRocks installation targets, CLI, or GUI are implemented. The [CI plan](ci.md) and [roadmap](../versions/README.md) record these dependencies.
+No 2.0 rockspec or LuaRocks installation targets are implemented. The initial CLI is under development; the GUI remains planned. The [CI plan](ci.md) and [roadmap](../versions/README.md) record these dependencies.

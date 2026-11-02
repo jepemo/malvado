@@ -61,7 +61,7 @@ copy_file(const char *source, const char *destination, int executable)
 }
 
 static int
-copy_tree(const char *source, const char *destination, unsigned depth)
+copy_tree(const char *source, const char *destination, unsigned depth, int native)
 {
     if (depth > 64) { fprintf(stderr, "Project is too deep\n"); return 0; }
     DIR *dir = opendir(source);
@@ -73,7 +73,11 @@ copy_tree(const char *source, const char *destination, unsigned depth)
         if (!entry) { if (errno) ok = 0; break; }
         const char *name = entry->d_name;
         if (name[0] == '.') continue;
-        if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "licenses"))) {
+        size_t name_length = strlen(name);
+        if (native && (!strcmp(name, "CMakeLists.txt") ||
+            (name_length >= 2 && (!strcmp(name + name_length - 2, ".c") ||
+                                  !strcmp(name + name_length - 2, ".h"))))) continue;
+        if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "game-bin") || !strcmp(name, "licenses"))) {
             fprintf(stderr, "Reserved project name: %s\n", name); ok = 0; break;
         }
         char *from = join_path(source, name), *to = join_path(destination, name);
@@ -85,7 +89,7 @@ copy_tree(const char *source, const char *destination, unsigned depth)
         } else if (S_ISREG(info.st_mode)) ok = copy_file(from, to, 0);
         else if (S_ISDIR(info.st_mode)) {
             if (mkdir(to, 0755) != 0) { perror(to); ok = 0; }
-            else ok = copy_tree(from, to, depth + 1);
+            else ok = copy_tree(from, to, depth + 1, native);
         } else {
             fprintf(stderr, "Unsupported project entry: %s\n", from); ok = 0;
         }
@@ -114,6 +118,19 @@ executable_directory(char *path, size_t size)
 }
 
 int
+malvado_sdk_root(char *path, size_t size)
+{
+    char executable[PATH_MAX], resolved[PATH_MAX];
+    if (!path || !size || !executable_directory(executable, sizeof(executable))) return 0;
+    char *root = join_path(executable, MALVADO_SDK_ROOT_REL);
+    if (!root) return 0;
+    int ok = realpath(root, resolved) != NULL && strlen(resolved) < size;
+    free(root);
+    if (ok) memcpy(path, resolved, strlen(resolved) + 1);
+    return ok;
+}
+
+int
 malvado_export_status(void)
 {
     char executable[PATH_MAX];
@@ -130,7 +147,7 @@ malvado_export_status(void)
 }
 
 int
-malvado_export(const char *output)
+malvado_export(const char *output, int native)
 {
     char current[PATH_MAX], executable[PATH_MAX];
     if (!output || !*output || !realpath(".", current) || !executable_directory(executable, sizeof(executable))) {
@@ -154,10 +171,11 @@ malvado_export(const char *output)
         fprintf(stderr, "Export destination must be in dist or outside the project directory\n"); return 1;
     }
     struct stat info;
-    if (lstat("main.lua", &info) != 0 || !S_ISREG(info.st_mode)) {
-        fprintf(stderr, "Project needs a regular main.lua file\n"); return 1;
+    const char *entry = native ? "main.c" : "main.lua";
+    if (lstat(entry, &info) != 0 || !S_ISREG(info.st_mode)) {
+        fprintf(stderr, "Project needs a regular %s file\n", entry); return 1;
     }
-    char *launcher = join_path(executable, MALVADO_LAUNCHER_REL);
+    char *launcher = join_path(executable, native ? MALVADO_NATIVE_LAUNCHER_REL : MALVADO_LAUNCHER_REL);
     char *notices = join_path(executable, MALVADO_NOTICES_REL);
     if (!launcher || !notices) { free(launcher); free(notices); return 1; }
     if (access(launcher, R_OK) != 0 || access(notices, R_OK) != 0) {
@@ -166,21 +184,24 @@ malvado_export(const char *output)
     }
     if (mkdir(output, 0755) != 0) { perror(output); free(launcher); free(notices); return 1; }
     char *game = join_path(output, "game"), *license_dir = join_path(output, "licenses");
-    int ok = game && license_dir && copy_file(launcher, game, 1) &&
-             mkdir(license_dir, 0755) == 0 && copy_tree(notices, license_dir, 1) &&
-             copy_tree(".", output, 0);
-    free(game); free(license_dir); free(launcher); free(notices);
+    char *native_game = native ? join_path(output, "game-bin") : NULL;
+    int ok = game && license_dir && (!native || native_game) && copy_file(launcher, game, 1) &&
+             (!native || copy_file(".malvado/build/game", native_game, 1)) &&
+             mkdir(license_dir, 0755) == 0 && copy_tree(notices, license_dir, 1, 0) &&
+             copy_tree(".", output, 0, native);
+    free(native_game); free(game); free(license_dir); free(launcher); free(notices);
     if (!ok) { fprintf(stderr, "Export incomplete; remove the new directory: %s\n", output); return 1; }
     printf("Exported game to %s\n", output);
     return 0;
 }
 
 int
-malvado_export_default(void)
+malvado_export_default(int native)
 {
     struct stat info;
-    if (lstat("main.lua", &info) != 0 || !S_ISREG(info.st_mode)) {
-        fprintf(stderr, "Project needs a regular main.lua file\n");
+    const char *entry = native ? "main.c" : "main.lua";
+    if (lstat(entry, &info) != 0 || !S_ISREG(info.st_mode)) {
+        fprintf(stderr, "Project needs a regular %s file\n", entry);
         return 1;
     }
     if (malvado_export_status() != 2) {
@@ -196,26 +217,34 @@ malvado_export_default(void)
         fprintf(stderr, "dist must be a directory, not a link or file\n");
         return 1;
     }
-    return malvado_export("dist/game");
+    return malvado_export("dist/game", native);
 }
 #else
 #include <stdio.h>
 #include "export.h"
+int
+malvado_sdk_root(char *path, size_t size)
+{
+    (void)path;
+    (void)size;
+    return 0;
+}
 int
 malvado_export_status(void)
 {
     return 0;
 }
 int
-malvado_export(const char *output)
+malvado_export(const char *output, int native)
 {
     (void)output;
+    (void)native;
     fprintf(stderr, "Game export requires a graphical macOS or Linux SDK\n");
     return 1;
 }
 int
-malvado_export_default(void)
+malvado_export_default(int native)
 {
-    return malvado_export(NULL);
+    return malvado_export(NULL, native);
 }
 #endif

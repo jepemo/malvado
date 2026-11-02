@@ -130,6 +130,12 @@ add_test(NAME smoke COMMAND smoke)
     if(NOT result EQUAL 0)
       message(FATAL_ERROR "Game export test failed")
     endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCLI=${installed_cli}"
+      "-DWORK=${WORK}/native-cli" "-DC_FLAGS=${C_FLAGS}" "-DEXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}"
+      -P "${SOURCE}/tests/native_cli.cmake" RESULT_VARIABLE result)
+    if(NOT result EQUAL 0)
+      message(FATAL_ERROR "Native client test failed")
+    endif()
   endif()
 endif()
 configure_file("${SOURCE}/examples/c/processes/main.c" "${WORK}/game/main.c" COPYONLY)
