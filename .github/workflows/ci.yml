@@ -50,7 +50,7 @@ jobs:
           path: sdk-artifact
       - name: Install Linux graphics dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libgl1-mesa-dri xvfb xauth
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libgl1-mesa-dri xvfb xauth ninja-build
       - name: Test SDK and game exports on Linux
         if: runner.os == 'Linux'
         run: |

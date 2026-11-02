@@ -124,9 +124,17 @@ malvado_native_build(void)
     char *prefix = malloc(size);
     if (!prefix) return 1;
     snprintf(prefix, size, "-DCMAKE_PREFIX_PATH=%s", sdk);
-    char *configure[] = {"cmake", "-S", ".", "-B", ".malvado/build", prefix, "-DCMAKE_BUILD_TYPE=Debug", NULL};
+    char current[PATH_MAX];
+    if (!getcwd(current, sizeof(current))) { perror("getcwd"); free(prefix); return 1; }
+    size_t output_size = strlen(current) + sizeof("-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=/.malvado/build");
+    char *output = malloc(output_size);
+    if (!output) { free(prefix); return 1; }
+    snprintf(output, output_size, "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=%s/.malvado/build", current);
+    char *configure[] = {"cmake", "-S", ".", "-B", ".malvado/build", prefix,
+                         "-DCMAKE_BUILD_TYPE=Debug", output, NULL};
     int result = run_process(configure);
     free(prefix);
+    free(output);
     if (result != 0) return 1;
     char *build[] = {"cmake", "--build", ".malvado/build", "--config", "Debug", "--target", "game", NULL};
     return run_process(build) == 0 ? 0 : 1;
