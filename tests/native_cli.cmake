@@ -28,6 +28,7 @@ project(game C)
 find_package(Malvado CONFIG REQUIRED COMPONENTS core)
 add_executable(game main.c)
 target_link_libraries(game PRIVATE Malvado::core)
+add_custom_target(unrelated ALL COMMAND "${CMAKE_COMMAND}" -E false)
 ]=])
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CFLAGS=${C_FLAGS}" "LDFLAGS=${EXE_LINKER_FLAGS}"
   "${CLI}" build "${WORK}/C game" WORKING_DIRECTORY "${WORK}/elsewhere" RESULT_VARIABLE result)

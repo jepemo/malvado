@@ -128,7 +128,7 @@ malvado_native_build(void)
     int result = run_process(configure);
     free(prefix);
     if (result != 0) return 1;
-    char *build[] = {"cmake", "--build", ".malvado/build", "--config", "Debug", NULL};
+    char *build[] = {"cmake", "--build", ".malvado/build", "--config", "Debug", "--target", "game", NULL};
     return run_process(build) == 0 ? 0 : 1;
 }
 
