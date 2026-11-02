@@ -9,6 +9,62 @@ on:
 permissions:
   contents: read
 jobs:
+  sdk-package:
+    name: Build SDK archive (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      - run: mise run package-sdk
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sdk-${{ matrix.os }}
+          path: |
+            build/sdk-package/*.tar.gz
+            build/sdk-package/*.sha256
+          if-no-files-found: error
+          retention-days: 3
+  sdk-consumer:
+    name: Test SDK on a fresh runner (${{ matrix.os }})
+    needs: sdk-package
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sdk-${{ matrix.os }}
+          path: sdk-artifact
+      - name: Install Linux graphics dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libgl1-mesa-dri xvfb xauth
+      - name: Test SDK and game exports on Linux
+        if: runner.os == 'Linux'
+        run: |
+          Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          cmake -DARCHIVE="$PWD/sdk-artifact/malvado-sdk-alpha.4-dev.tar.gz" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=ON -P tests/sdk_clean.cmake
+        env:
+          DISPLAY: ':99'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+      - name: Test SDK and game exports on macOS
+        if: runner.os == 'macOS'
+        run: cmake -DARCHIVE="$PWD/sdk-artifact/malvado-sdk-alpha.4-dev.tar.gz" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=OFF -P tests/sdk_clean.cmake
   build:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
