@@ -190,7 +190,42 @@ run_game(char *program, char *path, int headless)
 }
 
 static int
-new_project(const char *path)
+write_project_file(const char *path, const char *name, const char *content)
+{
+    size_t size = strlen(path) + strlen(name) + 2;
+    char *file_path = malloc(size);
+    if (!file_path) return 0;
+    snprintf(file_path, size, "%s/%s", path, name);
+    FILE *file = fopen(file_path, "wx");
+    if (!file) {
+        perror(file_path);
+        free(file_path);
+        return 0;
+    }
+    size_t length = strlen(content);
+    int failed = fwrite(content, 1, length, file) != length;
+    if (fclose(file) != 0) failed = 1;
+    if (failed) {
+        fprintf(stderr, "Cannot write %s\n", file_path);
+        remove(file_path);
+    }
+    free(file_path);
+    return !failed;
+}
+
+static void
+remove_project_file(const char *path, const char *name)
+{
+    size_t size = strlen(path) + strlen(name) + 2;
+    char *file_path = malloc(size);
+    if (!file_path) return;
+    snprintf(file_path, size, "%s/%s", path, name);
+    remove(file_path);
+    free(file_path);
+}
+
+static int
+new_project(const char *path, int native)
 {
     static const char game[] =
         "require(\"malvado\").import_globals()\n\n"
@@ -201,40 +236,48 @@ new_project(const char *path)
         "  end\n"
         "end)\n\n"
         "start(function() Game() end)\n";
+    static const char native_game[] =
+        "#include <malvado/platform.h>\n\n"
+        "int main(void)\n"
+        "{\n"
+        "    if (!mv_window_open(800, 600, \"Hello world\")) return 1;\n"
+        "    while (!mv_window_should_close() && !mv_window_escape_down()) {\n"
+        "        mv_window_begin((MvColor){25, 30, 45, 255});\n"
+        "        mv_window_draw_text(\"Hello, Malvado!\", 40, 40, 30, (MvColor){255, 255, 255, 255});\n"
+        "        mv_window_end();\n"
+        "    }\n"
+        "    mv_window_close();\n"
+        "    return 0;\n"
+        "}\n";
+    static const char native_cmake[] =
+        "cmake_minimum_required(VERSION 3.20)\n"
+        "project(game C)\n"
+        "set(CMAKE_C_STANDARD 11)\n"
+        "find_package(Malvado CONFIG REQUIRED COMPONENTS graphics)\n"
+        "add_executable(game main.c)\n"
+        "target_link_libraries(game PRIVATE Malvado::graphics)\n";
     size_t length = strlen(path);
     if (!length || length > 4096) {
         fprintf(stderr, "Invalid project path\n");
         return 2;
     }
-    char *file_path = malloc(length + sizeof("/main.lua"));
-    if (!file_path) {
-        fprintf(stderr, "Out of memory\n");
-        return 1;
-    }
-    snprintf(file_path, length + sizeof("/main.lua"), "%s/main.lua", path);
     if (mkdir_project(path) != 0) {
         perror("Cannot create project directory");
-        free(file_path);
         return 1;
     }
-    FILE *file = fopen(file_path, "wx");
-    if (!file) {
-        perror("Cannot create main.lua");
+    const char *main_file = native ? "main.c" : "main.lua";
+    if (!write_project_file(path, main_file, native ? native_game : game)) {
         remove_project(path);
-        free(file_path);
         return 1;
     }
-    int failed = fwrite(game, 1, sizeof(game) - 1, file) != sizeof(game) - 1;
-    if (fclose(file) != 0) failed = 1;
-    if (failed) {
-        fprintf(stderr, "Cannot write main.lua\n");
-        remove(file_path);
+    if (native && !write_project_file(path, "CMakeLists.txt", native_cmake)) {
+        remove_project_file(path, main_file);
         remove_project(path);
-        free(file_path);
         return 1;
     }
-    printf("Created %s. Enter the project directory and run: malvado run\n", file_path);
-    free(file_path);
+    printf("Created %s. %s\n", path, native ?
+           "Configure with CMake and the Malvado SDK." :
+           "Enter the project directory and run: malvado run");
     return 0;
 }
 
@@ -258,7 +301,9 @@ main(int argc, char **argv)
         return 0;
     }
     if (argc == 3 && strcmp(argv[1], "new") == 0)
-        return new_project(argv[2]);
+        return new_project(argv[2], 0);
+    if (argc == 4 && strcmp(argv[1], "new") == 0 && strcmp(argv[2], "--c") == 0)
+        return new_project(argv[3], 1);
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "export") == 0) {
         if (check_project(".", 1) != 0) return 1;
         return argc == 3 ? malvado_export(argv[2]) : malvado_export_default();
@@ -280,6 +325,6 @@ main(int argc, char **argv)
             return run_game(argv[0], argv[3], 1);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
+    fprintf(stderr, "Usage: malvado new [--c] PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export [PATH] | malvado doctor\n");
     return 2;
 }

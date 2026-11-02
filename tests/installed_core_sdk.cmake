@@ -67,6 +67,49 @@ if(CLI_NAME)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Installed game launcher test failed")
   endif()
+  if(HAS_GRAPHICS)
+    execute_process(COMMAND "${WORK}/moved sdk/${BINDIR}/${CLI_NAME}" new --c "${WORK}/C game"
+      RESULT_VARIABLE result)
+    if(NOT result EQUAL 0)
+      message(FATAL_ERROR "C project creation failed")
+    endif()
+    if(RUN_GRAPHICS)
+      file(WRITE "${WORK}/C game/smoke.c" [=[
+#include <malvado/platform.h>
+static int should_close(void) { static int frames; return ++frames > 3; }
+#define mv_window_should_close should_close
+#define main project_main
+#include "main.c"
+#undef main
+int main(void) { return project_main(); }
+]=])
+      file(APPEND "${WORK}/C game/CMakeLists.txt" [=[
+enable_testing()
+add_executable(smoke smoke.c)
+target_link_libraries(smoke PRIVATE Malvado::graphics)
+add_test(NAME smoke COMMAND smoke)
+]=])
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -S "${WORK}/C game" -B "${WORK}/c-build"
+      "-DCMAKE_PREFIX_PATH=${WORK}/moved sdk" "-DCMAKE_C_COMPILER=${C_COMPILER}"
+      "-DCMAKE_C_FLAGS=${C_FLAGS}" "-DCMAKE_EXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}"
+      RESULT_VARIABLE result)
+    if(NOT result EQUAL 0)
+      message(FATAL_ERROR "C project configuration failed")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build "${WORK}/c-build" --config "${CONFIG}"
+      RESULT_VARIABLE result)
+    if(NOT result EQUAL 0)
+      message(FATAL_ERROR "C project build failed")
+    endif()
+    if(RUN_GRAPHICS)
+      execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${WORK}/c-build" -C "${CONFIG}" --output-on-failure
+        RESULT_VARIABLE result)
+      if(NOT result EQUAL 0)
+        message(FATAL_ERROR "C project graphics check failed")
+      endif()
+    endif()
+  endif()
   if(CAN_EXPORT)
     set(installed_cli "${WORK}/moved sdk/${BINDIR}/${CLI_NAME}")
     set(installed_launcher "${WORK}/moved sdk/${LIBEXECDIR}/malvado/${LAUNCHER_NAME}")
