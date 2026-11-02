@@ -68,6 +68,18 @@ if(CLI_NAME)
     message(FATAL_ERROR "Installed game launcher test failed")
   endif()
   if(CAN_EXPORT)
+    set(installed_cli "${WORK}/moved sdk/${BINDIR}/${CLI_NAME}")
+    set(installed_launcher "${WORK}/moved sdk/${LIBEXECDIR}/malvado/${LAUNCHER_NAME}")
+    execute_process(COMMAND "${installed_cli}" doctor RESULT_VARIABLE result OUTPUT_VARIABLE output)
+    if(NOT result EQUAL 0 OR NOT output MATCHES "Export: launcher and license directory found")
+      message(FATAL_ERROR "Doctor did not detect the installed SDK: ${output}")
+    endif()
+    file(RENAME "${installed_launcher}" "${installed_launcher}.saved")
+    execute_process(COMMAND "${installed_cli}" doctor RESULT_VARIABLE result OUTPUT_VARIABLE output)
+    file(RENAME "${installed_launcher}.saved" "${installed_launcher}")
+    if(NOT result EQUAL 0 OR NOT output MATCHES "Export: launcher or license directory not found")
+      message(FATAL_ERROR "Doctor did not detect a missing launcher: ${output}")
+    endif()
     execute_process(COMMAND "${CMAKE_COMMAND}"
       "-DCLI=${WORK}/moved sdk/${BINDIR}/${CLI_NAME}"
       "-DWORK=${WORK}/export" "-DVISUAL=${RUN_GRAPHICS}"

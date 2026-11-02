@@ -209,6 +209,22 @@ new_project(const char *path)
 int
 main(int argc, char **argv)
 {
+    if (argc == 2 && strcmp(argv[1], "doctor") == 0) {
+        printf("Lua: %s\n", LUA_RELEASE);
+#ifdef MALVADO_GRAPHICS_ENABLED
+        printf("Graphics: enabled\n");
+#else
+        printf("Graphics: headless\n");
+#endif
+        int status = malvado_export_status();
+        if (status == 2)
+            printf("Export: launcher and license directory found\n");
+        else if (status == 1)
+            printf("Export: launcher or license directory not found; install the SDK\n");
+        else
+            printf("Export: unavailable in this build\n");
+        return 0;
+    }
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
     if (argc == 3 && strcmp(argv[1], "export") == 0) {
@@ -235,6 +251,6 @@ main(int argc, char **argv)
             return malvado_run(3, args);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE] | malvado export PATH\n");
+    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE] | malvado export PATH | malvado doctor\n");
     return 2;
 }

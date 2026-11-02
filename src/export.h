@@ -15,4 +15,7 @@
 #ifndef MALVADO_EXPORT_H
 #define MALVADO_EXPORT_H
 int malvado_export(const char *output);
+/* Return 2 if the launcher and license directory are present, 1 if they are
+ * missing, or 0 if this build cannot export games. */
+int malvado_export_status(void);
 #endif

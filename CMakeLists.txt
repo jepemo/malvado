@@ -142,6 +142,9 @@ if(MALVADO_BUILD_LUA)
   add_executable(malvado src/cli.c src/export.c)
   target_include_directories(malvado PRIVATE src)
   target_link_libraries(malvado PRIVATE malvado_lua_binding)
+  if(MALVADO_BUILD_RAYLIB)
+    target_compile_definitions(malvado PRIVATE MALVADO_GRAPHICS_ENABLED)
+  endif()
   if(MALVADO_BUILD_RAYLIB AND NOT BUILD_SHARED_LIBS AND
      (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "Linux") AND
      NOT IS_ABSOLUTE "${CMAKE_INSTALL_BINDIR}" AND

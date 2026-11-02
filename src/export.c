@@ -114,6 +114,22 @@ executable_directory(char *path, size_t size)
 }
 
 int
+malvado_export_status(void)
+{
+    char executable[PATH_MAX];
+    if (!executable_directory(executable, sizeof(executable))) return 1;
+    char *launcher = join_path(executable, MALVADO_LAUNCHER_REL);
+    char *notices = join_path(executable, MALVADO_NOTICES_REL);
+    struct stat launcher_info, notices_info;
+    int ready = launcher && notices && stat(launcher, &launcher_info) == 0 && S_ISREG(launcher_info.st_mode) &&
+                stat(notices, &notices_info) == 0 && S_ISDIR(notices_info.st_mode) &&
+                access(launcher, R_OK) == 0 && access(notices, R_OK) == 0;
+    free(launcher);
+    free(notices);
+    return ready ? 2 : 1;
+}
+
+int
 malvado_export(const char *output)
 {
     char current[PATH_MAX], executable[PATH_MAX];
@@ -157,6 +173,11 @@ malvado_export(const char *output)
 #else
 #include <stdio.h>
 #include "export.h"
+int
+malvado_export_status(void)
+{
+    return 0;
+}
 int
 malvado_export(const char *output)
 {

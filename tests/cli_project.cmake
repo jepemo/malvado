@@ -3,6 +3,10 @@
 
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
+execute_process(COMMAND "${CLI}" doctor RESULT_VARIABLE result OUTPUT_VARIABLE output)
+if(NOT result EQUAL 0 OR NOT output MATCHES "Lua: Lua 5.4" OR NOT output MATCHES "Graphics:" OR NOT output MATCHES "Export:")
+  message(FATAL_ERROR "Doctor did not report runtime capabilities: ${output}")
+endif()
 set(project "${WORK}/My game")
 execute_process(COMMAND "${CLI}" new "${project}" RESULT_VARIABLE result)
 if(NOT result EQUAL 0 OR NOT EXISTS "${project}/main.lua")
