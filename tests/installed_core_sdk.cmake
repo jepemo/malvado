@@ -61,6 +61,12 @@ if(CLI_NAME)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Installed client test failed")
   endif()
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    "-DLAUNCHER=${WORK}/moved sdk/${LIBEXECDIR}/malvado/${LAUNCHER_NAME}"
+    "-DWORK=${WORK}/launcher" -P "${SOURCE}/tests/game_launcher.cmake" RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Installed game launcher test failed")
+  endif()
 endif()
 configure_file("${SOURCE}/examples/c/processes/main.c" "${WORK}/game/main.c" COPYONLY)
 file(WRITE "${WORK}/game/CMakeLists.txt" [=[

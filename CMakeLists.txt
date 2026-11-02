@@ -142,7 +142,11 @@ if(MALVADO_BUILD_LUA)
   add_executable(malvado src/cli.c)
   target_include_directories(malvado PRIVATE src)
   target_link_libraries(malvado PRIVATE malvado_lua_binding)
+  add_executable(malvado-game src/game_main.c)
+  target_include_directories(malvado-game PRIVATE src)
+  target_link_libraries(malvado-game PRIVATE malvado_lua_binding)
   install(TARGETS malvado RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS malvado-game RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/malvado)
   install(FILES ${lua_SOURCE_DIR}/doc/readme.html DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME Lua-readme.html)
 endif()
 if(MSVC)
@@ -161,8 +165,10 @@ endif()
 enable_testing()
 if(MALVADO_BUILD_LUA)
   set(MALVADO_SDK_CLI_NAME $<TARGET_FILE_NAME:malvado>)
+  set(MALVADO_SDK_LAUNCHER_NAME $<TARGET_FILE_NAME:malvado-game>)
 else()
   set(MALVADO_SDK_CLI_NAME "")
+  set(MALVADO_SDK_LAUNCHER_NAME "")
 endif()
 add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
@@ -172,6 +178,7 @@ add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DHAS_ASSETS=${MALVADO_BUILD_ASSETS}
   -DHAS_GRAPHICS=${MALVADO_BUILD_RAYLIB}
   -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
+  -DLAUNCHER_NAME=${MALVADO_SDK_LAUNCHER_NAME} -DLIBEXECDIR=${CMAKE_INSTALL_LIBEXECDIR}
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)
@@ -211,6 +218,9 @@ add_test(NAME c_message_ownership COMMAND message-ownership-test)
 set_tests_properties(clock schedule c_context c_clock_example c_process c_process_example c_parity_example c_message_ownership PROPERTIES TIMEOUT 15)
 
 if(MALVADO_BUILD_LUA)
+add_test(NAME game_launcher COMMAND ${CMAKE_COMMAND} -DLAUNCHER=$<TARGET_FILE:malvado-game>
+  -DWORK=${CMAKE_CURRENT_BINARY_DIR}/launcher-test -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/game_launcher.cmake)
+set_tests_properties(game_launcher PROPERTIES TIMEOUT 15)
 add_test(NAME sdk_archive COMMAND ${CMAKE_COMMAND}
   -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-archive-test -DCONFIG=$<CONFIG>
@@ -218,6 +228,7 @@ add_test(NAME sdk_archive COMMAND ${CMAKE_COMMAND}
   "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
   -DHAS_ASSETS=${MALVADO_BUILD_ASSETS} -DHAS_GRAPHICS=${MALVADO_BUILD_RAYLIB}
   -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
+  -DLAUNCHER_NAME=${MALVADO_SDK_LAUNCHER_NAME} -DLIBEXECDIR=${CMAKE_INSTALL_LIBEXECDIR}
   -DARCHIVE_TEST=ON -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(sdk_archive PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 add_test(NAME cli_project COMMAND ${CMAKE_COMMAND} -DCLI=$<TARGET_FILE:malvado>
@@ -304,6 +315,10 @@ set_tests_properties(scheduler error_propagation clock process_lifecycle text si
 
 option(MALVADO_VISUAL_TESTS "Enable tests that open a window" OFF)
 if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
+  add_test(NAME visual_game_launcher COMMAND ${CMAKE_COMMAND} -DLAUNCHER=$<TARGET_FILE:malvado-game>
+    -DWORK=${CMAKE_CURRENT_BINARY_DIR}/visual-launcher-test -DVISUAL=ON
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/game_launcher.cmake)
+  set_tests_properties(visual_game_launcher PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
   add_test(NAME visual_installed_graphics_sdk COMMAND ${CMAKE_COMMAND}
     -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
     -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-visual-test -DCONFIG=$<CONFIG>
@@ -311,6 +326,7 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
     "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
     -DHAS_ASSETS=${MALVADO_BUILD_ASSETS} -DHAS_GRAPHICS=ON -DRUN_GRAPHICS=ON
     -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
+    -DLAUNCHER_NAME=${MALVADO_SDK_LAUNCHER_NAME} -DLIBEXECDIR=${CMAKE_INSTALL_LIBEXECDIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
   set_tests_properties(visual_installed_graphics_sdk PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   if(MALVADO_BUILD_GUI_G0)
