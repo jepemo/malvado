@@ -63,3 +63,13 @@ Copy each complete `dist/game` directory to the second computer. Keep the C and 
 Each game must open and close correctly without the SDK or an installed Lua interpreter. Record failures, including missing system libraries and graphics errors. Test input and audio with a game that uses them; the generated starter does not cover those features.
 
 This procedure does not establish a minimum operating system version. It does not verify a macOS app bundle, signing, notarization, or cross-platform exports.
+
+## Optional Linux container check
+
+With Docker running, test a Linux x86-64 SDK archive and its adjacent checksum file:
+
+```sh
+sh tools/verify-linux-candidate.sh /path/to/malvado-sdk-2.0.0-alpha.4-dev-linux-x86_64.tar.gz
+```
+
+The script downloads Ubuntu images and packages. It builds and exports games in one container, then runs the exports in another without the SDK or development tools. It uses a virtual display and software rendering. On another architecture, Docker must support x86-64 emulation. This check does not replace a test on native hardware.
