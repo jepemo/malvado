@@ -11,6 +11,8 @@ else()
   set(MALVADO_SDK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 file(WRITE "${CMAKE_BINARY_DIR}/malvado-sdk-target.txt" "${MALVADO_VERSION_STRING}\n${MALVADO_SDK_SYSTEM}\n${MALVADO_SDK_ARCH}\n")
+file(WRITE "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt"
+  "version=${MALVADO_VERSION_STRING}\nsystem=${MALVADO_SDK_SYSTEM}\narchitecture=${MALVADO_SDK_ARCH}\n")
 set(CMAKE_C_STANDARD 11)
 include(FetchContent)
 include(GNUInstallDirs)
@@ -62,6 +64,7 @@ configure_package_config_file(tools/cmake/MalvadoConfig.cmake.in
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado)
+install(FILES "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt" DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado)
 
 add_executable(example-c-clock examples/c/clock/main.c)
 target_link_libraries(example-c-clock PRIVATE malvado_core)

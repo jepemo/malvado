@@ -13,6 +13,8 @@ cd build/sdk-package
 
 This creates an archive and its `.sha256` file. The archive name includes the version, operating system, and architecture. The task will not overwrite an existing archive. Move or remove the old files before you run it again. The commands below assume that this directory contains only one SDK archive.
 
+The extracted SDK also records its version and target in `share/malvado/malvado-sdk-info.txt`.
+
 Check the archive before you extract it. On Linux, run:
 
 ```sh
