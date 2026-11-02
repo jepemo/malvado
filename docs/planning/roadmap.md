@@ -45,7 +45,7 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P0 / preparation | Resolve licenses; pin Lua/raylib sources, hashes, and versions; measure current examples; select legacy behavior | Classified API matrix, baseline captures/traces, reproducible dependency build |
 | P1 / 2.0.0-alpha.1 | CMake, bundled Lua, C context, raylib window, runner, `process/frame`, hello, initial build/CTest CI | Hello opens/closes without LÖVE or installed Lua on macOS/Linux; scheduler works headless |
 | P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
-| P3 / 2.0.0-alpha.3 | Complete current 2D graphics, input, text, audio, examples, and development workflow | C/Lua checks and user review; no tag before approval |
+| P3 / 2.0.0-alpha.3 | Current 2D graphics, input, text, audio, examples, and development workflow | Tagged preview; unchecked validation items remain open |
 | P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Create, run, export, and run C and Lua games on macOS/Linux |
 | P5 / 2.0.0-alpha.5 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
 | P6 / 2.0.0-alpha.6 | Windows and Android runtimes, packaging, and exports | Clean-machine Windows and Android device/emulator checks |
@@ -57,10 +57,13 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | 2.2 | Mode 8 | Sector world, collision, C/Lua APIs, examples and tests |
 | 2.3 | Mode 9 | 3D worlds and sprites, C/Lua APIs, examples and tests |
 | 2.4 | Optional GUI | Project and asset workflow using existing services |
+| 2.x, later | Evaluate LuaJIT | Compare real Malvado workloads, compatibility, memory, and supported-platform behavior before deciding |
 
 The complete **Malvado 2.0 API** is a release gate, except graphics modes 7, 8 and 9. Define its exact inventory and contracts before implementation. Do not silently equate that inventory with every historical DIV or Bennu export: assess the references and record differences with the owner. Earlier claims that only the essential profile is required no longer set the 2.0 scope.
 
-The required targets are macOS, Linux, Windows, and Android. Validate packages and example games on each target before release. iOS is deferred to a later version; its feasibility, toolchain, signing, distribution, and device testing are not 2.0 release gates. The GUI and graphics modes are not 2.0 gates. The user must review alpha.3 before its tag.
+The required targets are macOS, Linux, Windows, and Android. Validate packages and example games on each target before release. iOS is deferred to a later version; its feasibility, toolchain, signing, distribution, and device testing are not 2.0 release gates. The GUI and graphics modes are not 2.0 gates. Alpha.3 is tagged as a preview, with remaining checks tracked in its version file.
+
+Lua 5.4 remains the 2.0 runtime. A later LuaJIT evaluation must benchmark process scheduling, Lua calculations, rendering workloads, and memory on the same hardware and build settings. Review Lua 5.1/5.4 language and C API differences, coroutine cleanup, build and export support, and platform limitations before choosing whether to add another runtime. This is an investigation, not a commitment to switch.
 
 ## API documentation
 

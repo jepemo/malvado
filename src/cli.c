@@ -54,13 +54,15 @@ check_script(const char *path)
     return result == LUA_OK ? 0 : 1;
 }
 
-static int check_directory(const char *path, unsigned depth, unsigned *files);
+static int check_directory(const char *path, unsigned depth, unsigned *files, int for_export);
 
 static int
 check_entry(const char *directory, const char *name, int is_directory,
-            unsigned depth, unsigned *files)
+            unsigned depth, unsigned *files, int for_export)
 {
     if (name[0] == '.')
+        return 0;
+    if (for_export && is_directory && (!strcmp(name, "build") || !strcmp(name, "dist")))
         return 0;
     size_t length = strlen(directory) + strlen(name) + 2;
     char *path = malloc(length);
@@ -71,7 +73,7 @@ check_entry(const char *directory, const char *name, int is_directory,
     snprintf(path, length, "%s/%s", directory, name);
     int result = 0;
     if (is_directory) {
-        result = check_directory(path, depth + 1, files);
+        result = check_directory(path, depth + 1, files, for_export);
     } else {
         size_t name_length = strlen(name);
         if (name_length >= 4 && strcmp(name + name_length - 4, ".lua") == 0) {
@@ -84,7 +86,7 @@ check_entry(const char *directory, const char *name, int is_directory,
 }
 
 static int
-check_directory(const char *path, unsigned depth, unsigned *files)
+check_directory(const char *path, unsigned depth, unsigned *files, int for_export)
 {
     if (depth > 64) {
         fprintf(stderr, "Directory nesting exceeds 64: %s\n", path);
@@ -106,7 +108,7 @@ check_directory(const char *path, unsigned depth, unsigned *files)
     do {
         if (!(entry.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
             failed |= check_entry(path, entry.cFileName,
-                (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0, depth, files);
+                (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0, depth, files, for_export);
     } while (FindNextFileA(handle, &entry));
     if (GetLastError() != ERROR_NO_MORE_FILES) failed = 1;
     FindClose(handle);
@@ -134,7 +136,7 @@ check_directory(const char *path, unsigned depth, unsigned *files)
             perror(full);
             failed = 1;
         } else if (S_ISREG(info.st_mode) || S_ISDIR(info.st_mode)) {
-            failed |= check_entry(path, entry->d_name, S_ISDIR(info.st_mode), depth, files);
+            failed |= check_entry(path, entry->d_name, S_ISDIR(info.st_mode), depth, files, for_export);
         }
         free(full);
     }
@@ -144,10 +146,10 @@ check_directory(const char *path, unsigned depth, unsigned *files)
 }
 
 static int
-check_project(void)
+check_project(int for_export)
 {
     unsigned files = 0;
-    int failed = check_directory(".", 0, &files);
+    int failed = check_directory(".", 0, &files, for_export);
     if (!files) {
         fprintf(stderr, "No Lua files found\n");
         return 1;
@@ -210,11 +212,11 @@ main(int argc, char **argv)
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
     if (argc == 3 && strcmp(argv[1], "export") == 0) {
-        if (check_script("main.lua") != 0) return 1;
+        if (check_project(1) != 0) return 1;
         return malvado_export(argv[2]);
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
-        return argc == 3 ? check_script(argv[2]) : check_project();
+        return argc == 3 ? check_script(argv[2]) : check_project(0);
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {
             char *args[] = {argv[0], "main.lua"};
