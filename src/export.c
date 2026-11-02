@@ -101,10 +101,6 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
         if (!entry) { if (errno) ok = 0; break; }
         const char *name = entry->d_name;
         if (name[0] == '.') continue;
-        size_t name_length = strlen(name);
-        if (native && (!strcmp(name, "CMakeLists.txt") ||
-            (name_length >= 2 && (!strcmp(name + name_length - 2, ".c") ||
-                                  !strcmp(name + name_length - 2, ".h"))))) continue;
         if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "game-bin") || !strcmp(name, "licenses"))) {
             fprintf(stderr, "Reserved project name: %s\n", name); ok = 0; break;
         }
@@ -116,7 +112,11 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
         else if (S_ISDIR(info.st_mode) && (!strcmp(name, "build") || !strcmp(name, "dist"))) {
             /* Build outputs are not game assets. */
         } else if (S_ISREG(info.st_mode)) {
-            if (destination) ok = copy_file(from, to, 0);
+            size_t name_length = strlen(name);
+            int source_file = native && (!strcmp(name, "CMakeLists.txt") ||
+                (name_length >= 2 && (!strcmp(name + name_length - 2, ".c") ||
+                                      !strcmp(name + name_length - 2, ".h"))));
+            if (destination && !source_file) ok = copy_file(from, to, 0);
         } else if (S_ISDIR(info.st_mode)) {
             if (destination && mkdir(to, 0755) != 0) { perror(to); ok = 0; }
             else ok = copy_tree(from, to, depth + 1, native);

@@ -4,6 +4,9 @@
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}/C game/assets" "${WORK}/elsewhere")
 file(WRITE "${WORK}/C game/assets/value.txt" "asset")
+file(MAKE_DIRECTORY "${WORK}/C game/assets/texture.h")
+file(WRITE "${WORK}/C game/assets/texture.h/pixel.dat" "pixel")
+file(WRITE "${WORK}/C game/assets/ignored.c" "source")
 file(WRITE "${WORK}/C game/main.c" [=[
 #include <stdio.h>
 #include <string.h>
@@ -42,6 +45,8 @@ if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
 endif()
 execute_process(COMMAND "${CLI}" export WORKING_DIRECTORY "${WORK}/C game" RESULT_VARIABLE result)
 if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/dist/game/game-bin" OR
+   NOT EXISTS "${WORK}/C game/dist/game/assets/texture.h/pixel.dat" OR
+   EXISTS "${WORK}/C game/dist/game/assets/ignored.c" OR
    EXISTS "${WORK}/C game/dist/game/main.c" OR EXISTS "${WORK}/C game/dist/game/CMakeLists.txt")
   message(FATAL_ERROR "Native export failed or included source files")
 endif()
@@ -54,6 +59,15 @@ execute_process(COMMAND "${WORK}/C game/dist/game/game" WORKING_DIRECTORY "${WOR
   RESULT_VARIABLE result OUTPUT_VARIABLE output)
 if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
   message(FATAL_ERROR "Exported native game failed: ${output}")
+endif()
+file(CREATE_LINK "${WORK}/C game/assets/value.txt" "${WORK}/C game/assets/link.h" SYMBOLIC RESULT link_result)
+if(link_result STREQUAL "0")
+  execute_process(COMMAND "${CLI}" export "${WORK}/native-link-export"
+    WORKING_DIRECTORY "${WORK}/C game" RESULT_VARIABLE result)
+  if(result EQUAL 0 OR EXISTS "${WORK}/native-link-export")
+    message(FATAL_ERROR "A source-named symbolic link must be rejected")
+  endif()
+  file(REMOVE "${WORK}/C game/assets/link.h")
 endif()
 if(CMAKE_HOST_APPLE)
   execute_process(COMMAND "${CLI}" export --app WORKING_DIRECTORY "${WORK}/C game" RESULT_VARIABLE result)
