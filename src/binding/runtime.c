@@ -2100,7 +2100,8 @@ start(lua_State *L)
     luaL_checktype(L, 1, LUA_TFUNCTION);
     if (engine.started)
         return luaL_error(L, "start() can only be called once");
-    engine.started = 1;
+    if (!lua_isnoneornil(L, 2))
+        luaL_checktype(L, 2, LUA_TTABLE);
     int w = 800, h = 600;
     const char *title = "Malvado";
     if (lua_istable(L, 2)) {
@@ -2116,6 +2117,7 @@ start(lua_State *L)
     }
     if (w <= 0 || h <= 0)
         return luaL_error(L, "window dimensions must be positive");
+    engine.started = 1;
     engine.width = w;
     engine.height = h;
     if (!engine.headless) {

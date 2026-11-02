@@ -4,26 +4,17 @@ This page shows the release plan at a glance. Open a version to see its checklis
 
 - [x] [Alpha.1](2.0.0-alpha.1.md) — **complete**: C runtime, bundled Lua, raylib, and hello. Source tag: `v2.0.0-alpha.1`; no release package yet.
 - [x] [Alpha.2](2.0.0-alpha.2.md) — **complete**: shared C/Lua scheduler, processes, signals, messages, and inspection. Source tag: `v2.0.0-alpha.2`; no release package yet.
-- [ ] [Alpha.3](2.0.0-alpha.3.md) — **in progress**: graphics, input, text, audio, migrated examples, mise development workflows, and GUI toolkit prototype G0.
-- [ ] [Alpha.4](2.0.0-alpha.4.md) — **planned**: CLI, C SDK, desktop C/Lua packages, and the basis for GUI G1.
-- [ ] [Alpha.5](2.0.0-alpha.5.md) — **planned**: essential Bennu profile, collision, and first asset importers.
-- [ ] [Alpha.6](2.0.0-alpha.6.md) — **planned**: Android prototype/export and full Windows validation.
-- [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: Mode 7 perspective floor MVP.
-- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: Mode 9 3D scene and sprites MVP.
-- [ ] [Alpha.9](2.0.0-alpha.9.md) — **planned**: Mode 8 sector world MVP.
-- [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: freeze the essential API and complete its documentation.
-- [ ] [2.0.0](2.0.0.md) — **planned**: stable essential profile and accepted exporters.
-- [ ] [2.1 and later](../planning/roadmap.md) — **planned**: extended families, more FPG variants, FPG export, and mountable ZIP. These remain independently scheduled.
-- [ ] [2.2 and later](../specs/graphics-modes.md) — **candidates**: advanced graphics styles and compatibility research.
+- [ ] [Alpha.3](2.0.0-alpha.3.md) — **in progress**: 2D graphics, input, text, audio, examples, and development workflow. Review before tagging.
+- [ ] [Alpha.4](2.0.0-alpha.4.md) — **planned**: minimal client, SDK, project creation, execution, and desktop packages.
+- [ ] [Alpha.5](2.0.0-alpha.5.md) — **planned**: define the full 2.0 API inventory, collision, scrolling, and asset importers.
+- [ ] [Alpha.6](2.0.0-alpha.6.md) — **planned**: Android and Windows.
+- [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: complete the agreed 2.0 API in C and Lua.
+- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the public site and verify distribution.
+- [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: freeze the complete 2.0 API and verify release candidates.
+- [ ] [2.0.0](2.0.0.md) — **planned**: full agreed API, client, documentation, and verified macOS, Linux, Windows, and Android packages.
+- [ ] **2.1** — [Mode 7](../specs/graphics-modes.md).
+- [ ] **2.2** — [Mode 8](../specs/graphics-modes.md).
+- [ ] **2.3** — [Mode 9](../specs/graphics-modes.md).
+- [ ] **2.4** — [GUI](../specs/gui.md).
 
-## CLI and GUI
-
-`malvado-cli` starts in alpha.4, with project creation, run/check, and macOS/Linux export. The basic asset importers are planned for alpha.5. Android export and full Windows validation are in alpha.6. See the [CLI plan](../specs/cli.md).
-
-The optional GUI has its own version numbers. G0 is a toolkit prototype after core alpha.3. G1 (`gui 0.1.0`) depends on core and CLI alpha.4. G2 adds process inspection and tick controls; G3 adds asset metadata editing; G4 is the complete supported-host flow. GUI releases do not block the runtime or CLI. See the [GUI plan](../specs/gui.md).
-
-## Platform and release policy
-
-Alphas 1–5 require macOS and Linux checks. Android and Windows tests and fixes are scheduled for alpha.6. Validate the graphics modes on the platforms claimed for them before beta. A successful CI build alone does not validate an installer or a clean-machine graphics experience. The runtime, Lua binding, and CLI initially use coordinated versions. The optional GUI declares its own compatibility. See [CI and releases](../development/ci.md) and [distribution](../development/distribution.md).
-
-Define the essential Bennu profile before implementing its families. Do not claim full compatibility without its completed matrix. Documented extended profiles can remain deferred. See [compatibility profiles](../api/compatibility.md) and the [roadmap](../planning/roadmap.md).
+The GUI and graphics modes are outside the 2.0 release gates. iOS is deferred to a later version. The full 2.0 API inventory needs an explicit decision; historical compatibility is tracked separately. See the [roadmap](../planning/roadmap.md) and [CLI plan](../specs/cli.md).

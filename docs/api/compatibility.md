@@ -2,6 +2,8 @@
 
 Status: proposal. No compatibility with a new runtime is certified.
 
+The 2.0 scope is the complete agreed Malvado API, excluding graphics modes 7, 8, and 9. The API inventory must be agreed explicitly. The historical profiles below are reference and compatibility work; their names do not define or limit the complete Malvado 2.0 API. See the [roadmap](../planning/roadmap.md).
+
 ## Independent profiles
 
 - **malvado-legacy:** preserve the current DSL, degrees, size 1.0, text keyboard keys, text, and existing examples. Record each intentional migration change.

@@ -52,9 +52,10 @@ After the build, run these commands from the project directory:
 ./build/malvado-run examples/demo/main.lua
 ./build/malvado-run examples/space_asteroids/main.lua
 ./build/malvado-run examples/bench/main.lua
+./build/malvado-run examples/sprites/main.lua
 ```
 
-See the instructions for [Hello World](examples/helloworld/README.md), the [demo](examples/demo/README.md), [Space Asteroids](examples/space_asteroids/README.md), and the [benchmark](examples/bench/README.md). The [C and Lua process examples](examples/c/processes/README.md) show both APIs.
+See the instructions for [Hello World](examples/helloworld/README.md), the [demo](examples/demo/README.md), [Space Asteroids](examples/space_asteroids/README.md), the [benchmark](examples/bench/README.md), and [sprites](examples/sprites/README.md). The [C and Lua process examples](examples/c/processes/README.md) show both APIs.
 
 ## Documentation and development
 

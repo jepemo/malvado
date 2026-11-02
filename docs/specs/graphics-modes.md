@@ -1,6 +1,6 @@
 # Graphics modes 7, 8, and 9
 
-Status: design proposal. These modes are not implemented. Their MVPs are planned for alphas before the 2.0 release. See the [roadmap](../planning/roadmap.md). This proposal does not promise compatibility with DIV, Bennu, or the Mode9 DLL.
+Status: design proposal. These modes are not implemented. The modes are planned for 2.1, 2.2, and 2.3 after 2.0. See the [roadmap](../planning/roadmap.md). This proposal does not promise compatibility with DIV, Bennu, or the Mode9 DLL.
 
 ## Purpose
 
@@ -55,12 +55,13 @@ The C and Lua paths must expose equivalent capabilities. Design small mode-speci
 
 ## Milestones
 
-These are planned 2.0 prereleases before beta. Validate the new modes on the platforms claimed after alpha.6 before beta. Each milestone needs C and Lua examples, documentation, cleanup tests, non-visual tests without raylib, and visual smoke tests on verified platforms. Preserve existing 2D tests. Complete each step only with evidence.
+Each version needs C and Lua examples, documentation, cleanup tests, non-visual tests without raylib, and visual checks on its claimed platforms. Preserve existing 2D tests. The order follows the release plan. Mode 8 may use shared rendering primitives; do not require the complete Mode 9 implementation.
 
-1. **2.0.0-alpha.7 — Mode 7 MVP.** Define scene lifecycle, viewport, camera, and ordering. Draw one textured flat floor, a sky color, and camera-facing sprites with distance ordering. Exercise movement, rotation, height, horizon, field of view, and distance. Start with a texture; tilemaps and advanced sky are later work. Compare projection math headlessly and test pixels with a graphics backend.
-2. **2.0.0-alpha.8 — Mode 9 MVP.** Add shared 3D camera and transforms, a textured mesh or a minimal model, and an animated billboard with cutout transparency and depth occlusion. Support scene destruction and recreation. Test C and Lua examples and 2D overlay order. Select and document the first model format after testing its loader and dependencies; glTF and OBJ support are not assumed.
-3. **2.0.0-alpha.9 — Mode 8 MVP.** Define a backend-independent sector model with validated floors, ceilings, walls, and portals. Render two connected rooms, include sprites and a first-person camera, and add basic wall and floor collision queries. Test invalid topology, portal traversal, heights, and collision headlessly. Reuse the 3D renderer if the prototype meets the tests; do not assume it does.
-4. **2.0.0-beta.1 and 2.0.0 — stabilization.** Complete the three MVP contracts, platform matrix, regression tests, examples, and documentation. Freeze only the verified feature set. Resolve failed gates before release.
+1. **2.1 — Mode 7.** Implement a perspective floor, camera, viewport, sky, and world sprites. Test projection headlessly and rendering visually.
+2. **2.2 — Mode 8.** Implement sector topology, textured rooms, portals, sprites, camera, and basic collision. Test topology and collision headlessly.
+3. **2.3 — Mode 9.** Implement 3D scenes, models, camera, animated billboards, depth handling, and cleanup. Select model formats using tested fixtures.
+
+Each version defines its complete acceptance criteria before implementation. More advanced visual styles and historical compatibility can be scheduled separately.
 
 Advanced lighting, fog, skyboxes, low-resolution rendering, blended sprites, retro effects, HD-2D postprocessing, more model formats, moving sectors, and character controllers are candidates for a later release. Schedule them separately after measurements and user feedback. Collision queries and a reusable controller are distinct features. Define slopes and stairs with their own tests before claiming support.
 

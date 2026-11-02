@@ -45,21 +45,22 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P0 / preparation | Resolve licenses; pin Lua/raylib sources, hashes, and versions; measure current examples; select legacy behavior | Classified API matrix, baseline captures/traces, reproducible dependency build |
 | P1 / 2.0.0-alpha.1 | CMake, bundled Lua, C context, raylib window, runner, `process/frame`, hello, initial build/CTest CI | Hello opens/closes without LÖVE or installed Lua on macOS/Linux; scheduler works headless |
 | P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
-| P3 / 2.0.0-alpha.3 | PNG+JSON render/assets, input, text, audio in C and Lua; legacy shim; migrate four examples; add mise development workflows; prepare GUI G0 | Equivalent C/Lua demos without `love.*`, comparable images, documented benchmark, verified mise workflows on macOS/Linux |
-| P4 / 2.0.0-alpha.4 | CLI, C SDK, Lua runner, desktop packages; enable GUI G1 | Create → play → export → run C and Lua projects on macOS/Linux; Windows in alpha.6 |
-| P5 / 2.0.0-alpha.5 | Essential Bennu compatibility, scrolling, regions, first pinned-variant FPG importer, basic Aseprite adapter, collision, selected extras | Each essential-profile symbol has a contract, example, and semantic check |
-| P6 / 2.0.0-alpha.6 | Android export and full Windows validation: runtime, C/Lua API, CLI, packaging | Android APK/AAB, touch, lifecycle; Windows CI, C/Lua examples, CLI, clean-machine packages; fix failures before beta |
-| P7 / 2.0.0-alpha.7 | Mode 7 MVP: perspective floor and sprites | C/Lua examples, lifecycle, headless math, visual and 2D regression tests |
-| P8 / 2.0.0-alpha.8 | Mode 9 MVP: 3D scene and sprites | C/Lua examples, lifecycle, depth and 2D overlay tests |
-| P9 / 2.0.0-alpha.9 | Mode 8 MVP: sectors and basic collision | C/Lua examples, sector and collision tests, connected-room visual test |
-| P10 / 2.0.0-beta.1 | Freeze essential API, publishable docs, packaging, consistent errors | Unambiguous support matrix, complete examples, supported-OS tests, and verified graphics-mode MVPs |
-| P11 / 2.0.0 | Stabilization and migration guide | Beta criteria complete, reproducible releases, accepted sample games |
-| 2.1+ | Expand pending historical families and functions, more FPG variants, FPG export, and mountable ZIP | Schedule independently by profile and evidence; do not claim full compatibility without its completed matrix |
-| 2.2+ | Candidate advanced graphics styles and compatibility research | Schedule separately after MVP feedback and tests |
+| P3 / 2.0.0-alpha.3 | Complete current 2D graphics, input, text, audio, examples, and development workflow | C/Lua checks and user review; no tag before approval |
+| P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Create, run, export, and run C and Lua games on macOS/Linux |
+| P5 / 2.0.0-alpha.5 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
+| P6 / 2.0.0-alpha.6 | Windows and Android runtimes, packaging, and exports | Clean-machine Windows and Android device/emulator checks |
+| P7 / 2.0.0-alpha.7 | Complete all remaining agreed 2.0 API families in C and Lua | Every in-scope API entry has an implementation, contract, and behavior test |
+| P8 / 2.0.0-alpha.8 | Complete public documentation, examples, site, packaging, and platform review | Published site and verified end-to-end flows for all supported targets |
+| P9 / 2.0.0-beta.1 | Freeze the 2.0 API and prepare release candidates | Complete inventory, API parity, documentation, and platform evidence |
+| P10 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
+| 2.1 | Mode 7 | Perspective floor, sprites, C/Lua APIs, examples and tests |
+| 2.2 | Mode 8 | Sector world, collision, C/Lua APIs, examples and tests |
+| 2.3 | Mode 9 | 3D worlds and sprites, C/Lua APIs, examples and tests |
+| 2.4 | Optional GUI | Project and asset workflow using existing services |
 
-Alphas 1–5 close with macOS and Linux verification. Android and Windows prototypes, tests, and fixes are concentrated in alpha.6 before beta. Both remain product targets but are not announced as supported before validation. The first stable version is not blocked by CD-ROM, raw pointers, advertising, or historical functions with little value. List them as pending or unsupported with a reason. Researching the full API is separate from implementing it in one delivery.
+The complete **Malvado 2.0 API** is a release gate, except graphics modes 7, 8 and 9. Define its exact inventory and contracts before implementation. Do not silently equate that inventory with every historical DIV or Bennu export: assess the references and record differences with the owner. Earlier claims that only the essential profile is required no longer set the 2.0 scope.
 
-The three graphics-mode MVPs are part of the 2.0 release scope and have separate alphas before beta. They do not add implementation work to alpha.3. Mode 8 may reuse the Mode 9 renderer; verify this with a prototype. Validate the new modes on the supported platforms from alpha.6 before beta. See the [graphics modes proposal](../specs/graphics-modes.md).
+The required targets are macOS, Linux, Windows, and Android. Validate packages and example games on each target before release. iOS is deferred to a later version; its feasibility, toolchain, signing, distribution, and device testing are not 2.0 release gates. The GUI and graphics modes are not 2.0 gates. The user must review alpha.3 before its tag.
 
 ## API documentation
 
@@ -71,7 +72,7 @@ The [GitHub Actions plan](../development/ci.md) starts in alpha.1 with available
 
 ## Graphics tools track
 
-See [malvado-gui](../specs/gui.md). G0 validates toolkit/DPI/tables/trees. G1 creates projects, opens an external editor, runs, and exports. G2 inspects processes and controls ticks. G3 edits metadata/animations and reuses FPG importers. The GUI is optional, has its own version, and does not block runtime 2.0. The first delivery runs the game in a separate process and window; it does not require a full IDE or embedded preview.
+See [malvado-gui](../specs/gui.md). G0 validates toolkit/DPI/tables/trees. G1 creates projects, opens an external editor, runs, and exports. G2 inspects processes and controls ticks. G3 edits metadata/animations and reuses FPG importers. The GUI is optional and planned for 2.4. It does not block runtime 2.0. The first delivery runs the game in a separate process and window; it does not require a full IDE or embedded preview.
 
 See [assets](../specs/assets.md) for formats and distribution: PNG+JSON during development, FPG interoperability by variant, and ZIP for transport/distribution. FPG export and runtime-mountable ZIP are later capabilities, separate from the first FPG reader.
 

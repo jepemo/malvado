@@ -6,8 +6,8 @@ Build the headless debug runtime and run it from the repository root:
 
 ```sh
 mise run build-headless
-./build-lua-headless/malvado-run --headless benchmarks/processes.lua
-MALVADO_BENCH_PROCESSES=400 ./build-lua-headless/malvado-run --headless benchmarks/processes.lua
+./build-lua-headless/malvado-run --headless tools/benchmarks/processes.lua
+MALVADO_BENCH_PROCESSES=400 ./build-lua-headless/malvado-run --headless tools/benchmarks/processes.lua
 ```
 
 The process count must be an integer from 1 to 1000. The default is 100. Run on the same machine and build type for comparisons. Close other workloads and repeat runs. These wall-clock results are not a graphics frame rate.

@@ -1,6 +1,6 @@
 # malvado-gui: project, asset, and process workshop
 
-Status: analysis and planning. The tool is not implemented. Reference research date: 2026-10-29.
+Status: analysis and planning for Malvado 2.4. The tool is not implemented. GUI work is outside the 2.0 release gates. Reference research date: 2026-10-29.
 
 ## Product proposal
 

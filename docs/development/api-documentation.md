@@ -2,6 +2,8 @@
 
 Status: the initial MkDocs site is published. Full references remain planned. Research date: 2026-10-29. Both APIs are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
 
+The complete agreed Malvado 2.0 API, excluding graphics modes 7, 8, and 9, needs published documentation before 2.0. See the [roadmap](../planning/roadmap.md).
+
 ## Recommendation: Markdown + MkDocs + GitHub Pages
 
 1. **Markdown in Git** for documentation readable on GitHub and reviewed with code.
