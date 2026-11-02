@@ -211,6 +211,15 @@ add_test(NAME c_message_ownership COMMAND message-ownership-test)
 set_tests_properties(clock schedule c_context c_clock_example c_process c_process_example c_parity_example c_message_ownership PROPERTIES TIMEOUT 15)
 
 if(MALVADO_BUILD_LUA)
+add_test(NAME sdk_archive COMMAND ${CMAKE_COMMAND}
+  -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
+  -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-archive-test -DCONFIG=$<CONFIG>
+  "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
+  "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+  -DHAS_ASSETS=${MALVADO_BUILD_ASSETS} -DHAS_GRAPHICS=${MALVADO_BUILD_RAYLIB}
+  -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
+  -DARCHIVE_TEST=ON -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
+set_tests_properties(sdk_archive PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 add_test(NAME cli_project COMMAND ${CMAKE_COMMAND} -DCLI=$<TARGET_FILE:malvado>
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/cli-test -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_project.cmake)
 set_tests_properties(cli_project PROPERTIES TIMEOUT 15)

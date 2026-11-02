@@ -2,6 +2,8 @@
 
 Status: proposal. No 2.0 package or tools have been published. This document distinguishes the distributed products and the work needed to test them.
 
+An initial local SDK archive can be built with `mise run package-sdk`. It writes a `.tar.gz` file and a SHA-256 checksum under `build/sdk-package/`. The task builds for the current host and refuses to overwrite an existing archive. It is a development artifact, not a validated release or a game export. Move or remove the previous output before running it again. See [alpha.4](../versions/2.0.0-alpha.4.md) for verification status.
+
 ## Proposed decision
 
 The main Malvado 2 channel will be a **downloadable SDK per platform**. It will include the C library and headers, Lua binding/runner, and, when available, `malvado-cli` and templates. The GUI will have a separate desktop download or optional SDK package. Exported Lua games include the runtime and Lua. C games include their native runtime without requiring Lua. Players do not need to install Lua or LuaRocks.

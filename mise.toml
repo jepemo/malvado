@@ -24,6 +24,11 @@ description = "Build and run the Lua hello example (requires a display)"
 depends = ["build"]
 run = "./build/malvado-run examples/helloworld/main.lua"
 
+[tasks.package-sdk]
+description = "Create a local SDK archive and checksum"
+depends = ["build"]
+run = "cmake -DBUILD=build -DOUTPUT=build/sdk-package -DCONFIG=Debug -P cmake/package-sdk.cmake"
+
 [tasks.configure-c]
 description = "Configure the C-only build without dependency downloads"
 run = "cmake -S . -B build-c -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF -DCMAKE_INSTALL_LIBDIR=lib -DFETCHCONTENT_FULLY_DISCONNECTED=ON"
