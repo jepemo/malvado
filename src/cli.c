@@ -53,7 +53,7 @@ print_help(FILE *output)
             "  run [--headless] [PATH]  Run a game\n"
             "  check [PATH]         Check Lua syntax\n"
             "  export [PATH]        Export a game for this host\n"
-            "  export --app [PATH]  Export a macOS app\n"
+            "  export --app [--id ID] [PATH]  Export a macOS app\n"
             "  doctor               Show runtime capabilities\n"
             "  --version            Show the version\n");
 }
@@ -386,16 +386,24 @@ main(int argc, char **argv)
         }
         return malvado_native_build();
     }
-    if (argc >= 2 && argc <= 4 && strcmp(argv[1], "export") == 0) {
+    if (argc >= 2 && strcmp(argv[1], "export") == 0) {
         int app = argc >= 3 && strcmp(argv[2], "--app") == 0;
-        if (argc == 4 && !app) { print_help(stderr); return 2; }
+        const char *bundle_id = NULL, *destination = NULL;
+        for (int i = app ? 3 : 2; i < argc; ++i) {
+            if (app && strcmp(argv[i], "--id") == 0) {
+                if (bundle_id || ++i >= argc) { print_help(stderr); return 2; }
+                bundle_id = argv[i];
+            } else if (destination || argv[i][0] == '-') {
+                print_help(stderr); return 2;
+            } else destination = argv[i];
+        }
 #ifndef __APPLE__
         if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
 #endif
         int native = !is_regular_file("main.lua") && malvado_native_project();
         if (native ? malvado_native_build() != 0 : check_project(".", 1) != 0) return 1;
-        if (app) return argc == 4 ? malvado_export(argv[3], native, 1) : malvado_export_default(native, 1);
-        return argc == 3 ? malvado_export(argv[2], native, 0) : malvado_export_default(native, 0);
+        return destination ? malvado_export(destination, native, app, bundle_id) :
+                             malvado_export_default(native, app, bundle_id);
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
         return argc == 2 ? check_project(".", 0) :

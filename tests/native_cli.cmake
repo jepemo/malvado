@@ -65,6 +65,11 @@ if(CMAKE_HOST_APPLE)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Native app metadata is invalid")
   endif()
+  execute_process(COMMAND plutil -extract CFBundleIdentifier raw -o - "${bundle}/Contents/Info.plist"
+    RESULT_VARIABLE result OUTPUT_VARIABLE bundle_id OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(NOT result EQUAL 0 OR NOT bundle_id STREQUAL "org.malvado.game")
+    message(FATAL_ERROR "Native app default ID is incorrect: ${bundle_id}")
+  endif()
   execute_process(COMMAND "${bundle}/Contents/MacOS/game" WORKING_DIRECTORY "${WORK}/elsewhere"
     RESULT_VARIABLE result OUTPUT_VARIABLE output)
   if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")

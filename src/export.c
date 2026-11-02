@@ -191,14 +191,34 @@ valid_bundle_name(const unsigned char *name, size_t length)
 }
 
 static int
-write_bundle_info(const char *path, const char *name, size_t length)
+valid_bundle_id(const char *id)
+{
+    size_t length = strlen(id);
+    if (!length || length > 255) return 0;
+    int dot = 0, component_start = 1;
+    for (size_t i = 0; i < length; ++i) {
+        unsigned char c = (unsigned char)id[i];
+        int alphanumeric = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+        if (c == '.') {
+            if (component_start || id[i - 1] == '-') return 0;
+            component_start = 1; dot = 1;
+        } else {
+            if (!alphanumeric && (c != '-' || component_start)) return 0;
+            component_start = 0;
+        }
+    }
+    return dot && !component_start && id[length - 1] != '-';
+}
+
+static int
+write_bundle_info(const char *path, const char *name, size_t length, const char *bundle_id)
 {
     const char prefix[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
         "<plist version=\"1.0\"><dict>\n"
         "<key>CFBundleExecutable</key><string>game</string>\n"
-        "<key>CFBundleIdentifier</key><string>org.malvado.game</string>\n"
-        "<key>CFBundleName</key><string>";
+        "<key>CFBundleIdentifier</key><string>";
+    const char name_prefix[] = "</string>\n<key>CFBundleName</key><string>";
     const char suffix[] = "</string>\n"
         "<key>CFBundlePackageType</key><string>APPL</string>\n"
         "<key>CFBundleVersion</key><string>1</string>\n"
@@ -208,6 +228,8 @@ write_bundle_info(const char *path, const char *name, size_t length)
     FILE *file = fopen(path, "wx");
     if (!file) { perror(path); return 0; }
     int ok = fwrite(prefix, 1, sizeof(prefix) - 1, file) == sizeof(prefix) - 1;
+    if (ok) ok = fputs(bundle_id, file) >= 0;
+    if (ok) ok = fwrite(name_prefix, 1, sizeof(name_prefix) - 1, file) == sizeof(name_prefix) - 1;
     for (size_t i = 0; ok && i < length; ++i) {
         const char *escaped = name[i] == '&' ? "&amp;" : name[i] == '<' ? "&lt;" : name[i] == '>' ? "&gt;" : NULL;
         if (escaped) ok = fputs(escaped, file) >= 0;
@@ -220,7 +242,7 @@ write_bundle_info(const char *path, const char *name, size_t length)
 }
 
 int
-malvado_export(const char *output, int native, int app)
+malvado_export(const char *output, int native, int app, const char *bundle_id)
 {
 #ifndef __APPLE__
     if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
@@ -233,6 +255,10 @@ malvado_export(const char *output, int native, int app)
     size_t app_name_length = app ? strlen(app_name) - 4 : 0;
     if (app && !valid_bundle_name((const unsigned char *)app_name, app_name_length)) {
         fprintf(stderr, "App name must be non-empty valid UTF-8 without control characters\n"); return 1;
+    }
+    if (app && !bundle_id) bundle_id = "org.malvado.game";
+    if (app && !valid_bundle_id(bundle_id)) {
+        fprintf(stderr, "App ID must use dot-separated letters, digits, and hyphens\n"); return 1;
     }
     char current[PATH_MAX], executable[PATH_MAX];
     if (!output || !*output || !realpath(".", current) || !executable_directory(executable, sizeof(executable))) {
@@ -275,7 +301,7 @@ malvado_export(const char *output, int native, int app)
     char *payload = app && contents ? join_path(contents, "MacOS") : (app ? NULL : strdup(output));
     char *plist = app && contents ? join_path(contents, "Info.plist") : NULL;
     int ok = payload && (!app || (contents && plist && mkdir(contents, 0755) == 0 &&
-                                  mkdir(payload, 0755) == 0 && write_bundle_info(plist, app_name, app_name_length)));
+                                  mkdir(payload, 0755) == 0 && write_bundle_info(plist, app_name, app_name_length, bundle_id)));
     char *game = payload ? join_path(payload, "game") : NULL;
     char *license_dir = payload ? join_path(payload, "licenses") : NULL;
     char *native_game = native && payload ? join_path(payload, "game-bin") : NULL;
@@ -291,7 +317,7 @@ malvado_export(const char *output, int native, int app)
 }
 
 int
-malvado_export_default(int native, int app)
+malvado_export_default(int native, int app, const char *bundle_id)
 {
     struct stat info;
     const char *entry = native ? "main.c" : "main.lua";
@@ -312,7 +338,7 @@ malvado_export_default(int native, int app)
         fprintf(stderr, "dist must be a directory, not a link or file\n");
         return 1;
     }
-    return malvado_export(app ? "dist/game.app" : "dist/game", native, app);
+    return malvado_export(app ? "dist/game.app" : "dist/game", native, app, bundle_id);
 }
 #else
 #include <stdio.h>
@@ -330,17 +356,18 @@ malvado_export_status(void)
     return 0;
 }
 int
-malvado_export(const char *output, int native, int app)
+malvado_export(const char *output, int native, int app, const char *bundle_id)
 {
     (void)output;
     (void)native;
     (void)app;
+    (void)bundle_id;
     fprintf(stderr, "Game export requires a graphical macOS or Linux SDK\n");
     return 1;
 }
 int
-malvado_export_default(int native, int app)
+malvado_export_default(int native, int app, const char *bundle_id)
 {
-    return malvado_export(NULL, native, app);
+    return malvado_export(NULL, native, app, bundle_id);
 }
 #endif
