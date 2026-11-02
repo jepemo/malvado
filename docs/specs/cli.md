@@ -13,9 +13,9 @@ malvado run main.lua
 malvado gui
 ```
 
-`new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, or the specified file. Paths used by the game are relative to the current working directory. `run --headless [FILE]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
+`new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` uses it as the working directory, so modules and assets resolve relative to the project. When given a file, paths remain relative to the current working directory. `run --headless [PATH]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
 
-`check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. Pass a file to check only that file. It does not check assets, dependencies, or runtime behavior yet.
+`check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. Pass a directory to check its Lua files, or a file to check only that file. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. It does not check assets, dependencies, or runtime behavior yet.
 
 `doctor` reports the Lua version, whether this build has graphics, and whether the local export launcher and license directory are present. It does not open a window or verify the graphics driver, individual licenses, target SDKs, or toolchains. It returns success after the report even when an optional capability is unavailable.
 

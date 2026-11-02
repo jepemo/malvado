@@ -24,6 +24,7 @@
 #include <windows.h>
 #define mkdir_project(path) _mkdir(path)
 #define remove_project(path) _rmdir(path)
+#define change_directory(path) _chdir(path)
 #else
 #include <dirent.h>
 #include <errno.h>
@@ -31,6 +32,7 @@
 #include <unistd.h>
 #define mkdir_project(path) mkdir(path, 0777)
 #define remove_project(path) rmdir(path)
+#define change_directory(path) chdir(path)
 #endif
 #include "lua.h"
 #include "lauxlib.h"
@@ -146,15 +148,45 @@ check_directory(const char *path, unsigned depth, unsigned *files, int for_expor
 }
 
 static int
-check_project(int for_export)
+is_directory(const char *path)
+{
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+#else
+    struct stat info;
+    return stat(path, &info) == 0 && S_ISDIR(info.st_mode);
+#endif
+}
+
+static int
+check_project(const char *path, int for_export)
 {
     unsigned files = 0;
-    int failed = check_directory(".", 0, &files, for_export);
+    int failed = check_directory(path, 0, &files, for_export);
     if (!files) {
         fprintf(stderr, "No Lua files found\n");
         return 1;
     }
     return failed ? 1 : 0;
+}
+
+static int
+run_game(char *program, char *path, int headless)
+{
+    if (is_directory(path)) {
+        if (change_directory(path) != 0) {
+            perror(path);
+            return 1;
+        }
+        path = "main.lua";
+    }
+    if (headless) {
+        char *args[] = {program, "--headless", path};
+        return malvado_run(3, args);
+    }
+    char *args[] = {program, path};
+    return malvado_run(2, args);
 }
 
 static int
@@ -228,29 +260,26 @@ main(int argc, char **argv)
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
     if (argc == 3 && strcmp(argv[1], "export") == 0) {
-        if (check_project(1) != 0) return 1;
+        if (check_project(".", 1) != 0) return 1;
         return malvado_export(argv[2]);
     }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
-        return argc == 3 ? check_script(argv[2]) : check_project(0);
+        return argc == 2 ? check_project(".", 0) :
+               is_directory(argv[2]) ? check_project(argv[2], 0) : check_script(argv[2]);
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {
-            char *args[] = {argv[0], "main.lua"};
-            return malvado_run(2, args);
+            return run_game(argv[0], "main.lua", 0);
         }
         if (argc == 3) {
             if (strcmp(argv[2], "--headless") == 0) {
-                char *args[] = {argv[0], argv[2], "main.lua"};
-                return malvado_run(3, args);
+                return run_game(argv[0], "main.lua", 1);
             }
-            char *args[] = {argv[0], argv[2]};
-            return malvado_run(2, args);
+            return run_game(argv[0], argv[2], 0);
         }
         if (argc == 4 && strcmp(argv[2], "--headless") == 0) {
-            char *args[] = {argv[0], argv[2], argv[3]};
-            return malvado_run(3, args);
+            return run_game(argv[0], argv[3], 1);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE] | malvado export PATH | malvado doctor\n");
+    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [PATH] | malvado check [PATH] | malvado export PATH | malvado doctor\n");
     return 2;
 }
