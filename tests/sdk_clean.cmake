@@ -31,8 +31,10 @@ function(check_dependencies binary)
   if(NOT status EQUAL 0)
     message(FATAL_ERROR "Cannot inspect dependencies of ${binary}: ${error}")
   endif()
-  # The first line can contain the inspected binary's own path.
-  string(REGEX REPLACE "^[^\n]*\n" "" dependencies "${dependencies}")
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    # otool prints the inspected binary's path on the first line.
+    string(REGEX REPLACE "^[^\n]*\n" "" dependencies "${dependencies}")
+  endif()
   string(FIND "${dependencies}" "${WORK}/" work_reference)
   string(FIND "${dependencies}" "${SOURCE}/" source_reference)
   if(NOT work_reference EQUAL -1 OR NOT source_reference EQUAL -1 OR dependencies MATCHES "not found")
