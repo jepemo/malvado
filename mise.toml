@@ -27,7 +27,7 @@ run = "./build/malvado-run examples/helloworld/main.lua"
 [tasks.package-sdk]
 description = "Create a local SDK archive and checksum"
 depends = ["build"]
-run = "cmake -DBUILD=build -DOUTPUT=build/sdk-package -DCONFIG=Debug -P cmake/package-sdk.cmake"
+run = "cmake -DBUILD=build -DOUTPUT=build/sdk-package -DCONFIG=Debug -P tools/cmake/package-sdk.cmake"
 
 [tasks.configure-c]
 description = "Configure the C-only build without dependency downloads"

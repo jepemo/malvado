@@ -82,7 +82,7 @@ See [assets](../specs/assets.md) for formats and distribution: PNG+JSON during d
 ## Proposed code layout
 
 ```text
-include/malvado/       C API and opaque types
+src/include/malvado/   C API and opaque types
 src/core/              processes, scheduler, messages, clock, assets
 src/modules/           graphics, text, input, sound, and utility functions
 src/platform/raylib/   window, GPU, audio, and platform integration
@@ -93,7 +93,7 @@ src/gui/               UI, preferences, and isolated graphics adapter
 src/debug/             snapshots/commands and opt-in local protocol
 lua/malvado/           minimal facade and optional compatibility
 build/_deps/           CMake-downloaded dependencies, ignored by Git
-cmake/                 dependencies/toolchains
+tools/cmake/           build and package support
 platform/android/      Activity/Gradle/NDK template
 examples/              runnable games and assets
 api/                   Malvado contract when formalized

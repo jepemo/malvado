@@ -6,12 +6,12 @@ file(MAKE_DIRECTORY "${WORK}/game")
 if(ARCHIVE_TEST)
   file(MAKE_DIRECTORY "${WORK}/archive" "${WORK}/sdk")
   execute_process(COMMAND "${CMAKE_COMMAND}" "-DBUILD=${BUILD}" "-DOUTPUT=${WORK}/archive"
-    "-DCONFIG=${CONFIG}" -P "${SOURCE}/cmake/package-sdk.cmake" RESULT_VARIABLE result)
+    "-DCONFIG=${CONFIG}" -P "${SOURCE}/tools/cmake/package-sdk.cmake" RESULT_VARIABLE result)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "SDK archive creation failed")
   endif()
   execute_process(COMMAND "${CMAKE_COMMAND}" "-DBUILD=${BUILD}" "-DOUTPUT=${WORK}/archive"
-    "-DCONFIG=${CONFIG}" -P "${SOURCE}/cmake/package-sdk.cmake" RESULT_VARIABLE repeat_result
+    "-DCONFIG=${CONFIG}" -P "${SOURCE}/tools/cmake/package-sdk.cmake" RESULT_VARIABLE repeat_result
     OUTPUT_QUIET ERROR_QUIET)
   if(repeat_result EQUAL 0)
     message(FATAL_ERROR "SDK packaging overwrote an existing archive")

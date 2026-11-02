@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.20)
-include(cmake/version.cmake)
+include(tools/cmake/version.cmake)
 project(malvado VERSION ${MALVADO_BASE_VERSION} LANGUAGES C)
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" MALVADO_SDK_SYSTEM)
 if(APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -33,7 +33,7 @@ if(MALVADO_BUILD_ASSETS)
   FetchContent_MakeAvailable(cjson)
   add_library(malvado_assets STATIC src/assets/atlas.c ${cjson_SOURCE_DIR}/cJSON.c)
   target_include_directories(malvado_assets PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${cjson_SOURCE_DIR})
   if(UNIX)
@@ -46,7 +46,7 @@ endif()
 
 add_library(malvado_core STATIC src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c)
 target_include_directories(malvado_core PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE src/core)
 if(UNIX)
@@ -54,10 +54,10 @@ if(UNIX)
 endif()
 set_target_properties(malvado_core PROPERTIES EXPORT_NAME core)
 install(TARGETS malvado_core EXPORT MalvadoTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(DIRECTORY include/malvado DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY src/include/malvado DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT MalvadoTargets NAMESPACE Malvado:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/MalvadoConfig.cmake.in
+configure_package_config_file(tools/cmake/MalvadoConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
@@ -77,7 +77,7 @@ if(MALVADO_BUILD_RAYLIB)
   FetchContent_MakeAvailable(raylib)
   add_library(malvado_platform_raylib STATIC src/platform/raylib.c src/platform/image.c src/platform/input.c src/platform/time.c src/platform/fade.c)
   target_include_directories(malvado_platform_raylib PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
   target_link_libraries(malvado_platform_raylib PUBLIC
     $<BUILD_INTERFACE:raylib> $<INSTALL_INTERFACE:Malvado::raylib>)
@@ -120,7 +120,7 @@ if(MALVADO_BUILD_RAYLIB)
   endif()
 else()
   add_library(malvado_platform_headless STATIC src/platform/headless.c src/platform/image.c src/platform/input.c src/platform/time.c src/platform/fade.c)
-  target_include_directories(malvado_platform_headless PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_include_directories(malvado_platform_headless PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 endif()
 if(MALVADO_BUILD_LUA)
   FetchContent_Declare(lua URL https://www.lua.org/ftp/lua-5.4.8.tar.gz URL_HASH SHA256=4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae DOWNLOAD_EXTRACT_TIMESTAMP TRUE)

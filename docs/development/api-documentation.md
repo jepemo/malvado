@@ -28,9 +28,9 @@ Sources: [Doxygen C comments](https://www.doxygen.nl/manual/docblocks.html), [LD
 
 ```text
 README.md                         short entry point, installation, links
-mkdocs.yml                        site configuration
-requirements-docs.txt             pinned MkDocs version
-include/malvado/*.h               C API declarations and comments
+docs/mkdocs.yml                   site configuration
+docs/requirements.txt             pinned MkDocs version
+src/include/malvado/*.h               C API declarations and comments
 bindings/lua/definitions/         annotated .lua definitions for tooling only
 examples/c/                       actual C projects and examples
 examples/lua/                     actual Lua projects and examples
@@ -47,7 +47,7 @@ docs/site/migration/              migration and compatibility
 
 ## Source of truth by language
 
-**C:** signatures and types live in installable public headers under `include/malvado/`. Document each declaration's purpose, parameters, units, returns/errors, ownership, lifetime, and version. Use `/** ... */` comments and tags such as `@param` and `@return`, compatible with Doxygen, even if the initial site is written in Markdown. Check reference names and arguments against the headers. Do not publish a future API as if it exists.
+**C:** signatures and types live in installable public headers under `src/include/malvado/`. Document each declaration's purpose, parameters, units, returns/errors, ownership, lifetime, and version. Use `/** ... */` comments and tags such as `@param` and `@return`, compatible with Doxygen, even if the initial site is written in Markdown. Check reference names and arguments against the headers. Do not publish a future API as if it exists.
 
 **Lua:** public signatures, types, and comments live in a LuaCATS-annotated `.lua` definitions file for the C binding. This file is for **types and tooling**. Do not install or load it as an implementation that replaces `require("malvado")`. Each function's visible contract is also explained on its Markdown page and links to its example. Update binding registration, definitions, and documentation together. CI checks exported names, and tests exercise signatures and behavior. The Bennu reference inventory is not part of this contract.
 
@@ -78,9 +78,9 @@ Headless examples must terminate automatically in CI. Graphics examples can use 
 To build or preview the site:
 
 ```sh
-python3 -m pip install -r requirements-docs.txt
-python3 -m mkdocs build --strict
-python3 -m mkdocs serve
+python3 -m pip install -r docs/requirements.txt
+python3 -m mkdocs build --strict -f docs/mkdocs.yml
+python3 -m mkdocs serve -f docs/mkdocs.yml
 ```
 
 CI builds the site in strict mode. The first page links to the existing guides on GitHub. Signature checks and complete C and Lua references remain planned. A site build does not test external links or replace example tests.

@@ -2,7 +2,7 @@
 
 Want to run processes without Lua? Start with the [C process example](../../examples/c/processes/README.md). For a trace that you can compare with Lua, try the [C and Lua parity example](../../examples/c/parity/README.md).
 
-This page describes the experimental alpha.2 API in [`malvado.h`](../../include/malvado/malvado.h). It is a source-level contract. ABI stability is not guaranteed yet. Use a context and its processes on one owner thread; the API does not synchronize concurrent calls.
+This page describes the experimental alpha.2 API in [`malvado.h`](../../src/include/malvado/malvado.h). It is a source-level contract. ABI stability is not guaranteed yet. Use a context and its processes on one owner thread; the API does not synchronize concurrent calls.
 
 ## Create and close a context
 
@@ -56,6 +56,6 @@ C and Lua can exchange booleans, integers, numbers, and binary strings. The Lua 
 
 ## Platform and embedding limits
 
-[`platform.h`](../../include/malvado/platform.h) provides the initial window adapter. The raylib implementation owns one window and must run on the main thread. `mv_window_escape_down` and `mv_window_space_down` report held keys. The headless implementation cannot open a window and reports both keys as released. These functions are separate from the process context; broader graphics and resource APIs are planned for alpha.3.
+[`platform.h`](../../src/include/malvado/platform.h) provides the initial window adapter. The raylib implementation owns one window and must run on the main thread. `mv_window_escape_down` and `mv_window_space_down` report held keys. The headless implementation cannot open a window and reports both keys as released. These functions are separate from the process context; broader graphics and resource APIs are planned for alpha.3.
 
 The current `malvado-run` owns its Lua VM and context. Only one runner can be active at a time; a nested `malvado_run` returns exit code 2. `malvado_debug_context` is an experimental runner-thread diagnostic hook, used by the [mixed C/Lua test](../../tests/mixed_host.c). It is not a stable API for attaching a binding to an arbitrary host VM. IPC, a GUI, and a LuaRocks module for an external interpreter are not part of alpha.2.

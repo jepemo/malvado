@@ -8,7 +8,7 @@ if(NOT result EQUAL 0 OR NOT output MATCHES "new.*Create" OR NOT output MATCHES 
   message(FATAL_ERROR "Help did not list commands: ${output}")
 endif()
 execute_process(COMMAND "${CLI}" --version RESULT_VARIABLE result OUTPUT_VARIABLE output)
-include("${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../tools/cmake/version.cmake")
 string(STRIP "${output}" output)
 if(NOT result EQUAL 0 OR NOT output STREQUAL "malvado ${MALVADO_VERSION_STRING}")
   message(FATAL_ERROR "Version was not reported: ${output}")

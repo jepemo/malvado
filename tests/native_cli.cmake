@@ -60,7 +60,7 @@ if(ninja_program)
   set(multi "${WORK}/multi config")
   file(MAKE_DIRECTORY "${multi}")
   file(COPY "${WORK}/C game/main.c" "${WORK}/C game/CMakeLists.txt" "${WORK}/C game/assets" DESTINATION "${multi}")
-  execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CMAKE_GENERATOR=Ninja Multi-Config"
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CMAKE_GENERATOR=Ninja Multi-Config" "CFLAGS=${C_FLAGS}" "LDFLAGS=${EXE_LINKER_FLAGS}"
     "${CLI}" run "${multi}" WORKING_DIRECTORY "${WORK}/elsewhere" RESULT_VARIABLE result OUTPUT_VARIABLE output)
   if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
     message(FATAL_ERROR "Multi-config native run failed: ${output}")

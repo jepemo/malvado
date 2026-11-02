@@ -21,8 +21,8 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Build site
         run: |
-          python -m pip install -r requirements-docs.txt
-          python -m mkdocs build --strict
+          python -m pip install -r docs/requirements.txt
+          python -m mkdocs build --strict -f docs/mkdocs.yml
       - name: Preserve the previous documentation
         run: |
           git fetch --depth=1 origin dd2ed36a56c96f839c538ad3fe9533c9c3d83403

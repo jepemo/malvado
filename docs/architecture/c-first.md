@@ -4,7 +4,7 @@ Status: C core, Lua binding, and backends are separate and validated for alpha.2
 
 ## Current state
 
-`malvado_core` has an opaque C context, clock, scheduler, and process queues. `src/binding/runtime.c` adapts Lua coroutines to the scheduler and retains Lua references. `src/platform/` implements the raylib and headless backends. The runner links the binding. `include/malvado/malvado.h` exposes the initial C operations. `runtime.h` provides diagnostic hooks. CTest includes C, Lua, and mixed tests, plus a playable C/Lua example. The API is experimental and does not yet guarantee ABI stability.
+`malvado_core` has an opaque C context, clock, scheduler, and process queues. `src/binding/runtime.c` adapts Lua coroutines to the scheduler and retains Lua references. `src/platform/` implements the raylib and headless backends. The runner links the binding. `src/include/malvado/malvado.h` exposes the initial C operations. `runtime.h` provides diagnostic hooks. CTest includes C, Lua, and mixed tests, plus a playable C/Lua example. The API is experimental and does not yet guarantee ABI stability.
 
 ## Layers and dependencies
 
@@ -21,7 +21,7 @@ flowchart TD
     Tools[CLI and GUI] --> Public
 ```
 
-**Verifiable rules:** `include/malvado/` and `src/core/` do not include Lua or `lua_State` types and do not depend on Lua for build/link. Public headers do not include `raylib.h`; raylib is in its platform adapter. The core must configure, build, and test headless without downloading, finding, or linking Lua or raylib. The full desktop product uses raylib; the official runner links pinned bundled Lua. A real C game without Lua ensures that the separation is more than names.
+**Verifiable rules:** `src/include/malvado/` and `src/core/` do not include Lua or `lua_State` types and do not depend on Lua for build/link. Public headers do not include `raylib.h`; raylib is in its platform adapter. The core must configure, build, and test headless without downloading, finding, or linking Lua or raylib. The full desktop product uses raylib; the official runner links pinned bundled Lua. A real C game without Lua ensures that the separation is more than names.
 
 Planned layers:
 
@@ -65,7 +65,7 @@ C and Lua can share a context when the runner includes the binding. Tree, priori
 
 ## C API, ownership, and ABI
 
-Introduce `include/malvado/malvado.h` and module headers as code exists. The C and Lua APIs have references and runnable examples according to the [documentation plan](../development/api-documentation.md). `MvContext` and resources are opaque. Public IDs and values use specified-width types. Document inputs, units, returns, errors, pointer lifetimes, ownership, and destruction for each function. Manage text/resources/window through the context. Avoid a global singleton so tests can create, close, and recreate a context.
+Introduce `src/include/malvado/malvado.h` and module headers as code exists. The C and Lua APIs have references and runnable examples according to the [documentation plan](../development/api-documentation.md). `MvContext` and resources are opaque. Public IDs and values use specified-width types. Document inputs, units, returns, errors, pointer lifetimes, ownership, and destruction for each function. Manage text/resources/window through the context. Avoid a global singleton so tests can create, close, and recreate a context.
 
 Start with a static C library and versioned source API. Define a shared library and ABI stability before promising either. Functions return error codes or checkable results; the binding converts them to Lua errors. C callbacks must not receive pointers to internal structures. Use the context on its owner thread. Workers and IPC need separate designs.
 
