@@ -11,25 +11,25 @@ mise run package-sdk
 cd build/sdk-package
 ```
 
-This creates `malvado-sdk-alpha.4-dev.tar.gz` and its `.sha256` file. The task will not overwrite an existing archive. Move or remove the old files before you run it again.
+This creates an archive and its `.sha256` file. The archive name includes the version, operating system, and architecture. The task will not overwrite an existing archive. Move or remove the old files before you run it again. The commands below assume that this directory contains only one SDK archive.
 
 Check the archive before you extract it. On Linux, run:
 
 ```sh
-sha256sum -c malvado-sdk-alpha.4-dev.tar.gz.sha256
+sha256sum -c malvado-sdk-*.tar.gz.sha256
 ```
 
 On macOS, run:
 
 ```sh
-shasum -a 256 -c malvado-sdk-alpha.4-dev.tar.gz.sha256
+shasum -a 256 -c malvado-sdk-*.tar.gz.sha256
 ```
 
 Extract it and add the SDK to your path for this terminal:
 
 ```sh
 mkdir -p "$HOME/malvado-sdk"
-tar -xzf malvado-sdk-alpha.4-dev.tar.gz -C "$HOME/malvado-sdk"
+tar -xzf malvado-sdk-*.tar.gz -C "$HOME/malvado-sdk"
 export PATH="$HOME/malvado-sdk/bin:$PATH"
 malvado --version
 ```
