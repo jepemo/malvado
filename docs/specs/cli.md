@@ -17,6 +17,8 @@ malvado gui
 
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. Pass a file to check only that file. It does not check assets, dependencies, or runtime behavior yet.
 
+After building with Lua enabled, `cmake --install build --prefix /path/to/sdk` installs `malvado` in the SDK `bin` directory. Add that directory to `PATH` to use the short command. Full desktop packages and clean-machine validation remain pending.
+
 Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
 
 ## Target experience

@@ -76,6 +76,7 @@ if(MALVADO_BUILD_RAYLIB)
   set_target_properties(malvado_platform_raylib PROPERTIES EXPORT_NAME graphics)
   install(TARGETS malvado_platform_raylib EXPORT MalvadoGraphicsTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(EXPORT MalvadoGraphicsTargets NAMESPACE Malvado:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
+  install(FILES ${raylib_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME raylib-LICENSE)
   add_executable(example-c-window examples/c/window/main.c)
   target_link_libraries(example-c-window PRIVATE malvado_core malvado_platform_raylib)
   add_executable(example-c-timing-game examples/c/timing-game/main.c)
@@ -141,6 +142,8 @@ if(MALVADO_BUILD_LUA)
   add_executable(malvado src/cli.c)
   target_include_directories(malvado PRIVATE src)
   target_link_libraries(malvado PRIVATE malvado_lua_binding)
+  install(TARGETS malvado RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES ${lua_SOURCE_DIR}/doc/readme.html DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME Lua-readme.html)
 endif()
 if(MSVC)
   if(TARGET malvado-run)
@@ -156,6 +159,11 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+if(MALVADO_BUILD_LUA)
+  set(MALVADO_SDK_CLI_NAME $<TARGET_FILE_NAME:malvado>)
+else()
+  set(MALVADO_SDK_CLI_NAME "")
+endif()
 add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-test -DCONFIG=$<CONFIG>
@@ -163,6 +171,7 @@ add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
   -DHAS_ASSETS=${MALVADO_BUILD_ASSETS}
   -DHAS_GRAPHICS=${MALVADO_BUILD_RAYLIB}
+  -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)
@@ -292,6 +301,7 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
     "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
     "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
     -DHAS_ASSETS=${MALVADO_BUILD_ASSETS} -DHAS_GRAPHICS=ON -DRUN_GRAPHICS=ON
+    -DCLI_NAME=${MALVADO_SDK_CLI_NAME} -DBINDIR=${CMAKE_INSTALL_BINDIR} -DDATADIR=${CMAKE_INSTALL_DATADIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
   set_tests_properties(visual_installed_graphics_sdk PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   if(MALVADO_BUILD_GUI_G0)
