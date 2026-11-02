@@ -44,15 +44,24 @@ mise run hello
 
 The first build needs network access to download and verify the pinned dependencies. The example needs a display. Press **Escape** or close the window to exit.
 
+Create and run your own game with the client:
+
+```sh
+./build/malvado new my-game
+./build/malvado run my-game
+```
+
+See [SDK and projects](docs/site/sdk.md) to install the client and export a game.
+
 ## Try more examples
 
 After the build, run these commands from the project directory:
 
 ```sh
-./build/malvado-run examples/demo/main.lua
-./build/malvado-run examples/space_asteroids/main.lua
-./build/malvado-run examples/bench/main.lua
-./build/malvado-run examples/sprites/main.lua
+./build/malvado run examples/demo/main.lua
+./build/malvado run examples/space_asteroids/main.lua
+./build/malvado run examples/bench/main.lua
+./build/malvado run examples/sprites/main.lua
 ```
 
 See the instructions for [Hello World](examples/helloworld/README.md), the [demo](examples/demo/README.md), [Space Asteroids](examples/space_asteroids/README.md), the [benchmark](examples/bench/README.md), and [sprites](examples/sprites/README.md). The [C and Lua process examples](examples/c/processes/README.md) show both APIs.

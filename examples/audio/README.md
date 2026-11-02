@@ -5,7 +5,7 @@ This example uses a generated 440 Hz tone. Set your speaker volume to a comforta
 Build Malvado and run this command from the repository root:
 
 ```sh
-./build/malvado-run examples/audio/main.lua
+./build/malvado run examples/audio/main.lua
 ```
 
 Press **1** and **2** close together to play two independent effects. Press **Space** to start or stop a repeating stream. Press **Escape** to exit. The audio device and a display are required.

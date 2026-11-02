@@ -5,7 +5,7 @@ Turn with **Left** and **Right**, move with **Up**, and fire with **Space**. Des
 Build Malvado and run this command from the repository root:
 
 ```sh
-./build/malvado-run examples/space_asteroids/main.lua
+./build/malvado run examples/space_asteroids/main.lua
 ```
 
 The game uses the images in this folder and requires a display or virtual display. The [original example](https://github.com/jepemo/malvado/blob/4670d8a/examples/space_asteroids/main.lua) used LÖVE and global functions.

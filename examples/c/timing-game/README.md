@@ -6,7 +6,7 @@ Build the project, then choose either version:
 
 ```sh
 ./build/example-c-timing-game
-./build/malvado-run examples/c/timing-game/main.lua
+./build/malvado run examples/c/timing-game/main.lua
 ```
 
 Both versions use the same 60 Hz process model. The C version uses explicit state and does not link Lua. The Lua version keeps its state across `frame()` calls. The automated graphics checks are in `tests/`.

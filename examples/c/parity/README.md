@@ -4,7 +4,7 @@ These examples run the same three-tick scenario. A controller sends a message, f
 
 ```sh
 ./build/example-c-parity
-./build/malvado-run --headless examples/c/parity/main.lua
+./build/malvado run --headless examples/c/parity/main.lua
 ```
 
 The C example also runs when Lua and raylib are disabled. Its process state is explicit. Lua keeps its coroutine state across calls to `frame()`.

@@ -10,7 +10,7 @@ Choose a section with the arrow keys and **Enter**, or click an option. Press **
 Build Malvado and run this command from the repository root:
 
 ```sh
-./build/malvado-run examples/demo/main.lua
+./build/malvado run examples/demo/main.lua
 ```
 
 The demo requires a display or virtual display. The [original demo](https://github.com/jepemo/malvado/blob/4670d8a/examples/demo/main.lua) used LÖVE and global functions.

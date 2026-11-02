@@ -22,7 +22,7 @@ run = "ctest --test-dir build -C Debug --output-on-failure"
 [tasks.hello]
 description = "Build and run the Lua hello example (requires a display)"
 depends = ["build"]
-run = "./build/malvado-run examples/helloworld/main.lua"
+run = "./build/malvado run examples/helloworld/main.lua"
 
 [tasks.package-sdk]
 description = "Create a local SDK archive and checksum"

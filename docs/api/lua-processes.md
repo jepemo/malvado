@@ -26,7 +26,7 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 `mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns a positive process ID. IDs increase and are not reused during the run.
 
-`mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado-run --headless game.lua`. A headless game must end its processes to exit.
+`mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
 Omit `options` or pass a table. Other values, including the historical debug boolean, raise an error. Invalid options do not start the game; correct them before trying again.
 
