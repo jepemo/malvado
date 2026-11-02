@@ -19,7 +19,7 @@ malvado gui
 
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. Pass a directory to check its Lua files, or a file to check only that file. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. It does not check assets, dependencies, or runtime behavior yet.
 
-`doctor` reports the Lua version, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. It does not open a window or verify the graphics driver, target SDKs, or toolchains. It returns success after the report even when an optional capability is unavailable.
+`doctor` reports the Lua version, whether CMake is available, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. The CMake check does not test a compiler. Doctor does not open a window or verify the graphics driver or target SDKs. It returns success after the report even when an optional capability is unavailable.
 
 Use `malvado --help` to list commands and `malvado --version` to show the client version.
 

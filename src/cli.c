@@ -58,6 +58,34 @@ print_help(FILE *output)
 }
 
 static int
+cmake_available(void)
+{
+#ifdef _WIN32
+    return SearchPathA(NULL, "cmake.exe", NULL, 0, NULL, NULL) != 0;
+#else
+    const char *path = getenv("PATH");
+    if (!path) return 0;
+    const char *start = path;
+    for (;;) {
+        const char *end = strchr(start, ':');
+        size_t length = end ? (size_t)(end - start) : strlen(start);
+        char *candidate = malloc(length + sizeof("./cmake"));
+        if (!candidate) return 0;
+        if (length) {
+            memcpy(candidate, start, length);
+            strcpy(candidate + length, "/cmake");
+        } else strcpy(candidate, "./cmake");
+        struct stat info;
+        int found = stat(candidate, &info) == 0 && S_ISREG(info.st_mode) && access(candidate, X_OK) == 0;
+        free(candidate);
+        if (found) return 1;
+        if (!end) return 0;
+        start = end + 1;
+    }
+#endif
+}
+
+static int
 check_script(const char *path)
 {
     lua_State *L = luaL_newstate();
@@ -331,6 +359,7 @@ main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "doctor") == 0) {
         printf("Lua: %s\n", LUA_RELEASE);
+        printf("CMake: %s\n", cmake_available() ? "found" : "not found");
 #ifdef MALVADO_GRAPHICS_ENABLED
         printf("Graphics: enabled\n");
 #else
