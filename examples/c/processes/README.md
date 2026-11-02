@@ -17,4 +17,13 @@ find_package(Malvado CONFIG REQUIRED)
 target_link_libraries(my_game PRIVATE Malvado::core)
 ```
 
-When you configure the game, pass `-DCMAKE_PREFIX_PATH=/path/to/malvado-sdk`. This target provides the headless C core. If asset support was enabled when building Malvado, `Malvado::assets` provides atlas parsing. A graphics SDK target is not available yet.
+When you configure the game, pass `-DCMAKE_PREFIX_PATH=/path/to/malvado-sdk`. This target provides the headless C core. If asset support was enabled when building Malvado, `Malvado::assets` provides atlas parsing.
+
+For a graphics build, request the graphics component and link its target:
+
+```cmake
+find_package(Malvado CONFIG REQUIRED COMPONENTS graphics)
+target_link_libraries(my_game PRIVATE Malvado::core Malvado::graphics)
+```
+
+The SDK needs a build with the raylib backend enabled. The graphics target has been tested locally on macOS; other platforms still need verification.

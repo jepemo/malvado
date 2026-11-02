@@ -8,6 +8,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --install "${BUILD}" --prefix "${WORK
 if(NOT result EQUAL 0)
   message(FATAL_ERROR "SDK installation failed")
 endif()
+file(RENAME "${WORK}/sdk" "${WORK}/moved sdk")
 configure_file("${SOURCE}/examples/c/processes/main.c" "${WORK}/game/main.c" COPYONLY)
 file(WRITE "${WORK}/game/CMakeLists.txt" [=[
 cmake_minimum_required(VERSION 3.20)
@@ -29,8 +30,29 @@ target_link_libraries(atlas_test PRIVATE Malvado::assets)
 add_test(NAME atlas COMMAND atlas_test "${CMAKE_CURRENT_SOURCE_DIR}/atlas.json" "${CMAKE_CURRENT_SOURCE_DIR}/animated-atlas.json")
 ]=])
 endif()
+if(HAS_GRAPHICS)
+  file(WRITE "${WORK}/game/graphics.c" [=[
+#include "malvado/platform.h"
+int main(void) {
+  if (!mv_window_open(160, 100, "Installed SDK")) return 1;
+  mv_window_begin((MvColor){0, 0, 0, 255});
+  mv_window_draw_text("Hello", 10, 10, 20, (MvColor){255, 255, 255, 255});
+  mv_window_end();
+  mv_window_close();
+  return 0;
+}
+]=])
+  file(APPEND "${WORK}/game/CMakeLists.txt" [=[
+find_package(Malvado CONFIG REQUIRED COMPONENTS graphics)
+add_executable(graphics_test graphics.c)
+target_link_libraries(graphics_test PRIVATE Malvado::graphics)
+]=])
+  if(RUN_GRAPHICS)
+    file(APPEND "${WORK}/game/CMakeLists.txt" "add_test(NAME graphics COMMAND graphics_test)\n")
+  endif()
+endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${WORK}/game" -B "${WORK}/build"
-  "-DCMAKE_PREFIX_PATH=${WORK}/sdk" "-DCMAKE_C_COMPILER=${C_COMPILER}"
+  "-DCMAKE_PREFIX_PATH=${WORK}/moved sdk" "-DCMAKE_C_COMPILER=${C_COMPILER}"
   "-DCMAKE_C_FLAGS=${C_FLAGS}" "-DCMAKE_EXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}"
   RESULT_VARIABLE result)
 if(NOT result EQUAL 0)

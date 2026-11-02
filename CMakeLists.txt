@@ -71,8 +71,11 @@ if(MALVADO_BUILD_RAYLIB)
   target_include_directories(malvado_platform_raylib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-  target_link_libraries(malvado_platform_raylib PUBLIC raylib)
-  install(TARGETS malvado_platform_raylib ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  target_link_libraries(malvado_platform_raylib PUBLIC
+    $<BUILD_INTERFACE:raylib> $<INSTALL_INTERFACE:Malvado::raylib>)
+  set_target_properties(malvado_platform_raylib PROPERTIES EXPORT_NAME graphics)
+  install(TARGETS malvado_platform_raylib EXPORT MalvadoGraphicsTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(EXPORT MalvadoGraphicsTargets NAMESPACE Malvado:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
   add_executable(example-c-window examples/c/window/main.c)
   target_link_libraries(example-c-window PRIVATE malvado_core malvado_platform_raylib)
   add_executable(example-c-timing-game examples/c/timing-game/main.c)
@@ -159,6 +162,7 @@ add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
   "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
   -DHAS_ASSETS=${MALVADO_BUILD_ASSETS}
+  -DHAS_GRAPHICS=${MALVADO_BUILD_RAYLIB}
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)
@@ -282,6 +286,14 @@ set_tests_properties(scheduler error_propagation clock process_lifecycle text si
 
 option(MALVADO_VISUAL_TESTS "Enable tests that open a window" OFF)
 if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
+  add_test(NAME visual_installed_graphics_sdk COMMAND ${CMAKE_COMMAND}
+    -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
+    -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-visual-test -DCONFIG=$<CONFIG>
+    "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
+    "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+    -DHAS_ASSETS=${MALVADO_BUILD_ASSETS} -DHAS_GRAPHICS=ON -DRUN_GRAPHICS=ON
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
+  set_tests_properties(visual_installed_graphics_sdk PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   if(MALVADO_BUILD_GUI_G0)
     add_test(NAME visual_gui_g0 COMMAND gui-g0-raygui --smoke)
     set_tests_properties(visual_gui_g0 PROPERTIES TIMEOUT 15)
