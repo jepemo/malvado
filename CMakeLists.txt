@@ -126,6 +126,9 @@ if(MALVADO_BUILD_LUA)
   add_executable(malvado-run src/main.c)
   target_include_directories(malvado-run PRIVATE src)
   target_link_libraries(malvado-run PRIVATE malvado_lua_binding)
+  add_executable(malvado src/cli.c)
+  target_include_directories(malvado PRIVATE src)
+  target_link_libraries(malvado PRIVATE malvado_lua_binding)
 endif()
 if(MSVC)
   if(TARGET malvado-run)
@@ -178,6 +181,9 @@ add_test(NAME c_message_ownership COMMAND message-ownership-test)
 set_tests_properties(clock schedule c_context c_clock_example c_process c_process_example c_parity_example c_message_ownership PROPERTIES TIMEOUT 15)
 
 if(MALVADO_BUILD_LUA)
+add_test(NAME cli_project COMMAND ${CMAKE_COMMAND} -DCLI=$<TARGET_FILE:malvado>
+  -DWORK=${CMAKE_CURRENT_BINARY_DIR}/cli-test -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_project.cmake)
+set_tests_properties(cli_project PROPERTIES TIMEOUT 15)
 add_test(NAME c_lua_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:example-c-parity>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
@@ -283,6 +289,10 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_executable(example-visual-test tests/example_visual.c)
   target_include_directories(example-visual-test PRIVATE src)
   target_link_libraries(example-visual-test PRIVATE malvado_lua_binding)
+  add_test(NAME visual_cli_project COMMAND ${CMAKE_COMMAND} -DCLI=$<TARGET_FILE:malvado>
+    -DHOST=$<TARGET_FILE:example-visual-test> -DWORK=${CMAKE_CURRENT_BINARY_DIR}/cli-visual-test
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_visual.cmake)
+  set_tests_properties(visual_cli_project PROPERTIES TIMEOUT 15)
   add_test(NAME visual_lua_hello COMMAND hello-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/examples/helloworld/main.lua)
   set_tests_properties(visual_lua_hello PROPERTIES TIMEOUT 15)
   add_test(NAME visual_benchmark COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/tests/benchmark_example.lua)
