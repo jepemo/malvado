@@ -162,14 +162,44 @@ malvado_export_status(void)
 }
 
 static int
-write_bundle_info(const char *path)
+valid_bundle_name(const unsigned char *name, size_t length)
 {
-    const char info[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    if (!length) return 0;
+    for (size_t i = 0; i < length;) {
+        unsigned char first = name[i++];
+        unsigned code = first;
+        unsigned more = 0, minimum = 0;
+        if (first < 0x80) {
+            if (first < 0x20) return 0;
+        } else if (first >= 0xc2 && first <= 0xdf) {
+            code = first & 0x1f; more = 1; minimum = 0x80;
+        } else if (first >= 0xe0 && first <= 0xef) {
+            code = first & 0x0f; more = 2; minimum = 0x800;
+        } else if (first >= 0xf0 && first <= 0xf4) {
+            code = first & 0x07; more = 3; minimum = 0x10000;
+        } else return 0;
+        if (more > length - i) return 0;
+        for (unsigned j = 0; j < more; ++j) {
+            unsigned char next = name[i++];
+            if ((next & 0xc0) != 0x80) return 0;
+            code = (code << 6) | (next & 0x3f);
+        }
+        if (code < minimum || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ||
+            code == 0xfffe || code == 0xffff) return 0;
+    }
+    return 1;
+}
+
+static int
+write_bundle_info(const char *path, const char *name, size_t length)
+{
+    const char prefix[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
         "<plist version=\"1.0\"><dict>\n"
         "<key>CFBundleExecutable</key><string>game</string>\n"
         "<key>CFBundleIdentifier</key><string>org.malvado.game</string>\n"
-        "<key>CFBundleName</key><string>Malvado Game</string>\n"
+        "<key>CFBundleName</key><string>";
+    const char suffix[] = "</string>\n"
         "<key>CFBundlePackageType</key><string>APPL</string>\n"
         "<key>CFBundleVersion</key><string>1</string>\n"
         "<key>CFBundleShortVersionString</key><string>1.0</string>\n"
@@ -177,7 +207,13 @@ write_bundle_info(const char *path)
         "</dict></plist>\n";
     FILE *file = fopen(path, "wx");
     if (!file) { perror(path); return 0; }
-    int ok = fwrite(info, 1, sizeof(info) - 1, file) == sizeof(info) - 1;
+    int ok = fwrite(prefix, 1, sizeof(prefix) - 1, file) == sizeof(prefix) - 1;
+    for (size_t i = 0; ok && i < length; ++i) {
+        const char *escaped = name[i] == '&' ? "&amp;" : name[i] == '<' ? "&lt;" : name[i] == '>' ? "&gt;" : NULL;
+        if (escaped) ok = fputs(escaped, file) >= 0;
+        else ok = fputc((unsigned char)name[i], file) != EOF;
+    }
+    if (ok) ok = fwrite(suffix, 1, sizeof(suffix) - 1, file) == sizeof(suffix) - 1;
     if (fclose(file) != 0) ok = 0;
     if (!ok) fprintf(stderr, "Cannot write %s\n", path);
     return ok;
@@ -191,6 +227,12 @@ malvado_export(const char *output, int native, int app)
 #endif
     if (app && (!output || strlen(output) < 4 || strcmp(output + strlen(output) - 4, ".app") != 0)) {
         fprintf(stderr, "App export destination must end in .app\n"); return 1;
+    }
+    const char *app_name = app ? strrchr(output, '/') : NULL;
+    if (app) app_name = app_name ? app_name + 1 : output;
+    size_t app_name_length = app ? strlen(app_name) - 4 : 0;
+    if (app && !valid_bundle_name((const unsigned char *)app_name, app_name_length)) {
+        fprintf(stderr, "App name must be non-empty valid UTF-8 without control characters\n"); return 1;
     }
     char current[PATH_MAX], executable[PATH_MAX];
     if (!output || !*output || !realpath(".", current) || !executable_directory(executable, sizeof(executable))) {
@@ -233,7 +275,7 @@ malvado_export(const char *output, int native, int app)
     char *payload = app && contents ? join_path(contents, "MacOS") : (app ? NULL : strdup(output));
     char *plist = app && contents ? join_path(contents, "Info.plist") : NULL;
     int ok = payload && (!app || (contents && plist && mkdir(contents, 0755) == 0 &&
-                                  mkdir(payload, 0755) == 0 && write_bundle_info(plist)));
+                                  mkdir(payload, 0755) == 0 && write_bundle_info(plist, app_name, app_name_length)));
     char *game = payload ? join_path(payload, "game") : NULL;
     char *license_dir = payload ? join_path(payload, "licenses") : NULL;
     char *native_game = native && payload ? join_path(payload, "game-bin") : NULL;

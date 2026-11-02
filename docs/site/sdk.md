@@ -63,7 +63,7 @@ malvado export
 
 The exported folder contains the game and its license notices. Copy the full folder to the target computer. The export is for the current host; cross-platform export is not available yet. The destination must not already exist. Use `malvado export ../another-folder` to choose a different destination.
 
-On macOS, you can instead create an application bundle with `malvado export --app`. It creates `dist/game.app`. To choose a different destination, use a path that ends in `.app`, such as `malvado export --app ../my-game.app`. This initial bundle uses a default name and identifier. It is not signed or notarized by Malvado. Clean-machine validation is still in progress.
+On macOS, you can instead create an application bundle with `malvado export --app`. It creates `dist/game.app`. To choose a different name and destination, use a path that ends in `.app`, such as `malvado export --app ../my-game.app`. The name must be valid UTF-8 without control characters. This initial bundle uses a default identifier. It is not signed or notarized by Malvado. Clean-machine validation is still in progress.
 
 Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/master/docs/specs/cli.md).
 

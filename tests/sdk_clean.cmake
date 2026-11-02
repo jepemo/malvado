@@ -144,7 +144,7 @@ if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
   message(FATAL_ERROR "Exported C game needs the SDK: ${output}")
 endif()
 if(CMAKE_HOST_APPLE)
-  execute_process(COMMAND "${WORK}/export_game/Lua game.app/Contents/MacOS/game" ${game_args}
+  execute_process(COMMAND "${WORK}/export_game/Lua & café.app/Contents/MacOS/game" ${game_args}
     WORKING_DIRECTORY "${WORK}/outside" RESULT_VARIABLE result OUTPUT_VARIABLE output)
   if(NOT result EQUAL 0 OR NOT output MATCHES "export works")
     message(FATAL_ERROR "Exported Lua app needs the SDK: ${output}")
