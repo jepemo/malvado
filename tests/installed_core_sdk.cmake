@@ -67,6 +67,15 @@ if(CLI_NAME)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Installed game launcher test failed")
   endif()
+  if(CAN_EXPORT)
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      "-DCLI=${WORK}/moved sdk/${BINDIR}/${CLI_NAME}"
+      "-DWORK=${WORK}/export" "-DVISUAL=${RUN_GRAPHICS}"
+      -P "${SOURCE}/tests/export_game.cmake" RESULT_VARIABLE result)
+    if(NOT result EQUAL 0)
+      message(FATAL_ERROR "Game export test failed")
+    endif()
+  endif()
 endif()
 configure_file("${SOURCE}/examples/c/processes/main.c" "${WORK}/game/main.c" COPYONLY)
 file(WRITE "${WORK}/game/CMakeLists.txt" [=[

@@ -1,6 +1,6 @@
 # malvado-cli: projects and exporters
 
-Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [FILE]`, and `malvado check [FILE]` commands exist. Export, project metadata, and the other commands below remain proposals.
+Status: in progress for Malvado 2. Requested targets: **Linux, Windows, macOS, and Android**. Initial `malvado new PATH`, `malvado run [FILE]`, `malvado check [FILE]`, and local `malvado export PATH` commands exist. Project metadata and the other commands below remain proposals.
 
 ## Command name under review
 
@@ -18,6 +18,14 @@ malvado gui
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. Pass a file to check only that file. It does not check assets, dependencies, or runtime behavior yet.
 
 After building with Lua enabled, `cmake --install build --prefix /path/to/sdk` installs `malvado` in the SDK `bin` directory. Add that directory to `PATH` to use the short command. Full desktop packages and clean-machine validation remain pending.
+
+On macOS and Linux, an installed graphical SDK built with static libraries can make an initial local game folder:
+
+```sh
+malvado export ../my-game-export
+```
+
+Run this command from the project directory. The destination must not exist and must be outside the project directory. The folder contains `game`, the project files, and engine dependency licenses. Run `game` to start `main.lua`. The initial exporter skips hidden entries and directories named `build` or `dist`; it rejects symbolic links and special files. The project root cannot contain entries named `game` or `licenses`. If copying fails, the new destination can be incomplete; remove it before trying again. The export targets the current host and still needs clean-machine validation. It does not create a macOS app bundle, cross-compile, or validate all dependencies.
 
 Define paths, project discovery, errors, packaging, and the relationship between the CLI, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. Decide whether to keep a `malvado-run` alias for development after reviewing existing scripts. The examples below retain the earlier `malvado-cli` spelling until the command contract is accepted.
 

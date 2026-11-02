@@ -35,6 +35,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "runner/runtime.h"
+#include "export.h"
 
 static int
 check_script(const char *path)
@@ -208,6 +209,10 @@ main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "new") == 0)
         return new_project(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "export") == 0) {
+        if (check_script("main.lua") != 0) return 1;
+        return malvado_export(argv[2]);
+    }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
         return argc == 3 ? check_script(argv[2]) : check_project();
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
@@ -228,6 +233,6 @@ main(int argc, char **argv)
             return malvado_run(3, args);
         }
     }
-    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE]\n");
+    fprintf(stderr, "Usage: malvado new PATH | malvado run [--headless] [FILE] | malvado check [FILE] | malvado export PATH\n");
     return 2;
 }
