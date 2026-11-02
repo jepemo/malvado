@@ -31,7 +31,8 @@ if(MALVADO_BUILD_ASSETS)
   if(UNIX)
     target_link_libraries(malvado_assets PUBLIC m)
   endif()
-  install(TARGETS malvado_assets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  set_target_properties(malvado_assets PROPERTIES EXPORT_NAME assets)
+  install(TARGETS malvado_assets EXPORT MalvadoTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
@@ -157,6 +158,7 @@ add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-test -DCONFIG=$<CONFIG>
   "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
   "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+  -DHAS_ASSETS=${MALVADO_BUILD_ASSETS}
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)

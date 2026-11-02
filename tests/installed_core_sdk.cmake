@@ -12,12 +12,23 @@ configure_file("${SOURCE}/examples/c/processes/main.c" "${WORK}/game/main.c" COP
 file(WRITE "${WORK}/game/CMakeLists.txt" [=[
 cmake_minimum_required(VERSION 3.20)
 project(sdk_game C)
-find_package(Malvado CONFIG REQUIRED)
+find_package(Malvado CONFIG REQUIRED COMPONENTS core)
 add_executable(game main.c)
 target_link_libraries(game PRIVATE Malvado::core)
 enable_testing()
 add_test(NAME game COMMAND game)
 ]=])
+if(HAS_ASSETS)
+  configure_file("${SOURCE}/tests/atlas.c" "${WORK}/game/atlas.c" COPYONLY)
+  configure_file("${SOURCE}/tests/fixtures/atlas.json" "${WORK}/game/atlas.json" COPYONLY)
+  configure_file("${SOURCE}/tests/fixtures/animated-atlas.json" "${WORK}/game/animated-atlas.json" COPYONLY)
+  file(APPEND "${WORK}/game/CMakeLists.txt" [=[
+find_package(Malvado CONFIG REQUIRED COMPONENTS assets)
+add_executable(atlas_test atlas.c)
+target_link_libraries(atlas_test PRIVATE Malvado::assets)
+add_test(NAME atlas COMMAND atlas_test "${CMAKE_CURRENT_SOURCE_DIR}/atlas.json" "${CMAKE_CURRENT_SOURCE_DIR}/animated-atlas.json")
+]=])
+endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${WORK}/game" -B "${WORK}/build"
   "-DCMAKE_PREFIX_PATH=${WORK}/sdk" "-DCMAKE_C_COMPILER=${C_COMPILER}"
   "-DCMAKE_C_FLAGS=${C_FLAGS}" "-DCMAKE_EXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}"

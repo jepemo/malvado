@@ -17,4 +17,4 @@ find_package(Malvado CONFIG REQUIRED)
 target_link_libraries(my_game PRIVATE Malvado::core)
 ```
 
-When you configure the game, pass `-DCMAKE_PREFIX_PATH=/path/to/malvado-sdk`. This initial target provides the headless C core. Graphics and asset SDK targets are not available yet.
+When you configure the game, pass `-DCMAKE_PREFIX_PATH=/path/to/malvado-sdk`. This target provides the headless C core. If asset support was enabled when building Malvado, `Malvado::assets` provides atlas parsing. A graphics SDK target is not available yet.
