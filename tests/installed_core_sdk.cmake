@@ -19,7 +19,9 @@ enable_testing()
 add_test(NAME game COMMAND game)
 ]=])
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${WORK}/game" -B "${WORK}/build"
-  "-DCMAKE_PREFIX_PATH=${WORK}/sdk" RESULT_VARIABLE result)
+  "-DCMAKE_PREFIX_PATH=${WORK}/sdk" "-DCMAKE_C_COMPILER=${C_COMPILER}"
+  "-DCMAKE_C_FLAGS=${C_FLAGS}" "-DCMAKE_EXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}"
+  RESULT_VARIABLE result)
 if(NOT result EQUAL 0)
   message(FATAL_ERROR "SDK consumer configuration failed")
 endif()

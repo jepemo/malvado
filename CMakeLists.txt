@@ -155,6 +155,8 @@ enable_testing()
 add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-test -DCONFIG=$<CONFIG>
+  "-DC_COMPILER=${CMAKE_C_COMPILER}" "-DC_FLAGS=${CMAKE_C_FLAGS}"
+  "-DEXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
 add_executable(input-test tests/input.c)
