@@ -80,15 +80,17 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
         if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "game-bin") || !strcmp(name, "licenses"))) {
             fprintf(stderr, "Reserved project name: %s\n", name); ok = 0; break;
         }
-        char *from = join_path(source, name), *to = join_path(destination, name);
-        if (!from || !to) { free(from); free(to); ok = 0; break; }
+        char *from = join_path(source, name);
+        char *to = destination ? join_path(destination, name) : NULL;
+        if (!from || (destination && !to)) { free(from); free(to); ok = 0; break; }
         struct stat info;
         if (lstat(from, &info) != 0) { perror(from); ok = 0; }
         else if (S_ISDIR(info.st_mode) && (!strcmp(name, "build") || !strcmp(name, "dist"))) {
             /* Build outputs are not game assets. */
-        } else if (S_ISREG(info.st_mode)) ok = copy_file(from, to, 0);
-        else if (S_ISDIR(info.st_mode)) {
-            if (mkdir(to, 0755) != 0) { perror(to); ok = 0; }
+        } else if (S_ISREG(info.st_mode)) {
+            if (destination) ok = copy_file(from, to, 0);
+        } else if (S_ISDIR(info.st_mode)) {
+            if (destination && mkdir(to, 0755) != 0) { perror(to); ok = 0; }
             else ok = copy_tree(from, to, depth + 1, native);
         } else {
             fprintf(stderr, "Unsupported project entry: %s\n", from); ok = 0;
@@ -193,6 +195,9 @@ malvado_export(const char *output, int native)
     if (!launcher || !notices) { free(launcher); free(notices); return 1; }
     if (malvado_export_status() != 2) {
         fprintf(stderr, "Export requires an installed SDK with game launchers and licenses\n");
+        free(launcher); free(notices); return 1;
+    }
+    if (!copy_tree(".", NULL, 0, native)) {
         free(launcher); free(notices); return 1;
     }
     if (mkdir(output, 0755) != 0) { perror(output); free(launcher); free(notices); return 1; }
