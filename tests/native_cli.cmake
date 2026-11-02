@@ -44,6 +44,11 @@ if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/dist/game/game-bin" OR
    EXISTS "${WORK}/C game/dist/game/main.c" OR EXISTS "${WORK}/C game/dist/game/CMakeLists.txt")
   message(FATAL_ERROR "Native export failed or included source files")
 endif()
+foreach(notice LICENSE Lua-readme.html raylib-LICENSE)
+  if(NOT EXISTS "${WORK}/C game/dist/game/licenses/${notice}")
+    message(FATAL_ERROR "Native game license notice is missing: ${notice}")
+  endif()
+endforeach()
 execute_process(COMMAND "${WORK}/C game/dist/game/game" WORKING_DIRECTORY "${WORK}/elsewhere"
   RESULT_VARIABLE result OUTPUT_VARIABLE output)
 if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
