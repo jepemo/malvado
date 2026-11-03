@@ -72,6 +72,16 @@ main(void)
         assert(mv_key_from_name(cases[i].name, &key) && key == cases[i].key);
         assert(!mv_key_down(key));
     }
+    for (int i = 0; i < 26; ++i) {
+        char name[] = {(char)('a' + i), '\0'};
+        MvKey key;
+        assert(mv_key_from_name(name, &key) && key == (MvKey)(MV_KEY_A + i));
+    }
+    for (int i = 0; i < 10; ++i) {
+        char name[] = {(char)('0' + i), '\0'};
+        MvKey key;
+        assert(mv_key_from_name(name, &key) && key == (MvKey)(MV_KEY_0 + i));
+    }
     MvKey unchanged = MV_KEY_A;
     assert(!mv_key_from_name("A", &unchanged) && unchanged == MV_KEY_A);
     assert(!mv_key_from_name("unknown", &unchanged) && unchanged == MV_KEY_A);

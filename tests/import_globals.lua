@@ -42,6 +42,29 @@ assert(KEY_A == "a" and KEY_0 == "0" and SIGNAL_KILL == "kill")
 assert(mv.key(KEY_UP) == mv.key("up"))
 assert(legacy_fpg == nil and import_globals == nil and unlisted_extension == nil)
 
+for _, namespace in ipairs({mv.process, mv.input}) do
+  for name, value in pairs(namespace) do
+    if name ~= "define" then
+      assert(rawget(_G, name) == value, "namespace alias mismatch: " .. name)
+    end
+  end
+end
+local registry = debug.getregistry()
+local original_globals = registry[2]
+for name, value in pairs(mv) do
+  if name ~= "import_globals" and name ~= "legacy_fpg" and name ~= "unlisted_extension" and
+      (type(value) == "function" or name == "process" or name:match("^[A-Z][A-Z0-9_]*$")) then
+    local scratch = {[name] = "conflict"}
+    registry[2] = scratch
+    local imported = pcall(mv.import_globals)
+    registry[2] = original_globals
+    assert(not imported and scratch[name] == "conflict", "missed conflict: " .. name)
+    local count = 0
+    for _ in pairs(scratch) do count = count + 1 end
+    assert(count == 1, "partial import: " .. name)
+  end
+end
+
 local completed = false
 local task = process(function()
   frame()

@@ -14,6 +14,7 @@
  */
 #include "binding/globals.h"
 #include "lauxlib.h"
+#include "lualib.h"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -32,6 +33,38 @@ allocate(void *user, void *ptr, size_t old_size, size_t new_size)
     if (!new_size) { free(ptr); return NULL; }
     if (new_size > old_size && allocator->calls++ >= allocator->fail_at) return NULL;
     return realloc(ptr, new_size);
+}
+
+static void
+check_standard_conflict(void)
+{
+    static const char *const names[] = {"new_export", "print", NULL};
+    lua_State *L = luaL_newstate();
+    assert(L);
+    luaL_openlibs(L);
+    lua_newtable(L);
+    lua_pushboolean(L, 1);
+    lua_setfield(L, -2, "new_export");
+    lua_pushinteger(L, 42);
+    lua_setfield(L, -2, "print");
+    lua_pushlightuserdata(L, (void *)names);
+    lua_pushcclosure(L, malvado_import_globals, 2);
+    int callback = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
+    assert(lua_pcall(L, 0, 0, 0) != LUA_OK);
+    lua_pop(L, 1);
+    lua_getglobal(L, "new_export");
+    assert(lua_isnil(L, -1));
+    lua_pop(L, 1);
+    lua_getglobal(L, "print");
+    assert(lua_isfunction(L, -1));
+    lua_pop(L, 1);
+    lua_pushinteger(L, 1);
+    lua_rawseti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
+    assert(lua_pcall(L, 0, 0, 0) != LUA_OK);
+    lua_pop(L, 1);
+    lua_close(L);
 }
 
 int
@@ -81,5 +114,6 @@ main(void)
         lua_close(L);
     }
     assert(failures && later_failure && successes);
+    check_standard_conflict();
     return 0;
 }
