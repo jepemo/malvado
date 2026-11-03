@@ -1,0 +1,30 @@
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
+
+local mv = require("malvado")
+local proc = mv.process
+local worker = proc(function() while true do proc.frame() end end)
+local controller = proc(function()
+  proc.frame()
+  local all = proc.find(worker)
+  assert(#all == 4)
+  local lua_worker, native_root, created_child, owned_child = all[1], all[2], all[3], all[4]
+  assert(created_child.creator_id == native_root.id and created_child.parent == lua_worker)
+  assert(owned_child.creator_id == lua_worker.id and owned_child.parent == native_root)
+  local creation = proc.descendants(native_root, {relation = "creation"})
+  local ownership = proc.descendants(native_root, {relation = "ownership"})
+  assert(#creation == 1 and creation[1] == created_child)
+  assert(#ownership == 1 and ownership[1] == owned_child)
+  proc.signal_tree(native_root, "freeze", {relation = "ownership"})
+  assert(native_root.status == "frozen" and owned_child.status == "frozen")
+  assert(created_child.status == "running" and lua_worker.status == "running")
+  proc.signal_tree(native_root, "wakeup", {relation = "ownership"})
+  proc.signal_tree(native_root, "freeze")
+  assert(native_root.status == "frozen" and created_child.status == "frozen")
+  assert(owned_child.status == "running" and lua_worker.status == "running")
+  proc.kill_tree(native_root)
+  assert(native_root.status == "dead" and created_child.status == "dead" and owned_child.status == "dead")
+  assert(lua_worker.status == "running")
+  proc.kill(lua_worker)
+end)
+mv.start(function() controller {}; worker {} end)
