@@ -31,6 +31,7 @@
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
 #endif
+#include "binding/globals.h"
 #include "core/clock.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
@@ -2981,35 +2982,6 @@ static const char *const global_names[] = {
     NULL
 };
 
-static int
-import_globals(lua_State *L)
-{
-    lua_pushglobaltable(L);
-    int globals = lua_gettop(L);
-    for (int pass = 0; pass < 2; ++pass) {
-        for (size_t i = 0; global_names[i]; ++i) {
-            const char *name = global_names[i];
-            lua_pushstring(L, name);
-            lua_rawget(L, lua_upvalueindex(1));
-            if (lua_isnil(L, -1)) {
-                lua_pop(L, 1);
-                continue;
-            }
-            lua_pushstring(L, name);
-            if (pass == 0) {
-                lua_rawget(L, globals);
-                int allowed = lua_isnil(L, -1) || lua_rawequal(L, -1, -2);
-                lua_pop(L, 2);
-                if (!allowed)
-                    return luaL_error(L, "global already exists: %s", name);
-            } else {
-                lua_insert(L, -2);
-                lua_rawset(L, globals);
-            }
-        }
-    }
-    return 0;
-}
 
 static int
 spawn_process(lua_State *L)
@@ -3250,7 +3222,8 @@ open_module(lua_State *L)
     lua_pushcclosure(L, legacy_screen_dimension, 1);
     lua_setfield(L, -2, "get_screen_height");
     lua_pushvalue(L, -1);
-    lua_pushcclosure(L, import_globals, 1);
+    lua_pushlightuserdata(L, (void *)global_names);
+    lua_pushcclosure(L, malvado_import_globals, 2);
     lua_setfield(L, -2, "import_globals");
     return 1;
 }
