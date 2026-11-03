@@ -37,3 +37,16 @@ The C render benchmark draws the same 50×50 PNG 1000 times per frame for 120 fr
 It reports average wall time for drawing calls and for the subsequent present and wait. The latter includes GPU submission, the display, and the 60 FPS frame limit; it is not a GPU timer. VSync is not explicitly requested. Close the window to stop early. Use the same hardware, display settings, backend, image, window size, and frame limit for comparisons.
 
 On the same macOS machine and a debug build, three runs measured 0.113, 0.111, and 0.112 ms for drawing calls per frame, and 17.511, 16.939, and 16.967 ms for present and wait per frame. These numbers do not include Lua processes or establish performance on other devices.
+
+## Ownership traversal
+
+Build the C benchmark and run it from the repository root:
+
+```sh
+cmake --build build --target ownership-benchmark
+./build/ownership-benchmark
+```
+
+It creates a chain of 512 owned processes and queries the root's descendants ten times. It reports process CPU time for the queries only. It excludes creation and cleanup. Use the same compiler, build type and machine for comparisons. Repeat runs; this workload does not represent every game.
+
+The current core follows owner links directly. It also follows separate creator links and prunes unused creation nodes. Queries still scan live processes and do not have a type index. Measure a representative game before adding an index; a wide tree or frequent type queries can have different costs from this chain.

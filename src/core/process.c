@@ -27,9 +27,9 @@ typedef struct MessageNode {
 
 typedef struct Genealogy {
     MvProcessId id;
-    struct Genealogy *creator, *previous, *next;
+    struct Genealogy *creator, *owner, *previous, *next;
     size_t children;
-    int alive;
+    int alive, terminating;
 } Genealogy;
 
 typedef struct {
@@ -340,6 +340,8 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
     if (!lineage) return MV_OUT_OF_MEMORY;
     /* Growing the process array can move its entries. */
     creator = creator_id ? find(p, creator_id, 0) : NULL;
+    Process *owner = parent ? find(p, parent, 0) : NULL;
+    lineage->owner = owner ? owner->lineage : NULL;
     lineage->id = ++p->next_id;
     lineage->alive = 1;
     lineage->creator = creator ? creator->lineage : (creator_id ? closing_creator : NULL);
@@ -433,15 +435,12 @@ MvResult mv_process_message_count(MvContext *ctx, MvProcessId id, size_t *count)
     return MV_OK;
 }
 
-static int descendant(MvProcesses *p, Process *item, MvProcessId id)
+static int descendant(Process *item, MvProcessId id)
 {
-    MvProcessId parent = item->parent;
-    while (parent) {
-        if (parent == id) return 1;
-        Process *ancestor = find(p, parent, 1);
-        if (!ancestor) break;
-        parent = ancestor->parent;
-    }
+    /* A live process has only live owners. Owner links of dead nodes are not
+     * retained for history and must not be followed from a dead process. */
+    for (Genealogy *owner = item->lineage->owner; owner; owner = owner->owner)
+        if (owner->id == id) return 1;
     return 0;
 }
 
@@ -451,11 +450,13 @@ static void kill_owned(MvProcesses *p, MvProcessId id)
     Process *root = find(p, id, 1);
     if (!root) return;
     root->killed = 1;
+    root->lineage->terminating = 1;
     for (size_t i = 0; i < p->count; ++i) {
         Process *item = &p->items[i];
-        if (!item->killed && item->attached) {
-            Process *owner = find(p, item->parent, 1);
-            if (owner && owner->killed) item->killed = 1;
+        if (!item->killed && item->attached && item->lineage->owner &&
+            item->lineage->owner->terminating) {
+            item->killed = 1;
+            item->lineage->terminating = 1;
         }
     }
 }
@@ -481,7 +482,7 @@ signal_tree_snapshot(MvProcesses *p, MvProcessId root, MvSignal signal, int crea
         Process *item = &p->items[i];
         if (!item->id || item->killed) continue;
         if (creation ? created_under(item->lineage, root) :
-                       (item->id == root || descendant(p, item, root))) ++count;
+                       (item->id == root || descendant(item, root))) ++count;
     }
     if (count > SIZE_MAX / sizeof(size_t)) return MV_OVERFLOW;
     size_t *targets = count ? malloc(count * sizeof(*targets)) : NULL;
@@ -491,7 +492,7 @@ signal_tree_snapshot(MvProcesses *p, MvProcessId root, MvSignal signal, int crea
         Process *item = &p->items[i];
         if (!item->id || item->killed) continue;
         if (creation ? created_under(item->lineage, root) :
-                       (item->id == root || descendant(p, item, root))) targets[next++] = i;
+                       (item->id == root || descendant(item, root))) targets[next++] = i;
     }
     for (size_t i = 0; i < count; ++i)
         apply_signal(p, &p->items[targets[i]], signal);
@@ -583,7 +584,7 @@ snapshot_owned(MvContext *ctx, MvProcessId owner, uint64_t type, MvProcessInfo *
     for (size_t i = 0; i < p->count; ++i) {
         Process *item = &p->items[i];
         if (!item->id || item->killed || (type && item->type != type)) continue;
-        if (recursive ? !descendant(p, item, owner) : item->parent != owner) continue;
+        if (recursive ? !descendant(item, owner) : item->parent != owner) continue;
         if (count < capacity)
             out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
                                          item->status, item->messages, item->creator_id, item->attached};

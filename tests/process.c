@@ -327,6 +327,44 @@ int main(void)
     assert(mv_process_lineage_snapshot(growth, NULL, 0, &total) == MV_OK && total == 0);
     mv_context_destroy(growth);
 
+    MvContext *ownership = mv_context_create(60, 5);
+    assert(ownership);
+    MvProcessId ownership_root, ownership_child, ownership_previous;
+    assert(mv_process_spawn(ownership, 0, 0, idle_step, NULL, NULL, &ownership_root) == MV_OK);
+    ownership_previous = ownership_root;
+    for (int i = 0; i < 512; ++i) {
+        assert(mv_process_spawn(ownership, ownership_previous, 0, idle_step, NULL, NULL,
+                                &ownership_child) == MV_OK);
+        ownership_previous = ownership_child;
+    }
+    assert(mv_process_descendants(ownership, ownership_root, 0, NULL, 0, &total) == MV_OK &&
+           total == 512);
+    assert(mv_process_signal(ownership, ownership_root, MV_SIGNAL_KILL, 0) == MV_OK);
+    assert(mv_process_count(ownership) == 0 && mv_process_tick(ownership) == MV_OK);
+    assert(mv_process_lineage_snapshot(ownership, NULL, 0, &total) == MV_OK && total == 0);
+    mv_context_destroy(ownership);
+
+    MvContext *divergent = mv_context_create(60, 5);
+    assert(divergent);
+    MvProcessId owner_root, creator_root, intermediate, survivor;
+    assert(mv_process_spawn(divergent, 0, 0, idle_step, NULL, NULL, &owner_root) == MV_OK);
+    assert(mv_process_spawn(divergent, 0, 0, idle_step, NULL, NULL, &creator_root) == MV_OK);
+    assert(mv_process_spawn_related(divergent, creator_root, owner_root, 0, idle_step, NULL,
+                                    NULL, &intermediate) == MV_OK);
+    assert(mv_process_spawn_related(divergent, intermediate, 0, 0, idle_step, NULL,
+                                    NULL, &survivor) == MV_OK);
+    assert(mv_process_signal(divergent, owner_root, MV_SIGNAL_KILL, 0) == MV_OK);
+    assert(mv_process_tick(divergent) == MV_OK);
+    assert(mv_process_creation_descendants(divergent, creator_root, 0, &relation_info,
+                                           1, &total) == MV_OK);
+    assert(total == 1 && relation_info.id == survivor && relation_info.parent == 0);
+    assert(mv_process_descendants(divergent, creator_root, 0, NULL, 0, &total) == MV_OK &&
+           total == 0);
+    assert(mv_process_signal_creation_tree(divergent, creator_root, MV_SIGNAL_KILL) == MV_OK);
+    assert(mv_process_tick(divergent) == MV_OK);
+    assert(mv_process_lineage_snapshot(divergent, NULL, 0, &total) == MV_OK && total == 0);
+    mv_context_destroy(divergent);
+
     MvContext *first_runtime = mv_context_create(60, 5);
     MvContext *second_runtime = mv_context_create(60, 5);
     assert(first_runtime && second_runtime);
