@@ -122,7 +122,7 @@ Proposed templates: `starter`, `processes`, and `asteroids`; `android-touch` aft
 
 ## Shared use by malvado-gui
 
-The [GUI](gui.md) uses the same C project, configuration, template, job, validation, and export services. If it initially invokes a CLI subprocess, it needs structured output and a job protocol. It must not parse translated messages. The runner remains a separate process; game diagnostics use snapshots and commands between ticks. The CLI works without a graphics toolkit, and exports do not include ImGui.
+The future [GUI](gui.md) should reuse project and export behavior. The current exporter has an internal interface, but a complete stable service API does not yet exist. Design that interface during GUI work. If it initially invokes a CLI subprocess, it needs structured output and a job protocol. It must not parse translated messages. The runner remains a separate process; game diagnostics use snapshots and commands between ticks. The CLI works without a graphics toolkit, and exports do not include ImGui.
 
 ## Assets and packaging
 
