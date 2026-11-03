@@ -46,12 +46,12 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P1 / 2.0.0-alpha.1 | CMake, bundled Lua, C context, raylib window, runner, `process/frame`, hello, initial build/CTest CI | Hello opens/closes without LÖVE or installed Lua on macOS/Linux; scheduler works headless |
 | P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
 | P3 / 2.0.0-alpha.3 | Current 2D graphics, input, text, audio, examples, and development workflow | Tagged preview; unchecked validation items remain open |
-| P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Create, run, export, and run C and Lua games on macOS/Linux |
+| P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Automated create, run, export, and execution checks for C and Lua on macOS/Linux |
 | P5 / 2.0.0-alpha.5 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
-| P6 / 2.0.0-alpha.6 | Windows and Android runtimes, packaging, and exports | Clean-machine Windows and Android device/emulator checks |
+| P6 / 2.0.0-alpha.6 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |
 | P7 / 2.0.0-alpha.7 | Complete all remaining agreed 2.0 API families in C and Lua | Every in-scope API entry has an implementation, contract, and behavior test |
-| P8 / 2.0.0-alpha.8 | Complete public documentation, examples, site, packaging, and platform review | Published site and verified end-to-end flows for all supported targets |
-| P9 / 2.0.0-beta.1 | Freeze the 2.0 API and prepare release candidates | Complete inventory, API parity, documentation, and platform evidence |
+| P8 / 2.0.0-alpha.8 | Complete public documentation, examples, site, packaging, and platform review | Published site and automated end-to-end checks for supported targets |
+| P9 / 2.0.0-beta.1 | Freeze the 2.0 API, manually test user flows, and prepare release candidates | Complete inventory, API parity, documentation, manual device and clean-host results |
 | P10 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
 | 2.1 | Mode 7 | Perspective floor, sprites, C/Lua APIs, examples and tests |
 | 2.2 | Mode 8 | Sector world, collision, C/Lua APIs, examples and tests |
@@ -61,7 +61,7 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 
 The complete **Malvado 2.0 API** is a release gate, except graphics modes 7, 8 and 9. Define its exact inventory and contracts before implementation. Do not silently equate that inventory with every historical DIV or Bennu export: assess the references and record differences with the owner. Earlier claims that only the essential profile is required no longer set the 2.0 scope.
 
-The required targets are macOS, Linux, Windows, and Android. Validate packages and example games on each target before release. iOS is deferred to a later version; its feasibility, toolchain, signing, distribution, and device testing are not 2.0 release gates. The GUI and graphics modes are not 2.0 gates. Alpha.3 is tagged as a preview, with remaining checks tracked in its version file.
+The required targets are macOS, Linux, Windows, and Android. Alphas include automated tests for their features, including graphics, clean runners, and emulators where practical. Manual user-flow, physical-device, and clean-computer testing belongs to beta. Fix beta findings before the stable release. iOS is deferred to a later version; its feasibility, toolchain, signing, distribution, and device testing are not 2.0 release gates. The GUI and graphics modes are not 2.0 gates. Alpha.3 is tagged as a preview, with remaining implementation and automated checks tracked in its version file.
 
 Lua 5.4 remains the 2.0 runtime. A later LuaJIT evaluation must benchmark process scheduling, Lua calculations, rendering workloads, and memory on the same hardware and build settings. Review Lua 5.1/5.4 language and C API differences, coroutine cleanup, build and export support, and platform limitations before choosing whether to add another runtime. This is an investigation, not a commitment to switch.
 

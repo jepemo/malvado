@@ -2,6 +2,20 @@
 
 The development SDK includes the `malvado` command, the Lua runtime, and the C libraries. It works on the macOS or Linux host for which it was built. Malvado 2 is in development, and its tools can change.
 
+## Install a local development build
+
+From a source checkout on macOS or Linux, run:
+
+```sh
+mise run install
+export PATH="$HOME/.local/share/malvado-dev/bin:$PATH"
+malvado --version
+```
+
+The task builds and installs a development SDK for your user. Run `mise run install` again after you change the source. It replaces the managed SDK. Run `mise run uninstall` to remove it. The tasks do not change your shell configuration. Add the `export PATH` line to your shell configuration to use the command in new terminals.
+
+Set `MALVADO_DEV_PREFIX` to choose another installation directory. Add its `bin` directory to `PATH` instead. Use that directory only for the development SDK. The tasks refuse to change an unmanaged directory or a directory with extra files. They do not remove your projects.
+
 ## Build and install the SDK
 
 First, follow [Get started](getting-started.md) to install the build tools and get the source. From the source directory, build the SDK archive:
@@ -71,7 +85,7 @@ tar -czf my-game.tar.gz -C dist game
 
 The recipient can extract the archive and run `./game/game`.
 
-On macOS, you can instead create an application bundle with `malvado export --app`. It creates `dist/game.app`. To choose a different name and destination, use a path that ends in `.app`, such as `malvado export --app ../my-game.app`. The name must be valid UTF-8 without control characters. This initial bundle uses a default identifier. It is not signed or notarized by Malvado. Clean-machine validation is still in progress.
+On macOS, you can instead create an application bundle with `malvado export --app`. It creates `dist/game.app`. To choose a different name and destination, use a path that ends in `.app`, such as `malvado export --app ../my-game.app`. The name must be valid UTF-8 without control characters. This initial bundle uses a default identifier. It is not signed or notarized by Malvado. Manual clean-machine validation is planned for beta.
 
 To give a game its own macOS identifier, use `malvado export --app --id org.example.my-game`. Replace the example with an identifier for your game. Without `--id`, every app uses `org.malvado.game`.
 

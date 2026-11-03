@@ -1,6 +1,6 @@
 # Alpha.4 desktop validation
 
-Use this procedure to test an alpha.4 SDK candidate before release. Record the source commit, SDK archive name, host operating system and version, architecture, and results in the [alpha.4 checklist](../versions/2.0.0-alpha.4.md).
+Use this procedure for manual desktop testing in beta. It does not block alpha.4. Record the source commit, SDK archive name, host operating system and version, architecture, and results in the [beta.1 checklist](../versions/2.0.0-beta.1.md).
 
 Use one macOS computer and one Linux computer. Each SDK must match its host. For the final game check, use a second computer with the same operating system and architecture. That computer must not have the Malvado SDK installed. Both computers need a working graphics session.
 

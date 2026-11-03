@@ -2,6 +2,8 @@
 
 This page shows the release plan at a glance. Open a version to see its checklist, acceptance criteria, and related design documents. A checked item records verified work; it does not by itself mean a release package exists.
 
+Alphas include implementation and automated tests. Automated graphics, input, clean-runner, and emulator tests remain in the relevant alpha. Manual testing of complete user flows, physical devices, audio, and clean machines is planned for beta. Do not mark unfinished features as complete when moving manual tests.
+
 - [x] [Alpha.1](2.0.0-alpha.1.md) — **complete**: C runtime, bundled Lua, raylib, and hello. Source tag: `v2.0.0-alpha.1`; no release package yet.
 - [x] [Alpha.2](2.0.0-alpha.2.md) — **complete**: shared C/Lua scheduler, processes, signals, messages, and inspection. Source tag: `v2.0.0-alpha.2`; no release package yet.
 - [ ] [Alpha.3](2.0.0-alpha.3.md) — **tagged preview**: source tag `v2.0.0-alpha.3`; some checks remain open.

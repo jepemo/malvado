@@ -273,6 +273,14 @@ set_tests_properties(sdk_archive PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 add_test(NAME cli_project COMMAND ${CMAKE_COMMAND} -DCLI=$<TARGET_FILE:malvado>
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/cli-test -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_project.cmake)
 set_tests_properties(cli_project PROPERTIES TIMEOUT 15)
+if(MALVADO_CAN_EXPORT)
+  find_package(Python3 QUIET COMPONENTS Interpreter)
+  if(Python3_Interpreter_FOUND)
+    add_test(NAME dev_sdk_install COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/dev_sdk.py
+      --source ${CMAKE_CURRENT_SOURCE_DIR} --build ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(dev_sdk_install PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
+  endif()
+endif()
 add_test(NAME c_lua_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:example-c-parity>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>

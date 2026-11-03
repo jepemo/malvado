@@ -53,6 +53,16 @@ Create and run your own game with the client:
 
 See [SDK and projects](docs/site/sdk.md) to install the client and export a game.
 
+For local development, install the current build for your user:
+
+```sh
+mise run install
+export PATH="$HOME/.local/share/malvado-dev/bin:$PATH"
+malvado --version
+```
+
+Run `mise run uninstall` to remove it. The tasks do not change your shell configuration or your projects. Add the `export PATH` line to your shell configuration if you want it in new terminals. Set `MALVADO_DEV_PREFIX` to use a different installation directory. Use that directory only for the development SDK. The tasks refuse an unmanaged directory or one with extra files.
+
 ## Try more examples
 
 After the build, run these commands from the project directory:

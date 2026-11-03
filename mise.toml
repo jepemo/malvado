@@ -29,6 +29,15 @@ description = "Create a local SDK archive and checksum"
 depends = ["build"]
 run = "cmake -DBUILD=build -DOUTPUT=build/sdk-package -DCONFIG=Debug -P tools/cmake/package-sdk.cmake"
 
+[tasks.install]
+description = "Build and install the development SDK for this user"
+depends = ["build"]
+run = "python3 tools/dev_sdk.py install --build build"
+
+[tasks.uninstall]
+description = "Remove the managed development SDK"
+run = "python3 tools/dev_sdk.py uninstall"
+
 [tasks.configure-c]
 description = "Configure the C-only build without dependency downloads"
 run = "cmake -S . -B build-c -DCMAKE_BUILD_TYPE=Debug -DMALVADO_BUILD_LUA=OFF -DMALVADO_BUILD_RAYLIB=OFF -DCMAKE_INSTALL_LIBDIR=lib -DFETCHCONTENT_FULLY_DISCONNECTED=ON"

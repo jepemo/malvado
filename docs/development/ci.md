@@ -50,7 +50,7 @@ A release must represent an exact revision and pass CI. Initially, generate cand
 
 | Delivery | First planned artifact | Check before claiming support |
 | --- | --- | --- |
-| Desktop runtime | Executable/package for Linux x86_64, Windows x86_64, macOS arm64 | CTest, example start, included dependencies, clean-machine test |
+| Desktop runtime | Executable/package for Linux x86_64, Windows x86_64, macOS arm64 | CTest, example start, included dependencies, automated clean-runner test; manual clean-machine test in beta |
 | SDK/CLI | Tool and runtimes for available targets | New project → run → export → run package |
 | Android | Debug APK for tests; signed APK/AAB for release when exporter exists | Install, test lifecycle/touch, validate AAB; signing configuration separate |
 | GUI | Desktop packages with independent version | Project, preview, execution, and export flow; declared runtime compatibility |
@@ -78,9 +78,9 @@ For PR CI, use `contents: read` or less and no secrets. Do not run untrusted PR 
 | Current alpha.1 | `ci.yml`: available desktop builds, headless CTest, timeouts, catalog, compiler warnings | Test PR shows verifiable checks on available runners; document gaps |
 | Alpha.2 | Agreed formatting/analysis; sanitizers and expanded scheduler tests | CI fails on real errors and provides useful logs |
 | Alpha.3 | Bounded graphics smoke tests and asset examples; site build | CI examples exit automatically; no broken internal documentation links |
-| Alpha.4 | macOS/Linux packages, draft candidate, end-to-end CLI tests | Artifacts installed and run on clean hosts; correct checksums |
-| Alpha.6 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, distributed GUI, CLI, packages | Android emulator/device and lifecycle; Windows CI, graphics test, and clean-machine execution; release signing separate |
-| Beta/2.0 | Versioned Pages, tag automation, publication criteria | Reviewed complete candidate; docs and artifacts match the same commit |
+| Alpha.4 | macOS/Linux packages, draft candidate, end-to-end CLI tests | Automated fresh-runner tests and correct checksums |
+| Alpha.6 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, CLI, packages | Automated Windows CI, graphics, and emulator checks where available; release signing separate |
+| Beta/2.0 | Manual user-flow and device review, versioned Pages, tag automation, publication criteria | Reviewed complete candidate; manual clean-host results; docs and artifacts match the same commit |
 | GUI | Desktop build and smoke jobs at G0/G1 | CI covers selected toolkit and separates GUI from runtime |
 
-CI helps decide whether a version is ready. It does not replace license review, distribution tests, or graphics experience tests on real machines.
+CI helps decide whether a version is ready. Manual user-flow, physical-device, and graphics experience tests on clean machines belong to beta; they are not alpha exit gates.
