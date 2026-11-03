@@ -3,8 +3,11 @@
 
 local mv = require("malvado")
 assert(not pcall(mv.load_image, "tests/fixtures/red.png"))
+local shared
+local producer = mv.process(function() shared = mv.load_image("tests/fixtures/red.png") end)
 local worker = mv.process(function()
-    local image = mv.load_image("tests/fixtures/red.png")
+    local image = shared
+    assert(image and mv.image_size(image) == 8)
     local width, height = mv.image_size(image)
     assert(width == 8 and height == 8)
     local file = assert(io.open("tests/fixtures/atlas.json", "rb"))
@@ -50,6 +53,7 @@ local worker = mv.process(function()
     mv.set_color(255, 0, 255)
     mv.draw_circle(55, 15, 4)
     atlas = nil
+    shared = nil
     image = nil
     collectgarbage("collect")
     mv.frame()
@@ -58,5 +62,6 @@ mv.start(function()
     local image = mv.load_image("tests/fixtures/red.png")
     assert(not pcall(mv.draw_image, image, 0, 0))
     assert(not pcall(mv.draw_image_region, image, 0, 0, 0, 0, 4, 4))
+    producer()
     worker()
 end, {width = 64, height = 64, title = "Lua image test"})

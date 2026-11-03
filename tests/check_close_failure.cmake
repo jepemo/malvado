@@ -1,0 +1,20 @@
+# Malvado 2; project created by Jeremías Pérez and contributors.
+# SPDX-License-Identifier: Apache-2.0
+execute_process(COMMAND "${PROGRAM}" --headless "${SCRIPT}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+if(NOT status MATCHES "^[0-9]+$" OR status EQUAL 0)
+    message(FATAL_ERROR "Expected a normal nonzero exit, got '${status}': ${err}")
+endif()
+if(NOT DEFINED EXPECTED_ERROR)
+    set(EXPECTED_ERROR "non-string error")
+endif()
+if(NOT err MATCHES "Error closing process: .*${EXPECTED_ERROR}")
+    message(FATAL_ERROR "Missing close error: ${err}")
+endif()
+foreach(marker CLOSE_BAD CLOSE_GOOD CLOSE_PARENT)
+    string(REGEX MATCHALL "${marker}" matches "${out}")
+    list(LENGTH matches count)
+    if(NOT count EQUAL 1)
+        message(FATAL_ERROR "Expected one ${marker}, got ${count}: ${out} ${err}")
+    endif()
+endforeach()

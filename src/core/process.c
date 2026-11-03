@@ -262,7 +262,7 @@ MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
                           MvProcessId *id)
 {
-    return spawn_related(ctx, parent, parent, priority, step, destroy, user, id, 0);
+    return spawn_related(ctx, parent, parent, priority, step, destroy, user, id, parent != 0);
 }
 
 MvResult mv_process_spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessId owner_id,

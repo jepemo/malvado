@@ -92,16 +92,16 @@ static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason; } LuaSelf;
-typedef struct { MvImage *image; } LuaImage;
-typedef struct { MvSound *sound; } LuaSound;
-typedef struct { MvMusic *music; } LuaMusic;
-typedef struct { MvFont *font; } LuaFont;
+typedef struct { MvImage *image; MvResource *resource; } LuaImage;
+typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
+typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
+typedef struct { MvFont *font; MvResource *resource; } LuaFont;
 typedef struct { int rows, columns, count, directory; } LuaLegacySheet;
 #ifndef _WIN32
 typedef struct { char **names; size_t count; } LuaDirectoryEntries;
 #endif
 #ifdef MALVADO_BUILD_ASSETS
-typedef struct { MvAtlas *atlas; } LuaAtlas;
+typedef struct { MvAtlas *atlas; MvResource *resource; } LuaAtlas;
 #endif
 
 MvContext *
@@ -380,6 +380,13 @@ signal_process(lua_State *L)
 {
     lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
+    if (state == PROCESS_KILLED && luaL_testudata(L, 1, "malvado.process")) {
+        MvProcessStatus status;
+        if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK) {
+            lua_pushboolean(L, 0);
+            return 1;
+        }
+    }
     int self_kill = 0;
     if (state == PROCESS_KILLED && engine.active && L == engine.active_thread) {
         self_kill = active_in_tree(id, 1);
@@ -393,6 +400,10 @@ signal_process(lua_State *L)
     sync_processes();
     if (self_kill)
         return lua_yield(L, 0);
+    if (state == PROCESS_KILLED) {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
     return 0;
 }
 
@@ -542,19 +553,9 @@ get_priority(lua_State *L)
 static int
 kill_process(lua_State *L)
 {
-    LuaSelf *self = luaL_testudata(L, 1, "malvado.process");
-    if (self) {
-        MvProcessStatus status;
-        if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK) {
-            lua_pushboolean(L, 0);
-            return 1;
-        }
-    }
     lua_settop(L, 1);
     lua_pushliteral(L, "kill");
-    signal_process(L);
-    lua_pushboolean(L, 1);
-    return 1;
+    return signal_process(L);
 }
 
 static int
@@ -1379,11 +1380,65 @@ text_input_next(lua_State *L)
     return 1;
 }
 
+static MvResource *
+manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy)
+{
+    MvResource *resource = NULL;
+    MvProcessId owner = engine.active ? (MvProcessId)engine.active_id : 0;
+    if (mv_resource_create(engine.context, owner, data, destroy, &resource) != MV_OK) {
+        destroy(data);
+        luaL_error(L, "could not manage native resource");
+    }
+    if (mv_resource_retain(resource) != MV_OK)
+        luaL_error(L, "could not retain native resource");
+    return resource;
+}
+
+static void destroy_managed_sound(void *data) { mv_sound_destroy(data); }
+static void destroy_managed_music(void *data) { mv_music_destroy(data); }
+static void destroy_managed_font(void *data) { mv_font_destroy(data); }
+
+/* Keep a playing or paused stream alive until it stops or the runtime closes. */
+static void
+pin_audio(lua_State *L, int pinned)
+{
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
+    lua_pushvalue(L, 1);
+    if (pinned) lua_pushboolean(L, 1);
+    else lua_pushnil(L);
+    lua_rawset(L, -3);
+    lua_pop(L, 1);
+}
+
+static void
+sweep_audio(lua_State *L)
+{
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        LuaSound *sound = luaL_testudata(L, -2, "malvado.sound");
+        LuaMusic *music = luaL_testudata(L, -2, "malvado.music");
+        int ended = sound ? sound->playing && !sound->paused && !mv_sound_playing(sound->sound) :
+                    music ? music->playing && !music->paused && !mv_music_playing(music->music) : 1;
+        if (ended) {
+            if (sound) sound->playing = 0;
+            if (music) music->playing = 0;
+            lua_pushvalue(L, -2);
+            lua_pushnil(L);
+            lua_rawset(L, -5);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+}
+
 static int
 sound_gc(lua_State *L)
 {
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    mv_sound_destroy(sound->sound);
+    if (sound->resource) mv_resource_release(sound->resource);
+    else mv_sound_destroy(sound->sound);
+    sound->resource = NULL;
     sound->sound = NULL;
     return 0;
 }
@@ -1403,11 +1458,15 @@ load_sound(lua_State *L)
         engine.audio = 1;
     }
     LuaSound *sound = lua_newuserdatauv(L, sizeof(*sound), 0);
-    sound->sound = NULL;
+    *sound = (LuaSound){0};
     luaL_setmetatable(L, "malvado.sound");
     sound->sound = mv_sound_load(path);
     if (!sound->sound)
         return luaL_error(L, "could not load WAV sound: %s", path);
+    MvSound *native = sound->sound;
+    sound->sound = NULL;
+    sound->resource = manage_native_resource(L, native, destroy_managed_sound);
+    sound->sound = native;
     return 1;
 }
 
@@ -1416,11 +1475,15 @@ clone_sound(lua_State *L)
 {
     LuaSound *source = luaL_checkudata(L, 1, "malvado.sound");
     LuaSound *copy = lua_newuserdatauv(L, sizeof(*copy), 0);
-    copy->sound = NULL;
+    *copy = (LuaSound){0};
     luaL_setmetatable(L, "malvado.sound");
     copy->sound = mv_sound_clone(source->sound);
     if (!copy->sound)
         return luaL_error(L, "could not create sound instance");
+    MvSound *native = copy->sound;
+    copy->sound = NULL;
+    copy->resource = manage_native_resource(L, native, destroy_managed_sound);
+    copy->sound = native;
     return 1;
 }
 
@@ -1430,6 +1493,9 @@ play_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_play(sound->sound))
         return luaL_error(L, "sound is not available");
+    sound->playing = 1;
+    sound->paused = 0;
+    pin_audio(L, 1);
     return 0;
 }
 
@@ -1439,6 +1505,8 @@ stop_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_stop(sound->sound))
         return luaL_error(L, "sound is not available");
+    sound->playing = sound->paused = 0;
+    pin_audio(L, 0);
     return 0;
 }
 
@@ -1448,6 +1516,7 @@ pause_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_pause(sound->sound))
         return luaL_error(L, "sound is not available");
+    if (sound->playing) sound->paused = 1;
     return 0;
 }
 
@@ -1457,6 +1526,7 @@ resume_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_resume(sound->sound))
         return luaL_error(L, "sound is not available");
+    if (sound->playing) sound->paused = 0;
     return 0;
 }
 
@@ -1484,7 +1554,9 @@ static int
 music_gc(lua_State *L)
 {
     LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
-    mv_music_destroy(music->music);
+    if (music->resource) mv_resource_release(music->resource);
+    else mv_music_destroy(music->music);
+    music->resource = NULL;
     music->music = NULL;
     return 0;
 }
@@ -1507,11 +1579,15 @@ load_music(lua_State *L)
         engine.audio = 1;
     }
     LuaMusic *music = lua_newuserdatauv(L, sizeof(*music), 0);
-    music->music = NULL;
+    *music = (LuaMusic){0};
     luaL_setmetatable(L, "malvado.music");
     music->music = mv_music_load(path, loop);
     if (!music->music)
         return luaL_error(L, "could not load music: %s", path);
+    MvMusic *native = music->music;
+    music->music = NULL;
+    music->resource = manage_native_resource(L, native, destroy_managed_music);
+    music->music = native;
     return 1;
 }
 
@@ -1530,6 +1606,15 @@ music_action(lua_State *L)
     }
     if (!ok)
         return luaL_error(L, "music is not available");
+    if (action == 0) {
+        music->playing = 1;
+        music->paused = 0;
+        pin_audio(L, 1);
+    } else if (action == 2) {
+        music->playing = music->paused = 0;
+        pin_audio(L, 0);
+    } else if (action == 3 && music->playing) music->paused = 1;
+    else if (action == 4 && music->playing) music->paused = 0;
     return 0;
 }
 
@@ -1553,11 +1638,28 @@ music_volume(lua_State *L)
     return 0;
 }
 
+static void
+destroy_managed_image(void *data)
+{
+    mv_image_destroy(data);
+}
+
+static void
+manage_image(lua_State *L, LuaImage *image)
+{
+    MvImage *native = image->image;
+    image->image = NULL;
+    image->resource = manage_native_resource(L, native, destroy_managed_image);
+    image->image = native;
+}
+
 static int
 image_gc(lua_State *L)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
-    mv_image_destroy(image->image);
+    if (image->resource) mv_resource_release(image->resource);
+    else mv_image_destroy(image->image);
+    image->resource = NULL;
     image->image = NULL;
     return 0;
 }
@@ -1572,11 +1674,12 @@ load_image(lua_State *L)
     if (!engine.window)
         return luaL_error(L, "load_image requires an open window");
     LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
-    image->image = NULL;
+    *image = (LuaImage){0};
     luaL_setmetatable(L, "malvado.image");
     image->image = mv_image_load(path);
     if (!image->image)
         return luaL_error(L, "could not load PNG image: %s", path);
+    manage_image(L, image);
     return 1;
 }
 
@@ -1739,11 +1842,12 @@ legacy_directory(lua_State *L, const char *path)
     for (size_t i = 0; i < entries->count; ++i) {
         const char *file = lua_pushfstring(L, "%s/%s", path, entries->names[i]);
         LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
-        image->image = NULL;
+        *image = (LuaImage){0};
         luaL_setmetatable(L, "malvado.image");
         image->image = mv_image_load(file);
         if (!image->image)
             return luaL_error(L, "could not load PNG image: %s", file);
+        manage_image(L, image);
         lua_seti(L, images, (lua_Integer)i + 1);
         lua_pop(L, 1);
     }
@@ -1890,11 +1994,15 @@ legacy_frame(lua_State *L)
 }
 
 #ifdef MALVADO_BUILD_ASSETS
+static void destroy_managed_atlas(void *data) { mv_atlas_destroy(data); }
+
 static int
 atlas_gc(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
-    mv_atlas_destroy(atlas->atlas);
+    if (atlas->resource) mv_resource_release(atlas->resource);
+    else mv_atlas_destroy(atlas->atlas);
+    atlas->resource = NULL;
     atlas->atlas = NULL;
     return 0;
 }
@@ -1906,13 +2014,17 @@ load_atlas(lua_State *L)
     size_t length;
     const char *json = luaL_checklstring(L, 2, &length);
     LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 1);
-    atlas->atlas = NULL;
+    *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     const char *error = NULL;
     atlas->atlas = mv_atlas_parse(json, length, mv_image_width(image->image),
                                   mv_image_height(image->image), &error);
     if (!atlas->atlas)
         return luaL_error(L, "%s", error);
+    MvAtlas *native = atlas->atlas;
+    atlas->atlas = NULL;
+    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas);
+    atlas->atlas = native;
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
     return 1;
@@ -1995,7 +2107,9 @@ static int
 font_gc(lua_State *L)
 {
     LuaFont *font = luaL_checkudata(L, 1, "malvado.font");
-    mv_font_destroy(font->font);
+    if (font->resource) mv_resource_release(font->resource);
+    else mv_font_destroy(font->font);
+    font->resource = NULL;
     font->font = NULL;
     return 0;
 }
@@ -2041,11 +2155,15 @@ load_font(lua_State *L)
     if (!engine.window)
         return luaL_error(L, "load_font requires an open window");
     LuaFont *font = lua_newuserdatauv(L, sizeof(*font), 0);
-    font->font = NULL;
+    *font = (LuaFont){0};
     luaL_setmetatable(L, "malvado.font");
     font->font = mv_font_load_codepoints(path, (int)size, glyphs, count);
     if (!font->font)
         return luaL_error(L, "could not load TTF or OTF font: %s", path);
+    MvFont *native = font->font;
+    font->font = NULL;
+    font->resource = manage_native_resource(L, native, destroy_managed_font);
+    font->font = native;
     lua_createtable(L, 4, 2);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, "resource");
@@ -2234,7 +2352,9 @@ cleanup(Process *p)
     int status = lua_closethread(thread, engine.L);
     engine.closing_id = previous_closing_id;
     if (status != LUA_OK) {
-        fprintf(stderr, "Error closing process: %s\n", lua_tostring(thread, -1));
+        const char *message = lua_type(thread, -1) == LUA_TSTRING ?
+                              lua_tostring(thread, -1) : "non-string error";
+        fprintf(stderr, "Error closing process: %s\n", message);
         engine.failed = 1;
     }
     lua_rawgeti(engine.L, LUA_REGISTRYINDEX, self_ref);
@@ -2349,12 +2469,33 @@ lua_process_destroy(void *user)
     free(handle);
 }
 
+/* Native processes do not have a Lua destructor. Clear their userdata fields
+ * after scheduler cleanup without keeping those handles alive. */
+static void
+invalidate_dead_handles(lua_State *L)
+{
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        LuaSelf *self = luaL_testudata(L, -1, "malvado.process");
+        MvProcessStatus status;
+        if (self && mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK) {
+            lua_pushnil(L);
+            lua_setiuservalue(L, -2, 1);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+}
+
 static int
 tick(void)
 {
     engine.in_tick = 1;
     engine.tick_number++;
     MvResult result = mv_process_tick(engine.context);
+    invalidate_dead_handles(engine.L);
+    if (engine.audio) sweep_audio(engine.L);
     advance_fade();
     sync_processes();
     if (result != MV_OK) {
@@ -2953,6 +3094,8 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__mode");
     lua_setmetatable(L, -2);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    lua_newtable(L);
+    lua_setfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);

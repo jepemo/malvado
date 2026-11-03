@@ -53,6 +53,21 @@ static MvStepResult idle_step(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_YIELD;
 }
 
+typedef struct {
+    MvProcessId victim;
+    int calls;
+} KillerState;
+
+static MvStepResult
+kill_before_turn(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)id;
+    KillerState *state = user;
+    ++state->calls;
+    assert(mv_process_signal(ctx, state->victim, MV_SIGNAL_KILL, 0) == MV_OK);
+    return MV_STEP_DONE;
+}
+
 static MvStepResult finish_step(MvContext *ctx, MvProcessId id, void *user)
 {
     (void)ctx;
@@ -229,14 +244,25 @@ int main(void)
     owned = (State){0};
     assert(mv_process_spawn_related(cascade, 0, 0, 0, child_step, destroy,
                                     &owner, &owner_id) == MV_OK);
-    assert(mv_process_spawn_related(cascade, owner_id, owner_id, 0, child_step,
-                                    destroy, &owned, &owned_id) == MV_OK);
+    assert(mv_process_spawn(cascade, owner_id, 0, child_step,
+                            destroy, &owned, &owned_id) == MV_OK);
     assert(mv_process_signal(cascade, owner_id, MV_SIGNAL_KILL, 0) == MV_OK);
     assert(mv_process_count(cascade) == 0);
     assert(mv_process_tick(cascade) == MV_OK);
     assert(owner.calls == 0 && owned.calls == 0);
     assert(owner.destroyed == 1 && owned.destroyed == 1);
     mv_context_destroy(cascade);
+    MvContext *order = mv_context_create(60, 5);
+    assert(order);
+    State victim = {0};
+    KillerState killer = {0};
+    MvProcessId killer_id;
+    assert(mv_process_spawn(order, 0, 0, child_step, destroy, &victim, &killer.victim) == MV_OK);
+    assert(mv_process_spawn(order, 0, 1, kill_before_turn, NULL, &killer, &killer_id) == MV_OK);
+    assert(mv_process_tick(order) == MV_OK);
+    assert(killer.calls == 1 && victim.calls == 0 && victim.destroyed == 1);
+    mv_context_destroy(order);
+
     MvContext *shutdown = mv_context_create(60, 5);
     assert(shutdown);
     ShutdownState first = {.ctx = shutdown}, second = {.ctx = shutdown};

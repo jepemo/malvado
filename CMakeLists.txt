@@ -320,6 +320,34 @@ add_test(NAME error_propagation COMMAND ${CMAKE_COMMAND}
   -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/error.lua
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_error.cmake)
 
+add_executable(close-failure-host-test tests/close_failure_host.c)
+target_include_directories(close-failure-host-test PRIVATE src)
+target_link_libraries(close-failure-host-test PRIVATE malvado_lua_binding)
+add_test(NAME close_failure_resource COMMAND close-failure-host-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/close_failure.lua)
+set_tests_properties(close_failure_resource PROPERTIES TIMEOUT 15)
+add_test(NAME close_failure COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run>
+  -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/close_failure.lua
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_close_failure.cmake)
+set_tests_properties(close_failure PROPERTIES TIMEOUT 15)
+add_test(NAME close_failure_natural COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run>
+  -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/close_failure_natural.lua
+  "-DEXPECTED_ERROR=natural close failed"
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_close_failure.cmake)
+set_tests_properties(close_failure_natural PROPERTIES TIMEOUT 15)
+add_test(NAME close_failure_error COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run>
+  -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/close_failure_error.lua
+  "-DEXPECTED_ERROR=close after error"
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_close_failure.cmake)
+add_test(NAME close_failure_self COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run>
+  -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/close_failure_self.lua
+  "-DEXPECTED_ERROR=close after self-kill"
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_close_failure.cmake)
+set_tests_properties(close_failure_error close_failure_self PROPERTIES TIMEOUT 15)
+
 add_test(NAME process_lifecycle COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/process_lifecycle.lua)
 add_test(NAME text COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/text.lua)
 add_test(NAME keys COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/keys.lua)
@@ -487,6 +515,9 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   if(UNIX AND NOT APPLE)
     add_test(NAME visual_audio COMMAND audio-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/audio_visual.lua)
     set_tests_properties(visual_audio PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      ENVIRONMENT "ALSA_CONFIG_PATH=${CMAKE_CURRENT_SOURCE_DIR}/tests/alsa-null.conf")
+    add_test(NAME visual_audio_resource COMMAND audio-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/audio_resource.lua)
+    set_tests_properties(visual_audio_resource PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       ENVIRONMENT "ALSA_CONFIG_PATH=${CMAKE_CURRENT_SOURCE_DIR}/tests/alsa-null.conf")
     add_test(NAME visual_audio_demo COMMAND malvado-run ${CMAKE_CURRENT_SOURCE_DIR}/tests/audio_example.lua)
     set_tests_properties(visual_audio_demo PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

@@ -1,0 +1,38 @@
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
+
+local mv = require("malvado")
+local weak = setmetatable({}, {__mode = "v"})
+local producer = mv.process(function()
+  local sound = mv.load_sound("tests/fixtures/silence.wav")
+  local music = mv.load_music("tests/fixtures/silence.ogg", true)
+  weak[1], weak[2] = sound, music
+  mv.play_sound(sound)
+  mv.pause_sound(sound)
+  mv.play_music(music)
+  mv.pause_music(music)
+end)
+local natural = mv.process(function()
+  local sound = mv.load_sound("tests/fixtures/silence.wav")
+  weak[3] = sound
+  mv.play_sound(sound)
+end)
+local controller = mv.process(function()
+  mv.frame()
+  collectgarbage("collect")
+  assert(weak[1] and weak[2])
+  mv.stop_sound(weak[1])
+  mv.stop_music(weak[2])
+  collectgarbage("collect")
+  collectgarbage("collect")
+  assert(weak[1] == nil and weak[2] == nil)
+  for _ = 1, 45 do mv.frame() end
+  collectgarbage("collect")
+  collectgarbage("collect")
+  assert(weak[3] == nil)
+end)
+mv.start(function()
+  controller()
+  producer()
+  natural()
+end, {width = 64, height = 64})

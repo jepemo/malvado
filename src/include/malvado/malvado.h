@@ -108,7 +108,8 @@ void mv_message_release(MvMessage *message);
  * spawn transfers responsibility for user to that destructor, which is called
  * once on removal or context destruction. Otherwise the caller must keep user
  * valid for the process lifetime. On failure the caller retains responsibility
- * for user and id is unchanged. parent=0 creates a root process. */
+ * for user and id is unchanged. parent=0 creates a root process. A nonzero
+ * parent owns the new process, which ends when its owner ends. */
 MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
                           MvProcessId *id);
