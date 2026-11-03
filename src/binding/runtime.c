@@ -380,6 +380,30 @@ parse_signal(lua_State *L, int argument)
     return PROCESS_KILLED; /* luaL_error does not return. */
 }
 
+static void
+validate_options(lua_State *L, int index, const char *first, const char *second)
+{
+    index = lua_absindex(L, index);
+    luaL_checktype(L, index, LUA_TTABLE);
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        size_t length = 0;
+        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
+        if (!name || strlen(name) != length ||
+            (strcmp(name, first) != 0 && (!second || strcmp(name, second) != 0)))
+            luaL_error(L, "unknown process option");
+        lua_pop(L, 1);
+    }
+}
+
+static void
+raw_option(lua_State *L, int index, const char *name)
+{
+    index = lua_absindex(L, index);
+    lua_pushstring(L, name);
+    lua_rawget(L, index);
+}
+
 static int
 parse_creation_relation(lua_State *L, int argument)
 {
@@ -512,8 +536,8 @@ signal_tree(lua_State *L)
     ProcessState state = parse_signal(L, 2);
     int creation = 1;
     if (!lua_isnoneornil(L, 3)) {
-        luaL_checktype(L, 3, LUA_TTABLE);
-        lua_getfield(L, 3, "relation");
+        validate_options(L, 3, "relation", NULL);
+        raw_option(L, 3, "relation");
         if (!lua_isnil(L, -1)) {
             creation = parse_creation_relation(L, -1);
         }
@@ -787,10 +811,10 @@ create_process(lua_State *L)
 {
     lua_settop(L, 2);
     if (!lua_isnil(L, 1)) luaL_checktype(L, 1, LUA_TTABLE);
-    if (!lua_isnil(L, 2)) luaL_checktype(L, 2, LUA_TTABLE);
+    if (!lua_isnil(L, 2)) validate_options(L, 2, "attached", NULL);
     int explicit_attachment = 0, attached = 1;
     if (lua_istable(L, 2)) {
-        lua_getfield(L, 2, "attached");
+        raw_option(L, 2, "attached");
         if (!lua_isnil(L, -1)) {
             luaL_checktype(L, -1, LUA_TBOOLEAN);
             explicit_attachment = 1;
@@ -945,20 +969,27 @@ define_process(lua_State *L)
     luaL_checktype(L, 1, LUA_TFUNCTION);
     if (engine.next_type_id == LUA_MAXINTEGER)
         return luaL_error(L, "process type ID space exhausted");
-    if (!lua_isnoneornil(L, 2))
-        luaL_checktype(L, 2, LUA_TTABLE);
+    if (!lua_isnoneornil(L, 2)) {
+        validate_options(L, 2, "defaults", "children_attached");
+        raw_option(L, 2, "defaults");
+        if (!lua_isnil(L, -1)) luaL_checktype(L, -1, LUA_TTABLE);
+        lua_pop(L, 1);
+        raw_option(L, 2, "children_attached");
+        if (!lua_isnil(L, -1)) luaL_checktype(L, -1, LUA_TBOOLEAN);
+        lua_pop(L, 1);
+    }
     lua_settop(L, 2);
     lua_pushvalue(L, 1);
     lua_pushinteger(L, ++engine.next_type_id);
     if (lua_istable(L, 2)) {
-        lua_getfield(L, 2, "defaults");
+        raw_option(L, 2, "defaults");
         if (!lua_isnil(L, -1))
             luaL_checktype(L, -1, LUA_TTABLE);
     } else {
         lua_pushnil(L);
     }
     if (lua_istable(L, 2)) {
-        lua_getfield(L, 2, "children_attached");
+        raw_option(L, 2, "children_attached");
         if (!lua_isnil(L, -1)) luaL_checktype(L, -1, LUA_TBOOLEAN);
         else { lua_pop(L, 1); lua_pushboolean(L, 1); }
     } else lua_pushboolean(L, 1);
@@ -1031,13 +1062,13 @@ hierarchy_query(lua_State *L, int direct)
     int creation = 0;
     uint64_t type = 0;
     if (!lua_isnoneornil(L, 2)) {
-        luaL_checktype(L, 2, LUA_TTABLE);
-        lua_getfield(L, 2, "relation");
+        validate_options(L, 2, "relation", "type");
+        raw_option(L, 2, "relation");
         if (!lua_isnil(L, -1)) {
             creation = parse_creation_relation(L, -1);
         }
         lua_pop(L, 1);
-        lua_getfield(L, 2, "type");
+        raw_option(L, 2, "type");
         if (!lua_isnil(L, -1)) {
             if (!lua_iscfunction(L, -1) || lua_tocfunction(L, -1) != create_process ||
                 !lua_getupvalue(L, -1, 2))
