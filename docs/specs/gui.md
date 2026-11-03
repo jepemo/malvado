@@ -89,10 +89,10 @@ Pause stops ticks, not UI/control input. Step advances exactly one logical tick 
 
 | GUI milestone | Dependencies | Delivery and exit gate |
 | --- | --- | --- |
-| G0 / technical decision | Core alpha.3 and basic assets | Small comparison prototype: table/tree, PNG/atlas, DPI, focus, macOS/Linux build; select stack and pin versions. Validate Windows in alpha.6 if GUI is distributed |
+| G0 / technical decision | Core alpha.3 and basic assets | Small comparison prototype: table/tree, PNG/atlas, DPI, focus, macOS/Linux build; select stack and pin versions. Validate Windows in alpha.7 if GUI is distributed |
 | G1 / gui 0.1.0 | Core/CLI alpha.4 and G0 | Create starter, open editor, run/restart, go from error to file/line, preview assets, desktop export; same logical artifact as CLI |
 | G2 / gui 0.2.0 | G1, instrumented core P2, validated protocol | signals/timing: see tree/states; pause and exact one-tick step; editor responds to game error/no-yield |
 | G3 / gui 0.3.0 | G2 and validated asset pipeline | Edit points/pivots/animations, undo/redo, save/reopen; FPG import only after reader fixtures exist |
 | G4 / gui 1.0.0 | Stable project flow and declared support | Create→play→inspect→export on supported hosts; Android uses the existing exporter |
 
-The GUI has its own version because it is optional. Its maturity must not imply runtime 2.0 maturity. Add core diagnostic hooks early. GUI delivery does not block engine/CLI stabilization. Show Android as a target when alpha.6 supports it. No dates are committed and no GUI phases are delivered.
+The GUI has its own version because it is optional. Its maturity must not imply runtime 2.0 maturity. Add core diagnostic hooks early. GUI delivery does not block engine/CLI stabilization. Show Android as a target when alpha.7 supports it. No dates are committed and no GUI phases are delivered.

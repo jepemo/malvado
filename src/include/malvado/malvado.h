@@ -56,6 +56,7 @@ typedef struct {
     int64_t priority;
     MvProcessStatus status;
     size_t messages;
+    MvProcessId creator_id;
 } MvProcessInfo;
 
 typedef enum {
@@ -89,6 +90,13 @@ void mv_message_release(MvMessage *message);
 MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
                           MvProcessId *id);
+/** Create a process with separate creator and owner IDs. Both IDs must name
+ * live processes in ctx, or be zero. The owner controls the current parent
+ * relation; creator_id is historical. A nonzero owner links the child to its
+ * lifetime. This experimental entry point does not yet retain genealogy. */
+MvResult mv_process_spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessId owner_id,
+                                  int64_t priority, MvProcessStep step,
+                                  MvProcessDestroy destroy, void *user, MvProcessId *id);
 MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int tree);
 MvResult mv_process_priority(MvContext *ctx, MvProcessId id, int64_t *priority);
 MvResult mv_process_set_priority(MvContext *ctx, MvProcessId id, int64_t priority);

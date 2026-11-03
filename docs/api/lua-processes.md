@@ -36,6 +36,8 @@ After `start` begins, `mv.window_size()` returns the current width and height in
 
 `mv.key(name)` returns whether a key is held. Use lowercase letters `"a"` to `"z"`, digits `"0"` to `"9"`, `"left"`, `"right"`, `"up"`, `"down"`, `"space"`, `"escape"`, `"enter"`, `"tab"`, or `"backspace"`. Names are case-sensitive. Other names raise an error. In headless mode all supported keys return false. Try `"space"` and `"escape"` in the [C and Lua timing game](../../examples/c/timing-game/README.md).
 
+Key names are also available as constants. For example, use `mv.key(mv.KEY_UP)` or `mv.key(mv.KEY_A)`. After `import_globals()`, use `key(KEY_UP)`. Constants are strings, so `mv.KEY_UP` and `"up"` have the same value. Constants cover letters, digits, and the named keys above. Signal constants are `SIGNAL_SLEEP`, `SIGNAL_FREEZE`, `SIGNAL_WAKEUP`, and `SIGNAL_KILL`. They also have string values.
+
 The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. Both functions use the window thread.
 
 Use `local x, y = mv.mouse_position()` for the pointer position in window pixels. The top-left corner is `(0, 0)`. Use `mv.mouse_button("left")`, `"middle"`, or `"right"` to check whether a button is held. An unknown name raises an error. In headless mode the position is `(0, 0)` and all buttons are released.
@@ -78,10 +80,11 @@ The following fields belong to the engine and cannot be assigned:
 - `self.parent`: the creator's ID, or `nil`. It keeps the original ID even if the parent later ends.
 - `self.priority`: the current scheduler priority.
 - `self.delta`: logical seconds since this process's previous activation, or 0 on its first activation. It includes ticks spent sleeping or frozen.
-- `self.status`: `"running"`, `"sleeping"`, `"frozen"`, or `nil` after termination.
+- `self.status`: `"running"`, `"sleeping"`, `"frozen"`, or `"dead"` after termination.
+- `self.reason`: `nil` while alive, then `"returned"`, `"killed"`, or `"error"`.
 - `self.recv`: the message-receive method.
 
-After a parent ends, its live children become roots in the process tree. Their `self.parent` still identifies their original creator. A saved `self` value can outlive its process. Its `id` and `parent` remain readable, but a priority lookup or receive operation on a terminated process raises an error.
+After a parent ends, its live children become roots in the process tree. Their `self.parent` still identifies their original creator. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Other field reads and writes raise an error after termination. Cleanup releases its game fields, even while Lua still holds `self`.
 
 ## Control processes
 
@@ -91,7 +94,7 @@ Use `mv.set_priority(id, value)` and `mv.get_priority(id)` to change and read in
 
 `mv.signal(id, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(id, signal)` also signals the live descendants at the time of the call. New children do not inherit that signal. `mv.kill(id)` and `mv.kill_tree(id)` are shortcuts for the kill signal.
 
-Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process that kills itself continues until it yields or returns; cleanup happens afterward. Invalid signals or IDs raise an error without changing the tree.
+Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or IDs raise an error without changing the tree.
 
 ## Send and receive messages
 

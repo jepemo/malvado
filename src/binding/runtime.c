@@ -367,10 +367,53 @@ signal_process(lua_State *L)
 {
     lua_Integer id = luaL_checkinteger(L, 1);
     ProcessState state = parse_signal(L, 2);
+    int self_kill = state == PROCESS_KILLED && engine.active &&
+                    L == engine.active_thread && id == engine.active_id;
+    if (self_kill && !lua_isyieldable(L))
+        return luaL_error(L, "cannot kill the active process in a non-yieldable context");
     if (mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 0) != MV_OK)
         return luaL_error(L, "unknown process id");
     sync_processes();
+    if (self_kill)
+        return lua_yield(L, 0);
     return 0;
+}
+
+/* Check the same live ownership tree that the current C signal API uses. */
+static int
+active_in_tree(lua_Integer root)
+{
+    size_t total = 0;
+    if (mv_process_snapshot(engine.context, NULL, 0, &total) != MV_OK)
+        return -1;
+    if (total > SIZE_MAX / sizeof(MvProcessInfo))
+        return -1;
+    MvProcessInfo *items = total ? malloc(total * sizeof(*items)) : NULL;
+    if (total && !items)
+        return -1;
+    size_t count = 0;
+    if (mv_process_snapshot(engine.context, items, total, &count) != MV_OK || count > total) {
+        free(items);
+        return -1;
+    }
+    MvProcessId id = (MvProcessId)engine.active_id;
+    int found = 0;
+    for (size_t depth = 0; id && depth < count; ++depth) {
+        if (id == (MvProcessId)root) {
+            found = 1;
+            break;
+        }
+        MvProcessId parent = 0;
+        for (size_t i = 0; i < count; ++i) {
+            if (items[i].id == id) {
+                parent = items[i].parent;
+                break;
+            }
+        }
+        id = parent;
+    }
+    free(items);
+    return found;
 }
 
 static int
@@ -378,9 +421,19 @@ signal_tree(lua_State *L)
 {
     lua_Integer id = luaL_checkinteger(L, 1);
     ProcessState state = parse_signal(L, 2);
+    int self_kill = 0;
+    if (state == PROCESS_KILLED && engine.active && L == engine.active_thread) {
+        self_kill = active_in_tree(id);
+        if (self_kill < 0)
+            return luaL_error(L, "cannot inspect process tree");
+        if (self_kill && !lua_isyieldable(L))
+            return luaL_error(L, "cannot kill the active process in a non-yieldable context");
+    }
     if (mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 1) != MV_OK)
         return luaL_error(L, "unknown process id");
     sync_processes();
+    if (self_kill)
+        return lua_yield(L, 0);
     return 0;
 }
 
@@ -436,7 +489,7 @@ process_status(lua_State *L)
     return 1;
 }
 
-typedef struct { lua_Integer id, parent; } LuaSelf;
+typedef struct { lua_Integer id, parent; int reason; } LuaSelf;
 
 static int
 self_index(lua_State *L)
@@ -445,6 +498,24 @@ self_index(lua_State *L)
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && strcmp(key, "id") == 0) {
         lua_pushinteger(L, self->id);
+        return 1;
+    }
+    MvProcessStatus current_status;
+    if (mv_process_status(engine.context, (MvProcessId)self->id, &current_status) != MV_OK) {
+        if (key && strcmp(key, "status") == 0) {
+            lua_pushliteral(L, "dead");
+            return 1;
+        }
+        if (key && strcmp(key, "reason") == 0) {
+            const char *reason = self->reason == 1 ? "returned" :
+                                 self->reason == 2 ? "error" : "killed";
+            lua_pushstring(L, reason);
+            return 1;
+        }
+        return luaL_error(L, "process is no longer alive");
+    }
+    if (key && strcmp(key, "reason") == 0) {
+        lua_pushnil(L);
         return 1;
     }
     if (key && strcmp(key, "parent") == 0) {
@@ -498,10 +569,13 @@ self_index(lua_State *L)
 static int
 self_newindex(lua_State *L)
 {
-    luaL_checkudata(L, 1, "malvado.process");
+    LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && (!strcmp(key, "id") || !strcmp(key, "parent") ||
-                !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "recv") ||
+                !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "reason") || !strcmp(key, "recv") ||
                 !strcmp(key, "delta")))
         return luaL_error(L, "process field is read-only");
     if (key && strcmp(key, "z") == 0 &&
@@ -578,7 +652,7 @@ create_process(lua_State *L)
     }
     lua_Integer id = handle->id;
     LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
-    *self = (LuaSelf){id, engine.active_id};
+    *self = (LuaSelf){.id = id, .parent = engine.active_id};
     lua_pushvalue(L, -2);
     lua_setiuservalue(L, -2, 1);
     lua_remove(L, -2);
@@ -1836,11 +1910,15 @@ cleanup(Process *p)
     int self_ref = p->self_ref;
     int draw_ref = p->draw_ref;
     p->alive = 0;
-    int status = lua_resetthread(thread);
+    int status = lua_closethread(thread, engine.L);
     if (status != LUA_OK) {
         fprintf(stderr, "Error closing process: %s\n", lua_tostring(thread, -1));
         engine.failed = 1;
     }
+    lua_rawgeti(engine.L, LUA_REGISTRYINDEX, self_ref);
+    lua_pushnil(engine.L);
+    lua_setiuservalue(engine.L, -2, 1);
+    lua_pop(engine.L, 1);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, thread_ref);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, self_ref);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, draw_ref);
@@ -1889,6 +1967,13 @@ lua_process_step_protected(lua_State *L)
     engine.active = 0;
     engine.active_thread = NULL;
     engine.active_id = 0;
+    if (status != LUA_YIELD) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+        LuaSelf *self = lua_touserdata(L, -1);
+        if (self)
+            self->reason = status == LUA_OK ? 1 : 2;
+        lua_pop(L, 1);
+    }
     if (status != LUA_YIELD && status != LUA_OK) {
         luaL_traceback(L, co, lua_tostring(co, -1), 1);
         fprintf(stderr, "%s\n", lua_tostring(L, -1));
@@ -2200,27 +2285,202 @@ random_range(lua_State *L)
     return 1;
 }
 
+static const struct { const char *name; const char *value; } api_constants[] = {
+    {"KEY_A", "a"},
+    {"KEY_B", "b"},
+    {"KEY_C", "c"},
+    {"KEY_D", "d"},
+    {"KEY_E", "e"},
+    {"KEY_F", "f"},
+    {"KEY_G", "g"},
+    {"KEY_H", "h"},
+    {"KEY_I", "i"},
+    {"KEY_J", "j"},
+    {"KEY_K", "k"},
+    {"KEY_L", "l"},
+    {"KEY_M", "m"},
+    {"KEY_N", "n"},
+    {"KEY_O", "o"},
+    {"KEY_P", "p"},
+    {"KEY_Q", "q"},
+    {"KEY_R", "r"},
+    {"KEY_S", "s"},
+    {"KEY_T", "t"},
+    {"KEY_U", "u"},
+    {"KEY_V", "v"},
+    {"KEY_W", "w"},
+    {"KEY_X", "x"},
+    {"KEY_Y", "y"},
+    {"KEY_Z", "z"},
+    {"KEY_0", "0"},
+    {"KEY_1", "1"},
+    {"KEY_2", "2"},
+    {"KEY_3", "3"},
+    {"KEY_4", "4"},
+    {"KEY_5", "5"},
+    {"KEY_6", "6"},
+    {"KEY_7", "7"},
+    {"KEY_8", "8"},
+    {"KEY_9", "9"},
+    {"KEY_ESCAPE", "escape"},
+    {"KEY_SPACE", "space"},
+    {"KEY_LEFT", "left"},
+    {"KEY_RIGHT", "right"},
+    {"KEY_UP", "up"},
+    {"KEY_DOWN", "down"},
+    {"KEY_ENTER", "enter"},
+    {"KEY_TAB", "tab"},
+    {"KEY_BACKSPACE", "backspace"},
+    {"SIGNAL_SLEEP", "sleep"},
+    {"SIGNAL_FREEZE", "freeze"},
+    {"SIGNAL_WAKEUP", "wakeup"},
+    {"SIGNAL_KILL", "kill"},
+};
+
+static const char *const global_names[] = {
+    "process",
+    "find",
+    "snapshot",
+    "frame",
+    "signal",
+    "signal_tree",
+    "set_priority",
+    "get_priority",
+    "kill",
+    "kill_tree",
+    "status",
+    "send",
+    "start",
+    "set_title",
+    "window_size",
+    "set_color",
+    "fade_to",
+    "fade_active",
+    "fade_color",
+    "time_seconds",
+    "clear_screen",
+    "key",
+    "mouse_position",
+    "mouse_button",
+    "pad_connected",
+    "pad_button",
+    "pad_axis",
+    "text_input_next",
+    "load_sound",
+    "clone_sound",
+    "play_sound",
+    "stop_sound",
+    "pause_sound",
+    "resume_sound",
+    "sound_playing",
+    "sound_volume",
+    "load_music",
+    "music_playing",
+    "music_volume",
+    "draw_text",
+    "load_image",
+    "image_size",
+    "draw_image",
+    "draw_image_region",
+    "load_atlas",
+    "animation_frame",
+    "draw_sprite",
+    "font",
+    "load_font",
+    "write",
+    "change_text",
+    "delete_text",
+    "fade_off",
+    "fade_on",
+    "draw_box",
+    "draw_rect",
+    "draw_fcircle",
+    "draw_circle",
+    "rand",
+    "play_music",
+    "update_music",
+    "stop_music",
+    "pause_music",
+    "resume_music",
+    "get_screen_width",
+    "get_screen_height",
+    "KEY_A",
+    "KEY_B",
+    "KEY_C",
+    "KEY_D",
+    "KEY_E",
+    "KEY_F",
+    "KEY_G",
+    "KEY_H",
+    "KEY_I",
+    "KEY_J",
+    "KEY_K",
+    "KEY_L",
+    "KEY_M",
+    "KEY_N",
+    "KEY_O",
+    "KEY_P",
+    "KEY_Q",
+    "KEY_R",
+    "KEY_S",
+    "KEY_T",
+    "KEY_U",
+    "KEY_V",
+    "KEY_W",
+    "KEY_X",
+    "KEY_Y",
+    "KEY_Z",
+    "KEY_0",
+    "KEY_1",
+    "KEY_2",
+    "KEY_3",
+    "KEY_4",
+    "KEY_5",
+    "KEY_6",
+    "KEY_7",
+    "KEY_8",
+    "KEY_9",
+    "KEY_ESCAPE",
+    "KEY_SPACE",
+    "KEY_LEFT",
+    "KEY_RIGHT",
+    "KEY_UP",
+    "KEY_DOWN",
+    "KEY_ENTER",
+    "KEY_TAB",
+    "KEY_BACKSPACE",
+    "SIGNAL_SLEEP",
+    "SIGNAL_FREEZE",
+    "SIGNAL_WAKEUP",
+    "SIGNAL_KILL",
+    NULL
+};
+
 static int
 import_globals(lua_State *L)
 {
+    lua_pushglobaltable(L);
+    int globals = lua_gettop(L);
     for (int pass = 0; pass < 2; ++pass) {
-        lua_pushnil(L);
-        while (lua_next(L, lua_upvalueindex(1)) != 0) {
-            const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tostring(L, -2) : NULL;
-            if (name && strcmp(name, "import_globals") != 0 &&
-                strcmp(name, "legacy_fpg") != 0 && lua_isfunction(L, -1)) {
-                if (pass == 0) {
-                    lua_getglobal(L, name);
-                    int allowed = lua_isnil(L, -1) || lua_rawequal(L, -1, -2);
-                    lua_pop(L, 1);
-                    if (!allowed)
-                        return luaL_error(L, "global already exists: %s", name);
-                } else {
-                    lua_pushvalue(L, -1);
-                    lua_setglobal(L, name);
-                }
+        for (size_t i = 0; global_names[i]; ++i) {
+            const char *name = global_names[i];
+            lua_pushstring(L, name);
+            lua_rawget(L, lua_upvalueindex(1));
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+                continue;
             }
-            lua_pop(L, 1);
+            lua_pushstring(L, name);
+            if (pass == 0) {
+                lua_rawget(L, globals);
+                int allowed = lua_isnil(L, -1) || lua_rawequal(L, -1, -2);
+                lua_pop(L, 2);
+                if (!allowed)
+                    return luaL_error(L, "global already exists: %s", name);
+            } else {
+                lua_insert(L, -2);
+                lua_rawset(L, globals);
+            }
         }
     }
     return 0;
@@ -2342,6 +2602,10 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
+        lua_pushstring(L, api_constants[i].value);
+        lua_setfield(L, -2, api_constants[i].name);
+    }
     lua_pushboolean(L, 1);
     lua_pushcclosure(L, fade_switch, 1);
     lua_setfield(L, -2, "fade_off");

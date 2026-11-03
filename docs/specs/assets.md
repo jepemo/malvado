@@ -74,7 +74,7 @@ ZIP does not encrypt a game, and PNG is already compressed. Measure size/load ti
 | --- | --- | --- |
 | Core alpha.3 | PNG, directories/spritesheets, basic JSON library model | Sprites/demo without LÖVE; stable IDs and tested pivot |
 | Core alpha.4 | Folder export and delivery ZIP | Game runs from extracted package with development references intact |
-| Core alpha.5 | First pinned-variant FPG importer; basic Aseprite adapter | Selected 8-bit fixture preserves IDs/points/palette; equivalent animated spritesheet |
+| Core alpha.6 | First pinned-variant FPG importer; basic Aseprite adapter | Selected 8-bit fixture preserves IDs/points/palette; equivalent animated spritesheet |
 | GUI G1 | Browse and preview supported assets | Does not offer FPG import before a reader exists |
 | GUI G3 | Edit metadata and convert supported FPG to PNG+JSON | Save/reopen and compare points, IDs, and pixels |
 | 2.1+ | More FPG variants, FPG export, mountable ZIP, packing, map formats | Variant and limit matrix with dedicated tests |

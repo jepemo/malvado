@@ -47,12 +47,13 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P2 / 2.0.0-alpha.2 | Extract scheduler, processes, signals, messages, and public C API; connect official Lua binding; inspection and both API docs | C game without Lua, C/Lua parity, examples/contracts, deterministic traces, released references, memory tests |
 | P3 / 2.0.0-alpha.3 | Current 2D graphics, input, text, audio, examples, and development workflow | Tagged preview; unchecked validation items remain open |
 | P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Automated create, run, export, and execution checks for C and Lua on macOS/Linux |
-| P5 / 2.0.0-alpha.5 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
-| P6 / 2.0.0-alpha.6 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |
-| P7 / 2.0.0-alpha.7 | Complete all remaining agreed 2.0 API families in C and Lua | Every in-scope API entry has an implementation, contract, and behavior test |
-| P8 / 2.0.0-alpha.8 | Complete public documentation, examples, site, packaging, and platform review | Published site and automated end-to-end checks for supported targets |
-| P9 / 2.0.0-beta.1 | Freeze the 2.0 API, manually test user flows, and prepare release candidates | Complete inventory, API parity, documentation, manual device and clean-host results |
-| P10 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
+| P5 / 2.0.0-alpha.5 | Process identity, lifecycle, ownership, resources, genealogy, and C/Lua API migration | Contracts and automated lifecycle, graphics, resource, stress, and C/Lua parity checks in [alpha.5](../versions/2.0.0-alpha.5.md) |
+| P6 / 2.0.0-alpha.6 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
+| P7 / 2.0.0-alpha.7 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |
+| P8 / 2.0.0-alpha.8 | Complete all remaining agreed 2.0 API families in C and Lua | Every in-scope API entry has an implementation, contract, and behavior test |
+| P9 / 2.0.0-alpha.9 | Complete public documentation, examples, site, packaging, and platform review | Published site and automated end-to-end checks for supported targets |
+| P10 / 2.0.0-beta.1 | Freeze the 2.0 API, manually test user flows, and prepare release candidates | Complete inventory, API parity, documentation, manual device and clean-host results |
+| P11 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
 | 2.1 | Mode 7 | Perspective floor, sprites, C/Lua APIs, examples and tests |
 | 2.2 | Mode 8 | Sector world, collision, C/Lua APIs, examples and tests |
 | 2.3 | Mode 9 | 3D worlds and sprites, C/Lua APIs, examples and tests |
@@ -113,4 +114,4 @@ This layout is a proposal; do not create empty code directories for it. Research
 
 ## Recommended next implementation
 
-Continue with [alpha.3](../versions/2.0.0-alpha.3.md): graphics, assets, input, text, audio, mise development workflows, and migration of the four historical examples. Preserve the C and Lua process behavior verified in alpha.2. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.
+Complete the open checks in [alpha.3](../versions/2.0.0-alpha.3.md) and [alpha.4](../versions/2.0.0-alpha.4.md). Then implement the process model in [alpha.5](../versions/2.0.0-alpha.5.md). See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.

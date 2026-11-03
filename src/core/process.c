@@ -24,14 +24,14 @@ typedef struct MessageNode {
 } MessageNode;
 
 typedef struct {
-    MvProcessId id, parent;
+    MvProcessId id, parent, creator_id;
     uint64_t type;
     int64_t priority;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
     void *user;
-    int killed;
+    int killed, attached;
     MessageNode *head, *tail;
     size_t messages;
 } Process;
@@ -69,6 +69,8 @@ void mv_processes_destroy(MvProcesses *p)
 {
     if (!p) return;
     p->closing = 1;
+    for (size_t i = 0; i < p->count; ++i)
+        p->items[i].killed = 1;
     for (size_t i = 0; i < p->count; ++i) {
         MessageNode *node = p->items[i].head;
         while (node) {
@@ -83,14 +85,16 @@ void mv_processes_destroy(MvProcesses *p)
     free(p);
 }
 
-MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
+static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessId parent,
+                                  int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
-                          MvProcessId *id)
+                          MvProcessId *id, int attached)
 {
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !step || !id) return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
-    if (parent && !find(p, parent, 0)) return MV_NOT_FOUND;
+    if ((creator_id && !find(p, creator_id, 0)) ||
+        (parent && !find(p, parent, 0))) return MV_NOT_FOUND;
     if (p->next_id == UINT64_MAX) return MV_OVERFLOW;
     if (p->count == p->capacity) {
         if (p->capacity > SIZE_MAX / 2 / sizeof(*p->items)) return MV_OVERFLOW;
@@ -101,10 +105,25 @@ MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
         p->capacity = capacity;
     }
     MvProcessId next = ++p->next_id;
-    p->items[p->count++] = (Process){.id = next, .parent = parent, .priority = priority,
+    p->items[p->count++] = (Process){.id = next, .parent = parent, .creator_id = creator_id, .priority = priority, .attached = attached,
         .status = MV_PROCESS_RUNNING, .step = step, .destroy = destroy, .user = user};
     *id = next;
     return MV_OK;
+}
+
+MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
+                          MvProcessStep step, MvProcessDestroy destroy, void *user,
+                          MvProcessId *id)
+{
+    return spawn_related(ctx, parent, parent, priority, step, destroy, user, id, 0);
+}
+
+MvResult mv_process_spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessId owner_id,
+                                  int64_t priority, MvProcessStep step,
+                                  MvProcessDestroy destroy, void *user, MvProcessId *id)
+{
+    return spawn_related(ctx, creator_id, owner_id, priority, step, destroy, user, id,
+                         owner_id != 0);
 }
 
 void mv_message_release(MvMessage *message)
@@ -182,6 +201,21 @@ static int descendant(MvProcesses *p, Process *item, MvProcessId id)
     return 0;
 }
 
+/* Owners always precede their children in creation order. */
+static void kill_owned(MvProcesses *p, MvProcessId id)
+{
+    Process *root = find(p, id, 1);
+    if (!root) return;
+    root->killed = 1;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->killed && item->attached) {
+            Process *owner = find(p, item->parent, 1);
+            if (owner && owner->killed) item->killed = 1;
+        }
+    }
+}
+
 MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int tree)
 {
     MvProcesses *p = mv_context_processes(ctx);
@@ -195,7 +229,7 @@ MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int 
         case MV_SIGNAL_SLEEP: item->status = MV_PROCESS_SLEEPING; break;
         case MV_SIGNAL_FREEZE: item->status = MV_PROCESS_FROZEN; break;
         case MV_SIGNAL_WAKEUP: item->status = MV_PROCESS_RUNNING; break;
-        case MV_SIGNAL_KILL: item->killed = 1; break;
+        case MV_SIGNAL_KILL: kill_owned(p, item->id); break;
         }
     }
     return MV_OK;
@@ -255,7 +289,7 @@ MvResult mv_process_snapshot(MvContext *ctx, MvProcessInfo *out, size_t capacity
         if (item->killed || !item->id) continue;
         if (count < capacity)
             out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
-                                         item->status, item->messages};
+                                         item->status, item->messages, item->creator_id};
         ++count;
     }
     *total = count;
@@ -284,7 +318,7 @@ MvResult mv_process_tick(MvContext *ctx)
         void *user = item->user;
         MvStepResult outcome = step(ctx, id, user);
         /* A callback may spawn and reallocate the array. */
-        if (outcome != MV_STEP_YIELD) p->items[slot].killed = 1;
+        if (outcome != MV_STEP_YIELD) kill_owned(p, id);
         if (outcome != MV_STEP_YIELD && outcome != MV_STEP_DONE) {
             result = MV_PROCESS_ERROR;
             break;
