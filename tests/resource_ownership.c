@@ -40,6 +40,15 @@ finish(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_DONE;
 }
 
+static MvStepResult
+wait_step(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)ctx;
+    (void)id;
+    (void)user;
+    return MV_STEP_YIELD;
+}
+
 int
 main(void)
 {
@@ -65,6 +74,39 @@ main(void)
     assert(game.destroyed == 0);
     /* A detached reference must not use the already destroyed context. */
     game.ctx = NULL;
+    assert(mv_resource_transfer(c, NULL) == MV_INVALID_ARGUMENT);
     assert(mv_resource_release(c) == MV_OK && game.destroyed == 1);
+
+    MvContext *first = mv_context_create(60, 5);
+    MvContext *foreign = mv_context_create(60, 5);
+    assert(first && foreign);
+    MvProcessId old_owner, new_owner, foreign_owner;
+    assert(mv_process_spawn(first, 0, 0, wait_step, NULL, NULL, &old_owner) == MV_OK);
+    assert(mv_process_spawn(first, 0, 0, wait_step, NULL, NULL, &new_owner) == MV_OK);
+    assert(mv_process_spawn(foreign, 0, 0, wait_step, NULL, NULL, &foreign_owner) == MV_OK);
+    MvProcessRef old_ref, new_ref, foreign_ref;
+    assert(mv_process_ref_create(first, old_owner, &old_ref) == MV_OK);
+    assert(mv_process_ref_create(first, new_owner, &new_ref) == MV_OK);
+    assert(mv_process_ref_create(foreign, foreign_owner, &foreign_ref) == MV_OK);
+    Data moved = {NULL, 0}, owned_by_game = {NULL, 0}, promoted = {NULL, 0};
+    MvResource *moving, *game_resource, *promoted_resource;
+    assert(mv_resource_create(first, old_owner, &moved, release_data, &moving) == MV_OK);
+    assert(mv_resource_create(first, 0, &owned_by_game, release_data, &game_resource) == MV_OK);
+    assert(mv_resource_create(first, new_owner, &promoted, release_data, &promoted_resource) == MV_OK);
+    assert(mv_resource_transfer(promoted_resource, NULL) == MV_OK);
+    assert(mv_resource_retain(moving) == MV_OK);
+    assert(mv_resource_transfer(moving, &foreign_ref) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_transfer(game_resource, &old_ref) == MV_OK);
+    assert(mv_process_signal(first, old_owner, MV_SIGNAL_KILL, 0) == MV_OK);
+    assert(mv_process_tick(first) == MV_OK);
+    assert(moved.destroyed == 0 && owned_by_game.destroyed == 1);
+    assert(mv_resource_transfer(moving, &old_ref) == MV_NOT_FOUND);
+    assert(mv_resource_transfer(moving, &new_ref) == MV_OK);
+    assert(mv_resource_release(moving) == MV_OK && moved.destroyed == 0);
+    assert(mv_process_signal(first, new_owner, MV_SIGNAL_KILL, 0) == MV_OK);
+    assert(mv_process_tick(first) == MV_OK && moved.destroyed == 1 && promoted.destroyed == 0);
+    mv_context_destroy(first);
+    assert(promoted.destroyed == 1);
+    mv_context_destroy(foreign);
     return 0;
 }

@@ -96,6 +96,11 @@ typedef struct {
  * destructors use the context owner thread. */
 MvResult mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
                             MvResourceDestroy destroy, MvResource **out);
+/** Move the owner reference to a live process in the same context, or to the
+ * context when owner is NULL. Existing retained references do not change.
+ * A resource retained after its owner ends can be assigned a new owner while
+ * its context is live. Failure leaves its ownership unchanged. */
+MvResult mv_resource_transfer(MvResource *resource, const MvProcessRef *owner);
 MvResult mv_resource_retain(MvResource *resource);
 MvResult mv_resource_release(MvResource *resource);
 void *mv_resource_data(const MvResource *resource);

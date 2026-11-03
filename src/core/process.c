@@ -203,6 +203,23 @@ mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
 }
 
 MvResult
+mv_resource_transfer(MvResource *resource, const MvProcessRef *owner)
+{
+    if (!resource || !resource->manager) return MV_INVALID_ARGUMENT;
+    MvProcesses *p = resource->manager;
+    if (p->closing) return MV_BUSY;
+    MvProcessId id = 0;
+    if (owner) {
+        MvResult result = mv_process_ref_resolve(p->ctx, *owner, &id);
+        if (result != MV_OK) return result;
+        if (!find(p, id, 0)) return MV_NOT_FOUND;
+    }
+    resource->owner = id;
+    resource->owner_reference = 1;
+    return MV_OK;
+}
+
+MvResult
 mv_resource_retain(MvResource *resource)
 {
     if (!resource) return MV_INVALID_ARGUMENT;
