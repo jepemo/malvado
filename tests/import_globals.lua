@@ -13,8 +13,22 @@ local ok, message = pcall(mv.import_globals)
 assert(not ok and message:find("global already exists: key", 1, true))
 assert(process == nil and frame == nil and start == nil and key == "occupied")
 key = nil
+local meta_calls = 0
+local previous_meta = getmetatable(_G)
+setmetatable(_G, {
+  __index = function() meta_calls = meta_calls + 1 end,
+  __newindex = function() error("global import invoked __newindex") end
+})
 mv.import_globals()
 mv.import_globals()
+setmetatable(_G, previous_meta)
+assert(meta_calls == 0)
+for name, value in pairs(mv) do
+  if name ~= "import_globals" and name ~= "legacy_fpg" and name ~= "unlisted_extension" and
+      (type(value) == "function" or name == "process" or name:match("^[A-Z][A-Z0-9_]*$")) then
+    assert(rawget(_G, name) == value, "missing global export: " .. name)
+  end
+end
 assert(process == mv.process and frame == mv.frame and start == mv.start)
 assert(process.frame == frame and process.kill == mv.kill)
 assert(process.SIGNAL_KILL == SIGNAL_KILL)

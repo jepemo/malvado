@@ -3093,6 +3093,24 @@ open_module(lua_State *L)
         {"delete_text", delete_text},
         {NULL, NULL}
     };
+    for (size_t i = 0; global_names[i]; ++i) {
+        for (size_t j = i + 1; global_names[j]; ++j) {
+            if (strcmp(global_names[i], global_names[j]) == 0)
+                return luaL_error(L, "duplicate global export: %s", global_names[i]);
+        }
+    }
+    for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
+        for (size_t j = i + 1; j < sizeof(api_constants) / sizeof(api_constants[0]); ++j) {
+            if (strcmp(api_constants[i].name, api_constants[j].name) == 0)
+                return luaL_error(L, "duplicate constant export: %s", api_constants[i].name);
+        }
+    }
+    for (size_t i = 0; functions[i].name; ++i) {
+        for (size_t j = i + 1; functions[j].name; ++j) {
+            if (strcmp(functions[i].name, functions[j].name) == 0)
+                return luaL_error(L, "duplicate module export: %s", functions[i].name);
+        }
+    }
     luaL_newmetatable(L, "malvado.process");
     lua_pushcfunction(L, self_index);
     lua_setfield(L, -2, "__index");
