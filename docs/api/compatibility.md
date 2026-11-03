@@ -2,11 +2,11 @@
 
 Status: proposal. No compatibility with a new runtime is certified.
 
-The 2.0 scope is the complete agreed Malvado API, excluding graphics modes 7, 8, and 9. The API inventory must be agreed explicitly. The historical profiles below are reference and compatibility work; their names do not define or limit the complete Malvado 2.0 API. See the [roadmap](../planning/roadmap.md).
+The 2.0 scope is the complete agreed Malvado API, excluding graphics modes 7, 8, and 9. The API inventory must be agreed explicitly. The historical profiles below are references, not required 1.0 compatibility work. Their names do not define or limit the complete Malvado 2.0 API. Select any external format support separately. See the [roadmap](../planning/roadmap.md).
 
 ## Independent profiles
 
-- **malvado-legacy:** preserve the current DSL, degrees, size 1.0, text keyboard keys, text, and existing examples. Record each intentional migration change.
+- **malvado-legacy:** historical reference for the old DSL, degrees, size 1.0, text keyboard keys, text, and examples. Preserving this profile is not a 2.0 release gate.
 - **malvado-2:** namespaced Lua API, safe ownership, consistent errors, and opaque C types. This is the proposed default profile.
 - **bennu2-essential:** processes/signals, 2D graphics, text, input, audio, clock, and selected utilities from the pinned revision. Specify each symbol before freezing it.
 - **bennu-classic-extended:** formats, scrolling, Mode 7, effects, pathfinding, and other historical functions; expand by version.
