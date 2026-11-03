@@ -5,3 +5,4 @@
 - Start each Malvado C source and header file with the complete ASCII logo header, attribution, and SPDX license identifier, as in `src/main.c`. Do not change third-party notices or third-party source files.
 - Follow the [C style guide](docs/development/c-style.md).
 - Keep automated tests in each alpha milestone, including automated graphics and emulator checks. Schedule manual user-flow and physical-device testing for beta. Do not mark unfinished implementation work as complete.
+- Malvado 2.0 is not backward compatible with Malvado 1.0. Do not keep old APIs, shims, or behavior only for 1.0 compatibility. Reuse Lua names or behavior when they improve the 2.0 API. The C API is new. Earlier 2.0 alpha APIs are experimental and can change before the beta freeze. Treat interoperability with external formats as a separate decision.

@@ -28,7 +28,7 @@ This proposal replaces the old plan that required “No C changes,” third-part
 | Initial Lua version | Evaluate Lua 5.4 as a conservative base; confirm patch and support when dependencies are pinned | C coroutine and cleanup APIs; do not promise LuaJIT/5.1 |
 | Processes | One C scheduler; stateful C callbacks and Lua coroutines managed by the binding | Languages share lifecycle, signals, and priorities |
 | Reference | BennuGD2 primary, classic BennuGD historical, DIV/Fénix for comparison | Verifiable inventories without mixing generation signatures |
-| Compatibility | Explicit legacy Malvado and DIV-family profiles | Degrees, scale, text, and timing already differ |
+| Compatibility | Malvado 2.0 does not require 1.0 API compatibility; assess external formats separately | Choose Lua behavior for 2.0; the C API is new |
 | Distribution | Executable with Lua/raylib; optional C Lua module later | No dependency on the player's environment |
 | Tools | `malvado-cli` in C, shared packaging library | C-first services and reusable project logic |
 | GUI | Project/asset/process workshop; evaluate ImGui+cimgui+raylib adapter | C services/core; C++ limited to UI dependencies; raygui as a strict C alternative |
