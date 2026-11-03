@@ -138,6 +138,25 @@ int main(void)
     size_t total;
     assert(mv_process_snapshot(ctx, info, 2, &total) == MV_OK && total == 3);
     assert(info[0].id == aid && info[1].id == bid && info[1].type == 42 && info[1].priority == 10);
+    MvProcessInfo captured[3] = {{.id = 999}};
+    MvLineageInfo history[3] = {{.id = 888}};
+    size_t processes_needed = 0, history_needed = 0;
+    assert(mv_process_inspection_snapshot(ctx, captured, 3, &processes_needed,
+                                          history, 2, &history_needed) == MV_BUFFER_TOO_SMALL);
+    assert(processes_needed == 3 && history_needed == 3);
+    assert(captured[0].id == 999 && history[0].id == 888);
+    assert(mv_process_inspection_snapshot(ctx, captured, 3, &processes_needed,
+                                          history, 3, &history_needed) == MV_OK);
+    assert(processes_needed == 3 && history_needed == 3);
+    assert(captured[0].id == aid && captured[1].id == bid &&
+           captured[2].id == a.child);
+    assert(history[0].id == aid && history[1].id == bid && history[2].id == a.child);
+    assert(history[2].creator_id == aid && history[2].alive);
+    size_t unchanged_count = 99;
+    assert(mv_process_inspection_snapshot(ctx, captured, 3, &unchanged_count,
+                                          history, 3, &unchanged_count) == MV_INVALID_ARGUMENT);
+    assert(unchanged_count == 99);
+
     assert(mv_process_signal(ctx, aid, MV_SIGNAL_SLEEP, 1) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(trace_count == 3 && trace[2] == 2);

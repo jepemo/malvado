@@ -1042,13 +1042,43 @@ static int
 snapshot(lua_State *L)
 {
     sync_processes();
-    size_t count = mv_process_count(engine.context);
-    if (count > SIZE_MAX / sizeof(MvProcessInfo))
-        return luaL_error(L, "too many processes");
-    MvProcessInfo *items = lua_newuserdatauv(L, count * sizeof(*items), 0);
-    size_t total;
-    if (mv_process_snapshot(engine.context, items, count, &total) != MV_OK)
+    size_t count = 0, lineage_count = 0;
+    MvResult probe = mv_process_inspection_snapshot(engine.context, NULL, 0, &count,
+                                                    NULL, 0, &lineage_count);
+    if (probe != MV_OK && probe != MV_BUFFER_TOO_SMALL)
         return luaL_error(L, "failed to inspect processes");
+    MvProcessInfo *items = NULL;
+    MvLineageInfo *lineage = NULL;
+    size_t *draw_counts = NULL;
+    size_t total = 0, lineage_total = 0;
+    int captured = 0;
+    for (int attempt = 0; attempt < 16 && !captured; ++attempt) {
+        if (count > SIZE_MAX / sizeof(*items) || count > SIZE_MAX / sizeof(*draw_counts) ||
+            lineage_count > SIZE_MAX / sizeof(*lineage) || !lua_checkstack(L, 8))
+            return luaL_error(L, "inspection snapshot is too large");
+        items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+        lineage = lua_newuserdatauv(L, lineage_count * sizeof(*lineage), 0);
+        draw_counts = lua_newuserdatauv(L, count * sizeof(*draw_counts), 0);
+        MvResult result = mv_process_inspection_snapshot(engine.context, items, count, &total,
+                                                         lineage, lineage_count, &lineage_total);
+        if (result == MV_BUFFER_TOO_SMALL) {
+            lua_pop(L, 3);
+            count = total;
+            lineage_count = lineage_total;
+        } else if (result == MV_OK) {
+            captured = 1;
+        } else {
+            return luaL_error(L, "failed to inspect processes");
+        }
+    }
+    if (!captured) return luaL_error(L, "process list changed during inspection");
+    for (size_t i = 0; i < total; ++i) {
+        Process *process = find_process_slot((lua_Integer)items[i].id);
+        int draw_ref = process ? process->draw_ref : LUA_NOREF;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, draw_ref);
+        draw_counts[i] = lua_rawlen(L, -1);
+        lua_pop(L, 1);
+    }
     lua_newtable(L);
     lua_pushinteger(L, engine.tick_number);
     lua_setfield(L, -2, "tick");
@@ -1056,33 +1086,24 @@ snapshot(lua_State *L)
     lua_Integer result = 0;
     for (size_t i = 0; i < count && i < total; i++) {
         MvProcessInfo *p = &items[i];
-        Process *lua_process = find_process_slot((lua_Integer)p->id);
-        int draw_ref = lua_process ? lua_process->draw_ref : LUA_NOREF;
         lua_createtable(L, 0, 8);
         lua_pushinteger(L, (lua_Integer)p->id); lua_setfield(L, -2, "id");
         if (p->parent) {
             lua_pushinteger(L, (lua_Integer)p->parent); lua_setfield(L, -2, "parent");
         }
+        if (p->creator_id) {
+            lua_pushinteger(L, (lua_Integer)p->creator_id); lua_setfield(L, -2, "creator_id");
+        }
+        lua_pushboolean(L, p->attached); lua_setfield(L, -2, "attached");
         lua_pushinteger(L, (lua_Integer)p->type); lua_setfield(L, -2, "type");
         lua_pushinteger(L, p->priority); lua_setfield(L, -2, "priority");
         lua_pushstring(L, state_name((ProcessState)p->status)); lua_setfield(L, -2, "status");
         lua_pushinteger(L, (lua_Integer)p->messages); lua_setfield(L, -2, "messages");
-        lua_rawgeti(L, LUA_REGISTRYINDEX, draw_ref);
-        lua_Integer draw_count = (lua_Integer)lua_rawlen(L, -1);
-        lua_pop(L, 1);
-        lua_pushinteger(L, draw_count); lua_setfield(L, -2, "draw_commands");
+        lua_pushinteger(L, (lua_Integer)draw_counts[i]); lua_setfield(L, -2, "draw_commands");
         lua_pushboolean(L, p->status != MV_PROCESS_SLEEPING); lua_setfield(L, -2, "visible");
         lua_seti(L, -2, ++result);
     }
     lua_setfield(L, -2, "processes");
-    size_t lineage_count = 0;
-    if (mv_process_lineage_snapshot(engine.context, NULL, 0, &lineage_count) != MV_OK ||
-        lineage_count > SIZE_MAX / sizeof(MvLineageInfo))
-        return luaL_error(L, "failed to inspect genealogy");
-    MvLineageInfo *lineage = lua_newuserdatauv(L, lineage_count * sizeof(*lineage), 0);
-    size_t lineage_total = 0;
-    if (mv_process_lineage_snapshot(engine.context, lineage, lineage_count, &lineage_total) != MV_OK)
-        return luaL_error(L, "failed to inspect genealogy");
     lua_newtable(L);
     for (size_t i = 0; i < lineage_total && i < lineage_count; ++i) {
         lua_createtable(L, 0, 3);
@@ -1096,7 +1117,6 @@ snapshot(lua_State *L)
         lua_setfield(L, -2, "alive");
         lua_seti(L, -2, (lua_Integer)i + 1);
     }
-    lua_remove(L, -2);
     lua_setfield(L, -2, "lineage");
     return 1;
 }

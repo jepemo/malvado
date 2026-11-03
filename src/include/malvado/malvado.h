@@ -41,7 +41,8 @@ typedef enum {
     MV_BUSY,
     MV_PROCESS_ERROR,
     MV_QUEUE_FULL,
-    MV_QUEUE_EMPTY
+    MV_QUEUE_EMPTY,
+    MV_BUFFER_TOO_SMALL
 } MvResult;
 
 typedef uint64_t MvProcessId;
@@ -145,6 +146,14 @@ MvResult mv_process_descendants(MvContext *ctx, MvProcessId owner, uint64_t type
  * needed by live descendants. Buffer rules match mv_process_snapshot. */
 MvResult mv_process_lineage_snapshot(MvContext *ctx, MvLineageInfo *out,
                                      size_t capacity, size_t *total);
+/** Capture live processes and retained creation nodes together. On insufficient
+ * capacity, return MV_BUFFER_TOO_SMALL, write both required counts, and leave
+ * both buffers unchanged. On invalid input, leave counts and buffers unchanged.
+ * The caller owns both buffers. No callbacks run during capture. */
+MvResult mv_process_inspection_snapshot(MvContext *ctx,
+                                        MvProcessInfo *processes, size_t process_capacity,
+                                        size_t *process_total, MvLineageInfo *lineage,
+                                        size_t lineage_capacity, size_t *lineage_total);
 /** Query or signal the creation lineage. The root may have ended. A valid
  * root with no live descendants gives an empty result. The query excludes the
  * root and uses the same type filter and buffer rules as mv_process_children.

@@ -34,6 +34,8 @@ An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals ret
 
 `mv_process_snapshot` copies live process records in creation order. Each record contains ID, current parent, creator ID, attachment flag, type, priority, state, and queued-message count. Pass `NULL` for `out` only when capacity is zero. `total` receives the complete number even if the buffer is smaller. The caller owns the copied buffer. Changing a copy does not change the scheduler. An owned child ends with its owner. Independent children have no owner.
 
+`mv_process_inspection_snapshot` copies live processes and retained creation nodes in one capture. If either buffer is too small, it returns `MV_BUFFER_TOO_SMALL`, writes both required counts, and leaves both buffers unchanged. Pass null buffers with zero capacity to get the required counts. No callbacks run during capture. The caller owns both buffers.
+
 `mv_process_children` and `mv_process_descendants` copy live processes under a live owner in creation order. Pass type `0` to include all types, or a nonzero type ID to filter. The buffer and `total` rules match `mv_process_snapshot`. The current functions use ownership only. `mv_process_creation_descendants` and `mv_process_signal_creation_tree` use creation ancestry and accept a dead ancestor ID from the same context. An ancestor with no remaining descendants gives an empty result. The scheduler prunes history that no live process needs. `mv_process_lineage_snapshot` copies the retained nodes in creation order, with each node’s creator and live state.
 
 ## Owned resources

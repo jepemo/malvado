@@ -498,6 +498,29 @@ mv_process_lineage_snapshot(MvContext *ctx, MvLineageInfo *out, size_t capacity,
 }
 
 MvResult
+mv_process_inspection_snapshot(MvContext *ctx, MvProcessInfo *processes,
+                               size_t process_capacity, size_t *process_total,
+                               MvLineageInfo *lineage, size_t lineage_capacity,
+                               size_t *lineage_total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !process_total || !lineage_total || process_total == lineage_total ||
+        (process_capacity && !processes) || (lineage_capacity && !lineage))
+        return MV_INVALID_ARGUMENT;
+    size_t processes_needed = mv_process_count(ctx);
+    size_t lineage_needed = 0;
+    for (Genealogy *node = p->lineage; node; node = node->next) ++lineage_needed;
+    *process_total = processes_needed;
+    *lineage_total = lineage_needed;
+    if (process_capacity < processes_needed || lineage_capacity < lineage_needed)
+        return MV_BUFFER_TOO_SMALL;
+    size_t copied_processes, copied_lineage;
+    (void)mv_process_snapshot(ctx, processes, process_capacity, &copied_processes);
+    (void)mv_process_lineage_snapshot(ctx, lineage, lineage_capacity, &copied_lineage);
+    return MV_OK;
+}
+
+MvResult
 mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
                                 MvProcessInfo *out, size_t capacity, size_t *total)
 {
