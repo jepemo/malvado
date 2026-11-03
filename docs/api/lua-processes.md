@@ -24,7 +24,7 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 ## Start and stop
 
-`mv.process` is a callable namespace. Use `mv.process(fn)` or `mv.process.define(fn)` to define a process. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
+`mv.process` is a callable namespace. Use `mv.process(fn, options)` or `mv.process.define(fn, options)` to define a process. Both use the same implementation. Use `mv.process.spawn(definition, fields, options)` for an explicit spawn. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
 
 `mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns the same userdata that the process receives as `self`. Its `id` is a positive process ID. IDs increase and are not reused during the run. Pass this userdata to process operations. Numeric IDs are for inspection and are not accepted as process handles. `find` returns canonical process handles.
 
@@ -77,6 +77,8 @@ In C, open a window and call `mv_font_load(path, base_size)` for the default gly
 Pass `{relation = "creation"}` to follow creator relationships, including through dead ancestors. Pass `{type = Enemy}` to filter by a process definition. For example, `mv.process.descendants(parent, {relation = "creation", type = Enemy})` returns matching descendants. Ownership is the default relation. These queries use the current scheduler relations.
 
 ## Children and ownership
+
+A process started outside an active process is a root. This includes creation before `start` or inside its initial callback. An explicit `{attached = true}` requires an active owner and raises an error without one. An explicit `{attached = false}` creates a root. No process can be created during full runtime shutdown.
 
 A process started inside another process is attached to its owner by default. It ends when its owner ends. To create an independent child, use `mv.process.spawn(Child, {x = 10}, {attached = false})`. Its `creator_id` still identifies the creator, but its `parent` is `nil`.
 

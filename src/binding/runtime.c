@@ -858,6 +858,10 @@ create_process(lua_State *L)
         return luaL_error(L, "out of memory creating process");
     MvProcessId core_id;
     lua_Integer creator = engine.closing_id ? engine.closing_id : engine.active_id;
+    if (!creator && explicit_attachment && attached) {
+        free(handle);
+        return luaL_error(L, "cannot attach a process without an owner");
+    }
     if (engine.closing_id && (!explicit_attachment || attached)) {
         free(handle);
         return luaL_error(L, "a terminating process can only spawn independent processes explicitly");
