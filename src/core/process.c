@@ -395,22 +395,54 @@ static void kill_owned(MvProcesses *p, MvProcessId id)
     }
 }
 
+static void
+apply_signal(MvProcesses *p, Process *item, MvSignal signal)
+{
+    if (item->killed) return;
+    switch (signal) {
+    case MV_SIGNAL_SLEEP: item->status = MV_PROCESS_SLEEPING; break;
+    case MV_SIGNAL_FREEZE: item->status = MV_PROCESS_FROZEN; break;
+    case MV_SIGNAL_WAKEUP: item->status = MV_PROCESS_RUNNING; break;
+    case MV_SIGNAL_KILL: kill_owned(p, item->id); break;
+    }
+}
+
+/* No callback or cleanup runs while this snapshot is built or applied. */
+static MvResult
+signal_tree_snapshot(MvProcesses *p, MvProcessId root, MvSignal signal, int creation)
+{
+    size_t count = 0;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->id || item->killed) continue;
+        if (creation ? created_under(item->lineage, root) :
+                       (item->id == root || descendant(p, item, root))) ++count;
+    }
+    if (count > SIZE_MAX / sizeof(size_t)) return MV_OVERFLOW;
+    size_t *targets = count ? malloc(count * sizeof(*targets)) : NULL;
+    if (count && !targets) return MV_OUT_OF_MEMORY;
+    size_t next = 0;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->id || item->killed) continue;
+        if (creation ? created_under(item->lineage, root) :
+                       (item->id == root || descendant(p, item, root))) targets[next++] = i;
+    }
+    for (size_t i = 0; i < count; ++i)
+        apply_signal(p, &p->items[targets[i]], signal);
+    free(targets);
+    return MV_OK;
+}
+
 MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int tree)
 {
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || signal < MV_SIGNAL_SLEEP || signal > MV_SIGNAL_KILL) return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
-    if (!find(p, id, 0)) return MV_NOT_FOUND;
-    for (size_t i = 0; i < p->count; ++i) {
-        Process *item = &p->items[i];
-        if (item->killed || (item->id != id && (!tree || !descendant(p, item, id)))) continue;
-        switch (signal) {
-        case MV_SIGNAL_SLEEP: item->status = MV_PROCESS_SLEEPING; break;
-        case MV_SIGNAL_FREEZE: item->status = MV_PROCESS_FROZEN; break;
-        case MV_SIGNAL_WAKEUP: item->status = MV_PROCESS_RUNNING; break;
-        case MV_SIGNAL_KILL: kill_owned(p, item->id); break;
-        }
-    }
+    Process *item = find(p, id, 0);
+    if (!item) return MV_NOT_FOUND;
+    if (tree) return signal_tree_snapshot(p, id, signal, 0);
+    apply_signal(p, item, signal);
     return MV_OK;
 }
 
@@ -581,17 +613,7 @@ mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, MvSignal s
         return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
     if (ancestor > p->next_id) return MV_NOT_FOUND;
-    for (size_t i = 0; i < p->count; ++i) {
-        Process *item = &p->items[i];
-        if (!item->id || item->killed || !created_under(item->lineage, ancestor)) continue;
-        switch (signal) {
-        case MV_SIGNAL_SLEEP: item->status = MV_PROCESS_SLEEPING; break;
-        case MV_SIGNAL_FREEZE: item->status = MV_PROCESS_FROZEN; break;
-        case MV_SIGNAL_WAKEUP: item->status = MV_PROCESS_RUNNING; break;
-        case MV_SIGNAL_KILL: kill_owned(p, item->id); break;
-        }
-    }
-    return MV_OK;
+    return signal_tree_snapshot(p, ancestor, signal, 1);
 }
 
 MvResult mv_process_tick(MvContext *ctx)

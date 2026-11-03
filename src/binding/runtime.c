@@ -532,6 +532,8 @@ signal_tree(lua_State *L)
     MvResult result = creation ?
         mv_process_signal_creation_tree(engine.context, (MvProcessId)id, core_signal(state)) :
         mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 1);
+    if (result == MV_OUT_OF_MEMORY) return luaL_error(L, "out of memory signaling process tree");
+    if (result == MV_OVERFLOW) return luaL_error(L, "process tree is too large");
     if (result != MV_OK) return luaL_error(L, "unknown process id");
     sync_processes();
     if (self_kill) return lua_yield(L, 0);
