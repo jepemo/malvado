@@ -14,6 +14,7 @@
  */
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <float.h>
 #include <limits.h>
 #include <math.h>
@@ -1123,7 +1124,15 @@ snapshot(lua_State *L)
         draw_counts[i] = lua_rawlen(L, -1);
         lua_pop(L, 1);
     }
+    MvRuntimeId runtime_id;
+    if (mv_context_runtime_id(engine.context, &runtime_id) != MV_OK)
+        return luaL_error(L, "failed to inspect runtime identity");
+    char runtime_text[49];
+    (void)snprintf(runtime_text, sizeof(runtime_text), "%016" PRIx64 "%016" PRIx64 "%016" PRIx64,
+                   runtime_id.high, runtime_id.low, runtime_id.sequence);
     lua_newtable(L);
+    lua_pushstring(L, runtime_text);
+    lua_setfield(L, -2, "runtime");
     lua_pushinteger(L, engine.tick_number);
     lua_setfield(L, -2, "tick");
     lua_newtable(L);

@@ -46,13 +46,15 @@ if(MALVADO_BUILD_ASSETS)
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
-add_library(malvado_core STATIC src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c)
+add_library(malvado_core STATIC src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
 target_include_directories(malvado_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE src/core)
 if(UNIX)
   target_link_libraries(malvado_core PUBLIC m)
+elseif(WIN32)
+  target_link_libraries(malvado_core PUBLIC bcrypt)
 endif()
 set_target_properties(malvado_core PROPERTIES EXPORT_NAME core)
 install(TARGETS malvado_core EXPORT MalvadoTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -247,6 +249,12 @@ add_test(NAME c_context COMMAND context-test)
 add_test(NAME c_clock_example COMMAND example-c-clock)
 add_test(NAME c_process_example COMMAND example-c-processes)
 add_test(NAME c_parity_example COMMAND example-c-parity)
+add_executable(runtime-identity-test tests/runtime_identity.c)
+target_link_libraries(runtime-identity-test PRIVATE malvado_core)
+add_test(NAME c_runtime_identity COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:runtime-identity-test>
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_runtime_identity.cmake)
+set_tests_properties(c_runtime_identity PROPERTIES TIMEOUT 15)
 add_executable(process-test tests/process.c)
 target_link_libraries(process-test PRIVATE malvado_core)
 add_test(NAME c_process COMMAND process-test)

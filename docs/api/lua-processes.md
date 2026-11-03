@@ -135,6 +135,6 @@ Booleans, integers, numbers, and binary strings can be exchanged with C processe
 
 ## Inspect the scheduler
 
-`mv.snapshot()` returns a copy with `tick` and a `processes` list. Each entry contains `id`, `parent`, `type`, `status`, `priority`, `messages`, `draw_commands`, and `visible`. It includes live C and Lua processes. It does not copy message payloads or call game getters. Editing the result does not change the scheduler.
+`mv.snapshot()` returns a copy with a 48-character hexadecimal `runtime` identity, `tick`, and a `processes` list. The runtime identity stays the same during one run and is different with overwhelming probability after a restart. Each entry contains `id`, `parent`, `type`, `status`, `priority`, `messages`, `draw_commands`, and `visible`. It includes live C and Lua processes. It does not copy message payloads or call game getters. Editing the result does not change the scheduler.
 
 For tool authors, `src/runner/runtime.h` has experimental runner-thread hooks for snapshots, signals, pause, and one-tick stepping. These hooks are not a stable embedding API. They do not provide IPC or a GUI.

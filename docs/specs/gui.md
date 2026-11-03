@@ -85,7 +85,7 @@ Immutable snapshot: tick, PID/generation, type, parent, state, transform, next a
 
 ### Process snapshot contract
 
-Capture a snapshot on the runtime owner thread between ticks. Give it a runtime session identifier and tick number. A session identifier must change on each runtime start. A process key is the session identifier and its native process identity. A retained key must never select a different process after restart. The identity implementation remains an alpha.5 task.
+Capture a snapshot on the runtime owner thread between ticks. Give it a runtime session identifier and tick number. A session identifier uses 128 random bits and a process-local sequence. An accidental collision after restart is extremely unlikely. A runtime does not start if the operating system random source is unavailable. A process key is the session identifier and its native process identity. A retained key must never select a different process after restart. The C `mv_context_runtime_id` function and Lua snapshot expose this identity.
 
 Copy live process records in creation order. Each record includes its key, creator key, current owner key, type, priority, state, and message count. Use an absent owner for an independent process. Include sleeping and frozen processes. Exclude logically dead processes from this list. Copy only engine fields; do not invoke Lua callbacks or retain Lua game fields, coroutines, or resources.
 
@@ -93,7 +93,7 @@ Copy a second creation-lineage list in creation order. Each node has a process k
 
 Build the ownership tree from live records and their owner keys. Build the creation tree from the lineage list. Show live records with no owner as independent processes. Show dead lineage nodes as historical ancestors. A snapshot is an immutable copy, not a subscription. A selection can become stale after capture; commands must revalidate its session and process key.
 
-Capture both lists as one operation at a safe point. If allocation or capture fails, return an error without publishing a partial snapshot. A bounded buffer API must report the required sizes and let the caller retry. The caller owns its buffers. A snapshot does not keep processes or historical nodes alive. The C combined snapshot and Lua snapshot capture both lists together. Session identity remains pending.
+Capture both lists as one operation at a safe point. If allocation or capture fails, return an error without publishing a partial snapshot. A bounded buffer API must report the required sizes and let the caller retry. The caller owns its buffers. A snapshot does not keep processes or historical nodes alive. The C combined snapshot and Lua snapshot capture both lists together.
 
 Pause stops ticks, not UI/control input. Step advances exactly one logical tick and publishes the result; it is not Lua Step Into. Rendering may present the last state with a documented audio policy. Identify snapshots and commands by session/tick, detect reused PIDs, and refresh selection when a process dies. Do not access `lua_State` from the UI thread or let the inspector modify C structures during a tick.
 

@@ -6,7 +6,7 @@ This page describes the experimental alpha.2 API in [`malvado.h`](../../src/incl
 
 ## Create and close a context
 
-`mv_context_create(ticks_per_second, max_steps)` creates a context. Both arguments must be positive. The tick rate must be finite. A failure returns `NULL`. Call `mv_context_destroy(ctx)` when finished; it accepts `NULL`. The context owns the processes that were successfully added to it.
+`mv_context_create(ticks_per_second, max_steps)` creates a context. Both arguments must be positive. The tick rate must be finite. A failure returns `NULL`, including when the operating system random source is unavailable. Call `mv_context_destroy(ctx)` when finished; it accepts `NULL`. The context owns the processes that were successfully added to it.
 
 Do not destroy a context from a process callback or destructor. Such a call is ignored. Destroy it after the tick returns. During context shutdown, adding processes, sending or receiving messages, and sending signals return `MV_BUSY`.
 
@@ -18,7 +18,7 @@ To run processes, call `mv_process_tick` once for each logical step you want to 
 
 ## Processes and signals
 
-`mv_process_ref_create` makes a copyable context-scoped reference from a process ID. `mv_process_ref_resolve` validates it against a live context and returns its ID, even after the process ends. A reference from another context is rejected without changing the output. Runtime identifiers are unique within this application process; persistence across application restarts is not guaranteed. Do not modify reference fields. Existing ID-based APIs remain available during migration.
+`mv_process_ref_create` makes a copyable context-scoped reference from a process ID. `mv_process_ref_resolve` validates it against a live context and returns its ID, even after the process ends. A reference from another context is rejected without changing the output. Each runtime uses 128 random bits from the operating system and a process-local sequence. This makes accidental identity collisions across application restarts extremely unlikely. `mv_context_runtime_id` copies the runtime identity for an inspector. Do not modify reference fields. Existing ID-based APIs remain available during migration.
 
 `mv_process_spawn` accepts a parent ID, priority, step callback, optional destructor, user pointer, and output ID. Parent `0` creates a root. A nonzero parent must be live. The process retains the user pointer until removal. If a destructor is provided, a successful spawn transfers responsibility for the pointer to that destructor; it is called once on removal or context shutdown. Without a destructor, the caller must keep the pointer valid for the process lifetime. When spawn fails, responsibility stays with the caller and the output ID is unchanged. IDs are positive, increase monotonically, and are not reused in the context.
 

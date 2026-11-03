@@ -337,7 +337,7 @@ int main(void)
     MvProcessRef first_ref, second_ref;
     assert(mv_process_ref_create(first_runtime, first_process, &first_ref) == MV_OK);
     assert(mv_process_ref_create(second_runtime, second_process, &second_ref) == MV_OK);
-    assert(first_ref.runtime != second_ref.runtime);
+    assert(first_ref.runtime.sequence != second_ref.runtime.sequence);
     assert(mv_process_ref_resolve(second_runtime, first_ref, &resolved) == MV_INVALID_ARGUMENT);
     assert(resolved == 99);
     assert(mv_process_signal(first_runtime, first_process, MV_SIGNAL_KILL, 0) == MV_OK);

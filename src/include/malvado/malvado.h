@@ -46,8 +46,9 @@ typedef enum {
 } MvResult;
 
 typedef uint64_t MvProcessId;
-/* Copyable context-scoped identity. Treat its fields as opaque. */
-typedef struct { uint64_t runtime; MvProcessId id; } MvProcessRef;
+/* Copyable identities. Treat their fields as opaque. */
+typedef struct { uint64_t high, low, sequence; } MvRuntimeId;
+typedef struct { MvRuntimeId runtime; MvProcessId id; } MvProcessRef;
 typedef struct MvResource MvResource;
 typedef void (*MvResourceDestroy)(void *data);
 typedef enum { MV_PROCESS_RUNNING, MV_PROCESS_SLEEPING, MV_PROCESS_FROZEN } MvProcessStatus;
@@ -106,6 +107,9 @@ MvResult mv_process_send(MvContext *ctx, MvProcessId id, const MvMessage *messag
 MvResult mv_process_receive(MvContext *ctx, MvProcessId id, MvMessage *message);
 MvResult mv_process_message_count(MvContext *ctx, MvProcessId id, size_t *count);
 void mv_message_release(MvMessage *message);
+
+/** Copy the runtime identity. On failure the output is unchanged. */
+MvResult mv_context_runtime_id(MvContext *ctx, MvRuntimeId *out);
 
 /** Create or validate a context-scoped process reference. References remain
  * valid after the process ends, but cannot be used with a different context.
