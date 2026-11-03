@@ -3,7 +3,7 @@
 local mv = require("malvado")
 local worker = mv.process(function(self)
   for i = 1, 5000 do
-    mv.send(self.id, i)
+    mv.send(self, i)
     assert(self:recv() == i)
   end
   assert(self:recv() == nil)

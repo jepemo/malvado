@@ -17,7 +17,7 @@ local P = mv.process(function(self)
         assert(not pcall(function() self[field] = 5 end))
     end
     assert(not pcall(rawset, self, "id", 5))
-    mv.set_priority(self.id, 8)
+    mv.set_priority(self, 8)
     assert(self.priority == 8)
 end)
 mv.start(function()

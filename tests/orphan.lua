@@ -4,11 +4,11 @@
 local mv = require("malvado")
 local parent_id, child_id, other_id
 local child = mv.process(function(self)
-  assert(self.parent == nil and self.creator_id == parent_id)
+  assert(self.parent == nil and self.creator_id == parent_id.id)
   while true do mv.frame() end
 end)
 local parent = mv.process(function(self)
-  parent_id = self.id
+  parent_id = self
   child_id = mv.process.spawn(child, {}, {attached = false})
 end)
 local other = mv.process(function() while true do mv.frame() end end)

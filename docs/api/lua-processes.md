@@ -18,7 +18,7 @@ start(function()
 end)
 ```
 
-Run the [complete C and Lua examples](../../examples/c/processes/README.md), or try the [parity example](../../examples/c/parity/README.md) to compare their output. This page describes the current alpha.2 process API. For future graphics and other planned functions, see the [proposed Lua API](lua-contract.md).
+Run the [complete C and Lua examples](../../examples/c/processes/README.md), or try the [parity example](../../examples/c/parity/README.md) to compare their output. This page describes the current process API. See the [alpha migration guide](../development/alpha5-process-migration.md) if your project uses numeric process IDs. For future graphics and other planned functions, see the [proposed Lua API](lua-contract.md).
 
 `import_globals()` adds the modern Malvado functions to the Lua global environment. It checks all names before it adds any. If a name already has a different value, it raises an error and adds nothing. If an allocation fails during installation, it removes the names added by that call. You can call it again when the installed functions are unchanged. Global names can still be shadowed by local variables; choose distinct local names. To avoid global names, use `local mv = require("malvado")` and call functions as `mv.process`, `mv.frame`, and `mv.start`. Both forms use the same API.
 
@@ -26,7 +26,7 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 `mv.process` is a callable namespace. Use `mv.process(fn)` or `mv.process.define(fn)` to define a process. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
 
-`mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns the same userdata that the process receives as `self`. Its `id` is a positive process ID. IDs increase and are not reused during the run. Process operations accept this userdata. During the alpha.5 migration they also accept numeric IDs; this compatibility is temporary. `find` returns canonical process handles.
+`mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns the same userdata that the process receives as `self`. Its `id` is a positive process ID. IDs increase and are not reused during the run. Pass this userdata to process operations. Numeric IDs are for inspection and are not accepted as process handles. `find` returns canonical process handles.
 
 `mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
@@ -117,17 +117,17 @@ After an owner ends, its surviving children become roots in the current process 
 
 ## Control processes
 
-`mv.status(id)` returns the same state strings, or `nil` for an unknown or terminated process. `mv.find(constructor)` returns a new table of live IDs for that type, in creation order. It includes sleeping and frozen processes. A C process with the same type ID is also included.
+`mv.status(handle)` returns the current state string, or `nil` for a terminated process. `mv.find(constructor)` returns a new table of live handles for that type, in creation order. It includes sleeping and frozen processes. A C process with the same type ID is also included.
 
-Use `mv.set_priority(id, value)` and `mv.get_priority(id)` to change and read integer priorities. The default is 0. Higher priorities run first; ties use creation order. The scheduler fixes the order at the start of a tick. A change during a tick takes effect on the next tick. Invalid IDs raise an error.
+Use `mv.set_priority(handle, value)` and `mv.get_priority(handle)` to change and read integer priorities. The default is 0. Higher priorities run first; ties use creation order. The scheduler fixes the order at the start of a tick. A change during a tick takes effect on the next tick. Invalid handles raise an error.
 
-`mv.signal(id, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle)` are shortcuts for the kill signal. `mv.kill(handle)` and `mv.signal(handle, "kill")` return true when they kill a live process and false if that handle is already dead. `mv.process.alive(handle)` checks whether a process is live.
+`mv.signal(handle, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle)` are shortcuts for the kill signal. `mv.kill(handle)` and `mv.signal(handle, "kill")` return true when they kill a live process and false if that handle is already dead. `mv.process.alive(handle)` checks whether a process is live.
 
-Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or IDs raise an error without changing the tree. If a close callback fails, Malvado reports the error, continues cleanup and ends the run with a nonzero result.
+Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or handles raise an error without changing the tree. If a close callback fails, Malvado reports the error, continues cleanup and ends the run with a nonzero result.
 
 ## Send and receive messages
 
-`mv.send(id, value)` puts a value in the recipient's FIFO queue. `self:recv()` returns the next value, or `nil` if the queue is empty. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.
+`mv.send(handle, value)` puts a value in the recipient's FIFO queue. `self:recv()` returns the next value, or `nil` if the queue is empty. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.
 
 Booleans, integers, numbers, and binary strings can be exchanged with C processes. Strings are copied. Tables and other Lua objects can be sent only to Lua processes; they retain their identity within the VM. See the [C contract](c-contract.md) for message ownership and release rules.
 

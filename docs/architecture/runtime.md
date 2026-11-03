@@ -55,7 +55,7 @@ Destroying a process is not the same as waiting for GC. Mark it, remove it from 
 | --- | --- |
 | Clock | Configurable fixed logical tick (60 Hz by default); decoupled render |
 | Order | Documented priority and creation-order tie break; `z` affects drawing only |
-| Creation during tick | New process starts on the next tick; return PID immediately |
+| Creation during tick | New process starts on the next tick; return its Lua handle immediately |
 | `frame()` | Yield until the next tick; valid only inside a process |
 | Legacy `self.fps` | Per-process cadence with accumulator; do not discard remaining time |
 | Bennu `frame(percent)` | Compatibility-profile function; specify fractions and multiple resumptions with traces before implementation |

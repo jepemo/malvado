@@ -18,7 +18,7 @@ local child = mv.process(function(self)
   local resource <close> = setmetatable({}, {__close = function() tree_closed = tree_closed + 1 end})
   local value = setmetatable({}, {__tostring = function()
     local ok = pcall(mv.kill_tree, root_id)
-    rejected = not ok and mv.status(root_id) == "running" and mv.status(self.id) == "running"
+    rejected = not ok and mv.status(root_id) == "running" and mv.status(self) == "running"
     return "checked"
   end})
   tostring(value)

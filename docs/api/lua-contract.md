@@ -6,13 +6,13 @@
 | --- | --- | --- |
 | `mv.start(init, options?)` | Create a context/window and call init once; run until close, exit, or no game processes | C runner/binding |
 | `mv.process(fn)` → constructor | Define a process type; `fn(self)` runs in a VM coroutine | C |
-| `Constructor{...}` → pid | Create an instance and copy fields; run on the next tick | C |
+| `Constructor{...}` → handle | Create an instance and copy fields; run on the next tick | C |
 | `mv.frame()` | Yield until the next tick; error outside a process | `lua_yield` from C |
-| `mv.signal(pid, signal)` | Typed signal; an unknown handle is an error in the modern profile | C |
-| `mv.kill(pid)` | Kill signal alias; no implicit tree in the modern profile | C |
-| `mv.send(pid, value)` | Queue a value; error for an invalid target or a full queue | C/registry |
+| `mv.signal(handle, signal)` | Typed signal; an unknown handle is an error in the modern profile | C |
+| `mv.kill(handle)` | Kill the process and its owned descendants | C |
+| `mv.send(handle, value)` | Queue a value; error for an invalid target or a full queue | C/registry |
 | `self:recv()` → value/nil | Dequeue without blocking; nil is not a payload | C/registry |
-| `mv.set_proc(pid, values)` | Update validated fields; identity fields are read-only | C |
+| `mv.set_proc(handle, values)` | Update validated fields; identity fields are read-only | C |
 | `mv.key(name)` → bool | Held state for the tick; documented names adapted by the backend | C |
 | `mv.set_title(text)` | Change the title; document reduced behavior on Android | C/raylib |
 | `mv.clear_screen(r,g,b,a?)` | Set a persistent background; integer channels 0–255, alpha defaults to 255 | C |
@@ -50,7 +50,7 @@ end)
 
 ## Legacy shim
 
-`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `set_title`, `get_screen_width`, `get_screen_height`, `load_image`, `time_seconds`, `rand`, `fpg`, `set_color`, `draw_box`, `draw_rect`, `draw_fcircle`, `draw_circle`, `fade_off`, and `fade_on` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a PID, like the current core.
+`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `set_title`, `get_screen_width`, `get_screen_height`, `load_image`, `time_seconds`, `rand`, `fpg`, `set_color`, `draw_box`, `draw_rect`, `draw_fcircle`, `draw_circle`, `fade_off`, and `fade_on` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a process handle. Numeric process IDs are not accepted by process operations.
 
 The legacy `frame()` draws the current process's `graph` or `fpg` before it yields. For `graph`, use an image returned by `load_image`. For a spritesheet, use `fpg(path, "image", rows, columns)` and set `self.fpgIndex` to a zero-based frame index. A negative or missing index hides the sheet; larger indices wrap. The image dimensions must divide evenly by the row and column counts. `self.x`, `self.y`, `self.angle`, and `self.size` control position, clockwise degrees, and positive scale. Their defaults are 0, 0, 0, and 1. Individual images use their center as pivot; sheet regions use their top-left corner. `self.z` and `self.fps` use the current draw order and cadence rules. After a legacy frame, `self.width` and `self.height` contain the scaled dimensions for individual and directory images. For a spritesheet or hidden library, both are 0, as in the historical implementation.
 

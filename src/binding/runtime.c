@@ -295,18 +295,14 @@ receive_message(lua_State *L)
     return 1;
 }
 
-/* Numeric IDs remain accepted during the alpha.5 migration. */
 static lua_Integer
 check_process_id(lua_State *L, int index)
 {
-    LuaSelf *self = luaL_testudata(L, index, "malvado.process");
-    if (self) {
-        MvProcessId id;
-        if (mv_process_ref_resolve(engine.context, self->reference, &id) != MV_OK)
-            luaL_error(L, "process handle belongs to another runtime");
-        return (lua_Integer)id;
-    }
-    return luaL_checkinteger(L, index);
+    LuaSelf *self = luaL_checkudata(L, index, "malvado.process");
+    MvProcessId id;
+    if (mv_process_ref_resolve(engine.context, self->reference, &id) != MV_OK)
+        luaL_error(L, "process handle belongs to another runtime");
+    return (lua_Integer)id;
 }
 
 static int

@@ -5,7 +5,7 @@ local mv = require("malvado")
 local worker_id
 local worker = mv.process(function(self)
   assert(self.delta == 0)
-  mv.signal(self.id, "sleep")
+  mv.signal(self, "sleep")
   mv.frame()
   assert(mv.snapshot().tick == 6)
   assert(math.abs(self.delta - 5 / 60) < 1e-12)

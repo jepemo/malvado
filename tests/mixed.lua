@@ -3,18 +3,18 @@ local main
 main = mv.process(function(self)
     mv.frame()
     assert(self:recv() == 7)
-    assert(mv.status(2) == "running")
     local ids = mv.find(main)
     assert(#ids == 2 and ids[1] == self and ids[2].id == 2)
     assert(mv.find(main)[2] == ids[2])
+    assert(mv.status(ids[2]) == "running")
     local weak = setmetatable({}, {__mode = "v"})
     ids[2].payload = {}
     weak[1] = ids[2].payload
     local processes = mv.snapshot().processes
     assert(#processes == 2 and processes[2].id == 2 and processes[2].parent == self.id)
-    mv.set_priority(2, 11)
-    assert(mv.get_priority(2) == 11)
-    mv.send(2, "ping\0data")
+    mv.set_priority(ids[2], 11)
+    assert(mv.get_priority(ids[2]) == 11)
+    mv.send(ids[2], "ping\0data")
     mv.frame()
     assert(self:recv() == "pong")
     mv.frame()
