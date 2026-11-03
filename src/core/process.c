@@ -15,6 +15,7 @@
 #include "process.h"
 #include "schedule.h"
 #include <stdint.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,14 +62,45 @@ struct MvProcesses {
     MvResource *resources;
     size_t count, capacity;
     MvProcessId next_id;
+    uint64_t runtime_id;
     int busy, closing;
 };
 
+static _Atomic uint64_t next_runtime_id = 1;
+
 MvProcesses *mv_processes_create(MvContext *ctx)
 {
+    uint64_t id = atomic_load_explicit(&next_runtime_id, memory_order_relaxed);
+    do {
+        if (id == UINT64_MAX) return NULL;
+    } while (!atomic_compare_exchange_weak_explicit(&next_runtime_id, &id, id + 1,
+                                                     memory_order_relaxed, memory_order_relaxed));
     MvProcesses *p = calloc(1, sizeof(*p));
-    if (p) p->ctx = ctx;
+    if (p) {
+        p->ctx = ctx;
+        p->runtime_id = id;
+    }
     return p;
+}
+
+MvResult
+mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out || !id) return MV_INVALID_ARGUMENT;
+    if (id > p->next_id) return MV_NOT_FOUND;
+    *out = (MvProcessRef){p->runtime_id, id};
+    return MV_OK;
+}
+
+MvResult
+mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out || !ref.id || ref.runtime != p->runtime_id) return MV_INVALID_ARGUMENT;
+    if (ref.id > p->next_id) return MV_NOT_FOUND;
+    *out = ref.id;
+    return MV_OK;
 }
 
 int mv_processes_can_destroy(const MvProcesses *p)

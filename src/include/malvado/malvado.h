@@ -46,6 +46,8 @@ typedef enum {
 } MvResult;
 
 typedef uint64_t MvProcessId;
+/* Copyable context-scoped identity. Treat its fields as opaque. */
+typedef struct { uint64_t runtime; MvProcessId id; } MvProcessRef;
 typedef struct MvResource MvResource;
 typedef void (*MvResourceDestroy)(void *data);
 typedef enum { MV_PROCESS_RUNNING, MV_PROCESS_SLEEPING, MV_PROCESS_FROZEN } MvProcessStatus;
@@ -104,6 +106,12 @@ MvResult mv_process_send(MvContext *ctx, MvProcessId id, const MvMessage *messag
 MvResult mv_process_receive(MvContext *ctx, MvProcessId id, MvMessage *message);
 MvResult mv_process_message_count(MvContext *ctx, MvProcessId id, size_t *count);
 void mv_message_release(MvMessage *message);
+
+/** Create or validate a context-scoped process reference. References remain
+ * valid after the process ends, but cannot be used with a different context.
+ * On failure the output is unchanged. The context must be live. */
+MvResult mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out);
+MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *out);
 
 /** The process retains user until removal. If destroy is provided, a successful
  * spawn transfers responsibility for user to that destructor, which is called

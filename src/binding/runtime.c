@@ -91,7 +91,7 @@ static MvStepResult lua_process_step(MvContext *ctx, MvProcessId id, void *user)
 static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
-typedef struct { lua_Integer id, parent; int reason; } LuaSelf;
+typedef struct { lua_Integer id, parent; int reason; MvProcessRef reference; } LuaSelf;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
 typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
 typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
@@ -299,7 +299,12 @@ static lua_Integer
 check_process_id(lua_State *L, int index)
 {
     LuaSelf *self = luaL_testudata(L, index, "malvado.process");
-    if (self) return self->id;
+    if (self) {
+        MvProcessId id;
+        if (mv_process_ref_resolve(engine.context, self->reference, &id) != MV_OK)
+            luaL_error(L, "process handle belongs to another runtime");
+        return (lua_Integer)id;
+    }
     return luaL_checkinteger(L, index);
 }
 
@@ -611,6 +616,7 @@ static int
 self_index(lua_State *L)
 {
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
+    (void)check_process_id(L, 1);
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && strcmp(key, "id") == 0) {
         lua_pushinteger(L, self->id);
@@ -690,6 +696,7 @@ static int
 self_newindex(lua_State *L)
 {
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
+    (void)check_process_id(L, 1);
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
@@ -849,6 +856,8 @@ create_process(lua_State *L)
     lua_Integer id = handle->id;
     LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
     *self = (LuaSelf){.id = id, .parent = creator};
+    if (mv_process_ref_create(engine.context, core_id, &self->reference) != MV_OK)
+        return luaL_error(L, "failed to create process identity");
     lua_pushvalue(L, fields);
     lua_setiuservalue(L, -2, 1);
     luaL_getmetatable(L, "malvado.process");
@@ -940,6 +949,8 @@ push_process_handle(lua_State *L, const MvProcessInfo *info)
     lua_pop(L, 1);
     LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
     *self = (LuaSelf){.id = (lua_Integer)info->id, .parent = (lua_Integer)info->creator_id};
+    if (mv_process_ref_create(engine.context, info->id, &self->reference) != MV_OK)
+        luaL_error(L, "failed to create process identity");
     lua_newtable(L);
     lua_setiuservalue(L, -2, 1);
     luaL_getmetatable(L, "malvado.process");

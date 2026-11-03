@@ -313,6 +313,30 @@ int main(void)
     assert(mv_process_tick(deep) == MV_OK);
     assert(mv_process_lineage_snapshot(deep, NULL, 0, &total) == MV_OK && total == 0);
     mv_context_destroy(deep);
+    MvContext *first_runtime = mv_context_create(60, 5);
+    MvContext *second_runtime = mv_context_create(60, 5);
+    assert(first_runtime && second_runtime);
+    MvProcessId first_process, second_process, resolved = 99;
+    assert(mv_process_spawn(first_runtime, 0, 0, idle_step, NULL, NULL, &first_process) == MV_OK);
+    assert(mv_process_spawn(second_runtime, 0, 0, idle_step, NULL, NULL, &second_process) == MV_OK);
+    assert(first_process == second_process);
+    MvProcessRef first_ref, second_ref;
+    assert(mv_process_ref_create(first_runtime, first_process, &first_ref) == MV_OK);
+    assert(mv_process_ref_create(second_runtime, second_process, &second_ref) == MV_OK);
+    assert(first_ref.runtime != second_ref.runtime);
+    assert(mv_process_ref_resolve(second_runtime, first_ref, &resolved) == MV_INVALID_ARGUMENT);
+    assert(resolved == 99);
+    assert(mv_process_signal(first_runtime, first_process, MV_SIGNAL_KILL, 0) == MV_OK);
+    assert(mv_process_tick(first_runtime) == MV_OK);
+    assert(mv_process_ref_resolve(first_runtime, first_ref, &resolved) == MV_OK &&
+           resolved == first_process);
+    mv_context_destroy(first_runtime);
+    MvContext *later_runtime = mv_context_create(60, 5);
+    assert(later_runtime);
+    assert(mv_process_ref_resolve(later_runtime, first_ref, &resolved) == MV_INVALID_ARGUMENT);
+    assert(mv_process_ref_resolve(later_runtime, second_ref, &resolved) == MV_INVALID_ARGUMENT);
+    mv_context_destroy(later_runtime);
+    mv_context_destroy(second_runtime);
     puts("C process lifecycle passed");
     return 0;
 }
