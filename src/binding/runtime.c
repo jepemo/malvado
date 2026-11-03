@@ -33,6 +33,7 @@
 #endif
 #include "binding/globals.h"
 #include "core/clock.h"
+#include "core/process.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
 #include "runner/runtime.h"
@@ -640,6 +641,9 @@ self_index(lua_State *L)
             return 1;
         }
         if (key && strcmp(key, "reason") == 0) {
+            MvEndReason ended;
+            if (mv_process_end_reason(engine.context, (MvProcessId)self->id, &ended))
+                self->reason = (int)ended;
             const char *reason = self->reason == 1 ? "returned" :
                                  self->reason == 2 ? "error" : "killed";
             lua_pushstring(L, reason);
@@ -2536,6 +2540,9 @@ invalidate_dead_handles(lua_State *L)
         LuaSelf *self = luaL_testudata(L, -1, "malvado.process");
         MvProcessStatus status;
         if (self && mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK) {
+            MvEndReason reason;
+            if (mv_process_end_reason(engine.context, (MvProcessId)self->id, &reason))
+                self->reason = (int)reason;
             lua_pushnil(L);
             lua_setiuservalue(L, -2, 1);
         }

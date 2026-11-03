@@ -313,6 +313,20 @@ int main(void)
     assert(mv_process_tick(deep) == MV_OK);
     assert(mv_process_lineage_snapshot(deep, NULL, 0, &total) == MV_OK && total == 0);
     mv_context_destroy(deep);
+    MvContext *growth = mv_context_create(60, 5);
+    assert(growth);
+    MvProcessId growth_root, growth_child;
+    assert(mv_process_spawn(growth, 0, 0, idle_step, NULL, NULL, &growth_root) == MV_OK);
+    for (int i = 0; i < 100; ++i)
+        assert(mv_process_spawn_related(growth, growth_root, 0, 0, idle_step, NULL,
+                                        NULL, &growth_child) == MV_OK);
+    assert(mv_process_creation_descendants(growth, growth_root, 0, NULL, 0, &total) == MV_OK &&
+           total == 100);
+    assert(mv_process_signal_creation_tree(growth, growth_root, MV_SIGNAL_KILL) == MV_OK);
+    assert(mv_process_tick(growth) == MV_OK);
+    assert(mv_process_lineage_snapshot(growth, NULL, 0, &total) == MV_OK && total == 0);
+    mv_context_destroy(growth);
+
     MvContext *first_runtime = mv_context_create(60, 5);
     MvContext *second_runtime = mv_context_create(60, 5);
     assert(first_runtime && second_runtime);

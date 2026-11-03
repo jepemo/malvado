@@ -41,9 +41,15 @@ typedef struct {
     MvProcessDestroy destroy;
     void *user;
     int killed, attached;
+    MvEndReason reason;
     MessageNode *head, *tail;
     size_t messages;
 } Process;
+
+typedef struct {
+    MvProcessId id;
+    MvEndReason reason;
+} EndedProcess;
 
 struct MvResource {
     struct MvResource *next, *previous;
@@ -58,6 +64,8 @@ struct MvResource {
 struct MvProcesses {
     MvContext *ctx;
     Process *items;
+    EndedProcess *ended;
+    size_t ended_count;
     Genealogy *lineage, *cleanup_lineage;
     MvResource *resources;
     size_t count, capacity;
@@ -115,6 +123,25 @@ static Process *find(MvProcesses *p, MvProcessId id, int include_killed)
         if (p->items[i].id == id && (include_killed || !p->items[i].killed))
             return &p->items[i];
     return NULL;
+}
+
+int
+mv_process_end_reason(MvContext *ctx, MvProcessId id, MvEndReason *reason)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !id || !reason) return 0;
+    Process *item = find(p, id, 1);
+    if (item && item->killed) {
+        *reason = item->reason;
+        return 1;
+    }
+    for (size_t i = 0; i < p->ended_count; ++i) {
+        if (p->ended[i].id == id) {
+            *reason = p->ended[i].reason;
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static void
@@ -243,6 +270,7 @@ void mv_processes_destroy(MvProcesses *p)
         else unlink_resource(resource);
     }
     free(p->items);
+    free(p->ended);
     while (p->lineage) {
         Genealogy *next = p->lineage->next;
         free(p->lineage);
@@ -266,15 +294,21 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
         (parent && !find(p, parent, 0))) return MV_NOT_FOUND;
     if (p->next_id == UINT64_MAX) return MV_OVERFLOW;
     if (p->count == p->capacity) {
-        if (p->capacity > SIZE_MAX / 2 / sizeof(*p->items)) return MV_OVERFLOW;
+        if (p->capacity > SIZE_MAX / 2 / sizeof(*p->items) ||
+            p->capacity > SIZE_MAX / 2 / sizeof(*p->ended)) return MV_OVERFLOW;
         size_t capacity = p->capacity ? p->capacity * 2 : 16;
         Process *items = realloc(p->items, capacity * sizeof(*items));
         if (!items) return MV_OUT_OF_MEMORY;
         p->items = items;
+        EndedProcess *ended = realloc(p->ended, capacity * sizeof(*ended));
+        if (!ended) return MV_OUT_OF_MEMORY;
+        p->ended = ended;
         p->capacity = capacity;
     }
     Genealogy *lineage = calloc(1, sizeof(*lineage));
     if (!lineage) return MV_OUT_OF_MEMORY;
+    /* Growing the process array can move its entries. */
+    creator = creator_id ? find(p, creator_id, 0) : NULL;
     lineage->id = ++p->next_id;
     lineage->alive = 1;
     lineage->creator = creator ? creator->lineage : (creator_id ? closing_creator : NULL);
@@ -626,6 +660,7 @@ MvResult mv_process_tick(MvContext *ctx)
     MalvadoScheduleItem *order = count ? malloc(count * sizeof(*order)) : NULL;
     if (count && !order) return MV_OUT_OF_MEMORY;
     p->busy = 1;
+    p->ended_count = 0;
     for (size_t i = 0; i < count; ++i) order[i] = (MalvadoScheduleItem){i, p->items[i].priority};
     malvado_schedule_sort(order, count);
     MvResult result = MV_OK;
@@ -638,7 +673,11 @@ MvResult mv_process_tick(MvContext *ctx)
         void *user = item->user;
         MvStepResult outcome = step(ctx, id, user);
         /* A callback may spawn and reallocate the array. */
-        if (outcome != MV_STEP_YIELD) kill_owned(p, id);
+        if (outcome != MV_STEP_YIELD) {
+            if (!p->items[slot].killed)
+                p->items[slot].reason = outcome == MV_STEP_DONE ? MV_END_RETURNED : MV_END_ERROR;
+            kill_owned(p, id);
+        }
         if (outcome != MV_STEP_YIELD && outcome != MV_STEP_DONE) {
             result = MV_PROCESS_ERROR;
             break;
@@ -654,6 +693,7 @@ MvResult mv_process_tick(MvContext *ctx)
         void *user = p->items[i].user;
         MessageNode *node = p->items[i].head;
         Genealogy *lineage = p->items[i].lineage;
+        p->ended[p->ended_count++] = (EndedProcess){p->items[i].id, p->items[i].reason};
         p->items[i].id = 0;
         p->items[i].lineage = NULL;
         lineage->alive = 0;
