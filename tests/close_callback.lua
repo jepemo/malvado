@@ -6,7 +6,7 @@ local count = 0
 local child = mv.process(function() count = count + 1 end)
 local owner = mv.process(function()
   local guard <close> = setmetatable({}, {__close = function()
-    for _ = 1, 100 do child {} end
+    for _ = 1, 100 do mv.process.spawn(child, {}, {attached = false}) end
   end})
   mv.frame()
 end)

@@ -71,6 +71,7 @@ typedef struct {
     int width, height;
     lua_State *active_thread;
     lua_Integer active_id;
+    lua_Integer closing_id;
     lua_Integer next_process_id;
     lua_Integer next_type_id;
     lua_Integer tick_number;
@@ -90,6 +91,7 @@ static MvStepResult lua_process_step(MvContext *ctx, MvProcessId id, void *user)
 static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
+typedef struct { lua_Integer id, parent; int reason; } LuaSelf;
 typedef struct { MvImage *image; } LuaImage;
 typedef struct { MvSound *sound; } LuaSound;
 typedef struct { MvMusic *music; } LuaMusic;
@@ -292,10 +294,19 @@ receive_message(lua_State *L)
     return 1;
 }
 
+/* Numeric IDs remain accepted during the alpha.5 migration. */
+static lua_Integer
+check_process_id(lua_State *L, int index)
+{
+    LuaSelf *self = luaL_testudata(L, index, "malvado.process");
+    if (self) return self->id;
+    return luaL_checkinteger(L, index);
+}
+
 static int
 send_message(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     luaL_checkany(L, 2);
     if (lua_isnil(L, 2))
         return luaL_error(L, "message must not be nil");
@@ -362,13 +373,19 @@ parse_signal(lua_State *L, int argument)
     return PROCESS_KILLED; /* luaL_error does not return. */
 }
 
+static int active_in_tree(lua_Integer root, int attached_only);
+
 static int
 signal_process(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
-    int self_kill = state == PROCESS_KILLED && engine.active &&
-                    L == engine.active_thread && id == engine.active_id;
+    int self_kill = 0;
+    if (state == PROCESS_KILLED && engine.active && L == engine.active_thread) {
+        self_kill = active_in_tree(id, 1);
+        if (self_kill < 0)
+            return luaL_error(L, "cannot inspect process tree");
+    }
     if (self_kill && !lua_isyieldable(L))
         return luaL_error(L, "cannot kill the active process in a non-yieldable context");
     if (mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 0) != MV_OK)
@@ -381,7 +398,7 @@ signal_process(lua_State *L)
 
 /* Check the same live ownership tree that the current C signal API uses. */
 static int
-active_in_tree(lua_Integer root)
+active_in_tree(lua_Integer root, int attached_only)
 {
     size_t total = 0;
     if (mv_process_snapshot(engine.context, NULL, 0, &total) != MV_OK)
@@ -406,7 +423,7 @@ active_in_tree(lua_Integer root)
         MvProcessId parent = 0;
         for (size_t i = 0; i < count; ++i) {
             if (items[i].id == id) {
-                parent = items[i].parent;
+                parent = (!attached_only || items[i].attached) ? items[i].parent : 0;
                 break;
             }
         }
@@ -417,23 +434,78 @@ active_in_tree(lua_Integer root)
 }
 
 static int
+active_in_creation_tree(lua_Integer root)
+{
+    size_t count = mv_process_count(engine.context);
+    if (count > SIZE_MAX / sizeof(MvProcessInfo)) return -1;
+    MvProcessInfo *all = count ? malloc(count * sizeof(*all)) : NULL;
+    MvProcessInfo *targets = count ? malloc(count * sizeof(*targets)) : NULL;
+    if (count && (!all || !targets)) {
+        free(all);
+        free(targets);
+        return -1;
+    }
+    size_t total = 0, target_count = 0;
+    MvResult snapshot = mv_process_snapshot(engine.context, all, count, &total);
+    MvResult result = mv_process_creation_descendants(engine.context, (MvProcessId)root, 0,
+                                                       targets, count, &target_count);
+    if (snapshot != MV_OK || result != MV_OK || total > count || target_count > count) {
+        free(all);
+        free(targets);
+        return -1;
+    }
+    MvProcessId current = (MvProcessId)engine.active_id;
+    int found = 0;
+    for (size_t depth = 0; current && depth < total; ++depth) {
+        if (current == (MvProcessId)root) found = 1;
+        for (size_t i = 0; i < target_count && !found; ++i)
+            if (targets[i].id == current) found = 1;
+        if (found) break;
+        MvProcessId owner = 0;
+        for (size_t i = 0; i < total; ++i) {
+            if (all[i].id == current) {
+                if (all[i].attached) owner = all[i].parent;
+                break;
+            }
+        }
+        current = owner;
+    }
+    free(all);
+    free(targets);
+    return found;
+}
+
+static int
 signal_tree(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
+    int creation = 1;
+    if (!lua_isnoneornil(L, 3)) {
+        luaL_checktype(L, 3, LUA_TTABLE);
+        lua_getfield(L, 3, "relation");
+        if (!lua_isnil(L, -1)) {
+            const char *relation = luaL_checkstring(L, -1);
+            if (strcmp(relation, "ownership") == 0) creation = 0;
+            else if (strcmp(relation, "creation") != 0)
+                return luaL_error(L, "unknown process relation");
+        }
+        lua_pop(L, 1);
+    }
     int self_kill = 0;
     if (state == PROCESS_KILLED && engine.active && L == engine.active_thread) {
-        self_kill = active_in_tree(id);
+        self_kill = creation ? active_in_creation_tree(id) : active_in_tree(id, 0);
         if (self_kill < 0)
             return luaL_error(L, "cannot inspect process tree");
         if (self_kill && !lua_isyieldable(L))
             return luaL_error(L, "cannot kill the active process in a non-yieldable context");
     }
-    if (mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 1) != MV_OK)
-        return luaL_error(L, "unknown process id");
+    MvResult result = creation ?
+        mv_process_signal_creation_tree(engine.context, (MvProcessId)id, core_signal(state)) :
+        mv_process_signal(engine.context, (MvProcessId)id, core_signal(state), 1);
+    if (result != MV_OK) return luaL_error(L, "unknown process id");
     sync_processes();
-    if (self_kill)
-        return lua_yield(L, 0);
+    if (self_kill) return lua_yield(L, 0);
     return 0;
 }
 
@@ -448,7 +520,7 @@ kill_tree(lua_State *L)
 static int
 set_priority(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     lua_Integer priority = luaL_checkinteger(L, 2);
     if (mv_process_set_priority(engine.context, (MvProcessId)id, priority) != MV_OK)
         return luaL_error(L, "unknown process id");
@@ -459,7 +531,7 @@ set_priority(lua_State *L)
 static int
 get_priority(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     int64_t priority;
     if (mv_process_priority(engine.context, (MvProcessId)id, &priority) != MV_OK)
         return luaL_error(L, "unknown process id");
@@ -470,15 +542,34 @@ get_priority(lua_State *L)
 static int
 kill_process(lua_State *L)
 {
+    LuaSelf *self = luaL_testudata(L, 1, "malvado.process");
+    if (self) {
+        MvProcessStatus status;
+        if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK) {
+            lua_pushboolean(L, 0);
+            return 1;
+        }
+    }
     lua_settop(L, 1);
     lua_pushliteral(L, "kill");
-    return signal_process(L);
+    signal_process(L);
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int
+process_alive(lua_State *L)
+{
+    lua_Integer id = check_process_id(L, 1);
+    MvProcessStatus status;
+    lua_pushboolean(L, mv_process_status(engine.context, (MvProcessId)id, &status) == MV_OK);
+    return 1;
 }
 
 static int
 process_status(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_process_id(L, 1);
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK) {
         lua_pushnil(L);
@@ -489,7 +580,31 @@ process_status(lua_State *L)
     return 1;
 }
 
-typedef struct { lua_Integer id, parent; int reason; } LuaSelf;
+static void push_process_handle(lua_State *L, const MvProcessInfo *info);
+
+static void
+push_owner(lua_State *L, lua_Integer id)
+{
+    size_t count = mv_process_count(engine.context);
+    if (count > SIZE_MAX / sizeof(MvProcessInfo))
+        luaL_error(L, "too many processes");
+    MvProcessInfo *items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+    size_t total;
+    if (mv_process_snapshot(engine.context, items, count, &total) != MV_OK)
+        luaL_error(L, "failed to inspect processes");
+    MvProcessId owner = 0;
+    for (size_t i = 0; i < count && i < total; ++i)
+        if (items[i].id == (MvProcessId)id) owner = items[i].parent;
+    for (size_t i = 0; i < count && i < total; ++i) {
+        if (items[i].id == owner) {
+            push_process_handle(L, &items[i]);
+            lua_remove(L, -2);
+            return;
+        }
+    }
+    lua_pop(L, 1);
+    lua_pushnil(L);
+}
 
 static int
 self_index(lua_State *L)
@@ -518,9 +633,13 @@ self_index(lua_State *L)
         lua_pushnil(L);
         return 1;
     }
-    if (key && strcmp(key, "parent") == 0) {
+    if (key && strcmp(key, "creator_id") == 0) {
         if (self->parent) lua_pushinteger(L, self->parent);
         else lua_pushnil(L);
+        return 1;
+    }
+    if (key && strcmp(key, "parent") == 0) {
+        push_owner(L, self->id);
         return 1;
     }
     if (key && strcmp(key, "priority") == 0) {
@@ -574,13 +693,15 @@ self_newindex(lua_State *L)
     if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
-    if (key && (!strcmp(key, "id") || !strcmp(key, "parent") ||
+    if (key && (!strcmp(key, "id") || !strcmp(key, "parent") || !strcmp(key, "creator_id") ||
                 !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "reason") || !strcmp(key, "recv") ||
                 !strcmp(key, "delta")))
         return luaL_error(L, "process field is read-only");
     if (key && strcmp(key, "z") == 0 &&
         (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
         return luaL_error(L, "z must be a finite number");
+    if (key && strcmp(key, "children_attached") == 0 && lua_type(L, 3) != LUA_TBOOLEAN)
+        return luaL_error(L, "children_attached must be a boolean");
     if (key && strcmp(key, "fps") == 0 &&
         (!lua_isinteger(L, 3) || lua_tointeger(L, 3) < 0 || lua_tointeger(L, 3) > 60))
         return luaL_error(L, "fps must be an integer in 0..60");
@@ -591,25 +712,95 @@ self_newindex(lua_State *L)
     return 0;
 }
 
+/* Copy table graphs without sharing mutable defaults between processes. */
+static void
+copy_default(lua_State *L, int source, int copies, unsigned depth)
+{
+    source = lua_absindex(L, source);
+    copies = lua_absindex(L, copies);
+    if (depth > 256 || !lua_checkstack(L, 8))
+        luaL_error(L, "defaults are too deeply nested");
+    int type = lua_type(L, source);
+    if (type == LUA_TUSERDATA || type == LUA_TLIGHTUSERDATA || type == LUA_TTHREAD)
+        luaL_error(L, "defaults cannot contain userdata or threads");
+    if (type != LUA_TTABLE) {
+        lua_pushvalue(L, source);
+        return;
+    }
+    if (lua_getmetatable(L, source))
+        luaL_error(L, "defaults cannot contain metatables");
+    lua_pushvalue(L, source);
+    lua_rawget(L, copies);
+    if (!lua_isnil(L, -1))
+        return;
+    lua_pop(L, 1);
+    lua_newtable(L);
+    int result = lua_gettop(L);
+    lua_pushvalue(L, source);
+    lua_pushvalue(L, result);
+    lua_rawset(L, copies);
+    lua_pushnil(L);
+    while (lua_next(L, source)) {
+        copy_default(L, -2, copies, depth + 1);
+        copy_default(L, -2, copies, depth + 1);
+        lua_rawset(L, result);
+        lua_pop(L, 1);
+    }
+}
+
 static int
 create_process(lua_State *L)
 {
-    if (!lua_isnoneornil(L, 1))
-        luaL_checktype(L, 1, LUA_TTABLE);
-    if (lua_istable(L, 1)) {
-        lua_pushliteral(L, "z");
-        lua_rawget(L, 1);
-        if (!lua_isnil(L, -1) &&
-            (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
-            return luaL_error(L, "z must be a finite number");
-        lua_pop(L, 1);
-        lua_pushliteral(L, "fps");
-        lua_rawget(L, 1);
-        if (!lua_isnil(L, -1) &&
-            (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 60))
-            return luaL_error(L, "fps must be an integer in 0..60");
+    lua_settop(L, 2);
+    if (!lua_isnil(L, 1)) luaL_checktype(L, 1, LUA_TTABLE);
+    if (!lua_isnil(L, 2)) luaL_checktype(L, 2, LUA_TTABLE);
+    int explicit_attachment = 0, attached = 1;
+    if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "attached");
+        if (!lua_isnil(L, -1)) {
+            luaL_checktype(L, -1, LUA_TBOOLEAN);
+            explicit_attachment = 1;
+            attached = lua_toboolean(L, -1);
+        }
         lua_pop(L, 1);
     }
+    lua_newtable(L);
+    int copies = lua_gettop(L);
+    if (lua_isnil(L, lua_upvalueindex(3)))
+        lua_newtable(L);
+    else
+        copy_default(L, lua_upvalueindex(3), copies, 0);
+    int fields = lua_gettop(L);
+    if (lua_istable(L, 1)) {
+        lua_pushnil(L);
+        while (lua_next(L, 1)) {
+            lua_pushvalue(L, -2);
+            lua_pushvalue(L, -2);
+            lua_rawset(L, fields);
+            lua_pop(L, 1);
+        }
+    }
+    lua_getfield(L, fields, "children_attached");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_pushvalue(L, lua_upvalueindex(4));
+        lua_setfield(L, fields, "children_attached");
+    } else {
+        luaL_checktype(L, -1, LUA_TBOOLEAN);
+        lua_pop(L, 1);
+    }
+    lua_pushliteral(L, "z");
+    lua_rawget(L, fields);
+    if (!lua_isnil(L, -1) &&
+        (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
+        return luaL_error(L, "z must be a finite number");
+    lua_pop(L, 1);
+    lua_pushliteral(L, "fps");
+    lua_rawget(L, fields);
+    if (!lua_isnil(L, -1) &&
+        (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 60))
+        return luaL_error(L, "fps must be an integer in 0..60");
+    lua_pop(L, 1);
     if (engine.next_process_id == LUA_MAXINTEGER)
         return luaL_error(L, "process ID space exhausted");
     if (engine.count == engine.capacity) {
@@ -626,13 +817,27 @@ create_process(lua_State *L)
     if (!handle)
         return luaL_error(L, "out of memory creating process");
     MvProcessId core_id;
-    MvProcessId parent = (MvProcessId)engine.active_id;
-    MvProcessStatus parent_status;
-    if (parent && mv_process_status(engine.context, parent, &parent_status) != MV_OK)
-        parent = 0;
-    MvResult spawn_result = mv_process_spawn(engine.context, parent, 0,
-                                             lua_process_step, lua_process_destroy,
-                                             handle, &core_id);
+    lua_Integer creator = engine.closing_id ? engine.closing_id : engine.active_id;
+    if (engine.closing_id && (!explicit_attachment || attached)) {
+        free(handle);
+        return luaL_error(L, "a terminating process can only spawn independent processes explicitly");
+    }
+    if (creator && !explicit_attachment && !engine.closing_id) {
+        Process *owner = find_process(creator);
+        if (!owner) {
+            free(handle);
+            return luaL_error(L, "process creator is no longer alive");
+        }
+        lua_rawgeti(L, LUA_REGISTRYINDEX, owner->self_ref);
+        lua_getiuservalue(L, -1, 1);
+        lua_getfield(L, -1, "children_attached");
+        attached = lua_toboolean(L, -1);
+        lua_pop(L, 3);
+    }
+    MvProcessId parent = attached ? (MvProcessId)creator : 0;
+    MvResult spawn_result = mv_process_spawn_related(engine.context, (MvProcessId)creator, parent,
+                                                     0, lua_process_step, lua_process_destroy,
+                                                     handle, &core_id);
     if (spawn_result != MV_OK) {
         free(handle);
         return luaL_error(L, "failed to create process");
@@ -640,24 +845,17 @@ create_process(lua_State *L)
     handle->id = (lua_Integer)core_id;
     (void)mv_process_set_type(engine.context, core_id, (uint64_t)lua_tointeger(L, lua_upvalueindex(2)));
     engine.next_process_id = handle->id;
-    lua_newtable(L);
-    if (!lua_isnoneornil(L, 1)) {
-        lua_pushnil(L);
-        while (lua_next(L, 1)) {
-            lua_pushvalue(L, -2);
-            lua_pushvalue(L, -2);
-            lua_settable(L, -5);
-            lua_pop(L, 1);
-        }
-    }
     lua_Integer id = handle->id;
     LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
-    *self = (LuaSelf){.id = id, .parent = engine.active_id};
-    lua_pushvalue(L, -2);
+    *self = (LuaSelf){.id = id, .parent = creator};
+    lua_pushvalue(L, fields);
     lua_setiuservalue(L, -2, 1);
-    lua_remove(L, -2);
     luaL_getmetatable(L, "malvado.process");
     lua_setmetatable(L, -2);
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    lua_pushvalue(L, -2);
+    lua_rawseti(L, -2, id);
+    lua_pop(L, 1);
     int self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_State *co = lua_newthread(L);
     int thread_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -685,12 +883,12 @@ create_process(lua_State *L)
         .thread_ref = thread_ref,
         .self_ref = self_ref,
         .draw_ref = draw_ref,
-        .parent_id = engine.active_id,
+        .parent_id = (lua_Integer)parent,
         .state = PROCESS_RUNNING,
         .first = 1,
         .alive = 1
     };
-    lua_pushinteger(L, id);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
     return 1;
 }
 
@@ -700,9 +898,24 @@ define_process(lua_State *L)
     luaL_checktype(L, 1, LUA_TFUNCTION);
     if (engine.next_type_id == LUA_MAXINTEGER)
         return luaL_error(L, "process type ID space exhausted");
+    if (!lua_isnoneornil(L, 2))
+        luaL_checktype(L, 2, LUA_TTABLE);
+    lua_settop(L, 2);
     lua_pushvalue(L, 1);
     lua_pushinteger(L, ++engine.next_type_id);
-    lua_pushcclosure(L, create_process, 2);
+    if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "defaults");
+        if (!lua_isnil(L, -1))
+            luaL_checktype(L, -1, LUA_TTABLE);
+    } else {
+        lua_pushnil(L);
+    }
+    if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "children_attached");
+        if (!lua_isnil(L, -1)) luaL_checktype(L, -1, LUA_TBOOLEAN);
+        else { lua_pop(L, 1); lua_pushboolean(L, 1); }
+    } else lua_pushboolean(L, 1);
+    lua_pushcclosure(L, create_process, 4);
     return 1;
 }
 
@@ -712,6 +925,27 @@ state_name(ProcessState state)
 {
     static const char *names[] = {"running", "sleeping", "frozen", "killed"};
     return names[state];
+}
+
+static void
+push_process_handle(lua_State *L, const MvProcessInfo *info)
+{
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    lua_rawgeti(L, -1, (lua_Integer)info->id);
+    if (!lua_isnil(L, -1)) {
+        lua_remove(L, -2);
+        return;
+    }
+    lua_pop(L, 1);
+    LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
+    *self = (LuaSelf){.id = (lua_Integer)info->id, .parent = (lua_Integer)info->creator_id};
+    lua_newtable(L);
+    lua_setiuservalue(L, -2, 1);
+    luaL_getmetatable(L, "malvado.process");
+    lua_setmetatable(L, -2);
+    lua_pushvalue(L, -1);
+    lua_rawseti(L, -3, (lua_Integer)info->id);
+    lua_remove(L, -2);
 }
 
 static int
@@ -734,11 +968,73 @@ find_by_type(lua_State *L)
     lua_Integer result = 0;
     for (size_t i = 0; i < count && i < total; i++) {
         if (items[i].type == (uint64_t)type_id && items[i].id <= LUA_MAXINTEGER) {
-            lua_pushinteger(L, (lua_Integer)items[i].id);
+            push_process_handle(L, &items[i]);
             lua_seti(L, -2, ++result);
         }
     }
     return 1;
+}
+
+static int
+hierarchy_query(lua_State *L, int direct)
+{
+    lua_Integer root = check_process_id(L, 1);
+    int creation = 0;
+    uint64_t type = 0;
+    if (!lua_isnoneornil(L, 2)) {
+        luaL_checktype(L, 2, LUA_TTABLE);
+        lua_getfield(L, 2, "relation");
+        if (!lua_isnil(L, -1)) {
+            const char *relation = luaL_checkstring(L, -1);
+            if (strcmp(relation, "creation") == 0) creation = 1;
+            else if (strcmp(relation, "ownership") != 0)
+                return luaL_error(L, "unknown process relation");
+        }
+        lua_pop(L, 1);
+        lua_getfield(L, 2, "type");
+        if (!lua_isnil(L, -1)) {
+            if (!lua_iscfunction(L, -1) || lua_tocfunction(L, -1) != create_process ||
+                !lua_getupvalue(L, -1, 2))
+                return luaL_error(L, "expected a process constructor for type");
+            type = (uint64_t)lua_tointeger(L, -1);
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 1);
+    }
+    size_t count = mv_process_count(engine.context);
+    if (count > SIZE_MAX / sizeof(MvProcessInfo))
+        return luaL_error(L, "too many processes");
+    MvProcessInfo *items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+    size_t total = 0;
+    MvResult result;
+    if (creation)
+        result = mv_process_creation_descendants(engine.context, (MvProcessId)root, type,
+                                                 items, count, &total);
+    else if (direct)
+        result = mv_process_children(engine.context, (MvProcessId)root, type, items, count, &total);
+    else
+        result = mv_process_descendants(engine.context, (MvProcessId)root, type, items, count, &total);
+    if (result != MV_OK) return luaL_error(L, "invalid process query root");
+    lua_newtable(L);
+    lua_Integer output = 0;
+    for (size_t i = 0; i < total && i < count; ++i) {
+        if (creation && direct && items[i].creator_id != (MvProcessId)root) continue;
+        push_process_handle(L, &items[i]);
+        lua_seti(L, -2, ++output);
+    }
+    return 1;
+}
+
+static int
+process_children(lua_State *L)
+{
+    return hierarchy_query(L, 1);
+}
+
+static int
+process_descendants(lua_State *L)
+{
+    return hierarchy_query(L, 0);
 }
 
 static int
@@ -778,6 +1074,29 @@ snapshot(lua_State *L)
         lua_seti(L, -2, ++result);
     }
     lua_setfield(L, -2, "processes");
+    size_t lineage_count = 0;
+    if (mv_process_lineage_snapshot(engine.context, NULL, 0, &lineage_count) != MV_OK ||
+        lineage_count > SIZE_MAX / sizeof(MvLineageInfo))
+        return luaL_error(L, "failed to inspect genealogy");
+    MvLineageInfo *lineage = lua_newuserdatauv(L, lineage_count * sizeof(*lineage), 0);
+    size_t lineage_total = 0;
+    if (mv_process_lineage_snapshot(engine.context, lineage, lineage_count, &lineage_total) != MV_OK)
+        return luaL_error(L, "failed to inspect genealogy");
+    lua_newtable(L);
+    for (size_t i = 0; i < lineage_total && i < lineage_count; ++i) {
+        lua_createtable(L, 0, 3);
+        lua_pushinteger(L, (lua_Integer)lineage[i].id);
+        lua_setfield(L, -2, "id");
+        if (lineage[i].creator_id) {
+            lua_pushinteger(L, (lua_Integer)lineage[i].creator_id);
+            lua_setfield(L, -2, "creator_id");
+        }
+        lua_pushboolean(L, lineage[i].alive);
+        lua_setfield(L, -2, "alive");
+        lua_seti(L, -2, (lua_Integer)i + 1);
+    }
+    lua_remove(L, -2);
+    lua_setfield(L, -2, "lineage");
     return 1;
 }
 
@@ -1910,7 +2229,10 @@ cleanup(Process *p)
     int self_ref = p->self_ref;
     int draw_ref = p->draw_ref;
     p->alive = 0;
+    lua_Integer previous_closing_id = engine.closing_id;
+    engine.closing_id = p->id;
     int status = lua_closethread(thread, engine.L);
+    engine.closing_id = previous_closing_id;
     if (status != LUA_OK) {
         fprintf(stderr, "Error closing process: %s\n", lua_tostring(thread, -1));
         engine.failed = 1;
@@ -2339,7 +2661,10 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 
 static const char *const global_names[] = {
     "process",
+    "spawn",
     "find",
+    "children",
+    "descendants",
     "snapshot",
     "frame",
     "signal",
@@ -2347,6 +2672,7 @@ static const char *const global_names[] = {
     "set_priority",
     "get_priority",
     "kill",
+    "alive",
     "kill_tree",
     "status",
     "send",
@@ -2360,6 +2686,7 @@ static const char *const global_names[] = {
     "time_seconds",
     "clear_screen",
     "key",
+    "key_down",
     "mouse_position",
     "mouse_button",
     "pad_connected",
@@ -2487,11 +2814,31 @@ import_globals(lua_State *L)
 }
 
 static int
+spawn_process(lua_State *L)
+{
+    if (!lua_iscfunction(L, 1) || lua_tocfunction(L, 1) != create_process)
+        return luaL_error(L, "expected a process constructor");
+    lua_settop(L, 3);
+    lua_call(L, 2, 1);
+    return 1;
+}
+
+static int
+call_process_namespace(lua_State *L)
+{
+    lua_remove(L, 1);
+    return define_process(L);
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
         {"process", define_process},
+        {"spawn", spawn_process},
         {"find", find_by_type},
+        {"children", process_children},
+        {"descendants", process_descendants},
         {"snapshot", snapshot},
         {"frame", frame},
         {"signal", signal_process},
@@ -2499,6 +2846,7 @@ open_module(lua_State *L)
         {"set_priority", set_priority},
         {"get_priority", get_priority},
         {"kill", kill_process},
+        {"alive", process_alive},
         {"kill_tree", kill_tree},
         {"status", process_status},
         {"send", send_message},
@@ -2600,12 +2948,58 @@ open_module(lua_State *L)
     lua_pop(L, 1);
 #endif
     lua_newtable(L);
+    lua_newtable(L);
+    lua_pushliteral(L, "v");
+    lua_setfield(L, -2, "__mode");
+    lua_setmetatable(L, -2);
+    lua_setfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
     for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
         lua_pushstring(L, api_constants[i].value);
         lua_setfield(L, -2, api_constants[i].name);
     }
+    lua_newtable(L);
+    lua_getfield(L, -2, "process");
+    lua_setfield(L, -2, "define");
+    static const char *const process_functions[] = {
+        "spawn", "find", "children", "descendants", "snapshot", "frame", "signal", "signal_tree", "set_priority",
+        "get_priority", "kill", "alive", "kill_tree", "status", "send"
+    };
+    for (size_t i = 0; i < sizeof(process_functions) / sizeof(process_functions[0]); ++i) {
+        lua_getfield(L, -2, process_functions[i]);
+        lua_setfield(L, -2, process_functions[i]);
+    }
+    for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
+        if (strncmp(api_constants[i].name, "SIGNAL_", 7) == 0) {
+            lua_pushstring(L, api_constants[i].value);
+            lua_setfield(L, -2, api_constants[i].name);
+        }
+    }
+    lua_newtable(L);
+    lua_pushcfunction(L, call_process_namespace);
+    lua_setfield(L, -2, "__call");
+    lua_setmetatable(L, -2);
+    lua_setfield(L, -2, "process");
+    lua_getfield(L, -1, "key");
+    lua_setfield(L, -2, "key_down");
+    lua_newtable(L);
+    static const char *const input_functions[] = {
+        "key_down", "mouse_position", "mouse_button", "pad_connected", "pad_button",
+        "pad_axis", "text_input_next"
+    };
+    for (size_t i = 0; i < sizeof(input_functions) / sizeof(input_functions[0]); ++i) {
+        lua_getfield(L, -2, input_functions[i]);
+        lua_setfield(L, -2, input_functions[i]);
+    }
+    for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
+        if (strncmp(api_constants[i].name, "KEY_", 4) == 0) {
+            lua_pushstring(L, api_constants[i].value);
+            lua_setfield(L, -2, api_constants[i].name);
+        }
+    }
+    lua_setfield(L, -2, "input");
     lua_pushboolean(L, 1);
     lua_pushcclosure(L, fade_switch, 1);
     lua_setfield(L, -2, "fade_off");

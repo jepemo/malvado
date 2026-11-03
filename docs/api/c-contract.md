@@ -20,7 +20,7 @@ To run processes, call `mv_process_tick` once for each logical step you want to 
 
 `mv_process_spawn` accepts a parent ID, priority, step callback, optional destructor, user pointer, and output ID. Parent `0` creates a root. A nonzero parent must be live. The process retains the user pointer until removal. If a destructor is provided, a successful spawn transfers responsibility for the pointer to that destructor; it is called once on removal or context shutdown. Without a destructor, the caller must keep the pointer valid for the process lifetime. When spawn fails, responsibility stays with the caller and the output ID is unchanged. IDs are positive, increase monotonically, and are not reused in the context.
 
-The experimental `mv_process_spawn_related` accepts separate creator and owner IDs. Both must be live in the context or zero. The snapshot records the creator ID even after that creator ends; `parent` reports the current owner. This is only the first step toward the planned model: it ends owned children when their owner ends, but does not yet retain genealogy. The existing `mv_process_spawn` sets both IDs to its parent argument and retains its previous non-cascading behavior until migration.
+The experimental `mv_process_spawn_related` accepts separate creator and owner IDs. Both must be live in the context or zero. The snapshot records the creator ID even after that creator ends; `parent` reports the current owner. This is only the first step toward the planned model: it ends owned children when their owner ends and retains creation ancestry while descendants are alive. The existing `mv_process_spawn` sets both IDs to its parent argument and retains its previous non-cascading behavior until migration.
 
 The scheduler calls a runnable process once per tick. Return `MV_STEP_YIELD` to run again on a later tick, `MV_STEP_DONE` to finish, or `MV_STEP_ERROR` to report an error. A C callback returns to the scheduler; its C stack is not suspended. Keep persistent state in the user pointer. A callback error returns `MV_PROCESS_ERROR` from the tick after deferred cleanup. Processes added during a tick start no earlier than the next tick.
 
@@ -32,7 +32,17 @@ An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals ret
 
 ## Inspect a snapshot
 
-`mv_process_snapshot` copies live process records in creation order. Each record contains ID, current parent, type, priority, state, and queued-message count. Pass `NULL` for `out` only when capacity is zero. `total` receives the complete number even if the buffer is smaller. The caller owns the copied buffer. Changing a copy does not change the scheduler. When a parent ends, its surviving children become roots after cleanup.
+`mv_process_snapshot` copies live process records in creation order. Each record contains ID, current parent, creator ID, attachment flag, type, priority, state, and queued-message count. Pass `NULL` for `out` only when capacity is zero. `total` receives the complete number even if the buffer is smaller. The caller owns the copied buffer. Changing a copy does not change the scheduler. When a parent ends, its surviving children become roots after cleanup.
+
+`mv_process_children` and `mv_process_descendants` copy live processes under a live owner in creation order. Pass type `0` to include all types, or a nonzero type ID to filter. The buffer and `total` rules match `mv_process_snapshot`. The current functions use ownership only. `mv_process_creation_descendants` and `mv_process_signal_creation_tree` use creation ancestry and accept a dead ancestor ID from the same context. An ancestor with no remaining descendants gives an empty result. The scheduler prunes history that no live process needs. `mv_process_lineage_snapshot` copies the retained nodes in creation order, with each node’s creator and live state.
+
+## Owned resources
+
+`mv_resource_create(ctx, owner, data, destroy, &resource)` transfers `data` to the context after a successful call. The owner is a live process ID, or zero for the game context. The returned pointer is borrowed. The owner holds one reference until process cleanup or context shutdown.
+
+Call `mv_resource_retain` before sharing a resource or keeping it for pending work. Each successful retain needs one `mv_resource_release`. When the owner and all retained references are gone, Malvado calls `destroy` once. `mv_resource_data` returns the stored pointer while a reference is valid. On a failed create, the caller keeps `data` and the output is unchanged.
+
+Retained references can outlive the context. Release them before closing any graphics or audio service that their destructor needs. Use these operations and destructors on the context owner thread. Do not use a borrowed pointer after its owner ends unless you retained it. The graphics and audio APIs do not yet use this manager automatically.
 
 ## Exchange messages
 

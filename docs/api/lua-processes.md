@@ -24,7 +24,9 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 ## Start and stop
 
-`mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns a positive process ID. IDs increase and are not reused during the run.
+`mv.process` is a callable namespace. Use `mv.process(fn)` or `mv.process.define(fn)` to define a process. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
+
+`mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns the same userdata that the process receives as `self`. Its `id` is a positive process ID. IDs increase and are not reused during the run. Process operations accept this userdata. During the alpha.5 migration they also accept numeric IDs; this compatibility is temporary. `find` returns canonical process handles.
 
 `mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
@@ -36,7 +38,7 @@ After `start` begins, `mv.window_size()` returns the current width and height in
 
 `mv.key(name)` returns whether a key is held. Use lowercase letters `"a"` to `"z"`, digits `"0"` to `"9"`, `"left"`, `"right"`, `"up"`, `"down"`, `"space"`, `"escape"`, `"enter"`, `"tab"`, or `"backspace"`. Names are case-sensitive. Other names raise an error. In headless mode all supported keys return false. Try `"space"` and `"escape"` in the [C and Lua timing game](../../examples/c/timing-game/README.md).
 
-Key names are also available as constants. For example, use `mv.key(mv.KEY_UP)` or `mv.key(mv.KEY_A)`. After `import_globals()`, use `key(KEY_UP)`. Constants are strings, so `mv.KEY_UP` and `"up"` have the same value. Constants cover letters, digits, and the named keys above. Signal constants are `SIGNAL_SLEEP`, `SIGNAL_FREEZE`, `SIGNAL_WAKEUP`, and `SIGNAL_KILL`. They also have string values.
+The input namespace also provides `mv.input.key_down` and the other input functions. After `import_globals()`, `key_down` is the same function. Key names are also available as constants, including in `mv.input`. For example, use `mv.key(mv.KEY_UP)` or `mv.key(mv.KEY_A)`. After `import_globals()`, use `key(KEY_UP)`. Constants are strings, so `mv.KEY_UP` and `"up"` have the same value. Constants cover letters, digits, and the named keys above. Signal constants are `SIGNAL_SLEEP`, `SIGNAL_FREEZE`, `SIGNAL_WAKEUP`, and `SIGNAL_KILL`. They also have string values.
 
 The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. Both functions use the window thread.
 
@@ -68,6 +70,32 @@ The loader always prepares printable ASCII and Latin-1 code points, plus any req
 
 In C, open a window and call `mv_font_load(path, base_size)` for the default glyph set. To choose the whole set explicitly, use `mv_font_load_codepoints(path, base_size, codepoints, count)`, with 1 to 1024 distinct nonzero Unicode scalar values. Include a fallback character such as `?` in the set. Use `mv_font_text_width` and `mv_font_draw` with a size from 1 to 1024. They return 0 for invalid arguments or without a window; an empty string can also have zero width. Destroy every font with `mv_font_destroy` before closing the window. `mv_utf8_decode` and `mv_utf8_encode` convert one Unicode scalar at a time.
 
+## Find related processes
+
+`mv.process.children(parent)` returns the live direct children of an owner. `mv.process.descendants(parent)` includes all live descendants. Both return a new table of canonical handles in creation order. Sleeping and frozen processes are included.
+
+Pass `{relation = "creation"}` to follow creator relationships, including through dead ancestors. Pass `{type = Enemy}` to filter by a process definition. For example, `mv.process.descendants(parent, {relation = "creation", type = Enemy})` returns matching descendants. Ownership is the default relation. These queries use the current scheduler relations.
+
+## Children and ownership
+
+A process started inside another process is attached to its owner by default. It ends when its owner ends. To create an independent child, use `mv.process.spawn(Child, {x = 10}, {attached = false})`. Its `creator_id` still identifies the creator, but its `parent` is `nil`.
+
+Set `children_attached = false` in a process definition or its creation fields to make its future children independent by default. A process can change `self.children_attached` for future children. The explicit `attached` spawn option has priority. During deferred cleanup, a close callback must use `spawn` with `attached = false` to create a process. Runtime shutdown rejects new processes.
+
+## Default fields
+
+Pass `defaults` in the second argument to `mv.process` to set fields for each instance:
+
+```lua
+local Enemy = mv.process(function(self)
+  print(self.health, self.stats.attack)
+end, {defaults = {health = 100, stats = {attack = 10}}})
+
+Enemy {health = 250}
+```
+
+The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables, userdata, and threads are rejected. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
+
 ## Process data
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.
@@ -77,14 +105,15 @@ The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `s
 The following fields belong to the engine and cannot be assigned:
 
 - `self.id`: this process ID.
-- `self.parent`: the creator's ID, or `nil`. It keeps the original ID even if the parent later ends.
+- `self.creator_id`: the creator’s ID, or `nil` for a root.
+- `self.parent`: the current owner handle, or `nil`.
 - `self.priority`: the current scheduler priority.
 - `self.delta`: logical seconds since this process's previous activation, or 0 on its first activation. It includes ticks spent sleeping or frozen.
 - `self.status`: `"running"`, `"sleeping"`, `"frozen"`, or `"dead"` after termination.
 - `self.reason`: `nil` while alive, then `"returned"`, `"killed"`, or `"error"`.
 - `self.recv`: the message-receive method.
 
-After a parent ends, its live children become roots in the process tree. Their `self.parent` still identifies their original creator. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Other field reads and writes raise an error after termination. Cleanup releases its game fields, even while Lua still holds `self`.
+After an owner ends, its surviving children become roots in the current process tree. Their `self.creator_id` keeps the original creator ID. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Other field reads and writes raise an error after termination. Cleanup releases its game fields, even while Lua still holds `self`.
 
 ## Control processes
 
@@ -92,7 +121,7 @@ After a parent ends, its live children become roots in the process tree. Their `
 
 Use `mv.set_priority(id, value)` and `mv.get_priority(id)` to change and read integer priorities. The default is 0. Higher priorities run first; ties use creation order. The scheduler fixes the order at the start of a tick. A change during a tick takes effect on the next tick. Invalid IDs raise an error.
 
-`mv.signal(id, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(id, signal)` also signals the live descendants at the time of the call. New children do not inherit that signal. `mv.kill(id)` and `mv.kill_tree(id)` are shortcuts for the kill signal.
+`mv.signal(id, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle)` are shortcuts for the kill signal. `mv.kill(handle)` returns true when it kills a live process and false if that handle is already dead. `mv.process.alive(handle)` checks whether a process is live.
 
 Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or IDs raise an error without changing the tree.
 

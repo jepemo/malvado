@@ -45,6 +45,8 @@ typedef enum {
 } MvResult;
 
 typedef uint64_t MvProcessId;
+typedef struct MvResource MvResource;
+typedef void (*MvResourceDestroy)(void *data);
 typedef enum { MV_PROCESS_RUNNING, MV_PROCESS_SLEEPING, MV_PROCESS_FROZEN } MvProcessStatus;
 typedef enum { MV_SIGNAL_SLEEP, MV_SIGNAL_FREEZE, MV_SIGNAL_WAKEUP, MV_SIGNAL_KILL } MvSignal;
 typedef enum { MV_STEP_YIELD, MV_STEP_DONE, MV_STEP_ERROR } MvStepResult;
@@ -57,7 +59,13 @@ typedef struct {
     MvProcessStatus status;
     size_t messages;
     MvProcessId creator_id;
+    int attached;
 } MvProcessInfo;
+
+typedef struct {
+    MvProcessId id, creator_id;
+    int alive;
+} MvLineageInfo;
 
 typedef enum {
     MV_MESSAGE_BOOLEAN, MV_MESSAGE_INTEGER, MV_MESSAGE_NUMBER,
@@ -73,6 +81,20 @@ typedef struct {
         struct { void *data; void (*destroy)(void *); } opaque;
     } value;
 } MvMessage;
+
+/** Create a resource owned by a live process, or by the context if owner is
+ * zero. A successful call transfers data to destroy and returns a borrowed
+ * resource pointer. On failure data remains with the caller and out is not
+ * changed. The owner holds one reference until cleanup or context shutdown.
+ * Use retain to acquire a separate reference before sharing. Each successful
+ * retain needs one release. References may outlive the context; release them
+ * before shutting down any platform service needed by destroy. All calls and
+ * destructors use the context owner thread. */
+MvResult mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
+                            MvResourceDestroy destroy, MvResource **out);
+MvResult mv_resource_retain(MvResource *resource);
+MvResult mv_resource_release(MvResource *resource);
+void *mv_resource_data(const MvResource *resource);
 
 /** FIFO queue with at most 1024 messages per process. Bytes are copied on send;
  * opaque values transfer ownership only on successful send. Receive transfers
@@ -91,9 +113,10 @@ MvResult mv_process_spawn(MvContext *ctx, MvProcessId parent, int64_t priority,
                           MvProcessStep step, MvProcessDestroy destroy, void *user,
                           MvProcessId *id);
 /** Create a process with separate creator and owner IDs. Both IDs must name
- * live processes in ctx, or be zero. The owner controls the current parent
+ * live processes in ctx, or be zero. During a destructor, its own creator ID
+ * is also valid for a new independent process. The owner controls the current parent
  * relation; creator_id is historical. A nonzero owner links the child to its
- * lifetime. This experimental entry point does not yet retain genealogy. */
+ * lifetime. Creation ancestry remains available while live descendants need it. */
 MvResult mv_process_spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessId owner_id,
                                   int64_t priority, MvProcessStep step,
                                   MvProcessDestroy destroy, void *user, MvProcessId *id);
@@ -108,6 +131,26 @@ size_t mv_process_count(const MvContext *ctx);
  * complete count even when the buffer is smaller; out may be NULL if capacity
  * is zero. Results are snapshots and do not expose internal storage. */
 MvResult mv_process_snapshot(MvContext *ctx, MvProcessInfo *out, size_t capacity, size_t *total);
+/** Copy live children or descendants of a live owner in creation order.
+ * A type of zero selects all types. Sleeping and frozen processes are included.
+ * The buffer and total follow mv_process_snapshot. Invalid input or an unknown
+ * owner leaves both unchanged. These experimental functions currently use the
+ * ownership relation only; use mv_process_creation_descendants for creation. */
+MvResult mv_process_children(MvContext *ctx, MvProcessId owner, uint64_t type,
+                             MvProcessInfo *out, size_t capacity, size_t *total);
+MvResult mv_process_descendants(MvContext *ctx, MvProcessId owner, uint64_t type,
+                                MvProcessInfo *out, size_t capacity, size_t *total);
+/** Copy retained creation nodes in creation order. Dead nodes remain only while
+ * needed by live descendants. Buffer rules match mv_process_snapshot. */
+MvResult mv_process_lineage_snapshot(MvContext *ctx, MvLineageInfo *out,
+                                     size_t capacity, size_t *total);
+/** Query or signal the creation lineage. The root may have ended. A valid
+ * root with no live descendants gives an empty result. The query excludes the
+ * root and uses the same type filter and buffer rules as mv_process_children.
+ * The signal includes the root when it is live. IDs are local to ctx. */
+MvResult mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                                         MvProcessInfo *out, size_t capacity, size_t *total);
+MvResult mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, MvSignal signal);
 /** Run one logical scheduler tick. New processes first run on the next tick;
  * priorities are snapshotted at the beginning of the tick. Recursive ticks
  * return MV_BUSY. A callback error returns MV_PROCESS_ERROR after cleanup. */

@@ -10,7 +10,7 @@ local child = mv.process(function(self)
 end)
 local parent = mv.process(function(self)
   trace[#trace + 1] = "parent:start"
-  child { value = 42 }
+  mv.process.spawn(child, {value = 42}, {attached = false})
   mv.frame()
   trace[#trace + 1] = "parent:end"
 end)

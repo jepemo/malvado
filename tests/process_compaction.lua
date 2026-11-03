@@ -15,8 +15,8 @@ local controller = mv.process(function()
     mv.frame()
     assert(mv.status(id) == nil)
   end
-  local id = ephemeral {}
-  assert(id > last)
+  local id = mv.process.spawn(ephemeral, {}, {attached = false})
+  assert(id.id > last)
   mv.frame()
 end)
 mv.start(function() controller {} end)

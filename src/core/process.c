@@ -23,8 +23,16 @@ typedef struct MessageNode {
     struct MessageNode *next;
 } MessageNode;
 
+typedef struct Genealogy {
+    MvProcessId id;
+    struct Genealogy *creator, *previous, *next;
+    size_t children;
+    int alive;
+} Genealogy;
+
 typedef struct {
     MvProcessId id, parent, creator_id;
+    Genealogy *lineage;
     uint64_t type;
     int64_t priority;
     MvProcessStatus status;
@@ -36,9 +44,21 @@ typedef struct {
     size_t messages;
 } Process;
 
+struct MvResource {
+    struct MvResource *next, *previous;
+    struct MvProcesses *manager;
+    MvProcessId owner;
+    size_t references;
+    int owner_reference;
+    void *data;
+    MvResourceDestroy destroy;
+};
+
 struct MvProcesses {
     MvContext *ctx;
     Process *items;
+    Genealogy *lineage, *cleanup_lineage;
+    MvResource *resources;
     size_t count, capacity;
     MvProcessId next_id;
     int busy, closing;
@@ -65,6 +85,109 @@ static Process *find(MvProcesses *p, MvProcessId id, int include_killed)
     return NULL;
 }
 
+static void
+unlink_resource(MvResource *resource)
+{
+    MvProcesses *p = resource->manager;
+    if (!p) return;
+    if (resource->previous) resource->previous->next = resource->next;
+    else p->resources = resource->next;
+    if (resource->next) resource->next->previous = resource->previous;
+    resource->manager = NULL;
+    resource->next = resource->previous = NULL;
+}
+
+static void
+free_resource(MvResource *resource)
+{
+    void *data = resource->data;
+    MvResourceDestroy destroy = resource->destroy;
+    unlink_resource(resource);
+    free(resource);
+    destroy(data);
+}
+
+MvResult
+mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
+                   MvResourceDestroy destroy, MvResource **out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !destroy || !out) return MV_INVALID_ARGUMENT;
+    if (p->closing) return MV_BUSY;
+    if (owner && !find(p, owner, 0)) return MV_NOT_FOUND;
+    MvResource *resource = calloc(1, sizeof(*resource));
+    if (!resource) return MV_OUT_OF_MEMORY;
+    resource->manager = p;
+    resource->owner = owner;
+    resource->owner_reference = 1;
+    resource->data = data;
+    resource->destroy = destroy;
+    resource->next = p->resources;
+    if (p->resources) p->resources->previous = resource;
+    p->resources = resource;
+    *out = resource;
+    return MV_OK;
+}
+
+MvResult
+mv_resource_retain(MvResource *resource)
+{
+    if (!resource) return MV_INVALID_ARGUMENT;
+    if (resource->references == SIZE_MAX) return MV_OVERFLOW;
+    ++resource->references;
+    return MV_OK;
+}
+
+MvResult
+mv_resource_release(MvResource *resource)
+{
+    if (!resource || !resource->references) return MV_INVALID_ARGUMENT;
+    --resource->references;
+    if (!resource->references && !resource->owner_reference) free_resource(resource);
+    return MV_OK;
+}
+
+void *
+mv_resource_data(const MvResource *resource)
+{
+    return resource ? resource->data : NULL;
+}
+
+static void
+release_owned_resources(MvProcesses *p, MvProcessId owner)
+{
+    for (;;) {
+        MvResource *resource = p->resources;
+        while (resource && (!resource->owner_reference || resource->owner != owner))
+            resource = resource->next;
+        if (!resource) break;
+        resource->owner_reference = 0;
+        if (!resource->references) free_resource(resource);
+    }
+}
+
+static void
+prune_lineage(MvProcesses *p, Genealogy *node)
+{
+    while (node && !node->alive && !node->children) {
+        Genealogy *creator = node->creator;
+        if (node->previous) node->previous->next = node->next;
+        else p->lineage = node->next;
+        if (node->next) node->next->previous = node->previous;
+        if (creator) --creator->children;
+        free(node);
+        node = creator;
+    }
+}
+
+static int
+created_under(const Genealogy *node, MvProcessId ancestor)
+{
+    for (; node; node = node->creator)
+        if (node->id == ancestor) return 1;
+    return 0;
+}
+
 void mv_processes_destroy(MvProcesses *p)
 {
     if (!p) return;
@@ -81,7 +204,18 @@ void mv_processes_destroy(MvProcesses *p)
         }
         if (p->items[i].destroy) p->items[i].destroy(p->items[i].user);
     }
+    while (p->resources) {
+        MvResource *resource = p->resources;
+        resource->owner_reference = 0;
+        if (!resource->references) free_resource(resource);
+        else unlink_resource(resource);
+    }
     free(p->items);
+    while (p->lineage) {
+        Genealogy *next = p->lineage->next;
+        free(p->lineage);
+        p->lineage = next;
+    }
     free(p);
 }
 
@@ -93,7 +227,10 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !step || !id) return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
-    if ((creator_id && !find(p, creator_id, 0)) ||
+    Process *creator = creator_id ? find(p, creator_id, 0) : NULL;
+    Genealogy *closing_creator = p->cleanup_lineage;
+    if ((creator_id && !creator &&
+         (!closing_creator || closing_creator->id != creator_id || parent)) ||
         (parent && !find(p, parent, 0))) return MV_NOT_FOUND;
     if (p->next_id == UINT64_MAX) return MV_OVERFLOW;
     if (p->count == p->capacity) {
@@ -104,8 +241,18 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
         p->items = items;
         p->capacity = capacity;
     }
-    MvProcessId next = ++p->next_id;
-    p->items[p->count++] = (Process){.id = next, .parent = parent, .creator_id = creator_id, .priority = priority, .attached = attached,
+    Genealogy *lineage = calloc(1, sizeof(*lineage));
+    if (!lineage) return MV_OUT_OF_MEMORY;
+    lineage->id = ++p->next_id;
+    lineage->alive = 1;
+    lineage->creator = creator ? creator->lineage : (creator_id ? closing_creator : NULL);
+    if (lineage->creator) ++lineage->creator->children;
+    lineage->next = p->lineage;
+    if (p->lineage) p->lineage->previous = lineage;
+    p->lineage = lineage;
+    MvProcessId next = lineage->id;
+    p->items[p->count++] = (Process){.id = next, .parent = parent, .creator_id = creator_id,
+        .lineage = lineage, .priority = priority, .attached = attached,
         .status = MV_PROCESS_RUNNING, .step = step, .destroy = destroy, .user = user};
     *id = next;
     return MV_OK;
@@ -289,10 +436,106 @@ MvResult mv_process_snapshot(MvContext *ctx, MvProcessInfo *out, size_t capacity
         if (item->killed || !item->id) continue;
         if (count < capacity)
             out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
-                                         item->status, item->messages, item->creator_id};
+                                         item->status, item->messages, item->creator_id, item->attached};
         ++count;
     }
     *total = count;
+    return MV_OK;
+}
+
+static MvResult
+snapshot_owned(MvContext *ctx, MvProcessId owner, uint64_t type, MvProcessInfo *out,
+               size_t capacity, size_t *total, int recursive)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !owner || !total || (capacity && !out)) return MV_INVALID_ARGUMENT;
+    if (!find(p, owner, 0)) return MV_NOT_FOUND;
+    size_t count = 0;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->id || item->killed || (type && item->type != type)) continue;
+        if (recursive ? !descendant(p, item, owner) : item->parent != owner) continue;
+        if (count < capacity)
+            out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
+                                         item->status, item->messages, item->creator_id, item->attached};
+        ++count;
+    }
+    *total = count;
+    return MV_OK;
+}
+
+MvResult
+mv_process_children(MvContext *ctx, MvProcessId owner, uint64_t type,
+                    MvProcessInfo *out, size_t capacity, size_t *total)
+{
+    return snapshot_owned(ctx, owner, type, out, capacity, total, 0);
+}
+
+MvResult
+mv_process_descendants(MvContext *ctx, MvProcessId owner, uint64_t type,
+                       MvProcessInfo *out, size_t capacity, size_t *total)
+{
+    return snapshot_owned(ctx, owner, type, out, capacity, total, 1);
+}
+
+MvResult
+mv_process_lineage_snapshot(MvContext *ctx, MvLineageInfo *out, size_t capacity, size_t *total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !total || (capacity && !out)) return MV_INVALID_ARGUMENT;
+    Genealogy *node = p->lineage;
+    while (node && node->next) node = node->next;
+    size_t count = 0;
+    for (; node; node = node->previous) {
+        if (count < capacity) {
+            out[count] = (MvLineageInfo){node->id, node->creator ? node->creator->id : 0,
+                                         find(p, node->id, 0) != NULL};
+        }
+        ++count;
+    }
+    *total = count;
+    return MV_OK;
+}
+
+MvResult
+mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                                MvProcessInfo *out, size_t capacity, size_t *total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !ancestor || !total || (capacity && !out)) return MV_INVALID_ARGUMENT;
+    if (ancestor > p->next_id) return MV_NOT_FOUND;
+    size_t count = 0;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->id || item->killed || item->id == ancestor ||
+            (type && item->type != type) || !created_under(item->lineage, ancestor)) continue;
+        if (count < capacity)
+            out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
+                                         item->status, item->messages, item->creator_id, item->attached};
+        ++count;
+    }
+    *total = count;
+    return MV_OK;
+}
+
+MvResult
+mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, MvSignal signal)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !ancestor || signal < MV_SIGNAL_SLEEP || signal > MV_SIGNAL_KILL)
+        return MV_INVALID_ARGUMENT;
+    if (p->closing) return MV_BUSY;
+    if (ancestor > p->next_id) return MV_NOT_FOUND;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->id || item->killed || !created_under(item->lineage, ancestor)) continue;
+        switch (signal) {
+        case MV_SIGNAL_SLEEP: item->status = MV_PROCESS_SLEEPING; break;
+        case MV_SIGNAL_FREEZE: item->status = MV_PROCESS_FROZEN; break;
+        case MV_SIGNAL_WAKEUP: item->status = MV_PROCESS_RUNNING; break;
+        case MV_SIGNAL_KILL: kill_owned(p, item->id); break;
+        }
+    }
     return MV_OK;
 }
 
@@ -333,7 +576,10 @@ MvResult mv_process_tick(MvContext *ctx)
         MvProcessDestroy destroy = p->items[i].destroy;
         void *user = p->items[i].user;
         MessageNode *node = p->items[i].head;
+        Genealogy *lineage = p->items[i].lineage;
         p->items[i].id = 0;
+        p->items[i].lineage = NULL;
+        lineage->alive = 0;
         p->items[i].destroy = NULL;
         p->items[i].head = p->items[i].tail = NULL;
         while (node) {
@@ -342,7 +588,11 @@ MvResult mv_process_tick(MvContext *ctx)
             free(node);
             node = next;
         }
+        p->cleanup_lineage = lineage;
         if (destroy) destroy(user);
+        release_owned_resources(p, lineage->id);
+        p->cleanup_lineage = NULL;
+        prune_lineage(p, lineage);
     }
     for (size_t i = 0; i < p->count; ++i)
         if (p->items[i].parent && !find(p, p->items[i].parent, 0)) p->items[i].parent = 0;

@@ -11,7 +11,7 @@ local worker = mv.process(function(self)
 end)
 local function lookup(snapshot, id)
   for _, item in ipairs(snapshot.processes) do
-    if item.id == id then return item end
+    if item.id == id.id then return item end
   end
 end
 local controller = mv.process(function()
@@ -32,7 +32,9 @@ local controller = mv.process(function()
   local again = mv.snapshot()
   assert(lookup(again, a).draw_commands == 1 and lookup(again, b).draw_commands == 1)
   assert(lookup(snap, a).status == "running") -- Prior snapshots are copies.
-  mv.kill(a); mv.kill(b)
+  assert(mv.process.alive(a))
+  assert(mv.kill(a) and not mv.kill(a) and not mv.process.alive(a))
+  assert(mv.kill(b))
   assert(#mv.find(worker) == 0)
   mv.frame()
 end)

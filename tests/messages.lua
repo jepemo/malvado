@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local parent_id, child_id
 local child = mv.process(function(self)
-  assert(self.parent == parent_id)
+  assert(self.creator_id == parent_id)
   assert(self:recv() == "first")
   assert(self:recv() == "second")
   assert(self:recv() == nil)

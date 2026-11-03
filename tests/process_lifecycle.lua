@@ -4,10 +4,13 @@
 local mv = require("malvado")
 local args = { value = 1 }
 local seen = {}
+local created = {}
 local closed = 0
 local P = mv.process(function(self)
   local cleanup <close> = setmetatable({}, { __close = function() closed = closed + 1 end })
   seen[#seen + 1] = self.value
+  assert(self == created[#seen])
+  assert(mv.status(self) == "running")
   self.value = self.value + 1
   local co = coroutine.create(function() mv.frame() end)
   local ok = coroutine.resume(co)
@@ -16,8 +19,8 @@ local P = mv.process(function(self)
   seen[#seen + 1] = self.value
 end)
 mv.start(function()
-  P(args)
-  P(args)
+  created[1] = P(args)
+  created[2] = P(args)
 end)
 assert(table.concat(seen, ",") == "1,1,2,2")
 assert(args.value == 1 and args.id == nil)

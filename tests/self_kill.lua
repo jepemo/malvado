@@ -7,7 +7,7 @@ local P = mv.process(function(self)
   saved = self
   local resource <close> = setmetatable({}, {__close = function() closed = closed + 1 end})
   pcall(function()
-    mv.kill(self.id)
+    mv.kill(self)
     after = true
   end)
   after = true
