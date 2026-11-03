@@ -365,7 +365,10 @@ send_message(lua_State *L)
 static ProcessState
 parse_signal(lua_State *L, int argument)
 {
-    const char *signal = luaL_checkstring(L, argument);
+    size_t length;
+    const char *signal = luaL_checklstring(L, argument, &length);
+    if (strlen(signal) != length)
+        luaL_error(L, "unknown signal");
     if (strcmp(signal, "kill") == 0)
         return PROCESS_KILLED;
     if (strcmp(signal, "sleep") == 0)
@@ -376,6 +379,18 @@ parse_signal(lua_State *L, int argument)
         return PROCESS_RUNNING;
     luaL_error(L, "unknown signal: %s", signal);
     return PROCESS_KILLED; /* luaL_error does not return. */
+}
+
+static int
+parse_creation_relation(lua_State *L, int argument)
+{
+    size_t length;
+    const char *relation = luaL_checklstring(L, argument, &length);
+    if (strlen(relation) != length)
+        return luaL_error(L, "unknown process relation");
+    if (strcmp(relation, "creation") == 0) return 1;
+    if (strcmp(relation, "ownership") == 0) return 0;
+    return luaL_error(L, "unknown process relation");
 }
 
 static int active_in_tree(lua_Integer root, int attached_only);
@@ -501,10 +516,7 @@ signal_tree(lua_State *L)
         luaL_checktype(L, 3, LUA_TTABLE);
         lua_getfield(L, 3, "relation");
         if (!lua_isnil(L, -1)) {
-            const char *relation = luaL_checkstring(L, -1);
-            if (strcmp(relation, "ownership") == 0) creation = 0;
-            else if (strcmp(relation, "creation") != 0)
-                return luaL_error(L, "unknown process relation");
+            creation = parse_creation_relation(L, -1);
         }
         lua_pop(L, 1);
     }
@@ -997,10 +1009,7 @@ hierarchy_query(lua_State *L, int direct)
         luaL_checktype(L, 2, LUA_TTABLE);
         lua_getfield(L, 2, "relation");
         if (!lua_isnil(L, -1)) {
-            const char *relation = luaL_checkstring(L, -1);
-            if (strcmp(relation, "creation") == 0) creation = 1;
-            else if (strcmp(relation, "ownership") != 0)
-                return luaL_error(L, "unknown process relation");
+            creation = parse_creation_relation(L, -1);
         }
         lua_pop(L, 1);
         lua_getfield(L, 2, "type");
