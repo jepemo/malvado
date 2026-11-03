@@ -181,17 +181,22 @@ free_resource(MvResource *resource)
 }
 
 MvResult
-mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
+mv_resource_create(MvContext *ctx, const MvProcessRef *owner, void *data,
                    MvResourceDestroy destroy, MvResource **out)
 {
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !destroy || !out) return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
-    if (owner && !find(p, owner, 0)) return MV_NOT_FOUND;
+    MvProcessId owner_id = 0;
+    if (owner) {
+        MvResult result = mv_process_ref_resolve(ctx, *owner, &owner_id);
+        if (result != MV_OK) return result;
+        if (!find(p, owner_id, 0)) return MV_NOT_FOUND;
+    }
     MvResource *resource = calloc(1, sizeof(*resource));
     if (!resource) return MV_OUT_OF_MEMORY;
     resource->manager = p;
-    resource->owner = owner;
+    resource->owner = owner_id;
     resource->owner_reference = 1;
     resource->data = data;
     resource->destroy = destroy;

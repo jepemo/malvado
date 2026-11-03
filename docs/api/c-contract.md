@@ -44,7 +44,7 @@ An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals ret
 
 ## Owned resources
 
-`mv_resource_create(ctx, owner, data, destroy, &resource)` transfers `data` to the context after a successful call. The owner is a live process ID, or zero for the game context. The returned pointer is borrowed. The owner holds one reference until process cleanup or context shutdown.
+`mv_resource_create(ctx, owner, data, destroy, &resource)` transfers `data` to the context after a successful call. The owner is a pointer to a live process reference from the same context, or `NULL` for the game context. A dead or foreign owner is rejected without changing the output. The returned pointer is borrowed. The owner holds one reference until process cleanup or context shutdown.
 
 Call `mv_resource_retain` before sharing a resource or keeping it for pending work. Use `mv_resource_transfer(resource, &owner_ref)` to move the owner reference to a live process in the same context, or pass `NULL` to move it to the game context. The transfer does not change retained references. It can assign a new owner to a retained resource after its former owner ends. A foreign or dead owner is rejected without changing ownership. Each successful retain needs one `mv_resource_release`. When the owner and all retained references are gone, Malvado calls `destroy` once. `mv_resource_data` returns the stored pointer while a reference is valid. On a failed create, the caller keeps `data` and the output is unchanged.
 

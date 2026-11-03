@@ -87,14 +87,14 @@ typedef struct {
 } MvMessage;
 
 /** Create a resource owned by a live process, or by the context if owner is
- * zero. A successful call transfers data to destroy and returns a borrowed
+ * NULL. A process owner must belong to ctx. A successful call transfers data to destroy and returns a borrowed
  * resource pointer. On failure data remains with the caller and out is not
  * changed. The owner holds one reference until cleanup or context shutdown.
  * Use retain to acquire a separate reference before sharing. Each successful
  * retain needs one release. References may outlive the context; release them
  * before shutting down any platform service needed by destroy. All calls and
  * destructors use the context owner thread. */
-MvResult mv_resource_create(MvContext *ctx, MvProcessId owner, void *data,
+MvResult mv_resource_create(MvContext *ctx, const MvProcessRef *owner, void *data,
                             MvResourceDestroy destroy, MvResource **out);
 /** Move the owner reference to a live process in the same context, or to the
  * context when owner is NULL. Existing retained references do not change.

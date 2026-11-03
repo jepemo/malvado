@@ -1488,8 +1488,16 @@ static MvResource *
 manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy)
 {
     MvResource *resource = NULL;
-    MvProcessId owner = engine.active ? (MvProcessId)engine.active_id : 0;
-    if (mv_resource_create(engine.context, owner, data, destroy, &resource) != MV_OK) {
+    MvProcessRef owner;
+    const MvProcessRef *owner_ref = NULL;
+    if (engine.active) {
+        if (mv_process_ref_create(engine.context, (MvProcessId)engine.active_id, &owner) != MV_OK) {
+            destroy(data);
+            luaL_error(L, "could not identify resource owner");
+        }
+        owner_ref = &owner;
+    }
+    if (mv_resource_create(engine.context, owner_ref, data, destroy, &resource) != MV_OK) {
         destroy(data);
         luaL_error(L, "could not manage native resource");
     }

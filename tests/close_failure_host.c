@@ -40,7 +40,9 @@ inspect(void *user)
     size_t total;
     assert(mv_process_snapshot(ctx, processes, 4, &total) == MV_OK && total == 2);
     MvResource *resource;
-    assert(mv_resource_create(ctx, processes[1].id, state, resource_destroy, &resource) == MV_OK);
+    MvProcessRef owner;
+    assert(mv_process_ref_create(ctx, processes[1].id, &owner) == MV_OK);
+    assert(mv_resource_create(ctx, &owner, state, resource_destroy, &resource) == MV_OK);
     state->attached = 1;
 }
 

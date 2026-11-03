@@ -54,8 +54,11 @@ main(void)
                                         &independent) == MV_OK);
         MvResource *owned[4];
         MvProcessId owners[] = {root, first, second, independent};
-        for (int i = 0; i < 4; ++i)
-            assert(mv_resource_create(ctx, owners[i], &data, release_resource, &owned[i]) == MV_OK);
+        for (int i = 0; i < 4; ++i) {
+            MvProcessRef owner_ref;
+            assert(mv_process_ref_create(ctx, owners[i], &owner_ref) == MV_OK);
+            assert(mv_resource_create(ctx, &owner_ref, &data, release_resource, &owned[i]) == MV_OK);
+        }
         assert(mv_resource_retain(owned[3]) == MV_OK);
         assert(mv_process_signal(ctx, first, MV_SIGNAL_FREEZE, 0) == MV_OK);
         assert(mv_process_signal(ctx, root, MV_SIGNAL_KILL, 0) == MV_OK);
