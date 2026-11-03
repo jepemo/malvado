@@ -83,6 +83,18 @@ In core P2, prepare snapshots and commands executed **between ticks**, without a
 
 Immutable snapshot: tick, PID/generation, type, parent, state, transform, next activation, and aggregate metrics. Measure a Lua resume and a tick separately; do not present them as a Lua instruction profiler. Count messages without copying payloads. Do not serialize the whole VM or run game getters/metamethods to display fields.
 
+### Process snapshot contract
+
+Capture a snapshot on the runtime owner thread between ticks. Give it a runtime session identifier and tick number. A session identifier must change on each runtime start. A process key is the session identifier and its native process identity. A retained key must never select a different process after restart. The identity implementation remains an alpha.5 task.
+
+Copy live process records in creation order. Each record includes its key, creator key, current owner key, type, priority, state, and message count. Use an absent owner for an independent process. Include sleeping and frozen processes. Exclude logically dead processes from this list. Copy only engine fields; do not invoke Lua callbacks or retain Lua game fields, coroutines, or resources.
+
+Copy a second creation-lineage list in creation order. Each node has a process key, creator key, and live flag. Include dead nodes only while they connect a live descendant to its creator. A dead node has no game fields or resource references. Remove it when it no longer connects a live descendant. Do not keep extra history for the inspector.
+
+Build the ownership tree from live records and their owner keys. Build the creation tree from the lineage list. Show live records with no owner as independent processes. Show dead lineage nodes as historical ancestors. A snapshot is an immutable copy, not a subscription. A selection can become stale after capture; commands must revalidate its session and process key.
+
+Capture both lists as one operation at a safe point. If allocation or capture fails, return an error without publishing a partial snapshot. A bounded buffer API must report the required sizes and let the caller retry. The caller owns its buffers. A snapshot does not keep processes or historical nodes alive. The initial implementation has separate C snapshots and a Lua snapshot; it does not yet guarantee one atomic combined capture or session identity.
+
 Pause stops ticks, not UI/control input. Step advances exactly one logical tick and publishes the result; it is not Lua Step Into. Rendering may present the last state with a documented audio policy. Identify snapshots and commands by session/tick, detect reused PIDs, and refresh selection when a process dies. Do not access `lua_State` from the UI thread or let the inspector modify C structures during a tick.
 
 ## Milestones and acceptance
