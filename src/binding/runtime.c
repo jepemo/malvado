@@ -704,6 +704,18 @@ self_index(lua_State *L)
     return 1;
 }
 
+static const char *const read_only_process_fields[] = {
+    "id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta", NULL
+};
+
+static int
+is_read_only_process_field(const char *key)
+{
+    for (size_t i = 0; read_only_process_fields[i]; ++i)
+        if (strcmp(key, read_only_process_fields[i]) == 0) return 1;
+    return 0;
+}
+
 static int
 self_newindex(lua_State *L)
 {
@@ -713,9 +725,7 @@ self_newindex(lua_State *L)
     if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
-    if (key && (!strcmp(key, "id") || !strcmp(key, "parent") || !strcmp(key, "creator_id") ||
-                !strcmp(key, "priority") || !strcmp(key, "status") || !strcmp(key, "reason") || !strcmp(key, "recv") ||
-                !strcmp(key, "delta")))
+    if (key && is_read_only_process_field(key))
         return luaL_error(L, "process field is read-only");
     if (key && strcmp(key, "z") == 0 &&
         (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
@@ -799,6 +809,13 @@ create_process(lua_State *L)
             lua_rawset(L, fields);
             lua_pop(L, 1);
         }
+    }
+    for (size_t i = 0; read_only_process_fields[i]; ++i) {
+        lua_pushstring(L, read_only_process_fields[i]);
+        lua_rawget(L, fields);
+        if (!lua_isnil(L, -1))
+            return luaL_error(L, "process field is read-only: %s", read_only_process_fields[i]);
+        lua_pop(L, 1);
     }
     lua_getfield(L, fields, "children_attached");
     if (lua_isnil(L, -1)) {

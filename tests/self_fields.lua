@@ -13,14 +13,26 @@ local P = mv.process(function(self)
     self.value = 2
     assert(self.value == 2)
     assert(self.delta == 0)
-    for _, field in ipairs({"id", "parent", "priority", "status", "recv", "delta"}) do
+    for _, field in ipairs({"id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta"}) do
         assert(not pcall(function() self[field] = 5 end))
     end
     assert(not pcall(rawset, self, "id", 5))
     mv.set_priority(self.id, 8)
     assert(self.priority == 8)
 end)
-mv.start(function() P({id = -1, parent = -1, priority = -1}) end)
+mv.start(function()
+    local fields = {"id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta"}
+    for _, name in ipairs(fields) do
+        local input = {[name] = false}
+        assert(not pcall(P, input))
+        local defaults = mv.process(function() error("must not run") end, {defaults = input})
+        assert(not pcall(defaults, {}))
+    end
+    assert(not pcall(P, {children_attached = 1}))
+    assert(#mv.snapshot().processes == 0)
+    local first = P({})
+    assert(first.id == 1)
+end)
 
 assert(saved.status == "dead" and saved.reason == "returned" and saved.id > 0)
 assert(not pcall(function() return saved.value end))
