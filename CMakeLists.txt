@@ -623,3 +623,8 @@ set_tests_properties(lua_start_results PROPERTIES TIMEOUT 15)
 add_test(NAME lua_start_parity COMMAND ${CMAKE_COMMAND}
   -DPROGRAM=$<TARGET_FILE:malvado-run> -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_parity.cmake)
 set_tests_properties(lua_start_parity PROPERTIES TIMEOUT 15)
+add_executable(start-cleanup-test tests/start_cleanup.c)
+target_include_directories(start-cleanup-test PRIVATE src)
+target_link_libraries(start-cleanup-test PRIVATE malvado_lua_binding)
+add_test(NAME lua_start_cleanup COMMAND start-cleanup-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_cleanup.lua)
+set_tests_properties(lua_start_cleanup PROPERTIES TIMEOUT 15)
