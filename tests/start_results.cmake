@@ -21,6 +21,8 @@ check_script(mixed "require('malvado').start(function() end); return {}" 1 "game
 check_script(initializer "return {init = function() error('init failed') end}" 1 "init failed")
 check_script(nested "return {init = function() require('malvado').start(function() end) end}" 1 "only be called once")
 check_script(load "error('load failed')" 1 "load failed")
+check_script(load_object "error({})" 1 "non-string error")
+check_script(initializer_object "return {init = function() error({}) end}" 1 "non-string error")
 check_script(process "local mv = require('malvado'); local p = mv.process(function() error('task failed') end); return {init = function() p() end}" 1 "process failed")
 
 set(path "${CMAKE_CURRENT_BINARY_DIR}/invalid_bootstrap.lua")

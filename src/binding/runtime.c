@@ -3431,13 +3431,17 @@ malvado_run(int argc, char **argv)
     luaL_requiref(engine.L, "malvado.compat.legacy", open_legacy_module, 0);
     lua_pop(engine.L, 1);
     if (luaL_loadfile(engine.L, argv[index]) != LUA_OK || lua_pcall(engine.L, 0, 1, 0) != LUA_OK) {
-        fprintf(stderr, "%s\n", lua_tostring(engine.L, -1));
+        const char *message = lua_type(engine.L, -1) == LUA_TSTRING ?
+                              lua_tostring(engine.L, -1) : "non-string error";
+        fprintf(stderr, "%s\n", message);
         engine.failed = 1;
     } else if (lua_istable(engine.L, -1)) {
         lua_pushcfunction(engine.L, start_declared_game);
         lua_pushvalue(engine.L, -2);
         if (lua_pcall(engine.L, 1, 0, 0) != LUA_OK) {
-            fprintf(stderr, "%s\n", lua_tostring(engine.L, -1));
+            const char *message = lua_type(engine.L, -1) == LUA_TSTRING ?
+                                  lua_tostring(engine.L, -1) : "non-string error";
+            fprintf(stderr, "%s\n", message);
             engine.failed = 1;
         }
     }
