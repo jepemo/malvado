@@ -80,6 +80,11 @@ typedef struct {
     int alive;
 } MvLineageInfo;
 
+typedef struct {
+    MvRuntimeId runtime;
+    uint64_t tick;
+} MvInspectionHeader;
+
 typedef enum {
     MV_MESSAGE_BOOLEAN, MV_MESSAGE_INTEGER, MV_MESSAGE_NUMBER,
     MV_MESSAGE_BYTES, MV_MESSAGE_OPAQUE
@@ -196,6 +201,13 @@ MvResult mv_process_inspection_snapshot(MvContext *ctx,
                                         MvProcessInfo *processes, size_t process_capacity,
                                         size_t *process_total, MvLineageInfo *lineage,
                                         size_t lineage_capacity, size_t *lineage_total);
+/** Capture identity, scheduler tick, and both snapshot buffers together.
+ * On insufficient capacity, counts are written but header and buffers are
+ * unchanged. On invalid input, all outputs are unchanged. */
+MvResult mv_process_inspection_capture(MvContext *ctx, MvInspectionHeader *header,
+                                       MvProcessInfo *processes, size_t process_capacity,
+                                       size_t *process_total, MvLineageInfo *lineage,
+                                       size_t lineage_capacity, size_t *lineage_total);
 /** Query or signal the creation lineage. The root may have ended. A valid
  * root with no live descendants gives an empty result. The query excludes the
  * root and uses the same type filter and buffer rules as mv_process_children.

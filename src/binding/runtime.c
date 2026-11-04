@@ -1184,8 +1184,9 @@ snapshot(lua_State *L)
 {
     sync_processes();
     size_t count = 0, lineage_count = 0;
-    MvResult probe = mv_process_inspection_snapshot(engine.context, NULL, 0, &count,
-                                                    NULL, 0, &lineage_count);
+    MvInspectionHeader header;
+    MvResult probe = mv_process_inspection_capture(engine.context, &header, NULL, 0, &count,
+                                                   NULL, 0, &lineage_count);
     if (probe != MV_OK && probe != MV_BUFFER_TOO_SMALL)
         return luaL_error(L, "failed to inspect processes");
     MvProcessInfo *items = NULL;
@@ -1200,8 +1201,8 @@ snapshot(lua_State *L)
         items = lua_newuserdatauv(L, count * sizeof(*items), 0);
         lineage = lua_newuserdatauv(L, lineage_count * sizeof(*lineage), 0);
         draw_counts = lua_newuserdatauv(L, count * sizeof(*draw_counts), 0);
-        MvResult result = mv_process_inspection_snapshot(engine.context, items, count, &total,
-                                                         lineage, lineage_count, &lineage_total);
+        MvResult result = mv_process_inspection_capture(engine.context, &header, items, count, &total,
+                                                        lineage, lineage_count, &lineage_total);
         if (result == MV_BUFFER_TOO_SMALL) {
             lua_pop(L, 3);
             count = total;
@@ -1213,6 +1214,8 @@ snapshot(lua_State *L)
         }
     }
     if (!captured) return luaL_error(L, "process list changed during inspection");
+    if (header.tick > LUA_MAXINTEGER)
+        return luaL_error(L, "inspection tick is too large");
     for (size_t i = 0; i < total; ++i) {
         Process *process = find_process_slot((lua_Integer)items[i].id);
         int draw_ref = process ? process->draw_ref : LUA_NOREF;
@@ -1220,16 +1223,14 @@ snapshot(lua_State *L)
         draw_counts[i] = lua_rawlen(L, -1);
         lua_pop(L, 1);
     }
-    MvRuntimeId runtime_id;
-    if (mv_context_runtime_id(engine.context, &runtime_id) != MV_OK)
-        return luaL_error(L, "failed to inspect runtime identity");
+    MvRuntimeId runtime_id = header.runtime;
     char runtime_text[49];
     (void)snprintf(runtime_text, sizeof(runtime_text), "%016" PRIx64 "%016" PRIx64 "%016" PRIx64,
                    runtime_id.high, runtime_id.low, runtime_id.sequence);
     lua_newtable(L);
     lua_pushstring(L, runtime_text);
     lua_setfield(L, -2, "runtime");
-    lua_pushinteger(L, engine.tick_number);
+    lua_pushinteger(L, (lua_Integer)header.tick);
     lua_setfield(L, -2, "tick");
     lua_newtable(L);
     lua_Integer result = 0;

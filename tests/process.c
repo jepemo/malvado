@@ -193,6 +193,22 @@ int main(void)
     MvProcessInfo captured[3] = {{.id = 999}};
     MvLineageInfo history[3] = {{.id = 888}};
     size_t processes_needed = 0, history_needed = 0;
+    MvInspectionHeader header = {.runtime = {1, 2, 3}, .tick = 99};
+    processes_needed = history_needed = 77;
+    assert(mv_process_inspection_capture(ctx, NULL, captured, 3, &processes_needed,
+                                         history, 3, &history_needed) == MV_INVALID_ARGUMENT);
+    assert(processes_needed == 77 && history_needed == 77 && captured[0].id == 999 && history[0].id == 888);
+    assert(mv_process_inspection_capture(ctx, &header, captured, 3, &processes_needed,
+                                         history, 2, &history_needed) == MV_BUFFER_TOO_SMALL);
+    assert(header.tick == 99 && header.runtime.high == 1 && captured[0].id == 999 && history[0].id == 888);
+    assert(mv_process_inspection_capture(ctx, &header, captured, 3, &processes_needed,
+                                         history, 3, &history_needed) == MV_OK);
+    MvRuntimeId runtime;
+    assert(mv_context_runtime_id(ctx, &runtime) == MV_OK);
+    assert(header.tick == 1 && header.runtime.high == runtime.high &&
+           header.runtime.low == runtime.low && header.runtime.sequence == runtime.sequence);
+    captured[0].id = 999;
+    history[0].id = 888;
     assert(mv_process_inspection_snapshot(ctx, captured, 3, &processes_needed,
                                           history, 2, &history_needed) == MV_BUFFER_TOO_SMALL);
     assert(processes_needed == 3 && history_needed == 3);

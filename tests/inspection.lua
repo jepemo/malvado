@@ -3,6 +3,7 @@
 
 local mv = require("malvado")
 local a, b
+local weak = setmetatable({}, {__mode = "v"})
 local worker = mv.process(function(self)
   while true do
     mv.draw_text("hello", 0, 0, 20)
@@ -32,6 +33,8 @@ local controller = mv.process(function()
   assert(not pcall(mv.process.children, invalid))
   assert(not pcall(mv.process.descendants, invalid))
   assert(a.status == "running" and b.status == "running")
+  a.payload = {}
+  weak[1] = a.payload
   local snap = mv.snapshot()
   assert(snap.tick >= 2)
   assert(type(snap.runtime) == "string" and #snap.runtime == 48 and snap.runtime:match("^%x+$"))
@@ -54,6 +57,10 @@ local controller = mv.process(function()
   assert(mv.signal(b, "kill") and not mv.kill(b))
   assert(#mv.find(worker) == 0)
   mv.frame()
+  collectgarbage("collect")
+  collectgarbage("collect")
+  assert(weak[1] == nil) -- The retained snapshot does not own process fields.
+  assert(lookup(snap, a).status == "running")
 end)
 mv.start(function()
   controller {}

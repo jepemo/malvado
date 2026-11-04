@@ -52,6 +52,10 @@ main(void)
         assert(mv_process_spawn(ctx, first, 0, wait_step, NULL, NULL, &second) == MV_OK);
         assert(mv_process_spawn_related(ctx, first, 0, 0, wait_step, NULL, NULL,
                                         &independent) == MV_OK);
+        MvProcessRef root_ref;
+        MvProcessHandle *root_handle;
+        assert(mv_process_ref_create(ctx, root, &root_ref) == MV_OK);
+        assert(mv_process_handle_create(ctx, root_ref, &root_handle) == MV_OK);
         MvResource *owned[4];
         MvProcessId owners[] = {root, first, second, independent};
         for (int i = 0; i < 4; ++i) {
@@ -76,6 +80,10 @@ main(void)
         assert(destroyed == (round + 1) * 4);
         assert(mv_process_lineage_snapshot(ctx, NULL, 0, &total) == MV_OK && total == 0);
         assert(mv_process_count(ctx) == 0);
+        MvProcessHandleInfo root_state;
+        assert(mv_process_handle_snapshot(root_handle, &root_state) == MV_OK &&
+               !root_state.alive && root_state.reason == MV_END_KILLED);
+        mv_process_handle_destroy(root_handle);
     }
     mv_context_destroy(ctx);
     assert(destroyed == ROUNDS * 4);

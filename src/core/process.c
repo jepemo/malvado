@@ -80,6 +80,7 @@ struct MvProcesses {
     size_t count, capacity;
     MvProcessId next_id;
     MvRuntimeId runtime_id;
+    uint64_t ticks;
     int busy, closing;
 };
 
@@ -777,6 +778,22 @@ mv_process_inspection_snapshot(MvContext *ctx, MvProcessInfo *processes,
     return MV_OK;
 }
 
+MvResult
+mv_process_inspection_capture(MvContext *ctx, MvInspectionHeader *header,
+                              MvProcessInfo *processes, size_t process_capacity,
+                              size_t *process_total, MvLineageInfo *lineage,
+                              size_t lineage_capacity, size_t *lineage_total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !header) return MV_INVALID_ARGUMENT;
+    MvResult result = mv_process_inspection_snapshot(ctx, processes, process_capacity,
+                                                     process_total, lineage, lineage_capacity,
+                                                     lineage_total);
+    if (result == MV_OK)
+        *header = (MvInspectionHeader){p->runtime_id, p->ticks};
+    return result;
+}
+
 static MvResult
 snapshot_creation(MvContext *ctx, MvProcessId ancestor, uint64_t type,
                   MvProcessInfo *out, size_t capacity, size_t *total, int direct)
@@ -829,11 +846,13 @@ MvResult mv_process_tick(MvContext *ctx)
     MvProcesses *p = mv_context_processes(ctx);
     if (!p) return MV_INVALID_ARGUMENT;
     if (p->busy || p->closing) return MV_BUSY;
+    if (p->ticks == UINT64_MAX) return MV_OVERFLOW;
     size_t count = p->count;
     if (count > SIZE_MAX / sizeof(MalvadoScheduleItem)) return MV_OVERFLOW;
     MalvadoScheduleItem *order = count ? malloc(count * sizeof(*order)) : NULL;
     if (count && !order) return MV_OUT_OF_MEMORY;
     p->busy = 1;
+    ++p->ticks;
     p->ended_count = 0;
     for (size_t i = 0; i < count; ++i) order[i] = (MalvadoScheduleItem){i, p->items[i].priority};
     malvado_schedule_sort(order, count);
