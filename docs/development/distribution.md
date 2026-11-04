@@ -39,6 +39,8 @@ The external binding must define window and loop ownership, initialization and s
 
 To avoid unexpected updates to existing games, versions 1.x and 2.x must declare their version ranges and migration guide. If both use `malvado`, 2.0 must identify the API and engine break. Before publication, decide how to select 1.x and whether another name is useful. Verify actual LuaRocks resolver behavior and name availability.
 
+SDK and game package checks must use the [current process and startup contracts](../api/process-inventory.md). Installed C headers and libraries must provide the owned process handle API. Exported Lua games must support both entry forms. Keep Android emulator checks in alpha.7 and manual clean-machine checks in beta.
+
 ## Versions and CI
 
 Runtime and CLI use the proposed coordinated versions. GUI has its own version and compatibility matrix. Release artifacts record OS, architecture, runtime/Lua/raylib versions, hashes, and notices. When a rock exists, generate its rockspec from a pinned tag and run `luarocks lint` and `luarocks make` in temporary trees on each supported platform. Test the source artifact (`luarocks pack`). If binary rocks are published, test them by platform and Lua ABI. Publish to LuaRocks only after these tests and license resolution, as part of the release process. Upload requires an account and credentials and is separate from CI candidate generation.
