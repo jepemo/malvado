@@ -7,6 +7,7 @@ local producer = mv.process(function()
   font = mv.load_font("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 255, 255, 255, 255, "ΩΩ")
 end)
 local worker = mv.process(function()
+  mv.frame()
   mv.write(font, 100, 20, "Café Ω", "center")
   font = nil
   collectgarbage("collect")
