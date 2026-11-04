@@ -651,6 +651,18 @@ set_tests_properties(lua_declarative_example PROPERTIES TIMEOUT 15 PASS_REGULAR_
 add_test(NAME lua_global_inventory COMMAND ${CMAKE_COMMAND}
   -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/global_inventory.cmake)
 set_tests_properties(lua_global_inventory PROPERTIES TIMEOUT 15)
+add_executable(native-handle-shutdown-test tests/native_handle_shutdown.c)
+target_include_directories(native-handle-shutdown-test PRIVATE src)
+target_link_libraries(native-handle-shutdown-test PRIVATE malvado_lua_binding)
+add_test(NAME lua_native_handle_shutdown COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:native-handle-shutdown-test>
+  -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/native_handle_shutdown.lua
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_handle_shutdown.cmake)
+set_tests_properties(lua_native_handle_shutdown PROPERTIES TIMEOUT 15)
+add_test(NAME lua_handle_shutdown COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run> -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/handle_shutdown.lua
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/handle_shutdown.cmake)
+set_tests_properties(lua_handle_shutdown PROPERTIES TIMEOUT 15)
 add_test(NAME lua_text_ownership COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/text_ownership.lua)
 set_tests_properties(lua_text_ownership PROPERTIES TIMEOUT 15)
 add_test(NAME lua_cleanup_order COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/cleanup_order.lua)

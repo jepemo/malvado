@@ -126,6 +126,8 @@ The following fields belong to the engine and cannot be assigned. Do not put the
 
 After an owner ends, its surviving children become roots in the current process tree. Their `self.creator_id` keeps the original creator ID. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Other field reads and writes raise an error after termination. Cleanup releases its game fields, even while Lua still holds `self`.
 
+The same rules apply to handles for native C processes. During Lua shutdown, a finalizer can still read the identity, dead status, and reason of a retained handle. Other fields are unavailable. Handles belong to one runtime and Lua state; they cannot be used in a later run.
+
 ## Control processes
 
 `mv.status(handle)` returns the current state string, or `nil` for a terminated process. `mv.find(constructor)` returns a new table of live handles for that type, in creation order. It includes sleeping and frozen processes. A C process with the same type ID is also included.

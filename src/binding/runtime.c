@@ -67,6 +67,7 @@ typedef struct {
 typedef struct {
     lua_State *L;
     MvContext *context;
+    MvRuntimeId runtime_id;
     Process *items;
     size_t count, capacity;
     int active, headless, started, failed, window, audio;
@@ -653,7 +654,14 @@ static int
 self_index(lua_State *L)
 {
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
-    (void)check_process_id(L, 1);
+    if (engine.context) {
+        (void)check_process_id(L, 1);
+    } else if (!engine.L || !self->reference.id ||
+               self->reference.runtime.high != engine.runtime_id.high ||
+               self->reference.runtime.low != engine.runtime_id.low ||
+               self->reference.runtime.sequence != engine.runtime_id.sequence) {
+        return luaL_error(L, "process handle belongs to another runtime");
+    }
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && strcmp(key, "id") == 0) {
         lua_pushinteger(L, self->id);
@@ -3517,6 +3525,12 @@ malvado_run(int argc, char **argv)
         fprintf(stderr, "Could not create Malvado context\n");
         return 1;
     }
+    if (mv_context_runtime_id(engine.context, &engine.runtime_id) != MV_OK) {
+        fprintf(stderr, "Could not identify Malvado context\n");
+        mv_context_destroy(engine.context);
+        engine.context = NULL;
+        return 1;
+    }
     engine.L = luaL_newstate();
     if (!engine.L) {
         fprintf(stderr, "Could not create Lua state\n");
@@ -3547,6 +3561,7 @@ malvado_run(int argc, char **argv)
     }
     mv_context_destroy(engine.context);
     engine.context = NULL;
+    invalidate_dead_handles(engine.L);
     for (size_t i = 0; i < engine.count; i++)
         cleanup(&engine.items[i]);
     free(engine.items);
