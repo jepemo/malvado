@@ -3417,10 +3417,13 @@ malvado_run(int argc, char **argv)
     engine.background = (MvColor){0, 0, 0, 255};
     engine.draw_color = (MvColor){255, 255, 255, 255};
     engine.context = mv_context_create(60, 5);
-    if (!engine.context)
+    if (!engine.context) {
+        fprintf(stderr, "Could not create Malvado context\n");
         return 1;
+    }
     engine.L = luaL_newstate();
     if (!engine.L) {
+        fprintf(stderr, "Could not create Lua state\n");
         mv_context_destroy(engine.context);
         engine.context = NULL;
         return 1;

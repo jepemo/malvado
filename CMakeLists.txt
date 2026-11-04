@@ -611,8 +611,6 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   endif()
 endif()
 
-endif() # MALVADO_BUILD_LUA
-
 add_test(NAME lua_declarative_start COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_start.lua)
 set_tests_properties(lua_declarative_start PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "declarative tick")
 add_test(NAME lua_declarative_mixed COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_mixed.lua)
@@ -641,3 +639,25 @@ add_test(NAME lua_global_inventory COMMAND ${CMAKE_COMMAND}
 set_tests_properties(lua_global_inventory PROPERTIES TIMEOUT 15)
 add_test(NAME lua_cleanup_order COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/cleanup_order.lua)
 set_tests_properties(lua_cleanup_order PROPERTIES TIMEOUT 15)
+add_library(start-injection-binding STATIC src/binding/runtime.c src/binding/globals.c)
+target_include_directories(start-injection-binding PRIVATE src)
+target_compile_definitions(start-injection-binding PRIVATE
+  mv_context_create=test_context_create mv_context_destroy=test_context_destroy
+  luaL_newstate=test_lua_newstate lua_close=test_lua_close
+  mv_window_open=test_window_open mv_window_close=test_window_close)
+if(MALVADO_BUILD_ASSETS)
+  target_compile_definitions(start-injection-binding PRIVATE MALVADO_BUILD_ASSETS)
+  target_link_libraries(start-injection-binding PUBLIC malvado_assets)
+endif()
+if(MALVADO_BUILD_RAYLIB)
+  target_link_libraries(start-injection-binding PUBLIC malvado_lua malvado_core malvado_platform_raylib)
+else()
+  target_link_libraries(start-injection-binding PUBLIC malvado_lua malvado_core malvado_platform_headless)
+endif()
+add_executable(start-injection-test tests/start_injection.c)
+target_include_directories(start-injection-test PRIVATE src)
+target_link_libraries(start-injection-test PRIVATE start-injection-binding)
+add_test(NAME lua_start_injection COMMAND start-injection-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_injection.lua)
+set_tests_properties(lua_start_injection PROPERTIES TIMEOUT 15)
+
+endif() # MALVADO_BUILD_LUA
