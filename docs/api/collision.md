@@ -145,10 +145,10 @@ invalid transforms raise an error. Sleeping and frozen processes participate.
 The optional `position` table can replace `x`, `y`, or both for one query; it
 does not move the process. Unknown fields and invalid numbers raise an error.
 
-### Sweeping a rectangle
+### Sweeping a shape
 
 `mv_collision_world_sweep(world, shape, transform, dx, dy, &result)` sweeps a
-rectangle, including an oriented rectangle, along a straight displacement
+circle or rectangle, including an oriented rectangle, along a straight displacement
 against the world's axis-aligned rectangles. Lua provides
 `world:sweep(shape, transform, dx, dy)`. A successful result contains `hit`,
 `fraction`, `normal_x`, `normal_y`, and, for a hit, `id`. Move by the requested
@@ -163,11 +163,39 @@ The C function returns 1 for a valid sweep and -1 for invalid input, initial
 overlap, or an unsupported shape; on error it leaves the result unchanged. Lua
 raises an error in those cases. Displacements must be finite and each component
 must not exceed `DBL_MAX / 16` in magnitude. The start and end transforms must
-meet the shape limits above. Circle sweeps are not supported yet and are
-rejected; `world:move(process, dx, dy)` is not implemented.
+meet the shape limits above. For a circle, the radius divided by the largest displacement component,
+coordinate difference from a candidate rectangle, or candidate dimension must
+be at least `8 * sqrt(DBL_EPSILON)`. Values below that limit are rejected to
+avoid unreliable corner calculations. Floating-point rounding can affect
+near-tangent contacts.
 
 ```lua
 local box = mv.collision.rect(2, 2)
 local result = world:sweep(box, {x = 0, y = 40}, 200, 0)
 local allowed_x = 200 * result.fraction
+```
+
+
+### Move a process
+
+`world:move(process, dx, dy)` sweeps its explicit circle or rectangle collider,
+then updates `x` and `y` by the permitted displacement. It returns a table with
+`hit`, `moved_x`, `moved_y`, `normal_x`, `normal_y`, and an obstacle `id` on
+impact. A disabled collider or a process without a collider or graphic moves
+freely. A process with a graphic but no explicit collider raises an error until
+automatic graphic colliders are implemented. The operation does not slide.
+An invalid process or transform, initial overlap, or a sweep outside the
+numeric limits raises an error. A process that starts inside an obstacle must be
+repositioned before it can use this operation.
+
+In C, `mv_collision_world_move(world, shape, &transform, dx, dy, &result)`
+updates the caller's transform on success. It returns 1 on success and -1 on
+error, leaving both outputs unchanged on error. To avoid rounding into an
+obstacle, it can reduce a hit fraction by a few representable steps. If it
+cannot find a non-overlapping destination within eight steps, it returns an
+error. Lua reports the actual displacement after this adjustment.
+
+```lua
+local result = world:move(player, 4, 0)
+if result.hit then print("Wall", result.id) end
 ```

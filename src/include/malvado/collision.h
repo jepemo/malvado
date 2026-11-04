@@ -60,12 +60,20 @@ typedef struct {
     size_t id;
     double fraction, normal_x, normal_y;
 } MvCollisionSweep;
-/* Sweep a rectangle against world rectangles. Returns 1 on success, -1 on
- * invalid inputs, unsupported shapes, or initial overlap. On failure the
+/* Sweep a circle or rectangle against world rectangles. Returns 1 on success, -1 on
+ * invalid inputs, unsupported shapes, initial overlap, or insufficient numeric
+ * precision for a circle against a candidate. On failure the
  * output is unchanged. A hit fraction is in [0,1]; without a hit it is 1. */
 int mv_collision_world_sweep(const MvCollisionWorld *world, MvCollisionShape shape,
                              MvCollisionTransform transform, double dx, double dy,
                              MvCollisionSweep *out);
+
+/* Move a shape by the permitted fraction. Return 1 on success, -1 on error.
+ * The transform and result are unchanged on error. A hit fraction can be
+ * reduced by a few representable steps to avoid numerical overlap. */
+int mv_collision_world_move(const MvCollisionWorld *world, MvCollisionShape shape,
+                            MvCollisionTransform *transform, double dx, double dy,
+                            MvCollisionSweep *out);
 
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);

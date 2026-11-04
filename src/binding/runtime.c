@@ -3465,6 +3465,70 @@ world_process_collision(lua_State *L)
 }
 
 static int
+world_process_move(lua_State *L)
+{
+    lua_settop(L, 4);
+    MvCollisionWorld *world = check_world(L);
+    lua_Integer id = check_process_id(L, 2);
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
+    double dx = luaL_checknumber(L, 3), dy = luaL_checknumber(L, 4);
+    if (!isfinite(dx) || !isfinite(dy) || fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16)
+        return luaL_error(L, "invalid movement");
+    lua_getiuservalue(L, 2, 1);
+    int fields = lua_gettop(L);
+    MvCollisionTransform transform = {
+        shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
+        shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
+    };
+    if (!isfinite(transform.x) || !isfinite(transform.y))
+        return luaL_error(L, "invalid process position");
+    double old_x = transform.x, old_y = transform.y;
+    raw_option(L, fields, "collider");
+    MvCollisionSweep result = {.fraction = 1};
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        raw_option(L, fields, "graph");
+        if (!lua_isnil(L, -1))
+            return luaL_error(L, "automatic graphic colliders are not supported yet");
+        transform.x += dx;
+        transform.y += dy;
+    } else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
+        transform.x += dx;
+        transform.y += dy;
+    } else {
+        MvCollisionShape *shape = luaL_checkudata(L, -1, "malvado.collision_shape");
+        if (mv_collision_world_move(world, *shape, &transform, dx, dy, &result) < 0)
+            return luaL_error(L, "invalid movement or initial collision");
+    }
+    if (!isfinite(transform.x) || !isfinite(transform.y))
+        return luaL_error(L, "invalid movement destination");
+    lua_createtable(L, 0, 6);
+    lua_pushboolean(L, result.hit);
+    lua_setfield(L, -2, "hit");
+    lua_pushnumber(L, transform.x - old_x);
+    lua_setfield(L, -2, "moved_x");
+    lua_pushnumber(L, transform.y - old_y);
+    lua_setfield(L, -2, "moved_y");
+    lua_pushnumber(L, result.normal_x);
+    lua_setfield(L, -2, "normal_x");
+    lua_pushnumber(L, result.normal_y);
+    lua_setfield(L, -2, "normal_y");
+    if (result.hit) {
+        lua_pushinteger(L, (lua_Integer)result.id);
+        lua_setfield(L, -2, "id");
+    }
+    lua_pushliteral(L, "x");
+    lua_pushnumber(L, transform.x);
+    lua_rawset(L, fields);
+    lua_pushliteral(L, "y");
+    lua_pushnumber(L, transform.y);
+    lua_rawset(L, fields);
+    return 1;
+}
+
+static int
 world_sweep(lua_State *L)
 {
     MvCollisionWorld *world = check_world(L);
@@ -3588,6 +3652,8 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "sweep");
     lua_pushcfunction(L, world_process_collision);
     lua_setfield(L, -2, "collision");
+    lua_pushcfunction(L, world_process_move);
+    lua_setfield(L, -2, "move");
     lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado collision world");
     lua_setfield(L, -2, "__metatable");

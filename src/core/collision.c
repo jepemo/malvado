@@ -272,13 +272,84 @@ sweep_rectangles(const WorldShape *moving, const WorldShape *obstacle,
     return 1;
 }
 
+static void
+sweep_circle_face(double time, double along, double low, double high,
+                  double nx, double ny, double *best, double *normal_x, double *normal_y)
+{
+    if (time >= 0 && time <= 1 && time < *best && along >= low && along <= high) {
+        *best = time;
+        *normal_x = nx;
+        *normal_y = ny;
+    }
+}
+
+static int
+sweep_circle_rect(const WorldShape *circle, MvRect rect, double dx, double dy,
+                  double *time, double *normal_x, double *normal_y)
+{
+    double best = INFINITY, nx = 0, ny = 0;
+    double right = rect.x + rect.width, bottom = rect.y + rect.height;
+    if ((dy == 0 && (circle->y == rect.y - circle->radius ||
+                     circle->y == bottom + circle->radius)) ||
+        (dx == 0 && (circle->x == rect.x - circle->radius ||
+                     circle->x == right + circle->radius)))
+        return 0;
+    if (dx > 0) {
+        double t = (rect.x - circle->radius - circle->x) / dx;
+        sweep_circle_face(t, circle->y + t * dy, rect.y, bottom, -1, 0, &best, &nx, &ny);
+    } else if (dx < 0) {
+        double t = (right + circle->radius - circle->x) / dx;
+        sweep_circle_face(t, circle->y + t * dy, rect.y, bottom, 1, 0, &best, &nx, &ny);
+    }
+    if (dy > 0) {
+        double t = (rect.y - circle->radius - circle->y) / dy;
+        sweep_circle_face(t, circle->x + t * dx, rect.x, right, 0, -1, &best, &nx, &ny);
+    } else if (dy < 0) {
+        double t = (bottom + circle->radius - circle->y) / dy;
+        sweep_circle_face(t, circle->x + t * dx, rect.x, right, 0, 1, &best, &nx, &ny);
+    }
+    const double corners[4][2] = {{rect.x, rect.y}, {right, rect.y},
+                                  {rect.x, bottom}, {right, bottom}};
+    for (int i = 0; i < 4; ++i) {
+        double x = circle->x - corners[i][0], y = circle->y - corners[i][1];
+        double scale = fmax(circle->radius, fmax(fmax(fabs(x), fabs(y)), fmax(fabs(dx), fabs(dy))));
+        double px = x / scale, py = y / scale, vx = dx / scale, vy = dy / scale;
+        double radius = circle->radius / scale;
+        double a = vx * vx + vy * vy;
+        double b = px * vx + py * vy;
+        double c = px * px + py * py - radius * radius;
+        double discriminant = b * b - a * c;
+        if (a == 0 || b >= 0 || discriminant <= 0)
+            continue;
+        double t = c / (-b + sqrt(discriminant));
+        if (t < 0 || t > 1 || t >= best)
+            continue;
+        double hit_x = x + t * dx, hit_y = y + t * dy;
+        if ((i % 2 == 0 ? hit_x > 0 : hit_x < 0) ||
+            (i < 2 ? hit_y > 0 : hit_y < 0))
+            continue;
+        double length = hypot(hit_x, hit_y);
+        if (length == 0)
+            continue;
+        best = t;
+        nx = hit_x / length;
+        ny = hit_y / length;
+    }
+    if (!isfinite(best))
+        return 0;
+    *time = best;
+    *normal_x = nx;
+    *normal_y = ny;
+    return 1;
+}
+
 int
 mv_collision_world_sweep(const MvCollisionWorld *world, MvCollisionShape shape,
                          MvCollisionTransform transform, double dx, double dy,
                          MvCollisionSweep *out)
 {
     WorldShape start, end;
-    if (!world || !out || shape.kind != MV_COLLISION_RECT || !isfinite(dx) || !isfinite(dy) ||
+    if (!world || !out || !isfinite(dx) || !isfinite(dy) ||
         fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16 ||
         !world_shape(shape, transform, &start))
         return -1;
@@ -311,11 +382,49 @@ mv_collision_world_sweep(const MvCollisionWorld *world, MvCollisionShape shape,
         if (!world_shape(obstacle_shape, obstacle_transform, &obstacle))
             return -1;
         double time, nx, ny;
-        if (sweep_rectangles(&start, &obstacle, dx, dy, &time, &nx, &ny) &&
+        if (shape.kind == MV_COLLISION_CIRCLE) {
+            double range = fmax(fmax(fabs(dx), fabs(dy)),
+                                fmax(fmax(fabs(start.x - item.rect.x), fabs(start.y - item.rect.y)),
+                                     fmax(item.rect.width, item.rect.height)));
+            if (range > 0 && start.radius / range < 8 * sqrt(DBL_EPSILON))
+                return -1;
+        }
+        int hit = shape.kind == MV_COLLISION_CIRCLE ?
+                  sweep_circle_rect(&start, item.rect, dx, dy, &time, &nx, &ny) :
+                  sweep_rectangles(&start, &obstacle, dx, dy, &time, &nx, &ny);
+        if (hit &&
             (!result.hit || time < result.fraction || (time == result.fraction && item.id < result.id))) {
             result = (MvCollisionSweep){1, item.id, time, nx, ny};
         }
     }
     *out = result;
     return 1;
+}
+
+int
+mv_collision_world_move(const MvCollisionWorld *world, MvCollisionShape shape,
+                        MvCollisionTransform *transform, double dx, double dy,
+                        MvCollisionSweep *out)
+{
+    if (!transform || !out)
+        return -1;
+    MvCollisionSweep result;
+    if (mv_collision_world_sweep(world, shape, *transform, dx, dy, &result) < 0)
+        return -1;
+    MvCollisionTransform position = *transform;
+    for (int attempt = 0; attempt < 8; ++attempt) {
+        position.x = transform->x + dx * result.fraction;
+        position.y = transform->y + dy * result.fraction;
+        size_t hit;
+        int overlapping = mv_collision_world_query(world, shape, position, &hit);
+        if (overlapping == 0) {
+            *transform = position;
+            *out = result;
+            return 1;
+        }
+        if (overlapping < 0 || !result.hit || result.fraction <= 0)
+            return -1;
+        result.fraction = nextafter(result.fraction, 0);
+    }
+    return -1;
 }
