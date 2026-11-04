@@ -2840,6 +2840,59 @@ start(lua_State *L)
 }
 
 static int
+empty_initializer(lua_State *L)
+{
+    (void)L;
+    return 0;
+}
+
+static int
+start_declared_game(lua_State *L)
+{
+    if (engine.started)
+        return luaL_error(L, "game table returned after start()");
+    if (lua_getmetatable(L, 1))
+        return luaL_error(L, "game table must not have a metatable");
+    lua_pushnil(L);
+    while (lua_next(L, 1)) {
+        if (lua_type(L, -2) != LUA_TSTRING)
+            return luaL_error(L, "game option names must be strings");
+        size_t length;
+        const char *key = lua_tolstring(L, -2, &length);
+        if (strlen(key) != length)
+            return luaL_error(L, "invalid game option name");
+        if (strcmp(key, "width") == 0 || strcmp(key, "height") == 0) {
+            if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) <= 0 ||
+                lua_tointeger(L, -1) > INT_MAX)
+                return luaL_error(L, "invalid game dimension: %s", key);
+        } else if (strcmp(key, "title") == 0) {
+            size_t title_length;
+            if (lua_type(L, -1) != LUA_TSTRING)
+                return luaL_error(L, "game title must be a string");
+            const char *title = lua_tolstring(L, -1, &title_length);
+            if (strlen(title) != title_length)
+                return luaL_error(L, "game title contains a zero byte");
+        } else if (strcmp(key, "init") == 0) {
+            if (!lua_isfunction(L, -1))
+                return luaL_error(L, "game init must be a function");
+        } else {
+            return luaL_error(L, "unknown game option: %s", key);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pushcfunction(L, start);
+    lua_pushliteral(L, "init");
+    lua_rawget(L, 1);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_pushcfunction(L, empty_initializer);
+    }
+    lua_pushvalue(L, 1);
+    lua_call(L, 2, 0);
+    return 0;
+}
+
+static int
 time_seconds(lua_State *L)
 {
     double seconds;
@@ -3363,9 +3416,16 @@ malvado_run(int argc, char **argv)
     lua_pop(engine.L, 1);
     luaL_requiref(engine.L, "malvado.compat.legacy", open_legacy_module, 0);
     lua_pop(engine.L, 1);
-    if (luaL_loadfile(engine.L, argv[index]) != LUA_OK || lua_pcall(engine.L, 0, 0, 0) != LUA_OK) {
+    if (luaL_loadfile(engine.L, argv[index]) != LUA_OK || lua_pcall(engine.L, 0, 1, 0) != LUA_OK) {
         fprintf(stderr, "%s\n", lua_tostring(engine.L, -1));
         engine.failed = 1;
+    } else if (lua_istable(engine.L, -1)) {
+        lua_pushcfunction(engine.L, start_declared_game);
+        lua_pushvalue(engine.L, -2);
+        if (lua_pcall(engine.L, 1, 0, 0) != LUA_OK) {
+            fprintf(stderr, "%s\n", lua_tostring(engine.L, -1));
+            engine.failed = 1;
+        }
     }
     mv_context_destroy(engine.context);
     engine.context = NULL;
