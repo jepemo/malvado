@@ -114,4 +114,4 @@ This layout is a proposal; do not create empty code directories for it. Research
 
 ## Recommended next implementation
 
-Complete the open checks in [alpha.3](../versions/2.0.0-alpha.3.md) and [alpha.4](../versions/2.0.0-alpha.4.md). Then implement the process model in [alpha.5](../versions/2.0.0-alpha.5.md). See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.
+Continue with the API inventory in [alpha.6](../versions/2.0.0-alpha.6.md). See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.
