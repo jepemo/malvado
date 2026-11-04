@@ -301,7 +301,10 @@ new_project(const char *path, int native)
         "    frame()\n"
         "  end\n"
         "end)\n\n"
-        "start(function() Game() end)\n";
+        "return {\n"
+        "  title = \"My game\",\n"
+        "  init = function() Game() end,\n"
+        "}\n";
     static const char native_game[] =
         "#include <malvado/platform.h>\n\n"
         "int main(void)\n"
