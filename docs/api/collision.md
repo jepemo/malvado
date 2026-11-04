@@ -45,3 +45,38 @@ half-extents must not exceed `DBL_MAX / 16` in magnitude. Floating-point
 rounding can affect contact at rotated edges. Shapes are values owned by the
 caller; no allocation or renderer is involved. This is a low-level geometry
 operation; process queries and a collision world are not yet implemented.
+
+## Reusable shapes in Lua
+
+Use `mv.collision` to create shapes and test them without a window:
+
+```lua
+local collision = require("malvado").collision
+local circle = collision.circle(10)
+local box = collision.rect(40, 20, {offset_x = 20, offset_y = 10})
+if collision.overlap(circle, {x = 12, y = 10}, box, {x = 0, y = 0}) then
+    print("Overlap")
+end
+```
+
+`circle(radius, options)` and `rect(width, height, options)` return immutable,
+reusable descriptors. Dimensions must be positive and finite. The optional
+`offset_x` and `offset_y` specify the shape center relative to its origin; both
+default to zero. For a top-left rectangle origin, use half the width and height
+as the offsets. Invalid dimensions, offsets, or unknown options raise an error.
+Lua retains descriptors while they are referenced. They can be shared in
+process defaults without sharing mutable tables.
+
+`overlap(shape_a, transform_a, shape_b, transform_b)` uses the C geometry
+operation. Each transform is `nil` for the identity or a table with `x`, `y`,
+`angle`, and `scale`; these default to zero, zero, zero degrees, and one. All
+values must be finite and scale must be positive. Invalid shapes, transforms,
+unknown fields, or values outside the C operation's documented limits raise an
+error. It returns a boolean. Touching edges do not overlap. This function does
+not query processes or automatically attach colliders to them.
+
+The `collision` namespace is not installed by `import_globals()`. Use
+`require("malvado").collision`. A global `collision(...)` shorthand is not
+provided: process selection and shape geometry have different arguments, and a
+single global name would make their meaning ambiguous. Process collision queries
+remain planned in the `process` namespace.

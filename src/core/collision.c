@@ -80,6 +80,8 @@ world_shape(MvCollisionShape shape, MvCollisionTransform transform, WorldShape *
         out->bound_x = fabs(c) * out->hx + fabs(s) * out->hy;
         out->bound_y = fabs(s) * out->hx + fabs(c) * out->hy;
     }
+    if (shape.kind == MV_COLLISION_RECT && (out->hx <= 0 || out->hy <= 0))
+        return 0;
     return isfinite(out->x) && isfinite(out->y) &&
            fabs(out->x) <= DBL_MAX / 16 && fabs(out->y) <= DBL_MAX / 16 &&
            out->bound_x <= DBL_MAX / 16 && out->bound_y <= DBL_MAX / 16 &&

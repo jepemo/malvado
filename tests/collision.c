@@ -43,6 +43,12 @@ main(void)
     assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){3, 0, 0, 1}) == 1);
     assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){3, 0, 90, 1}) == 0);
     assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){2.5, 0, 90, 1}) == 1);
+    MvCollisionShape top_left = {.kind = MV_COLLISION_RECT, .width = 4, .height = 2,
+                                  .offset_x = 2, .offset_y = 1};
+    assert(mv_collision_overlap(top_left, (MvCollisionTransform){10, 10, 0, 1},
+                                circle, (MvCollisionTransform){10.5, 10.5, 0, 1}) == 1);
+    assert(mv_collision_overlap(top_left, (MvCollisionTransform){10, 10, 0, 1},
+                                circle, (MvCollisionTransform){8, 10, 0, 1}) == 0);
     circle.offset_x = 2;
     assert(mv_collision_overlap(circle, (MvCollisionTransform){0, 0, 90, 1},
                                 circle, (MvCollisionTransform){0, 4, -90, 1}) == 1);
@@ -50,5 +56,16 @@ main(void)
     assert(mv_collision_overlap(circle, origin, circle, (MvCollisionTransform){2.5, 0, 0, 2}) == 1);
     assert(mv_collision_overlap(circle, origin, rect, (MvCollisionTransform){0, 0, NAN, 1}) == -1);
     assert(mv_collision_overlap(circle, origin, rect, (MvCollisionTransform){0, 0, 0, 0}) == -1);
+    assert(mv_collision_overlap(rect, (MvCollisionTransform){0, 0, 45, 1},
+                                circle, (MvCollisionTransform){0, 1.8, 0, 1}) == 1);
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){2.8, 1.8, 0, 1}, rect, origin) ==
+           mv_collision_overlap(rect, origin, circle, (MvCollisionTransform){2.8, 1.8, 0, 1}));
+    assert(mv_collision_overlap((MvCollisionShape){.kind = MV_COLLISION_RECT, .width = 0, .height = 1},
+                                origin, circle, origin) == -1);
+    assert(mv_collision_overlap((MvCollisionShape){.kind = MV_COLLISION_CIRCLE, .radius = INFINITY},
+                                origin, circle, origin) == -1);
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){DBL_MAX, 0, 0, 1}, rect, origin) == -1);
+    assert(mv_collision_overlap((MvCollisionShape){.kind = MV_COLLISION_RECT, .width = DBL_MIN, .height = 1},
+                                (MvCollisionTransform){0, 0, 45, DBL_MIN}, circle, origin) == -1);
     return 0;
 }

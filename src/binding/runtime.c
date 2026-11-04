@@ -788,6 +788,10 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     if (depth > 256 || !lua_checkstack(L, 8))
         luaL_error(L, "defaults are too deeply nested");
     int type = lua_type(L, source);
+    if (type == LUA_TUSERDATA && luaL_testudata(L, source, "malvado.collision_shape")) {
+        lua_pushvalue(L, source);
+        return;
+    }
     if (type == LUA_TUSERDATA || type == LUA_TLIGHTUSERDATA || type == LUA_TTHREAD)
         luaL_error(L, "defaults cannot contain userdata or threads");
     if (type != LUA_TTABLE) {
@@ -3255,6 +3259,81 @@ rect_contains(lua_State *L)
     return 1;
 }
 
+static double
+shape_option(lua_State *L, int index, const char *name, double fallback)
+{
+    raw_option(L, index, name);
+    double value = lua_isnil(L, -1) ? fallback : luaL_checknumber(L, -1);
+    lua_pop(L, 1);
+    return value;
+}
+
+static int
+collision_shape(lua_State *L)
+{
+    MvCollisionKind kind = (MvCollisionKind)lua_tointeger(L, lua_upvalueindex(1));
+    MvCollisionShape shape = {.kind = kind};
+    int options;
+    if (kind == MV_COLLISION_CIRCLE) {
+        shape.radius = luaL_checknumber(L, 1);
+        options = 2;
+    } else {
+        shape.width = luaL_checknumber(L, 1);
+        shape.height = luaL_checknumber(L, 2);
+        options = 3;
+    }
+    if (!lua_isnoneornil(L, options)) {
+        validate_options(L, options, "offset_x", "offset_y");
+        shape.offset_x = shape_option(L, options, "offset_x", 0);
+        shape.offset_y = shape_option(L, options, "offset_y", 0);
+    }
+    MvCollisionTransform identity = {0, 0, 0, 1};
+    if (mv_collision_overlap(shape, identity, shape, identity) < 0)
+        return luaL_error(L, "invalid collision shape");
+    MvCollisionShape *stored = lua_newuserdatauv(L, sizeof(*stored), 0);
+    *stored = shape;
+    luaL_setmetatable(L, "malvado.collision_shape");
+    return 1;
+}
+
+static MvCollisionTransform
+collision_transform(lua_State *L, int index)
+{
+    MvCollisionTransform result = {0, 0, 0, 1};
+    if (lua_isnoneornil(L, index))
+        return result;
+    luaL_checktype(L, index, LUA_TTABLE);
+    index = lua_absindex(L, index);
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        size_t length;
+        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
+        if (!name || strlen(name) != length ||
+            (strcmp(name, "x") && strcmp(name, "y") && strcmp(name, "angle") && strcmp(name, "scale")))
+            luaL_error(L, "unknown collision transform field");
+        lua_pop(L, 1);
+    }
+    result.x = shape_option(L, index, "x", 0);
+    result.y = shape_option(L, index, "y", 0);
+    result.angle = shape_option(L, index, "angle", 0);
+    result.scale = shape_option(L, index, "scale", 1);
+    return result;
+}
+
+static int
+collision_overlap(lua_State *L)
+{
+    MvCollisionShape *a = luaL_checkudata(L, 1, "malvado.collision_shape");
+    MvCollisionTransform transform_a = collision_transform(L, 2);
+    MvCollisionShape *b = luaL_checkudata(L, 3, "malvado.collision_shape");
+    MvCollisionTransform transform_b = collision_transform(L, 4);
+    int result = mv_collision_overlap(*a, transform_a, *b, transform_b);
+    if (result < 0)
+        return luaL_error(L, "invalid collision transform");
+    lua_pushboolean(L, result);
+    return 1;
+}
+
 static int
 open_module(lua_State *L)
 {
@@ -3340,6 +3419,10 @@ open_module(lua_State *L)
                 return luaL_error(L, "duplicate module export: %s", functions[i].name);
         }
     }
+    luaL_newmetatable(L, "malvado.collision_shape");
+    lua_pushliteral(L, "malvado collision shape");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.process");
     lua_pushcfunction(L, self_index);
     lua_setfield(L, -2, "__index");
@@ -3403,6 +3486,16 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_newtable(L);
+    lua_pushinteger(L, MV_COLLISION_CIRCLE);
+    lua_pushcclosure(L, collision_shape, 1);
+    lua_setfield(L, -2, "circle");
+    lua_pushinteger(L, MV_COLLISION_RECT);
+    lua_pushcclosure(L, collision_shape, 1);
+    lua_setfield(L, -2, "rect");
+    lua_pushcfunction(L, collision_overlap);
+    lua_setfield(L, -2, "overlap");
+    lua_setfield(L, -2, "collision");
     for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
         lua_pushstring(L, api_constants[i].value);
         lua_setfield(L, -2, api_constants[i].name);

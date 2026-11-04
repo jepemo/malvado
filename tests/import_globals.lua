@@ -41,6 +41,7 @@ assert(KEY_UP == mv.KEY_UP and KEY_UP == "up")
 assert(KEY_A == "a" and KEY_0 == "0" and SIGNAL_KILL == "kill")
 assert(mv.key(KEY_UP) == mv.key("up"))
 assert(legacy_fpg == nil and import_globals == nil and unlisted_extension == nil)
+assert(collision == nil and type(mv.collision) == "table")
 
 for _, namespace in ipairs({mv.process, mv.input}) do
   for name, value in pairs(namespace) do
