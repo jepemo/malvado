@@ -646,6 +646,7 @@ endif()
 
 add_test(NAME lua_collision_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/collision_example.lua)
 set_tests_properties(lua_collision_example PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
+add_test(NAME lua_world_process COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/world_process.lua)
 add_test(NAME lua_collision COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/collision.lua)
 add_test(NAME lua_declarative_start COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_start.lua)
 set_tests_properties(lua_declarative_start PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "declarative tick")

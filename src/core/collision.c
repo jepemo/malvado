@@ -229,3 +229,93 @@ mv_collision_world_query(const MvCollisionWorld *world, MvCollisionShape shape,
     *id = first;
     return 1;
 }
+
+static int
+sweep_rectangles(const WorldShape *moving, const WorldShape *obstacle,
+                 double dx, double dy, double *time, double *normal_x, double *normal_y)
+{
+    const double axes[4][2] = {{moving->ux, moving->uy}, {-moving->uy, moving->ux},
+                                {1, 0}, {0, 1}};
+    double enter = -INFINITY, exit = INFINITY, nx = 0, ny = 0;
+    for (int i = 0; i < 4; ++i) {
+        double x = axes[i][0], y = axes[i][1];
+        double distance = (moving->x - obstacle->x) * x + (moving->y - obstacle->y) * y;
+        double radius = projection_radius(moving, x, y) + projection_radius(obstacle, x, y);
+        double velocity = dx * x + dy * y;
+        if (velocity == 0) {
+            if (fabs(distance) >= radius)
+                return 0;
+            continue;
+        }
+        double first = (-radius - distance) / velocity;
+        double last = (radius - distance) / velocity;
+        if (first > last) {
+            double swap = first;
+            first = last;
+            last = swap;
+        }
+        if (first > enter) {
+            enter = first;
+            nx = velocity > 0 ? -x : x;
+            ny = velocity > 0 ? -y : y;
+        }
+        if (last < exit)
+            exit = last;
+        if (enter >= exit)
+            return 0;
+    }
+    if (enter < 0 || enter > 1 || exit <= 0)
+        return 0;
+    *time = enter;
+    *normal_x = nx;
+    *normal_y = ny;
+    return 1;
+}
+
+int
+mv_collision_world_sweep(const MvCollisionWorld *world, MvCollisionShape shape,
+                         MvCollisionTransform transform, double dx, double dy,
+                         MvCollisionSweep *out)
+{
+    WorldShape start, end;
+    if (!world || !out || shape.kind != MV_COLLISION_RECT || !isfinite(dx) || !isfinite(dy) ||
+        fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16 ||
+        !world_shape(shape, transform, &start))
+        return -1;
+    MvCollisionTransform destination = transform;
+    destination.x += dx;
+    destination.y += dy;
+    if (!world_shape(shape, destination, &end))
+        return -1;
+    size_t overlapping;
+    int initial = mv_collision_world_query(world, shape, transform, &overlapping);
+    if (initial != 0)
+        return -1;
+    MvCollisionSweep result = {.fraction = 1};
+    double left = fmin(start.x, end.x) - start.bound_x;
+    double right = fmax(start.x, end.x) + start.bound_x;
+    double top = fmin(start.y, end.y) - start.bound_y;
+    double bottom = fmax(start.y, end.y) + start.bound_y;
+    for (size_t i = 0; i < world->count; ++i) {
+        WorldRect item = world->rects[i];
+        if (item.rect.x > right)
+            break;
+        if (item.rect.x + item.rect.width < left || item.rect.y > bottom ||
+            item.rect.y + item.rect.height < top)
+            continue;
+        MvCollisionShape obstacle_shape = {.kind = MV_COLLISION_RECT, .width = item.rect.width,
+                                          .height = item.rect.height};
+        MvCollisionTransform obstacle_transform = {item.rect.x + item.rect.width / 2,
+                                                   item.rect.y + item.rect.height / 2, 0, 1};
+        WorldShape obstacle;
+        if (!world_shape(obstacle_shape, obstacle_transform, &obstacle))
+            return -1;
+        double time, nx, ny;
+        if (sweep_rectangles(&start, &obstacle, dx, dy, &time, &nx, &ny) &&
+            (!result.hit || time < result.fraction || (time == result.fraction && item.id < result.id))) {
+            result = (MvCollisionSweep){1, item.id, time, nx, ny};
+        }
+    }
+    *out = result;
+    return 1;
+}

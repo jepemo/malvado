@@ -44,7 +44,7 @@ for invalid values. Values must be finite. World centers and bounding
 half-extents must not exceed `DBL_MAX / 16` in magnitude. Floating-point
 rounding can affect contact at rotated edges. Shapes are values owned by the
 caller; no allocation or renderer is involved. This is a low-level geometry
-operation; process queries are not yet implemented.
+operation; it does not inspect processes.
 
 ## Reusable shapes in Lua
 
@@ -131,4 +131,43 @@ world:add_rect({x = 100, y = 0, width = 10, height = 80})
 local hit = world:overlap(mv.collision.circle(8), {x = 96, y = 40})
 ```
 
-Process queries and swept movement are not yet available.
+### Process queries in Lua
+
+`world:collision(process, position)` tests a live process with an explicit
+`collision.circle` or `collision.rect` in its `collider` field. It returns the
+first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
+`angle`, and `size`, including the collider offset. A `false` collider disables
+participation. A process with neither a collider nor a graph returns `nil`.
+Automatic colliders from graphs are not implemented; querying a graph without
+an explicit collider raises an error. Invalid, foreign, or dead handles and
+invalid transforms raise an error. Sleeping and frozen processes participate.
+
+The optional `position` table can replace `x`, `y`, or both for one query; it
+does not move the process. Unknown fields and invalid numbers raise an error.
+
+### Sweeping a rectangle
+
+`mv_collision_world_sweep(world, shape, transform, dx, dy, &result)` sweeps a
+rectangle, including an oriented rectangle, along a straight displacement
+against the world's axis-aligned rectangles. Lua provides
+`world:sweep(shape, transform, dx, dy)`. A successful result contains `hit`,
+`fraction`, `normal_x`, `normal_y`, and, for a hit, `id`. Move by the requested
+displacement multiplied by `fraction`; the sweep does not modify the shape or
+a process. Without a hit, the fraction is 1 and the normal is zero. Equal-time
+hits select the lowest obstacle ID. At an edge, motion into an obstacle hits at
+fraction zero; motion away or parallel to it is allowed. A path that only
+grazes an edge or corner is not a hit. The endpoint can report a hit at
+fraction 1. Floating-point rounding can affect contact at rotated edges.
+
+The C function returns 1 for a valid sweep and -1 for invalid input, initial
+overlap, or an unsupported shape; on error it leaves the result unchanged. Lua
+raises an error in those cases. Displacements must be finite and each component
+must not exceed `DBL_MAX / 16` in magnitude. The start and end transforms must
+meet the shape limits above. Circle sweeps are not supported yet and are
+rejected; `world:move(process, dx, dy)` is not implemented.
+
+```lua
+local box = mv.collision.rect(2, 2)
+local result = world:sweep(box, {x = 0, y = 40}, 200, 0)
+local allowed_x = 200 * result.fraction
+```

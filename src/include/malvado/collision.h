@@ -55,6 +55,18 @@ int mv_collision_world_add_rect(MvCollisionWorld *world, MvRect rect, size_t *id
 int mv_collision_world_query(const MvCollisionWorld *world, MvCollisionShape shape,
                              MvCollisionTransform transform, size_t *id);
 
+typedef struct {
+    int hit;
+    size_t id;
+    double fraction, normal_x, normal_y;
+} MvCollisionSweep;
+/* Sweep a rectangle against world rectangles. Returns 1 on success, -1 on
+ * invalid inputs, unsupported shapes, or initial overlap. On failure the
+ * output is unchanged. A hit fraction is in [0,1]; without a hit it is 1. */
+int mv_collision_world_sweep(const MvCollisionWorld *world, MvCollisionShape shape,
+                             MvCollisionTransform transform, double dx, double dy,
+                             MvCollisionSweep *out);
+
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);
 int mv_rect_contains(MvRect rect, double x, double y);

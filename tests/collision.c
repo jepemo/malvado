@@ -86,6 +86,33 @@ main(void)
     }
     assert(mv_collision_world_query(world, rect, (MvCollisionTransform){2270, 2, 45, 1}, &id) == 1);
     assert(id == 130);
+    MvCollisionWorld *walls = mv_collision_world_create();
+    assert(walls);
+    assert(mv_collision_world_add_rect(walls, (MvRect){10, -10, 1, 20}, &id));
+    assert(mv_collision_world_add_rect(walls, (MvRect){20, -10, 1, 20}, &id));
+    MvCollisionSweep sweep;
+    MvCollisionShape mover = {.kind = MV_COLLISION_RECT, .width = 2, .height = 2};
+    assert(mv_collision_world_sweep(walls, mover, origin, 100, 0, &sweep) == 1);
+    assert(sweep.hit && sweep.id == 1 && fabs(sweep.fraction - .09) < 1e-12);
+    assert(sweep.normal_x == -1 && sweep.normal_y == 0);
+    assert(mv_collision_world_sweep(walls, mover, origin, 2, 0, &sweep) == 1);
+    assert(!sweep.hit && sweep.fraction == 1);
+    assert(mv_collision_world_sweep(walls, mover, (MvCollisionTransform){9, 0, 0, 1}, -2, 0, &sweep) == 1);
+    assert(!sweep.hit);
+    assert(mv_collision_world_sweep(walls, mover, (MvCollisionTransform){9, 0, 0, 1}, 2, 0, &sweep) == 1);
+    assert(sweep.hit && sweep.fraction == 0 && sweep.normal_x == -1);
+    assert(mv_collision_world_sweep(walls, mover, origin, 100, 5, &sweep) == 1);
+    assert(sweep.hit && sweep.id == 1 && fabs(sweep.fraction - .09) < 1e-12);
+    assert(mv_collision_world_sweep(walls, mover, (MvCollisionTransform){0, 11, 0, 1}, 100, 0, &sweep) == 1);
+    assert(!sweep.hit); /* The rectangles only touch along an edge. */
+    sweep.fraction = 123;
+    assert(mv_collision_world_sweep(walls, mover, (MvCollisionTransform){10, 0, 0, 1}, 1, 0, &sweep) == -1);
+    assert(sweep.fraction == 123);
+    assert(mv_collision_world_sweep(walls, circle, origin, 100, 0, &sweep) == -1);
+    assert(mv_collision_world_sweep(walls, mover, origin, NAN, 0, &sweep) == -1);
+    assert(mv_collision_world_sweep(walls, mover, (MvCollisionTransform){0, 0, 45, 1}, 100, 0, &sweep) == 1);
+    assert(sweep.hit && sweep.fraction < .09);
+    mv_collision_world_destroy(walls);
     mv_collision_world_destroy(world);
     mv_collision_world_destroy(NULL);
     return 0;

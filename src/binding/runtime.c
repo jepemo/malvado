@@ -3414,6 +3414,84 @@ world_overlap(lua_State *L)
 }
 
 static int
+world_process_collision(lua_State *L)
+{
+    lua_settop(L, 3);
+    MvCollisionWorld *world = check_world(L);
+    if (!lua_isnil(L, 3)) {
+        validate_options(L, 3, "x", "y");
+        double x = shape_option(L, 3, "x", 0);
+        double y = shape_option(L, 3, "y", 0);
+        if (!isfinite(x) || !isfinite(y))
+            return luaL_error(L, "invalid collision position");
+    }
+    lua_Integer id = check_process_id(L, 2);
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
+    lua_getiuservalue(L, 2, 1);
+    int fields = lua_gettop(L);
+    raw_option(L, fields, "collider");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        raw_option(L, fields, "graph");
+        if (!lua_isnil(L, -1))
+            return luaL_error(L, "automatic graphic colliders are not supported yet");
+        lua_pushnil(L);
+        return 1;
+    }
+    if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    MvCollisionShape *shape = luaL_checkudata(L, -1, "malvado.collision_shape");
+    MvCollisionTransform transform = {
+        shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
+        shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
+    };
+    if (!lua_isnil(L, 3)) {
+        transform.x = shape_option(L, 3, "x", transform.x);
+        transform.y = shape_option(L, 3, "y", transform.y);
+    }
+    size_t hit;
+    int result = mv_collision_world_query(world, *shape, transform, &hit);
+    if (result < 0)
+        return luaL_error(L, "invalid process collision transform");
+    if (result)
+        lua_pushinteger(L, (lua_Integer)hit);
+    else
+        lua_pushnil(L);
+    return 1;
+}
+
+static int
+world_sweep(lua_State *L)
+{
+    MvCollisionWorld *world = check_world(L);
+    MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
+    MvCollisionTransform transform = collision_transform(L, 3);
+    double dx = luaL_checknumber(L, 4);
+    double dy = luaL_checknumber(L, 5);
+    MvCollisionSweep result;
+    if (mv_collision_world_sweep(world, *shape, transform, dx, dy, &result) < 0)
+        return luaL_error(L, "invalid sweep, unsupported shape, or initial overlap");
+    lua_createtable(L, 0, 5);
+    lua_pushboolean(L, result.hit);
+    lua_setfield(L, -2, "hit");
+    if (result.hit) {
+        lua_pushinteger(L, (lua_Integer)result.id);
+        lua_setfield(L, -2, "id");
+    }
+    lua_pushnumber(L, result.fraction);
+    lua_setfield(L, -2, "fraction");
+    lua_pushnumber(L, result.normal_x);
+    lua_setfield(L, -2, "normal_x");
+    lua_pushnumber(L, result.normal_y);
+    lua_setfield(L, -2, "normal_y");
+    return 1;
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
@@ -3506,6 +3584,10 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "add_rect");
     lua_pushcfunction(L, world_overlap);
     lua_setfield(L, -2, "overlap");
+    lua_pushcfunction(L, world_sweep);
+    lua_setfield(L, -2, "sweep");
+    lua_pushcfunction(L, world_process_collision);
+    lua_setfield(L, -2, "collision");
     lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado collision world");
     lua_setfield(L, -2, "__metatable");
