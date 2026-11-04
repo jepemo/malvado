@@ -46,7 +46,7 @@ if(MALVADO_BUILD_ASSETS)
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
-add_library(malvado_core STATIC src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
+add_library(malvado_core STATIC src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
 target_include_directories(malvado_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -221,6 +221,9 @@ add_test(NAME installed_core_sdk COMMAND ${CMAKE_COMMAND}
   -DLAUNCHER_NAME=${MALVADO_SDK_LAUNCHER_NAME} -DLIBEXECDIR=${CMAKE_INSTALL_LIBEXECDIR}
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/installed_core_sdk.cmake)
 set_tests_properties(installed_core_sdk PROPERTIES TIMEOUT 60)
+add_executable(collision-test tests/collision.c)
+target_link_libraries(collision-test PRIVATE malvado_core)
+add_test(NAME collision COMMAND collision-test)
 add_executable(input-test tests/input.c)
 if(MALVADO_BUILD_RAYLIB)
   target_link_libraries(input-test PRIVATE malvado_platform_raylib)
@@ -632,6 +635,7 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   endif()
 endif()
 
+add_test(NAME lua_collision COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/collision.lua)
 add_test(NAME lua_declarative_start COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_start.lua)
 set_tests_properties(lua_declarative_start PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "declarative tick")
 add_test(NAME lua_declarative_mixed COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_mixed.lua)

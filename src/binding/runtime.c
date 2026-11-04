@@ -29,6 +29,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "malvado/platform.h"
+#include "malvado/collision.h"
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
 #endif
@@ -3078,6 +3079,8 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 };
 
 static const char *const global_names[] = {
+    "rect_overlaps",
+    "rect_contains",
     "process",
     "spawn",
     "find",
@@ -3219,10 +3222,45 @@ call_process_namespace(lua_State *L)
     return define_process(L);
 }
 
+static MvRect
+check_rect(lua_State *L, int index)
+{
+    MvRect rect = {luaL_checknumber(L, index), luaL_checknumber(L, index + 1),
+                   luaL_checknumber(L, index + 2), luaL_checknumber(L, index + 3)};
+    return rect;
+}
+
+static int
+rect_overlaps(lua_State *L)
+{
+    MvRect a = check_rect(L, 1);
+    MvRect b = check_rect(L, 5);
+    int result = mv_rect_overlaps(a, b);
+    if (result < 0)
+        return luaL_error(L, "invalid rectangle");
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int
+rect_contains(lua_State *L)
+{
+    MvRect rect = check_rect(L, 1);
+    double x = luaL_checknumber(L, 5);
+    double y = luaL_checknumber(L, 6);
+    int result = mv_rect_contains(rect, x, y);
+    if (result < 0)
+        return luaL_error(L, "invalid rectangle or point");
+    lua_pushboolean(L, result);
+    return 1;
+}
+
 static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
+        {"rect_overlaps", rect_overlaps},
+        {"rect_contains", rect_contains},
         {"process", define_process},
         {"spawn", spawn_process},
         {"find", find_by_type},

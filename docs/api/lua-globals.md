@@ -6,6 +6,8 @@ Each global has the same value as the `mv` field shown below. `process` is a cal
 
 | Global | Module field |
 | --- | --- |
+| `rect_overlaps` | `mv.rect_overlaps` |
+| `rect_contains` | `mv.rect_contains` |
 | `process` | `mv.process` |
 | `spawn` | `mv.spawn` |
 | `find` | `mv.find` |
