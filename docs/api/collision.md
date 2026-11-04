@@ -44,7 +44,7 @@ for invalid values. Values must be finite. World centers and bounding
 half-extents must not exceed `DBL_MAX / 16` in magnitude. Floating-point
 rounding can affect contact at rotated edges. Shapes are values owned by the
 caller; no allocation or renderer is involved. This is a low-level geometry
-operation; process queries and a collision world are not yet implemented.
+operation; process queries are not yet implemented.
 
 ## Reusable shapes in Lua
 
@@ -80,3 +80,55 @@ The `collision` namespace is not installed by `import_globals()`. Use
 provided: process selection and shape geometry have different arguments, and a
 single global name would make their meaning ambiguous. Process collision queries
 remain planned in the `process` namespace.
+
+
+## Static world in C
+
+`mv_collision_world_create()` allocates an empty, renderer-independent world.
+Destroy it with `mv_collision_world_destroy()`, which also accepts `NULL`.
+`mv_collision_world_add_rect(world, rect, &id)` copies an axis-aligned rectangle
+and assigns a one-based ID in insertion order. It returns 1 on success, or 0
+for invalid geometry, arguments, allocation failure, or when the world already
+contains `INT_MAX` rectangles. On failure it leaves
+the world and output unchanged. Rectangles must also satisfy the transformed
+shape limits above. There is no removal operation yet.
+
+`mv_collision_world_query(world, shape, transform, &id)` returns 1 and the
+lowest inserted overlapping ID, 0 if none overlap, or -1 for invalid arguments
+or shape. The output is unchanged on failure or no hit. Queries use the same
+edge-contact rule as `mv_collision_overlap`. The world sorts obstacles by their
+left edge and filters candidates by their bounding boxes. In the worst case it
+still scans the full world. This C API does not retain the supplied shape.
+
+```c
+MvCollisionWorld *world = mv_collision_world_create();
+size_t wall;
+if (world && mv_collision_world_add_rect(world, (MvRect){100, 0, 10, 80}, &wall)) {
+    MvCollisionShape circle = {.kind = MV_COLLISION_CIRCLE, .radius = 8};
+    MvCollisionTransform position = {96, 40, 0, 1};
+    size_t hit;
+    int overlaps = mv_collision_world_query(world, circle, position, &hit);
+    /* overlaps is 1 and hit is wall. */
+    (void)overlaps;
+}
+mv_collision_world_destroy(world);
+```
+
+### Lua
+
+`mv.world.create()` returns a garbage-collected world. The world owns its
+rectangles. `world:add_rect({x = 100, y = 0, width = 10, height = 80})` adds
+one and returns its ID. All four fields are required; unknown or invalid fields
+and allocation failures raise an error. `world:overlap(shape, transform)`
+returns the first overlapping ID or `nil`. It uses the same shape descriptors,
+transform defaults, limits, and errors as `collision.overlap`. The `world`
+namespace is not installed by `import_globals()`.
+
+```lua
+local mv = require("malvado")
+local world = mv.world.create()
+world:add_rect({x = 100, y = 0, width = 10, height = 80})
+local hit = world:overlap(mv.collision.circle(8), {x = 96, y = 40})
+```
+
+Process queries and swept movement are not yet available.

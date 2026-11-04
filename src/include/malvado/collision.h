@@ -16,6 +16,8 @@
 #ifndef MALVADO_COLLISION_H
 #define MALVADO_COLLISION_H
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,6 +40,20 @@ typedef struct { double x, y, angle, scale; } MvCollisionTransform;
  * DBL_MAX / 16 in magnitude. Rotation is clockwise in screen space. */
 int mv_collision_overlap(MvCollisionShape a, MvCollisionTransform transform_a,
                          MvCollisionShape b, MvCollisionTransform transform_b);
+
+/* A world owns its rectangles. IDs are one-based and follow insertion order.
+ * Create returns NULL on allocation failure; destroy accepts NULL. */
+typedef struct MvCollisionWorld MvCollisionWorld;
+MvCollisionWorld *mv_collision_world_create(void);
+void mv_collision_world_destroy(MvCollisionWorld *world);
+/* Return 1 and write the ID, or 0 on invalid input, allocation failure, or
+ * if the world already contains INT_MAX rectangles.
+ * On failure, the world and output are unchanged. */
+int mv_collision_world_add_rect(MvCollisionWorld *world, MvRect rect, size_t *id);
+/* Return 1 and write the first overlapping ID, 0 for none, or -1 on invalid
+ * input. Output is unchanged when no hit or on error. */
+int mv_collision_world_query(const MvCollisionWorld *world, MvCollisionShape shape,
+                             MvCollisionTransform transform, size_t *id);
 
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);

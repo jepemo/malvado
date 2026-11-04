@@ -14,7 +14,10 @@
  */
 
 #include <float.h>
+#include <limits.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include "malvado/collision.h"
 
 static int
@@ -141,4 +144,88 @@ mv_collision_overlap(MvCollisionShape a, MvCollisionTransform transform_a,
     if (second.kind == MV_COLLISION_CIRCLE)
         return circle_rect_overlap(&second, &first);
     return rectangles_overlap(&first, &second);
+}
+
+typedef struct {
+    MvRect rect;
+    size_t id;
+} WorldRect;
+
+struct MvCollisionWorld {
+    WorldRect *rects;
+    size_t count, capacity;
+};
+
+MvCollisionWorld *
+mv_collision_world_create(void)
+{
+    return calloc(1, sizeof(MvCollisionWorld));
+}
+
+void
+mv_collision_world_destroy(MvCollisionWorld *world)
+{
+    if (!world)
+        return;
+    free(world->rects);
+    free(world);
+}
+
+int
+mv_collision_world_add_rect(MvCollisionWorld *world, MvRect rect, size_t *id)
+{
+    if (!world || !id || !valid_rect(rect) || world->count >= INT_MAX)
+        return 0;
+    MvCollisionShape shape = {.kind = MV_COLLISION_RECT, .width = rect.width, .height = rect.height};
+    MvCollisionTransform transform = {rect.x + rect.width / 2, rect.y + rect.height / 2, 0, 1};
+    WorldShape bounds;
+    if (!world_shape(shape, transform, &bounds))
+        return 0;
+    if (world->count == world->capacity) {
+        size_t capacity = world->capacity ? world->capacity * 2 : 16;
+        if (capacity < world->capacity || capacity > SIZE_MAX / sizeof(*world->rects))
+            return 0;
+        WorldRect *rects = realloc(world->rects, capacity * sizeof(*rects));
+        if (!rects)
+            return 0;
+        world->rects = rects;
+        world->capacity = capacity;
+    }
+    size_t position = world->count;
+    while (position && world->rects[position - 1].rect.x > rect.x) {
+        world->rects[position] = world->rects[position - 1];
+        --position;
+    }
+    world->rects[position] = (WorldRect){rect, world->count + 1};
+    *id = ++world->count;
+    return 1;
+}
+
+int
+mv_collision_world_query(const MvCollisionWorld *world, MvCollisionShape shape,
+                         MvCollisionTransform transform, size_t *id)
+{
+    WorldShape bounds;
+    if (!world || !id || !world_shape(shape, transform, &bounds))
+        return -1;
+    size_t first = SIZE_MAX;
+    for (size_t i = 0; i < world->count; ++i) {
+        WorldRect item = world->rects[i];
+        if (item.rect.x >= bounds.x + bounds.bound_x)
+            break;
+        if (item.rect.x + item.rect.width <= bounds.x - bounds.bound_x ||
+            item.rect.y >= bounds.y + bounds.bound_y ||
+            item.rect.y + item.rect.height <= bounds.y - bounds.bound_y)
+            continue;
+        MvCollisionShape obstacle = {.kind = MV_COLLISION_RECT, .width = item.rect.width,
+                                     .height = item.rect.height};
+        MvCollisionTransform location = {item.rect.x + item.rect.width / 2,
+                                         item.rect.y + item.rect.height / 2, 0, 1};
+        if (mv_collision_overlap(shape, transform, obstacle, location) == 1 && item.id < first)
+            first = item.id;
+    }
+    if (first == SIZE_MAX)
+        return 0;
+    *id = first;
+    return 1;
 }

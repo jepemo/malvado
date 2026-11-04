@@ -3335,6 +3335,85 @@ collision_overlap(lua_State *L)
 }
 
 static int
+world_gc(lua_State *L)
+{
+    MvCollisionWorld **world = luaL_checkudata(L, 1, "malvado.collision_world");
+    mv_collision_world_destroy(*world);
+    *world = NULL;
+    return 0;
+}
+
+static MvCollisionWorld *
+check_world(lua_State *L)
+{
+    MvCollisionWorld **world = luaL_checkudata(L, 1, "malvado.collision_world");
+    if (!*world)
+        luaL_error(L, "collision world is closed");
+    return *world;
+}
+
+static int
+world_create(lua_State *L)
+{
+    MvCollisionWorld **world = lua_newuserdatauv(L, sizeof(*world), 0);
+    *world = NULL;
+    luaL_setmetatable(L, "malvado.collision_world");
+    *world = mv_collision_world_create();
+    if (!*world)
+        return luaL_error(L, "cannot allocate collision world");
+    return 1;
+}
+
+static double
+world_rect_field(lua_State *L, const char *name)
+{
+    raw_option(L, 2, name);
+    double value = luaL_checknumber(L, -1);
+    lua_pop(L, 1);
+    return value;
+}
+
+static int
+world_add_rect(lua_State *L)
+{
+    MvCollisionWorld *world = check_world(L);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    lua_pushnil(L);
+    while (lua_next(L, 2)) {
+        size_t length;
+        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
+        if (!name || strlen(name) != length ||
+            (strcmp(name, "x") && strcmp(name, "y") && strcmp(name, "width") && strcmp(name, "height")))
+            return luaL_error(L, "unknown world rectangle field");
+        lua_pop(L, 1);
+    }
+    MvRect rect = {world_rect_field(L, "x"), world_rect_field(L, "y"),
+                   world_rect_field(L, "width"), world_rect_field(L, "height")};
+    size_t id;
+    if (!mv_collision_world_add_rect(world, rect, &id))
+        return luaL_error(L, "invalid rectangle or out of memory");
+    lua_pushinteger(L, (lua_Integer)id);
+    return 1;
+}
+
+static int
+world_overlap(lua_State *L)
+{
+    MvCollisionWorld *world = check_world(L);
+    MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
+    MvCollisionTransform transform = collision_transform(L, 3);
+    size_t id;
+    int result = mv_collision_world_query(world, *shape, transform, &id);
+    if (result < 0)
+        return luaL_error(L, "invalid collision transform");
+    if (!result)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (lua_Integer)id);
+    return 1;
+}
+
+static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
@@ -3419,6 +3498,18 @@ open_module(lua_State *L)
                 return luaL_error(L, "duplicate module export: %s", functions[i].name);
         }
     }
+    luaL_newmetatable(L, "malvado.collision_world");
+    lua_pushcfunction(L, world_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    lua_pushcfunction(L, world_add_rect);
+    lua_setfield(L, -2, "add_rect");
+    lua_pushcfunction(L, world_overlap);
+    lua_setfield(L, -2, "overlap");
+    lua_setfield(L, -2, "__index");
+    lua_pushliteral(L, "malvado collision world");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.collision_shape");
     lua_pushliteral(L, "malvado collision shape");
     lua_setfield(L, -2, "__metatable");
@@ -3486,6 +3577,10 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_newtable(L);
+    lua_pushcfunction(L, world_create);
+    lua_setfield(L, -2, "create");
+    lua_setfield(L, -2, "world");
     lua_newtable(L);
     lua_pushinteger(L, MV_COLLISION_CIRCLE);
     lua_pushcclosure(L, collision_shape, 1);

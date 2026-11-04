@@ -67,5 +67,26 @@ main(void)
     assert(mv_collision_overlap(circle, (MvCollisionTransform){DBL_MAX, 0, 0, 1}, rect, origin) == -1);
     assert(mv_collision_overlap((MvCollisionShape){.kind = MV_COLLISION_RECT, .width = DBL_MIN, .height = 1},
                                 (MvCollisionTransform){0, 0, 45, DBL_MIN}, circle, origin) == -1);
+    MvCollisionWorld *world = mv_collision_world_create();
+    assert(world);
+    size_t id = 99;
+    assert(!mv_collision_world_add_rect(world, (MvRect){0, 0, 0, 1}, &id) && id == 99);
+    assert(!mv_collision_world_add_rect(world, (MvRect){0, 0, 1, 1}, NULL));
+    assert(mv_collision_world_add_rect(world, (MvRect){10, 0, 10, 10}, &id) && id == 1);
+    assert(mv_collision_world_add_rect(world, (MvRect){0, 0, 15, 10}, &id) && id == 2);
+    assert(mv_collision_world_query(world, circle, (MvCollisionTransform){12, 5, 0, 1}, &id) == 1 && id == 1);
+    assert(mv_collision_world_query(world, circle, (MvCollisionTransform){2, 5, 0, 1}, &id) == 1 && id == 2);
+    id = 99;
+    assert(mv_collision_world_query(world, circle, (MvCollisionTransform){21, 5, 0, 1}, &id) == 0 && id == 99);
+    assert(mv_collision_world_query(world, circle, (MvCollisionTransform){0, 0, 0, 0}, &id) == -1 && id == 99);
+    assert(mv_collision_world_query(NULL, circle, origin, &id) == -1);
+    for (int i = 0; i < 128; ++i) {
+        assert(mv_collision_world_add_rect(world, (MvRect){1000 + i * 10, 0, 5, 5}, &id));
+        assert(id == (size_t)i + 3);
+    }
+    assert(mv_collision_world_query(world, rect, (MvCollisionTransform){2270, 2, 45, 1}, &id) == 1);
+    assert(id == 130);
+    mv_collision_world_destroy(world);
+    mv_collision_world_destroy(NULL);
     return 0;
 }
