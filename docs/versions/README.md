@@ -16,7 +16,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.2](2.0.0-alpha.2.md) — **complete**: shared C/Lua scheduler, processes, signals, messages, and inspection. Source tag: `v2.0.0-alpha.2`; no release package yet.
 - [ ] [Alpha.3](2.0.0-alpha.3.md) — **tagged preview**: source tag `v2.0.0-alpha.3`; some checks remain open.
 - [ ] [Alpha.4](2.0.0-alpha.4.md) — **in progress**: minimal client, SDK, project creation, execution, and desktop packages.
-- [ ] [Alpha.5](2.0.0-alpha.5.md) — **in progress**: process model, C and Lua API, lifecycle, resources, and genealogy.
+- [ ] [Alpha.5](2.0.0-alpha.5.md) — **locally verified**: process model, C and Lua API, lifecycle, resources, and genealogy. CI on the final commit and a release tag remain pending.
 - [ ] [Alpha.6](2.0.0-alpha.6.md) — **planned**: define the full 2.0 API inventory, collision, scrolling, and asset importers.
 - [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: Android and Windows.
 - [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the agreed 2.0 API in C and Lua.
