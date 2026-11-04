@@ -98,6 +98,7 @@ static void lua_process_destroy(void *user);
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason; MvProcessRef reference; } LuaSelf;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
+typedef struct { MvCollisionShape shape; MvColor color; int top_left; } LuaGraphic;
 typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
 typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
 typedef struct { MvFont *font; MvResource *resource; } LuaFont;
@@ -788,7 +789,9 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     if (depth > 256 || !lua_checkstack(L, 8))
         luaL_error(L, "defaults are too deeply nested");
     int type = lua_type(L, source);
-    if (type == LUA_TUSERDATA && luaL_testudata(L, source, "malvado.collision_shape")) {
+    if (type == LUA_TUSERDATA &&
+        (luaL_testudata(L, source, "malvado.collision_shape") ||
+         luaL_testudata(L, source, "malvado.graphic"))) {
         lua_pushvalue(L, source);
         return;
     }
@@ -2780,11 +2783,50 @@ compare_draw_order(const void *a, const void *b)
     return (left->slot > right->slot) - (left->slot < right->slot);
 }
 
+static int
+render_number(lua_State *L, int fields, const char *name, double fallback, double *value)
+{
+    raw_option(L, fields, name);
+    int valid = lua_isnil(L, -1) || lua_type(L, -1) == LUA_TNUMBER;
+    *value = lua_isnil(L, -1) ? fallback : lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return valid && isfinite(*value) && fabs(*value) <= FLT_MAX / 16;
+}
+
+static void
+render_graph(lua_State *L, const Process *process)
+{
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+    lua_getiuservalue(L, -1, 1);
+    int fields = lua_gettop(L);
+    raw_option(L, fields, "graph");
+    LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
+    double x, y, angle, scale;
+    if (graphic && render_number(L, fields, "x", 0, &x) &&
+        render_number(L, fields, "y", 0, &y) &&
+        render_number(L, fields, "angle", 0, &angle) &&
+        render_number(L, fields, "size", 1, &scale) && scale > 0) {
+        if (graphic->shape.kind == MV_COLLISION_CIRCLE) {
+            double radius = graphic->shape.radius * scale;
+            if (isfinite(radius) && radius >= FLT_MIN && radius <= FLT_MAX / 16)
+                (void)mv_window_draw_filled_circle((float)x, (float)y, (float)radius, graphic->color);
+        } else {
+            double width = graphic->shape.width * scale, height = graphic->shape.height * scale;
+            if (isfinite(width) && isfinite(height) && width >= FLT_MIN && height >= FLT_MIN &&
+                width <= FLT_MAX / 16 && height <= FLT_MAX / 16)
+                (void)mv_window_draw_transformed_rect((float)x, (float)y, (float)width, (float)height,
+                    graphic->top_left ? 0 : (float)(width / 2),
+                    graphic->top_left ? 0 : (float)(height / 2), (float)angle, graphic->color);
+        }
+    }
+    lua_pop(L, 3);
+}
+
 static void
 render(void)
 {
     lua_State *L = engine.L;
-    if (!lua_checkstack(L, 3)) {
+    if (!lua_checkstack(L, 8)) {
         engine.failed = 1;
         return;
     }
@@ -2815,6 +2857,7 @@ render(void)
         Process *process = &engine.items[order[p].slot];
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
+        render_graph(L, process);
         lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
         for (lua_Integer i = 1; i <= (lua_Integer)lua_rawlen(L, -1); i++) {
             lua_geti(L, -1, i);
@@ -3414,6 +3457,32 @@ world_overlap(lua_State *L)
 }
 
 static int
+process_collider(lua_State *L, int fields, MvCollisionShape *shape)
+{
+    raw_option(L, fields, "collider");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        raw_option(L, fields, "graph");
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 1);
+            return 0;
+        }
+        LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
+        if (!graphic)
+            luaL_error(L, "unsupported graphic for automatic collider");
+        *shape = graphic->shape;
+    } else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
+        lua_pop(L, 1);
+        return 0;
+    } else {
+        MvCollisionShape *explicit_shape = luaL_checkudata(L, -1, "malvado.collision_shape");
+        *shape = *explicit_shape;
+    }
+    lua_pop(L, 1);
+    return 1;
+}
+
+static int
 world_process_collision(lua_State *L)
 {
     lua_settop(L, 3);
@@ -3431,20 +3500,11 @@ world_process_collision(lua_State *L)
         return luaL_error(L, "process is no longer alive");
     lua_getiuservalue(L, 2, 1);
     int fields = lua_gettop(L);
-    raw_option(L, fields, "collider");
-    if (lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-        raw_option(L, fields, "graph");
-        if (!lua_isnil(L, -1))
-            return luaL_error(L, "automatic graphic colliders are not supported yet");
+    MvCollisionShape shape;
+    if (!process_collider(L, fields, &shape)) {
         lua_pushnil(L);
         return 1;
     }
-    if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
-        lua_pushnil(L);
-        return 1;
-    }
-    MvCollisionShape *shape = luaL_checkudata(L, -1, "malvado.collision_shape");
     MvCollisionTransform transform = {
         shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
         shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
@@ -3454,7 +3514,7 @@ world_process_collision(lua_State *L)
         transform.y = shape_option(L, 3, "y", transform.y);
     }
     size_t hit;
-    int result = mv_collision_world_query(world, *shape, transform, &hit);
+    int result = mv_collision_world_query(world, shape, transform, &hit);
     if (result < 0)
         return luaL_error(L, "invalid process collision transform");
     if (result)
@@ -3485,22 +3545,13 @@ world_process_move(lua_State *L)
     if (!isfinite(transform.x) || !isfinite(transform.y))
         return luaL_error(L, "invalid process position");
     double old_x = transform.x, old_y = transform.y;
-    raw_option(L, fields, "collider");
+    MvCollisionShape shape;
     MvCollisionSweep result = {.fraction = 1};
-    if (lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-        raw_option(L, fields, "graph");
-        if (!lua_isnil(L, -1))
-            return luaL_error(L, "automatic graphic colliders are not supported yet");
+    if (!process_collider(L, fields, &shape)) {
         transform.x += dx;
         transform.y += dy;
-    } else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
-        transform.x += dx;
-        transform.y += dy;
-    } else {
-        MvCollisionShape *shape = luaL_checkudata(L, -1, "malvado.collision_shape");
-        if (mv_collision_world_move(world, *shape, &transform, dx, dy, &result) < 0)
-            return luaL_error(L, "invalid movement or initial collision");
+    } else if (mv_collision_world_move(world, shape, &transform, dx, dy, &result) < 0) {
+        return luaL_error(L, "invalid movement or initial collision");
     }
     if (!isfinite(transform.x) || !isfinite(transform.y))
         return luaL_error(L, "invalid movement destination");
@@ -3552,6 +3603,73 @@ world_sweep(lua_State *L)
     lua_setfield(L, -2, "normal_x");
     lua_pushnumber(L, result.normal_y);
     lua_setfield(L, -2, "normal_y");
+    return 1;
+}
+
+static int
+graphic_create(lua_State *L)
+{
+    MvCollisionKind kind = (MvCollisionKind)lua_tointeger(L, lua_upvalueindex(1));
+    LuaGraphic graphic = {.shape = {.kind = kind}, .color = {255, 255, 255, 255}};
+    int options;
+    if (kind == MV_COLLISION_CIRCLE) {
+        graphic.shape.radius = luaL_checknumber(L, 1);
+        options = 2;
+    } else {
+        graphic.shape.width = luaL_checknumber(L, 1);
+        graphic.shape.height = luaL_checknumber(L, 2);
+        options = 3;
+    }
+    MvCollisionTransform identity = {0, 0, 0, 1};
+    if (mv_collision_overlap(graphic.shape, identity, graphic.shape, identity) < 0 ||
+        (kind == MV_COLLISION_CIRCLE && (graphic.shape.radius < FLT_MIN || graphic.shape.radius > FLT_MAX / 16)) ||
+        (kind == MV_COLLISION_RECT &&
+         (graphic.shape.width < FLT_MIN || graphic.shape.height < FLT_MIN ||
+          graphic.shape.width > FLT_MAX / 16 || graphic.shape.height > FLT_MAX / 16)))
+        return luaL_error(L, "invalid graphic dimensions");
+    if (!lua_isnoneornil(L, options)) {
+        validate_options(L, options, "color", "pivot");
+        raw_option(L, options, "pivot");
+        if (!lua_isnil(L, -1)) {
+            size_t length;
+            const char *pivot = luaL_checklstring(L, -1, &length);
+            if (strlen(pivot) != length ||
+                (strcmp(pivot, "center") && (kind != MV_COLLISION_RECT || strcmp(pivot, "top-left"))))
+                return luaL_error(L, "invalid graphic pivot");
+            graphic.top_left = strcmp(pivot, "top-left") == 0;
+        }
+        lua_pop(L, 1);
+        raw_option(L, options, "color");
+        if (!lua_isnil(L, -1)) {
+            luaL_checktype(L, -1, LUA_TTABLE);
+            int color = lua_absindex(L, -1);
+            lua_pushnil(L);
+            while (lua_next(L, color)) {
+                if (!lua_isinteger(L, -2) || lua_tointeger(L, -2) < 1 || lua_tointeger(L, -2) > 4)
+                    return luaL_error(L, "invalid graphic color");
+                lua_pop(L, 1);
+            }
+            unsigned char channels[4] = {255, 255, 255, 255};
+            for (int i = 0; i < 4; ++i) {
+                lua_rawgeti(L, color, i + 1);
+                if (i < 3 || !lua_isnil(L, -1)) {
+                    if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 255)
+                        return luaL_error(L, "invalid graphic color");
+                    channels[i] = (unsigned char)lua_tointeger(L, -1);
+                }
+                lua_pop(L, 1);
+            }
+            graphic.color = (MvColor){channels[0], channels[1], channels[2], channels[3]};
+        }
+        lua_pop(L, 1);
+    }
+    if (graphic.top_left) {
+        graphic.shape.offset_x = graphic.shape.width / 2;
+        graphic.shape.offset_y = graphic.shape.height / 2;
+    }
+    LuaGraphic *stored = lua_newuserdatauv(L, sizeof(*stored), 0);
+    *stored = graphic;
+    luaL_setmetatable(L, "malvado.graphic");
     return 1;
 }
 
@@ -3640,6 +3758,10 @@ open_module(lua_State *L)
                 return luaL_error(L, "duplicate module export: %s", functions[i].name);
         }
     }
+    luaL_newmetatable(L, "malvado.graphic");
+    lua_pushliteral(L, "malvado graphic");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.collision_world");
     lua_pushcfunction(L, world_gc);
     lua_setfield(L, -2, "__gc");
@@ -3725,6 +3847,14 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_newtable(L);
+    lua_pushinteger(L, MV_COLLISION_CIRCLE);
+    lua_pushcclosure(L, graphic_create, 1);
+    lua_setfield(L, -2, "circle");
+    lua_pushinteger(L, MV_COLLISION_RECT);
+    lua_pushcclosure(L, graphic_create, 1);
+    lua_setfield(L, -2, "rect");
+    lua_setfield(L, -2, "graphics");
     lua_newtable(L);
     lua_pushcfunction(L, world_create);
     lua_setfield(L, -2, "create");

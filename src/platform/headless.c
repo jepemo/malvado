@@ -105,6 +105,17 @@ int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color)
     (void)x; (void)y; (void)radius; (void)filled; (void)color;
     return 0;
 }
+int mv_window_draw_transformed_rect(float x, float y, float width, float height,
+                                    float pivot_x, float pivot_y, float angle, MvColor color)
+{
+    (void)x; (void)y; (void)width; (void)height; (void)pivot_x; (void)pivot_y; (void)angle; (void)color;
+    return 0;
+}
+int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color)
+{
+    (void)x; (void)y; (void)radius; (void)color;
+    return 0;
+}
 MvImage *mv_image_load(const char *path) { (void)path; return NULL; }
 void mv_image_destroy(MvImage *image) { (void)image; }
 int mv_image_width(const MvImage *image) { (void)image; return 0; }

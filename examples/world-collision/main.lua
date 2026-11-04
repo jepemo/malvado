@@ -5,7 +5,7 @@ local mv = require("malvado")
 mv.import_globals()
 
 local world = mv.world.create()
-local player_shape = mv.collision.circle(16)
+local player_graphic = mv.graphics.circle(16, {color = {80, 190, 255}})
 world:add_rect({x = 300, y = 100, width = 40, height = 280})
 
 local Player = process(function(self)
@@ -19,14 +19,12 @@ local Player = process(function(self)
 
     set_color(255, 165, 70)
     draw_box(300, 100, 340, 380)
-    set_color(80, 190, 255)
-    draw_fcircle(self.x, self.y, 16)
     draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
     frame()
   end
-end)
+end, {defaults = {graph = player_graphic}})
 
 start(function()
   clear_screen(25, 30, 45)
-  Player({x = 100, y = 200, collider = player_shape})
+  Player({x = 100, y = 200})
 end, {width = 640, height = 480, title = "World collision"})

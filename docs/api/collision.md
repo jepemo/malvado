@@ -72,8 +72,8 @@ operation. Each transform is `nil` for the identity or a table with `x`, `y`,
 `angle`, and `scale`; these default to zero, zero, zero degrees, and one. All
 values must be finite and scale must be positive. Invalid shapes, transforms,
 unknown fields, or values outside the C operation's documented limits raise an
-error. It returns a boolean. Touching edges do not overlap. This function does
-not query processes or automatically attach colliders to them.
+error. It returns a boolean. Touching edges do not overlap. This function does not query processes. Process graphics can supply automatic
+colliders, as described below.
 
 The `collision` namespace is not installed by `import_globals()`. Use
 `require("malvado").collision`. A global `collision(...)` shorthand is not
@@ -138,8 +138,10 @@ local hit = world:overlap(mv.collision.circle(8), {x = 96, y = 40})
 first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
 `angle`, and `size`, including the collider offset. A `false` collider disables
 participation. A process with neither a collider nor a graph returns `nil`.
-Automatic colliders from graphs are not implemented; querying a graph without
-an explicit collider raises an error. Invalid, foreign, or dead handles and
+When `collider` is `nil`, a supported `graphics.circle` or `graphics.rect`
+graph supplies its shape and pivot. A graph of another type without an explicit
+collider raises an error; automatic image and atlas colliders are not yet
+supported. Invalid, foreign, or dead handles and
 invalid transforms raise an error. Sleeping and frozen processes participate.
 
 The optional `position` table can replace `x`, `y`, or both for one query; it
@@ -182,8 +184,8 @@ local allowed_x = 200 * result.fraction
 then updates `x` and `y` by the permitted displacement. It returns a table with
 `hit`, `moved_x`, `moved_y`, `normal_x`, `normal_y`, and an obstacle `id` on
 impact. A disabled collider or a process without a collider or graphic moves
-freely. A process with a graphic but no explicit collider raises an error until
-automatic graphic colliders are implemented. The operation does not slide.
+freely. A supported geometric graphic supplies a collider when no explicit collider is
+set. Other graphic types require an explicit collider. The operation does not slide.
 An invalid process or transform, initial overlap, or a sweep outside the
 numeric limits raises an error. A process that starts inside an obstacle must be
 repositioned before it can use this operation.

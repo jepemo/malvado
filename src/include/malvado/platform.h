@@ -152,6 +152,11 @@ int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, M
  * Return 0 for invalid geometry, an invalid flag, or no window. */
 int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color);
 int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color);
+/* Filled shapes at floating-point coordinates. Rectangles rotate clockwise
+ * around the supplied pivot, in local pixels. Return 0 for invalid input. */
+int mv_window_draw_transformed_rect(float x, float y, float width, float height,
+                                    float pivot_x, float pivot_y, float angle, MvColor color);
+int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.
  * The caller owns the image and must destroy it before closing the window. */
 MvImage *mv_image_load(const char *path);

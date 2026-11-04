@@ -549,6 +549,28 @@ mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color)
     return 1;
 }
 
+int
+mv_window_draw_transformed_rect(float x, float y, float width, float height,
+                                float pivot_x, float pivot_y, float angle, MvColor color)
+{
+    if (!IsWindowReady() || !isfinite(x) || !isfinite(y) || !isfinite(width) ||
+        !isfinite(height) || !isfinite(pivot_x) || !isfinite(pivot_y) || !isfinite(angle) ||
+        width <= 0 || height <= 0)
+        return 0;
+    DrawRectanglePro((Rectangle){x, y, width, height}, (Vector2){pivot_x, pivot_y}, angle,
+                     (Color){color.r, color.g, color.b, color.a});
+    return 1;
+}
+
+int
+mv_window_draw_filled_circle(float x, float y, float radius, MvColor color)
+{
+    if (!IsWindowReady() || !isfinite(x) || !isfinite(y) || !isfinite(radius) || radius <= 0)
+        return 0;
+    DrawCircleV((Vector2){x, y}, radius, (Color){color.r, color.g, color.b, color.a});
+    return 1;
+}
+
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor c)
 {
     DrawText(text, x, y, size, (Color){c.r, c.g, c.b, c.a});

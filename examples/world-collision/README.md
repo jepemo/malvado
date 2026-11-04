@@ -6,5 +6,5 @@ Run from the repository root:
 ./build/malvado run examples/world-collision/main.lua
 ```
 
-Use the arrow keys to move the circle. The static wall stops it. Press Escape
+Use the arrow keys to move the circle. The static wall stops it. The circle graphic supplies its collider automatically. Press Escape
 to exit. The wall is drawn separately from its collision geometry.

@@ -2,8 +2,14 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local original_frame, original_draw = mv.frame, mv.draw_fcircle
-local ticks, last_x = 0, nil
+local original_frame, original_process = mv.frame, mv.process
+local ticks, last_x, player = 0, nil, nil
+mv.process = function(fn, options)
+  return original_process(function(self)
+    player = self
+    return fn(self)
+  end, options)
+end
 mv.key = function(name)
   if name == "right" then return true end
   if name == "escape" then return ticks >= 54 end
@@ -11,12 +17,9 @@ mv.key = function(name)
 end
 mv.frame = function()
   ticks = ticks + 1
+  last_x = player.x
+  assert(last_x <= 284)
   return original_frame()
-end
-mv.draw_fcircle = function(x, y, radius)
-  last_x = x
-  assert(x <= 284)
-  return original_draw(x, y, radius)
 end
 dofile("examples/world-collision/main.lua")
 assert(ticks == 54 and last_x == 284)

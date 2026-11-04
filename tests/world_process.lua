@@ -53,6 +53,9 @@ local controller = mv.process(function()
   empty.collider = nil
   empty.graph = {}
   assert(not pcall(world.collision, world, empty))
+  empty.collider = shape
+  empty.x = 9
+  assert(world:collision(empty) == 1)
   mv.kill(a)
   assert(not pcall(world.collision, world, a))
   mv.kill(empty)

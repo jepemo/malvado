@@ -32,3 +32,51 @@ In C, call `mv_window_draw_box(x, y, width, height, filled, color)` or `mv_windo
 For another color, call `mv.fade_to(r, g, b, a, ticks)`. Channels are integers from 0 to 255; duration is an integer from 0 to 1,000,000 ticks. A duration of zero changes the color immediately when the request reaches the front of the queue. Up to 16 requests can wait behind the current transition; adding another raises an error. `mv.fade_active()` is true while a transition or queued request remains. `mv.fade_color()` returns the current red, green, blue, and alpha values. The overlay is drawn after processes and persistent text. It advances once per simulation tick and stops when the runner stops.
 
 In C, initialize `MvFade fade = {0}` and call `mv_fade_start(&fade, target, ticks)`. Call `mv_fade_step(&fade)` on each simulation tick and use `fade.current` as the color of a window-sized filled box. `mv_fade_active(&fade)` reports whether the transition is in progress. A start with invalid input returns 0 without changing the state. C callers manage any transition queue themselves.
+
+## Process graphics
+
+A process can draw a reusable circle or rectangle on every frame. Create a
+descriptor once and put it in `graph`:
+
+```lua
+require("malvado").import_globals()
+local graphics = require("malvado").graphics
+local ball = graphics.circle(20, {color = {80, 190, 255}})
+local Ball = process(function(self)
+  while not key("escape") do
+    self.x = self.x + 1
+    frame()
+  end
+end, {defaults = {graph = ball}})
+start(function() Ball({x = 100, y = 100}) end)
+```
+
+`graphics.circle(radius, options)` and `graphics.rect(width, height, options)`
+return immutable descriptors. Dimensions must be finite, positive, and in
+`FLT_MIN..FLT_MAX / 16` so the graphics backend can represent them. Options may
+contain `color = {r, g, b}` or `{r, g, b, a}`; each channel is an integer in
+0..255. The default is opaque white. `pivot` defaults to `"center"` for both
+shapes. Rectangles also accept `"top-left"`. Circles only accept `"center"`.
+Invalid dimensions, colors, pivots, or unknown options raise an error. Lua
+retains the descriptor while it is referenced, including by process defaults.
+Descriptors can be shared between processes without sharing mutable fields.
+
+A graph uses the process `x`, `y`, clockwise `angle` in degrees, and uniform
+`size` (default 1). `z` keeps its existing draw-order meaning. The graph is drawn
+before that process's immediate draw commands. Sleeping processes are hidden;
+frozen processes remain visible. `graph = nil` removes the graphic.
+Invalid or out-of-range transform values, non-positive size, or scaled dimensions
+outside `FLT_MIN..FLT_MAX / 16` skip the graph for that frame. Process field
+assignments otherwise keep their existing rules. Values other than supported graphic descriptors are ignored by automatic drawing.
+Image and atlas graphics are not supported by this mechanism yet.
+
+Without an explicit collider, a supported graphic also supplies its collision
+shape, using the same pivot and transform. See [collision](collision.md).
+The namespaces `graphics` and `collision` are accessed through `require`; they
+are not installed as globals by `import_globals()`.
+
+In C, the raylib platform provides `mv_window_draw_transformed_rect` and
+`mv_window_draw_filled_circle` between `mv_window_begin` and `mv_window_end`.
+The rectangle takes its pivot in local pixels and rotates clockwise. These
+functions draw immediately and do not create colliders. They return 0 for
+invalid input or no window, including in the headless backend.
