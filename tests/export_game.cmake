@@ -175,6 +175,22 @@ execute_process(COMMAND chmod u+rw "${WORK}/unreadable-project/asset.dat" RESULT
 if(NOT chmod_result EQUAL 0)
   message(FATAL_ERROR "Cannot restore test file permissions")
 endif()
+file(MAKE_DIRECTORY "${WORK}/declarative-project")
+file(WRITE "${WORK}/declarative-project/main.lua" [=[
+local mv = require("malvado")
+local task = mv.process(function() print("declarative export works") end)
+return {title = "Export test", width = 320, height = 240, init = function() task() end}
+]=])
+execute_process(COMMAND "${CLI}" export "${WORK}/declarative game"
+  WORKING_DIRECTORY "${WORK}/declarative-project" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+  message(FATAL_ERROR "Declarative export failed")
+endif()
+execute_process(COMMAND "${WORK}/declarative game/game" ${args}
+  WORKING_DIRECTORY "${WORK}/elsewhere" RESULT_VARIABLE result OUTPUT_VARIABLE output)
+if(NOT result EQUAL 0 OR NOT output MATCHES "declarative export works")
+  message(FATAL_ERROR "Exported declarative game failed: ${output}")
+endif()
 if(NOT KEEP_EXPORT)
   file(REMOVE_RECURSE "${WORK}")
 endif()
