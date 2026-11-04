@@ -639,3 +639,5 @@ set_tests_properties(lua_declarative_example PROPERTIES TIMEOUT 15 PASS_REGULAR_
 add_test(NAME lua_global_inventory COMMAND ${CMAKE_COMMAND}
   -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/global_inventory.cmake)
 set_tests_properties(lua_global_inventory PROPERTIES TIMEOUT 15)
+add_test(NAME lua_cleanup_order COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/cleanup_order.lua)
+set_tests_properties(lua_cleanup_order PROPERTIES TIMEOUT 15)
