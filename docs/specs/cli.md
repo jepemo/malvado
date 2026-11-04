@@ -15,6 +15,8 @@ malvado gui
 
 `new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` uses it as the working directory, so modules and assets resolve relative to the project. When given a file, paths remain relative to the current working directory. `run --headless [PATH]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
 
+The Lua template returns a game table. The runner also supports `mv.start()`. Exported Lua games load `main.lua` with the same entry rules. See the [Lua process guide](../api/lua-processes.md).
+
 `malvado new --c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS and Linux, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
 
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. Pass a directory to check its Lua files, or a file to check only that file. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. It does not check assets, dependencies, or runtime behavior yet.
@@ -116,7 +118,7 @@ version_code = 1
 orientation = "landscape"
 ```
 
-Window configuration supplies defaults to `mv.start`; explicit options take precedence. Validate entry, relative paths, platform IDs, version, and profiles. Add a lockfile with SDK and tool revisions/hashes when dependency resolution exists. The project schema evolves independently of the runtime version.
+Window configuration supplies defaults to either Lua entry form; script options take precedence. Validate entry, relative paths, platform IDs, version, and profiles. Add a lockfile with SDK and tool revisions/hashes when dependency resolution exists. The project schema evolves independently of the runtime version.
 
 Proposed templates: `starter`, `processes`, and `asteroids`; `android-touch` after mobile validation. Starter needs no downloads or external assets. Other templates include only assets with recorded origin and license. Test templates as real games. Avoid copies of examples that later diverge.
 
