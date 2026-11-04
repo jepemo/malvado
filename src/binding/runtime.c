@@ -814,6 +814,46 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     }
 }
 
+typedef struct {
+    LuaSelf *self;
+    lua_State *thread;
+    int self_ref, thread_ref, draw_ref;
+} SpawnDraft;
+
+/* All Lua allocations for a process happen before the native spawn. */
+static int
+prepare_spawn(lua_State *L)
+{
+    SpawnDraft *draft = lua_touserdata(L, 1);
+    draft->self = lua_newuserdatauv(L, sizeof(*draft->self), 1);
+    *draft->self = (LuaSelf){0};
+    lua_pushvalue(L, 2);
+    lua_setiuservalue(L, -2, 1);
+    luaL_getmetatable(L, "malvado.process");
+    lua_setmetatable(L, -2);
+    draft->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    draft->thread = lua_newthread(L);
+    draft->thread_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    if (!lua_checkstack(draft->thread, 2))
+        return luaL_error(L, "cannot prepare process coroutine");
+    lua_pushvalue(L, 3);
+    lua_xmove(L, draft->thread, 1);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, draft->self_ref);
+    lua_xmove(L, draft->thread, 1);
+    lua_newtable(L);
+    draft->draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    return 0;
+}
+
+static void
+discard_spawn(lua_State *L, SpawnDraft *draft)
+{
+    luaL_unref(L, LUA_REGISTRYINDEX, draft->draw_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, draft->thread_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, draft->self_ref);
+}
+
 static int
 create_process(lua_State *L)
 {
@@ -874,37 +914,15 @@ create_process(lua_State *L)
         (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 60))
         return luaL_error(L, "fps must be an integer in 0..60");
     lua_pop(L, 1);
-    if (engine.next_process_id == LUA_MAXINTEGER)
-        return luaL_error(L, "process ID space exhausted");
-    if (engine.count == engine.capacity) {
-        if (engine.capacity > SIZE_MAX / 2 / sizeof(*engine.items))
-            return luaL_error(L, "too many processes");
-        size_t n = engine.capacity ? engine.capacity * 2 : 16;
-        Process *p = realloc(engine.items, n * sizeof(*p));
-        if (!p)
-            return luaL_error(L, "out of memory creating process");
-        engine.items = p;
-        engine.capacity = n;
-    }
-    LuaProcessHandle *handle = malloc(sizeof(*handle));
-    if (!handle)
-        return luaL_error(L, "out of memory creating process");
-    MvProcessId core_id;
     lua_Integer creator = engine.closing_id ? engine.closing_id : engine.active_id;
-    if (!creator && explicit_attachment && attached) {
-        free(handle);
+    if (!creator && explicit_attachment && attached)
         return luaL_error(L, "cannot attach a process without an owner");
-    }
-    if (engine.closing_id && (!explicit_attachment || attached)) {
-        free(handle);
+    if (engine.closing_id && (!explicit_attachment || attached))
         return luaL_error(L, "a terminating process can only spawn independent processes explicitly");
-    }
     if (creator && !explicit_attachment && !engine.closing_id) {
         Process *owner = find_process(creator);
-        if (!owner) {
-            free(handle);
+        if (!owner)
             return luaL_error(L, "process creator is no longer alive");
-        }
         lua_rawgeti(L, LUA_REGISTRYINDEX, owner->self_ref);
         lua_getiuservalue(L, -1, 1);
         lua_getfield(L, -1, "children_attached");
@@ -912,62 +930,70 @@ create_process(lua_State *L)
         lua_pop(L, 3);
     }
     MvProcessId parent = attached ? (MvProcessId)creator : 0;
+    if (!lua_checkstack(L, 6))
+        return luaL_error(L, "cannot prepare process");
+    SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .draw_ref = LUA_NOREF};
+    lua_pushcfunction(L, prepare_spawn);
+    lua_pushlightuserdata(L, &draft);
+    lua_pushvalue(L, fields);
+    lua_pushvalue(L, lua_upvalueindex(1));
+    if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+        discard_spawn(L, &draft);
+        return lua_error(L);
+    }
+
+    /* Finalizers can create processes during preparation, so check capacity now. */
+    if (engine.count == engine.capacity) {
+        if (engine.capacity > SIZE_MAX / 2 / sizeof(*engine.items)) {
+            discard_spawn(L, &draft);
+            return luaL_error(L, "too many processes");
+        }
+        size_t n = engine.capacity ? engine.capacity * 2 : 16;
+        Process *items = realloc(engine.items, n * sizeof(*items));
+        if (!items) {
+            discard_spawn(L, &draft);
+            return luaL_error(L, "out of memory creating process");
+        }
+        engine.items = items;
+        engine.capacity = n;
+    }
+    MvProcessId next_id;
+    if (mv_process_next_id(engine.context, &next_id) != MV_OK || next_id > LUA_MAXINTEGER) {
+        discard_spawn(L, &draft);
+        return luaL_error(L, "process ID space exhausted");
+    }
+    LuaProcessHandle *handle = malloc(sizeof(*handle));
+    if (!handle) {
+        discard_spawn(L, &draft);
+        return luaL_error(L, "out of memory creating process");
+    }
+    MvProcessId core_id;
     MvResult spawn_result = mv_process_spawn_related(engine.context, (MvProcessId)creator, parent,
                                                      0, lua_process_step, lua_process_destroy,
                                                      handle, &core_id);
     if (spawn_result != MV_OK) {
         free(handle);
+        discard_spawn(L, &draft);
         return luaL_error(L, "failed to create process");
     }
     handle->id = (lua_Integer)core_id;
     (void)mv_process_set_type(engine.context, core_id, (uint64_t)lua_tointeger(L, lua_upvalueindex(2)));
     engine.next_process_id = handle->id;
-    lua_Integer id = handle->id;
-    LuaSelf *self = lua_newuserdatauv(L, sizeof(*self), 1);
-    *self = (LuaSelf){.id = id, .parent = creator};
-    if (mv_process_ref_create(engine.context, core_id, &self->reference) != MV_OK)
-        return luaL_error(L, "failed to create process identity");
-    lua_pushvalue(L, fields);
-    lua_setiuservalue(L, -2, 1);
-    luaL_getmetatable(L, "malvado.process");
-    lua_setmetatable(L, -2);
-    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
-    lua_pushvalue(L, -2);
-    lua_rawseti(L, -2, id);
-    lua_pop(L, 1);
-    int self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_State *co = lua_newthread(L);
-    int thread_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_pushvalue(L, lua_upvalueindex(1));
-    lua_xmove(L, co, 1);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
-    lua_xmove(L, co, 1);
-    lua_newtable(L);
-    int draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    /* Lua allocations may run finalizers that create more processes. */
-    if (engine.count == engine.capacity) {
-        if (engine.capacity > SIZE_MAX / 2 / sizeof(*engine.items))
-            return luaL_error(L, "too many processes");
-        size_t n = engine.capacity ? engine.capacity * 2 : 16;
-        Process *items = realloc(engine.items, n * sizeof(*items));
-        if (!items)
-            return luaL_error(L, "out of memory creating process");
-        engine.items = items;
-        engine.capacity = n;
-    }
+    *draft.self = (LuaSelf){.id = handle->id, .parent = creator,
+                            .reference = {engine.runtime_id, core_id}};
     engine.items[engine.count++] = (Process) {
-        .id = id,
+        .id = handle->id,
         .type_id = lua_tointeger(L, lua_upvalueindex(2)),
-        .thread = co,
-        .thread_ref = thread_ref,
-        .self_ref = self_ref,
-        .draw_ref = draw_ref,
+        .thread = draft.thread,
+        .thread_ref = draft.thread_ref,
+        .self_ref = draft.self_ref,
+        .draw_ref = draft.draw_ref,
         .parent_id = (lua_Integer)parent,
         .state = PROCESS_RUNNING,
         .first = 1,
         .alive = 1
     };
-    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
     return 1;
 }
 
@@ -1016,6 +1042,11 @@ state_name(ProcessState state)
 static void
 push_process_handle(lua_State *L, const MvProcessInfo *info)
 {
+    Process *process = find_process_slot((lua_Integer)info->id);
+    if (process) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+        return;
+    }
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
     lua_rawgeti(L, -1, (lua_Integer)info->id);
     if (!lua_isnil(L, -1)) {
@@ -2644,6 +2675,10 @@ static void
 invalidate_dead_handles(lua_State *L)
 {
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        return;
+    }
     lua_pushnil(L);
     while (lua_next(L, -2)) {
         LuaSelf *self = luaL_testudata(L, -1, "malvado.process");

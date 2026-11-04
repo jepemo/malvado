@@ -113,6 +113,8 @@ Use `self` for your game fields, such as `self.remaining`. These fields are loca
 
 The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. Only `z` and `fps` affect modern process drawing and scheduling automatically. The legacy `frame` also uses the graphic fields described in the [compatibility guide](lua-contract.md#legacy-shim).
 
+A failed spawn leaves no process or scheduler entry from that attempt. It does not change the supplied fields or defaults. Lua prepares the process state before the native spawn. If preparation or native creation fails, it releases the references from that attempt.
+
 The following fields belong to the engine and cannot be assigned. Do not put them in defaults or creation fields; Malvado rejects them before creating the process:
 
 - `self.id`: this process ID.

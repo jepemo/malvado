@@ -30,6 +30,13 @@ static enum Failure failure;
 static int contexts_created, contexts_destroyed, states_created, states_closed;
 static int windows_opened, windows_closed;
 
+MvResult test_process_spawn_related(MvContext *ctx, MvProcessId creator, MvProcessId owner,
+                                    int64_t priority, MvProcessStep step,
+                                    MvProcessDestroy destroy, void *user, MvProcessId *id)
+{
+    return mv_process_spawn_related(ctx, creator, owner, priority, step, destroy, user, id);
+}
+
 MvContext *test_context_create(double rate, unsigned steps)
 {
     if (failure == CONTEXT) return NULL;

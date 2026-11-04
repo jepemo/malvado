@@ -21,6 +21,8 @@ typedef enum {
 } MvEndReason;
 /* A dead process is available until cleanup or through the most recent tick. */
 int mv_process_end_reason(MvContext *ctx, MvProcessId id, MvEndReason *reason);
+/* Read the next ID without reserving it. The caller must not yield before spawn. */
+MvResult mv_process_next_id(MvContext *ctx, MvProcessId *out);
 MvProcesses *mv_processes_create(MvContext *ctx);
 void mv_processes_destroy(MvProcesses *processes);
 int mv_processes_can_destroy(const MvProcesses *processes);

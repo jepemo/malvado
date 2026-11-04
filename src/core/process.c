@@ -104,6 +104,16 @@ mv_context_runtime_id(MvContext *ctx, MvRuntimeId *out)
 }
 
 MvResult
+mv_process_next_id(MvContext *ctx, MvProcessId *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out) return MV_INVALID_ARGUMENT;
+    if (p->next_id == UINT64_MAX) return MV_OVERFLOW;
+    *out = p->next_id + 1;
+    return MV_OK;
+}
+
+MvResult
 mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out)
 {
     MvProcesses *p = mv_context_processes(ctx);

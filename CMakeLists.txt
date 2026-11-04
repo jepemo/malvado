@@ -671,6 +671,7 @@ add_library(start-injection-binding STATIC src/binding/runtime.c src/binding/glo
 target_include_directories(start-injection-binding PRIVATE src)
 target_compile_definitions(start-injection-binding PRIVATE
   mv_context_create=test_context_create mv_context_destroy=test_context_destroy
+  mv_process_spawn_related=test_process_spawn_related
   luaL_newstate=test_lua_newstate luaL_openlibs=test_lua_openlibs lua_close=test_lua_close
   mv_window_open=test_window_open mv_window_close=test_window_close)
 if(MALVADO_BUILD_ASSETS)
@@ -682,6 +683,11 @@ if(MALVADO_BUILD_RAYLIB)
 else()
   target_link_libraries(start-injection-binding PUBLIC malvado_lua malvado_core malvado_platform_headless)
 endif()
+add_executable(spawn-allocation-test tests/spawn_allocation.c)
+target_include_directories(spawn-allocation-test PRIVATE src)
+target_link_libraries(spawn-allocation-test PRIVATE start-injection-binding)
+add_test(NAME lua_spawn_allocation COMMAND spawn-allocation-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/spawn_allocation.lua)
+set_tests_properties(lua_spawn_allocation PROPERTIES TIMEOUT 60)
 add_executable(start-injection-test tests/start_injection.c)
 target_include_directories(start-injection-test PRIVATE src)
 target_link_libraries(start-injection-test PRIVATE start-injection-binding)
