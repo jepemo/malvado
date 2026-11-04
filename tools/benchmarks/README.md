@@ -50,3 +50,5 @@ cmake --build build --target ownership-benchmark
 It creates a chain of 512 owned processes and queries the root's descendants ten times. It reports process CPU time for the queries only. It excludes creation and cleanup. Use the same compiler, build type and machine for comparisons. Repeat runs; this workload does not represent every game.
 
 The current core follows owner links directly. It also follows separate creator links and prunes unused creation nodes. Queries still scan live processes and do not have a type index. Measure a representative game before adding an index; a wide tree or frequent type queries can have different costs from this chain.
+
+On the local macOS development build, two runs of the 512-level, ten-query workload reported 1.656 ms and 1.631 ms of process CPU time. The `c_long_session` test also completes 5,000 rounds and 20,000 processes and resources, with pruning checks. These are implementation checks, not performance limits. They do not measure wide trees or frequent type-filtered queries.
