@@ -64,7 +64,7 @@ malvado run
 
 Edit `main.lua` to change the game. Run `malvado check` to check the syntax of the Lua files without starting the game.
 
-The new Lua project returns a game table. Its `init` function starts the game processes. Set `title`, `width`, and `height` in the table to change the window. For a small example, see the [declarative game](../../examples/declarative/README.md). You can also use `mv.start()` in an entry script. Use one entry form per run.
+The new Lua project returns a game table. Its `init` function starts the game processes. Set `title`, `width`, and `height` in the table to change the window. For a small example, see the [declarative game](https://github.com/jepemo/malvado/tree/master/examples/declarative). You can also use `mv.start()` in an entry script. Use one entry form per run.
 
 To create a C game, use `malvado new --c my-c-game`. Run it with `malvado run` from the new directory. C projects need CMake and a C compiler. Use `malvado build` to build without starting the game.
 
