@@ -2757,6 +2757,40 @@ render(void)
     mv_window_end();
 }
 
+static void
+validate_start_options(lua_State *L, int index, int allow_init)
+{
+    if (lua_getmetatable(L, index))
+        luaL_error(L, "game table must not have a metatable");
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        if (lua_type(L, -2) != LUA_TSTRING)
+            luaL_error(L, "game option names must be strings");
+        size_t length;
+        const char *key = lua_tolstring(L, -2, &length);
+        if (strlen(key) != length)
+            luaL_error(L, "invalid game option name");
+        if (strcmp(key, "width") == 0 || strcmp(key, "height") == 0) {
+            if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) <= 0 ||
+                lua_tointeger(L, -1) > INT_MAX)
+                luaL_error(L, "invalid game dimension: %s", key);
+        } else if (strcmp(key, "title") == 0) {
+            size_t title_length;
+            if (lua_type(L, -1) != LUA_TSTRING)
+                luaL_error(L, "game title must be a string");
+            const char *title = lua_tolstring(L, -1, &title_length);
+            if (strlen(title) != title_length)
+                luaL_error(L, "game title contains a zero byte");
+        } else if (allow_init && strcmp(key, "init") == 0) {
+            if (!lua_isfunction(L, -1))
+                luaL_error(L, "game init must be a function");
+        } else {
+            luaL_error(L, "unknown game option: %s", key);
+        }
+        lua_pop(L, 1);
+    }
+}
+
 static int
 start(lua_State *L)
 {
@@ -2765,6 +2799,8 @@ start(lua_State *L)
         return luaL_error(L, "start() can only be called once");
     if (!lua_isnoneornil(L, 2))
         luaL_checktype(L, 2, LUA_TTABLE);
+    if (lua_istable(L, 2))
+        validate_start_options(L, 2, 0);
     lua_Integer w = 800, h = 600;
     const char *title = "Malvado";
     if (lua_istable(L, 2)) {
@@ -2851,35 +2887,7 @@ start_declared_game(lua_State *L)
 {
     if (engine.started)
         return luaL_error(L, "game table returned after start()");
-    if (lua_getmetatable(L, 1))
-        return luaL_error(L, "game table must not have a metatable");
-    lua_pushnil(L);
-    while (lua_next(L, 1)) {
-        if (lua_type(L, -2) != LUA_TSTRING)
-            return luaL_error(L, "game option names must be strings");
-        size_t length;
-        const char *key = lua_tolstring(L, -2, &length);
-        if (strlen(key) != length)
-            return luaL_error(L, "invalid game option name");
-        if (strcmp(key, "width") == 0 || strcmp(key, "height") == 0) {
-            if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) <= 0 ||
-                lua_tointeger(L, -1) > INT_MAX)
-                return luaL_error(L, "invalid game dimension: %s", key);
-        } else if (strcmp(key, "title") == 0) {
-            size_t title_length;
-            if (lua_type(L, -1) != LUA_TSTRING)
-                return luaL_error(L, "game title must be a string");
-            const char *title = lua_tolstring(L, -1, &title_length);
-            if (strlen(title) != title_length)
-                return luaL_error(L, "game title contains a zero byte");
-        } else if (strcmp(key, "init") == 0) {
-            if (!lua_isfunction(L, -1))
-                return luaL_error(L, "game init must be a function");
-        } else {
-            return luaL_error(L, "unknown game option: %s", key);
-        }
-        lua_pop(L, 1);
-    }
+    validate_start_options(L, 1, 1);
     lua_pushcfunction(L, start);
     lua_pushliteral(L, "init");
     lua_rawget(L, 1);
@@ -2887,7 +2895,13 @@ start_declared_game(lua_State *L)
         lua_pop(L, 1);
         lua_pushcfunction(L, empty_initializer);
     }
-    lua_pushvalue(L, 1);
+    lua_newtable(L);
+    const char *options[] = {"width", "height", "title"};
+    for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
+        lua_pushstring(L, options[i]);
+        lua_rawget(L, 1);
+        lua_setfield(L, -2, options[i]);
+    }
     lua_call(L, 2, 0);
     return 0;
 }
