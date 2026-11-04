@@ -22,6 +22,23 @@ extern "C" {
 
 typedef struct { double x, y, width, height; } MvRect;
 
+/* Local geometry is centered at (offset_x, offset_y). Rectangles use width
+ * and height; circles use radius. The transform scales and rotates the offset
+ * around the origin before translating it into world space. */
+typedef enum { MV_COLLISION_CIRCLE, MV_COLLISION_RECT } MvCollisionKind;
+typedef struct {
+    MvCollisionKind kind;
+    double width, height, radius;
+    double offset_x, offset_y;
+} MvCollisionShape;
+typedef struct { double x, y, angle, scale; } MvCollisionTransform;
+
+/* Return 1 for overlap, 0 for separation or tangency, and -1 for invalid
+ * geometry or transform. World centers and bounding half-extents must not exceed
+ * DBL_MAX / 16 in magnitude. Rotation is clockwise in screen space. */
+int mv_collision_overlap(MvCollisionShape a, MvCollisionTransform transform_a,
+                         MvCollisionShape b, MvCollisionTransform transform_b);
+
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);
 int mv_rect_contains(MvRect rect, double x, double y);

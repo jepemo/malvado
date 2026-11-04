@@ -32,5 +32,23 @@ main(void)
     assert(mv_rect_overlaps(a, (MvRect){0, 0, 0, 1}) == -1);
     assert(mv_rect_overlaps(a, (MvRect){DBL_MAX, 0, DBL_MAX, 1}) == -1);
     assert(mv_rect_overlaps(a, (MvRect){DBL_MAX, 0, 1, 1}) == -1);
+    MvCollisionShape circle = {.kind = MV_COLLISION_CIRCLE, .radius = 1};
+    MvCollisionShape rect = {.kind = MV_COLLISION_RECT, .width = 4, .height = 2};
+    MvCollisionTransform origin = {0, 0, 0, 1};
+    assert(mv_collision_overlap(circle, origin, circle, (MvCollisionTransform){1, 0, 0, 1}) == 1);
+    assert(mv_collision_overlap(circle, origin, circle, (MvCollisionTransform){2, 0, 0, 1}) == 0);
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){2.5, 0, 0, 1}, rect, origin) == 1);
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){3, 0, 0, 1}, rect, origin) == 0);
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){2.8, 1.8, 0, 1}, rect, origin) == 0);
+    assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){3, 0, 0, 1}) == 1);
+    assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){3, 0, 90, 1}) == 0);
+    assert(mv_collision_overlap(rect, origin, rect, (MvCollisionTransform){2.5, 0, 90, 1}) == 1);
+    circle.offset_x = 2;
+    assert(mv_collision_overlap(circle, (MvCollisionTransform){0, 0, 90, 1},
+                                circle, (MvCollisionTransform){0, 4, -90, 1}) == 1);
+    circle.offset_x = 0;
+    assert(mv_collision_overlap(circle, origin, circle, (MvCollisionTransform){2.5, 0, 0, 2}) == 1);
+    assert(mv_collision_overlap(circle, origin, rect, (MvCollisionTransform){0, 0, NAN, 1}) == -1);
+    assert(mv_collision_overlap(circle, origin, rect, (MvCollisionTransform){0, 0, 0, 0}) == -1);
     return 0;
 }
