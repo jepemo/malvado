@@ -13,6 +13,7 @@
  * See LICENSE for details.
  */
 #include "process.h"
+#include "malvado/collision.h"
 #include "entropy.h"
 #include "schedule.h"
 #include <stdint.h>
@@ -42,6 +43,9 @@ typedef struct {
     MvProcessDestroy destroy;
     void *user;
     int killed, attached;
+    int has_collider;
+    MvCollisionShape collider;
+    MvCollisionTransform collider_transform;
     MvEndReason reason;
     MessageNode *head, *tail;
     size_t messages;
@@ -156,6 +160,95 @@ static Process *find(MvProcesses *p, MvProcessId id, int include_killed)
         if (p->items[i].id == id && (include_killed || !p->items[i].killed))
             return &p->items[i];
     return NULL;
+}
+
+static MvResult
+collider_process(MvContext *ctx, MvProcessRef reference, Process **out)
+{
+    MvProcessId id;
+    MvResult result = mv_process_ref_resolve(ctx, reference, &id);
+    if (result != MV_OK)
+        return result;
+    Process *item = find(mv_context_processes(ctx), id, 0);
+    if (!item)
+        return MV_NOT_FOUND;
+    *out = item;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_set(MvContext *ctx, MvProcessRef reference,
+                        MvCollisionShape shape, MvCollisionTransform transform)
+{
+    Process *item;
+    MvResult result = collider_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    if (mv_collision_overlap(shape, transform, shape, transform) < 0)
+        return MV_INVALID_ARGUMENT;
+    item->collider = shape;
+    item->collider_transform = transform;
+    item->has_collider = 1;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_clear(MvContext *ctx, MvProcessRef reference)
+{
+    Process *item;
+    MvResult result = collider_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->has_collider = 0;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *overlap)
+{
+    if (!overlap)
+        return MV_INVALID_ARGUMENT;
+    Process *first, *second;
+    MvResult result = collider_process(ctx, a, &first);
+    if (result != MV_OK)
+        return result;
+    result = collider_process(ctx, b, &second);
+    if (result != MV_OK)
+        return result;
+    *overlap = first != second && first->has_collider && second->has_collider &&
+        mv_collision_overlap(first->collider, first->collider_transform,
+                             second->collider, second->collider_transform) == 1;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
+                         MvProcessRef *out, size_t capacity, size_t *total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !total || (capacity && !out))
+        return MV_INVALID_ARGUMENT;
+    Process *origin;
+    MvResult result = collider_process(ctx, source, &origin);
+    if (result != MV_OK)
+        return result;
+    size_t count = 0;
+    if (origin->has_collider) {
+        for (size_t i = 0; i < p->count; ++i) {
+            Process *item = &p->items[i];
+            if (!item->id || item->killed || item == origin || !item->has_collider ||
+                (type && item->type != type))
+                continue;
+            if (mv_collision_overlap(origin->collider, origin->collider_transform,
+                                     item->collider, item->collider_transform) != 1)
+                continue;
+            if (count < capacity)
+                out[count] = (MvProcessRef){p->runtime_id, item->id};
+            ++count;
+        }
+    }
+    *total = count;
+    return MV_OK;
 }
 
 static void

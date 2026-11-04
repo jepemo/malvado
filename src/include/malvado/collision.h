@@ -17,6 +17,7 @@
 #define MALVADO_COLLISION_H
 
 #include <stddef.h>
+#include "malvado/malvado.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,21 @@ typedef struct { double x, y, angle, scale; } MvCollisionTransform;
  * DBL_MAX / 16 in magnitude. Rotation is clockwise in screen space. */
 int mv_collision_overlap(MvCollisionShape a, MvCollisionTransform transform_a,
                          MvCollisionShape b, MvCollisionTransform transform_b);
+
+/* Process colliders are copied into the context and removed with the process.
+ * Set again after changing a process transform. Clear is idempotent. Dead or
+ * foreign references return an error. These functions do not allocate. */
+MvResult mv_process_collider_set(MvContext *ctx, MvProcessRef process,
+                                 MvCollisionShape shape, MvCollisionTransform transform);
+MvResult mv_process_collider_clear(MvContext *ctx, MvProcessRef process);
+/* Compare two live processes; self-comparison and missing colliders return 0.
+ * On error, the output is unchanged. */
+MvResult mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *overlap);
+/* Copy up to capacity colliding process references in creation order. Type 0
+ * selects all types. total receives the full count. A missing source collider
+ * returns no results. Sleeping and frozen processes are included. */
+MvResult mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
+                                 MvProcessRef *out, size_t capacity, size_t *total);
 
 /* A world owns its rectangles. IDs are one-based and follow insertion order.
  * Create returns NULL on allocation failure; destroy accepts NULL. */

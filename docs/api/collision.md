@@ -138,10 +138,10 @@ local hit = world:overlap(mv.collision.circle(8), {x = 96, y = 40})
 first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
 `angle`, and `size`, including the collider offset. A `false` collider disables
 participation. A process with neither a collider nor a graph returns `nil`.
-When `collider` is `nil`, a supported `graphics.circle` or `graphics.rect`
-graph supplies its shape and pivot. A graph of another type without an explicit
-collider raises an error; automatic image and atlas colliders are not yet
-supported. Invalid, foreign, or dead handles and
+When `collider` is `nil`, a supported graphic or image supplies its shape and
+pivot. Direct images use their full bounds and a top-left pivot. An atlas sprite
+descriptor uses its region and metadata pivot. A graph of another type without
+an explicit collider raises an error. Invalid, foreign, or dead handles and
 invalid transforms raise an error. Sleeping and frozen processes participate.
 
 The optional `position` table can replace `x`, `y`, or both for one query; it
@@ -184,7 +184,7 @@ local allowed_x = 200 * result.fraction
 then updates `x` and `y` by the permitted displacement. It returns a table with
 `hit`, `moved_x`, `moved_y`, `normal_x`, `normal_y`, and an obstacle `id` on
 impact. A disabled collider or a process without a collider or graphic moves
-freely. A supported geometric graphic supplies a collider when no explicit collider is
+freely. A supported graphic or image supplies a collider when no explicit collider is
 set. Other graphic types require an explicit collider. The operation does not slide.
 An invalid process or transform, initial overlap, or a sweep outside the
 numeric limits raises an error. A process that starts inside an obstacle must be
@@ -200,4 +200,40 @@ error. Lua reports the actual displacement after this adjustment.
 ```lua
 local result = world:move(player, 4, 0)
 if result.hit then print("Wall", result.id) end
+```
+
+
+## Process colliders in C
+
+Include `malvado/collision.h` and use a live `MvProcessRef` from the same
+context. `mv_process_collider_set(ctx, ref, shape, transform)` copies the
+shape and transform into that process. Call it again when the C process moves
+or changes its collider. `mv_process_collider_clear(ctx, ref)` disables the
+collider and is safe to repeat. Invalid geometry returns `MV_INVALID_ARGUMENT`
+without changing the old collider. A dead process returns `MV_NOT_FOUND`; a
+foreign reference returns `MV_INVALID_ARGUMENT`. Process termination removes
+the collider with the process. No function in this group allocates.
+
+`mv_process_collider_test(ctx, a, b, &hit)` compares two live processes and
+writes 1 or 0. A process does not collide with itself; a missing collider gives
+0. `mv_process_collider_find(ctx, source, type, buffer, capacity, &total)`
+copies matching references in creation order, excluding the source. Type 0
+selects all types. It writes the total even when the buffer is too small and
+accepts a null buffer when capacity is zero. Both include sleeping and frozen
+processes and exclude dead processes. A bad argument or dead source returns an
+error without changing the outputs. The initial implementation scans the
+process list and applies bounding-box rejection before the narrow phase; a
+measured process broad phase remains open. Lua process-to-process queries do
+not yet use this C registry.
+
+```c
+MvCollisionShape circle = {.kind = MV_COLLISION_CIRCLE, .radius = 10};
+MvCollisionTransform transform = {100, 100, 0, 1};
+if (mv_process_collider_set(ctx, player, circle, transform) == MV_OK) {
+    MvProcessRef hits[8];
+    size_t count;
+    if (mv_process_collider_find(ctx, player, 0, hits, 8, &count) == MV_OK) {
+        /* The first min(count, 8) entries contain process references. */
+    }
+}
 ```

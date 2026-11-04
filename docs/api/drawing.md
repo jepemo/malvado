@@ -67,8 +67,9 @@ before that process's immediate draw commands. Sleeping processes are hidden;
 frozen processes remain visible. `graph = nil` removes the graphic.
 Invalid or out-of-range transform values, non-positive size, or scaled dimensions
 outside `FLT_MIN..FLT_MAX / 16` skip the graph for that frame. Process field
-assignments otherwise keep their existing rules. Values other than supported graphic descriptors are ignored by automatic drawing.
-Image and atlas graphics are not supported by this mechanism yet.
+assignments otherwise keep their existing rules. Values other than supported graphics or images are ignored by automatic drawing.
+See [images](images.md#use-images-and-atlas-sprites-as-process-graphics) for
+image and atlas sprite graphics.
 
 Without an explicit collider, a supported graphic also supplies its collision
 shape, using the same pivot and transform. See [collision](collision.md).

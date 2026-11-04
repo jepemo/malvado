@@ -63,6 +63,7 @@ typedef struct {
     lua_Integer last_activation_tick;
     double delta;
     int first;
+    int legacy_frame;
     int alive;
 } Process;
 typedef struct {
@@ -98,7 +99,13 @@ static void lua_process_destroy(void *user);
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason; MvProcessRef reference; } LuaSelf;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
-typedef struct { MvCollisionShape shape; MvColor color; int top_left; } LuaGraphic;
+typedef struct {
+    MvCollisionShape shape;
+    MvColor color;
+    int top_left, sprite;
+    MvImageRegion region;
+    int pivot_x, pivot_y;
+} LuaGraphic;
 typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
 typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
 typedef struct { MvFont *font; MvResource *resource; } LuaFont;
@@ -791,7 +798,8 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     int type = lua_type(L, source);
     if (type == LUA_TUSERDATA &&
         (luaL_testudata(L, source, "malvado.collision_shape") ||
-         luaL_testudata(L, source, "malvado.graphic"))) {
+         luaL_testudata(L, source, "malvado.graphic") ||
+         luaL_testudata(L, source, "malvado.image"))) {
         lua_pushvalue(L, source);
         return;
     }
@@ -2103,6 +2111,7 @@ legacy_frame(lua_State *L)
     Process *process = find_process(engine.active_id);
     if (!process)
         return luaL_error(L, "frame() must be called inside a live process");
+    process->legacy_frame = 1;
     int self_ref = process->self_ref;
     lua_settop(L, 0);
     lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
@@ -2608,6 +2617,7 @@ lua_process_step_protected(lua_State *L)
     process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
     process->last_activation_tick = engine.tick_number;
     process->first = 0;
+    process->legacy_frame = 0;
     lua_newtable(L);
     lua_rawseti(L, LUA_REGISTRYINDEX, draw_ref);
     engine.active = 1;
@@ -2801,12 +2811,29 @@ render_graph(lua_State *L, const Process *process)
     int fields = lua_gettop(L);
     raw_option(L, fields, "graph");
     LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
+    LuaImage *image = luaL_testudata(L, -1, "malvado.image");
     double x, y, angle, scale;
-    if (graphic && render_number(L, fields, "x", 0, &x) &&
+    if ((graphic || (image && !process->legacy_frame && !process->first)) &&
+        render_number(L, fields, "x", 0, &x) &&
         render_number(L, fields, "y", 0, &y) &&
         render_number(L, fields, "angle", 0, &angle) &&
         render_number(L, fields, "size", 1, &scale) && scale > 0) {
-        if (graphic->shape.kind == MV_COLLISION_CIRCLE) {
+        if (image) {
+            MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
+            MvImageTransform transform = {(float)x, (float)y, 0, 0, (float)scale, (float)angle};
+            (void)mv_image_draw_region(image->image, region, transform);
+        } else if (graphic->sprite) {
+            int graph_index = lua_gettop(L);
+            lua_getiuservalue(L, graph_index, 1);
+            lua_getiuservalue(L, -1, 1);
+            LuaImage *sprite_image = luaL_testudata(L, -1, "malvado.image");
+            if (sprite_image) {
+                MvImageTransform transform = {(float)x, (float)y, (float)graphic->pivot_x,
+                                               (float)graphic->pivot_y, (float)scale, (float)angle};
+                (void)mv_image_draw_region(sprite_image->image, graphic->region, transform);
+            }
+            lua_pop(L, 2);
+        } else if (graphic->shape.kind == MV_COLLISION_CIRCLE) {
             double radius = graphic->shape.radius * scale;
             if (isfinite(radius) && radius >= FLT_MIN && radius <= FLT_MAX / 16)
                 (void)mv_window_draw_filled_circle((float)x, (float)y, (float)radius, graphic->color);
@@ -3468,9 +3495,18 @@ process_collider(lua_State *L, int fields, MvCollisionShape *shape)
             return 0;
         }
         LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
-        if (!graphic)
-            luaL_error(L, "unsupported graphic for automatic collider");
-        *shape = graphic->shape;
+        LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+        if (graphic) {
+            *shape = graphic->shape;
+        } else if (image && image->image) {
+            int width = mv_image_width(image->image), height = mv_image_height(image->image);
+            if (width <= 0 || height <= 0)
+                return luaL_error(L, "invalid image for automatic collider");
+            *shape = (MvCollisionShape){.kind = MV_COLLISION_RECT,
+                .width = width, .height = height, .offset_x = width / 2.0, .offset_y = height / 2.0};
+        } else {
+            return luaL_error(L, "unsupported graphic for automatic collider");
+        }
     } else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) {
         lua_pop(L, 1);
         return 0;
@@ -3673,6 +3709,30 @@ graphic_create(lua_State *L)
     return 1;
 }
 
+#ifdef MALVADO_BUILD_ASSETS
+static int
+graphic_sprite(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    MvAtlasSprite sprite;
+    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
+        return luaL_error(L, "unknown sprite id");
+    LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 1);
+    *graphic = (LuaGraphic){
+        .shape = {.kind = MV_COLLISION_RECT, .width = sprite.region.width,
+                  .height = sprite.region.height,
+                  .offset_x = sprite.region.width / 2.0 - sprite.pivot_x,
+                  .offset_y = sprite.region.height / 2.0 - sprite.pivot_y},
+        .sprite = 1, .region = sprite.region, .pivot_x = sprite.pivot_x, .pivot_y = sprite.pivot_y
+    };
+    luaL_setmetatable(L, "malvado.graphic");
+    lua_pushvalue(L, 1);
+    lua_setiuservalue(L, -2, 1);
+    return 1;
+}
+#endif
+
 static int
 open_module(lua_State *L)
 {
@@ -3854,6 +3914,10 @@ open_module(lua_State *L)
     lua_pushinteger(L, MV_COLLISION_RECT);
     lua_pushcclosure(L, graphic_create, 1);
     lua_setfield(L, -2, "rect");
+#ifdef MALVADO_BUILD_ASSETS
+    lua_pushcfunction(L, graphic_sprite);
+    lua_setfield(L, -2, "sprite");
+#endif
     lua_setfield(L, -2, "graphics");
     lua_newtable(L);
     lua_pushcfunction(L, world_create);

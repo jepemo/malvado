@@ -105,13 +105,13 @@ end, {defaults = {health = 100, stats = {attack = 10}}})
 Enemy {health = 250}
 ```
 
-The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables, userdata, and threads are rejected. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
+The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables and threads are rejected. Collision shapes, graphic descriptors, and image userdata are shared; other userdata are rejected. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
 
 ## Process data
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.
 
-The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. Only `z` and `fps` affect modern process drawing and scheduling automatically. The legacy `frame` also uses the graphic fields described in the [compatibility guide](lua-contract.md#legacy-shim).
+The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. `x`, `y`, `angle`, `size`, and `z` control automatic process graphics; `fps` controls cadence. The legacy `frame` also uses the graphic fields described in the [compatibility guide](lua-contract.md#legacy-shim).
 
 A failed spawn leaves no process or scheduler entry from that attempt. It does not change the supplied fields or defaults. Lua prepares the process state before the native spawn. If preparation or native creation fails, it releases the references from that attempt.
 
@@ -162,4 +162,4 @@ to draw it at the process position. When `self.collider` is `nil`, the graphic
 also provides a collision shape. Set an explicit collider to override it, or
 set `false` to disable collision. See [drawing](drawing.md#process-graphics)
 and [collision](collision.md#process-queries-in-lua) for transforms, lifetime,
-and error behavior. Automatic image and atlas colliders remain pending.
+and error behavior. Images and atlas sprite descriptors can also provide automatic colliders.

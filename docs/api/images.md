@@ -115,3 +115,33 @@ Schema 2 requires at least one animation. Names must be unique. Each animation n
 Use `mv.animation_frame(atlas, "flash", elapsed_ms, loop)` to find the current sprite ID, then pass it to `mv.draw_sprite`. The elapsed time is a non-negative integer. `loop` defaults to `true`. If it is `false`, the last frame remains selected after the animation ends. A missing name or invalid argument raises an error. The caller controls time and playback state.
 
 In C, `mv_atlas_animation_frame(atlas, name, elapsed_ms, loop, &id)` returns 1 on success. It returns 0 without changing `id` for an invalid argument or unknown animation. `loop` is 0 or 1. The atlas owns the sequence data.
+
+
+## Use images and atlas sprites as process graphics
+
+An image returned by `load_image` can be assigned directly to `self.graph`.
+Its position is the top-left corner, as with `draw_image`. Automatic image
+drawing starts after the process first activates. The process's `x`,
+`y`, `angle`, and `size` transform the image, and its full dimensions provide
+the default rectangular collider. Process defaults may share an image. The
+process holds the image alive while its `graph` refers to it. Images still
+require an open window and cannot be loaded in headless mode.
+
+For an atlas sprite, create a fixed descriptor with
+`mv.graphics.sprite(atlas, id)` and assign it to `self.graph`. It uses the
+sprite's region and metadata pivot for drawing and its rectangular collider.
+It keeps the atlas and its image alive. An unknown ID raises an error. The
+function is available when atlas support is built. A whole atlas is not a graph.
+For animation, call `animation_frame` and replace `self.graph` with a
+descriptor for the selected ID; the descriptor does not advance on its own.
+Pixel-perfect collision is not supported.
+
+```lua
+local sprite = mv.graphics.sprite(atlas, 42)
+local Actor = mv.process(function(self)
+    while true do mv.frame() end
+end, {defaults = {graph = sprite}})
+```
+
+The legacy `frame()` draws its own image graph with its historical centered
+pivot. That command is not drawn again by the automatic image graph path.
