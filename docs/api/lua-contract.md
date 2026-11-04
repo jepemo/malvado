@@ -25,7 +25,7 @@
 | `mv.time_seconds()` → number | Monotonic clock seconds with an unspecified origin; subtract two readings to measure elapsed time | C |
 | `mv.exit(code?)` | Request orderly shutdown, default code 0; end the current process in a controlled way | C |
 
-`options` can specify `width`, `height`, and `title`. Defaults are 800×600 and Malvado. The current logical tick rate is 60 Hz.
+`options` can specify `width`, `height`, and `title`. Defaults are 800×600 and Malvado. An entry script can also return a game table with these options and an optional `init` function. See the [declarative game example](../../examples/declarative/README.md) and the [startup rules](lua-processes.md). The current logical tick rate is 60 Hz.
 
 Current process fields include read-only `id` and `delta`, `x/y/z=0`, `angle=0` in degrees, `size=1`, and `fps=0` (each tick), plus user fields. `delta` is logical seconds between activations and is 0 on the first activation; it includes ticks spent sleeping or frozen. The historical engine used the latest render-frame duration for processes with a nonzero `fps`, so code that relies on that behavior can move differently. Before P3, define any remaining `file/fpg/fpgIndex`, dimension, and anchor behavior. Do not assign Bennu semantics automatically.
 

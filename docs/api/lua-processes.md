@@ -30,6 +30,11 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 `mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
+You can also return a game table from the entry script. Set `width`, `height`, and `title` in the table. Add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. The same defaults apply. See the [declarative game example](../../examples/declarative/README.md).
+
+The table can contain only those options and `init`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
+
+
 Omit `options` or pass a table. Other values, including the historical debug boolean, raise an error. Invalid options do not start the game; correct them before trying again.
 
 Call `mv.set_title(title)` after the window opens to change its title. It reports an error without a window or if the title contains a zero byte. In C, `mv_window_set_title(title)` returns 1 on success, or 0 for a null title or no window.

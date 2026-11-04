@@ -631,3 +631,5 @@ set_tests_properties(lua_start_cleanup PROPERTIES TIMEOUT 15)
 add_test(NAME lua_start_failure_cleanup COMMAND ${CMAKE_COMMAND}
   -DPROGRAM=$<TARGET_FILE:malvado-run> -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_failure_cleanup.cmake)
 set_tests_properties(lua_start_failure_cleanup PROPERTIES TIMEOUT 15)
+add_test(NAME lua_declarative_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/examples/declarative/main.lua)
+set_tests_properties(lua_declarative_example PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Hello from a process")
