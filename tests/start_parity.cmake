@@ -9,9 +9,13 @@ local task = mv.process(function()
   mv.frame()
   print("tick 2")
 end)
+local other = mv.process(function()
+  print("other")
+end)
 local function init()
   print("init")
   task()
+  other()
 end
 ]=])
 file(WRITE "${prefix}_explicit.lua" "${common}\nmv.start(init)\n")
@@ -23,7 +27,7 @@ foreach(style explicit declared)
 endforeach()
 if(NOT status_explicit EQUAL 0 OR NOT status_declared EQUAL 0 OR
    NOT output_explicit STREQUAL output_declared OR
-   NOT output_explicit STREQUAL "init\ntick 1\ntick 2\n")
+   NOT output_explicit STREQUAL "init\ntick 1\nother\ntick 2\n")
   message(FATAL_ERROR "Entry styles differ: ${status_explicit} ${output_explicit} ${error_explicit}; ${status_declared} ${output_declared} ${error_declared}")
 endif()
 
