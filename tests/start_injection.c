@@ -20,11 +20,12 @@
 #include <assert.h>
 #include "lua.h"
 #include "lauxlib.h"
+#include "lualib.h"
 #include "malvado/malvado.h"
 #include "malvado/platform.h"
 #include "runner/runtime.h"
 
-enum Failure { NONE, CONTEXT, LUA_STATE, WINDOW };
+enum Failure { NONE, CONTEXT, LUA_STATE, BOOTSTRAP, WINDOW };
 static enum Failure failure;
 static int contexts_created, contexts_destroyed, states_created, states_closed;
 static int windows_opened, windows_closed;
@@ -51,6 +52,15 @@ lua_State *test_lua_newstate(void)
     return L;
 }
 
+void test_lua_openlibs(lua_State *L)
+{
+    if (failure == BOOTSTRAP) {
+        luaL_error(L, "injected bootstrap failure");
+        return;
+    }
+    luaL_openlibs(L);
+}
+
 void test_lua_close(lua_State *L)
 {
     if (L) states_closed++;
@@ -73,7 +83,7 @@ void test_window_close(void)
 
 int main(int argc, char **argv)
 {
-    assert(argc == 2);
+    assert(argc == 3);
     char *headless[] = {"malvado-run", "--headless", argv[1]};
     char *windowed[] = {"malvado-run", argv[1]};
     for (int i = CONTEXT; i <= WINDOW; i++) {
@@ -82,7 +92,7 @@ int main(int argc, char **argv)
         failure = (enum Failure)i;
         assert(malvado_run(i == WINDOW ? 2 : 3, i == WINDOW ? windowed : headless) == 1);
         assert(contexts_created == (i == CONTEXT ? 0 : 1));
-        assert(states_created == (i == WINDOW ? 1 : 0));
+        assert(states_created == (i >= BOOTSTRAP ? 1 : 0));
         assert(contexts_created == contexts_destroyed);
         assert(states_created == states_closed);
         assert(windows_opened == 0 && windows_closed == 0);
@@ -92,5 +102,12 @@ int main(int argc, char **argv)
         assert(contexts_created == contexts_destroyed);
         assert(states_created == states_closed);
     }
+    char *caught[] = {"malvado-run", argv[2]};
+    failure = WINDOW;
+    assert(malvado_run(2, caught) == 1);
+    assert(contexts_created == contexts_destroyed && states_created == states_closed);
+    failure = NONE;
+    assert(malvado_run(3, headless) == 0);
+    assert(contexts_created == contexts_destroyed && states_created == states_closed);
     return 0;
 }

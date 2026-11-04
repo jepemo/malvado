@@ -1,0 +1,11 @@
+# Lua runner startup and shutdown
+
+`malvado_run(argc, argv)` accepts one entry script and an optional `--headless` flag. The command-line runner and the packaged Lua launcher use this function. A C host can call it again after it returns. It must not call it while another runner is active. The function uses the runner thread and does not change its signature or transfer ownership of the argument strings.
+
+The runner returns `0` when the script and any game run complete without a recorded failure. It returns `1` for context or Lua state creation failure, Lua initialization failure, an uncaught script or configuration error, window creation failure, initializer failure, process failure, or a reported process close failure. It returns `2` for invalid runner arguments or a nested runner call. Both headless and windowed runs use these status rules. Headless runs do not open a window.
+
+The runner reports uncaught Lua errors and initialization failures on standard error. A non-string error is reported as `non-string error`. API argument and configuration errors are Lua errors; a script can catch them and retry before startup. A failure to open the window, an initializer failure, a process error, or a process close error records a failed run even if game code catches the Lua error. Game code that catches an error is responsible for reporting it. Lua finalizer errors follow Lua's finalizer behavior; they are not a replacement for a process close error.
+
+The runner creates a context, then a Lua state. It prepares Lua libraries and Malvado modules in a protected call before it loads the entry script. If a step fails, it does not run later startup steps. When startup or execution ends, it destroys the context, cleans the remaining binding processes, closes Lua, and closes any opened audio device and window. Each acquired object is released once. Context-owned resource references are released during context destruction; explicit retained references can outlive it. A later run starts with a new context and Lua state.
+
+The [Lua process guide](lua-processes.md) describes the two entry forms. `lua_start_injection`, `lua_start_failure_cleanup`, `lua_start_cleanup`, `lua_start_parity`, and the close-failure tests check the failure and cleanup paths. The graphics build runs the startup injection test too.

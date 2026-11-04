@@ -643,7 +643,7 @@ add_library(start-injection-binding STATIC src/binding/runtime.c src/binding/glo
 target_include_directories(start-injection-binding PRIVATE src)
 target_compile_definitions(start-injection-binding PRIVATE
   mv_context_create=test_context_create mv_context_destroy=test_context_destroy
-  luaL_newstate=test_lua_newstate lua_close=test_lua_close
+  luaL_newstate=test_lua_newstate luaL_openlibs=test_lua_openlibs lua_close=test_lua_close
   mv_window_open=test_window_open mv_window_close=test_window_close)
 if(MALVADO_BUILD_ASSETS)
   target_compile_definitions(start-injection-binding PRIVATE MALVADO_BUILD_ASSETS)
@@ -657,7 +657,8 @@ endif()
 add_executable(start-injection-test tests/start_injection.c)
 target_include_directories(start-injection-test PRIVATE src)
 target_link_libraries(start-injection-test PRIVATE start-injection-binding)
-add_test(NAME lua_start_injection COMMAND start-injection-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_injection.lua)
+add_test(NAME lua_start_injection COMMAND start-injection-test
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_injection.lua ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_window_caught.lua)
 set_tests_properties(lua_start_injection PROPERTIES TIMEOUT 15)
 
 endif() # MALVADO_BUILD_LUA

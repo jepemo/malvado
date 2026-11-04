@@ -2820,8 +2820,10 @@ start(lua_State *L)
     engine.width = w;
     engine.height = h;
     if (!engine.headless) {
-        if (!mv_window_open(w, h, title))
+        if (!mv_window_open(w, h, title)) {
+            engine.failed = 1;
             return luaL_error(L, "could not open window");
+        }
         engine.window = 1;
     }
     lua_pushvalue(L, 1);
@@ -3430,6 +3432,18 @@ protect_process_coroutines(lua_State *L)
     lua_pop(L, 1);
 }
 
+static int
+initialize_lua(lua_State *L)
+{
+    luaL_openlibs(L);
+    protect_process_coroutines(L);
+    luaL_requiref(L, "malvado", open_module, 0);
+    lua_pop(L, 1);
+    luaL_requiref(L, "malvado.compat.legacy", open_legacy_module, 0);
+    lua_pop(L, 1);
+    return 0;
+}
+
 int
 malvado_run(int argc, char **argv)
 {
@@ -3461,13 +3475,13 @@ malvado_run(int argc, char **argv)
         engine.context = NULL;
         return 1;
     }
-    luaL_openlibs(engine.L);
-    protect_process_coroutines(engine.L);
-    luaL_requiref(engine.L, "malvado", open_module, 0);
-    lua_pop(engine.L, 1);
-    luaL_requiref(engine.L, "malvado.compat.legacy", open_legacy_module, 0);
-    lua_pop(engine.L, 1);
-    if (luaL_loadfile(engine.L, argv[index]) != LUA_OK || lua_pcall(engine.L, 0, 1, 0) != LUA_OK) {
+    lua_pushcfunction(engine.L, initialize_lua);
+    int status = lua_pcall(engine.L, 0, 0, 0);
+    if (status == LUA_OK)
+        status = luaL_loadfile(engine.L, argv[index]);
+    if (status == LUA_OK)
+        status = lua_pcall(engine.L, 0, 1, 0);
+    if (status != LUA_OK) {
         const char *message = lua_type(engine.L, -1) == LUA_TSTRING ?
                               lua_tostring(engine.L, -1) : "non-string error";
         fprintf(stderr, "%s\n", message);
