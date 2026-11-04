@@ -49,9 +49,11 @@ typedef uint64_t MvProcessId;
 /* Copyable identities. Treat their fields as opaque. */
 typedef struct { uint64_t high, low, sequence; } MvRuntimeId;
 typedef struct { MvRuntimeId runtime; MvProcessId id; } MvProcessRef;
+typedef struct MvProcessHandle MvProcessHandle;
 typedef struct MvResource MvResource;
 typedef void (*MvResourceDestroy)(void *data);
 typedef enum { MV_PROCESS_RUNNING, MV_PROCESS_SLEEPING, MV_PROCESS_FROZEN } MvProcessStatus;
+typedef enum { MV_END_KILLED, MV_END_RETURNED, MV_END_ERROR } MvEndReason;
 typedef enum { MV_SIGNAL_SLEEP, MV_SIGNAL_FREEZE, MV_SIGNAL_WAKEUP, MV_SIGNAL_KILL } MvSignal;
 typedef enum { MV_STEP_YIELD, MV_STEP_DONE, MV_STEP_ERROR } MvStepResult;
 typedef MvStepResult (*MvProcessStep)(MvContext *ctx, MvProcessId id, void *user);
@@ -65,6 +67,13 @@ typedef struct {
     MvProcessId creator_id;
     int attached;
 } MvProcessInfo;
+
+typedef struct {
+    MvProcessRef reference;
+    int alive;
+    MvProcessInfo process; /* Valid only while alive. */
+    MvEndReason reason;    /* Valid only after termination. */
+} MvProcessHandleInfo;
 
 typedef struct {
     MvProcessId id, creator_id;
@@ -121,6 +130,17 @@ MvResult mv_context_runtime_id(MvContext *ctx, MvRuntimeId *out);
  * On failure the output is unchanged. The context must be live. */
 MvResult mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out);
 MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *out);
+
+/** Acquire an owned handle for a live process. On failure, out is unchanged.
+ * A handle preserves its identity and termination reason after the process
+ * or context ends. It does not retain the process or its resources. */
+MvResult mv_process_handle_create(MvContext *ctx, MvProcessRef ref, MvProcessHandle **out);
+/** Copy the current state. A dead handle exposes its reference and reason;
+ * its process field is zero. The caller owns the copied value. */
+MvResult mv_process_handle_snapshot(const MvProcessHandle *handle, MvProcessHandleInfo *out);
+/** Release an owned handle, including after context destruction. NULL is safe.
+ * Use the context and its handles on one owner thread. */
+void mv_process_handle_destroy(MvProcessHandle *handle);
 
 /** The process retains user until removal. If destroy is provided, a successful
  * spawn transfers responsibility for user to that destructor, which is called

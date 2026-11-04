@@ -50,13 +50,25 @@ main(void)
         mv_context_destroy(ctx);
         return 1;
     }
+    MvProcessRef reference;
+    MvProcessHandle *handle = NULL;
+    if (mv_process_ref_create(ctx, id, &reference) != MV_OK ||
+        mv_process_handle_create(ctx, reference, &handle) != MV_OK) {
+        mv_context_destroy(ctx);
+        return 1;
+    }
     while (mv_process_count(ctx)) {
         if (mv_process_tick(ctx) != MV_OK) {
             mv_context_destroy(ctx);
+            mv_process_handle_destroy(handle);
             return 1;
         }
     }
     int success = counter.remaining == 0 && counter.destroyed == 1;
     mv_context_destroy(ctx);
+    MvProcessHandleInfo info;
+    success = success && mv_process_handle_snapshot(handle, &info) == MV_OK &&
+              !info.alive && info.reason == MV_END_RETURNED;
+    mv_process_handle_destroy(handle);
     return success ? 0 : 1;
 }

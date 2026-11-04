@@ -2,7 +2,7 @@
 
 Want to run processes without Lua? Start with the [C process example](../../examples/c/processes/README.md). For a trace that you can compare with Lua, try the [C and Lua parity example](../../examples/c/parity/README.md).
 
-This page describes the experimental alpha.2 API in [`malvado.h`](../../src/include/malvado/malvado.h). It is a source-level contract. ABI stability is not guaranteed yet. Use a context and its processes on one owner thread; the API does not synchronize concurrent calls.
+This page describes the experimental C API in [`malvado.h`](../../src/include/malvado/malvado.h). It is a source-level contract. ABI stability is not guaranteed yet. Use a context and its processes on one owner thread; the API does not synchronize concurrent calls.
 
 ## Create and close a context
 
@@ -37,6 +37,16 @@ During process cleanup, a C destructor can create an independent process with ow
 Tree signals capture their live recipients before they change any state. A failure to allocate the snapshot returns `MV_OUT_OF_MEMORY` without changing any process. Processes created later do not receive that signal.
 
 An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals return `MV_INVALID_ARGUMENT`. An invalid signal or ID does not change the tree. `mv_process_status` reads a live process state; `mv_process_count` returns the number of live processes. A suspended process counts as live.
+
+## Keep a process identity
+
+`mv_process_ref_create(ctx, id, &ref)` copies a context-scoped identity. `mv_process_ref_resolve(ctx, ref, &id)` validates it and returns its ID. IDs are not reused within a context. A reference remains valid for that context after the process ends. A reference from another context returns `MV_INVALID_ARGUMENT`, even if its numeric ID matches. A zero ID is invalid; an ID not issued by that context returns `MV_NOT_FOUND`. On failure, the output is unchanged. Do not call either function with a destroyed context.
+
+To retain the termination reason, call `mv_process_handle_create(ctx, ref, &handle)` while the process is alive. The caller owns the handle and must call `mv_process_handle_destroy`, which also accepts `NULL`. Creation returns `MV_NOT_FOUND` for an ended process, `MV_OUT_OF_MEMORY` on allocation failure, and `MV_BUSY` during shutdown. Invalid or foreign references are rejected. Failure leaves the output unchanged. A handle does not keep the process, its fields, resources, or genealogy alive.
+
+`mv_process_handle_snapshot(handle, &info)` copies the reference and state. While alive, `info.alive` is nonzero and `info.process` contains the current type, priority, status, creator, owner, and message count. After termination, `info.alive` is zero, `info.process` is zeroed, and `info.reason` is `MV_END_RETURNED`, `MV_END_KILLED`, or `MV_END_ERROR`. The reference and reason remain available after cleanup and context destruction. The caller owns the copied snapshot. Invalid arguments leave the output unchanged. A handle must be acquired before termination; a copyable reference alone does not retain a reason.
+
+Use the context and its handles on one owner thread, including handle destruction. A detached handle can be read and destroyed after its context ends. Do not use a destroyed handle. The context tracks only handles that callers own; release them when no longer needed. See the [C process example](../../examples/c/processes/main.c) for acquisition and release.
 
 ## Inspect a snapshot
 

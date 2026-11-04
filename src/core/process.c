@@ -52,6 +52,13 @@ typedef struct {
     MvEndReason reason;
 } EndedProcess;
 
+struct MvProcessHandle {
+    struct MvProcessHandle *next, *previous;
+    struct MvProcesses *manager;
+    MvProcessRef reference;
+    MvEndReason reason;
+};
+
 struct MvResource {
     struct MvResource *next, *previous;
     struct MvProcesses *manager;
@@ -69,6 +76,7 @@ struct MvProcesses {
     size_t ended_count;
     Genealogy *lineage, *cleanup_lineage;
     MvResource *resources;
+    MvProcessHandle *handles;
     size_t count, capacity;
     MvProcessId next_id;
     MvRuntimeId runtime_id;
@@ -147,6 +155,84 @@ static Process *find(MvProcesses *p, MvProcessId id, int include_killed)
         if (p->items[i].id == id && (include_killed || !p->items[i].killed))
             return &p->items[i];
     return NULL;
+}
+
+static void
+unlink_handle(MvProcessHandle *handle)
+{
+    MvProcesses *p = handle->manager;
+    if (!p) return;
+    if (handle->previous) handle->previous->next = handle->next;
+    else p->handles = handle->next;
+    if (handle->next) handle->next->previous = handle->previous;
+    handle->manager = NULL;
+    handle->next = handle->previous = NULL;
+}
+
+MvResult
+mv_process_handle_create(MvContext *ctx, MvProcessRef ref, MvProcessHandle **out)
+{
+    if (!out) return MV_INVALID_ARGUMENT;
+    MvProcessId id;
+    MvResult result = mv_process_ref_resolve(ctx, ref, &id);
+    if (result != MV_OK) return result;
+    MvProcesses *p = mv_context_processes(ctx);
+    if (p->closing) return MV_BUSY;
+    if (!find(p, id, 0)) return MV_NOT_FOUND;
+    MvProcessHandle *handle = calloc(1, sizeof(*handle));
+    if (!handle) return MV_OUT_OF_MEMORY;
+    handle->manager = p;
+    handle->reference = ref;
+    handle->next = p->handles;
+    if (p->handles) p->handles->previous = handle;
+    p->handles = handle;
+    *out = handle;
+    return MV_OK;
+}
+
+MvResult
+mv_process_handle_snapshot(const MvProcessHandle *handle, MvProcessHandleInfo *out)
+{
+    if (!handle || !out) return MV_INVALID_ARGUMENT;
+    MvProcessHandleInfo result = {0};
+    result.reference = handle->reference;
+    if (!handle->manager) {
+        result.reason = handle->reason;
+    } else {
+        Process *item = find(handle->manager, handle->reference.id, 1);
+        if (!item) return MV_NOT_FOUND;
+        if (item->killed) {
+            result.reason = item->reason;
+        } else {
+            result.alive = 1;
+            result.process = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
+                                             item->status, item->messages, item->creator_id, item->attached};
+        }
+    }
+    *out = result;
+    return MV_OK;
+}
+
+void
+mv_process_handle_destroy(MvProcessHandle *handle)
+{
+    if (!handle) return;
+    unlink_handle(handle);
+    free(handle);
+}
+
+static void
+retire_handles(MvProcesses *p, const Process *item)
+{
+    MvProcessHandle *handle = p->handles;
+    while (handle) {
+        MvProcessHandle *next = handle->next;
+        if (handle->reference.id == item->id) {
+            handle->reason = item->reason;
+            unlink_handle(handle);
+        }
+        handle = next;
+    }
 }
 
 int
@@ -299,6 +385,8 @@ void mv_processes_destroy(MvProcesses *p)
     p->closing = 1;
     for (size_t i = 0; i < p->count; ++i)
         p->items[i].killed = 1;
+    for (size_t i = 0; i < p->count; ++i)
+        retire_handles(p, &p->items[i]);
     for (size_t i = 0; i < p->count; ++i) {
         MessageNode *node = p->items[i].head;
         while (node) {
@@ -780,6 +868,7 @@ MvResult mv_process_tick(MvContext *ctx)
         MessageNode *node = p->items[i].head;
         Genealogy *lineage = p->items[i].lineage;
         p->ended[p->ended_count++] = (EndedProcess){p->items[i].id, p->items[i].reason};
+        retire_handles(p, &p->items[i]);
         p->items[i].id = 0;
         p->items[i].lineage = NULL;
         lineage->alive = 0;
