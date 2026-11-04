@@ -21,6 +21,8 @@ end
 
 Paths are relative to the working directory. Volume ranges from zero to one. Loading fails if the file is not a valid WAV or the audio device cannot open. Audio is not available in headless mode. Keep a reference to a sound while it plays. Lua releases sounds when they are no longer used or when the runner closes.
 
+Playing and paused sounds retain their resources even if the process that created them ends. Stopping a sound releases its playback reference. See the [resource lifetime contract](resource-lifetime.md) for ownership and sharing.
+
 To play overlapping instances of one effect, use `local another = mv.clone_sound(sound)`. Each instance has independent playback and volume. They share the sample data, which stays alive until all instances are released. Keep a Lua reference to each instance while it plays. In C, `mv_sound_clone(sound)` returns an owned instance or `NULL`; destroy each instance with `mv_sound_destroy`.
 
 ## C
@@ -55,6 +57,8 @@ mv.update_music(music)
 ```
 
 The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`, `mv.stop_music`, `mv.music_playing`, and `mv.music_volume` to control the stream. Volume is from zero to one. Keep a reference to the music while it plays. The runner releases it when it is no longer used or when it closes. Audio is unavailable in headless mode.
+
+Playing and paused music retains its stream after the creating process ends. The runner releases playback references when playback stops, completes, or the runner closes.
 
 In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_music_update` regularly, including when the rest of the game is idle. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
 
