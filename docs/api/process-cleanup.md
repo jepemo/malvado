@@ -12,6 +12,6 @@ A Lua coroutine closes its pending variables during its destructor. An error in 
 
 ## Reentrancy and shutdown
 
-A cleanup callback cannot run another scheduler tick or destroy the active context. It can inspect live state and signal other live processes. It can create only an explicitly independent process. Such a process keeps its creator relationship and can run on a later tick; it is not part of the original termination snapshot. Reject an attached spawn before creating a process. These rules apply to both C and Lua; the remaining C cases must be implemented and tested before the ownership check closes.
+A cleanup callback cannot run another scheduler tick or destroy the active context. It can inspect live state and signal other live processes. It can create only an explicitly independent process. Such a process keeps its creator relationship and can run on a later tick; it is not part of the original termination snapshot. Reject an attached spawn before creating a process. These rules apply to both C and Lua.
 
 At context shutdown, mark all processes dead before destructors run. Reject every spawn, including independent spawns. Release process and game owner references, then discard the context's lineage. Explicit resource references retained outside the context remain valid until released. A cleanup callback must not recursively destroy the context. The runtime continues shutdown after an error and reports failure through the runner.

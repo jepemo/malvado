@@ -53,6 +53,47 @@ static MvStepResult idle_step(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_YIELD;
 }
 
+typedef struct {
+    MvContext *ctx;
+    MvProcessId creator, owner, independent;
+    int destroyed;
+} CleanupSpawnState;
+
+static void cleanup_spawn(void *user)
+{
+    CleanupSpawnState *state = user;
+    MvProcessId result = 999;
+    assert(mv_process_spawn(state->ctx, state->owner, 0, idle_step, NULL, NULL,
+                            &result) == MV_BUSY && result == 999);
+    assert(mv_process_spawn_related(state->ctx, state->owner, state->owner, 0, idle_step,
+                                    NULL, NULL, &result) == MV_BUSY && result == 999);
+    assert(mv_process_spawn_related(state->ctx, state->creator, 0, 0, idle_step,
+                                    NULL, NULL, &state->independent) == MV_OK);
+    state->destroyed++;
+}
+
+static MvStepResult finish_immediately(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)ctx;
+    (void)id;
+    (void)user;
+    return MV_STEP_DONE;
+}
+
+typedef struct {
+    MvContext *ctx;
+    MvProcessId victim;
+    int destroyed;
+} CleanupKillState;
+
+static void cleanup_kill(void *user)
+{
+    CleanupKillState *state = user;
+    assert(mv_process_tick(state->ctx) == MV_BUSY);
+    assert(mv_process_signal(state->ctx, state->victim, MV_SIGNAL_KILL, 0) == MV_OK);
+    state->destroyed++;
+}
+
 static MvStepResult self_kill_step(MvContext *ctx, MvProcessId id, void *user)
 {
     State *state = user;
@@ -418,6 +459,43 @@ int main(void)
     assert(mv_process_tick(self_context) == MV_OK);
     assert(self_state.calls == 1 && self_state.destroyed == 1);
     mv_context_destroy(self_context);
+
+    MvContext *cleanup_context = mv_context_create(60, 5);
+    assert(cleanup_context);
+    CleanupSpawnState cleanup_state = {.ctx = cleanup_context};
+    assert(mv_process_spawn(cleanup_context, 0, 0, idle_step, NULL, NULL,
+                            &cleanup_state.owner) == MV_OK);
+    assert(mv_process_spawn(cleanup_context, 0, 0, finish_immediately, cleanup_spawn,
+                            &cleanup_state, &cleanup_state.creator) == MV_OK);
+    assert(mv_process_tick(cleanup_context) == MV_OK);
+    assert(cleanup_state.destroyed == 1 && cleanup_state.independent != 0);
+    MvProcessInfo descendants[1];
+    size_t descendants_count = 0;
+    assert(mv_process_creation_descendants(cleanup_context, cleanup_state.creator, 0,
+                                           descendants, 1, &descendants_count) == MV_OK);
+    assert(descendants_count == 1 && descendants[0].id == cleanup_state.independent);
+    assert(mv_process_tick(cleanup_context) == MV_OK && cleanup_state.destroyed == 1);
+    mv_context_destroy(cleanup_context);
+
+    {
+        MvContext *reentrant = mv_context_create(60, 5);
+        assert(reentrant);
+        State victim = {0}, victim_child = {0};
+        CleanupKillState killer = {.ctx = reentrant};
+        MvProcessId killer_id, victim_child_id;
+        assert(mv_process_spawn(reentrant, 0, 0, finish_immediately, cleanup_kill,
+                                &killer, &killer_id) == MV_OK);
+        assert(mv_process_spawn(reentrant, 0, 0, idle_step, destroy, &victim,
+                                &killer.victim) == MV_OK);
+        assert(mv_process_spawn(reentrant, killer.victim, 0, idle_step, destroy, &victim_child,
+                                &victim_child_id) == MV_OK);
+        assert(mv_process_tick(reentrant) == MV_OK);
+        assert(killer.destroyed == 1 && victim.destroyed == 1 && victim_child.destroyed == 1);
+        assert(mv_process_count(reentrant) == 0);
+        assert(mv_process_tick(reentrant) == MV_OK);
+        mv_context_destroy(reentrant);
+        assert(killer.destroyed == 1 && victim.destroyed == 1 && victim_child.destroyed == 1);
+    }
     puts("C process lifecycle passed");
     return 0;
 }

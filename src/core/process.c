@@ -323,6 +323,7 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !step || !id) return MV_INVALID_ARGUMENT;
     if (p->closing) return MV_BUSY;
+    if (p->cleanup_lineage && parent) return MV_BUSY;
     Process *creator = creator_id ? find(p, creator_id, 0) : NULL;
     Genealogy *closing_creator = p->cleanup_lineage;
     if ((creator_id && !creator &&

@@ -32,6 +32,8 @@ Higher priorities run first. Ties use creation order. The scheduler fixes the or
 
 `mv_process_kill(ctx, ref, &killed)` validates a context-scoped reference and ends the process and its attached descendants. It sets `killed` to 1 if the process was alive, or 0 if it was already dead. A foreign or invalid reference is rejected without changing `killed`. A C callback that kills itself must return promptly; C code is not interrupted. The scheduler does not run that process again.
 
+During process cleanup, a C destructor can create an independent process with owner zero. It can use the process being cleaned as the creator. A spawn with an owner returns `MV_BUSY` without changing the output ID. During context shutdown, all spawns return `MV_BUSY`. See the [cleanup contract](process-cleanup.md) for order and reentrancy.
+
 Tree signals capture their live recipients before they change any state. A failure to allocate the snapshot returns `MV_OUT_OF_MEMORY` without changing any process. Processes created later do not receive that signal.
 
 An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals return `MV_INVALID_ARGUMENT`. An invalid signal or ID does not change the tree. `mv_process_status` reads a live process state; `mv_process_count` returns the number of live processes. A suspended process counts as live.
