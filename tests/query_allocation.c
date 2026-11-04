@@ -60,6 +60,10 @@ main(void)
     size_t match_count;
     assert(mv_process_collider_find(ctx, root_ref, 0, matches, 1, &match_count) == MV_OK);
     assert(match_count == 1 && matches[0].id == child);
+    MvProcessRef first;
+    assert(mv_process_collider_first(ctx, root_ref, 0, &first) == MV_OK && first.id == child);
+    MvProcessInfo info;
+    assert(mv_process_info(ctx, first, &info) == MV_OK && info.id == child);
     assert(mv_process_collider_clear(ctx, child_ref) == MV_OK);
     assert(mv_process_signal(ctx, root, MV_SIGNAL_FREEZE, 1) == MV_OUT_OF_MEMORY);
     assert(mv_process_signal_creation_tree(ctx, root, MV_SIGNAL_KILL) == MV_OUT_OF_MEMORY);

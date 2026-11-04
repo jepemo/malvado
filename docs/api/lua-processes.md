@@ -162,4 +162,4 @@ to draw it at the process position. When `self.collider` is `nil`, the graphic
 also provides a collision shape. Set an explicit collider to override it, or
 set `false` to disable collision. See [drawing](drawing.md#process-graphics)
 and [collision](collision.md#process-queries-in-lua) for transforms, lifetime,
-and error behavior. Images and atlas sprite descriptors can also provide automatic colliders.
+and error behavior. Images and atlas sprite descriptors can also provide automatic colliders. Use `process.collision(self, Enemy)` for the first matching process or `process.collisions(self, Enemy)` for all matches in creation order.

@@ -2,7 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local defaults = {nested = {value = 12}}
+local defaults = {nested = {value = 12}, graph = mv.graphics.circle(2)}
 local process = mv.process(function() error("process must not run") end, {defaults = defaults})
 local weak = setmetatable({}, {__mode = "v"})
 local payload = {}

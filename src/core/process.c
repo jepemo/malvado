@@ -163,7 +163,7 @@ static Process *find(MvProcesses *p, MvProcessId id, int include_killed)
 }
 
 static MvResult
-collider_process(MvContext *ctx, MvProcessRef reference, Process **out)
+resolve_live_process(MvContext *ctx, MvProcessRef reference, Process **out)
 {
     MvProcessId id;
     MvResult result = mv_process_ref_resolve(ctx, reference, &id);
@@ -181,7 +181,7 @@ mv_process_collider_set(MvContext *ctx, MvProcessRef reference,
                         MvCollisionShape shape, MvCollisionTransform transform)
 {
     Process *item;
-    MvResult result = collider_process(ctx, reference, &item);
+    MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK)
         return result;
     if (mv_collision_overlap(shape, transform, shape, transform) < 0)
@@ -196,7 +196,7 @@ MvResult
 mv_process_collider_clear(MvContext *ctx, MvProcessRef reference)
 {
     Process *item;
-    MvResult result = collider_process(ctx, reference, &item);
+    MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK)
         return result;
     item->has_collider = 0;
@@ -209,15 +209,44 @@ mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *ov
     if (!overlap)
         return MV_INVALID_ARGUMENT;
     Process *first, *second;
-    MvResult result = collider_process(ctx, a, &first);
+    MvResult result = resolve_live_process(ctx, a, &first);
     if (result != MV_OK)
         return result;
-    result = collider_process(ctx, b, &second);
+    result = resolve_live_process(ctx, b, &second);
     if (result != MV_OK)
         return result;
     *overlap = first != second && first->has_collider && second->has_collider &&
         mv_collision_overlap(first->collider, first->collider_transform,
                              second->collider, second->collider_transform) == 1;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_first(MvContext *ctx, MvProcessRef source, uint64_t type,
+                          MvProcessRef *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out)
+        return MV_INVALID_ARGUMENT;
+    Process *origin;
+    MvResult result = resolve_live_process(ctx, source, &origin);
+    if (result != MV_OK)
+        return result;
+    MvProcessRef found = {0};
+    if (origin->has_collider) {
+        for (size_t i = 0; i < p->count; ++i) {
+            Process *item = &p->items[i];
+            if (!item->id || item->killed || item == origin || !item->has_collider ||
+                (type && item->type != type))
+                continue;
+            if (mv_collision_overlap(origin->collider, origin->collider_transform,
+                                     item->collider, item->collider_transform) == 1) {
+                found = (MvProcessRef){p->runtime_id, item->id};
+                break;
+            }
+        }
+    }
+    *out = found;
     return MV_OK;
 }
 
@@ -229,7 +258,7 @@ mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
     if (!p || !total || (capacity && !out))
         return MV_INVALID_ARGUMENT;
     Process *origin;
-    MvResult result = collider_process(ctx, source, &origin);
+    MvResult result = resolve_live_process(ctx, source, &origin);
     if (result != MV_OK)
         return result;
     size_t count = 0;
@@ -760,6 +789,20 @@ MvResult mv_process_status(MvContext *ctx, MvProcessId id, MvProcessStatus *stat
     Process *item = find(mv_context_processes(ctx), id, 0);
     if (!item) return MV_NOT_FOUND;
     *status = item->status;
+    return MV_OK;
+}
+
+MvResult
+mv_process_info(MvContext *ctx, MvProcessRef reference, MvProcessInfo *out)
+{
+    if (!out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    *out = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
+                           item->status, item->messages, item->creator_id, item->attached};
     return MV_OK;
 }
 

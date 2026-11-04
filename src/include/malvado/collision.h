@@ -51,6 +51,10 @@ MvResult mv_process_collider_clear(MvContext *ctx, MvProcessRef process);
 /* Compare two live processes; self-comparison and missing colliders return 0.
  * On error, the output is unchanged. */
 MvResult mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *overlap);
+/* Find the first collision in creation order, or write an all-zero reference
+ * if none exists. Type 0 selects all types. No allocation is performed. */
+MvResult mv_process_collider_first(MvContext *ctx, MvProcessRef source, uint64_t type,
+                                  MvProcessRef *out);
 /* Copy up to capacity colliding process references in creation order. Type 0
  * selects all types. total receives the full count. A missing source collider
  * returns no results. Sleeping and frozen processes are included. */

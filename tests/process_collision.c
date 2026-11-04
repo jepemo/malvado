@@ -50,6 +50,14 @@ main(void)
     size_t count = 99;
     assert(mv_process_collider_find(ctx, refs[0], 1, out, 1, &count) == MV_OK);
     assert(count == 2 && out[0].id == ids[1]);
+    MvProcessRef first;
+    assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[1]);
+    first = refs[0];
+    assert(mv_process_collider_first(other, refs[0], 1, &first) == MV_INVALID_ARGUMENT);
+    assert(first.id == ids[0]);
+    assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[1]);
+    MvProcessInfo info;
+    assert(mv_process_info(ctx, first, &info) == MV_OK && info.id == ids[1] && info.type == 1);
     int hit = 99;
     assert(mv_process_collider_test(ctx, refs[0], refs[0], &hit) == MV_OK && !hit);
     assert(mv_process_collider_test(ctx, refs[0], refs[1], &hit) == MV_OK && hit);
@@ -68,6 +76,7 @@ main(void)
     int killed;
     assert(mv_process_kill(ctx, refs[3], &killed) == MV_OK && killed);
     assert(mv_process_collider_find(ctx, refs[0], 0, out, 3, &count) == MV_OK && count == 0);
+    assert(mv_process_collider_first(ctx, refs[0], 0, &first) == MV_OK && first.id == 0);
     hit = 99;
     assert(mv_process_collider_test(ctx, refs[0], refs[3], &hit) == MV_NOT_FOUND && hit == 99);
     assert(mv_process_collider_clear(ctx, refs[3]) == MV_NOT_FOUND);

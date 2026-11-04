@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -93,8 +94,16 @@ void test_window_close(void) { mv_window_close(); }
 int
 main(int argc, char **argv)
 {
-    assert(argc == 2);
+    assert(argc == 2 || argc == 3);
     char *args[] = {"malvado-run", "--headless", argv[1]};
+    if (argc == 3 && strcmp(argv[2], "noalloc") == 0) {
+        fail_at = 0;
+        armed = succeeded = fail_native = 0;
+        assert(malvado_run(3, args) == 0);
+        assert(succeeded && !armed);
+        return 0;
+    }
+    assert(argc == 2);
     for (fail_at = 0; fail_at < 256; fail_at++) {
         armed = succeeded = 0;
         assert(malvado_run(3, args) == 0);

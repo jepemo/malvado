@@ -6,8 +6,9 @@ require("malvado.compat.legacy").import_globals()
 local world = mv.world.create()
 world:add_rect({x = 10, y = 10, width = 2, height = 2})
 world:add_rect({x = 43, y = 38, width = 1, height = 1})
+world:add_rect({x = 30, y = 16, width = 1, height = 1})
 local weak = setmetatable({}, {__mode = "v"})
-local image_actor, sprite_actor, legacy_actor
+local image_actor, sprite_actor, legacy_actor, probe
 local idle = function() while true do mv.frame() end end
 local controller = mv.process(function()
   assert(world:collision(image_actor) == 1)
@@ -16,9 +17,19 @@ local controller = mv.process(function()
   for _ = 1, 60 do mv.frame() end
   collectgarbage("collect")
   assert(weak[1] and weak[2] and weak[3])
+  assert(world:collision(legacy_actor) == 3)
+  assert(mv.process.collision(legacy_actor, probe) == probe)
+  legacy_actor.fpg = {}
+  assert(not pcall(world.collision, world, legacy_actor))
+  assert(not pcall(mv.process.collision, legacy_actor, probe))
+  legacy_actor.collider = mv.collision.rect(8, 8)
+  assert(world:collision(legacy_actor) == 3)
+  legacy_actor.fpg = nil
+  legacy_actor.collider = nil
   mv.kill(image_actor)
   mv.kill(sprite_actor)
   mv.kill(legacy_actor)
+  mv.kill(probe)
   mv.frame()
   mv.frame()
   collectgarbage("collect")
@@ -41,6 +52,7 @@ local producer = mv.process(function()
   sprite_actor = actor({graph = sprite, x = 50, y = 40, size = 2, angle = 90}, {attached = false})
   local legacy = mv.process(function() while true do frame() end end)
   legacy_actor = legacy({graph = image, x = 34, y = 20}, {attached = false})
+  probe = actor({x = 30.5, y = 16.5, collider = mv.collision.rect(1, 1)}, {attached = false})
 end)
 mv.start(function()
   mv.clear_screen(0, 0, 0)

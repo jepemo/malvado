@@ -1,52 +1,38 @@
 -- Malvado 2; project created by Jeremías Pérez and contributors.
 -- SPDX-License-Identifier: Apache-2.0
 
-local real_mv = require("malvado")
-local tick = 0
+local mv = require("malvado")
+local original_process, original_frame, original_text = mv.process, mv.frame, mv.draw_text
+local ticks, definitions, player, player_thread = 0, 0, nil, nil
 local messages = {}
-local circle_x
-local square_draws = 0
-local tasks = {}
-local mv = {}
-function mv.import_globals()
-  for name, value in pairs(mv) do _G[name] = value end
-end
-function mv.process(fn)
-  return function() tasks[#tasks + 1] = coroutine.create(fn) end
-end
-function mv.start(init)
-  init()
-  while tick < 140 do
-    for _, task in ipairs(tasks) do
-      local ok, err = coroutine.resume(task)
-      assert(ok, err)
-    end
-    tick = tick + 1
+mv.process = setmetatable({collision = original_process.collision}, {
+  __call = function(_, fn, options)
+    definitions = definitions + 1
+    local is_player = definitions == 2
+    return original_process(function(self)
+      if is_player then player, player_thread = self, coroutine.running() end
+      return fn(self)
+    end, options)
   end
-  assert(#tasks == 2)
-end
-function mv.clear_screen() end
-function mv.set_color() end
-function mv.draw_box() square_draws = square_draws + 1 end
-function mv.draw_fcircle(x) circle_x = x end
-function mv.draw_text(text)
-  if text == "Collision!" then messages[tick] = true end
-end
-function mv.key(name)
-  if name == "escape" then return tick >= 140 end
-  if name == "right" then return tick < 75 end
-  if name == "left" then return tick >= 75 end
+})
+mv.key = function(name)
+  if name == "escape" then return ticks >= 140 end
+  if name == "right" then return ticks < 75 end
+  if name == "left" then return ticks >= 75 end
   return false
 end
-function mv.frame() coroutine.yield() end
-package.loaded.malvado = mv
-dofile("examples/collision/main.lua")
-assert(messages[63] == nil)
-assert(messages[64] == true) -- Circle touches the square at x = 380.
-assert(messages[75] == true)
-assert(messages[84] == true)
-assert(messages[85] == nil)
-assert(circle_x == 160)
-assert(square_draws == 140)
-package.loaded.malvado = real_mv
-real_mv.start(function() end)
+mv.draw_text = function(text, ...)
+  if text == "Collision!" then messages[ticks] = true end
+  return original_text(text, ...)
+end
+mv.frame = function()
+  if coroutine.running() == player_thread then
+    if ticks == 139 then
+      assert(player.x == 160)
+      assert(not messages[64] and messages[65] and messages[83] and not messages[84])
+    end
+    ticks = ticks + 1
+  end
+  return original_frame()
+end
+return dofile("examples/collision/main.lua")

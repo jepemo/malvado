@@ -172,6 +172,8 @@ MvResult mv_process_set_priority(MvContext *ctx, MvProcessId id, int64_t priorit
 MvResult mv_process_set_type(MvContext *ctx, MvProcessId id, uint64_t type);
 MvResult mv_process_status(MvContext *ctx, MvProcessId id, MvProcessStatus *status);
 size_t mv_process_count(const MvContext *ctx);
+/* Copy one live process record. On failure the output is unchanged. */
+MvResult mv_process_info(MvContext *ctx, MvProcessRef reference, MvProcessInfo *out);
 /** Copy up to capacity live processes in creation order. total receives the
  * complete count even when the buffer is smaller; out may be NULL if capacity
  * is zero. Results are snapshots and do not expose internal storage. */

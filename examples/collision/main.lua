@@ -1,50 +1,35 @@
 -- Malvado 2; project created by Jeremías Pérez and contributors.
 -- SPDX-License-Identifier: Apache-2.0
 
-require("malvado").import_globals()
-
-local width, height = 640, 480
-local radius, speed = 20, 4
-local square = {x = 400, y = 180, size = 100}
-
-local function circle_hits_square(x, y)
-  local closest_x = math.max(square.x, math.min(x, square.x + square.size))
-  local closest_y = math.max(square.y, math.min(y, square.y + square.size))
-  local dx, dy = x - closest_x, y - closest_y
-  return dx * dx + dy * dy <= radius * radius
-end
+local mv = require("malvado")
+mv.import_globals()
 
 local Square = process(function()
-  while not key("escape") do
-    set_color(255, 165, 70)
-    draw_box(square.x, square.y, square.x + square.size, square.y + square.size)
-    frame()
-  end
-end)
+  while not key("escape") do frame() end
+end, {defaults = {graph = mv.graphics.rect(100, 100, {
+  pivot = "top-left", color = {255, 165, 70}
+})}})
 
-local Circle = process(function()
-  local x, y = 120, 230
+local Circle = process(function(self)
   while not key("escape") do
-    if key("left") then x = x - speed end
-    if key("right") then x = x + speed end
-    if key("up") then y = y - speed end
-    if key("down") then y = y + speed end
-    x = math.max(radius, math.min(width - radius, x))
-    y = math.max(radius, math.min(height - radius, y))
-
-    local hit = circle_hits_square(x, y)
-    set_color(80, 190, 255)
-    draw_fcircle(x, y, radius)
+    if key("left") then self.x = self.x - 4 end
+    if key("right") then self.x = self.x + 4 end
+    if key("up") then self.y = self.y - 4 end
+    if key("down") then self.y = self.y + 4 end
+    self.x = math.max(20, math.min(620, self.x))
+    self.y = math.max(20, math.min(460, self.y))
     draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
-    if hit then
+    if process.collision(self, Square) then
       draw_text("Collision!", 20, 55, 28)
     end
     frame()
   end
-end)
+end, {defaults = {graph = mv.graphics.circle(20, {color = {80, 190, 255}})}})
 
-start(function()
+local game = {width = 640, height = 480, title = "Circle collision"}
+function game.init()
   clear_screen(25, 30, 45)
-  Square()
-  Circle()
-end, {width = width, height = height, title = "Circle collision"})
+  Square({x = 400, y = 180})
+  Circle({x = 120, y = 230})
+end
+return game

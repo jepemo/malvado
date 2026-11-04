@@ -79,7 +79,7 @@ The `collision` namespace is not installed by `import_globals()`. Use
 `require("malvado").collision`. A global `collision(...)` shorthand is not
 provided: process selection and shape geometry have different arguments, and a
 single global name would make their meaning ambiguous. Process collision queries
-remain planned in the `process` namespace.
+are available in the `process` namespace.
 
 
 ## Static world in C
@@ -216,15 +216,22 @@ the collider with the process. No function in this group allocates.
 
 `mv_process_collider_test(ctx, a, b, &hit)` compares two live processes and
 writes 1 or 0. A process does not collide with itself; a missing collider gives
-0. `mv_process_collider_find(ctx, source, type, buffer, capacity, &total)`
+0. `mv_process_collider_first(ctx, source, type, &ref)` writes the first
+matching reference, or a zero reference if there is none.
+`mv_process_collider_find(ctx, source, type, buffer, capacity, &total)`
 copies matching references in creation order, excluding the source. Type 0
 selects all types. It writes the total even when the buffer is too small and
 accepts a null buffer when capacity is zero. Both include sleeping and frozen
 processes and exclude dead processes. A bad argument or dead source returns an
-error without changing the outputs. The initial implementation scans the
+error without changing the outputs. `mv_process_info(ctx, ref, &info)` copies a
+live process record for a reference and leaves the output unchanged on error.
+The initial implementation scans the
 process list and applies bounding-box rejection before the narrow phase; a
-measured process broad phase remains open. Lua process-to-process queries do
-not yet use this C registry.
+measured process broad phase remains open. Lua process colliders synchronize
+with this same C registry when their relevant fields change. Lua fields are the
+source of truth for Lua-owned process colliders; do not overwrite those entries
+from C, because the next Lua field update replaces them. Native processes use
+the C registration functions.
 
 ```c
 MvCollisionShape circle = {.kind = MV_COLLISION_CIRCLE, .radius = 10};
@@ -237,3 +244,32 @@ if (mv_process_collider_set(ctx, player, circle, transform) == MV_OK) {
     }
 }
 ```
+
+
+## Process-to-process queries in Lua
+
+`mv.process.collision(source, target)` returns the first colliding process
+handle or `nil`. `mv.process.collisions(source, target)` returns a fresh table
+of matching handles in creation order. The target is a process constructor or a
+specific process handle. The source is excluded, and a specific dead target
+does not match. Sleeping and frozen processes participate. Handles are the same
+canonical handles returned by process creation and inspection. Touching without
+overlap is not a collision.
+
+```lua
+local enemy = process.collision(self, Enemy)
+if enemy then enemy.health = enemy.health - 1 end
+```
+
+The source must be live. Invalid or foreign handles raise an error. An invalid
+source collider or transform raises an error, as does an invalid explicitly
+selected live target. When selecting by type, processes with invalid colliders
+or transforms are excluded until corrected. A `false` collider, or no graph
+and no collider, excludes the process. Assignments to `x`, `y`, `angle`,
+`size`, `graph`, and `collider`, and `world:move`, update the native collider
+immediately. The first-hit query does not allocate a result table. Both queries
+work without a window.
+
+A legacy image drawn by legacy `frame()` uses a centered automatic collider.
+A legacy FPG sheet needs an explicit collider; its automatically derived
+collider is not supported.

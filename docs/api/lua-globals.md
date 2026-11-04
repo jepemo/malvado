@@ -2,7 +2,7 @@
 
 `require("malvado").import_globals()` installs the names below. It checks all names before it changes globals. A different existing value causes an error. If installation fails, it removes the names added by that call. Repeating the import with the same values is safe. Normal `require` does not install globals.
 
-Each global has the same value as the `mv` field shown below. `process` is a callable table. `mv.process.define` defines a process and is not a separate global. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. Atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` is a callable table. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. Atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |

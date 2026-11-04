@@ -52,3 +52,35 @@ It creates a chain of 512 owned processes and queries the root's descendants ten
 The current core follows owner links directly. It also follows separate creator links and prunes unused creation nodes. Queries still scan live processes and do not have a type index. Measure a representative game before adding an index; a wide tree or frequent type queries can have different costs from this chain.
 
 On the local macOS development build, two runs of the 512-level, ten-query workload reported 1.656 ms and 1.631 ms of process CPU time. The `c_long_session` test also completes 5,000 rounds and 20,000 processes and resources, with pruning checks. These are implementation checks, not performance limits. They do not measure wide trees or frequent type-filtered queries.
+
+## Process collision queries
+
+Build the headless debug runtime and run both workloads from the repository root:
+
+```sh
+mise run build-headless
+./build-lua-headless/process-collision-benchmark
+./build-lua-headless/malvado-run --headless tools/benchmarks/process_collision.lua
+```
+
+Each workload creates 1,000 processes. The C benchmark measures 1,000 first-hit
+queries with separated circles, 1,000 collider updates, and 1,000 first-hit
+queries with all circles overlapping. The Lua benchmark measures 1,000 field
+updates followed by 1,000 no-hit type queries. The reported times are process
+CPU time; they exclude process creation and cleanup. The Lua measurement also
+includes binding and field-access costs. The C benchmark uses all process types;
+the Lua benchmark selects one type. Both smoke tests verify their results but
+set no performance threshold.
+
+On 2026-11-04, three debug runs on macOS, Apple M2 Pro, reported C miss times of
+127.260, 127.014, and 124.883 ms; C update times of 0.801, 0.760, and 0.899 ms;
+and C dense-hit times of 0.826, 0.758, and 0.900 ms. Lua update times were
+3.948, 4.041, and 3.891 ms; Lua miss times were 131.995, 121.470, and
+122.690 ms. These are local measurements, not platform guarantees.
+
+The current implementation scans live processes in creation order. It computes
+bounding boxes before running the shape-specific intersection test and stops
+at the first hit for a single-result query. It has no spatial index. The
+worst-case miss workload above exceeds a 60 Hz frame budget when all 1,000
+queries occur in one frame. Treat this as a baseline, not an efficiency claim;
+a measured candidate index remains open in alpha.6.

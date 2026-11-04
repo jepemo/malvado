@@ -97,7 +97,7 @@ static MvStepResult lua_process_step(MvContext *ctx, MvProcessId id, void *user)
 static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
-typedef struct { lua_Integer id, parent; int reason; MvProcessRef reference; } LuaSelf;
+typedef struct { lua_Integer id, parent; int reason, collision_invalid; MvProcessRef reference; } LuaSelf;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
 typedef struct {
     MvCollisionShape shape;
@@ -762,6 +762,74 @@ is_read_only_process_field(const char *key)
 }
 
 static int
+collider_number(lua_State *L, int fields, const char *name, double fallback, double *out)
+{
+    raw_option(L, fields, name);
+    int valid = lua_isnil(L, -1) || lua_isnumber(L, -1);
+    *out = lua_isnil(L, -1) ? fallback : lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return valid && isfinite(*out);
+}
+
+/* The Lua fields remain authoritative. Invalid fields remove the native
+ * collider until corrected; collision queries report the invalid state. */
+static void
+sync_process_collider(lua_State *L, LuaSelf *self, int fields)
+{
+    MvProcessRef reference = self->reference;
+    fields = lua_absindex(L, fields);
+    MvCollisionShape shape = {0};
+    int present = 0, invalid = 0;
+    Process *slot = find_process_slot((lua_Integer)reference.id);
+    int legacy = slot && slot->legacy_frame;
+    raw_option(L, fields, "collider");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        if (legacy) {
+            raw_option(L, fields, "fpg");
+            invalid = !lua_isnil(L, -1);
+            lua_pop(L, 1);
+        }
+        raw_option(L, fields, "graph");
+        if (!invalid && !lua_isnil(L, -1)) {
+            LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
+            LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+            if (graphic) {
+                shape = graphic->shape;
+                present = 1;
+            } else if (image && image->image) {
+                int width = mv_image_width(image->image), height = mv_image_height(image->image);
+                if (width > 0 && height > 0) {
+                    shape = (MvCollisionShape){.kind = MV_COLLISION_RECT, .width = width, .height = height,
+                        .offset_x = legacy ? 0 : width / 2.0,
+                        .offset_y = legacy ? 0 : height / 2.0};
+                    present = 1;
+                } else invalid = 1;
+            } else invalid = 1;
+        }
+    } else if (!(lua_isboolean(L, -1) && !lua_toboolean(L, -1))) {
+        MvCollisionShape *explicit_shape = luaL_testudata(L, -1, "malvado.collision_shape");
+        if (explicit_shape) {
+            shape = *explicit_shape;
+            present = 1;
+        } else invalid = 1;
+    }
+    lua_pop(L, 1);
+    MvCollisionTransform transform = {0, 0, 0, 1};
+    if (present && (!collider_number(L, fields, "x", 0, &transform.x) ||
+                    !collider_number(L, fields, "y", 0, &transform.y) ||
+                    !collider_number(L, fields, "angle", 0, &transform.angle) ||
+                    !collider_number(L, fields, "size", 1, &transform.scale)))
+        invalid = 1;
+    if (present && !invalid &&
+        mv_process_collider_set(engine.context, reference, shape, transform) != MV_OK)
+        invalid = 1;
+    if (!present || invalid)
+        (void)mv_process_collider_clear(engine.context, reference);
+    self->collision_invalid = invalid;
+}
+
+static int
 self_newindex(lua_State *L)
 {
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
@@ -784,6 +852,10 @@ self_newindex(lua_State *L)
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
     lua_rawset(L, -3);
+    if (key && (!strcmp(key, "x") || !strcmp(key, "y") || !strcmp(key, "angle") ||
+                !strcmp(key, "size") || !strcmp(key, "graph") || !strcmp(key, "collider") ||
+                !strcmp(key, "fpg")))
+        sync_process_collider(L, self, -1);
     return 0;
 }
 
@@ -946,7 +1018,7 @@ create_process(lua_State *L)
         lua_pop(L, 3);
     }
     MvProcessId parent = attached ? (MvProcessId)creator : 0;
-    if (!lua_checkstack(L, 6))
+    if (!lua_checkstack(L, 12))
         return luaL_error(L, "cannot prepare process");
     SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .draw_ref = LUA_NOREF};
     lua_pushcfunction(L, prepare_spawn);
@@ -1009,6 +1081,7 @@ create_process(lua_State *L)
         .first = 1,
         .alive = 1
     };
+    sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
     return 1;
 }
@@ -1292,6 +1365,15 @@ frame(lua_State *L)
 {
     if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
         return luaL_error(L, "frame() must be called inside a process");
+    Process *process = find_process(engine.active_id);
+    if (process && process->legacy_frame) {
+        process->legacy_frame = 0;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+        LuaSelf *self = lua_touserdata(L, -1);
+        lua_getiuservalue(L, -1, 1);
+        sync_process_collider(L, self, -1);
+        lua_pop(L, 2);
+    }
     return lua_yield(L, 0);
 }
 
@@ -2116,6 +2198,7 @@ legacy_frame(lua_State *L)
     lua_settop(L, 0);
     lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
     lua_getiuservalue(L, 1, 1);
+    sync_process_collider(L, lua_touserdata(L, 1), 2);
     lua_getfield(L, 2, "fpg");
     int x_source = 0, y_source = 0, region_width, region_height;
     int sheet_image = 0;
@@ -2617,7 +2700,6 @@ lua_process_step_protected(lua_State *L)
     process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
     process->last_activation_tick = engine.tick_number;
     process->first = 0;
-    process->legacy_frame = 0;
     lua_newtable(L);
     lua_rawseti(L, LUA_REGISTRYINDEX, draw_ref);
     engine.active = 1;
@@ -3484,11 +3566,18 @@ world_overlap(lua_State *L)
 }
 
 static int
-process_collider(lua_State *L, int fields, MvCollisionShape *shape)
+process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
 {
     raw_option(L, fields, "collider");
     if (lua_isnil(L, -1)) {
         lua_pop(L, 1);
+        if (legacy) {
+            raw_option(L, fields, "fpg");
+            int has_sheet = !lua_isnil(L, -1);
+            lua_pop(L, 1);
+            if (has_sheet)
+                return luaL_error(L, "legacy sheets require an explicit collider");
+        }
         raw_option(L, fields, "graph");
         if (lua_isnil(L, -1)) {
             lua_pop(L, 1);
@@ -3503,7 +3592,8 @@ process_collider(lua_State *L, int fields, MvCollisionShape *shape)
             if (width <= 0 || height <= 0)
                 return luaL_error(L, "invalid image for automatic collider");
             *shape = (MvCollisionShape){.kind = MV_COLLISION_RECT,
-                .width = width, .height = height, .offset_x = width / 2.0, .offset_y = height / 2.0};
+                .width = width, .height = height, .offset_x = legacy ? 0 : width / 2.0,
+                .offset_y = legacy ? 0 : height / 2.0};
         } else {
             return luaL_error(L, "unsupported graphic for automatic collider");
         }
@@ -3537,7 +3627,8 @@ world_process_collision(lua_State *L)
     lua_getiuservalue(L, 2, 1);
     int fields = lua_gettop(L);
     MvCollisionShape shape;
-    if (!process_collider(L, fields, &shape)) {
+    Process *slot = find_process_slot(id);
+    if (!process_collider(L, fields, slot && slot->legacy_frame, &shape)) {
         lua_pushnil(L);
         return 1;
     }
@@ -3583,7 +3674,8 @@ world_process_move(lua_State *L)
     double old_x = transform.x, old_y = transform.y;
     MvCollisionShape shape;
     MvCollisionSweep result = {.fraction = 1};
-    if (!process_collider(L, fields, &shape)) {
+    Process *slot = find_process_slot(id);
+    if (!process_collider(L, fields, slot && slot->legacy_frame, &shape)) {
         transform.x += dx;
         transform.y += dy;
     } else if (mv_collision_world_move(world, shape, &transform, dx, dy, &result) < 0) {
@@ -3612,6 +3704,8 @@ world_process_move(lua_State *L)
     lua_pushliteral(L, "y");
     lua_pushnumber(L, transform.y);
     lua_rawset(L, fields);
+    LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
+    sync_process_collider(L, self, fields);
     return 1;
 }
 
@@ -3640,6 +3734,116 @@ world_sweep(lua_State *L)
     lua_pushnumber(L, result.normal_y);
     lua_setfield(L, -2, "normal_y");
     return 1;
+}
+
+static int
+process_collision_query(lua_State *L, int multiple)
+{
+    LuaSelf *source = luaL_checkudata(L, 1, "malvado.process");
+    lua_Integer source_id = check_process_id(L, 1);
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
+    if (source->collision_invalid)
+        return luaL_error(L, "invalid process collider or transform");
+    MvProcessRef source_ref = source->reference;
+    uint64_t type = 0;
+    LuaSelf *target = luaL_testudata(L, 2, "malvado.process");
+    if (target) {
+        (void)check_process_id(L, 2);
+        if (multiple)
+            lua_createtable(L, 1, 0);
+        if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
+            return luaL_error(L, "process is no longer alive");
+        if (source->collision_invalid)
+            return luaL_error(L, "invalid process collider or transform");
+        MvProcessStatus target_status;
+        if (target->collision_invalid &&
+            mv_process_status(engine.context, (MvProcessId)target->id, &target_status) == MV_OK)
+            return luaL_error(L, "invalid process collider or transform");
+        int hit = 0;
+        MvResult result = mv_process_collider_test(engine.context, source_ref, target->reference, &hit);
+        if (result != MV_OK && result != MV_NOT_FOUND)
+            return luaL_error(L, "invalid collision target");
+        if (multiple) {
+            if (hit) {
+                lua_pushvalue(L, 2);
+                lua_seti(L, -2, 1);
+            }
+        } else if (hit) {
+            lua_pushvalue(L, 2);
+        } else lua_pushnil(L);
+        return 1;
+    }
+    if (!lua_iscfunction(L, 2) || lua_tocfunction(L, 2) != create_process ||
+        !lua_getupvalue(L, 2, 2))
+        return luaL_error(L, "expected a process constructor or handle");
+    type = (uint64_t)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    if (!multiple) {
+        MvProcessRef found;
+        if (mv_process_collider_first(engine.context, source_ref, type, &found) != MV_OK)
+            return luaL_error(L, "failed to query process collisions");
+        if (!found.id) {
+            lua_pushnil(L);
+        } else {
+            MvProcessInfo info;
+            if (mv_process_info(engine.context, found, &info) != MV_OK)
+                return luaL_error(L, "collision target is no longer alive");
+            push_process_handle(L, &info);
+            if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
+                return luaL_error(L, "process is no longer alive");
+            if (mv_process_status(engine.context, found.id, &status) != MV_OK) {
+                lua_pop(L, 1);
+                lua_pushnil(L);
+            }
+        }
+        return 1;
+    }
+    size_t capacity = mv_process_count(engine.context), total = 0;
+    MvProcessRef *refs = NULL;
+    int captured = 0;
+    for (int attempt = 0; attempt < 16 && !captured; ++attempt) {
+        if (capacity > SIZE_MAX / sizeof(*refs))
+            return luaL_error(L, "too many processes");
+        refs = lua_newuserdatauv(L, capacity * sizeof(*refs), 0);
+        if (mv_process_collider_find(engine.context, source_ref, type, refs, capacity, &total) != MV_OK)
+            return luaL_error(L, "failed to query process collisions");
+        if (total > capacity) {
+            lua_pop(L, 1);
+            capacity = total;
+        } else captured = 1;
+    }
+    if (!captured)
+        return luaL_error(L, "process list changed during collision query");
+    lua_newtable(L);
+    lua_Integer count = 0;
+    for (size_t i = 0; i < total; ++i) {
+        MvProcessInfo info;
+        if (mv_process_info(engine.context, refs[i], &info) == MV_OK) {
+            push_process_handle(L, &info);
+            lua_seti(L, -2, ++count);
+            if (mv_process_status(engine.context, refs[i].id, &status) != MV_OK) {
+                lua_pushnil(L);
+                lua_seti(L, -2, count--);
+            }
+        }
+    }
+    if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
+    return 1;
+}
+
+static int
+process_collision_first(lua_State *L)
+{
+    return process_collision_query(L, 0);
+}
+
+static int
+process_collision_all(lua_State *L)
+{
+    return process_collision_query(L, 1);
 }
 
 static int
@@ -3818,6 +4022,15 @@ open_module(lua_State *L)
                 return luaL_error(L, "duplicate module export: %s", functions[i].name);
         }
     }
+    /* Keep collider field names interned: synchronization after native spawn
+     * must not allocate or turn a successful spawn into a Lua failure. */
+    static const char *const collider_keys[] = {"collider", "graph", "x", "y", "angle", "size", "fpg"};
+    lua_createtable(L, 7, 0);
+    for (size_t i = 0; i < sizeof(collider_keys) / sizeof(collider_keys[0]); ++i) {
+        lua_pushstring(L, collider_keys[i]);
+        lua_seti(L, -2, (lua_Integer)i + 1);
+    }
+    lua_setfield(L, LUA_REGISTRYINDEX, "malvado.collider_keys");
     luaL_newmetatable(L, "malvado.graphic");
     lua_pushliteral(L, "malvado graphic");
     lua_setfield(L, -2, "__metatable");
@@ -3954,6 +4167,10 @@ open_module(lua_State *L)
             lua_setfield(L, -2, api_constants[i].name);
         }
     }
+    lua_pushcfunction(L, process_collision_first);
+    lua_setfield(L, -2, "collision");
+    lua_pushcfunction(L, process_collision_all);
+    lua_setfield(L, -2, "collisions");
     lua_newtable(L);
     lua_pushcfunction(L, call_process_namespace);
     lua_setfield(L, -2, "__call");

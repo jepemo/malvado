@@ -46,7 +46,7 @@ assert(graphics == nil and type(mv.graphics) == "table")
 
 for _, namespace in ipairs({mv.process, mv.input}) do
   for name, value in pairs(namespace) do
-    if name ~= "define" then
+    if name ~= "define" and name ~= "collision" and name ~= "collisions" then
       assert(rawget(_G, name) == value, "namespace alias mismatch: " .. name)
     end
   end

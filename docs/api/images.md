@@ -144,4 +144,6 @@ end, {defaults = {graph = sprite}})
 ```
 
 The legacy `frame()` draws its own image graph with its historical centered
-pivot. That command is not drawn again by the automatic image graph path.
+pivot. That command is not drawn again by the automatic image graph path. The automatic
+collider also uses a centered pivot while the process uses legacy `frame()`.
+Legacy FPG sheets require an explicit collider.
