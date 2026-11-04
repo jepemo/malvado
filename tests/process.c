@@ -246,6 +246,12 @@ int main(void)
     assert(mv_process_snapshot(relations, &relation_info, 1, &total) == MV_OK);
     assert(total == 1 && relation_info.id == independent_id);
     assert(relation_info.parent == 0 && relation_info.creator_id == creator_id);
+    assert(mv_process_set_type(relations, independent_id, 17) == MV_OK);
+    assert(mv_process_find(relations, 17, &relation_info, 1, &total) == MV_OK &&
+           total == 1 && relation_info.id == independent_id);
+    assert(mv_process_creation_children(relations, creator_id, 17, &relation_info,
+                                        1, &total) == MV_OK && total == 1 &&
+           relation_info.id == independent_id);
     State leaf = {0};
     MvProcessId leaf_id;
     assert(mv_process_spawn_related(relations, independent_id, 0, 0, child_step,
@@ -262,6 +268,15 @@ int main(void)
     assert(mv_process_creation_descendants(relations, creator_id, 0, &relation_info,
                                            1, &total) == MV_OK);
     assert(total == 1 && relation_info.id == leaf_id);
+    assert(mv_process_creation_children(relations, creator_id, 0, &relation_info,
+                                        1, &total) == MV_OK && total == 0);
+    assert(mv_process_creation_children(relations, independent_id, 0, &relation_info,
+                                        1, &total) == MV_OK && total == 1 &&
+           relation_info.id == leaf_id);
+    total = 123;
+    assert(mv_process_find(relations, 0, NULL, 1, &total) == MV_INVALID_ARGUMENT && total == 123);
+    assert(mv_process_creation_children(relations, UINT64_MAX, 0, &relation_info,
+                                        1, &total) == MV_NOT_FOUND && total == 123);
     assert(mv_process_signal_creation_tree(relations, creator_id, MV_SIGNAL_FREEZE) == MV_OK);
     MvProcessStatus leaf_status;
     assert(mv_process_status(relations, leaf_id, &leaf_status) == MV_OK &&

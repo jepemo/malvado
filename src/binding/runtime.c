@@ -1040,14 +1040,27 @@ find_by_type(lua_State *L)
     size_t count = mv_process_count(engine.context);
     if (count > SIZE_MAX / sizeof(MvProcessInfo))
         return luaL_error(L, "too many processes");
-    MvProcessInfo *items = lua_newuserdatauv(L, count * sizeof(*items), 0);
-    size_t total;
-    if (mv_process_snapshot(engine.context, items, count, &total) != MV_OK)
-        return luaL_error(L, "failed to inspect processes");
+    MvProcessInfo *items = NULL;
+    size_t total = 0;
+    int captured = 0;
+    for (int attempt = 0; attempt < 16 && !captured; ++attempt) {
+        if (count > SIZE_MAX / sizeof(*items))
+            return luaL_error(L, "too many processes");
+        items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+        if (mv_process_find(engine.context, (uint64_t)type_id, items, count, &total) != MV_OK)
+            return luaL_error(L, "failed to inspect processes");
+        if (total > count) {
+            lua_pop(L, 1);
+            count = total;
+        } else {
+            captured = 1;
+        }
+    }
+    if (!captured) return luaL_error(L, "process list changed during inspection");
     lua_newtable(L);
     lua_Integer result = 0;
     for (size_t i = 0; i < count && i < total; i++) {
-        if (items[i].type == (uint64_t)type_id && items[i].id <= LUA_MAXINTEGER) {
+        if (items[i].id <= LUA_MAXINTEGER) {
             push_process_handle(L, &items[i]);
             lua_seti(L, -2, ++result);
         }
@@ -1081,21 +1094,34 @@ hierarchy_query(lua_State *L, int direct)
     size_t count = mv_process_count(engine.context);
     if (count > SIZE_MAX / sizeof(MvProcessInfo))
         return luaL_error(L, "too many processes");
-    MvProcessInfo *items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+    MvProcessInfo *items = NULL;
     size_t total = 0;
-    MvResult result;
-    if (creation)
-        result = mv_process_creation_descendants(engine.context, (MvProcessId)root, type,
-                                                 items, count, &total);
-    else if (direct)
-        result = mv_process_children(engine.context, (MvProcessId)root, type, items, count, &total);
-    else
-        result = mv_process_descendants(engine.context, (MvProcessId)root, type, items, count, &total);
-    if (result != MV_OK) return luaL_error(L, "invalid process query root");
+    int captured = 0;
+    for (int attempt = 0; attempt < 16 && !captured; ++attempt) {
+        if (count > SIZE_MAX / sizeof(*items))
+            return luaL_error(L, "too many processes");
+        items = lua_newuserdatauv(L, count * sizeof(*items), 0);
+        MvResult result;
+        if (creation && direct)
+            result = mv_process_creation_children(engine.context, (MvProcessId)root, type, items, count, &total);
+        else if (creation)
+            result = mv_process_creation_descendants(engine.context, (MvProcessId)root, type, items, count, &total);
+        else if (direct)
+            result = mv_process_children(engine.context, (MvProcessId)root, type, items, count, &total);
+        else
+            result = mv_process_descendants(engine.context, (MvProcessId)root, type, items, count, &total);
+        if (result != MV_OK) return luaL_error(L, "invalid process query root");
+        if (total > count) {
+            lua_pop(L, 1);
+            count = total;
+        } else {
+            captured = 1;
+        }
+    }
+    if (!captured) return luaL_error(L, "process list changed during inspection");
     lua_newtable(L);
     lua_Integer output = 0;
     for (size_t i = 0; i < total && i < count; ++i) {
-        if (creation && direct && items[i].creator_id != (MvProcessId)root) continue;
         push_process_handle(L, &items[i]);
         lua_seti(L, -2, ++output);
     }

@@ -151,6 +151,10 @@ size_t mv_process_count(const MvContext *ctx);
  * complete count even when the buffer is smaller; out may be NULL if capacity
  * is zero. Results are snapshots and do not expose internal storage. */
 MvResult mv_process_snapshot(MvContext *ctx, MvProcessInfo *out, size_t capacity, size_t *total);
+/** Copy live processes of type in creation order. Type zero selects all types.
+ * The buffer and total follow mv_process_snapshot. */
+MvResult mv_process_find(MvContext *ctx, uint64_t type, MvProcessInfo *out,
+                         size_t capacity, size_t *total);
 /** Copy live children or descendants of a live owner in creation order.
  * A type of zero selects all types. Sleeping and frozen processes are included.
  * The buffer and total follow mv_process_snapshot. Invalid input or an unknown
@@ -178,6 +182,10 @@ MvResult mv_process_inspection_snapshot(MvContext *ctx,
  * The signal includes the root when it is live. IDs are local to ctx. */
 MvResult mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
                                          MvProcessInfo *out, size_t capacity, size_t *total);
+/** Copy direct live children by creator, including children of a dead creator.
+ * Buffer, filter, and root rules match mv_process_creation_descendants. */
+MvResult mv_process_creation_children(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                                      MvProcessInfo *out, size_t capacity, size_t *total);
 MvResult mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, MvSignal signal);
 /** Run one logical scheduler tick. New processes first run on the next tick;
  * priorities are snapshotted at the beginning of the tick. Recursive ticks

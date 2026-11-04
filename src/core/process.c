@@ -581,12 +581,18 @@ size_t mv_process_count(const MvContext *ctx)
 
 MvResult mv_process_snapshot(MvContext *ctx, MvProcessInfo *out, size_t capacity, size_t *total)
 {
+    return mv_process_find(ctx, 0, out, capacity, total);
+}
+
+MvResult mv_process_find(MvContext *ctx, uint64_t type, MvProcessInfo *out,
+                         size_t capacity, size_t *total)
+{
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !total || (capacity && !out)) return MV_INVALID_ARGUMENT;
     size_t count = 0;
     for (size_t i = 0; i < p->count; ++i) {
         Process *item = &p->items[i];
-        if (item->killed || !item->id) continue;
+        if (item->killed || !item->id || (type && item->type != type)) continue;
         if (count < capacity)
             out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
                                          item->status, item->messages, item->creator_id, item->attached};
@@ -673,9 +679,9 @@ mv_process_inspection_snapshot(MvContext *ctx, MvProcessInfo *processes,
     return MV_OK;
 }
 
-MvResult
-mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
-                                MvProcessInfo *out, size_t capacity, size_t *total)
+static MvResult
+snapshot_creation(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                  MvProcessInfo *out, size_t capacity, size_t *total, int direct)
 {
     MvProcesses *p = mv_context_processes(ctx);
     if (!p || !ancestor || !total || (capacity && !out)) return MV_INVALID_ARGUMENT;
@@ -684,7 +690,8 @@ mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t t
     for (size_t i = 0; i < p->count; ++i) {
         Process *item = &p->items[i];
         if (!item->id || item->killed || item->id == ancestor ||
-            (type && item->type != type) || !created_under(item->lineage, ancestor)) continue;
+            (type && item->type != type) ||
+            (direct ? item->creator_id != ancestor : !created_under(item->lineage, ancestor))) continue;
         if (count < capacity)
             out[count] = (MvProcessInfo){item->id, item->parent, item->type, item->priority,
                                          item->status, item->messages, item->creator_id, item->attached};
@@ -692,6 +699,20 @@ mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t t
     }
     *total = count;
     return MV_OK;
+}
+
+MvResult
+mv_process_creation_descendants(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                                MvProcessInfo *out, size_t capacity, size_t *total)
+{
+    return snapshot_creation(ctx, ancestor, type, out, capacity, total, 0);
+}
+
+MvResult
+mv_process_creation_children(MvContext *ctx, MvProcessId ancestor, uint64_t type,
+                             MvProcessInfo *out, size_t capacity, size_t *total)
+{
+    return snapshot_creation(ctx, ancestor, type, out, capacity, total, 1);
 }
 
 MvResult
