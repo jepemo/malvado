@@ -13,6 +13,7 @@ function(check_script name script expected diagnostic)
 endfunction()
 
 check_script(empty "return {}" 0 "")
+check_script(defaults "local mv = require('malvado'); return {init = function() local w, h = mv.window_size(); assert(w == 800 and h == 600) end}" 0 "")
 check_script(nil "return nil" 0 "")
 check_script(other "return 123" 0 "")
 check_script(explicit "require('malvado').start(function() end); return 123" 0 "")

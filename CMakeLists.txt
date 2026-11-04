@@ -606,7 +606,7 @@ endif()
 endif() # MALVADO_BUILD_LUA
 
 add_test(NAME lua_declarative_start COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_start.lua)
-set_tests_properties(lua_declarative_start PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "declarative tick")
+set_tests_properties(lua_declarative_start PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PASS_REGULAR_EXPRESSION "declarative tick")
 add_test(NAME lua_declarative_mixed COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_mixed.lua)
 set_tests_properties(lua_declarative_mixed PROPERTIES TIMEOUT 15 WILL_FAIL TRUE)
 add_test(NAME lua_declarative_invalid COMMAND ${CMAKE_COMMAND}

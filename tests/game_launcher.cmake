@@ -34,4 +34,14 @@ execute_process(COMMAND "${WORK}/game assets/${name}" ${args} WORKING_DIRECTORY 
 if(NOT result EQUAL 0 OR NOT output MATCHES "game loaded")
   message(FATAL_ERROR "Relocated game launcher failed: ${output}")
 endif()
+file(WRITE "${WORK}/game assets/main.lua" [=[
+local mv = require("malvado")
+local game = mv.process(function() print("declarative launcher tick") end)
+return {width = 320, height = 240, init = function() game() end}
+]=])
+execute_process(COMMAND "${WORK}/game assets/${name}" ${args} WORKING_DIRECTORY "${WORK}/other"
+  RESULT_VARIABLE result OUTPUT_VARIABLE output)
+if(NOT result EQUAL 0 OR NOT output MATCHES "declarative launcher tick")
+  message(FATAL_ERROR "Declarative game launcher failed: ${output}")
+endif()
 file(REMOVE_RECURSE "${WORK}")
