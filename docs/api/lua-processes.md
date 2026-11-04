@@ -134,6 +134,8 @@ Use `mv.set_priority(handle, value)` and `mv.get_priority(handle)` to change and
 
 Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or handles raise an error without changing the tree. If a close callback fails, Malvado reports the error, continues cleanup and ends the run with a nonzero result.
 
+The scheduler controls process coroutines. `coroutine.resume()` and `coroutine.close()` return `false` and an error message if given a process coroutine. They work as usual for coroutines created by game code.
+
 ## Send and receive messages
 
 `mv.send(handle, value)` puts a value in the recipient's FIFO queue. `self:recv()` returns the next value, or `nil` if the queue is empty. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.

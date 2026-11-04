@@ -3397,6 +3397,39 @@ open_legacy_module(lua_State *L)
     return 1;
 }
 
+static int
+call_coroutine_operation(lua_State *L)
+{
+    lua_State *thread = lua_tothread(L, 1);
+    if (thread) {
+        for (size_t i = 0; i < engine.count; i++) {
+            if (engine.items[i].alive && engine.items[i].thread == thread) {
+                lua_pushboolean(L, 0);
+                lua_pushliteral(L, "cannot control a managed process coroutine");
+                return 2;
+            }
+        }
+    }
+    int arguments = lua_gettop(L);
+    lua_pushvalue(L, lua_upvalueindex(1));
+    lua_insert(L, 1);
+    lua_call(L, arguments, LUA_MULTRET);
+    return lua_gettop(L);
+}
+
+static void
+protect_process_coroutines(lua_State *L)
+{
+    static const char *const operations[] = {"resume", "close"};
+    lua_getglobal(L, "coroutine");
+    for (size_t i = 0; i < sizeof(operations) / sizeof(operations[0]); i++) {
+        lua_getfield(L, -1, operations[i]);
+        lua_pushcclosure(L, call_coroutine_operation, 1);
+        lua_setfield(L, -2, operations[i]);
+    }
+    lua_pop(L, 1);
+}
+
 int
 malvado_run(int argc, char **argv)
 {
@@ -3429,6 +3462,7 @@ malvado_run(int argc, char **argv)
         return 1;
     }
     luaL_openlibs(engine.L);
+    protect_process_coroutines(engine.L);
     luaL_requiref(engine.L, "malvado", open_module, 0);
     lua_pop(engine.L, 1);
     luaL_requiref(engine.L, "malvado.compat.legacy", open_legacy_module, 0);
