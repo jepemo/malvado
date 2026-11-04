@@ -22,6 +22,8 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 `import_globals()` adds the modern Malvado functions to the Lua global environment. It checks all names before it adds any. If a name already has a different value, it raises an error and adds nothing. If an allocation fails during installation, it removes the names added by that call. You can call it again when the installed functions are unchanged. Global names can still be shadowed by local variables; choose distinct local names. To avoid global names, use `local mv = require("malvado")` and call functions as `mv.process`, `mv.frame`, and `mv.start`. Both forms use the same API.
 
+See the [global export table](lua-globals.md) for all current names.
+
 ## Start and stop
 
 `mv.process` is a callable namespace. Use `mv.process(fn, options)` or `mv.process.define(fn, options)` to define a process. Both use the same implementation. Definition options are `defaults` and `children_attached`. Use `mv.process.spawn(definition, fields, options)` for an explicit spawn; its option is `attached`. Unknown options raise an error. Options use the table's own fields; metatable lookup is not used. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
