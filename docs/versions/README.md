@@ -4,6 +4,14 @@ This page shows the release plan at a glance. Open a version to see its checklis
 
 Alphas include implementation and automated tests. Automated graphics, input, clean-runner, and emulator tests remain in the relevant alpha. Manual testing of complete user flows, physical devices, audio, and clean machines is planned for beta. Do not mark unfinished features as complete when moving manual tests.
 
+## How to plan a version
+
+A version has a named outcome, a fixed scope, and a checklist of deliverables. Each unchecked item must name the behavior or decision, the boundary, and the automated evidence needed to close it. A checked item means that its complete scope and checks passed. Keep implementation, graphics, and emulator checks in the relevant alpha. Schedule manual user flows and physical-device checks for beta.
+
+Do not add a checked item for each partial change. Keep partial results in a linked design or evidence page, or in commit history. If implementation reveals a gap, add a specific unchecked item to the responsible version. Moving unfinished work to another version requires an explicit scope decision and a clear destination; it does not count as completed work.
+
+Some later versions depend on decisions that do not exist yet. Their lists are planning gates, not final implementation checklists. Resolve those gates and split the resulting work into bounded deliverables before starting that implementation. Do not mark a whole family complete without its code, contract, and automated checks.
+
 - [x] [Alpha.1](2.0.0-alpha.1.md) — **complete**: C runtime, bundled Lua, raylib, and hello. Source tag: `v2.0.0-alpha.1`; no release package yet.
 - [x] [Alpha.2](2.0.0-alpha.2.md) — **complete**: shared C/Lua scheduler, processes, signals, messages, and inspection. Source tag: `v2.0.0-alpha.2`; no release package yet.
 - [ ] [Alpha.3](2.0.0-alpha.3.md) — **tagged preview**: source tag `v2.0.0-alpha.3`; some checks remain open.
