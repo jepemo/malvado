@@ -2,11 +2,14 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
+local font
 local producer = mv.process(function()
-  local font = mv.load_font("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 255, 255, 255, 255, "ΩΩ")
-  mv.write(font, 100, 20, "Café Ω", "center")
+  font = mv.load_font("tests/fixtures/fonts/AnonymousPro-Bold.ttf", 24, 255, 255, 255, 255, "ΩΩ")
 end)
 local worker = mv.process(function()
+  mv.write(font, 100, 20, "Café Ω", "center")
+  font = nil
+  collectgarbage("collect")
   for _ = 1, 15 do mv.frame() end
 end)
 mv.start(function()

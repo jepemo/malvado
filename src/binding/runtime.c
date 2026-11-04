@@ -2339,6 +2339,8 @@ write_text(lua_State *L)
     lua_setfield(L, -2, "font");
     lua_pushstring(L, align);
     lua_setfield(L, -2, "align");
+    lua_pushinteger(L, engine.active ? engine.active_id : 0);
+    lua_setfield(L, -2, "owner");
     lua_Integer id = ++engine.next_text_id;
     lua_seti(L, -2, id);
     lua_pop(L, 1);
@@ -2449,6 +2451,25 @@ render_texts(lua_State *L)
 }
 
 static void
+release_process_texts(lua_State *L, lua_Integer owner)
+{
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        lua_getfield(L, -1, "owner");
+        int owned = lua_tointeger(L, -1) == owner;
+        lua_pop(L, 1);
+        lua_pop(L, 1);
+        if (owned) {
+            lua_pushvalue(L, -1);
+            lua_pushnil(L);
+            lua_rawset(L, -4);
+        }
+    }
+    lua_pop(L, 1);
+}
+
+static void
 cleanup(Process *p)
 {
     if (!p->alive)
@@ -2458,6 +2479,7 @@ cleanup(Process *p)
     int thread_ref = p->thread_ref;
     int self_ref = p->self_ref;
     int draw_ref = p->draw_ref;
+    lua_Integer id = p->id;
     p->alive = 0;
     lua_Integer previous_closing_id = engine.closing_id;
     engine.closing_id = p->id;
@@ -2469,6 +2491,7 @@ cleanup(Process *p)
         fprintf(stderr, "Error closing process: %s\n", message);
         engine.failed = 1;
     }
+    release_process_texts(engine.L, id);
     lua_rawgeti(engine.L, LUA_REGISTRYINDEX, self_ref);
     lua_pushnil(engine.L);
     lua_setiuservalue(engine.L, -2, 1);
