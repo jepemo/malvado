@@ -612,3 +612,6 @@ set_tests_properties(lua_declarative_mixed PROPERTIES TIMEOUT 15 WILL_FAIL TRUE)
 add_test(NAME lua_declarative_invalid COMMAND ${CMAKE_COMMAND}
   -DPROGRAM=$<TARGET_FILE:malvado-run> -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/declarative_invalid.cmake)
 set_tests_properties(lua_declarative_invalid PROPERTIES TIMEOUT 15)
+add_test(NAME lua_start_results COMMAND ${CMAKE_COMMAND}
+  -DPROGRAM=$<TARGET_FILE:malvado-run> -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/start_results.cmake)
+set_tests_properties(lua_start_results PROPERTIES TIMEOUT 15)
