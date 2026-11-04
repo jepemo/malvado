@@ -30,6 +30,8 @@ Higher priorities run first. Ties use creation order. The scheduler fixes the or
 
 `mv_process_signal(ctx, id, signal, tree)` accepts `MV_SIGNAL_SLEEP`, `MV_SIGNAL_FREEZE`, `MV_SIGNAL_WAKEUP`, and `MV_SIGNAL_KILL`. If `tree` is nonzero, the signal also applies to the live descendants at the time of the call. Later children do not inherit it. Sleeping and frozen processes remain alive but do not run. The Lua rendering layer hides sleeping processes and keeps the last drawing of frozen processes. A killed process is no longer available through public lookups. Cleanup is deferred until the current callback returns. A process that kills itself continues until it returns.
 
+`mv_process_kill(ctx, ref, &killed)` validates a context-scoped reference and ends the process and its attached descendants. It sets `killed` to 1 if the process was alive, or 0 if it was already dead. A foreign or invalid reference is rejected without changing `killed`. A C callback that kills itself must return promptly; C code is not interrupted. The scheduler does not run that process again.
+
 Tree signals capture their live recipients before they change any state. A failure to allocate the snapshot returns `MV_OUT_OF_MEMORY` without changing any process. Processes created later do not receive that signal.
 
 An unknown or killed ID returns `MV_NOT_FOUND`. Invalid arguments or signals return `MV_INVALID_ARGUMENT`. An invalid signal or ID does not change the tree. `mv_process_status` reads a live process state; `mv_process_count` returns the number of live processes. A suspended process counts as live.

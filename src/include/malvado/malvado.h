@@ -140,6 +140,7 @@ MvResult mv_process_spawn_related(MvContext *ctx, MvProcessId creator_id, MvProc
                                   int64_t priority, MvProcessStep step,
                                   MvProcessDestroy destroy, void *user, MvProcessId *id);
 MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int tree);
+MvResult mv_process_kill(MvContext *ctx, MvProcessRef ref, int *killed);
 MvResult mv_process_priority(MvContext *ctx, MvProcessId id, int64_t *priority);
 MvResult mv_process_set_priority(MvContext *ctx, MvProcessId id, int64_t priority);
 /** Type IDs are caller-defined; zero means no type. */

@@ -53,6 +53,17 @@ static MvStepResult idle_step(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_YIELD;
 }
 
+static MvStepResult self_kill_step(MvContext *ctx, MvProcessId id, void *user)
+{
+    State *state = user;
+    MvProcessRef ref;
+    int killed = 0;
+    assert(mv_process_ref_create(ctx, id, &ref) == MV_OK);
+    assert(mv_process_kill(ctx, ref, &killed) == MV_OK && killed == 1);
+    state->calls++;
+    return MV_STEP_YIELD;
+}
+
 typedef struct {
     MvProcessId victim;
     int calls;
@@ -378,8 +389,14 @@ int main(void)
     assert(first_ref.runtime.sequence != second_ref.runtime.sequence);
     assert(mv_process_ref_resolve(second_runtime, first_ref, &resolved) == MV_INVALID_ARGUMENT);
     assert(resolved == 99);
-    assert(mv_process_signal(first_runtime, first_process, MV_SIGNAL_KILL, 0) == MV_OK);
+    int killed = 99;
+    assert(mv_process_kill(second_runtime, first_ref, &killed) == MV_INVALID_ARGUMENT);
+    assert(killed == 99);
+    assert(mv_process_kill(first_runtime, first_ref, NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_process_kill(first_runtime, first_ref, &killed) == MV_OK && killed == 1);
+    assert(mv_process_kill(first_runtime, first_ref, &killed) == MV_OK && killed == 0);
     assert(mv_process_tick(first_runtime) == MV_OK);
+    assert(mv_process_kill(first_runtime, first_ref, &killed) == MV_OK && killed == 0);
     assert(mv_process_ref_resolve(first_runtime, first_ref, &resolved) == MV_OK &&
            resolved == first_process);
     mv_context_destroy(first_runtime);
@@ -389,6 +406,18 @@ int main(void)
     assert(mv_process_ref_resolve(later_runtime, second_ref, &resolved) == MV_INVALID_ARGUMENT);
     mv_context_destroy(later_runtime);
     mv_context_destroy(second_runtime);
+
+    MvContext *self_context = mv_context_create(60, 5);
+    State self_state = {0};
+    MvProcessId self_id;
+    assert(self_context);
+    assert(mv_process_spawn(self_context, 0, 0, self_kill_step, destroy,
+                            &self_state, &self_id) == MV_OK);
+    assert(mv_process_tick(self_context) == MV_OK);
+    assert(self_state.calls == 1 && self_state.destroyed == 1);
+    assert(mv_process_tick(self_context) == MV_OK);
+    assert(self_state.calls == 1 && self_state.destroyed == 1);
+    mv_context_destroy(self_context);
     puts("C process lifecycle passed");
     return 0;
 }

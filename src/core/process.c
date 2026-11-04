@@ -517,6 +517,23 @@ MvResult mv_process_signal(MvContext *ctx, MvProcessId id, MvSignal signal, int 
     return MV_OK;
 }
 
+MvResult mv_process_kill(MvContext *ctx, MvProcessRef ref, int *killed)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    MvProcessId id;
+    if (!p || !killed) return MV_INVALID_ARGUMENT;
+    MvResult result = mv_process_ref_resolve(ctx, ref, &id);
+    if (result != MV_OK) return result;
+    if (p->closing) return MV_BUSY;
+    if (!find(p, id, 0)) {
+        *killed = 0;
+        return MV_OK;
+    }
+    kill_owned(p, id);
+    *killed = 1;
+    return MV_OK;
+}
+
 MvResult mv_process_priority(MvContext *ctx, MvProcessId id, int64_t *priority)
 {
     if (!ctx || !priority) return MV_INVALID_ARGUMENT;
