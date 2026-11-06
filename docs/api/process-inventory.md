@@ -16,3 +16,16 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 C IDs are local to a context. Copyable `MvProcessRef` values validate runtime identity. An owned `MvProcessHandle` preserves a termination reason until the caller releases it. Snapshots copy engine fields and do not keep a process alive. Lua process operations use handles, not numeric IDs. Flat Lua names and namespace entries use the same implementation; see the [global export table](lua-globals.md).
 
 Do not add `attach`, `detach`, `on_exit`, `cancel`, or a general callback-based process query as part of this baseline. Alpha.6 must compare the remaining API inventory with the pinned references and make explicit decisions. Malvado 1.0 compatibility is not a 2.0 gate.
+
+## Alpha.6 process graphics and collision additions
+
+These entries describe the implemented alpha.6 additions, not the complete 2.0 inventory. See [collision](collision.md), [drawing](drawing.md), and [processes](lua-processes.md) for contracts and limitations.
+
+| Area | C | Lua |
+| --- | --- | --- |
+| Shapes and overlap | `mv_collision_overlap`, `mv_rect_overlaps`, `mv_rect_contains` | `collision.circle`, `collision.rect`, `collision.overlap`, `rect_overlaps`, `rect_contains` |
+| Process colliders and queries | `mv_process_collider_set`, `mv_process_collider_clear`, `mv_process_collider_test`, `mv_process_collider_first`, `mv_process_collider_find` | `self.collider`, automatic `self.graph` collider, `process.collision`, `process.collisions` |
+| Process graphics | Process rendering is provided by the Lua binding; native callers use the drawing API | `graphics.circle`, `graphics.rect`, supported image and sprite graphs |
+| Static world | `mv_collision_world_create`, `mv_collision_world_destroy`, `mv_collision_world_add_rect`, `mv_collision_world_query`, `mv_collision_world_sweep`, `mv_collision_world_move` | `world.create`, `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` |
+
+The world owns its static rectangles. Process colliders are copied into their context. Lua graphic descriptors retain their resources. Pixel masks, automatic colliders for legacy FPG sheets, and world shapes other than static rectangles are not supported.

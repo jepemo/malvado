@@ -225,9 +225,10 @@ accepts a null buffer when capacity is zero. Both include sleeping and frozen
 processes and exclude dead processes. A bad argument or dead source returns an
 error without changing the outputs. `mv_process_info(ctx, ref, &info)` copies a
 live process record for a reference and leaves the output unchanged on error.
-The initial implementation scans the
-process list and applies bounding-box rejection before the narrow phase; a
-measured process broad phase remains open. Lua process colliders synchronize
+The implementation scans the process list in creation order and rejects distant
+candidates with cached transformed bounds before the narrow phase. Updates
+refresh the bounds with the collider. This linear scan can still be expensive
+in large or dense scenes; see [benchmarks](../../tools/benchmarks/README.md). Lua process colliders synchronize
 with this same C registry when their relevant fields change. Lua fields are the
 source of truth for Lua-owned process colliders; do not overwrite those entries
 from C, because the next Lua field update replaces them. Native processes use

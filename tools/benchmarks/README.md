@@ -89,5 +89,5 @@ The implementation still scans live processes in creation order, but uses cached
 bounds to reject distant candidates before shape intersection. Updates replace
 the bounds atomically with the collider; invalid updates preserve both. This
 linear scan can still become expensive at larger scales or with dense scenes.
-The alpha.6 performance item remains open until render-frequency independence
-and the remaining acceptance checks are verified.
+`visual_collision_render_frequency` checks identical process collision and tick
+traces with one and four rendered frames per tick.
