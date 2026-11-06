@@ -84,7 +84,7 @@ Proposed CMake targets:
 
 Configuration must permit `MALVADO_BUILD_LUA=OFF`, `MALVADO_BUILD_RAYLIB=OFF`, and headless tests without downloading either dependency. CMake declares and downloads Lua/raylib only for enabled targets that require them. `build/_deps` remains ignored. Installation must distribute headers and libraries with licenses and documented transitive link rules.
 
-CLI/GUI reuse C services. For Lua projects, `run/export` packages runner and scripts. For C games, the CLI may generate and build a native project against the target SDK with the proper toolchain. This is additional alpha.4/alpha.7 work, not an existing export capability. Android needs input/lifecycle, NDK, and SDK for both paths. The optional external LuaRocks module uses the host Lua with a compatible ABI. It must not insert an additional Lua VM into the core.
+CLI/GUI reuse C services. For Lua projects, `run/export` packages runner and scripts. For C games, the CLI may generate and build a native project against the target SDK with the proper toolchain. This is additional alpha.4/alpha.9 work, not an existing export capability. Android needs input/lifecycle, NDK, and SDK for both paths. The optional external LuaRocks module uses the host Lua with a compatible ABI. It must not insert an additional Lua VM into the core.
 
 ## Incremental migration and acceptance
 
@@ -94,4 +94,4 @@ CLI/GUI reuse C services. For Lua projects, `run/export` packages runner and scr
 4. **Cut 4, partial:** raylib and headless backends are separate, with a freeze/sleep visual test. Remaining resources and drawing belong to alpha.3. Lua diagnostics still live in the binding.
 5. **Cut 5:** install the C SDK, package the official runner, and validate CI, exporters, and platform documentation. Verify external LuaRocks separately when a module target exists.
 
-For each cut, run existing tests before and after, independent C tests, and sanitizers. Do not remove or disable the working runner until parity is demonstrated. Run headless tests on Linux/macOS during alphas 1–5 and graphics smoke tests on available platforms. Add Windows and verify full flows in alpha.7 before beta. Publish a complete C example with its Lua equivalent and run both in CI. The no-Lua path is an acceptance criterion, not an experimental variant that can silently break.
+For each cut, run existing tests before and after, independent C tests, and sanitizers. Do not remove or disable the working runner until parity is demonstrated. Run headless tests on Linux/macOS during alphas 1–5 and graphics smoke tests on available platforms. Add Windows and verify full flows in alpha.9 before beta. Publish a complete C example with its Lua equivalent and run both in CI. The no-Lua path is an acceptance criterion, not an experimental variant that can silently break.

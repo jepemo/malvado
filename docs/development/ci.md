@@ -13,18 +13,18 @@ Status: initial workflow implemented and run on GitHub on 2026-10-29. The goal i
 
 Publishing requires GitHub permissions and Pages configuration. Writing workflows alone does not configure or publish a site. External PRs run without signing or deployment secrets. Use stable check names for branch protection where available.
 
-`.github/workflows/ci.yml` has a macOS/Linux matrix, catalog verification, sanitizers and static analysis, and a Linux Xvfb graphics test. All seven earlier jobs passed in [GitHub Actions for commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows is validated in alpha.7. The link does not validate later changes.
+`.github/workflows/ci.yml` has a macOS/Linux matrix, catalog verification, sanitizers and static analysis, and a Linux Xvfb graphics test. All seven earlier jobs passed in [GitHub Actions for commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows is validated in alpha.9. The link does not validate later changes.
 
 ## Initial CI: alpha.1
 
-1. **Linux and macOS:** configure CMake with documented versions/toolchains, build, and run `ctest --output-on-failure`. Install raylib system dependencies. Add and validate Windows in alpha.7; it does not block earlier alphas.
+1. **Linux and macOS:** configure CMake with documented versions/toolchains, build, and run `ctest --output-on-failure`. Install raylib system dependencies. Add and validate Windows in alpha.9; it does not block earlier alphas.
 2. **Raylib/Lua:** CMake downloads Lua 5.4.8 and raylib 5.5 into the build directory and verifies SHA-256 hashes. Cache downloads where useful without skipping verification. Limit style checks to project code; exclude `vendor/` and `_deps/`.
 3. **Static checks and style:** enable compiler warnings for `src/`. Add `clang-format --dry-run --Werror` when configuration is applied, then `clang-tidy` on `compile_commands.json` with agreed rules. Add `luacheck` for Lua examples and tests when configured. Document known warnings and exceptions. Do not describe an unconfigured tool as an active check.
 4. **Memory tests:** use ASan/UBSan in a compatible Linux configuration as process tests expand. Record platform limits. Add creation/removal, error, and coroutine cleanup cases.
 5. **Documentation:** download pinned sources with `python3 docs/tools/fetch_api_sources.py`, run `python3 docs/tools/catalog_api.py`, compare generated files with the repository, and fail on differences. Both commands check source hashes. Validate internal links and site build when a generator exists. Also check generated files if they are initially untracked.
-6. **Graphics example:** headless tests do not prove that a window opens. Add bounded graphics smoke tests on suitable runners, such as Linux with a virtual display, and tests on real systems. Record macOS and audio/input acceptance separately when automation is unreliable. Validate Android and Windows in alpha.7.
+6. **Graphics example:** headless tests do not prove that a window opens. Add bounded graphics smoke tests on suitable runners, such as Linux with a virtual display, and tests on real systems. Record macOS and audio/input acceptance separately when automation is unreliable. Validate Android and Windows in alpha.9.
 
-Recommended initial matrix: Linux x86_64 and macOS arm64; add Windows x86_64 in alpha.7. Use explicit runner/architecture names and pin versions during implementation. Confirm runner availability for this repository. If an architecture is unavailable, leave its check pending or use an appropriate runner; do not label the target validated. Do not run interactive hello indefinitely in CI; add an automatic-exit smoke mode.
+Recommended initial matrix: Linux x86_64 and macOS arm64; add Windows x86_64 in alpha.9. Use explicit runner/architecture names and pin versions during implementation. Confirm runner availability for this repository. If an architecture is unavailable, leave its check pending or use an appropriate runner; do not label the target validated. Do not run interactive hello indefinitely in CI; add an automatic-exit smoke mode.
 
 ## Check quality
 

@@ -24,7 +24,7 @@ This proposal replaces the old plan that required “No C changes,” third-part
 | Topic | Proposal | Reason |
 | --- | --- | --- |
 | Implementation | C11 + CMake; raylib behind a C adapter | Native core and desktop/Android builds |
-| Game languages | Full C API and official Lua binding, both first-class | C games without a VM and Lua games with a standalone runtime |
+| Game languages | C core with first-class C, Lua, and planned Rust APIs | C games without a VM and Lua games with a standalone runtime |
 | Initial Lua version | Evaluate Lua 5.4 as a conservative base; confirm patch and support when dependencies are pinned | C coroutine and cleanup APIs; do not promise LuaJIT/5.1 |
 | Processes | One C scheduler; stateful C callbacks and Lua coroutines managed by the binding | Languages share lifecycle, signals, and priorities |
 | Reference | BennuGD2 primary, classic BennuGD historical, DIV/Fénix for comparison | Verifiable inventories without mixing generation signatures |
@@ -34,7 +34,7 @@ This proposal replaces the old plan that required “No C changes,” third-part
 | GUI | Project/asset/process workshop; evaluate ImGui+cimgui+raylib adapter | C services/core; C++ limited to UI dependencies; raygui as a strict C alternative |
 | Assets | Editable PNG+JSON, FPG for compatibility, ZIP as container | Preserve IDs/points without a new proprietary graphics binary |
 | CI and releases | GitHub Actions for builds, tests, analysis, docs, and version artifacts | Detect PR regressions and create verifiable candidates |
-| Documentation | C and Lua APIs with runnable examples, Markdown, and MkDocs on Pages | Two first-class references, PR review, and versioned search |
+| Documentation | C, Lua, and Rust APIs with runnable examples; Astro/Starlight migration planned | Two first-class references, PR review, and versioned search |
 
 Do not reimplement the Lua VM. Lua is already implemented in C. Do not use operating-system threads to simulate DIV processes. The Lua VM retains a script stack even with a C scheduler. The C core must run without Lua using native processes with explicit state. It does not promise arbitrary C stack suspension. See [C architecture and Lua binding](../architecture/c-first.md).
 
@@ -49,11 +49,12 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Automated create, run, export, and execution checks for C and Lua on macOS/Linux |
 | P5 / 2.0.0-alpha.5 | Process identity, lifecycle, ownership, resources, genealogy, and C/Lua API migration | Contracts and automated lifecycle, graphics, resource, stress, and C/Lua parity checks in [alpha.5](../versions/2.0.0-alpha.5.md) |
 | P6 / 2.0.0-alpha.6 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
-| P7 / 2.0.0-alpha.7 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |
-| P8 / 2.0.0-alpha.8 | Complete all remaining agreed 2.0 API families in C and Lua | Every in-scope API entry has an implementation, contract, and behavior test |
-| P9 / 2.0.0-alpha.9 | Complete public documentation, examples, site, packaging, and platform review | Published site and automated end-to-end checks for supported targets |
-| P10 / 2.0.0-beta.1 | Freeze the 2.0 API, manually test user flows, and prepare release candidates | Complete inventory, API parity, documentation, manual device and clean-host results |
-| P11 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
+| P7 / 2.0.0-alpha.7 | Rust SDK and multi-language architecture | Shared scheduler, installed SDK, parity and Rust game checks |
+| P8 / 2.0.0-alpha.8 | Complete all remaining agreed 2.0 API families in C, Lua, and Rust | Every in-scope API entry has an implementation, contract, and behavior test |
+| P9 / 2.0.0-alpha.9 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |
+| P10 / 2.0.0-alpha.10 | Complete public documentation, examples, site, packaging, and platform review | Published site and automated end-to-end checks for supported targets |
+| P11 / 2.0.0-beta.1 | Freeze the 2.0 API, manually test user flows, and prepare release candidates | Complete inventory, API parity, documentation, manual device and clean-host results |
+| P12 / 2.0.0 | Stabilization and release | Beta gates complete and release artifacts verified |
 | 2.1 | Mode 7 | Perspective floor, sprites, C/Lua APIs, examples and tests |
 | 2.2 | Mode 8 | Sector world, collision, C/Lua APIs, examples and tests |
 | 2.3 | Mode 9 | 3D worlds and sprites, C/Lua APIs, examples and tests |
@@ -68,7 +69,7 @@ Lua 5.4 remains the 2.0 runtime. A later LuaJIT evaluation must benchmark proces
 
 ## API documentation
 
-C and Lua will have getting-started guides, module references, and equivalent runnable examples. The initial site uses Markdown in Git, MkDocs, and GitHub Pages. The plan uses C signatures in public headers and LuaCATS definitions for the binding. See the [documentation plan](../development/api-documentation.md) for sources, CI, and versioning. Full site references remain pending.
+C, Lua, and Rust will have getting-started guides, module references, and equivalent runnable examples. The initial site uses Markdown in Git, MkDocs, and GitHub Pages. The plan uses C signatures in public headers and LuaCATS definitions for the binding. See the [documentation plan](../development/api-documentation.md) for sources, CI, and versioning. Full site references remain pending.
 
 ## CI and release publication
 

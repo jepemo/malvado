@@ -18,9 +18,10 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.4](2.0.0-alpha.4.md) — **complete**: minimal client, SDK, project creation, execution, and desktop packages. Source tag: `v2.0.0-alpha.4`; no release package yet.
 - [x] [Alpha.5](2.0.0-alpha.5.md) — **complete**: process model, C and Lua API, lifecycle, resources, and genealogy. The source revision selected for the tag must pass CI; no tag or release package exists yet.
 - [ ] [Alpha.6](2.0.0-alpha.6.md) — **in progress**: define the full 2.0 API inventory, collision, scrolling, and asset importers.
-- [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: Android and Windows.
-- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the agreed 2.0 API in C and Lua.
-- [ ] [Alpha.9](2.0.0-alpha.9.md) — **planned**: complete the public site and verify distribution.
+- [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: multi-language architecture and first-class Rust.
+- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the agreed 2.0 API in C, Lua, and Rust.
+- [ ] [Alpha.9](2.0.0-alpha.9.md) — **planned**: Android and Windows.
+- [ ] [Alpha.10](2.0.0-alpha.10.md) — **planned**: complete the public site and verify distribution.
 - [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: freeze the complete 2.0 API and verify release candidates.
 - [ ] [2.0.0](2.0.0.md) — **planned**: full agreed API, client, documentation, and verified macOS, Linux, Windows, and Android packages.
 - [ ] **2.1** — [Mode 7](../specs/graphics-modes.md).
@@ -30,3 +31,5 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [ ] **2.x, later** — evaluate LuaJIT using Malvado workloads and compatibility tests; Lua 5.4 remains the 2.0 runtime.
 
 The GUI and graphics modes are outside the 2.0 release gates. iOS is deferred to a later version. The full 2.0 API inventory needs an explicit decision; historical compatibility is tracked separately. See the [roadmap](../planning/roadmap.md) and [CLI plan](../specs/cli.md).
+
+The planned alpha.7–alpha.9 milestones were renumbered when Rust was inserted as alpha.7. Alpha.8 and alpha.9 were subsequently exchanged. Old links to those version filenames may now identify a different milestone; the alpha.10 website migration must audit public links and explain this change.

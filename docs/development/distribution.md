@@ -39,7 +39,7 @@ The external binding must define window and loop ownership, initialization and s
 
 To avoid unexpected updates to existing games, versions 1.x and 2.x must declare their version ranges and migration guide. If both use `malvado`, 2.0 must identify the API and engine break. Before publication, decide how to select 1.x and whether another name is useful. Verify actual LuaRocks resolver behavior and name availability.
 
-SDK and game package checks must use the [current process and startup contracts](../api/process-inventory.md). Installed C headers and libraries must provide the owned process handle API. Exported Lua games must support both entry forms. Keep Android emulator checks in alpha.7 and manual clean-machine checks in beta.
+SDK and game package checks must use the [current process and startup contracts](../api/process-inventory.md). Installed C headers and libraries must provide the owned process handle API. Exported Lua games must support both entry forms. Keep Android emulator checks in alpha.9 and manual clean-machine checks in beta.
 
 ## Versions and CI
 
