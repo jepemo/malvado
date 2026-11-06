@@ -2343,6 +2343,31 @@ animation_frame(lua_State *L)
     return 1;
 }
 
+/* Return a snapshot; it does not retain the atlas or expose borrowed pointers. */
+static int
+sprite_info(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    MvAtlasSprite sprite;
+    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
+        return luaL_error(L, "unknown sprite id");
+    lua_createtable(L, 0, 12);
+    lua_pushstring(L, sprite.name);
+    lua_setfield(L, -2, "name");
+    const char *names[] = {"id", "x", "y", "width", "height", "pivot_x", "pivot_y",
+                           "source_width", "source_height", "trim_x", "trim_y"};
+    const int values[] = {sprite.id, sprite.region.x, sprite.region.y,
+                          sprite.region.width, sprite.region.height, sprite.pivot_x,
+                          sprite.pivot_y, sprite.source_width, sprite.source_height,
+                          sprite.trim_x, sprite.trim_y};
+    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); ++i) {
+        lua_pushinteger(L, values[i]);
+        lua_setfield(L, -2, names[i]);
+    }
+    return 1;
+}
+
 static int
 draw_sprite(lua_State *L)
 {
@@ -3304,6 +3329,7 @@ static const char *const global_names[] = {
     "draw_image_region",
     "load_atlas",
     "load_aseprite",
+    "sprite_info",
     "animation_frame",
     "draw_sprite",
     "font",
@@ -4012,6 +4038,7 @@ open_module(lua_State *L)
 #ifdef MALVADO_BUILD_ASSETS
         {"load_atlas", load_atlas},
         {"load_aseprite", load_aseprite},
+        {"sprite_info", sprite_info},
         {"animation_frame", animation_frame},
         {"draw_sprite", draw_sprite},
 #endif
