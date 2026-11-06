@@ -33,7 +33,7 @@ Compare benchmarks on the same machine with the same process count, resources, V
 | `audio` | Effect, music, volume, and pause | Resume without duplicate channels |
 | `scroll` | Region and camera | Large scene with fixed HUD |
 | `fpg-import` | Import one FPG variant to PNG+JSON | Preserve non-consecutive IDs, points, transparency, and palette |
-| `atlas-import` | Aseprite PNG+JSON atlas subset | Durations, offsets, and explicit rejection of unsupported options |
+| [Aseprite animation](../../examples/aseprite/README.md) | Aseprite PNG+JSON atlas subset | Automated animation frame progression; importer tests cover offsets and rejection of unsupported options |
 | `gui-workflow` | Open a copy of starter/asteroids from the GUI | Create, run, navigate to error, inspect ticks, and export with CLI services |
 | `legacy-formats` | FPG/MAP/FNT/PAL when available | Asset with known controls and palette |
 | `asteroids` | Complete game and export | Start/play/lose/restart cycle on each target |

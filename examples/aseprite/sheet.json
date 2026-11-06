@@ -1,0 +1,13 @@
+{
+  "frames": [
+    {"filename":"one","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":100},
+    {"filename":"two","frame":{"x":4,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":200},
+    {"filename":"three","frame":{"x":4,"y":4,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":300}
+  ],
+  "meta":{"image":"sheet.png","size":{"w":8,"h":8},"frameTags":[
+    {"name":"bounce","from":0,"to":2,"direction":"pingpong","color":"#12aBcD80"},
+    {"name":"backbounce","from":0,"to":2,"direction":"pingpong_reverse"},
+    {"name":"single","from":1,"to":1,"direction":"pingpong","color":"#abcdef"},
+    {"name":"pair","from":0,"to":1,"direction":"pingpong_reverse"}
+  ]}
+}
