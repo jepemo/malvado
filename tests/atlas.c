@@ -248,6 +248,22 @@ main(int argc, char **argv)
     assert(!mv_atlas_pivot_color(NULL, &slice_color));
     assert(!mv_atlas_pivot_color(atlas, NULL));
     mv_atlas_destroy(atlas);
+    const char *frames_end = strstr(buffer, "\n  ],\n  \"meta\"");
+    assert(frames_end);
+    char multiple[4096];
+    const char *second_frame = ",\n    {\"filename\":\"full\",\"frame\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8},"
+        "\"rotated\":false,\"trimmed\":false,\"spriteSourceSize\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8},"
+        "\"sourceSize\":{\"w\":8,\"h\":8},\"duration\":200}";
+    int multiple_length = snprintf(multiple, sizeof(multiple), "%.*s%s%s",
+                                   (int)(frames_end - buffer), buffer, second_frame, frames_end);
+    assert(multiple_length > 0 && (size_t)multiple_length < sizeof(multiple));
+    atlas = mv_atlas_parse_aseprite(multiple, (size_t)multiple_length, 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite) && sprite.pivot_x == 2 && sprite.pivot_y == 3);
+    assert(mv_atlas_find(atlas, 2, &sprite) && sprite.pivot_x == 4 && sprite.pivot_y == 6);
+    assert(mv_atlas_animation_frame(atlas, "default", 120, 1, &frame) && frame == 2);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(multiple, "\"sourceSize\":{\"w\":8,\"h\":8}",
+                            "\"sourceSize\":{\"w\":9,\"h\":8}");
     invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"other\"");
     invalid_aseprite_change(buffer, "\"frame\":0", "\"frame\":0,\"frame\":0");
     invalid_aseprite_change(buffer, "\"pivot\":{\"x\":4,\"y\":6}", "\"pivot\":{\"x\":4,\"y\":6,\"z\":0}");
