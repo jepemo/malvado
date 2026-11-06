@@ -81,3 +81,14 @@ In C, the raylib platform provides `mv_window_draw_transformed_rect` and
 The rectangle takes its pivot in local pixels and rotates clockwise. These
 functions draw immediately and do not create colliders. They return 0 for
 invalid input or no window, including in the headless backend.
+
+## Window clipping in C
+
+Between `mv_window_begin` and `mv_window_end`, call
+`mv_window_clip_begin(x, y, width, height)` to restrict subsequent drawing to
+one rectangle in logical window pixels. The rectangle must be nonempty and
+fully inside the window. Clips cannot be nested. Invalid arguments or state
+return 0 without changing the current clip. `mv_window_clip_end()` restores
+unrestricted drawing and returns 1, or 0 if no clip is active. Ending a frame
+also clears an active clip. These calls return 0 without a graphics window.
+This low-level primitive does not yet provide process regions or scrolling.

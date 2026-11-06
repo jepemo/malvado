@@ -28,6 +28,8 @@ int
 main(void)
 {
     double before, after;
+    assert(!mv_window_clip_begin(0, 0, 1, 1));
+    assert(!mv_window_clip_end());
     assert(!mv_window_set_title(NULL) && !mv_window_set_title("No window"));
     int width = 1, height = 2;
     assert(!mv_window_size(NULL, &height) && height == 2);

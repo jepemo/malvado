@@ -134,6 +134,13 @@ int mv_music_resume(MvMusic *music);
 int mv_music_playing(const MvMusic *music);
 int mv_music_set_volume(MvMusic *music, float volume);
 void mv_window_begin(MvColor background);
+/* Clip subsequent drawing to a rectangle inside the logical window. Call
+ * between window_begin and window_end. Rectangles must be nonempty and fully
+ * inside the window. Nested clips are rejected. Invalid calls leave the clip
+ * unchanged. clip_end restores unrestricted drawing. window_end also clears
+ * an active clip. Return 1 on success, 0 on invalid state or arguments. */
+int mv_window_clip_begin(int x, int y, int width, int height);
+int mv_window_clip_end(void);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Return the built-in font width in pixels, or 0 for invalid input or no window. */
 int mv_window_text_width(const char *text, int size);

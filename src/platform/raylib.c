@@ -42,6 +42,7 @@ struct MvFont {
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
+static int drawing_active, clip_active;
 
 int
 mv_pad_connected(int slot)
@@ -334,6 +335,8 @@ mv_window_size(int *width, int *height)
 void mv_window_close(void)
 {
     if (IsWindowReady()) CloseWindow();
+    drawing_active = 0;
+    clip_active = 0;
     text_head = 0;
     text_count = 0;
 }
@@ -427,8 +430,31 @@ capture_text_input(void)
 void mv_window_begin(MvColor c)
 {
     BeginDrawing();
+    drawing_active = 1;
     ClearBackground((Color){c.r, c.g, c.b, c.a});
 }
+int
+mv_window_clip_begin(int x, int y, int width, int height)
+{
+    if (!IsWindowReady() || !drawing_active || clip_active || x < 0 || y < 0 ||
+        width <= 0 || height <= 0 || x >= GetScreenWidth() || y >= GetScreenHeight() ||
+        width > GetScreenWidth() - x || height > GetScreenHeight() - y)
+        return 0;
+    BeginScissorMode(x, y, width, height);
+    clip_active = 1;
+    return 1;
+}
+
+int
+mv_window_clip_end(void)
+{
+    if (!IsWindowReady() || !drawing_active || !clip_active)
+        return 0;
+    EndScissorMode();
+    clip_active = 0;
+    return 1;
+}
+
 int
 mv_window_text_width(const char *text, int size)
 {
@@ -640,7 +666,9 @@ mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransfor
 void mv_window_flush(void) { rlDrawRenderBatchActive(); }
 void mv_window_end(void)
 {
+    if (clip_active) (void)mv_window_clip_end();
     EndDrawing();
+    drawing_active = 0;
     capture_text_input();
 }
 double mv_platform_time(void) { return GetTime(); }
