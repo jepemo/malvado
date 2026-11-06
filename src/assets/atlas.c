@@ -217,6 +217,8 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
             !integer_field(item, "width", 1, width - sprite->region.x, &sprite->region.width) ||
             !integer_field(item, "height", 1, height - sprite->region.y, &sprite->region.height))
             goto fail;
+        sprite->source_width = sprite->region.width;
+        sprite->source_height = sprite->region.height;
         const cJSON *px = cJSON_GetObjectItemCaseSensitive(item, "pivot_x");
         const cJSON *py = cJSON_GetObjectItemCaseSensitive(item, "pivot_y");
         if ((px && !integer_field(item, "pivot_x", INT_MIN, INT_MAX, &sprite->pivot_x)) ||
@@ -280,7 +282,7 @@ fail:
     return NULL;
 }
 
-/* Import the untrimmed array subset into the existing atlas representation. */
+/* Import the supported array subset into the existing atlas representation. */
 MvAtlas *
 mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
                         const char **error)
@@ -354,23 +356,31 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         MvAtlasSprite *sprite = &atlas->sprites[atlas->count];
         const cJSON *rotated = cJSON_GetObjectItemCaseSensitive(entry, "rotated");
         const cJSON *trimmed = cJSON_GetObjectItemCaseSensitive(entry, "trimmed");
-        if (cJSON_IsTrue(rotated) || cJSON_IsTrue(trimmed)) {
-            if (error) *error = "unsupported Aseprite rotated or trimmed frame";
+        if (cJSON_IsTrue(rotated)) {
+            if (error) *error = "unsupported Aseprite rotated frame";
             goto fail_aseprite;
         }
         int sx, sy, sw, sh, ow, oh, duration;
         if (!object_fields(entry, frame_fields, 7) || !object_fields(rect, rect_fields, 4) ||
             !object_fields(source, rect_fields, 4) || !object_fields(original, size_fields, 2) ||
-            !cJSON_IsFalse(rotated) || !cJSON_IsFalse(trimmed) ||
+            !cJSON_IsFalse(rotated) || !cJSON_IsBool(trimmed) ||
             !integer_field(rect, "x", 0, width - 1, &sprite->region.x) ||
             !integer_field(rect, "y", 0, height - 1, &sprite->region.y) ||
             !integer_field(rect, "w", 1, width - sprite->region.x, &sprite->region.width) ||
             !integer_field(rect, "h", 1, height - sprite->region.y, &sprite->region.height) ||
-            !integer_field(source, "x", 0, 0, &sx) || !integer_field(source, "y", 0, 0, &sy) ||
+            !integer_field(source, "x", 0, INT_MAX, &sx) || !integer_field(source, "y", 0, INT_MAX, &sy) ||
             !integer_field(source, "w", 1, INT_MAX, &sw) || !integer_field(source, "h", 1, INT_MAX, &sh) ||
             !integer_field(original, "w", 1, INT_MAX, &ow) || !integer_field(original, "h", 1, INT_MAX, &oh) ||
-            sw != sprite->region.width || sh != sprite->region.height || ow != sw || oh != sh ||
+            sw != sprite->region.width || sh != sprite->region.height ||
+            sw > ow || sh > oh || sx > ow - sw || sy > oh - sh ||
+            (cJSON_IsFalse(trimmed) && (sx != 0 || sy != 0 || ow != sw || oh != sh)) ||
             !integer_field(entry, "duration", 1, 3600000, &duration)) goto fail_aseprite;
+        sprite->source_width = ow;
+        sprite->source_height = oh;
+        sprite->trim_x = sx;
+        sprite->trim_y = sy;
+        sprite->pivot_x = -sx;
+        sprite->pivot_y = -sy;
         sprite->name = copy_text(cJSON_GetObjectItemCaseSensitive(entry, "filename"), 127);
         if (!sprite->name) goto fail_aseprite;
         sprite->id = (int)atlas->count + 1;

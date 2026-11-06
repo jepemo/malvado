@@ -43,7 +43,7 @@ invalid_aseprite_change(const char *json, const char *old, const char *replaceme
 int
 main(int argc, char **argv)
 {
-    assert(argc == 4);
+    assert(argc == 5);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
     char buffer[2048];
@@ -59,6 +59,7 @@ main(int argc, char **argv)
     assert(!strcmp(sprite.name, "green") && sprite.region.x == 4 && sprite.region.width == 4);
     assert(sprite.pivot_x == 2 && sprite.pivot_y == 4);
     assert(mv_atlas_find(atlas, 7, &sprite) && sprite.pivot_x == 0 && sprite.pivot_y == 0);
+    assert(sprite.source_width == 4 && sprite.source_height == 8 && sprite.trim_x == 0 && sprite.trim_y == 0);
     assert(!mv_atlas_find(atlas, 8, &sprite));
     mv_atlas_destroy(atlas);
     mv_atlas_destroy(NULL);
@@ -123,7 +124,7 @@ main(int argc, char **argv)
     invalid_aseprite_change(tagged, "\"name\":\"walk\"", "\"name\":\"default\"");
     invalid_aseprite_change(tagged, "\"name\":\"back\"", "\"name\":\"walk\"");
     invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"forward\",\"repeat\":\"2\"");
-    invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":true");
+    invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":1");
     invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
     invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":0");
@@ -136,6 +137,34 @@ main(int argc, char **argv)
     memcpy(rotated + strlen("\"rotated\":"), "true ", 5);
     assert(!mv_atlas_parse_aseprite(buffer, length, 8, 8, &error) && error);
     assert(!mv_atlas_parse_aseprite("{}", 2, 8, 8, &error) && error);
+    file = fopen(argv[4], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer) - 1, file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    buffer[length] = '\0';
+    atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
+    assert(atlas && !error && mv_atlas_find(atlas, 1, &sprite));
+    assert(sprite.region.x == 4 && sprite.region.width == 4 && sprite.region.height == 4);
+    assert(sprite.source_width == 8 && sprite.source_height == 8);
+    assert(sprite.trim_x == 2 && sprite.trim_y == 3 && sprite.pivot_x == -2 && sprite.pivot_y == -3);
+    assert(mv_atlas_animation_frame(atlas, "default", 0, 1, &frame) && frame == 1);
+    mv_atlas_destroy(atlas);
+    char edge[2048];
+    memcpy(edge, buffer, length + 1);
+    char *offset = strstr(edge, "\"x\":2,\"y\":3");
+    assert(offset);
+    offset[strlen("\"x\":")] = '4';
+    offset[strlen("\"x\":2,\"y\":")] = '4';
+    atlas = mv_atlas_parse_aseprite(edge, length, 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite));
+    assert(sprite.trim_x == 4 && sprite.trim_y == 4);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(buffer, "\"trimmed\":true", "\"trimmed\":false");
+    invalid_aseprite_change(buffer, "\"x\":2,\"y\":3", "\"x\":5,\"y\":3");
+    invalid_aseprite_change(buffer, "\"x\":2,\"y\":3", "\"x\":2,\"y\":5");
+    invalid_aseprite_change(buffer, "\"x\":2,\"y\":3", "\"x\":-1,\"y\":3");
+    invalid_aseprite_change(buffer, "\"sourceSize\":{\"w\":8", "\"sourceSize\":{\"w\":3");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

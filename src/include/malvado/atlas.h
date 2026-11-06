@@ -28,13 +28,15 @@ typedef struct {
     const char *name; /* Borrowed; valid until the atlas is destroyed. */
     MvImageRegion region;
     int pivot_x, pivot_y;
+    /* Original canvas and crop offset, in pixels. */
+    int source_width, source_height, trim_x, trim_y;
 } MvAtlasSprite;
 
 /* Parse a schema 1 or 2 atlas and validate regions against the image dimensions.
  * The JSON buffer is borrowed only during this call. The optional error is a
  * static message. The caller owns the result and must destroy it. */
 MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, const char **error);
-/* Import an Aseprite JSON array export with untrimmed, unrotated frames.
+/* Import an Aseprite JSON array export with unrotated frames.
  * The caller supplies the actual image dimensions. The atlas owns its data.
  * Forward and reverse tags become named animations. Unsupported metadata is
  * rejected; error receives a static message. */
