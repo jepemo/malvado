@@ -31,6 +31,7 @@ Compare benchmarks on the same machine with the same process count, resources, V
 | `text` | write/change/delete, alignment, UTF-8 | Score changes without recreating objects each tick |
 | `input` | Keyboard, mouse, controller | Held key versus event and hotplug |
 | `audio` | Effect, music, volume, and pause | Resume without duplicate channels |
+| [Regions](../../examples/regions/README.md) | Process clipping and an unclipped overlay | Automated clipping and restoration checks |
 | `scroll` | Region and camera | Large scene with fixed HUD |
 | `fpg-import` | Import one FPG variant to PNG+JSON | Preserve non-consecutive IDs, points, transparency, and palette |
 | [Aseprite animation](../../examples/aseprite/README.md) | Aseprite PNG+JSON atlas subset | Automated animation frame progression; importer tests cover offsets and rejection of unsupported options |
