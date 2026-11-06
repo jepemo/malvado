@@ -33,12 +33,18 @@ check_frame(void *user)
     Color green = GetImageColor(screen, 22 * screen.width / width, 12 * screen.height / height);
     Color sprite = GetImageColor(screen, 50 * screen.width / width, 40 * screen.height / height);
     Color outside = GetImageColor(screen, 40 * screen.width / width, 40 * screen.height / height);
+    Color pivot = GetImageColor(screen, 29 * screen.width / width, 43 * screen.height / height);
+    Color pivot_manual = GetImageColor(screen, 39 * screen.width / width, 48 * screen.height / height);
+    Color pivot_outside = GetImageColor(screen, 33 * screen.width / width, 43 * screen.height / height);
     Color cropped = GetImageColor(screen, 7 * screen.width / width, 49 * screen.height / height);
     Color rotated_crop = GetImageColor(screen, 50 * screen.width / width, 60 * screen.height / height);
     Color manual_crop = GetImageColor(screen, 23 * screen.width / width, 49 * screen.height / height);
     Color cropped_outside = GetImageColor(screen, 5 * screen.width / width, 46 * screen.height / height);
     Color legacy = GetImageColor(screen, 31 * screen.width / width, 20 * screen.height / height);
     Color legacy_outside = GetImageColor(screen, 40 * screen.width / width, 20 * screen.height / height);
+    assert(pivot.g > 240 && pivot.r < 10 && pivot.b < 10);
+    assert(pivot_manual.g > 240 && pivot_manual.r < 10 && pivot_manual.b < 10);
+    assert(pivot_outside.g < 10 && pivot_outside.r < 10 && pivot_outside.b < 10);
     assert(rotated_crop.g > 240 && rotated_crop.r < 10 && rotated_crop.b < 10);
     assert(manual_crop.g > 240 && manual_crop.r < 10 && manual_crop.b < 10);
     assert(cropped.g > 240 && cropped.r < 10 && cropped.b < 10);

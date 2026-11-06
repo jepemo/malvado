@@ -2325,6 +2325,24 @@ load_aseprite(lua_State *L)
 }
 
 static int
+atlas_pivot_color(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    MvColor color;
+    if (!mv_atlas_pivot_color(atlas->atlas, &color)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 4, 0);
+    const int channels[] = {color.r, color.g, color.b, color.a};
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, channels[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    return 1;
+}
+
+static int
 animation_repeats(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
@@ -3387,6 +3405,7 @@ static const char *const global_names[] = {
     "sprite_id",
     "animation_frame",
     "animation_color",
+    "atlas_pivot_color",
     "animation_repeats",
     "draw_sprite",
     "font",
@@ -4099,6 +4118,7 @@ open_module(lua_State *L)
         {"sprite_id", sprite_id},
         {"animation_frame", animation_frame},
         {"animation_color", animation_color},
+        {"atlas_pivot_color", atlas_pivot_color},
         {"animation_repeats", animation_repeats},
         {"draw_sprite", draw_sprite},
 #endif
