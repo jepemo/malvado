@@ -49,6 +49,9 @@ size_t mv_atlas_count(const MvAtlas *atlas);
 int mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite);
 /* Find a sprite by its exact name. Leave the output unchanged on failure. */
 int mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite);
+/* Copy the optional color of the imported full-canvas pivot slice. Return 0
+ * without changing out if the slice has no color or the argument is invalid. */
+int mv_atlas_pivot_color(const MvAtlas *atlas, MvColor *out);
 /* Copy an imported tag color. Return 0 without changing out if absent or invalid. */
 int mv_atlas_animation_color(const MvAtlas *atlas, const char *name, MvColor *out);
 /* Copy an explicit Aseprite repeat count (0..65535). Return 0 without

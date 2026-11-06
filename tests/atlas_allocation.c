@@ -49,11 +49,10 @@ void test_atlas_free(void *pointer)
     free(pointer);
 }
 
-int
-main(int argc, char **argv)
+static void
+check_file(const char *path)
 {
-    assert(argc == 2);
-    FILE *file = fopen(argv[1], "rb");
+    FILE *file = fopen(path, "rb");
     assert(file);
     char buffer[2048];
     size_t length = fread(buffer, 1, sizeof(buffer), file);
@@ -78,5 +77,13 @@ main(int argc, char **argv)
     }
     assert(failures > 0 && failures < 999);
     cJSON_InitHooks(NULL);
+}
+
+int
+main(int argc, char **argv)
+{
+    assert(argc == 3);
+    check_file(argv[1]);
+    check_file(argv[2]);
     return 0;
 }

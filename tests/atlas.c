@@ -43,7 +43,7 @@ invalid_aseprite_change(const char *json, const char *old, const char *replaceme
 int
 main(int argc, char **argv)
 {
-    assert(argc == 6);
+    assert(argc == 7);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
     char buffer[2048];
@@ -61,6 +61,8 @@ main(int argc, char **argv)
     assert(mv_atlas_find(atlas, 7, &sprite) && sprite.pivot_x == 0 && sprite.pivot_y == 0);
     assert(sprite.source_width == 4 && sprite.source_height == 8 && sprite.trim_x == 0 && sprite.trim_y == 0);
     assert(!mv_atlas_find(atlas, 8, &sprite));
+    MvColor absent = {1, 2, 3, 4};
+    assert(!mv_atlas_pivot_color(atlas, &absent) && absent.r == 1 && absent.a == 4);
     assert(mv_atlas_find_name(atlas, "green", &sprite) && sprite.id == 42);
     assert(!mv_atlas_find_name(atlas, "Green", &sprite) && sprite.id == 42);
     assert(!mv_atlas_find_name(atlas, NULL, &sprite) && sprite.id == 42);
@@ -230,6 +232,31 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "#12aBcD80", "#123");
     invalid_aseprite_change(buffer, "\"color\":\"#abcdef\"", "\"color\":123");
     invalid_aseprite_change(buffer, "\"color\":\"#abcdef\"", "\"color\":\"#abcdef\",\"color\":\"#abcdef\"");
+    file = fopen(argv[6], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer) - 1, file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    buffer[length] = '\0';
+    atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
+    assert(atlas && !error && mv_atlas_find(atlas, 1, &sprite));
+    assert(sprite.pivot_x == 2 && sprite.pivot_y == 3);
+    assert(sprite.trim_x == 2 && sprite.trim_y == 3);
+    MvColor slice_color = {0};
+    assert(mv_atlas_pivot_color(atlas, &slice_color));
+    assert(slice_color.r == 0x12 && slice_color.g == 0x34 && slice_color.b == 0x56 && slice_color.a == 0x78);
+    assert(!mv_atlas_pivot_color(NULL, &slice_color));
+    assert(!mv_atlas_pivot_color(atlas, NULL));
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"other\"");
+    invalid_aseprite_change(buffer, "\"frame\":0", "\"frame\":0,\"frame\":0");
+    invalid_aseprite_change(buffer, "\"pivot\":{\"x\":4,\"y\":6}", "\"pivot\":{\"x\":4,\"y\":6,\"z\":0}");
+    invalid_aseprite_change(buffer, "\"frame\":0", "\"frame\":1");
+    invalid_aseprite_change(buffer, "\"pivot\":{\"x\":4", "\"pivot\":{\"x\":-2147483648");
+    invalid_aseprite_change(buffer, "\"bounds\":{\"x\":0", "\"bounds\":{\"x\":1");
+    invalid_aseprite_change(buffer, "\"bounds\":{\"x\":0,\"y\":0,\"w\":8", "\"bounds\":{\"x\":0,\"y\":0,\"w\":7");
+    invalid_aseprite_change(buffer, "#12345678", "#oops");
+    invalid_aseprite_change(buffer, "\"frame\":0", "\"center\":{},\"frame\":0");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
