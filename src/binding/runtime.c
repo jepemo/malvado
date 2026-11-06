@@ -99,6 +99,7 @@ static void lua_process_destroy(void *user);
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason, collision_invalid; MvProcessRef reference; } LuaSelf;
 typedef struct { int x, y, width, height; } LuaRegion;
+typedef struct { float x, y; } LuaScroll;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
 typedef struct {
     MvCollisionShape shape;
@@ -841,6 +842,9 @@ self_newindex(lua_State *L)
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && is_read_only_process_field(key))
         return luaL_error(L, "process field is read-only");
+    if (key && strcmp(key, "scroll") == 0 && !lua_isnil(L, 3) &&
+        !luaL_testudata(L, 3, "malvado.scroll"))
+        return luaL_error(L, "scroll must be a scroll descriptor or nil");
     if (key && strcmp(key, "region") == 0 && !lua_isnil(L, 3) &&
         !luaL_testudata(L, 3, "malvado.region"))
         return luaL_error(L, "region must be a region descriptor or nil");
@@ -876,6 +880,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
         (luaL_testudata(L, source, "malvado.collision_shape") ||
          luaL_testudata(L, source, "malvado.graphic") ||
          luaL_testudata(L, source, "malvado.region") ||
+         luaL_testudata(L, source, "malvado.scroll") ||
          luaL_testudata(L, source, "malvado.image"))) {
         lua_pushvalue(L, source);
         return;
@@ -1000,6 +1005,11 @@ create_process(lua_State *L)
     if (!lua_isnil(L, -1) &&
         (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
         return luaL_error(L, "z must be a finite number");
+    lua_pop(L, 1);
+    lua_pushliteral(L, "scroll");
+    lua_rawget(L, fields);
+    if (!lua_isnil(L, -1) && !luaL_testudata(L, -1, "malvado.scroll"))
+        return luaL_error(L, "scroll must be a scroll descriptor or nil");
     lua_pop(L, 1);
     lua_pushliteral(L, "region");
     lua_rawget(L, fields);
@@ -3080,6 +3090,23 @@ begin_process_region(lua_State *L, const Process *process)
     return mv_window_clip_begin((int)left, (int)top, (int)(right - left), (int)(bottom - top)) ? 2 : 0;
 }
 
+/* Return 1 without a scroll, 2 when active, or 0 for invalid state. */
+static int
+begin_process_scroll(lua_State *L, const Process *process)
+{
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+    lua_getiuservalue(L, -1, 1);
+    lua_getfield(L, -1, "scroll");
+    LuaScroll *stored = luaL_testudata(L, -1, "malvado.scroll");
+    LuaScroll scroll = stored ? *stored : (LuaScroll){0};
+    int present = !lua_isnil(L, -1);
+    int valid = stored != NULL;
+    lua_pop(L, 3);
+    if (!present) return 1;
+    if (!valid) return 0;
+    return mv_window_scroll_begin(scroll.x, scroll.y) ? 2 : 0;
+}
+
 static void
 render(void)
 {
@@ -3117,6 +3144,11 @@ render(void)
             continue;
         int region = begin_process_region(L, process);
         if (!region) continue;
+        int scroll = begin_process_scroll(L, process);
+        if (!scroll) {
+            if (region == 2) (void)mv_window_clip_end();
+            continue;
+        }
         render_graph(L, process);
         lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
         for (lua_Integer i = 1; i <= (lua_Integer)lua_rawlen(L, -1); i++) {
@@ -3143,6 +3175,7 @@ render(void)
             lua_pop(L, 4);
         }
         lua_pop(L, 1);
+        if (scroll == 2) (void)mv_window_scroll_end();
         if (region == 2) (void)mv_window_clip_end();
     }
     render_texts(L);
@@ -4072,6 +4105,18 @@ graphic_create(lua_State *L)
 }
 
 static int
+scroll_create(lua_State *L)
+{
+    lua_Number x = luaL_checknumber(L, 1), y = luaL_checknumber(L, 2);
+    if (!isfinite(x) || !isfinite(y) || fabs(x) > FLT_MAX / 16 || fabs(y) > FLT_MAX / 16)
+        return luaL_error(L, "invalid scroll coordinates");
+    LuaScroll *scroll = lua_newuserdatauv(L, sizeof(*scroll), 0);
+    *scroll = (LuaScroll){(float)x, (float)y};
+    luaL_setmetatable(L, "malvado.scroll");
+    return 1;
+}
+
+static int
 region_create(lua_State *L)
 {
     lua_Integer x = luaL_checkinteger(L, 1), y = luaL_checkinteger(L, 2);
@@ -4231,6 +4276,10 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado collision world");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.scroll");
+    lua_pushliteral(L, "malvado scroll");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.region");
     lua_pushliteral(L, "malvado region");
     lua_setfield(L, -2, "__metatable");
@@ -4311,6 +4360,8 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "rect");
     lua_pushcfunction(L, region_create);
     lua_setfield(L, -2, "region");
+    lua_pushcfunction(L, scroll_create);
+    lua_setfield(L, -2, "scroll");
 #ifdef MALVADO_BUILD_ASSETS
     lua_pushcfunction(L, graphic_sprite);
     lua_setfield(L, -2, "sprite");

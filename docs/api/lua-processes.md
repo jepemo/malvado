@@ -170,3 +170,9 @@ Set `self.region` to a `graphics.region(x, y, width, height)` descriptor to
 clip this process's graph and immediate drawing. Set it to `nil` to remove the
 clip. It does not change process coordinates or collision queries. See
 [window clipping and regions](drawing.md#clip-a-lua-process-to-a-region).
+
+## Process scrolling
+
+Assign a `graphics.scroll(x, y)` descriptor to `self.scroll` to draw this
+process relative to a world offset. Other processes and collision positions
+are unchanged. See [scrolling](drawing.md#scroll-a-lua-process).

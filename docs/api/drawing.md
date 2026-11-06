@@ -132,3 +132,20 @@ state. Scrolling cannot be nested. If a clip is needed, begin it before the
 scroll and end it after the scroll. Invalid calls leave both states unchanged.
 These functions return 0 when there is no graphics window. They do not change
 process positions or collisions.
+
+## Scroll a Lua process
+
+`graphics.scroll(x, y)` creates an immutable, shareable scroll descriptor.
+Assign it to `self.scroll` or include it in process defaults. It translates the
+process graph and immediate draw commands by `(-x, -y)` on the next render.
+Coordinates are finite numbers with magnitude at most `FLT_MAX / 16`; the
+descriptor stores them as C floats. Assign a new descriptor to move the
+view, or `nil` to restore window coordinates. Invalid values raise an error,
+including during process creation. Descriptors can be created headlessly.
+
+A process's `region` remains in window coordinates and clips the scrolled
+result. Processes without the descriptor, persistent text, the fade, and
+other processes are unaffected. Scroll does not change process positions,
+collision geometry, scheduling, or `z` order. This initial capability is a
+uniform translation; it does not implement wrapping, parallax, tilemaps, zoom,
+or camera rotation.
