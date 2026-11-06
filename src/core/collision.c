@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "malvado/collision.h"
+#include "collision_internal.h"
 
 static int
 valid_rect(MvRect r)
@@ -92,6 +93,17 @@ world_shape(MvCollisionShape shape, MvCollisionTransform transform, WorldShape *
            isfinite(out->bound_y) && out->bound_x > 0 && out->bound_y > 0 &&
            isfinite(out->x + out->bound_x) && isfinite(out->x - out->bound_x) &&
            isfinite(out->y + out->bound_y) && isfinite(out->y - out->bound_y);
+}
+
+int
+mv_collision_bounds(MvCollisionShape shape, MvCollisionTransform transform,
+                    MvCollisionBounds *bounds)
+{
+    WorldShape world;
+    if (!bounds || !world_shape(shape, transform, &world))
+        return 0;
+    *bounds = (MvCollisionBounds){world.x, world.y, world.bound_x, world.bound_y};
+    return 1;
 }
 
 static double

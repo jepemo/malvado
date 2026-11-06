@@ -78,9 +78,16 @@ and C dense-hit times of 0.826, 0.758, and 0.900 ms. Lua update times were
 3.948, 4.041, and 3.891 ms; Lua miss times were 131.995, 121.470, and
 122.690 ms. These are local measurements, not platform guarantees.
 
-The current implementation scans live processes in creation order. It computes
-bounding boxes before running the shape-specific intersection test and stops
-at the first hit for a single-result query. It has no spatial index. The
-worst-case miss workload above exceeds a 60 Hz frame budget when all 1,000
-queries occur in one frame. Treat this as a baseline, not an efficiency claim;
-a measured candidate index remains open in alpha.6.
+After caching transformed bounds on collider updates, three debug runs on the
+same local machine reported C miss times of 5.167, 4.881, and 4.952 ms; C
+update times of 0.732, 0.687, and 0.711 ms; and dense-hit times of 0.795,
+0.747, and 0.723 ms. Lua update times were 3.667, 4.051, and 3.904 ms;
+Lua miss times were 4.988, 4.848, and 4.809 ms. This is a local comparison,
+not a performance guarantee.
+
+The implementation still scans live processes in creation order, but uses cached
+bounds to reject distant candidates before shape intersection. Updates replace
+the bounds atomically with the collider; invalid updates preserve both. This
+linear scan can still become expensive at larger scales or with dense scenes.
+The alpha.6 performance item remains open until render-frequency independence
+and the remaining acceptance checks are verified.

@@ -69,6 +69,18 @@ main(void)
     assert(mv_process_collider_test(ctx, refs[0], refs[1], &hit) == MV_OK && !hit);
     assert(mv_process_collider_set(ctx, refs[1], circle, (MvCollisionTransform){NAN, 0, 0, 1}) == MV_INVALID_ARGUMENT);
     assert(mv_process_collider_test(ctx, refs[0], refs[1], &hit) == MV_OK && !hit);
+    /* Cached bounds follow rotation, offset and scale, including failed updates. */
+    MvCollisionShape offset_rect = {.kind = MV_COLLISION_RECT, .width = 4,
+                                    .height = 2, .offset_x = 10};
+    assert(mv_process_collider_set(ctx, refs[1], offset_rect,
+                                   (MvCollisionTransform){0, -20, 90, 2}) == MV_OK);
+    assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[1]);
+    assert(mv_process_collider_set(ctx, refs[1], offset_rect,
+                                   (MvCollisionTransform){0, -20, 0, 2}) == MV_OK);
+    assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[2]);
+    assert(mv_process_collider_set(ctx, refs[1], offset_rect,
+                                   (MvCollisionTransform){NAN, 0, 0, 1}) == MV_INVALID_ARGUMENT);
+    assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[2]);
     assert(mv_process_collider_clear(ctx, refs[2]) == MV_OK);
     assert(mv_process_collider_clear(ctx, refs[2]) == MV_OK);
     assert(mv_process_collider_find(ctx, refs[0], 0, out, 3, &count) == MV_OK && count == 1 && out[0].id == ids[3]);

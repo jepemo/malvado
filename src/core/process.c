@@ -14,9 +14,11 @@
  */
 #include "process.h"
 #include "malvado/collision.h"
+#include "collision_internal.h"
 #include "entropy.h"
 #include "schedule.h"
 #include <stdint.h>
+#include <math.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,6 +48,7 @@ typedef struct {
     int has_collider;
     MvCollisionShape collider;
     MvCollisionTransform collider_transform;
+    MvCollisionBounds collider_bounds;
     MvEndReason reason;
     MessageNode *head, *tail;
     size_t messages;
@@ -184,8 +187,10 @@ mv_process_collider_set(MvContext *ctx, MvProcessRef reference,
     MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK)
         return result;
-    if (mv_collision_overlap(shape, transform, shape, transform) < 0)
+    MvCollisionBounds bounds;
+    if (!mv_collision_bounds(shape, transform, &bounds))
         return MV_INVALID_ARGUMENT;
+    item->collider_bounds = bounds;
     item->collider = shape;
     item->collider_transform = transform;
     item->has_collider = 1;
@@ -203,6 +208,15 @@ mv_process_collider_clear(MvContext *ctx, MvProcessRef reference)
     return MV_OK;
 }
 
+static int
+collider_candidates(const Process *a, const Process *b)
+{
+    return fabs(a->collider_bounds.x - b->collider_bounds.x) <
+               a->collider_bounds.half_width + b->collider_bounds.half_width &&
+           fabs(a->collider_bounds.y - b->collider_bounds.y) <
+               a->collider_bounds.half_height + b->collider_bounds.half_height;
+}
+
 MvResult
 mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *overlap)
 {
@@ -216,6 +230,7 @@ mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *ov
     if (result != MV_OK)
         return result;
     *overlap = first != second && first->has_collider && second->has_collider &&
+        collider_candidates(first, second) &&
         mv_collision_overlap(first->collider, first->collider_transform,
                              second->collider, second->collider_transform) == 1;
     return MV_OK;
@@ -238,6 +253,8 @@ mv_process_collider_first(MvContext *ctx, MvProcessRef source, uint64_t type,
             Process *item = &p->items[i];
             if (!item->id || item->killed || item == origin || !item->has_collider ||
                 (type && item->type != type))
+                continue;
+            if (!collider_candidates(origin, item))
                 continue;
             if (mv_collision_overlap(origin->collider, origin->collider_transform,
                                      item->collider, item->collider_transform) == 1) {
@@ -267,6 +284,8 @@ mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
             Process *item = &p->items[i];
             if (!item->id || item->killed || item == origin || !item->has_collider ||
                 (type && item->type != type))
+                continue;
+            if (!collider_candidates(origin, item))
                 continue;
             if (mv_collision_overlap(origin->collider, origin->collider_transform,
                                      item->collider, item->collider_transform) != 1)
