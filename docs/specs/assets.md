@@ -1,6 +1,6 @@
 # Graphics assets: FPG, modern atlases, and ZIP packages
 
-Status: proposed FPG decision. A restricted Aseprite JSON-array importer is implemented; see [images](../api/images.md) for its exact subset and limits. This extends the format analysis in the plan and malvado-gui.
+Status: the initial [8-bit FPG input subset](fpg-8.md) is selected. A restricted Aseprite JSON-array importer is implemented; see [images](../api/images.md) for its exact subset and limits. This extends the format analysis in the plan and malvado-gui.
 
 ## Recommended decision
 
