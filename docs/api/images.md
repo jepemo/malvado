@@ -81,7 +81,7 @@ An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
 }
 ```
 
-All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. The schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields and duplicate keys. Aseprite JSON is not supported yet.
+All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. The schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields and duplicate keys. This schema is separate from the Aseprite subset described below.
 
 Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Paths are relative to the working directory:
 
@@ -147,3 +147,23 @@ The legacy `frame()` draws its own image graph with its historical centered
 pivot. That command is not drawn again by the automatic image graph path. The automatic
 collider also uses a centered pivot while the process uses legacy `frame()`.
 Legacy FPG sheets require an explicit collider.
+
+## Import an Aseprite JSON array
+
+`mv.load_aseprite(image, json)` loads a restricted Aseprite JSON array export into an atlas. Load the PNG with `mv.load_image` first. The function retains the image just like `mv.load_atlas`; release Lua references when no longer needed. It raises an error for invalid or unsupported input.
+
+```lua
+local image = mv.load_image("sheet.png")
+local file = assert(io.open("sheet.json", "rb"))
+local json = file:read("a")
+file:close()
+local atlas = mv.load_aseprite(image, json)
+local id = mv.animation_frame(atlas, "default", elapsed_ms)
+-- Call mv.draw_sprite(atlas, id, x, y) inside a process.
+```
+
+The JSON must contain an array of 1–4096 frames and matching `meta.image` and `meta.size` fields. Image dimensions must match the loaded PNG. Frame names must be unique printable ASCII strings, with at most 127 bytes; image paths have at most 511 bytes. Each frame must be unrotated and untrimmed, with source dimensions matching its region. Durations are integer milliseconds from 1 to 3,600,000. Frames receive IDs 1 through N in file order and a top-left pivot; their durations form the `default` animation. The PNG pixels are not changed.
+
+The importer accepts only scale `"1"` and, when present, format `"RGBA8888"`. Nonempty frame tags, layers, slices, rotated or trimmed frames, unknown fields, duplicate keys, invalid bounds, and metadata over 1 MiB are rejected. It does not import crop offsets, custom pivots, tags, layers, slices, or palette data. It does not verify that `meta.image` names the supplied image. Use a suitable export without these features. The error identifies rotated/trimmed frames and nonempty tags/layers/slices; other invalid or unsupported metadata uses a general error.
+
+C programs can call `mv_atlas_parse_aseprite(json, length, width, height, &error)` without Lua or a graphics backend when asset support is enabled. The caller owns the returned atlas and destroys it with `mv_atlas_destroy`; the error, when provided, is a static string. The [fixture](../../tests/fixtures/aseprite/array.json) is an original project test fixture, not an export of third-party artwork.

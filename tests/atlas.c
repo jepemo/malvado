@@ -26,10 +26,24 @@ invalid(const char *json)
     assert(!atlas && error);
 }
 
+static void
+invalid_aseprite_change(const char *json, const char *old, const char *replacement)
+{
+    char changed[4096];
+    const char *match = strstr(json, old);
+    assert(match);
+    size_t prefix = (size_t)(match - json);
+    int written = snprintf(changed, sizeof(changed), "%.*s%s%s", (int)prefix, json,
+                           replacement, match + strlen(old));
+    assert(written > 0 && (size_t)written < sizeof(changed));
+    const char *error = NULL;
+    assert(!mv_atlas_parse_aseprite(changed, (size_t)written, 8, 8, &error) && error);
+}
+
 int
 main(int argc, char **argv)
 {
-    assert(argc == 3);
+    assert(argc == 4);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
     char buffer[2048];
@@ -67,6 +81,36 @@ main(int argc, char **argv)
     assert(!mv_atlas_animation_frame(atlas, "flash", 0, 1, NULL));
     mv_atlas_destroy(atlas);
 
+    file = fopen(argv[3], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer), file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    assert(length < sizeof(buffer));
+    buffer[length] = '\0';
+    atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
+    assert(atlas && !error && mv_atlas_count(atlas) == 2);
+    assert(!strcmp(mv_atlas_image(atlas), "red.png"));
+    assert(mv_atlas_find(atlas, 2, &sprite) && sprite.region.x == 4 &&
+           sprite.region.width == 4 && !strcmp(sprite.name, "two"));
+    assert(mv_atlas_animation_frame(atlas, "default", 99, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "default", 100, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "default", 300, 1, &frame) && frame == 1);
+    mv_atlas_destroy(atlas);
+    assert(!mv_atlas_parse_aseprite(buffer, length, 7, 8, &error) && error);
+    invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":true");
+    invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
+    invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
+    invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":0");
+    invalid_aseprite_change(buffer, "\"filename\":\"two\"", "\"filename\":\"one\"");
+    invalid_aseprite_change(buffer, "\"scale\":\"1\"", "\"scale\":\"2\"");
+    invalid_aseprite_change(buffer, "\"rotated\":false", "\"extra\":0,\"rotated\":false");
+    invalid_aseprite_change(buffer, "\"w\":4", "\"w\":9");
+    char *rotated = strstr(buffer, "\"rotated\":false");
+    assert(rotated);
+    memcpy(rotated + strlen("\"rotated\":"), "true ", 5);
+    assert(!mv_atlas_parse_aseprite(buffer, length, 8, 8, &error) && error);
+    assert(!mv_atlas_parse_aseprite("{}", 2, 8, 8, &error) && error);
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

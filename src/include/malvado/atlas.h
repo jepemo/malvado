@@ -34,6 +34,11 @@ typedef struct {
  * The JSON buffer is borrowed only during this call. The optional error is a
  * static message. The caller owns the result and must destroy it. */
 MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, const char **error);
+/* Import an Aseprite JSON array export with untrimmed, unrotated frames.
+ * The caller supplies the actual image dimensions. The atlas owns its data.
+ * Unsupported metadata is rejected; error receives a static message. */
+MvAtlas *mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
+                                 const char **error);
 void mv_atlas_destroy(MvAtlas *atlas);
 const char *mv_atlas_image(const MvAtlas *atlas);
 size_t mv_atlas_count(const MvAtlas *atlas);

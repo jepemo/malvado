@@ -2286,7 +2286,7 @@ atlas_gc(lua_State *L)
 }
 
 static int
-load_atlas(lua_State *L)
+load_atlas_format(lua_State *L, int aseprite)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     size_t length;
@@ -2295,8 +2295,12 @@ load_atlas(lua_State *L)
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     const char *error = NULL;
-    atlas->atlas = mv_atlas_parse(json, length, mv_image_width(image->image),
-                                  mv_image_height(image->image), &error);
+    if (aseprite)
+        atlas->atlas = mv_atlas_parse_aseprite(json, length, mv_image_width(image->image),
+                                               mv_image_height(image->image), &error);
+    else
+        atlas->atlas = mv_atlas_parse(json, length, mv_image_width(image->image),
+                                      mv_image_height(image->image), &error);
     if (!atlas->atlas)
         return luaL_error(L, "%s", error);
     MvAtlas *native = atlas->atlas;
@@ -2306,6 +2310,18 @@ load_atlas(lua_State *L)
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
     return 1;
+}
+
+static int
+load_atlas(lua_State *L)
+{
+    return load_atlas_format(L, 0);
+}
+
+static int
+load_aseprite(lua_State *L)
+{
+    return load_atlas_format(L, 1);
 }
 
 static int
@@ -3287,6 +3303,7 @@ static const char *const global_names[] = {
     "draw_image",
     "draw_image_region",
     "load_atlas",
+    "load_aseprite",
     "animation_frame",
     "draw_sprite",
     "font",
@@ -3994,6 +4011,7 @@ open_module(lua_State *L)
         {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
         {"load_atlas", load_atlas},
+        {"load_aseprite", load_aseprite},
         {"animation_frame", animation_frame},
         {"draw_sprite", draw_sprite},
 #endif

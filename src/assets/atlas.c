@@ -280,6 +280,111 @@ fail:
     return NULL;
 }
 
+/* Import the untrimmed array subset into the existing atlas representation. */
+MvAtlas *
+mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
+                        const char **error)
+{
+    static const char *const root_fields[] = {"frames", "meta"};
+    static const char *const meta_fields[] = {"app", "version", "image", "format", "size", "scale", "frameTags", "layers", "slices"};
+    static const char *const frame_fields[] = {"filename", "frame", "rotated", "trimmed", "spriteSourceSize", "sourceSize", "duration"};
+    static const char *const rect_fields[] = {"x", "y", "w", "h"};
+    static const char *const size_fields[] = {"w", "h"};
+    if (error) *error = "invalid or unsupported Aseprite metadata";
+    if (!json || length == 0 || length > 1024 * 1024 || width <= 0 || height <= 0 ||
+        memchr(json, '\0', length) || !json_numbers_valid(json, length))
+        return NULL;
+    for (size_t i = 0; i + 5 < length; ++i)
+        if (json[i] == '\\' && !memcmp(json + i + 1, "u0000", 5)) return NULL;
+    char *input = malloc(length + 1);
+    if (!input) return NULL;
+    memcpy(input, json, length);
+    input[length] = '\0';
+    cJSON *root = cJSON_ParseWithLengthOpts(input, length + 1, NULL, 1);
+    free(input);
+    if (!root) return NULL;
+    MvAtlas *atlas = NULL;
+    const cJSON *meta = cJSON_GetObjectItemCaseSensitive(root, "meta");
+    const cJSON *frames = cJSON_GetObjectItemCaseSensitive(root, "frames");
+    const cJSON *size = cJSON_GetObjectItemCaseSensitive(meta, "size");
+    int w, h;
+    if (!object_fields(root, root_fields, 2) || !object_fields(meta, meta_fields, 9) ||
+        !object_fields(size, size_fields, 2) ||
+        !integer_field(size, "w", 1, INT_MAX, &w) || w != width ||
+        !integer_field(size, "h", 1, INT_MAX, &h) || h != height ||
+        !cJSON_IsArray(frames)) goto fail_aseprite;
+    const char *optional_arrays[] = {"frameTags", "layers", "slices"};
+    for (size_t i = 0; i < 3; ++i) {
+        const cJSON *field = cJSON_GetObjectItemCaseSensitive(meta, optional_arrays[i]);
+        if (field && (!cJSON_IsArray(field) || field->child)) {
+            if (error) *error = "unsupported Aseprite tags, layers, or slices";
+            goto fail_aseprite;
+        }
+    }
+    const cJSON *format = cJSON_GetObjectItemCaseSensitive(meta, "format");
+    const cJSON *scale = cJSON_GetObjectItemCaseSensitive(meta, "scale");
+    const cJSON *app = cJSON_GetObjectItemCaseSensitive(meta, "app");
+    const cJSON *version = cJSON_GetObjectItemCaseSensitive(meta, "version");
+    if ((format && (!cJSON_IsString(format) || strcmp(format->valuestring, "RGBA8888"))) ||
+        (scale && (!cJSON_IsString(scale) || strcmp(scale->valuestring, "1"))) ||
+        (app && !cJSON_IsString(app)) || (version && !cJSON_IsString(version))) goto fail_aseprite;
+    int count = cJSON_GetArraySize(frames);
+    if (count < 1 || count > 4096) goto fail_aseprite;
+    atlas = calloc(1, sizeof(*atlas));
+    if (!atlas) goto fail_aseprite;
+    atlas->image = copy_text(cJSON_GetObjectItemCaseSensitive(meta, "image"), 511);
+    atlas->sprites = calloc((size_t)count, sizeof(*atlas->sprites));
+    atlas->animations = calloc(1, sizeof(*atlas->animations));
+    if (!atlas->image || !atlas->sprites || !atlas->animations) goto fail_aseprite;
+    atlas->animation_count = 1;
+    Animation *animation = atlas->animations;
+    animation->name = malloc(sizeof("default"));
+    animation->frames = calloc((size_t)count, sizeof(*animation->frames));
+    if (!animation->name || !animation->frames) goto fail_aseprite;
+    memcpy(animation->name, "default", sizeof("default"));
+    const cJSON *entry;
+    cJSON_ArrayForEach(entry, frames) {
+        const cJSON *rect = cJSON_GetObjectItemCaseSensitive(entry, "frame");
+        const cJSON *source = cJSON_GetObjectItemCaseSensitive(entry, "spriteSourceSize");
+        const cJSON *original = cJSON_GetObjectItemCaseSensitive(entry, "sourceSize");
+        MvAtlasSprite *sprite = &atlas->sprites[atlas->count];
+        const cJSON *rotated = cJSON_GetObjectItemCaseSensitive(entry, "rotated");
+        const cJSON *trimmed = cJSON_GetObjectItemCaseSensitive(entry, "trimmed");
+        if (cJSON_IsTrue(rotated) || cJSON_IsTrue(trimmed)) {
+            if (error) *error = "unsupported Aseprite rotated or trimmed frame";
+            goto fail_aseprite;
+        }
+        int sx, sy, sw, sh, ow, oh, duration;
+        if (!object_fields(entry, frame_fields, 7) || !object_fields(rect, rect_fields, 4) ||
+            !object_fields(source, rect_fields, 4) || !object_fields(original, size_fields, 2) ||
+            !cJSON_IsFalse(rotated) || !cJSON_IsFalse(trimmed) ||
+            !integer_field(rect, "x", 0, width - 1, &sprite->region.x) ||
+            !integer_field(rect, "y", 0, height - 1, &sprite->region.y) ||
+            !integer_field(rect, "w", 1, width - sprite->region.x, &sprite->region.width) ||
+            !integer_field(rect, "h", 1, height - sprite->region.y, &sprite->region.height) ||
+            !integer_field(source, "x", 0, 0, &sx) || !integer_field(source, "y", 0, 0, &sy) ||
+            !integer_field(source, "w", 1, INT_MAX, &sw) || !integer_field(source, "h", 1, INT_MAX, &sh) ||
+            !integer_field(original, "w", 1, INT_MAX, &ow) || !integer_field(original, "h", 1, INT_MAX, &oh) ||
+            sw != sprite->region.width || sh != sprite->region.height || ow != sw || oh != sh ||
+            !integer_field(entry, "duration", 1, 3600000, &duration)) goto fail_aseprite;
+        sprite->name = copy_text(cJSON_GetObjectItemCaseSensitive(entry, "filename"), 127);
+        if (!sprite->name) goto fail_aseprite;
+        sprite->id = (int)atlas->count + 1;
+        ++atlas->count;
+        for (size_t i = 0; i + 1 < atlas->count; ++i)
+            if (!strcmp(atlas->sprites[i].name, sprite->name)) goto fail_aseprite;
+        animation->frames[animation->count++] = (AnimationFrame){sprite->id, duration};
+        animation->duration_ms += (uint64_t)duration;
+    }
+    cJSON_Delete(root);
+    if (error) *error = NULL;
+    return atlas;
+fail_aseprite:
+    mv_atlas_destroy(atlas);
+    cJSON_Delete(root);
+    return NULL;
+}
+
 const char *
 mv_atlas_image(const MvAtlas *atlas)
 {

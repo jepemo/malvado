@@ -58,6 +58,7 @@ Each global has the same value as the `mv` field shown below. `process` is a cal
 | `draw_image` | `mv.draw_image` |
 | `draw_image_region` | `mv.draw_image_region` |
 | `load_atlas` | `mv.load_atlas` |
+| `load_aseprite` | `mv.load_aseprite` |
 | `animation_frame` | `mv.animation_frame` |
 | `draw_sprite` | `mv.draw_sprite` |
 | `font` | `mv.font` |
