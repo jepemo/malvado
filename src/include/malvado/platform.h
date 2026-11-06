@@ -141,6 +141,12 @@ void mv_window_begin(MvColor background);
  * an active clip. Return 1 on success, 0 on invalid state or arguments. */
 int mv_window_clip_begin(int x, int y, int width, int height);
 int mv_window_clip_end(void);
+/* Translate world drawing by (-x, -y) within the current frame. Coordinates
+ * must be finite and within FLT_MAX / 16. Start any clip before scrolling;
+ * nesting scrolls or changing the clip while scrolling is rejected. Ending a
+ * frame restores both states. Return 1 on success, 0 on invalid input/state. */
+int mv_window_scroll_begin(float x, float y);
+int mv_window_scroll_end(void);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Return the built-in font width in pixels, or 0 for invalid input or no window. */
 int mv_window_text_width(const char *text, int size);

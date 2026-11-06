@@ -17,6 +17,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include <math.h>
+#include <float.h>
 #include <limits.h>
 #include <stdlib.h>
 
@@ -42,7 +43,7 @@ struct MvFont {
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
-static int drawing_active, clip_active;
+static int drawing_active, clip_active, scroll_active;
 
 int
 mv_pad_connected(int slot)
@@ -337,6 +338,7 @@ void mv_window_close(void)
     if (IsWindowReady()) CloseWindow();
     drawing_active = 0;
     clip_active = 0;
+    scroll_active = 0;
     text_head = 0;
     text_count = 0;
 }
@@ -436,7 +438,7 @@ void mv_window_begin(MvColor c)
 int
 mv_window_clip_begin(int x, int y, int width, int height)
 {
-    if (!IsWindowReady() || !drawing_active || clip_active || x < 0 || y < 0 ||
+    if (!IsWindowReady() || !drawing_active || clip_active || scroll_active || x < 0 || y < 0 ||
         width <= 0 || height <= 0 || x >= GetScreenWidth() || y >= GetScreenHeight() ||
         width > GetScreenWidth() - x || height > GetScreenHeight() - y)
         return 0;
@@ -448,10 +450,32 @@ mv_window_clip_begin(int x, int y, int width, int height)
 int
 mv_window_clip_end(void)
 {
-    if (!IsWindowReady() || !drawing_active || !clip_active)
+    if (!IsWindowReady() || !drawing_active || !clip_active || scroll_active)
         return 0;
     EndScissorMode();
     clip_active = 0;
+    return 1;
+}
+
+int
+mv_window_scroll_begin(float x, float y)
+{
+    if (!IsWindowReady() || !drawing_active || scroll_active || !isfinite(x) || !isfinite(y) ||
+        fabsf(x) > FLT_MAX / 16 || fabsf(y) > FLT_MAX / 16)
+        return 0;
+    Camera2D camera = {.offset = {0, 0}, .target = {x, y}, .rotation = 0, .zoom = 1};
+    BeginMode2D(camera);
+    scroll_active = 1;
+    return 1;
+}
+
+int
+mv_window_scroll_end(void)
+{
+    if (!IsWindowReady() || !drawing_active || !scroll_active)
+        return 0;
+    EndMode2D();
+    scroll_active = 0;
     return 1;
 }
 
@@ -666,6 +690,7 @@ mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransfor
 void mv_window_flush(void) { rlDrawRenderBatchActive(); }
 void mv_window_end(void)
 {
+    if (scroll_active) (void)mv_window_scroll_end();
     if (clip_active) (void)mv_window_clip_end();
     EndDrawing();
     drawing_active = 0;

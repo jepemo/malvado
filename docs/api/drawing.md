@@ -120,3 +120,15 @@ or the screen fade. It does not move objects, change draw order, or affect
 collision geometry. Changes take effect at the next render; headless
 simulation does not require a window. Regions are independent of the scroll
 feature, which remains pending.
+
+## Window scrolling in C
+
+Between `mv_window_begin` and `mv_window_end`, call
+`mv_window_scroll_begin(x, y)` to translate world drawing by `(-x, -y)`.
+Coordinates must be finite and have magnitude at most `FLT_MAX / 16`.
+`mv_window_scroll_end()` restores window coordinates. A frame end also
+restores the state. Calls return 1 on success or 0 for invalid arguments or
+state. Scrolling cannot be nested. If a clip is needed, begin it before the
+scroll and end it after the scroll. Invalid calls leave both states unchanged.
+These functions return 0 when there is no graphics window. They do not change
+process positions or collisions.

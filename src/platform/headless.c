@@ -79,6 +79,8 @@ int mv_window_clip_begin(int x, int y, int width, int height)
     return 0;
 }
 int mv_window_clip_end(void) { return 0; }
+int mv_window_scroll_begin(float x, float y) { (void)x; (void)y; return 0; }
+int mv_window_scroll_end(void) { return 0; }
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color)
 {
     (void)text; (void)x; (void)y; (void)size; (void)color;
