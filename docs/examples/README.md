@@ -32,7 +32,7 @@ Compare benchmarks on the same machine with the same process count, resources, V
 | `input` | Keyboard, mouse, controller | Held key versus event and hotplug |
 | `audio` | Effect, music, volume, and pause | Resume without duplicate channels |
 | [Regions](../../examples/regions/README.md) | Process clipping and an unclipped overlay | Automated clipping and restoration checks |
-| `scroll` | Region and camera | Large scene with fixed HUD |
+| [Scroll](../../examples/scroll/README.md) | World translation and a fixed overlay | Automated graphics checks |
 | `fpg-import` | Import one FPG variant to PNG+JSON | Preserve non-consecutive IDs, points, transparency, and palette |
 | [Aseprite animation](../../examples/aseprite/README.md) | Aseprite PNG+JSON atlas subset | Automated animation frame progression; importer tests cover offsets and rejection of unsupported options |
 | `gui-workflow` | Open a copy of starter/asteroids from the GUI | Create, run, navigate to error, inspect ticks, and export with CLI services |
