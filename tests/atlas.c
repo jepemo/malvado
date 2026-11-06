@@ -43,7 +43,7 @@ invalid_aseprite_change(const char *json, const char *old, const char *replaceme
 int
 main(int argc, char **argv)
 {
-    assert(argc == 5);
+    assert(argc == 6);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
     char buffer[2048];
@@ -118,7 +118,7 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "back", UINT64_MAX, 0, &frame) && frame == 1);
     assert(mv_atlas_animation_frame(atlas, "still", 1000, 1, &frame) && frame == 2);
     mv_atlas_destroy(atlas);
-    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"pingpong\"");
+    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"unknown\"");
     invalid_aseprite_change(tagged, "\"from\":0", "\"from\":2");
     invalid_aseprite_change(tagged, "\"to\":1", "\"to\":2");
     invalid_aseprite_change(tagged, "\"name\":\"walk\"", "\"name\":\"default\"");
@@ -165,6 +165,28 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "\"x\":2,\"y\":3", "\"x\":2,\"y\":5");
     invalid_aseprite_change(buffer, "\"x\":2,\"y\":3", "\"x\":-1,\"y\":3");
     invalid_aseprite_change(buffer, "\"sourceSize\":{\"w\":8", "\"sourceSize\":{\"w\":3");
+    file = fopen(argv[5], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer) - 1, file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    buffer[length] = '\0';
+    atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
+    assert(atlas && !error);
+    assert(mv_atlas_animation_frame(atlas, "bounce", 0, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "bounce", 100, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "bounce", 300, 1, &frame) && frame == 3);
+    assert(mv_atlas_animation_frame(atlas, "bounce", 600, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "bounce", 800, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "bounce", UINT64_MAX, 0, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "backbounce", 0, 1, &frame) && frame == 3);
+    assert(mv_atlas_animation_frame(atlas, "backbounce", 300, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "backbounce", 500, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "backbounce", 600, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "backbounce", 800, 1, &frame) && frame == 3);
+    assert(mv_atlas_animation_frame(atlas, "single", 200, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "pair", 200, 1, &frame) && frame == 1);
+    mv_atlas_destroy(atlas);
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

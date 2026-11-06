@@ -400,11 +400,17 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             !integer_field(tag, "from", 0, count - 1, &from) ||
             !integer_field(tag, "to", from, count - 1, &to) ||
             !cJSON_IsString(direction) ||
-            (strcmp(direction->valuestring, "forward") && strcmp(direction->valuestring, "reverse"))) {
+            (strcmp(direction->valuestring, "forward") && strcmp(direction->valuestring, "reverse") &&
+             strcmp(direction->valuestring, "pingpong") && strcmp(direction->valuestring, "pingpong_reverse"))) {
             if (error) *error = "invalid or unsupported Aseprite frame tag";
             goto fail_aseprite;
         }
-        size_t frame_count = (size_t)(to - from + 1);
+        size_t range_count = (size_t)(to - from + 1);
+        int pingpong = !strcmp(direction->valuestring, "pingpong") ||
+                       !strcmp(direction->valuestring, "pingpong_reverse");
+        size_t frame_count = range_count;
+        if (pingpong && range_count > 2)
+            frame_count += range_count - 2;
         if (frame_count > 4096 - total_frames) goto fail_aseprite;
         total_frames += frame_count;
         Animation *tag_animation = &atlas->animations[atlas->animation_count++];
@@ -414,9 +420,11 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             if (!strcmp(atlas->animations[i].name, tag_animation->name)) goto fail_aseprite;
         tag_animation->frames = calloc(frame_count, sizeof(*tag_animation->frames));
         if (!tag_animation->frames) goto fail_aseprite;
-        int reverse = !strcmp(direction->valuestring, "reverse");
+        int reverse = !strcmp(direction->valuestring, "reverse") ||
+                      !strcmp(direction->valuestring, "pingpong_reverse");
         for (size_t i = 0; i < frame_count; ++i) {
-            size_t source_index = (size_t)(reverse ? to - (int)i : from + (int)i);
+            size_t position = i < range_count ? i : 2 * range_count - 2 - i;
+            size_t source_index = (size_t)(reverse ? to - (int)position : from + (int)position);
             AnimationFrame frame = animation->frames[source_index];
             tag_animation->frames[tag_animation->count++] = frame;
             tag_animation->duration_ms += (uint64_t)frame.duration_ms;
