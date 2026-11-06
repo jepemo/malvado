@@ -163,3 +163,10 @@ also provides a collision shape. Set an explicit collider to override it, or
 set `false` to disable collision. See [drawing](drawing.md#process-graphics)
 and [collision](collision.md#process-queries-in-lua) for transforms, lifetime,
 and error behavior. Images and atlas sprite descriptors can also provide automatic colliders. Use `process.collision(self, Enemy)` for the first matching process or `process.collisions(self, Enemy)` for all matches in creation order.
+
+## Process drawing region
+
+Set `self.region` to a `graphics.region(x, y, width, height)` descriptor to
+clip this process's graph and immediate drawing. Set it to `nil` to remove the
+clip. It does not change process coordinates or collision queries. See
+[window clipping and regions](drawing.md#clip-a-lua-process-to-a-region).

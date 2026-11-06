@@ -14,12 +14,33 @@ assert(not pcall(graphics.circle, 2, {color = {1, 2, 256}}))
 assert(not pcall(graphics.circle, 2, {color = {1, 2}}))
 assert(not pcall(graphics.circle, 2, {extra = 1}))
 assert(not pcall(function() circle.radius = 3 end))
+local region = graphics.region(-5, 0, 10, 10)
+assert(not pcall(graphics.region, 0, 0, 0, 1))
+assert(not pcall(graphics.region, 0, 0, 1.5, 1))
+assert(not pcall(graphics.region, math.huge, 0, 1, 1))
+assert(not pcall(function() region.x = 4 end))
+local region_actor = mv.process(function() while true do mv.frame() end end,
+                                {defaults = {region = region}})
 local world = mv.world.create()
 world:add_rect({x = 10, y = 0, width = 10, height = 10})
 world:add_rect({x = 8, y = 0, width = 10, height = 10})
 local actor = mv.process(function() while true do mv.frame() end end,
                          {defaults = {graph = circle, nested = {count = 0}}})
 local controller = mv.process(function()
+  assert(not pcall(region_actor, {region = {}}))
+  local r = region_actor()
+  assert(r.region == region)
+  r.graph = circle
+  local target = actor({x = 0, y = 0})
+  r.region = graphics.region(100, 100, 1, 1)
+  assert(mv.process.collision(r, target) == target)
+  mv.kill(target)
+  r.region = region
+  assert(not pcall(function() r.region = false end) and r.region == region)
+  r.region = nil
+  assert(r.region == nil)
+  r.region = region
+  mv.kill(r)
   local a = actor({x = 9, y = 5})
   local b = actor({x = 0, y = 5})
   assert(a.graph == circle and b.graph == circle and a.nested ~= b.nested)

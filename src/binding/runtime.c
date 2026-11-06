@@ -98,6 +98,7 @@ static void lua_process_destroy(void *user);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason, collision_invalid; MvProcessRef reference; } LuaSelf;
+typedef struct { int x, y, width, height; } LuaRegion;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
 typedef struct {
     MvCollisionShape shape;
@@ -840,6 +841,9 @@ self_newindex(lua_State *L)
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && is_read_only_process_field(key))
         return luaL_error(L, "process field is read-only");
+    if (key && strcmp(key, "region") == 0 && !lua_isnil(L, 3) &&
+        !luaL_testudata(L, 3, "malvado.region"))
+        return luaL_error(L, "region must be a region descriptor or nil");
     if (key && strcmp(key, "z") == 0 &&
         (lua_type(L, 3) != LUA_TNUMBER || !isfinite(lua_tonumber(L, 3))))
         return luaL_error(L, "z must be a finite number");
@@ -871,6 +875,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     if (type == LUA_TUSERDATA &&
         (luaL_testudata(L, source, "malvado.collision_shape") ||
          luaL_testudata(L, source, "malvado.graphic") ||
+         luaL_testudata(L, source, "malvado.region") ||
          luaL_testudata(L, source, "malvado.image"))) {
         lua_pushvalue(L, source);
         return;
@@ -995,6 +1000,11 @@ create_process(lua_State *L)
     if (!lua_isnil(L, -1) &&
         (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
         return luaL_error(L, "z must be a finite number");
+    lua_pop(L, 1);
+    lua_pushliteral(L, "region");
+    lua_rawget(L, fields);
+    if (!lua_isnil(L, -1) && !luaL_testudata(L, -1, "malvado.region"))
+        return luaL_error(L, "region must be a region descriptor or nil");
     lua_pop(L, 1);
     lua_pushliteral(L, "fps");
     lua_rawget(L, fields);
@@ -3044,6 +3054,32 @@ render_graph(lua_State *L, const Process *process)
     lua_pop(L, 3);
 }
 
+/* Return 1 for no region, 2 for an active clip, or 0 when fully off-screen. */
+static int
+begin_process_region(lua_State *L, const Process *process)
+{
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+    lua_getiuservalue(L, -1, 1);
+    lua_getfield(L, -1, "region");
+    LuaRegion *stored = luaL_testudata(L, -1, "malvado.region");
+    LuaRegion region = stored ? *stored : (LuaRegion){0};
+    int present = !lua_isnil(L, -1);
+    int valid = stored != NULL;
+    lua_pop(L, 3);
+    if (!present) return 1;
+    if (!valid) return 0;
+    int width, height;
+    if (!mv_window_size(&width, &height)) return 0;
+    int64_t left = region.x, top = region.y;
+    int64_t right = left + region.width, bottom = top + region.height;
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (right > width) right = width;
+    if (bottom > height) bottom = height;
+    if (right <= left || bottom <= top) return 0;
+    return mv_window_clip_begin((int)left, (int)top, (int)(right - left), (int)(bottom - top)) ? 2 : 0;
+}
+
 static void
 render(void)
 {
@@ -3079,6 +3115,8 @@ render(void)
         Process *process = &engine.items[order[p].slot];
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
+        int region = begin_process_region(L, process);
+        if (!region) continue;
         render_graph(L, process);
         lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
         for (lua_Integer i = 1; i <= (lua_Integer)lua_rawlen(L, -1); i++) {
@@ -3105,6 +3143,7 @@ render(void)
             lua_pop(L, 4);
         }
         lua_pop(L, 1);
+        if (region == 2) (void)mv_window_clip_end();
     }
     render_texts(L);
     if (engine.fade.current.a != 0) {
@@ -4032,6 +4071,20 @@ graphic_create(lua_State *L)
     return 1;
 }
 
+static int
+region_create(lua_State *L)
+{
+    lua_Integer x = luaL_checkinteger(L, 1), y = luaL_checkinteger(L, 2);
+    lua_Integer width = luaL_checkinteger(L, 3), height = luaL_checkinteger(L, 4);
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX ||
+        width <= 0 || width > INT_MAX || height <= 0 || height > INT_MAX)
+        return luaL_error(L, "invalid region rectangle");
+    LuaRegion *region = lua_newuserdatauv(L, sizeof(*region), 0);
+    *region = (LuaRegion){(int)x, (int)y, (int)width, (int)height};
+    luaL_setmetatable(L, "malvado.region");
+    return 1;
+}
+
 #ifdef MALVADO_BUILD_ASSETS
 static int
 graphic_sprite(lua_State *L)
@@ -4178,6 +4231,10 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado collision world");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.region");
+    lua_pushliteral(L, "malvado region");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.collision_shape");
     lua_pushliteral(L, "malvado collision shape");
     lua_setfield(L, -2, "__metatable");
@@ -4252,6 +4309,8 @@ open_module(lua_State *L)
     lua_pushinteger(L, MV_COLLISION_RECT);
     lua_pushcclosure(L, graphic_create, 1);
     lua_setfield(L, -2, "rect");
+    lua_pushcfunction(L, region_create);
+    lua_setfield(L, -2, "region");
 #ifdef MALVADO_BUILD_ASSETS
     lua_pushcfunction(L, graphic_sprite);
     lua_setfield(L, -2, "sprite");

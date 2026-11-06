@@ -91,4 +91,32 @@ fully inside the window. Clips cannot be nested. Invalid arguments or state
 return 0 without changing the current clip. `mv_window_clip_end()` restores
 unrestricted drawing and returns 1, or 0 if no clip is active. Ending a frame
 also clears an active clip. These calls return 0 without a graphics window.
-This low-level primitive does not yet provide process regions or scrolling.
+This low-level primitive does not implement scrolling.
+
+## Clip a Lua process to a region
+
+Create a reusable region in logical window pixels and assign it to a process:
+
+```lua
+local mv = require("malvado")
+local viewport = mv.graphics.region(20, 20, 160, 100)
+local Actor = mv.process(function(self)
+    while true do mv.frame() end
+end, {defaults = {region = viewport, graph = mv.graphics.circle(20)}})
+```
+
+`graphics.region(x, y, width, height)` accepts integer coordinates in the C
+`int` range and positive integer dimensions up to `INT_MAX`. It creates an
+immutable descriptor without opening a window. Descriptors can be shared in
+process defaults. `self.region` accepts a descriptor or `nil`; `nil` removes the
+clip. Invalid descriptors and invalid assignments raise an error, including
+at process creation. The region stays in window coordinates when the process
+moves or rotates. Parts outside the window are clipped to its bounds, and a
+fully outside region hides that process's drawing.
+
+The region clips the process graph and immediate draw commands, including
+text and images. It does not clip persistent `write` text, other processes,
+or the screen fade. It does not move objects, change draw order, or affect
+collision geometry. Changes take effect at the next render; headless
+simulation does not require a window. Regions are independent of the scroll
+feature, which remains pending.
