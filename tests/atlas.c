@@ -61,6 +61,11 @@ main(int argc, char **argv)
     assert(mv_atlas_find(atlas, 7, &sprite) && sprite.pivot_x == 0 && sprite.pivot_y == 0);
     assert(sprite.source_width == 4 && sprite.source_height == 8 && sprite.trim_x == 0 && sprite.trim_y == 0);
     assert(!mv_atlas_find(atlas, 8, &sprite));
+    assert(mv_atlas_find_name(atlas, "green", &sprite) && sprite.id == 42);
+    assert(!mv_atlas_find_name(atlas, "Green", &sprite) && sprite.id == 42);
+    assert(!mv_atlas_find_name(atlas, NULL, &sprite) && sprite.id == 42);
+    assert(!mv_atlas_find_name(NULL, "green", &sprite) && sprite.id == 42);
+    assert(!mv_atlas_find_name(atlas, "green", NULL));
     mv_atlas_destroy(atlas);
     mv_atlas_destroy(NULL);
 
@@ -92,6 +97,7 @@ main(int argc, char **argv)
     atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
     assert(atlas && !error && mv_atlas_count(atlas) == 2);
     assert(!strcmp(mv_atlas_image(atlas), "red.png"));
+    assert(mv_atlas_find_name(atlas, "two", &sprite) && sprite.id == 2);
     assert(mv_atlas_find(atlas, 2, &sprite) && sprite.region.x == 4 &&
            sprite.region.width == 4 && !strcmp(sprite.name, "two"));
     assert(mv_atlas_animation_frame(atlas, "default", 99, 1, &frame) && frame == 1);

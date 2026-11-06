@@ -47,6 +47,8 @@ const char *mv_atlas_image(const MvAtlas *atlas);
 size_t mv_atlas_count(const MvAtlas *atlas);
 /* Return 1 and copy a sprite on success, or 0 if the ID is not present. */
 int mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite);
+/* Find a sprite by its exact name. Leave the output unchanged on failure. */
+int mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite);
 /* Find a frame by elapsed milliseconds. Loop must be 0 or 1. Non-looping
  * animations hold their last frame. On failure, the output is unchanged. */
 int mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,

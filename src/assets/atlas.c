@@ -466,6 +466,20 @@ mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite)
 }
 
 int
+mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite)
+{
+    if (!atlas || !name || !sprite)
+        return 0;
+    for (size_t i = 0; i < atlas->count; ++i) {
+        if (strcmp(atlas->sprites[i].name, name) == 0) {
+            *sprite = atlas->sprites[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int
 mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,
                          int loop, int *sprite_id)
 {

@@ -2343,6 +2343,22 @@ animation_frame(lua_State *L)
     return 1;
 }
 
+static int
+sprite_id(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    size_t length;
+    const char *name = luaL_checklstring(L, 2, &length);
+    if (strlen(name) != length)
+        return luaL_error(L, "invalid sprite name");
+    MvAtlasSprite sprite;
+    if (mv_atlas_find_name(atlas->atlas, name, &sprite))
+        lua_pushinteger(L, sprite.id);
+    else
+        lua_pushnil(L);
+    return 1;
+}
+
 /* Return a snapshot; it does not retain the atlas or expose borrowed pointers. */
 static int
 sprite_info(lua_State *L)
@@ -3330,6 +3346,7 @@ static const char *const global_names[] = {
     "load_atlas",
     "load_aseprite",
     "sprite_info",
+    "sprite_id",
     "animation_frame",
     "draw_sprite",
     "font",
@@ -4039,6 +4056,7 @@ open_module(lua_State *L)
         {"load_atlas", load_atlas},
         {"load_aseprite", load_aseprite},
         {"sprite_info", sprite_info},
+        {"sprite_id", sprite_id},
         {"animation_frame", animation_frame},
         {"draw_sprite", draw_sprite},
 #endif
