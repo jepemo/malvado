@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: selected alpha.6 input contract; the importer is not yet complete.
+Status: the backend-independent C reader is implemented; Lua access, rendering, and conversion are pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -28,8 +28,25 @@ the explicit rendering/conversion contract.
 The fixture has IDs 7 and 42, red and green palette entries, indexed pixels,
 a defined point and an undefined point. Compare these exact values and every
 truncation boundary in C tests. Test malformed fields, allocation failure,
-resource cleanup and an installed C SDK consumer. The C parser must not depend
+resource cleanup and an installed C SDK consumer. The C parser does not depend
 on Lua or a graphics backend. A later increment must define and test Lua access,
 rendering or conversion and transparency; do not mark the full FPG item done
 until those paths and the required examples are verified. Other FPG depths,
 compressed files, writing and binary round trips are outside this subset.
+
+## C reader
+
+Include `malvado/fpg.h` and link `Malvado::assets`. `mv_fpg_parse` borrows the
+input during the call and returns an owned copy, or NULL with a static error
+message. `mv_fpg_destroy` releases it and accepts NULL. `mv_fpg_at` enumerates
+records in file order; `mv_fpg_sprite` finds an ID. Names and filenames are
+fixed-size raw byte arrays, not necessarily terminated strings. Sprite pixel
+pointers, palette and gamma pointers are borrowed until destruction.
+`mv_fpg_point` returns original signed coordinates and a `defined` flag.
+Missing IDs, indexes or output pointers return 0 without changing the output.
+Palette bytes remain 0–63; no color conversion or transparency is applied.
+
+The parser rejects empty libraries and nonzero record-size fields. The pinned
+writer emits zero for that field; other variants remain unsupported. The
+truncation test accepts the boundary after a complete first record because it
+is itself a valid one-sprite library.
