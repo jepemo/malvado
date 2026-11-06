@@ -32,6 +32,7 @@
 #include "malvado/collision.h"
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
+#include "malvado/fpg.h"
 #endif
 #include "binding/globals.h"
 #include "core/clock.h"
@@ -117,6 +118,7 @@ typedef struct { char **names; size_t count; } LuaDirectoryEntries;
 #endif
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; MvResource *resource; } LuaAtlas;
+typedef struct { MvFpg *fpg; } LuaFpg;
 #endif
 
 MvContext *
@@ -2292,6 +2294,138 @@ legacy_frame(lua_State *L)
 }
 
 #ifdef MALVADO_BUILD_ASSETS
+static int
+fpg_gc(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    mv_fpg_destroy(value->fpg);
+    value->fpg = NULL;
+    return 0;
+}
+
+static int
+fpg_parse(lua_State *L)
+{
+    size_t length;
+    const char *data = luaL_checklstring(L, 1, &length);
+    LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 0);
+    value->fpg = NULL;
+    luaL_setmetatable(L, "malvado.fpg");
+    const char *error = NULL;
+    value->fpg = mv_fpg_parse(data, length, &error);
+    if (!value->fpg) return luaL_error(L, "%s", error);
+    return 1;
+}
+
+static int
+fpg_count(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_pushinteger(L, (lua_Integer)mv_fpg_count(value->fpg));
+    return 1;
+}
+
+static int
+fpg_id_at(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer index = luaL_checkinteger(L, 2);
+    MvFpgSprite sprite;
+    if (index < 1 || (uint64_t)(index - 1) > SIZE_MAX ||
+        !mv_fpg_at(value->fpg, (size_t)(index - 1), &sprite))
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, sprite.id);
+    return 1;
+}
+
+static int
+fpg_palette(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_pushlstring(L, (const char *)mv_fpg_palette(value->fpg), 768);
+    return 1;
+}
+
+static int
+fpg_gamma(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_pushlstring(L, (const char *)mv_fpg_gamma(value->fpg), 576);
+    return 1;
+}
+
+static int
+fpg_sprite(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    MvFpgSprite sprite;
+    if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 0, 7);
+    lua_pushinteger(L, sprite.id);
+    lua_setfield(L, -2, "id");
+    lua_pushinteger(L, sprite.width);
+    lua_setfield(L, -2, "width");
+    lua_pushinteger(L, sprite.height);
+    lua_setfield(L, -2, "height");
+    lua_pushinteger(L, (lua_Integer)sprite.point_count);
+    lua_setfield(L, -2, "point_count");
+    lua_pushlstring(L, (const char *)sprite.name, sizeof(sprite.name));
+    lua_setfield(L, -2, "name_raw");
+    lua_pushlstring(L, (const char *)sprite.filename, sizeof(sprite.filename));
+    lua_setfield(L, -2, "filename_raw");
+    lua_pushlstring(L, (const char *)sprite.pixels, (size_t)sprite.width * sprite.height);
+    lua_setfield(L, -2, "pixels");
+    return 1;
+}
+
+static int
+fpg_point(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2), index = luaL_checkinteger(L, 3);
+    MvFpgPoint point;
+    if (id < 1 || id > 999 || index < 0 || (uint64_t)index > SIZE_MAX ||
+        !mv_fpg_point(value->fpg, (int)id, (size_t)index, &point)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 0, 3);
+    lua_pushinteger(L, point.x);
+    lua_setfield(L, -2, "x");
+    lua_pushinteger(L, point.y);
+    lua_setfield(L, -2, "y");
+    lua_pushboolean(L, point.defined);
+    lua_setfield(L, -2, "defined");
+    return 1;
+}
+
+static int
+fpg_rgba(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
+        return luaL_error(L, "transparent_zero must be a boolean");
+    MvFpgSprite sprite;
+    if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    int transparent_zero = lua_toboolean(L, 3);
+    size_t length = (size_t)sprite.width * (size_t)sprite.height * 4;
+    luaL_Buffer buffer;
+    char *output = luaL_buffinitsize(L, &buffer, length);
+    if (!mv_fpg_copy_rgba(value->fpg, (int)id, transparent_zero, (uint8_t *)output, length))
+        return luaL_error(L, "cannot convert FPG sprite");
+    luaL_pushresultsize(&buffer, length);
+    return 1;
+}
+
 static void destroy_managed_atlas(void *data) { mv_atlas_destroy(data); }
 
 static int
@@ -4333,6 +4467,19 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
 #ifdef MALVADO_BUILD_ASSETS
+    luaL_newmetatable(L, "malvado.fpg");
+    lua_pushcfunction(L, fpg_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    static const luaL_Reg fpg_methods[] = {
+        {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
+        {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba}, {NULL, NULL}
+    };
+    luaL_setfuncs(L, fpg_methods, 0);
+    lua_setfield(L, -2, "__index");
+    lua_pushliteral(L, "malvado FPG");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.atlas");
     lua_pushcfunction(L, atlas_gc);
     lua_setfield(L, -2, "__gc");
@@ -4367,6 +4514,12 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "sprite");
 #endif
     lua_setfield(L, -2, "graphics");
+#ifdef MALVADO_BUILD_ASSETS
+    lua_newtable(L);
+    lua_pushcfunction(L, fpg_parse);
+    lua_setfield(L, -2, "parse");
+    lua_setfield(L, -2, "fpg");
+#endif
     lua_newtable(L);
     lua_pushcfunction(L, world_create);
     lua_setfield(L, -2, "create");

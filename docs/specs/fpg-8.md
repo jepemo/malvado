@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua access, rendering, and conversion are pending.
+Status: the backend-independent C reader is implemented; Lua metadata access and RGBA conversion are implemented; rendering and PNG+JSON conversion are pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -59,3 +59,26 @@ left by two, as in the pinned reader. `transparent_zero` must be 0 or 1; when
 arguments or insufficient space return 0 without changing the buffer. Gamma
 is preserved as raw data and is not applied. Conversion does not change the
 original palette or indices and does not encode PNG.
+
+## Lua reader
+
+With assets enabled, `mv.fpg.parse(bytes)` parses a binary Lua string and
+returns an owned FPG object. It raises an error for invalid or unsupported data.
+The object is released by garbage collection and works without a window. It can be held in Lua variables and process fields, but is not supported in process defaults.
+The methods use the C reader and return independent Lua values:
+
+- `fpg:count()` returns the number of sprites. `fpg:id_at(index)` returns the
+  ID in file order, with a one-based index, or `nil` if it is absent.
+- `fpg:sprite(id)` returns a table with `id`, `width`, `height`, `point_count`,
+  binary `name_raw` (32 bytes), `filename_raw` (12 bytes), and `pixels`, or
+  `nil` if the ID is absent. Names are fixed-size bytes, not guaranteed text.
+- `fpg:point(id, index)` returns `{x, y, defined}` for a zero-based point, or
+  `nil` for an absent ID or index. Undefined points retain their raw values.
+- `fpg:palette()` returns the 768 original six-bit RGB bytes and `fpg:gamma()`
+  returns the 576 original gamma bytes.
+- `fpg:rgba(id, transparent_zero)` returns an RGBA byte string or `nil` for an
+  absent ID. The optional flag is a boolean and defaults to false. Conversion
+  has the same channel and transparency behavior as `mv_fpg_copy_rgba`.
+
+These operations do not create images or render graphics. The `mv.fpg`
+namespace is separate from the legacy global `fpg` graphics helper.
