@@ -313,11 +313,11 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         !integer_field(size, "w", 1, INT_MAX, &w) || w != width ||
         !integer_field(size, "h", 1, INT_MAX, &h) || h != height ||
         !cJSON_IsArray(frames)) goto fail_aseprite;
-    const char *optional_arrays[] = {"frameTags", "layers", "slices"};
-    for (size_t i = 0; i < 3; ++i) {
+    const char *optional_arrays[] = {"layers", "slices"};
+    for (size_t i = 0; i < 2; ++i) {
         const cJSON *field = cJSON_GetObjectItemCaseSensitive(meta, optional_arrays[i]);
         if (field && (!cJSON_IsArray(field) || field->child)) {
-            if (error) *error = "unsupported Aseprite tags, layers, or slices";
+            if (error) *error = "unsupported Aseprite layers or slices";
             goto fail_aseprite;
         }
     }
@@ -330,11 +330,15 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         (app && !cJSON_IsString(app)) || (version && !cJSON_IsString(version))) goto fail_aseprite;
     int count = cJSON_GetArraySize(frames);
     if (count < 1 || count > 4096) goto fail_aseprite;
+    const cJSON *tags = cJSON_GetObjectItemCaseSensitive(meta, "frameTags");
+    if (tags && !cJSON_IsArray(tags)) goto fail_aseprite;
+    int tag_count = tags ? cJSON_GetArraySize(tags) : 0;
+    if (tag_count > 255) goto fail_aseprite;
     atlas = calloc(1, sizeof(*atlas));
     if (!atlas) goto fail_aseprite;
     atlas->image = copy_text(cJSON_GetObjectItemCaseSensitive(meta, "image"), 511);
     atlas->sprites = calloc((size_t)count, sizeof(*atlas->sprites));
-    atlas->animations = calloc(1, sizeof(*atlas->animations));
+    atlas->animations = calloc((size_t)tag_count + 1, sizeof(*atlas->animations));
     if (!atlas->image || !atlas->sprites || !atlas->animations) goto fail_aseprite;
     atlas->animation_count = 1;
     Animation *animation = atlas->animations;
@@ -375,6 +379,38 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             if (!strcmp(atlas->sprites[i].name, sprite->name)) goto fail_aseprite;
         animation->frames[animation->count++] = (AnimationFrame){sprite->id, duration};
         animation->duration_ms += (uint64_t)duration;
+    }
+    static const char *const tag_fields[] = {"name", "from", "to", "direction"};
+    size_t total_frames = (size_t)count;
+    const cJSON *tag;
+    cJSON_ArrayForEach(tag, tags) {
+        int from, to;
+        const cJSON *direction = cJSON_GetObjectItemCaseSensitive(tag, "direction");
+        if (!object_fields(tag, tag_fields, 4) ||
+            !integer_field(tag, "from", 0, count - 1, &from) ||
+            !integer_field(tag, "to", from, count - 1, &to) ||
+            !cJSON_IsString(direction) ||
+            (strcmp(direction->valuestring, "forward") && strcmp(direction->valuestring, "reverse"))) {
+            if (error) *error = "invalid or unsupported Aseprite frame tag";
+            goto fail_aseprite;
+        }
+        size_t frame_count = (size_t)(to - from + 1);
+        if (frame_count > 4096 - total_frames) goto fail_aseprite;
+        total_frames += frame_count;
+        Animation *tag_animation = &atlas->animations[atlas->animation_count++];
+        tag_animation->name = copy_text(cJSON_GetObjectItemCaseSensitive(tag, "name"), 127);
+        if (!tag_animation->name) goto fail_aseprite;
+        for (size_t i = 0; i + 1 < atlas->animation_count; ++i)
+            if (!strcmp(atlas->animations[i].name, tag_animation->name)) goto fail_aseprite;
+        tag_animation->frames = calloc(frame_count, sizeof(*tag_animation->frames));
+        if (!tag_animation->frames) goto fail_aseprite;
+        int reverse = !strcmp(direction->valuestring, "reverse");
+        for (size_t i = 0; i < frame_count; ++i) {
+            size_t source_index = (size_t)(reverse ? to - (int)i : from + (int)i);
+            AnimationFrame frame = animation->frames[source_index];
+            tag_animation->frames[tag_animation->count++] = frame;
+            tag_animation->duration_ms += (uint64_t)frame.duration_ms;
+        }
     }
     cJSON_Delete(root);
     if (error) *error = NULL;

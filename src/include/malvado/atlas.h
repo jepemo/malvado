@@ -36,7 +36,8 @@ typedef struct {
 MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, const char **error);
 /* Import an Aseprite JSON array export with untrimmed, unrotated frames.
  * The caller supplies the actual image dimensions. The atlas owns its data.
- * Unsupported metadata is rejected; error receives a static message. */
+ * Forward and reverse tags become named animations. Unsupported metadata is
+ * rejected; error receives a static message. */
 MvAtlas *mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
                                  const char **error);
 void mv_atlas_destroy(MvAtlas *atlas);

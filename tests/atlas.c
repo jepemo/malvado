@@ -98,6 +98,31 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "default", 300, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
     assert(!mv_atlas_parse_aseprite(buffer, length, 7, 8, &error) && error);
+    const char *tag_start = strstr(buffer, "\"frameTags\":[]");
+    assert(tag_start);
+    char tagged[4096];
+    const char *tags = "\"frameTags\":[{\"name\":\"walk\",\"from\":0,\"to\":1,\"direction\":\"forward\"},"
+                       "{\"name\":\"back\",\"from\":0,\"to\":1,\"direction\":\"reverse\"},"
+                       "{\"name\":\"still\",\"from\":1,\"to\":1,\"direction\":\"reverse\"}]";
+    int tagged_length = snprintf(tagged, sizeof(tagged), "%.*s%s%s", (int)(tag_start - buffer),
+                                 buffer, tags, tag_start + strlen("\"frameTags\":[]"));
+    assert(tagged_length > 0 && (size_t)tagged_length < sizeof(tagged));
+    atlas = mv_atlas_parse_aseprite(tagged, (size_t)tagged_length, 8, 8, &error);
+    assert(atlas && !error);
+    assert(mv_atlas_animation_frame(atlas, "walk", 99, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "walk", 100, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "back", 199, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "back", 200, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "back", 300, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "back", UINT64_MAX, 0, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "still", 1000, 1, &frame) && frame == 2);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"pingpong\"");
+    invalid_aseprite_change(tagged, "\"from\":0", "\"from\":2");
+    invalid_aseprite_change(tagged, "\"to\":1", "\"to\":2");
+    invalid_aseprite_change(tagged, "\"name\":\"walk\"", "\"name\":\"default\"");
+    invalid_aseprite_change(tagged, "\"name\":\"back\"", "\"name\":\"walk\"");
+    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"forward\",\"repeat\":\"2\"");
     invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":true");
     invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
