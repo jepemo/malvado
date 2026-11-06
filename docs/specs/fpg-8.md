@@ -50,3 +50,12 @@ The parser rejects empty libraries and nonzero record-size fields. The pinned
 writer emits zero for that field; other variants remain unsupported. The
 truncation test accepts the boundary after a complete first record because it
 is itself a valid one-sprite library.
+
+`mv_fpg_copy_rgba(fpg, id, transparent_zero, output, length)` writes one RGBA
+pixel per indexed pixel to a caller-owned, non-overlapping buffer of at least
+`width * height * 4` bytes. It converts each six-bit channel by shifting it
+left by two, as in the pinned reader. `transparent_zero` must be 0 or 1; when
+1, palette index 0 has alpha 0. All other pixels have alpha 255. Invalid
+arguments or insufficient space return 0 without changing the buffer. Gamma
+is preserved as raw data and is not applied. Conversion does not change the
+original palette or indices and does not encode PNG.

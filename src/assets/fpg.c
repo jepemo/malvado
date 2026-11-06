@@ -158,3 +158,24 @@ mv_fpg_point(const MvFpg *fpg, int id, size_t index, MvFpgPoint *out)
     *out = (MvFpgPoint){x, y, !(x == -1 && y == -1)};
     return 1;
 }
+
+int
+mv_fpg_copy_rgba(const MvFpg *fpg, int id, int transparent_zero,
+                 uint8_t *output, size_t length)
+{
+    const Entry *entry = find_entry(fpg, id);
+    if (!entry || !output || (transparent_zero != 0 && transparent_zero != 1))
+        return 0;
+    size_t count = (size_t)entry->width * (size_t)entry->height;
+    if (length / 4 < count) return 0;
+    const uint8_t *pixels = fpg->bytes + entry->pixels_offset;
+    const uint8_t *palette = mv_fpg_palette(fpg);
+    for (size_t i = 0; i < count; ++i) {
+        unsigned index = pixels[i];
+        output[4 * i] = (uint8_t)(palette[3 * index] << 2);
+        output[4 * i + 1] = (uint8_t)(palette[3 * index + 1] << 2);
+        output[4 * i + 2] = (uint8_t)(palette[3 * index + 2] << 2);
+        output[4 * i + 3] = (uint8_t)(transparent_zero && index == 0 ? 0 : 255);
+    }
+    return 1;
+}

@@ -59,6 +59,18 @@ main(int argc, char **argv)
     assert(mv_fpg_point(fpg, 7, 1, &point) && !point.defined);
     assert(!mv_fpg_point(fpg, 7, 2, &point) && !point.defined);
     assert(!mv_fpg_sprite(fpg, 8, &sprite) && sprite.id == 7);
+    uint8_t rgba[16];
+    memset(rgba, 0x5a, sizeof(rgba));
+    assert(!mv_fpg_copy_rgba(fpg, 7, 1, rgba, 15) && rgba[0] == 0x5a);
+    assert(!mv_fpg_copy_rgba(fpg, 99, 1, rgba, sizeof(rgba)) && rgba[0] == 0x5a);
+    assert(!mv_fpg_copy_rgba(fpg, 7, 2, rgba, sizeof(rgba)) && rgba[0] == 0x5a);
+    assert(!mv_fpg_copy_rgba(fpg, 7, 1, NULL, sizeof(rgba)));
+    assert(mv_fpg_copy_rgba(fpg, 7, 1, rgba, sizeof(rgba)));
+    assert(rgba[0] == 0 && rgba[1] == 0 && rgba[2] == 0 && rgba[3] == 0);
+    assert(rgba[4] == 252 && rgba[5] == 0 && rgba[6] == 0 && rgba[7] == 255);
+    assert(mv_fpg_copy_rgba(fpg, 42, 0, rgba, sizeof(rgba)));
+    assert(rgba[0] == 0 && rgba[1] == 252 && rgba[2] == 0 && rgba[3] == 255);
+    assert(mv_fpg_copy_rgba(fpg, 7, 0, rgba, sizeof(rgba)) && rgba[3] == 255);
     data[8 + 3] = 0;
     assert(mv_fpg_palette(fpg)[3] == 63);
     mv_fpg_destroy(fpg);

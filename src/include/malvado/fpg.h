@@ -45,6 +45,11 @@ int mv_fpg_sprite(const MvFpg *fpg, int id, MvFpgSprite *out);
 /* Enumerate sprites in file order with a zero-based index. */
 int mv_fpg_at(const MvFpg *fpg, size_t index, MvFpgSprite *out);
 int mv_fpg_point(const MvFpg *fpg, int id, size_t index, MvFpgPoint *out);
+/* Convert to width * height RGBA bytes. Each six-bit channel is shifted left
+ * by two. transparent_zero is 0 (opaque) or 1 (index 0 transparent). The
+ * output must not overlap FPG data. On invalid input the output is unchanged. */
+int mv_fpg_copy_rgba(const MvFpg *fpg, int id, int transparent_zero,
+                     uint8_t *output, size_t length);
 
 #ifdef __cplusplus
 }
