@@ -51,6 +51,10 @@ int mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite);
 int mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite);
 /* Copy an imported tag color. Return 0 without changing out if absent or invalid. */
 int mv_atlas_animation_color(const MvAtlas *atlas, const char *name, MvColor *out);
+/* Copy an explicit Aseprite repeat count (0..65535). Return 0 without
+ * changing out if the tag is absent or does not specify a count. The count
+ * is metadata; mv_atlas_animation_frame does not apply it automatically. */
+int mv_atlas_animation_repeats(const MvAtlas *atlas, const char *name, unsigned *out);
 /* Find a frame by elapsed milliseconds. Loop must be 0 or 1. Non-looping
  * animations hold their last frame. On failure, the output is unchanged. */
 int mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,

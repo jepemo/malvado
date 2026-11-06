@@ -129,7 +129,7 @@ main(int argc, char **argv)
     invalid_aseprite_change(tagged, "\"to\":1", "\"to\":2");
     invalid_aseprite_change(tagged, "\"name\":\"walk\"", "\"name\":\"default\"");
     invalid_aseprite_change(tagged, "\"name\":\"back\"", "\"name\":\"walk\"");
-    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"forward\",\"repeat\":\"2\"");
+    invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"forward\",\"repeat\":\"-2\"");
     invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":1");
     invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
@@ -179,6 +179,14 @@ main(int argc, char **argv)
     buffer[length] = '\0';
     atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
     assert(atlas && !error);
+    unsigned repeats = 99;
+    assert(mv_atlas_animation_repeats(atlas, "bounce", &repeats) && repeats == 3);
+    assert(mv_atlas_animation_repeats(atlas, "single", &repeats) && repeats == 0);
+    assert(!mv_atlas_animation_repeats(atlas, "default", &repeats) && repeats == 0);
+    assert(!mv_atlas_animation_repeats(atlas, "missing", &repeats) && repeats == 0);
+    assert(!mv_atlas_animation_repeats(NULL, "bounce", &repeats));
+    assert(!mv_atlas_animation_repeats(atlas, NULL, &repeats));
+    assert(!mv_atlas_animation_repeats(atlas, "bounce", NULL));
     MvColor color = {1, 2, 3, 4};
     assert(mv_atlas_animation_color(atlas, "bounce", &color));
     assert(color.r == 0x12 && color.g == 0xab && color.b == 0xcd && color.a == 0x80);
@@ -203,6 +211,21 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "single", 200, 1, &frame) && frame == 2);
     assert(mv_atlas_animation_frame(atlas, "pair", 200, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
+    const char *repeat_field = strstr(buffer, "\"repeat\":\"3\"");
+    assert(repeat_field);
+    char maximum[2048];
+    int maximum_length = snprintf(maximum, sizeof(maximum), "%.*s%s%s",
+                                  (int)(repeat_field - buffer), buffer,
+                                  "\"repeat\":\"65535\"", repeat_field + strlen("\"repeat\":\"3\""));
+    assert(maximum_length > 0 && (size_t)maximum_length < sizeof(maximum));
+    atlas = mv_atlas_parse_aseprite(maximum, (size_t)maximum_length, 8, 8, &error);
+    assert(atlas && mv_atlas_animation_repeats(atlas, "bounce", &repeats) && repeats == 65535);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(buffer, "\"repeat\":\"3\"", "\"repeat\":\"65536\"");
+    invalid_aseprite_change(buffer, "\"repeat\":\"3\"", "\"repeat\":\"\"");
+    invalid_aseprite_change(buffer, "\"repeat\":\"3\"", "\"repeat\":3");
+    invalid_aseprite_change(buffer, "\"repeat\":\"3\"", "\"repeat\":\"1x\"");
+    invalid_aseprite_change(buffer, "\"repeat\":\"3\"", "\"repeat\":\"2\",\"repeat\":\"3\"");
     invalid_aseprite_change(buffer, "#12aBcD80", "#12aBcD8z");
     invalid_aseprite_change(buffer, "#12aBcD80", "#123");
     invalid_aseprite_change(buffer, "\"color\":\"#abcdef\"", "\"color\":123");
