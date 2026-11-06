@@ -26,6 +26,8 @@ typedef struct {
     AnimationFrame *frames;
     size_t count;
     uint64_t duration_ms;
+    MvColor color;
+    int has_color;
 } Animation;
 
 struct MvAtlas {
@@ -282,6 +284,33 @@ fail:
     return NULL;
 }
 
+static int
+hex_digit(char value)
+{
+    if (value >= '0' && value <= '9') return value - '0';
+    if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+    if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+    return -1;
+}
+
+static int
+parse_tag_color(const cJSON *field, MvColor *color)
+{
+    if (!cJSON_IsString(field) || !field->valuestring) return 0;
+    const char *text = field->valuestring;
+    size_t length = strlen(text);
+    if ((length != 7 && length != 9) || text[0] != '#') return 0;
+    unsigned char rgba[4] = {0, 0, 0, 255};
+    for (size_t i = 0; i < (length - 1) / 2; ++i) {
+        int high = hex_digit(text[1 + i * 2]);
+        int low = hex_digit(text[2 + i * 2]);
+        if (high < 0 || low < 0) return 0;
+        rgba[i] = (unsigned char)(high * 16 + low);
+    }
+    *color = (MvColor){rgba[0], rgba[1], rgba[2], rgba[3]};
+    return 1;
+}
+
 /* Import the supported array subset into the existing atlas representation. */
 MvAtlas *
 mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
@@ -390,13 +419,13 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         animation->frames[animation->count++] = (AnimationFrame){sprite->id, duration};
         animation->duration_ms += (uint64_t)duration;
     }
-    static const char *const tag_fields[] = {"name", "from", "to", "direction"};
+    static const char *const tag_fields[] = {"name", "from", "to", "direction", "color"};
     size_t total_frames = (size_t)count;
     const cJSON *tag;
     cJSON_ArrayForEach(tag, tags) {
         int from, to;
         const cJSON *direction = cJSON_GetObjectItemCaseSensitive(tag, "direction");
-        if (!object_fields(tag, tag_fields, 4) ||
+        if (!object_fields(tag, tag_fields, 5) ||
             !integer_field(tag, "from", 0, count - 1, &from) ||
             !integer_field(tag, "to", from, count - 1, &to) ||
             !cJSON_IsString(direction) ||
@@ -414,6 +443,12 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         if (frame_count > 4096 - total_frames) goto fail_aseprite;
         total_frames += frame_count;
         Animation *tag_animation = &atlas->animations[atlas->animation_count++];
+        const cJSON *color = cJSON_GetObjectItemCaseSensitive(tag, "color");
+        if (color && !parse_tag_color(color, &tag_animation->color)) {
+            if (error) *error = "invalid Aseprite tag color";
+            goto fail_aseprite;
+        }
+        tag_animation->has_color = color != NULL;
         tag_animation->name = copy_text(cJSON_GetObjectItemCaseSensitive(tag, "name"), 127);
         if (!tag_animation->name) goto fail_aseprite;
         for (size_t i = 0; i + 1 < atlas->animation_count; ++i)
@@ -473,6 +508,20 @@ mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite
     for (size_t i = 0; i < atlas->count; ++i) {
         if (strcmp(atlas->sprites[i].name, name) == 0) {
             *sprite = atlas->sprites[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int
+mv_atlas_animation_color(const MvAtlas *atlas, const char *name, MvColor *out)
+{
+    if (!atlas || !name || !out) return 0;
+    for (size_t i = 0; i < atlas->animation_count; ++i) {
+        const Animation *animation = &atlas->animations[i];
+        if (!strcmp(animation->name, name) && animation->has_color) {
+            *out = animation->color;
             return 1;
         }
     }

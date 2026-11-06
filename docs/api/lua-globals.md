@@ -62,6 +62,7 @@ Each global has the same value as the `mv` field shown below. `process` is a cal
 | `sprite_info` | `mv.sprite_info` |
 | `sprite_id` | `mv.sprite_id` |
 | `animation_frame` | `mv.animation_frame` |
+| `animation_color` | `mv.animation_color` |
 | `draw_sprite` | `mv.draw_sprite` |
 | `font` | `mv.font` |
 | `load_font` | `mv.load_font` |

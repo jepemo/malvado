@@ -179,6 +179,16 @@ main(int argc, char **argv)
     buffer[length] = '\0';
     atlas = mv_atlas_parse_aseprite(buffer, length, 8, 8, &error);
     assert(atlas && !error);
+    MvColor color = {1, 2, 3, 4};
+    assert(mv_atlas_animation_color(atlas, "bounce", &color));
+    assert(color.r == 0x12 && color.g == 0xab && color.b == 0xcd && color.a == 0x80);
+    assert(mv_atlas_animation_color(atlas, "single", &color));
+    assert(color.r == 0xab && color.g == 0xcd && color.b == 0xef && color.a == 255);
+    assert(!mv_atlas_animation_color(atlas, "default", &color) && color.a == 255);
+    assert(!mv_atlas_animation_color(atlas, "missing", &color) && color.r == 0xab);
+    assert(!mv_atlas_animation_color(NULL, "bounce", &color));
+    assert(!mv_atlas_animation_color(atlas, NULL, &color));
+    assert(!mv_atlas_animation_color(atlas, "bounce", NULL));
     assert(mv_atlas_animation_frame(atlas, "bounce", 0, 1, &frame) && frame == 1);
     assert(mv_atlas_animation_frame(atlas, "bounce", 100, 1, &frame) && frame == 2);
     assert(mv_atlas_animation_frame(atlas, "bounce", 300, 1, &frame) && frame == 3);
@@ -193,6 +203,10 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "single", 200, 1, &frame) && frame == 2);
     assert(mv_atlas_animation_frame(atlas, "pair", 200, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
+    invalid_aseprite_change(buffer, "#12aBcD80", "#12aBcD8z");
+    invalid_aseprite_change(buffer, "#12aBcD80", "#123");
+    invalid_aseprite_change(buffer, "\"color\":\"#abcdef\"", "\"color\":123");
+    invalid_aseprite_change(buffer, "\"color\":\"#abcdef\"", "\"color\":\"#abcdef\",\"color\":\"#abcdef\"");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

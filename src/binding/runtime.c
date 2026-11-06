@@ -2325,6 +2325,28 @@ load_aseprite(lua_State *L)
 }
 
 static int
+animation_color(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    size_t length;
+    const char *name = luaL_checklstring(L, 2, &length);
+    if (strlen(name) != length)
+        return luaL_error(L, "invalid animation name");
+    MvColor color;
+    if (!mv_atlas_animation_color(atlas->atlas, name, &color)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 4, 0);
+    const int channels[] = {color.r, color.g, color.b, color.a};
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, channels[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    return 1;
+}
+
+static int
 animation_frame(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
@@ -3348,6 +3370,7 @@ static const char *const global_names[] = {
     "sprite_info",
     "sprite_id",
     "animation_frame",
+    "animation_color",
     "draw_sprite",
     "font",
     "load_font",
@@ -4058,6 +4081,7 @@ open_module(lua_State *L)
         {"sprite_info", sprite_info},
         {"sprite_id", sprite_id},
         {"animation_frame", animation_frame},
+        {"animation_color", animation_color},
         {"draw_sprite", draw_sprite},
 #endif
         {"font", font},
