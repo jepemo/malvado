@@ -29,9 +29,9 @@ The fixture has IDs 7 and 42, red and green palette entries, indexed pixels,
 a defined point and an undefined point. Compare these exact values and every
 truncation boundary in C tests. Test malformed fields, allocation failure,
 resource cleanup and an installed C SDK consumer. The C parser does not depend
-on Lua or a graphics backend. A later increment must define and test Lua access,
-rendering or conversion and transparency; do not mark the full FPG item done
-until those paths and the required examples are verified. Other FPG depths,
+on Lua or a graphics backend. Lua access, rendering, conversion, and transparency have separate contracts
+and checks below. Keep the full FPG item open until all its acceptance checks
+are verified. Other FPG depths,
 compressed files, writing and binary round trips are outside this subset.
 
 ## C reader

@@ -33,7 +33,8 @@ Compare benchmarks on the same machine with the same process count, resources, V
 | `audio` | Effect, music, volume, and pause | Resume without duplicate channels |
 | [Regions](../../examples/regions/README.md) | Process clipping and an unclipped overlay | Automated clipping and restoration checks |
 | [Scroll](../../examples/scroll/README.md) | World translation and a fixed overlay | Automated graphics checks |
-| [FPG graphics](../../examples/fpg/README.md) | Import 8-bit FPG sprites and draw with a control point | Automated pixels and transparency; PNG+JSON conversion remains pending |
+| [FPG graphics](../../examples/fpg/README.md) | Import 8-bit FPG sprites and draw with a control point | Automated pixels and transparency |
+| [Converted FPG](../../examples/fpg_converted/README.md) | Load PNGs and pivot metadata exported from an FPG | Automated conversion and graphics check |
 | [Aseprite animation](../../examples/aseprite/README.md) | Aseprite PNG+JSON atlas subset | Automated animation frame progression; importer tests cover offsets and rejection of unsupported options |
 | `gui-workflow` | Open a copy of starter/asteroids from the GUI | Create, run, navigate to error, inspect ticks, and export with CLI services |
 | `legacy-formats` | FPG/MAP/FNT/PAL when available | Asset with known controls and palette |

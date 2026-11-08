@@ -571,7 +571,7 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
     find_package(Python3 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
       add_test(NAME visual_fpg_conversion COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_converted_visual.py
-        $<TARGET_FILE:malvado> $<TARGET_FILE:fpg-example-visual-test> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_converted_visual.lua)
+        $<TARGET_FILE:malvado> $<TARGET_FILE:fpg-example-visual-test> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg ${CMAKE_CURRENT_SOURCE_DIR}/examples/fpg_converted/main.lua)
       set_tests_properties(visual_fpg_conversion PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
     add_executable(fpg-image-visual-test tests/fpg_image_visual.c)
