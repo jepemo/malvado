@@ -293,7 +293,19 @@ main(int argc, char **argv)
     mv_atlas_destroy(atlas);
     invalid_aseprite_change(animated, "\"frame\":1", "\"frame\":0");
     invalid_aseprite_change(animated, "\"frame\":1", "\"frame\":2");
-    invalid_aseprite_change(animated, "\"frame\":0", "\"frame\":1");
+    const char *first_key = strstr(multiple, "\"frame\":0,\"bounds\"");
+    assert(first_key);
+    char delayed[4096];
+    int delayed_length = snprintf(delayed, sizeof(delayed), "%.*s%s%s",
+        (int)(first_key - multiple), multiple, "\"frame\":1,\"bounds\"",
+        first_key + strlen("\"frame\":0,\"bounds\""));
+    assert(delayed_length > 0 && (size_t)delayed_length < sizeof(delayed));
+    atlas = mv_atlas_parse_aseprite(delayed, (size_t)delayed_length, 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite));
+    assert(sprite.pivot_x == -2 && sprite.pivot_y == -3);
+    assert(mv_atlas_find(atlas, 2, &sprite) && sprite.pivot_x == 4 && sprite.pivot_y == 6);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(delayed, "\"frame\":1,\"bounds\"", "\"frame\":2,\"bounds\"");
     invalid_aseprite_change(multiple, "\"sourceSize\":{\"w\":8,\"h\":8}",
                             "\"sourceSize\":{\"w\":7,\"h\":8}");
     invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"other\"");

@@ -400,7 +400,7 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             if (!object_fields(key, key_fields, 3) ||
                 !object_fields(bounds, rect_fields, 4) || !object_fields(pivot, point_fields, 2) ||
                 !integer_field(key, "frame", 0, count - 1, &frame) ||
-                (previous < 0 ? frame != 0 : frame <= previous) ||
+                frame <= previous ||
                 !integer_field(bounds, "x", 0, INT_MAX, &bx) || !integer_field(bounds, "y", 0, INT_MAX, &by) ||
                 !integer_field(bounds, "w", 1, INT_MAX, &bw) || !integer_field(bounds, "h", 1, INT_MAX, &bh) ||
                 !integer_field(pivot, "x", INT_MIN, INT_MAX, &px) ||

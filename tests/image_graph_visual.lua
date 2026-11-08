@@ -79,6 +79,12 @@ local producer = mv.process(function()
   assert(mv.sprite_info(animated_atlas, 1).pivot_x == 0)
   assert(mv.sprite_info(animated_atlas, 2).pivot_x == 3)
   assert(mv.sprite_info(animated_atlas, 3).pivot_x == 3)
+  local delayed_json, delayed_count = animated_json:gsub(
+    '{"frame":0,"bounds":{"x":0,"y":0,"w":4,"h":4},"pivot":{"x":0,"y":0}},', "")
+  assert(delayed_count == 1)
+  local delayed = mv.load_aseprite(image, delayed_json)
+  assert(mv.sprite_info(delayed, mv.animation_frame(delayed, "default", 0)).pivot_x == 0)
+  assert(mv.sprite_info(delayed, mv.animation_frame(delayed, "default", 100)).pivot_x == 3)
   local cropped_json, crop_count = animated_json:gsub(
     '"filename":"two","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4}',
     '"filename":"two","frame":{"x":0,"y":0,"w":2,"h":2},"rotated":false,"trimmed":true,"spriteSourceSize":{"x":1,"y":1,"w":2,"h":2}')
