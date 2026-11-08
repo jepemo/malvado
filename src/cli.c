@@ -39,6 +39,9 @@
 #include "runner/runtime.h"
 #include "build.h"
 #include "export.h"
+#ifdef MALVADO_BUILD_ASSETS
+#include "fpg_export.h"
+#endif
 
 #ifndef MALVADO_VERSION_STRING
 #define MALVADO_VERSION_STRING "development"
@@ -54,6 +57,9 @@ print_help(FILE *output)
             "  check [PATH]         Check Lua syntax\n"
             "  export [PATH]        Export a game for this host\n"
             "  export --app [--id ID] [PATH]  Export a macOS app\n"
+#ifdef MALVADO_BUILD_ASSETS
+            "  fpg-export [--transparent-zero] INPUT OUTPUT  Export FPG to PNG and JSON\n"
+#endif
             "  doctor               Show runtime capabilities\n"
             "  --version            Show the version\n");
 }
@@ -361,6 +367,17 @@ main(int argc, char **argv)
         printf("malvado %s\n", MALVADO_VERSION_STRING);
         return 0;
     }
+#ifdef MALVADO_BUILD_ASSETS
+    if (argc >= 2 && strcmp(argv[1], "fpg-export") == 0) {
+        int transparent = argc >= 3 && !strcmp(argv[2], "--transparent-zero");
+        int first = transparent ? 3 : 2;
+        if (argc != first + 2 || argv[first][0] == '-' || argv[first + 1][0] == '-') {
+            print_help(stderr);
+            return 2;
+        }
+        return malvado_fpg_export(argv[first], argv[first + 1], transparent);
+    }
+#endif
     if (argc == 2 && strcmp(argv[1], "doctor") == 0) {
         printf("Lua: %s\n", LUA_RELEASE);
         printf("CMake: %s\n", cmake_available() ? "found" : "not found");

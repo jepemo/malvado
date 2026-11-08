@@ -23,6 +23,11 @@ The Lua template returns a game table. The runner also supports `mv.start()`. Ex
 
 `doctor` reports the Lua version, whether CMake is available, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. The CMake check does not test a compiler. Doctor does not open a window or verify the graphics driver or target SDKs. It returns success after the report even when an optional capability is unavailable.
 
+`malvado fpg-export [--transparent-zero] INPUT OUTPUT` converts the supported
+8-bit FPG subset into an indexed PNG per sprite and a JSON manifest. It needs
+asset support but no window. The destination must not exist. See the
+[FPG contract](fpg-8.md) for transparency, metadata, and cleanup behavior.
+
 Use `malvado --help` to list commands and `malvado --version` to show the client version.
 
 After building with Lua enabled, `cmake --install build --prefix /path/to/sdk` installs `malvado` in the SDK `bin` directory. Add that directory to `PATH` to use the short command. Full desktop packages and clean-machine validation remain pending.

@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; file conversion and JSON import remain pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter is implemented; JSON import remains pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -71,6 +71,22 @@ The optional index-zero transparency is encoded in a `tRNS` chunk. No gamma
 correction or FPG metadata is encoded. The PNG uses uncompressed DEFLATE;
 it can be larger than a compressed image. The APIs need neither Lua nor a
 renderer. They do not create files; the caller owns file handling.
+
+## File conversion
+
+With asset support enabled, convert the selected FPG subset using:
+
+```sh
+malvado fpg-export --transparent-zero graphics.fpg converted
+```
+
+The output directory must not exist. The command creates `manifest.json` and
+one indexed PNG per ID. Without `--transparent-zero`, index 0 is opaque. It
+rejects invalid input before creating the directory and does not overwrite an
+existing destination. On failure after creation, it attempts to remove the
+files it created and the directory, reporting cleanup failures. Conversion
+works without a graphics window. PNGs use uncompressed DEFLATE; FPG gamma is
+preserved in the manifest but is not applied to PNG colors.
 
 ## FPG metadata JSON
 
