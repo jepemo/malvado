@@ -173,6 +173,11 @@ int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color);
 /* Load a PNG after opening a window. Returns NULL on failure.
  * The caller owns the image and must destroy it before closing the window. */
 MvImage *mv_image_load(const char *path);
+/* Create an image from packed RGBA bytes. Input is borrowed only during the
+ * call. Width and height are positive, at most 8192, and length must cover
+ * width * height * 4 bytes. Requires an open graphics window. Returns an
+ * owned image or NULL; destroy it before closing the window. */
+MvImage *mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length);
 void mv_image_destroy(MvImage *image);
 int mv_image_width(const MvImage *image);
 int mv_image_height(const MvImage *image);

@@ -45,6 +45,13 @@ if (image) {
 
 `mv_image_load` returns `NULL` if loading fails or the window is not open. `mv_image_width` and `mv_image_height` return the dimensions in pixels, or zero for `NULL`. `mv_image_destroy(NULL)` is safe. Use the window and image functions on the window thread.
 
+C programs can also create an image from packed RGBA bytes with
+`mv_image_from_rgba(width, height, pixels, length)`. It requires an open
+window, dimensions in 1–8192 and at least `width * height * 4` bytes. The
+input is borrowed during the call; the caller owns the returned image and must
+destroy it before closing the window. It returns NULL on invalid input or
+failure. It is not available in headless mode.
+
 ## Draw part of an image
 
 Use a region to draw one sprite from a PNG sheet. The region is a rectangle in source pixels. The position is in window pixels. The pivot is relative to the top-left corner of the region. Scale is uniform. Rotation is clockwise in degrees.

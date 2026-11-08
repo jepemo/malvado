@@ -28,6 +28,8 @@ int
 main(void)
 {
     double before, after;
+    const uint8_t pixel[4] = {0, 0, 0, 255};
+    assert(!mv_image_from_rgba(1, 1, pixel, sizeof(pixel)));
     assert(!mv_window_clip_begin(0, 0, 1, 1));
     assert(!mv_window_clip_end());
     assert(!mv_window_scroll_begin(0, 0));

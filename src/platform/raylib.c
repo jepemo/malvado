@@ -647,6 +647,26 @@ mv_image_load(const char *path)
     return image;
 }
 
+MvImage *
+mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length)
+{
+    if (!IsWindowReady() || !pixels || width < 1 || height < 1 || width > 8192 || height > 8192)
+        return NULL;
+    size_t required = (size_t)width * (size_t)height * 4;
+    if (length < required) return NULL;
+    Image source = {.data = (void *)pixels, .width = width, .height = height,
+                    .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+    Texture2D texture = LoadTextureFromImage(source);
+    if (!IsTextureValid(texture)) return NULL;
+    MvImage *image = malloc(sizeof(*image));
+    if (!image) {
+        UnloadTexture(texture);
+        return NULL;
+    }
+    image->texture = texture;
+    return image;
+}
+
 void
 mv_image_destroy(MvImage *image)
 {
