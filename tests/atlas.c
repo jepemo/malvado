@@ -106,6 +106,21 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "default", 100, 1, &frame) && frame == 2);
     assert(mv_atlas_animation_frame(atlas, "default", 300, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
+    const char *filename = strstr(buffer, "\"filename\":\"one\"");
+    assert(filename);
+    char unicode[4096];
+    int unicode_length = snprintf(unicode, sizeof(unicode), "%.*s%s%s",
+        (int)(filename - buffer), buffer, "\"filename\":\"ni\\u00f1o\"",
+        filename + strlen("\"filename\":\"one\""));
+    assert(unicode_length > 0 && (size_t)unicode_length < sizeof(unicode));
+    atlas = mv_atlas_parse_aseprite(unicode, (size_t)unicode_length, 8, 8, &error);
+    assert(atlas && mv_atlas_find_name(atlas, "ni\xc3\xb1o", &sprite) && sprite.id == 1);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(unicode, "\"filename\":\"two\"", "\"filename\":\"niño\"");
+    invalid_aseprite_change(buffer, "\"filename\":\"one\"", "\"filename\":\"\xe2\x82\"");
+    invalid_aseprite_change(buffer, "\"filename\":\"one\"", "\"filename\":\"\xc0\x80\"");
+    invalid_aseprite_change(buffer, "\"filename\":\"one\"", "\"filename\":\"\xed\xa0\x80\"");
+    invalid_aseprite_change(buffer, "\"filename\":\"one\"", "\"filename\":\"\xf4\x90\x80\x80\"");
     assert(!mv_atlas_parse_aseprite(buffer, length, 7, 8, &error) && error);
     const char *hash = "{\"frames\":{},\"meta\":{\"image\":\"red.png\",\"size\":{\"w\":8,\"h\":8}}}";
     assert(!mv_atlas_parse_aseprite(hash, strlen(hash), 8, 8, &error));

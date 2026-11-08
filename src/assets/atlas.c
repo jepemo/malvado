@@ -77,6 +77,42 @@ copy_text(const cJSON *field, size_t limit)
     return copy;
 }
 
+/* Copy a nonempty UTF-8 string without ASCII control characters. */
+static char *
+copy_utf8_text(const cJSON *field, size_t limit)
+{
+    if (!cJSON_IsString(field) || !field->valuestring)
+        return NULL;
+    const unsigned char *text = (const unsigned char *)field->valuestring;
+    size_t length = strlen(field->valuestring);
+    if (length == 0 || length > limit)
+        return NULL;
+    for (size_t i = 0; i < length;) {
+        unsigned char c = text[i++];
+        if (c < 0x80) {
+            if (c < 32 || c == 127) return NULL;
+            continue;
+        }
+        unsigned value, minimum;
+        size_t extra;
+        if (c >= 0xc2 && c <= 0xdf) { value = c & 0x1f; minimum = 0x80; extra = 1; }
+        else if (c >= 0xe0 && c <= 0xef) { value = c & 0x0f; minimum = 0x800; extra = 2; }
+        else if (c >= 0xf0 && c <= 0xf4) { value = c & 0x07; minimum = 0x10000; extra = 3; }
+        else return NULL;
+        if (extra > length - i) return NULL;
+        while (extra--) {
+            c = text[i++];
+            if ((c & 0xc0) != 0x80) return NULL;
+            value = (value << 6) | (c & 0x3f);
+        }
+        if (value < minimum || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff))
+            return NULL;
+    }
+    char *copy = malloc(length + 1);
+    if (copy) memcpy(copy, text, length + 1);
+    return copy;
+}
+
 void
 mv_atlas_destroy(MvAtlas *atlas)
 {
@@ -367,7 +403,7 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         sprite->trim_y = sy;
         sprite->pivot_x = -sx;
         sprite->pivot_y = -sy;
-        sprite->name = copy_text(cJSON_GetObjectItemCaseSensitive(entry, "filename"), 127);
+        sprite->name = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(entry, "filename"), 127);
         if (!sprite->name) goto fail_aseprite;
         sprite->id = (int)atlas->count + 1;
         ++atlas->count;
