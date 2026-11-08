@@ -1,5 +1,7 @@
 # Play a sound
 
+The [audio inventory](audio-inventory.md) maps the C and Lua APIs to examples and tests.
+
 Malvado can load short WAV sound effects. This API is experimental. It plays each sound once. Playing the same sound again restarts it.
 
 ## Lua
