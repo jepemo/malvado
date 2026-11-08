@@ -24,14 +24,17 @@ static void
 check_frame(void *user)
 {
     int *frames = user;
-    if (++*frames != 3)
+    ++*frames;
+    if (*frames != 3 && *frames != 12 && *frames != 24)
         return;
     Image screen = LoadImageFromScreen();
     Image sheet = LoadImage("examples/aseprite/sheet.png");
     assert(screen.data && sheet.data);
     int width = GetScreenWidth(), height = GetScreenHeight();
     Color actual = GetImageColor(screen, 280 * screen.width / width, 190 * screen.height / height);
-    Color expected = GetImageColor(sheet, 2, 2);
+    int x = *frames == 3 ? 2 : 6;
+    int y = *frames == 24 ? 6 : 2;
+    Color expected = GetImageColor(sheet, x, y);
     Color outside = GetImageColor(screen, 240 * screen.width / width, 190 * screen.height / height);
     assert(actual.r == expected.r && actual.g == expected.g && actual.b == expected.b);
     assert(outside.r == 25 && outside.g == 30 && outside.b == 45);
@@ -48,6 +51,6 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(check_frame, &frames);
     int result = malvado_run(2, args);
     malvado_debug_set_frame_hook(NULL, NULL);
-    assert(result == 0 && frames >= 3);
+    assert(result == 0 && frames >= 24);
     return 0;
 }
