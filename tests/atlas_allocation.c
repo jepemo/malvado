@@ -82,8 +82,9 @@ check_file(const char *path)
 int
 main(int argc, char **argv)
 {
-    assert(argc == 3);
+    assert(argc == 4);
     check_file(argv[1]);
     check_file(argv[2]);
+    check_file(argv[3]);
     return 0;
 }
