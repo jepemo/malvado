@@ -71,6 +71,17 @@ main(int argc, char **argv)
     assert(mv_fpg_copy_rgba(fpg, 42, 0, rgba, sizeof(rgba)));
     assert(rgba[0] == 0 && rgba[1] == 252 && rgba[2] == 0 && rgba[3] == 255);
     assert(mv_fpg_copy_rgba(fpg, 7, 0, rgba, sizeof(rgba)) && rgba[3] == 255);
+    size_t json_size = mv_fpg_json_size(fpg, 1);
+    assert(json_size > 1 && !mv_fpg_json_size(NULL, 1) && !mv_fpg_json_size(fpg, 2));
+    char *json = malloc(json_size);
+    assert(json);
+    memset(json, 0x5a, json_size);
+    assert(!mv_fpg_copy_json(fpg, 1, json, json_size - 1) && json[0] == 0x5a);
+    assert(!mv_fpg_copy_json(fpg, 2, json, json_size) && json[0] == 0x5a);
+    assert(!mv_fpg_copy_json(fpg, 1, NULL, json_size));
+    assert(mv_fpg_copy_json(fpg, 1, json, json_size));
+    assert(strlen(json) + 1 == json_size && strstr(json, "\"id\":7"));
+    free(json);
     size_t png_size = mv_fpg_png_size(fpg, 7, 1);
     assert(png_size > 0 && mv_fpg_png_size(fpg, 7, 0) + 13 == png_size);
     assert(!mv_fpg_png_size(fpg, 999, 1) && !mv_fpg_png_size(fpg, 7, 2));

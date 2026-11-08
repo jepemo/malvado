@@ -59,6 +59,12 @@ size_t mv_fpg_png_size(const MvFpg *fpg, int id, int transparent_zero);
 int mv_fpg_copy_png(const MvFpg *fpg, int id, int transparent_zero,
                     uint8_t *output, size_t length);
 
+/* Versioned FPG metadata JSON. Size includes the terminating zero byte.
+ * transparent_zero must match PNG encoding. The caller supplies a
+ * non-overlapping buffer; failure leaves it unchanged. */
+size_t mv_fpg_json_size(const MvFpg *fpg, int transparent_zero);
+int mv_fpg_copy_json(const MvFpg *fpg, int transparent_zero, char *output, size_t length);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG encoding is implemented in C; JSON conversion is pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; file conversion and JSON import remain pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -71,6 +71,28 @@ The optional index-zero transparency is encoded in a `tRNS` chunk. No gamma
 correction or FPG metadata is encoded. The PNG uses uncompressed DEFLATE;
 it can be larger than a compressed image. The APIs need neither Lua nor a
 renderer. They do not create files; the caller owns file handling.
+
+## FPG metadata JSON
+
+`mv_fpg_json_size(fpg, transparent_zero)` returns the buffer size including
+its terminating zero byte, or zero for invalid input. `mv_fpg_copy_json`
+writes that many bytes into a caller-owned non-overlapping buffer. It returns
+0 without changing the buffer for invalid inputs or a short buffer. The
+boolean integer `transparent_zero` must be 0 or 1 and must match the choice
+used when writing each sprite PNG. The encoder does not write files.
+
+The deterministic UTF-8 JSON has `schema: 1`, `kind: "malvado-fpg-8"`, a
+`transparent_zero` boolean, and `palette_hex` and `gamma_hex` fields. The hex
+fields preserve all original six-bit palette and gamma bytes. `sprites` is in
+FPG file order. Each entry contains its numeric `id`, `image` (`<id>.png`),
+`width`, `height`, full fixed-size `name_hex` and `filename_hex` byte fields,
+and zero-based ordered `points` with signed `x`, `y`, and `defined`. The
+indexed PNG preserves the pixel indexes and contains the converted palette.
+No text encoding is assumed for historical names. The manifest and PNGs do
+not preserve a binary FPG file for byte-for-byte reconstruction. The caller
+must save each PNG under the specified filename. This FPG-specific interchange
+format is distinct from the native atlas schema; an importer for it is not yet
+provided.
 
 ## Lua reader
 

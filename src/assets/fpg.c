@@ -15,6 +15,8 @@
 
 #include "malvado/fpg.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 enum { HEADER_SIZE = 8, PALETTE_SIZE = 768, GAMMA_SIZE = 576, RECORD_SIZE = 64 };
@@ -270,5 +272,77 @@ mv_fpg_copy_png(const MvFpg *fpg, int id, int transparent_zero,
     write_be32(out, b << 16 | a); out += 4;
     write_be32(out, png_crc(chunk, compressed + 4)); out += 4;
     png_chunk(out, "IEND", NULL, 0);
+    return 1;
+}
+
+typedef struct { char *output; size_t length; } JsonWriter;
+
+static void
+json_text(JsonWriter *writer, const char *format, ...)
+{
+    char text[160];
+    va_list arguments;
+    va_start(arguments, format);
+    int length = vsnprintf(text, sizeof(text), format, arguments);
+    va_end(arguments);
+    if (writer->output) memcpy(writer->output + writer->length, text, (size_t)length);
+    writer->length += (size_t)length;
+}
+
+static void
+json_hex(JsonWriter *writer, const uint8_t *data, size_t length)
+{
+    static const char hex[] = "0123456789abcdef";
+    if (writer->output) {
+        for (size_t i = 0; i < length; ++i) {
+            writer->output[writer->length + i * 2] = hex[data[i] >> 4];
+            writer->output[writer->length + i * 2 + 1] = hex[data[i] & 15];
+        }
+    }
+    writer->length += length * 2;
+}
+
+static size_t
+fpg_json(const MvFpg *fpg, int transparent_zero, char *output)
+{
+    JsonWriter w = {output, 0};
+    json_text(&w, "{\"schema\":1,\"kind\":\"malvado-fpg-8\",\"transparent_zero\":%s,\"palette_hex\":\"", transparent_zero ? "true" : "false");
+    json_hex(&w, mv_fpg_palette(fpg), PALETTE_SIZE);
+    json_text(&w, "\",\"gamma_hex\":\"");
+    json_hex(&w, mv_fpg_gamma(fpg), GAMMA_SIZE);
+    json_text(&w, "\",\"sprites\":[");
+    for (size_t i = 0; i < fpg->count; ++i) {
+        const Entry *entry = &fpg->entries[i];
+        const uint8_t *record = fpg->bytes + entry->record_offset;
+        json_text(&w, "%s{\"id\":%d,\"image\":\"%d.png\",\"width\":%d,\"height\":%d,\"name_hex\":\"", i ? "," : "", entry->id, entry->id, entry->width, entry->height);
+        json_hex(&w, record + 8, 32);
+        json_text(&w, "\",\"filename_hex\":\"");
+        json_hex(&w, record + 40, 12);
+        json_text(&w, "\",\"points\":[");
+        for (size_t j = 0; j < entry->point_count; ++j) {
+            const uint8_t *p = record + RECORD_SIZE + j * 4;
+            int x = read_i16(p), y = read_i16(p + 2);
+            json_text(&w, "%s{\"x\":%d,\"y\":%d,\"defined\":%s}", j ? "," : "", x, y, x == -1 && y == -1 ? "false" : "true");
+        }
+        json_text(&w, "]}");
+    }
+    json_text(&w, "]}");
+    if (output) output[w.length] = '\0';
+    return w.length + 1;
+}
+
+size_t
+mv_fpg_json_size(const MvFpg *fpg, int transparent_zero)
+{
+    if (!fpg || (transparent_zero != 0 && transparent_zero != 1)) return 0;
+    return fpg_json(fpg, transparent_zero, NULL);
+}
+
+int
+mv_fpg_copy_json(const MvFpg *fpg, int transparent_zero, char *output, size_t length)
+{
+    size_t needed = mv_fpg_json_size(fpg, transparent_zero);
+    if (!needed || !output || length < needed) return 0;
+    fpg_json(fpg, transparent_zero, output);
     return 1;
 }

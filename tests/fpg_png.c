@@ -53,6 +53,17 @@ main(int argc, char **argv)
     const char *error = NULL;
     MvFpg *fpg = mv_fpg_parse(data, length, &error);
     assert(fpg && !error);
+    if (!strcmp(argv[2], "json") || !strcmp(argv[2], "json-opaque")) {
+        int transparent = strcmp(argv[2], "json-opaque") != 0;
+        size_t size = mv_fpg_json_size(fpg, transparent);
+        char *json = malloc(size);
+        assert(json && mv_fpg_copy_json(fpg, transparent, json, size));
+        assert(fwrite(json, 1, size - 1, stdout) == size - 1);
+        free(json);
+        mv_fpg_destroy(fpg);
+        free(data);
+        return 0;
+    }
     int transparent = strcmp(argv[2], "opaque") != 0;
     size_t size = mv_fpg_png_size(fpg, 7, transparent);
     unsigned char *png = malloc(size);

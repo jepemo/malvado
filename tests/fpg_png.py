@@ -1,6 +1,7 @@
 # Malvado 2; project created by Jeremías Pérez and contributors.
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import struct
 import subprocess
 import sys
@@ -43,3 +44,19 @@ def check(mode):
 
 for case in ("opaque", "transparent", "large"):
     check(case)
+
+for mode in ("json", "json-opaque"):
+    manifest = json.loads(subprocess.check_output([sys.argv[1], sys.argv[2], mode]))
+    original = open(sys.argv[2], "rb").read()
+    assert manifest["schema"] == 1 and manifest["kind"] == "malvado-fpg-8"
+    assert manifest["transparent_zero"] == (mode == "json")
+    assert bytes.fromhex(manifest["palette_hex"]) == original[8:776]
+    assert bytes.fromhex(manifest["gamma_hex"]) == original[776:1352]
+    assert [sprite["id"] for sprite in manifest["sprites"]] == [7, 42]
+    first, second = manifest["sprites"]
+    assert (first["image"], first["width"], first["height"]) == ("7.png", 2, 2)
+    assert bytes.fromhex(first["name_hex"]) == original[1360:1392]
+    assert bytes.fromhex(first["filename_hex"]) == original[1392:1404]
+    assert first["points"] == [{"x": 1, "y": 0, "defined": True},
+                               {"x": -1, "y": -1, "defined": False}]
+    assert second["image"] == "42.png" and second["points"] == [{"x": 0, "y": 0, "defined": True}]
