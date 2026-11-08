@@ -303,8 +303,11 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
     const cJSON *scale = cJSON_GetObjectItemCaseSensitive(meta, "scale");
     const cJSON *app = cJSON_GetObjectItemCaseSensitive(meta, "app");
     const cJSON *version = cJSON_GetObjectItemCaseSensitive(meta, "version");
-    if ((format && (!cJSON_IsString(format) || strcmp(format->valuestring, "RGBA8888"))) ||
-        (scale && (!cJSON_IsString(scale) || strcmp(scale->valuestring, "1"))) ||
+    if (format && (!cJSON_IsString(format) || strcmp(format->valuestring, "RGBA8888"))) {
+        if (error) *error = "unsupported Aseprite pixel format";
+        goto fail_aseprite;
+    }
+    if ((scale && (!cJSON_IsString(scale) || strcmp(scale->valuestring, "1"))) ||
         (app && !cJSON_IsString(app)) || (version && !cJSON_IsString(version))) goto fail_aseprite;
     int count = cJSON_GetArraySize(frames);
     if (count < 1 || count > 4096) goto fail_aseprite;

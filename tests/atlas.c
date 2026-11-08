@@ -137,6 +137,15 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
     invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":0");
     invalid_aseprite_change(buffer, "\"filename\":\"two\"", "\"filename\":\"one\"");
+    const char *format_field = strstr(buffer, "\"format\":\"RGBA8888\"");
+    assert(format_field);
+    char bad_format[4096];
+    int bad_format_length = snprintf(bad_format, sizeof(bad_format), "%.*s%s%s",
+        (int)(format_field - buffer), buffer, "\"format\":\"I8\"",
+        format_field + strlen("\"format\":\"RGBA8888\""));
+    assert(bad_format_length > 0 && (size_t)bad_format_length < sizeof(bad_format));
+    assert(!mv_atlas_parse_aseprite(bad_format, (size_t)bad_format_length, 8, 8, &error));
+    assert(error && !strcmp(error, "unsupported Aseprite pixel format"));
     invalid_aseprite_change(buffer, "\"scale\":\"1\"", "\"scale\":\"2\"");
     invalid_aseprite_change(buffer, "\"rotated\":false", "\"extra\":0,\"rotated\":false");
     invalid_aseprite_change(buffer, "\"w\":4", "\"w\":9");
