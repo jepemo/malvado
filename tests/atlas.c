@@ -298,6 +298,9 @@ main(int argc, char **argv)
 
     invalid_aseprite_change(buffer, "#12345678", "#oops");
     invalid_aseprite_change(buffer, "\"frame\":0", "\"center\":{},\"frame\":0");
+    invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"pivot\\u0000extra\"");
+    invalid_aseprite_change(buffer, "\"keys\"", "\"keys\\u0000extra\"");
+    invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\\u0000hidden\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
