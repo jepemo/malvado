@@ -423,7 +423,11 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         const cJSON *name = cJSON_GetObjectItemCaseSensitive(slice, "name");
         const cJSON *keys = cJSON_GetObjectItemCaseSensitive(slice, "keys");
         const cJSON *color = cJSON_GetObjectItemCaseSensitive(slice, "color");
-        if (slice->next || !object_fields(slice, slice_fields, 3) ||
+        if (slice->next) {
+            if (error) *error = "unsupported Aseprite multiple slices";
+            goto fail_aseprite;
+        }
+        if (!object_fields(slice, slice_fields, 3) ||
             !cJSON_IsString(name) || strcmp(name->valuestring, "pivot") ||
             !cJSON_IsArray(keys) || !keys->child ||
             (color && !parse_hex_color(color, &atlas->pivot_color))) {

@@ -166,6 +166,16 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":1");
     invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
+    const char *slice_field = strstr(buffer, "\"slices\":[]");
+    assert(slice_field);
+    char multiple_slices[4096];
+    int slices_length = snprintf(multiple_slices, sizeof(multiple_slices), "%.*s%s%s",
+        (int)(slice_field - buffer), buffer, "\"slices\":[{},{}]",
+        slice_field + strlen("\"slices\":[]"));
+    assert(slices_length > 0 && (size_t)slices_length < sizeof(multiple_slices));
+    assert(!mv_atlas_parse_aseprite(multiple_slices, (size_t)slices_length, 8, 8, &error));
+    assert(error && !strcmp(error, "unsupported Aseprite multiple slices"));
+
     invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":0");
     invalid_aseprite_change(buffer, "\"filename\":\"two\"", "\"filename\":\"one\"");
     const char *format_field = strstr(buffer, "\"format\":\"RGBA8888\"");
