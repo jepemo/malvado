@@ -42,6 +42,9 @@ json_numbers_valid(const char *text, size_t length)
                 ++i;
             continue;
         }
+        unsigned char byte = (unsigned char)text[i];
+        if (byte < 32 && byte != '\t' && byte != '\n' && byte != '\r')
+            return 0;
         if (text[i] != '-' && (text[i] < '0' || text[i] > '9')) {
             ++i;
             continue;

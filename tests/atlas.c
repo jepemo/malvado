@@ -189,6 +189,9 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "\"trimmed\":false", "\"trimmed\":1");
     invalid_aseprite_change(buffer, "\"frameTags\":[]", "\"frameTags\":[{}]");
     invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":[{}]");
+    invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":\v[]");
+    invalid_aseprite_change(buffer, "\"layers\":[]", "\"layers\":\f[]");
+
     const char *slice_field = strstr(buffer, "\"slices\":[]");
     assert(slice_field);
     char multiple_slices[4096];
@@ -435,6 +438,8 @@ main(int argc, char **argv)
     atlas = mv_atlas_parse_aseprite(literal_aseprite, (size_t)literal_length, 8, 8, &error);
     assert(atlas);
     mv_atlas_destroy(atlas);
+    invalid("{\v\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
+    invalid("{\"schema\":1,\f\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

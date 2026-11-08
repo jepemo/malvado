@@ -176,3 +176,5 @@ and process fields, but not in process defaults.
 The `mv.fpg` namespace is separate from the legacy global `fpg` graphics
 helper. The `fpg` object can still be inspected in headless mode, but image
 creation requires a window.
+
+Manifest parsing accepts only JSON whitespace outside strings. It rejects other unescaped control characters.

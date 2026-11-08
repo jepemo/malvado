@@ -119,6 +119,8 @@ main(int argc, char **argv)
     mv_fpg_manifest_destroy(manifest);
     mv_fpg_manifest_destroy(NULL);
     assert(mv_fpg_copy_json(fpg, 1, json, json_size));
+    invalid_manifest_change(json, "\"schema\":1", "\"schema\":\v1");
+    invalid_manifest_change(json, "\"schema\":1", "\"schema\":\f1");
     invalid_manifest_change(json, "\"schema\":1", "\"schema\":2");
     invalid_manifest_change(json, "\"schema\":1", "\"schema\":1,\"schema\":1");
     invalid_manifest_change(json, "\"image\":\"7.png\"", "\"image\":\"../7.png\"");
