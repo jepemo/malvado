@@ -1,0 +1,28 @@
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
+
+local mv = require("malvado")
+mv.import_globals()
+
+local red, green, pivot
+local Picture = process(function()
+  while not key("escape") do
+    draw_image_region(red, 160, 120, 0, 0, 2, 2, pivot.x, pivot.y, 32)
+    draw_image_region(green, 240, 120, 0, 0, 2, 1, 0, 0, 32)
+    draw_text("FPG sprites  |  Escape: exit", 20, 20, 20)
+    frame()
+  end
+end)
+
+local game = {width = 640, height = 480, title = "FPG graphics"}
+function game.init()
+  clear_screen(25, 30, 45)
+  local file = assert(io.open("examples/fpg/graphics.fpg", "rb"))
+  local library = mv.fpg.parse(file:read("a"))
+  file:close()
+  red = assert(library:image(7, true))
+  green = assert(library:image(42, true))
+  pivot = assert(library:point(7, 0))
+  Picture()
+end
+return game
