@@ -58,25 +58,6 @@ has_zero_escape(const char *json, size_t length)
     return 0;
 }
 
-static char *
-copy_text(const cJSON *field, size_t limit)
-{
-    if (!cJSON_IsString(field) || !field->valuestring)
-        return NULL;
-    size_t length = strlen(field->valuestring);
-    if (length == 0 || length > limit)
-        return NULL;
-    for (size_t i = 0; i < length; ++i) {
-        unsigned char c = (unsigned char)field->valuestring[i];
-        if (c < 32 || c > 126)
-            return NULL;
-    }
-    char *copy = malloc(length + 1);
-    if (copy)
-        memcpy(copy, field->valuestring, length + 1);
-    return copy;
-}
-
 /* Copy a nonempty UTF-8 string without ASCII control characters. */
 static char *
 copy_utf8_text(const cJSON *field, size_t limit)
@@ -173,7 +154,7 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
     atlas = calloc(1, sizeof(*atlas));
     if (!atlas)
         goto fail;
-    atlas->image = copy_text(cJSON_GetObjectItemCaseSensitive(root, "image"), 511);
+    atlas->image = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(root, "image"), 511);
     atlas->sprites = calloc((size_t)count, sizeof(*atlas->sprites));
     if (!atlas->image || !atlas->sprites)
         goto fail;
@@ -194,7 +175,7 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
         if ((px && !integer_field(item, "pivot_x", INT_MIN, INT_MAX, &sprite->pivot_x)) ||
             (py && !integer_field(item, "pivot_y", INT_MIN, INT_MAX, &sprite->pivot_y)))
             goto fail;
-        sprite->name = copy_text(cJSON_GetObjectItemCaseSensitive(item, "name"), 127);
+        sprite->name = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(item, "name"), 127);
         if (!sprite->name)
             goto fail;
         ++atlas->count;
@@ -221,7 +202,7 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
             if (frame_count < 1 || (size_t)frame_count > 4096 - total_frames)
                 goto fail;
             total_frames += (size_t)frame_count;
-            animation->name = copy_text(cJSON_GetObjectItemCaseSensitive(entry, "name"), 127);
+            animation->name = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(entry, "name"), 127);
             animation->frames = calloc((size_t)frame_count, sizeof(*animation->frames));
             if (!animation->name || !animation->frames)
                 goto fail;

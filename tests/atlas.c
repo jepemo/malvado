@@ -89,6 +89,17 @@ main(int argc, char **argv)
     assert(!mv_atlas_animation_frame(atlas, "flash", 0, 1, NULL));
     mv_atlas_destroy(atlas);
 
+    const char *native_utf8 = "{\"schema\":2,\"kind\":\"graphics-library\","
+        "\"image\":\"niño.png\",\"sprites\":[{\"id\":1,\"name\":\"niño\","
+        "\"x\":0,\"y\":0,\"width\":1,\"height\":1}],"
+        "\"animations\":[{\"name\":\"camiñar\",\"frames\":[{\"sprite\":1,\"duration_ms\":1}]}]}";
+    atlas = mv_atlas_parse(native_utf8, strlen(native_utf8), 8, 8, &error);
+    assert(atlas && !strcmp(mv_atlas_image(atlas), "niño.png"));
+    assert(mv_atlas_find_name(atlas, "niño", &sprite) && sprite.id == 1);
+    assert(mv_atlas_animation_frame(atlas, "camiñar", 0, 1, &frame) && frame == 1);
+    mv_atlas_destroy(atlas);
+    invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"\xc0\x80\",\"sprites\":[{\"id\":1,\"name\":\"ok\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
+    invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"x\",\"sprites\":[{\"id\":1,\"name\":\"\xc0\x80\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     file = fopen(argv[3], "rb");
     assert(file);
     length = fread(buffer, 1, sizeof(buffer), file);
