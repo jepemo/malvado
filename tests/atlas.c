@@ -145,6 +145,18 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "back", UINT64_MAX, 0, &frame) && frame == 1);
     assert(mv_atlas_animation_frame(atlas, "still", 1000, 1, &frame) && frame == 2);
     mv_atlas_destroy(atlas);
+    const char *tag_name = strstr(tagged, "\"name\":\"walk\"");
+    assert(tag_name);
+    char unicode_tag[4096];
+    int unicode_tag_length = snprintf(unicode_tag, sizeof(unicode_tag), "%.*s%s%s",
+        (int)(tag_name - tagged), tagged, "\"name\":\"cami\\u00f1ar\"",
+        tag_name + strlen("\"name\":\"walk\""));
+    assert(unicode_tag_length > 0 && (size_t)unicode_tag_length < sizeof(unicode_tag));
+    atlas = mv_atlas_parse_aseprite(unicode_tag, (size_t)unicode_tag_length, 8, 8, &error);
+    assert(atlas && mv_atlas_animation_frame(atlas, "camiñar", 100, 1, &frame) && frame == 2);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(unicode_tag, "\"name\":\"back\"", "\"name\":\"camiñar\"");
+    invalid_aseprite_change(tagged, "\"name\":\"walk\"", "\"name\":\"\xc0\x80\"");
     invalid_aseprite_change(tagged, "\"direction\":\"forward\"", "\"direction\":\"unknown\"");
     invalid_aseprite_change(tagged, "\"from\":0", "\"from\":2");
     invalid_aseprite_change(tagged, "\"to\":1", "\"to\":2");

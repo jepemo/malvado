@@ -507,7 +507,7 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             goto fail_aseprite;
         }
         tag_animation->has_repeats = repeat != NULL;
-        tag_animation->name = copy_text(cJSON_GetObjectItemCaseSensitive(tag, "name"), 127);
+        tag_animation->name = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(tag, "name"), 127);
         if (!tag_animation->name) goto fail_aseprite;
         for (size_t i = 0; i + 1 < atlas->animation_count; ++i)
             if (!strcmp(atlas->animations[i].name, tag_animation->name)) goto fail_aseprite;
