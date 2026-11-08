@@ -26,9 +26,17 @@ The historical Malvado engine called directories/spritesheets `fpg()` and had ZI
 | ZIP + manifest | Share libraries or distribute a game | Familiar container for multiple asset types | Needs C reader and limits; compression does not protect code |
 | New proprietary binary | Optimized cache if measurements justify it | Could reduce load time | Complexity, converters, debugging, versioning; deferred |
 
-[Aseprite exports PNG spritesheets and JSON metadata](https://www.aseprite.org/docs/cli/), including json-array/json-hash variants and animation data. Initially propose an adapter for a tested subset of PNG+JSON json-array exports. Report unsupported fields instead of ignoring them. Players do not need Aseprite or a redistributed editor.
+[Aseprite exports PNG spritesheets and JSON metadata](https://www.aseprite.org/docs/cli/), including json-array/json-hash variants and animation data. Alpha.6 selects the tested PNG+JSON json-array subset described in [images](../api/images.md). Report unsupported fields instead of ignoring them. Players do not need Aseprite or a redistributed editor.
 
 Level maps are a separate asset. [Tiled publishes a JSON map and tileset format](https://doc.mapeditor.org/en/stable/reference/json-map-format/). Consider an importer when tilemaps are supported. Do not force a level into an FPG or promise complete Tiled compatibility in 2.0. PNG+JSON is a pipeline choice, not a claim that one modern standard replaces all DIV formats.
+
+## Alpha.6 Aseprite acceptance decision
+
+Alpha.6 accepts the JSON-array subset in [images](../api/images.md). It covers frame regions, durations, crop offsets, tags, and one named pivot slice with animated keys. It rejects data outside that contract. It does not promise the whole Aseprite format.
+
+The acceptance evidence is split across two fixtures. The unmodified [Coric export](../../tests/fixtures/aseprite/coric/README.md) tests multiple frames, durations, and tags in C, the installed C SDK, and Lua. Lua also loads its PNG. The original [Aseprite-format example](../../examples/aseprite/README.md) tests crop offsets, a pivot, animation and rendered pixels. That example was prepared for Malvado; it is not represented as an export from Aseprite. The `atlas`, `atlas_allocation`, `visual_image`, `visual_image_graph`, `visual_aseprite_example_pixels`, and `visual_aseprite_example` tests cover validation, cleanup, lookup, animation, drawing, and rejected input. The original proposal asked for one exported example combining these features. This decision uses two fixtures instead; a single real Aseprite export combining crop and pivot has not been tested.
+
+Multiple slices, JSON-hash exports, layers, nine-slice centers, and additional tag data are outside this subset. They are rejected because the atlas cannot preserve their meaning. Review these formats for 2.5, after the 2.0 API and GUI, with separate contracts and fidelity and rejection tests before accepting them. Alpha.6 does not require their implementation.
 
 ## Common C model for importers
 
@@ -85,6 +93,6 @@ Choose the first FPG variant using samples of known origin. Do not claim support
 
 Create `fpg-import`: a small library with non-consecutive IDs, name, defined and undefined point, palette, and transparency. Import it, generate PNG+JSON, and show the same image in the runtime. Compare pixels/indexes and supported metadata. Add 16/32-bit variants only with their own fixtures.
 
-Create `atlas-import`: Aseprite export with multiple frames/durations, crop, and pivot. Validate the subset and give clear errors for rotation or other unsupported options. Initial packing can avoid rotation. Its importer must not accept data that it will render incorrectly.
+For `atlas-import`, use a real Aseprite export for frames and durations, and the Malvado Aseprite-format example for crop and pivot. Validate the subset and give clear errors for rotation or other unsupported options. The importer must not accept data that it will render incorrectly. The evidence and its limit are stated in the acceptance decision above.
 
 Check dimension limits, overflow, truncated sizes, duplicate IDs, and unknown versions. For ZIP, check `../` paths, absolute paths, case-variant duplicates, decompressed size, and entry count. These checks belong in the shared C reader/converter, not only the GUI dialog. FPG fixtures must be licensed for redistribution. Do not copy commercial game packages for tests.

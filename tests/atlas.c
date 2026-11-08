@@ -43,10 +43,10 @@ invalid_aseprite_change(const char *json, const char *old, const char *replaceme
 int
 main(int argc, char **argv)
 {
-    assert(argc == 7);
+    assert(argc == 8);
     FILE *file = fopen(argv[1], "rb");
     assert(file);
-    char buffer[2048];
+    char buffer[8192];
     size_t length = fread(buffer, 1, sizeof(buffer), file);
     assert(!ferror(file) && feof(file));
     fclose(file);
@@ -100,6 +100,23 @@ main(int argc, char **argv)
     mv_atlas_destroy(atlas);
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"\xc0\x80\",\"sprites\":[{\"id\":1,\"name\":\"ok\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"x\",\"sprites\":[{\"id\":1,\"name\":\"\xc0\x80\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
+    /* Unmodified JSON exported by Aseprite from a separately licensed project. */
+    file = fopen(argv[7], "rb");
+    assert(file);
+    length = fread(buffer, 1, sizeof(buffer), file);
+    assert(!ferror(file) && feof(file));
+    fclose(file);
+    atlas = mv_atlas_parse_aseprite(buffer, length, 48, 64, &error);
+    assert(atlas && !error && mv_atlas_count(atlas) == 12);
+    assert(!strcmp(mv_atlas_image(atlas), "coric.png"));
+    assert(mv_atlas_find_name(atlas, "coric 1.aseprite", &sprite));
+    assert(sprite.id == 2 && sprite.region.x == 16 && sprite.region.width == 16);
+    assert(mv_atlas_animation_frame(atlas, "walk_n", 132, 1, &frame) && frame == 1);
+    assert(mv_atlas_animation_frame(atlas, "walk_n", 133, 1, &frame) && frame == 2);
+    assert(mv_atlas_animation_frame(atlas, "walk_n", 267, 1, &frame) && frame == 3);
+    assert(mv_atlas_animation_frame(atlas, "walk_n", 400, 1, &frame) && frame == 2);
+    mv_atlas_destroy(atlas);
+
     file = fopen(argv[3], "rb");
     assert(file);
     length = fread(buffer, 1, sizeof(buffer), file);

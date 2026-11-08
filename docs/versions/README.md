@@ -28,6 +28,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [ ] **2.2** — [Mode 8](../specs/graphics-modes.md).
 - [ ] **2.3** — [Mode 9](../specs/graphics-modes.md).
 - [ ] **2.4** — [GUI](../specs/gui.md).
+- [ ] **2.5** — review additional Aseprite metadata and export formats after the 2.0 API and GUI; see the [asset decision](../specs/assets.md#alpha6-aseprite-acceptance-decision).
 - [ ] **2.x, later** — evaluate LuaJIT using Malvado workloads and compatibility tests; Lua 5.4 remains the 2.0 runtime.
 
 The GUI and graphics modes are outside the 2.0 release gates. iOS is deferred to a later version. The full 2.0 API inventory needs an explicit decision; historical compatibility is tracked separately. See the [roadmap](../planning/roadmap.md) and [CLI plan](../specs/cli.md).
