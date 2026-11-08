@@ -88,6 +88,9 @@ The methods use the C reader and return independent Lua values:
   `nil` for an absent ID or index. Undefined points retain their raw values.
 - `fpg:palette()` returns the 768 original six-bit RGB bytes and `fpg:gamma()`
   returns the 576 original gamma bytes.
+- `fpg:png(id, transparent_zero)` returns an indexed PNG byte string, or `nil`
+  for an absent ID. The optional flag is a boolean and defaults to false. It
+  works without a window and uses the C PNG encoder described above.
 - `fpg:rgba(id, transparent_zero)` returns an RGBA byte string or `nil` for an
   absent ID. The optional flag is a boolean and defaults to false. Conversion
   has the same channel and transparency behavior as `mv_fpg_copy_rgba`.

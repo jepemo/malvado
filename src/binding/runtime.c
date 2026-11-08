@@ -2427,6 +2427,31 @@ fpg_rgba(lua_State *L)
 }
 
 static int
+fpg_png(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
+        return luaL_error(L, "transparent_zero must be a boolean");
+    if (id < 1 || id > 999) {
+        lua_pushnil(L);
+        return 1;
+    }
+    int transparent_zero = lua_toboolean(L, 3);
+    size_t length = mv_fpg_png_size(value->fpg, (int)id, transparent_zero);
+    if (!length) {
+        lua_pushnil(L);
+        return 1;
+    }
+    luaL_Buffer buffer;
+    char *output = luaL_buffinitsize(L, &buffer, length);
+    if (!mv_fpg_copy_png(value->fpg, (int)id, transparent_zero, (uint8_t *)output, length))
+        return luaL_error(L, "cannot encode FPG sprite");
+    luaL_pushresultsize(&buffer, length);
+    return 1;
+}
+
+static int
 fpg_image(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
@@ -4506,7 +4531,7 @@ open_module(lua_State *L)
     static const luaL_Reg fpg_methods[] = {
         {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
         {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
-        {"image", fpg_image}, {NULL, NULL}
+        {"image", fpg_image}, {"png", fpg_png}, {NULL, NULL}
     };
     luaL_setfuncs(L, fpg_methods, 0);
     lua_setfield(L, -2, "__index");
