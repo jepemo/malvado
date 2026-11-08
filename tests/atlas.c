@@ -146,7 +146,15 @@ main(int argc, char **argv)
     assert(bad_format_length > 0 && (size_t)bad_format_length < sizeof(bad_format));
     assert(!mv_atlas_parse_aseprite(bad_format, (size_t)bad_format_length, 8, 8, &error));
     assert(error && !strcmp(error, "unsupported Aseprite pixel format"));
-    invalid_aseprite_change(buffer, "\"scale\":\"1\"", "\"scale\":\"2\"");
+    const char *scale_field = strstr(buffer, "\"scale\":\"1\"");
+    assert(scale_field);
+    char bad_scale[4096];
+    int bad_scale_length = snprintf(bad_scale, sizeof(bad_scale), "%.*s%s%s",
+        (int)(scale_field - buffer), buffer, "\"scale\":\"2\"",
+        scale_field + strlen("\"scale\":\"1\""));
+    assert(bad_scale_length > 0 && (size_t)bad_scale_length < sizeof(bad_scale));
+    assert(!mv_atlas_parse_aseprite(bad_scale, (size_t)bad_scale_length, 8, 8, &error));
+    assert(error && !strcmp(error, "unsupported Aseprite scale"));
     invalid_aseprite_change(buffer, "\"rotated\":false", "\"extra\":0,\"rotated\":false");
     invalid_aseprite_change(buffer, "\"w\":4", "\"w\":9");
     char *rotated = strstr(buffer, "\"rotated\":false");
