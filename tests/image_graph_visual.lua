@@ -79,6 +79,12 @@ local producer = mv.process(function()
   assert(mv.sprite_info(animated_atlas, 1).pivot_x == 0)
   assert(mv.sprite_info(animated_atlas, 2).pivot_x == 3)
   assert(mv.sprite_info(animated_atlas, 3).pivot_x == 3)
+  local hidden_json, hidden_count = animated_json:gsub(
+    '"frame":1,"bounds":{"x":0,"y":0,"w":4,"h":4}',
+    '"frame":1,"bounds":{"x":0,"y":0,"w":0,"h":0}')
+  assert(hidden_count == 1)
+  local hidden = mv.load_aseprite(image, hidden_json)
+  assert(mv.sprite_info(hidden, mv.animation_frame(hidden, "default", 100)).pivot_x == 0)
   local reset_json, reset_count = animated_json:gsub(',"pivot":{"x":3,"y":0}', "")
   assert(reset_count == 1)
   local reset = mv.load_aseprite(image, reset_json)

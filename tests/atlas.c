@@ -303,6 +303,19 @@ main(int argc, char **argv)
     assert(mv_atlas_find(atlas, 2, &sprite) && sprite.pivot_x == 0 && sprite.pivot_y == 0);
     mv_atlas_destroy(atlas);
     invalid_aseprite_change(no_pivot, "\"frame\":1,\"bounds\"", "\"frame\":1,\"pivot\":null,\"bounds\"");
+    const char *second_bounds = strstr(animated, "\"frame\":1,\"bounds\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8}");
+    assert(second_bounds);
+    char hidden[4096];
+    int hidden_length = snprintf(hidden, sizeof(hidden), "%.*s%s%s",
+        (int)(second_bounds - animated), animated,
+        "\"frame\":1,\"bounds\":{\"x\":0,\"y\":0,\"w\":0,\"h\":0}",
+        second_bounds + strlen("\"frame\":1,\"bounds\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8}"));
+    assert(hidden_length > 0 && (size_t)hidden_length < sizeof(hidden));
+    atlas = mv_atlas_parse_aseprite(hidden, (size_t)hidden_length, 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite) && sprite.pivot_x == 2 && sprite.pivot_y == 3);
+    assert(mv_atlas_find(atlas, 2, &sprite) && sprite.pivot_x == 0 && sprite.pivot_y == 0);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(hidden, "\"w\":0,\"h\":0", "\"w\":-1,\"h\":0");
     invalid_aseprite_change(animated, "\"frame\":1", "\"frame\":0");
     invalid_aseprite_change(animated, "\"frame\":1", "\"frame\":2");
     const char *first_key = strstr(multiple, "\"frame\":0,\"bounds\"");
