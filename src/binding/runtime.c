@@ -2426,6 +2426,38 @@ fpg_rgba(lua_State *L)
     return 1;
 }
 
+static int
+fpg_image(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
+        return luaL_error(L, "transparent_zero must be a boolean");
+    MvFpgSprite sprite;
+    if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    if (!engine.window)
+        return luaL_error(L, "FPG image requires an open window");
+    int transparent_zero = lua_toboolean(L, 3);
+    LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
+    *image = (LuaImage){0};
+    luaL_setmetatable(L, "malvado.image");
+    size_t length = (size_t)sprite.width * (size_t)sprite.height * 4;
+    luaL_Buffer buffer;
+    char *rgba = luaL_buffinitsize(L, &buffer, length);
+    if (!mv_fpg_copy_rgba(value->fpg, (int)id, transparent_zero, (uint8_t *)rgba, length))
+        return luaL_error(L, "cannot convert FPG sprite");
+    image->image = mv_image_from_rgba(sprite.width, sprite.height, (uint8_t *)rgba, length);
+    luaL_pushresultsize(&buffer, length);
+    lua_pop(L, 1);
+    if (!image->image)
+        return luaL_error(L, "could not create FPG image");
+    manage_image(L, image);
+    return 1;
+}
+
 static void destroy_managed_atlas(void *data) { mv_atlas_destroy(data); }
 
 static int
@@ -4473,7 +4505,8 @@ open_module(lua_State *L)
     lua_newtable(L);
     static const luaL_Reg fpg_methods[] = {
         {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
-        {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba}, {NULL, NULL}
+        {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
+        {"image", fpg_image}, {NULL, NULL}
     };
     luaL_setfuncs(L, fpg_methods, 0);
     lua_setfield(L, -2, "__index");

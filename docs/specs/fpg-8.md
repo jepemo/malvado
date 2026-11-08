@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access and RGBA conversion are implemented; rendering and PNG+JSON conversion are pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; PNG+JSON conversion is pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -80,5 +80,16 @@ The methods use the C reader and return independent Lua values:
   absent ID. The optional flag is a boolean and defaults to false. Conversion
   has the same channel and transparency behavior as `mv_fpg_copy_rgba`.
 
-These operations do not create images or render graphics. The `mv.fpg`
-namespace is separate from the legacy global `fpg` graphics helper.
+`fpg:image(id, transparent_zero)` creates an independent managed image from a
+sprite. The optional boolean defaults to false, as for `rgba`; absent IDs
+return `nil`. A valid ID requires an open graphics window. Image creation
+raises an error if conversion or upload fails. The image keeps its pixels
+after the FPG object is collected and can be used with `draw_image`, image
+regions, and `self.graph`. It follows the normal image resource lifetime.
+An automatic graph collider uses image bounds. FPG control point zero is not
+implicitly applied as the image pivot; read it with `fpg:point` and use an
+explicit image-region pivot when needed.
+
+The `mv.fpg` namespace is separate from the legacy global `fpg` graphics
+helper. The `fpg` object can still be inspected in headless mode, but image
+creation requires a window.
