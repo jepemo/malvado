@@ -438,7 +438,7 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         animation->frames[animation->count++] = (AnimationFrame){sprite->id, duration};
         animation->duration_ms += (uint64_t)duration;
     }
-    /* A single static full-canvas slice named "pivot" defines the origin. */
+    /* A full-canvas pivot key applies until the next key. */
     const cJSON *slices = cJSON_GetObjectItemCaseSensitive(meta, "slices");
     if (slices && !cJSON_IsArray(slices)) goto fail_aseprite;
     if (slices && slices->child) {
@@ -448,36 +448,50 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         const cJSON *slice = slices->child;
         const cJSON *name = cJSON_GetObjectItemCaseSensitive(slice, "name");
         const cJSON *keys = cJSON_GetObjectItemCaseSensitive(slice, "keys");
-        const cJSON *key = cJSON_IsArray(keys) ? keys->child : NULL;
-        const cJSON *bounds = cJSON_GetObjectItemCaseSensitive(key, "bounds");
-        const cJSON *pivot = cJSON_GetObjectItemCaseSensitive(key, "pivot");
         const cJSON *color = cJSON_GetObjectItemCaseSensitive(slice, "color");
-        int frame, bx, by, bw, bh, px, py;
         if (slice->next || !object_fields(slice, slice_fields, 3) ||
             !cJSON_IsString(name) || strcmp(name->valuestring, "pivot") ||
-            !key || key->next || !object_fields(key, key_fields, 3) ||
-            !object_fields(bounds, rect_fields, 4) || !object_fields(pivot, point_fields, 2) ||
-            !integer_field(key, "frame", 0, 0, &frame) ||
-            !integer_field(bounds, "x", 0, 0, &bx) || !integer_field(bounds, "y", 0, 0, &by) ||
-            !integer_field(bounds, "w", 1, INT_MAX, &bw) || !integer_field(bounds, "h", 1, INT_MAX, &bh) ||
-            !integer_field(pivot, "x", INT_MIN, INT_MAX, &px) ||
-            !integer_field(pivot, "y", INT_MIN, INT_MAX, &py) ||
+            !cJSON_IsArray(keys) || !keys->child ||
             (color && !parse_hex_color(color, &atlas->pivot_color))) {
             if (error) *error = "invalid or unsupported Aseprite pivot slice";
             goto fail_aseprite;
         }
         atlas->has_pivot_color = color != NULL;
-        for (size_t i = 0; i < atlas->count; ++i) {
-            MvAtlasSprite *sprite = &atlas->sprites[i];
-            int64_t x = (int64_t)px - sprite->trim_x;
-            int64_t y = (int64_t)py - sprite->trim_y;
-            if (sprite->source_width != bw || sprite->source_height != bh ||
-                x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX) {
+        const cJSON *key;
+        int previous = -1;
+        cJSON_ArrayForEach(key, keys) {
+            const cJSON *bounds = cJSON_GetObjectItemCaseSensitive(key, "bounds");
+            const cJSON *pivot = cJSON_GetObjectItemCaseSensitive(key, "pivot");
+            int frame, bx, by, bw, bh, px, py;
+            if (!object_fields(key, key_fields, 3) ||
+                !object_fields(bounds, rect_fields, 4) || !object_fields(pivot, point_fields, 2) ||
+                !integer_field(key, "frame", 0, count - 1, &frame) ||
+                (previous < 0 ? frame != 0 : frame <= previous) ||
+                !integer_field(bounds, "x", 0, 0, &bx) || !integer_field(bounds, "y", 0, 0, &by) ||
+                !integer_field(bounds, "w", 1, INT_MAX, &bw) || !integer_field(bounds, "h", 1, INT_MAX, &bh) ||
+                !integer_field(pivot, "x", INT_MIN, INT_MAX, &px) ||
+                !integer_field(pivot, "y", INT_MIN, INT_MAX, &py)) {
                 if (error) *error = "invalid or unsupported Aseprite pivot slice";
                 goto fail_aseprite;
             }
-            sprite->pivot_x = (int)x;
-            sprite->pivot_y = (int)y;
+            int end = count;
+            if (key->next && !integer_field(key->next, "frame", frame + 1, count - 1, &end)) {
+                if (error) *error = "invalid or unsupported Aseprite pivot slice";
+                goto fail_aseprite;
+            }
+            previous = frame;
+            for (size_t i = (size_t)frame; i < (size_t)end; ++i) {
+                MvAtlasSprite *sprite = &atlas->sprites[i];
+                int64_t x = (int64_t)px - sprite->trim_x;
+                int64_t y = (int64_t)py - sprite->trim_y;
+                if (sprite->source_width != bw || sprite->source_height != bh ||
+                    x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX) {
+                    if (error) *error = "invalid or unsupported Aseprite pivot slice";
+                    goto fail_aseprite;
+                }
+                sprite->pivot_x = (int)x;
+                sprite->pivot_y = (int)y;
+            }
         }
     }
     static const char *const tag_fields[] = {"name", "from", "to", "direction", "color", "repeat"};
