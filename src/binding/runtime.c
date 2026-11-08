@@ -119,6 +119,7 @@ typedef struct { char **names; size_t count; } LuaDirectoryEntries;
 #ifdef MALVADO_BUILD_ASSETS
 typedef struct { MvAtlas *atlas; MvResource *resource; } LuaAtlas;
 typedef struct { MvFpg *fpg; } LuaFpg;
+typedef struct { MvFpgManifest *manifest; } LuaFpgManifest;
 #endif
 
 MvContext *
@@ -2314,6 +2315,113 @@ fpg_parse(lua_State *L)
     const char *error = NULL;
     value->fpg = mv_fpg_parse(data, length, &error);
     if (!value->fpg) return luaL_error(L, "%s", error);
+    return 1;
+}
+
+static int
+fpg_manifest_gc(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    mv_fpg_manifest_destroy(value->manifest);
+    value->manifest = NULL;
+    return 0;
+}
+
+static int
+fpg_manifest_parse(lua_State *L)
+{
+    size_t length;
+    const char *json = luaL_checklstring(L, 1, &length);
+    LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 0);
+    value->manifest = NULL;
+    luaL_setmetatable(L, "malvado.fpg_manifest");
+    const char *error = NULL;
+    value->manifest = mv_fpg_manifest_parse(json, length, &error);
+    if (!value->manifest) return luaL_error(L, "%s", error);
+    return 1;
+}
+
+static int
+fpg_manifest_count(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_pushinteger(L, (lua_Integer)mv_fpg_manifest_count(value->manifest));
+    return 1;
+}
+
+static int
+fpg_manifest_id_at(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_Integer index = luaL_checkinteger(L, 2);
+    MvFpgManifestSprite sprite;
+    if (index < 1 || (uint64_t)(index - 1) > SIZE_MAX ||
+        !mv_fpg_manifest_at(value->manifest, (size_t)(index - 1), &sprite))
+        lua_pushnil(L);
+    else lua_pushinteger(L, sprite.id);
+    return 1;
+}
+
+static int
+fpg_manifest_transparent(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_pushboolean(L, mv_fpg_manifest_transparent_zero(value->manifest));
+    return 1;
+}
+
+static int
+fpg_manifest_palette(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_pushlstring(L, (const char *)mv_fpg_manifest_palette(value->manifest), 768);
+    return 1;
+}
+
+static int
+fpg_manifest_gamma(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_pushlstring(L, (const char *)mv_fpg_manifest_gamma(value->manifest), 576);
+    return 1;
+}
+
+static int
+fpg_manifest_sprite(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    MvFpgManifestSprite sprite;
+    if (id < 1 || id > 999 || !mv_fpg_manifest_sprite(value->manifest, (int)id, &sprite)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 0, 7);
+    lua_pushinteger(L, sprite.id); lua_setfield(L, -2, "id");
+    lua_pushinteger(L, sprite.width); lua_setfield(L, -2, "width");
+    lua_pushinteger(L, sprite.height); lua_setfield(L, -2, "height");
+    lua_pushinteger(L, (lua_Integer)sprite.point_count); lua_setfield(L, -2, "point_count");
+    lua_pushfstring(L, "%d.png", sprite.id); lua_setfield(L, -2, "image");
+    lua_pushlstring(L, (const char *)sprite.name, sizeof(sprite.name)); lua_setfield(L, -2, "name_raw");
+    lua_pushlstring(L, (const char *)sprite.filename, sizeof(sprite.filename)); lua_setfield(L, -2, "filename_raw");
+    return 1;
+}
+
+static int
+fpg_manifest_point(lua_State *L)
+{
+    LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
+    lua_Integer id = luaL_checkinteger(L, 2), index = luaL_checkinteger(L, 3);
+    MvFpgPoint point;
+    if (id < 1 || id > 999 || index < 0 || (uint64_t)index > SIZE_MAX ||
+        !mv_fpg_manifest_point(value->manifest, (int)id, (size_t)index, &point)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 0, 3);
+    lua_pushinteger(L, point.x); lua_setfield(L, -2, "x");
+    lua_pushinteger(L, point.y); lua_setfield(L, -2, "y");
+    lua_pushboolean(L, point.defined); lua_setfield(L, -2, "defined");
     return 1;
 }
 
@@ -4541,6 +4649,21 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
 #ifdef MALVADO_BUILD_ASSETS
+    luaL_newmetatable(L, "malvado.fpg_manifest");
+    lua_pushcfunction(L, fpg_manifest_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    static const luaL_Reg manifest_methods[] = {
+        {"count", fpg_manifest_count}, {"id_at", fpg_manifest_id_at},
+        {"transparent_zero", fpg_manifest_transparent}, {"palette", fpg_manifest_palette},
+        {"gamma", fpg_manifest_gamma}, {"sprite", fpg_manifest_sprite},
+        {"point", fpg_manifest_point}, {NULL, NULL}
+    };
+    luaL_setfuncs(L, manifest_methods, 0);
+    lua_setfield(L, -2, "__index");
+    lua_pushliteral(L, "malvado FPG manifest");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.fpg");
     lua_pushcfunction(L, fpg_gc);
     lua_setfield(L, -2, "__gc");
@@ -4593,6 +4716,8 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_pushcfunction(L, fpg_parse);
     lua_setfield(L, -2, "parse");
+    lua_pushcfunction(L, fpg_manifest_parse);
+    lua_setfield(L, -2, "parse_manifest");
     lua_setfield(L, -2, "fpg");
 #endif
     lua_newtable(L);

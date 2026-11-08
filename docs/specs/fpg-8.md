@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter and C JSON metadata reader are implemented; Lua metadata import remains pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter and C and Lua JSON metadata readers are implemented.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -161,6 +161,17 @@ regions, and `self.graph`. It follows the normal image resource lifetime.
 An automatic graph collider uses image bounds. FPG control point zero is not
 implicitly applied as the image pivot; read it with `fpg:point` and use an
 explicit image-region pivot when needed.
+
+`mv.fpg.parse_manifest(json)` reads a version 1 JSON manifest using the same
+C reader and limits. It returns a garbage-collected metadata object without
+loading PNG files. `manifest:count()`, `manifest:id_at(index)`,
+`manifest:palette()`, `manifest:gamma()`, and `manifest:point(id, index)` use
+the same index and missing-value conventions as the FPG reader.
+`manifest:transparent_zero()` returns a boolean. `manifest:sprite(id)` returns
+an independent table with `id`, `image`, `width`, `height`, `point_count`,
+`name_raw`, and `filename_raw`, or `nil` for an absent ID. The object does not
+provide image pixels; load a PNG separately. It can be held in Lua variables
+and process fields, but not in process defaults.
 
 The `mv.fpg` namespace is separate from the legacy global `fpg` graphics
 helper. The `fpg` object can still be inspected in headless mode, but image
