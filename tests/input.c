@@ -102,8 +102,27 @@ main(void)
     assert(!mv_mouse_button_from_name(NULL, &button));
     assert(!mv_mouse_button_from_name("left", NULL));
     assert(!mv_mouse_down(MV_MOUSE_LEFT) && !mv_mouse_down((MvMouseButton)-1));
+    static const struct { const char *name; MvPadButton value; } buttons[] = {
+        {"a", MV_PAD_A}, {"b", MV_PAD_B}, {"x", MV_PAD_X}, {"y", MV_PAD_Y},
+        {"up", MV_PAD_UP}, {"down", MV_PAD_DOWN}, {"left", MV_PAD_LEFT},
+        {"right", MV_PAD_RIGHT}, {"lb", MV_PAD_LB}, {"rb", MV_PAD_RB},
+        {"back", MV_PAD_BACK}, {"start", MV_PAD_START}
+    };
+    static const struct { const char *name; MvPadAxis value; } axes[] = {
+        {"left_x", MV_PAD_LEFT_X}, {"left_y", MV_PAD_LEFT_Y},
+        {"right_x", MV_PAD_RIGHT_X}, {"right_y", MV_PAD_RIGHT_Y},
+        {"left_trigger", MV_PAD_LEFT_TRIGGER}, {"right_trigger", MV_PAD_RIGHT_TRIGGER}
+    };
     MvPadButton pad_button = MV_PAD_A;
     MvPadAxis pad_axis = MV_PAD_LEFT_X;
+    for (size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); ++i)
+        assert(mv_pad_button_from_name(buttons[i].name, &pad_button) && pad_button == buttons[i].value);
+    for (size_t i = 0; i < sizeof(axes) / sizeof(axes[0]); ++i)
+        assert(mv_pad_axis_from_name(axes[i].name, &pad_axis) && pad_axis == axes[i].value);
+    assert(!mv_pad_button_from_name(NULL, &pad_button));
+    assert(!mv_pad_button_from_name("a", NULL));
+    assert(!mv_pad_axis_from_name(NULL, &pad_axis));
+    assert(!mv_pad_axis_from_name("left_x", NULL));
     assert(mv_pad_button_from_name("start", &pad_button) && pad_button == MV_PAD_START);
     assert(!mv_pad_button_from_name("invalid", &pad_button) && pad_button == MV_PAD_START);
     assert(mv_pad_axis_from_name("right_y", &pad_axis) && pad_axis == MV_PAD_RIGHT_Y);

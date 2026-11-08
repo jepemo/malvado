@@ -12,6 +12,10 @@ for slot = 0, 3 do
   end
 end
 assert(not pcall(mv.pad_connected, -1))
+assert(not pcall(mv.pad_connected, 4))
+assert(not pcall(mv.pad_connected, 0.5))
+assert(not pcall(mv.pad_button, 0, "A"))
+assert(not pcall(mv.pad_axis, 0, "left_x\0extra"))
 assert(not pcall(mv.pad_button, 4, "a"))
 assert(not pcall(mv.pad_button, 0, "a\0b"))
 assert(not pcall(mv.pad_axis, 0, "bad"))
