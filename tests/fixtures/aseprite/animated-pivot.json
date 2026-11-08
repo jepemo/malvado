@@ -1,0 +1,13 @@
+{
+  "frames": [
+    {"filename":"one","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":100},
+    {"filename":"two","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":100},
+    {"filename":"three","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":4,"h":4},"sourceSize":{"w":4,"h":4},"duration":100}
+  ],
+  "meta":{"image":"red.png","size":{"w":8,"h":8},"slices":[
+    {"name":"pivot","keys":[
+      {"frame":0,"bounds":{"x":0,"y":0,"w":4,"h":4},"pivot":{"x":0,"y":0}},
+      {"frame":1,"bounds":{"x":0,"y":0,"w":4,"h":4},"pivot":{"x":3,"y":0}}
+    ]}
+  ]}
+}
