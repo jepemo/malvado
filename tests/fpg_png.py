@@ -45,11 +45,15 @@ def check(mode):
 for case in ("opaque", "transparent", "large"):
     check(case)
 
-for mode in ("json", "json-opaque"):
+for mode in ("json", "json-opaque", "json-raw"):
     manifest = json.loads(subprocess.check_output([sys.argv[1], sys.argv[2], mode]))
-    original = open(sys.argv[2], "rb").read()
+    original = bytearray(open(sys.argv[2], "rb").read())
+    if mode == "json-raw":
+        original[8], original[776] = 17, 0xfe
+        original[1360:1363] = bytes([0xff, 0, 0x80])
+        original[1392] = 0xe1
     assert manifest["schema"] == 1 and manifest["kind"] == "malvado-fpg-8"
-    assert manifest["transparent_zero"] == (mode == "json")
+    assert manifest["transparent_zero"] == (mode != "json-opaque")
     assert bytes.fromhex(manifest["palette_hex"]) == original[8:776]
     assert bytes.fromhex(manifest["gamma_hex"]) == original[776:1352]
     assert [sprite["id"] for sprite in manifest["sprites"]] == [7, 42]

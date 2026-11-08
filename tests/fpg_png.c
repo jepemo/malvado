@@ -50,10 +50,18 @@ main(int argc, char **argv)
         for (size_t i = 0; i < 257U * 257U; ++i) data[pixels + i] = (unsigned char)i;
         length = pixels + 257U * 257U;
     }
+    if (!strcmp(argv[2], "json-raw")) {
+        data[8] = 17;
+        data[776] = 0xfe;
+        data[1360] = 0xff;
+        data[1361] = 0;
+        data[1362] = 0x80;
+        data[1392] = 0xe1;
+    }
     const char *error = NULL;
     MvFpg *fpg = mv_fpg_parse(data, length, &error);
     assert(fpg && !error);
-    if (!strcmp(argv[2], "json") || !strcmp(argv[2], "json-opaque")) {
+    if (!strcmp(argv[2], "json") || !strcmp(argv[2], "json-opaque") || !strcmp(argv[2], "json-raw")) {
         int transparent = strcmp(argv[2], "json-opaque") != 0;
         size_t size = mv_fpg_json_size(fpg, transparent);
         char *json = malloc(size);
