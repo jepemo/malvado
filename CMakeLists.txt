@@ -755,6 +755,12 @@ set_tests_properties(lua_world_example PROPERTIES WORKING_DIRECTORY ${CMAKE_CURR
 if(MALVADO_BUILD_ASSETS)
   add_test(NAME lua_fpg COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg.lua)
   set_tests_properties(lua_fpg PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
+  find_package(Python3 QUIET COMPONENTS Interpreter)
+  if(Python3_Interpreter_FOUND)
+    add_test(NAME lua_fpg_export COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_export.py
+      $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_export.lua ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)
+    set_tests_properties(lua_fpg_export PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
+  endif()
 endif()
 add_test(NAME lua_graphics_process COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/graphics_process.lua)
 add_test(NAME lua_process_collision_benchmark COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tools/benchmarks/process_collision.lua)
