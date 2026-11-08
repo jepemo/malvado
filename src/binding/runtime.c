@@ -2427,6 +2427,23 @@ fpg_rgba(lua_State *L)
 }
 
 static int
+fpg_json(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    if (!lua_isnoneornil(L, 2) && !lua_isboolean(L, 2))
+        return luaL_error(L, "transparent_zero must be a boolean");
+    int transparent_zero = lua_toboolean(L, 2);
+    size_t length = mv_fpg_json_size(value->fpg, transparent_zero);
+    if (!length) return luaL_error(L, "cannot encode FPG metadata");
+    luaL_Buffer buffer;
+    char *output = luaL_buffinitsize(L, &buffer, length);
+    if (!mv_fpg_copy_json(value->fpg, transparent_zero, output, length))
+        return luaL_error(L, "cannot encode FPG metadata");
+    luaL_pushresultsize(&buffer, length - 1);
+    return 1;
+}
+
+static int
 fpg_png(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
@@ -4531,7 +4548,7 @@ open_module(lua_State *L)
     static const luaL_Reg fpg_methods[] = {
         {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
         {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
-        {"image", fpg_image}, {"png", fpg_png}, {NULL, NULL}
+        {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
     };
     luaL_setfuncs(L, fpg_methods, 0);
     lua_setfield(L, -2, "__index");

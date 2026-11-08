@@ -110,6 +110,9 @@ The methods use the C reader and return independent Lua values:
   `nil` for an absent ID or index. Undefined points retain their raw values.
 - `fpg:palette()` returns the 768 original six-bit RGB bytes and `fpg:gamma()`
   returns the 576 original gamma bytes.
+- `fpg:json(transparent_zero)` returns the metadata manifest as a JSON string
+  without a trailing zero byte. The optional flag is a boolean and defaults to
+  false. It works without a window. Use the same flag for every sprite PNG.
 - `fpg:png(id, transparent_zero)` returns an indexed PNG byte string, or `nil`
   for an absent ID. The optional flag is a boolean and defaults to false. It
   works without a window and uses the C PNG encoder described above.
