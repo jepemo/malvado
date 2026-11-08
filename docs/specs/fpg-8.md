@@ -177,4 +177,4 @@ The `mv.fpg` namespace is separate from the legacy global `fpg` graphics
 helper. The `fpg` object can still be inspected in headless mode, but image
 creation requires a window.
 
-Manifest parsing accepts only JSON whitespace outside strings. It rejects other unescaped control characters.
+Manifest numeric fields must be exact integers, including when written with a decimal point or exponent. Manifest parsing accepts only JSON whitespace outside strings. It rejects other unescaped control characters.

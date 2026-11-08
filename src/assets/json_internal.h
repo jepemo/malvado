@@ -20,6 +20,46 @@
 #include <string.h>
 #include "cJSON.h"
 
+/* All asset metadata numbers are integers. Check before conversion to double,
+ * which can round a fraction to an integer or underflow it to zero. */
+static int
+json_number_is_integer(const char *text, size_t start, size_t end)
+{
+    size_t fractional = 0, trailing_zeroes = 0;
+    int after_point = 0, nonzero = 0;
+    size_t i = start;
+    if (text[i] == '-') ++i;
+    while (i < end && text[i] != 'e' && text[i] != 'E') {
+        char c = text[i++];
+        if (c == '.') {
+            after_point = 1;
+            continue;
+        }
+        if (after_point) ++fractional;
+        if (c == '0') ++trailing_zeroes;
+        else { nonzero = 1; trailing_zeroes = 0; }
+    }
+    if (!nonzero) return 1;
+    size_t exponent = 0;
+    int negative = 0;
+    if (i < end) {
+        ++i;
+        if (text[i] == '-' || text[i] == '+') negative = text[i++] == '-';
+        /* A larger exponent cannot change the integer decision. */
+        size_t limit = end - start + 1;
+        while (i < end) {
+            unsigned digit = (unsigned)(text[i++] - '0');
+            if (exponent > limit / 10 || (exponent == limit / 10 && digit > limit % 10))
+                exponent = limit;
+            else
+                exponent = exponent * 10 + digit;
+        }
+    }
+    if (negative)
+        return exponent <= trailing_zeroes && fractional <= trailing_zeroes - exponent;
+    return exponent >= fractional || fractional - exponent <= trailing_zeroes;
+}
+
 static int
 json_numbers_valid(const char *text, size_t length)
 {
@@ -49,6 +89,7 @@ json_numbers_valid(const char *text, size_t length)
             ++i;
             continue;
         }
+        size_t number_start = i;
         if (text[i] == '-')
             ++i;
         if (i == length || text[i] < '0' || text[i] > '9')
@@ -76,6 +117,8 @@ json_numbers_valid(const char *text, size_t length)
             while (i < length && text[i] >= '0' && text[i] <= '9')
                 ++i;
         }
+        if (!json_number_is_integer(text, number_start, i))
+            return 0;
         if (i < length && text[i] != ',' && text[i] != ']' && text[i] != '}' &&
             text[i] != ' ' && text[i] != '\t' && text[i] != '\n' && text[i] != '\r')
             return 0;

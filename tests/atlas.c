@@ -203,6 +203,8 @@ main(int argc, char **argv)
     assert(error && !strcmp(error, "unsupported Aseprite multiple slices"));
 
     invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":0");
+    invalid_aseprite_change(buffer, "\"duration\":100", "\"duration\":100.0000000000000001");
+    invalid_aseprite_change(buffer, "\"x\":0", "\"x\":1e-999");
     invalid_aseprite_change(buffer, "\"filename\":\"two\"", "\"filename\":\"one\"");
     const char *format_field = strstr(buffer, "\"format\":\"RGBA8888\"");
     assert(format_field);
@@ -440,6 +442,11 @@ main(int argc, char **argv)
     mv_atlas_destroy(atlas);
     invalid("{\v\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{\"schema\":1,\f\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
+    const char *exact_number = "{\"schema\":1.0,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":100e-2,\"name\":\"a\",\"x\":0e-999,\"y\":0,\"width\":1,\"height\":1}]}";
+    atlas = mv_atlas_parse(exact_number, strlen(exact_number), 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite));
+    mv_atlas_destroy(atlas);
+    invalid("{\"schema\":1.0000000000000001,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
