@@ -225,6 +225,21 @@ int main(void)
                                           history, 3, &unchanged_count) == MV_INVALID_ARGUMENT);
     assert(unchanged_count == 99);
 
+    /* Each signal replaces the current live state, including repeated signals. */
+    MvProcessStatus signal_status;
+    const MvSignal transitions[] = {MV_SIGNAL_SLEEP, MV_SIGNAL_SLEEP, MV_SIGNAL_FREEZE,
+                                    MV_SIGNAL_FREEZE, MV_SIGNAL_SLEEP, MV_SIGNAL_WAKEUP,
+                                    MV_SIGNAL_WAKEUP};
+    const MvProcessStatus expected[] = {MV_PROCESS_SLEEPING, MV_PROCESS_SLEEPING,
+        MV_PROCESS_FROZEN, MV_PROCESS_FROZEN, MV_PROCESS_SLEEPING,
+        MV_PROCESS_RUNNING, MV_PROCESS_RUNNING};
+    for (size_t i = 0; i < sizeof(transitions) / sizeof(transitions[0]); ++i) {
+        assert(mv_process_signal(ctx, bid, transitions[i], 0) == MV_OK);
+        assert(mv_process_status(ctx, bid, &signal_status) == MV_OK && signal_status == expected[i]);
+    }
+    assert(mv_process_signal(ctx, bid, (MvSignal)99, 0) == MV_INVALID_ARGUMENT);
+    assert(mv_process_status(ctx, bid, &signal_status) == MV_OK && signal_status == MV_PROCESS_RUNNING);
+
     assert(mv_process_signal(ctx, aid, MV_SIGNAL_SLEEP, 1) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(trace_count == 3 && trace[2] == 2);

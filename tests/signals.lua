@@ -22,6 +22,16 @@ local target = mv.process(function(self)
   error("killed process ran again")
 end)
 local controller = mv.process(function()
+  for _, transition in ipairs({
+    {"sleep", "sleeping"}, {"sleep", "sleeping"}, {"freeze", "frozen"},
+    {"freeze", "frozen"}, {"sleep", "sleeping"}, {"wakeup", "running"},
+    {"wakeup", "running"},
+  }) do
+    mv.signal(target_id, transition[1])
+    assert(mv.status(target_id) == transition[2])
+  end
+  assert(not pcall(mv.signal, target_id, "invalid"))
+  assert(mv.status(target_id) == "running")
   mv.signal(target_id, SIGNAL_SLEEP)
   assert(mv.status(target_id) == "sleeping")
   mv.send(target_id, shared)
