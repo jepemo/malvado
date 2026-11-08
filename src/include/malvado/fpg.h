@@ -59,6 +59,29 @@ size_t mv_fpg_png_size(const MvFpg *fpg, int id, int transparent_zero);
 int mv_fpg_copy_png(const MvFpg *fpg, int id, int transparent_zero,
                     uint8_t *output, size_t length);
 
+/* Immutable metadata parsed from a version 1 FPG JSON manifest, up to 16 MiB.
+ * The parser owns its result and does not retain the input. error receives a
+ * static message or NULL on success. Destroy with mv_fpg_manifest_destroy.
+ * The manifest has no pixel data and does not load or validate PNG files. */
+typedef struct MvFpgManifest MvFpgManifest;
+typedef struct {
+    int id, width, height;
+    unsigned char name[32], filename[12];
+    size_t point_count;
+} MvFpgManifestSprite;
+MvFpgManifest *mv_fpg_manifest_parse(const char *json, size_t length, const char **error);
+void mv_fpg_manifest_destroy(MvFpgManifest *manifest);
+size_t mv_fpg_manifest_count(const MvFpgManifest *manifest);
+/* Returns 0 or 1; -1 means manifest is NULL. */
+int mv_fpg_manifest_transparent_zero(const MvFpgManifest *manifest);
+const uint8_t *mv_fpg_manifest_palette(const MvFpgManifest *manifest);
+const uint8_t *mv_fpg_manifest_gamma(const MvFpgManifest *manifest);
+/* Palette and gamma pointers are borrowed. Lookups return 0 without changing
+ * the output on invalid inputs or missing entries; indexes are zero-based. */
+int mv_fpg_manifest_at(const MvFpgManifest *manifest, size_t index, MvFpgManifestSprite *out);
+int mv_fpg_manifest_sprite(const MvFpgManifest *manifest, int id, MvFpgManifestSprite *out);
+int mv_fpg_manifest_point(const MvFpgManifest *manifest, int id, size_t index, MvFpgPoint *out);
+
 /* Versioned FPG metadata JSON. Size includes the terminating zero byte.
  * transparent_zero must match PNG encoding. The caller supplies a
  * non-overlapping buffer; failure leaves it unchanged. */

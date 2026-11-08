@@ -31,6 +31,22 @@ write_u32(uint8_t *p, uint32_t value)
     p[3] = (uint8_t)(value >> 24);
 }
 
+static void
+invalid_manifest_change(const char *json, const char *old, const char *replacement)
+{
+    const char *match = strstr(json, old);
+    assert(match);
+    size_t capacity = strlen(json) + strlen(replacement) + 1;
+    char *changed = malloc(capacity);
+    assert(changed);
+    int written = snprintf(changed, capacity, "%.*s%s%s", (int)(match - json), json,
+                           replacement, match + strlen(old));
+    assert(written > 0 && (size_t)written < capacity);
+    const char *error = NULL;
+    assert(!mv_fpg_manifest_parse(changed, (size_t)written, &error) && error);
+    free(changed);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -81,6 +97,40 @@ main(int argc, char **argv)
     assert(!mv_fpg_copy_json(fpg, 1, NULL, json_size));
     assert(mv_fpg_copy_json(fpg, 1, json, json_size));
     assert(strlen(json) + 1 == json_size && strstr(json, "\"id\":7"));
+    assert(mv_fpg_manifest_transparent_zero(NULL) == -1);
+    assert(mv_fpg_manifest_count(NULL) == 0 && !mv_fpg_manifest_palette(NULL));
+    MvFpgManifest *manifest = mv_fpg_manifest_parse(json, json_size - 1, &error);
+    assert(manifest && !error && mv_fpg_manifest_count(manifest) == 2);
+    assert(mv_fpg_manifest_transparent_zero(manifest) == 1);
+    assert(!memcmp(mv_fpg_manifest_palette(manifest), mv_fpg_palette(fpg), 768));
+    assert(!memcmp(mv_fpg_manifest_gamma(manifest), mv_fpg_gamma(fpg), 576));
+    MvFpgManifestSprite metadata;
+    assert(mv_fpg_manifest_at(manifest, 1, &metadata) && metadata.id == 42);
+    assert(!mv_fpg_manifest_at(manifest, 2, &metadata) && metadata.id == 42);
+    assert(mv_fpg_manifest_sprite(manifest, 7, &metadata));
+    assert(metadata.width == 2 && metadata.height == 2 && metadata.point_count == 2);
+    assert(!memcmp(metadata.name, "red", 4));
+    assert(!mv_fpg_manifest_sprite(manifest, 8, &metadata) && metadata.id == 7);
+    assert(mv_fpg_manifest_point(manifest, 7, 0, &point) && point.x == 1 && point.defined);
+    assert(mv_fpg_manifest_point(manifest, 7, 1, &point) && !point.defined);
+    assert(!mv_fpg_manifest_point(manifest, 7, 2, &point) && !point.defined);
+    memset(json, 'x', json_size - 1);
+    assert(mv_fpg_manifest_sprite(manifest, 7, &metadata) && metadata.id == 7);
+    mv_fpg_manifest_destroy(manifest);
+    mv_fpg_manifest_destroy(NULL);
+    assert(mv_fpg_copy_json(fpg, 1, json, json_size));
+    invalid_manifest_change(json, "\"schema\":1", "\"schema\":2");
+    invalid_manifest_change(json, "\"schema\":1", "\"schema\":1,\"schema\":1");
+    invalid_manifest_change(json, "\"image\":\"7.png\"", "\"image\":\"../7.png\"");
+    invalid_manifest_change(json, "\"id\":42", "\"id\":7");
+    invalid_manifest_change(json, "\"defined\":false", "\"defined\":true");
+    invalid_manifest_change(json, "\"transparent_zero\":true", "\"transparent_zero\":1");
+    invalid_manifest_change(json, "\"kind\":\"malvado-fpg-8\"", "\"kind\":\"malvado-fpg-8\\u0000x\"");
+    invalid_manifest_change(json, "\"palette_hex\":\"", "\"palette_hex\":\"zz");
+    assert(!mv_fpg_manifest_parse(json, json_size, &error) && error);
+    assert(!mv_fpg_manifest_parse(NULL, 1, &error) && error);
+    assert(!mv_fpg_manifest_parse(json, 16U * 1024U * 1024U + 1, &error) && error);
+
     free(json);
     size_t png_size = mv_fpg_png_size(fpg, 7, 1);
     assert(png_size > 0 && mv_fpg_png_size(fpg, 7, 0) + 13 == png_size);

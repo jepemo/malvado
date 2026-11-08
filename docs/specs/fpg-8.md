@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter is implemented; JSON import remains pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter and C JSON metadata reader are implemented; Lua metadata import remains pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -107,8 +107,24 @@ indexed PNG preserves the pixel indexes and contains the converted palette.
 No text encoding is assumed for historical names. The manifest and PNGs do
 not preserve a binary FPG file for byte-for-byte reconstruction. The caller
 must save each PNG under the specified filename. This FPG-specific interchange
-format is distinct from the native atlas schema; an importer for it is not yet
-provided.
+format is distinct from the native atlas schema.
+
+`mv_fpg_manifest_parse(json, length, &error)` parses this version 1 manifest
+without loading PNGs. It returns an owned object or NULL with a static error;
+the input may be released after the call. Destroy it with
+`mv_fpg_manifest_destroy`. Input is limited to 16 MiB, even if a larger
+manifest can be generated from an FPG. The reader rejects unknown or duplicate
+fields, invalid IDs, noncanonical image filenames, malformed hex, out-of-range
+palette channels and coordinates, and inconsistent undefined points. It does
+not validate PNG contents or image dimensions against files.
+
+`mv_fpg_manifest_count` and `mv_fpg_manifest_at` enumerate entries in file
+order with a zero-based index. `mv_fpg_manifest_sprite` finds an ID, and
+`mv_fpg_manifest_point` accesses a zero-based point. Successful lookups copy
+metadata to the caller; failures leave the output unchanged. The image filename
+is the ID followed by `.png`. Palette and gamma pointers are borrowed until
+destruction. `mv_fpg_manifest_transparent_zero` returns 0 or 1, or -1 for a
+NULL manifest. A NULL manifest has count zero and NULL palette/gamma pointers.
 
 ## Lua reader
 

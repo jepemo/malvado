@@ -33,7 +33,7 @@ option(MALVADO_BUILD_ASSETS "Build JSON atlas metadata support" ${MALVADO_ASSETS
 if(MALVADO_BUILD_ASSETS)
   FetchContent_Declare(cjson URL https://github.com/DaveGamble/cJSON/archive/refs/tags/v1.7.19.tar.gz URL_HASH SHA256=7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562 DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR no-cmake)
   FetchContent_MakeAvailable(cjson)
-  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/fpg.c ${cjson_SOURCE_DIR}/cJSON.c)
+  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/fpg.c src/assets/fpg_manifest.c ${cjson_SOURCE_DIR}/cJSON.c)
   target_include_directories(malvado_assets PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -263,6 +263,14 @@ if(MALVADO_BUILD_ASSETS)
   target_include_directories(fpg-allocation-test PRIVATE src/include)
   add_test(NAME fpg_allocation COMMAND fpg-allocation-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)
   set_tests_properties(fpg_allocation PROPERTIES TIMEOUT 15)
+  add_library(fpg-manifest-allocation-core OBJECT src/assets/fpg_manifest.c)
+  target_include_directories(fpg-manifest-allocation-core PRIVATE src/include ${cjson_SOURCE_DIR})
+  target_compile_definitions(fpg-manifest-allocation-core PRIVATE malloc=test_manifest_malloc calloc=test_manifest_calloc free=test_manifest_free)
+  add_executable(fpg-manifest-allocation-test tests/fpg_manifest_allocation.c $<TARGET_OBJECTS:fpg-manifest-allocation-core>)
+  target_include_directories(fpg-manifest-allocation-test PRIVATE src/include ${cjson_SOURCE_DIR})
+  target_link_libraries(fpg-manifest-allocation-test PRIVATE malvado_assets)
+  add_test(NAME fpg_manifest_allocation COMMAND fpg-manifest-allocation-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)
+  set_tests_properties(fpg_manifest_allocation PROPERTIES TIMEOUT 15)
   add_executable(fpg-test tests/fpg.c)
   target_link_libraries(fpg-test PRIVATE malvado_assets)
   add_test(NAME fpg COMMAND fpg-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)
