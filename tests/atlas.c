@@ -302,6 +302,21 @@ main(int argc, char **argv)
     invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"pivot\\u0000extra\"");
     invalid_aseprite_change(buffer, "\"keys\"", "\"keys\\u0000extra\"");
     invalid("{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a.png\\u0000hidden\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}");
+    /* A literal backslash and u0000 are not an embedded zero byte. */
+    const char *literal = "{\"schema\":1,\"kind\":\"graphics-library\",\"image\":\"a\\\\u0000.png\",\"sprites\":[{\"id\":1,\"name\":\"a\",\"x\":0,\"y\":0,\"width\":1,\"height\":1}]}";
+    atlas = mv_atlas_parse(literal, strlen(literal), 8, 8, &error);
+    assert(atlas);
+    mv_atlas_destroy(atlas);
+    const char *image_field = strstr(buffer, "\"image\":\"red.png\"");
+    assert(image_field);
+    char literal_aseprite[4096];
+    int literal_length = snprintf(literal_aseprite, sizeof(literal_aseprite), "%.*s%s%s",
+        (int)(image_field - buffer), buffer, "\"image\":\"a\\\\u0000.png\"",
+        image_field + strlen("\"image\":\"red.png\""));
+    assert(literal_length > 0 && (size_t)literal_length < sizeof(literal_aseprite));
+    atlas = mv_atlas_parse_aseprite(literal_aseprite, (size_t)literal_length, 8, 8, &error);
+    assert(atlas);
+    mv_atlas_destroy(atlas);
     invalid("{}");
     invalid("{\"schema\":01,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");
     invalid("{\"schema\":1.,\"kind\":\"graphics-library\",\"image\":\"a.png\",\"sprites\":[]}");

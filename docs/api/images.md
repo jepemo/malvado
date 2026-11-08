@@ -88,7 +88,7 @@ An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
 }
 ```
 
-All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. The schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields, duplicate keys, and escaped zero bytes and unescaped control characters in JSON strings. This schema is separate from the Aseprite subset described below.
+All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. The schema accepts printable ASCII names and image paths. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields, duplicate keys, and escaped zero bytes and unescaped control characters in JSON strings. A literal backslash followed by `u0000` is allowed. This schema is separate from the Aseprite subset described below.
 
 Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Paths are relative to the working directory:
 

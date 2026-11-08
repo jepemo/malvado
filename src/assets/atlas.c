@@ -43,6 +43,21 @@ struct MvAtlas {
     int has_pivot_color;
 };
 
+/* Reject zero escapes while allowing a literal backslash followed by u0000. */
+static int
+has_zero_escape(const char *json, size_t length)
+{
+    for (size_t i = 0; i < length; ++i) {
+        if (json[i] != '\\')
+            continue;
+        if (i + 5 < length && !memcmp(json + i + 1, "u0000", 5))
+            return 1;
+        if (i + 1 < length)
+            ++i;
+    }
+    return 0;
+}
+
 static char *
 copy_text(const cJSON *field, size_t limit)
 {
@@ -94,12 +109,8 @@ mv_atlas_parse(const char *json, size_t length, int width, int height, const cha
         memchr(json, '\0', length) || !json_numbers_valid(json, length))
         return NULL;
     /* cJSON strings cannot represent an embedded zero byte. */
-    for (size_t i = 0; i + 5 < length; ++i) {
-        if (json[i] == '\\' && json[i + 1] == 'u' &&
-            json[i + 2] == '0' && json[i + 3] == '0' &&
-            json[i + 4] == '0' && json[i + 5] == '0')
-            return NULL;
-    }
+    if (has_zero_escape(json, length))
+        return NULL;
     char *input = malloc(length + 1);
     if (!input)
         return NULL;
@@ -264,8 +275,8 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
     if (!json || length == 0 || length > 1024 * 1024 || width <= 0 || height <= 0 ||
         memchr(json, '\0', length) || !json_numbers_valid(json, length))
         return NULL;
-    for (size_t i = 0; i + 5 < length; ++i)
-        if (json[i] == '\\' && !memcmp(json + i + 1, "u0000", 5)) return NULL;
+    if (has_zero_escape(json, length))
+        return NULL;
     char *input = malloc(length + 1);
     if (!input) return NULL;
     memcpy(input, json, length);
