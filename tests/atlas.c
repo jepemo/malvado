@@ -278,14 +278,24 @@ main(int argc, char **argv)
     invalid_aseprite_change(animated, "\"frame\":1", "\"frame\":2");
     invalid_aseprite_change(animated, "\"frame\":0", "\"frame\":1");
     invalid_aseprite_change(multiple, "\"sourceSize\":{\"w\":8,\"h\":8}",
-                            "\"sourceSize\":{\"w\":9,\"h\":8}");
+                            "\"sourceSize\":{\"w\":7,\"h\":8}");
     invalid_aseprite_change(buffer, "\"name\":\"pivot\"", "\"name\":\"other\"");
     invalid_aseprite_change(buffer, "\"frame\":0", "\"frame\":0,\"frame\":0");
     invalid_aseprite_change(buffer, "\"pivot\":{\"x\":4,\"y\":6}", "\"pivot\":{\"x\":4,\"y\":6,\"z\":0}");
     invalid_aseprite_change(buffer, "\"frame\":0", "\"frame\":1");
     invalid_aseprite_change(buffer, "\"pivot\":{\"x\":4", "\"pivot\":{\"x\":-2147483648");
-    invalid_aseprite_change(buffer, "\"bounds\":{\"x\":0", "\"bounds\":{\"x\":1");
-    invalid_aseprite_change(buffer, "\"bounds\":{\"x\":0,\"y\":0,\"w\":8", "\"bounds\":{\"x\":0,\"y\":0,\"w\":7");
+    const char *bounds = strstr(buffer, "\"bounds\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8}");
+    assert(bounds);
+    char partial[4096];
+    int partial_length = snprintf(partial, sizeof(partial), "%.*s%s%s",
+        (int)(bounds - buffer), buffer, "\"bounds\":{\"x\":1,\"y\":2,\"w\":6,\"h\":5}",
+        bounds + strlen("\"bounds\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8}"));
+    assert(partial_length > 0 && (size_t)partial_length < sizeof(partial));
+    atlas = mv_atlas_parse_aseprite(partial, (size_t)partial_length, 8, 8, &error);
+    assert(atlas && mv_atlas_find(atlas, 1, &sprite) && sprite.pivot_x == 3 && sprite.pivot_y == 5);
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(partial, "\"x\":1,\"y\":2,\"w\":6", "\"x\":3,\"y\":2,\"w\":6");
+
     invalid_aseprite_change(buffer, "#12345678", "#oops");
     invalid_aseprite_change(buffer, "\"frame\":0", "\"center\":{},\"frame\":0");
     invalid("{}");
