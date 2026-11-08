@@ -107,6 +107,10 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "default", 300, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
     assert(!mv_atlas_parse_aseprite(buffer, length, 7, 8, &error) && error);
+    const char *hash = "{\"frames\":{},\"meta\":{\"image\":\"red.png\",\"size\":{\"w\":8,\"h\":8}}}";
+    assert(!mv_atlas_parse_aseprite(hash, strlen(hash), 8, 8, &error));
+    assert(error && !strcmp(error, "unsupported Aseprite JSON hash; export JSON array"));
+
     const char *tag_start = strstr(buffer, "\"frameTags\":[]");
     assert(tag_start);
     char tagged[4096];

@@ -287,6 +287,10 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
     MvAtlas *atlas = NULL;
     const cJSON *meta = cJSON_GetObjectItemCaseSensitive(root, "meta");
     const cJSON *frames = cJSON_GetObjectItemCaseSensitive(root, "frames");
+    if (cJSON_IsObject(frames)) {
+        if (error) *error = "unsupported Aseprite JSON hash; export JSON array";
+        goto fail_aseprite;
+    }
     const cJSON *size = cJSON_GetObjectItemCaseSensitive(meta, "size");
     int w, h;
     if (!object_fields(root, root_fields, 2) || !object_fields(meta, meta_fields, 9) ||
