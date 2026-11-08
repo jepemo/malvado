@@ -227,7 +227,8 @@ MvResult mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, M
 MvResult mv_process_tick(MvContext *ctx);
 
 /** Create an independent context and logical clock.
- * @param ticks_per_second Finite, positive logical tick rate in hertz.
+ * @param ticks_per_second Finite, positive logical tick rate in hertz. Its
+ * reciprocal must also be finite and positive.
  * @param max_steps Maximum ticks returned for one advance; must be nonzero.
  * @return Owned context, or NULL for invalid settings or allocation failure.
  * Destroy the context with mv_context_destroy. */
@@ -243,7 +244,9 @@ void mv_context_destroy(MvContext *ctx);
  * @return MV_OK, MV_INVALID_ARGUMENT or MV_OVERFLOW. On failure the context
  * and steps are unchanged. Time above max_steps is recorded as dropped. */
 MvResult mv_context_advance(MvContext *ctx, double elapsed_seconds, unsigned *steps);
+/* Return the total logical clock steps, or 0 for a NULL context. */
 uint64_t mv_context_ticks(const MvContext *ctx);
+/* Return dropped logical time in seconds, or 0 for a NULL context. */
 double mv_context_dropped_seconds(const MvContext *ctx);
 
 #ifdef __cplusplus

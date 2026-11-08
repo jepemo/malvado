@@ -6,11 +6,11 @@ This page describes the experimental C API in [`malvado.h`](../../src/include/ma
 
 ## Create and close a context
 
-`mv_context_create(ticks_per_second, max_steps)` creates a context. Both arguments must be positive. The tick rate must be finite. A failure returns `NULL`, including when the operating system random source is unavailable. Call `mv_context_destroy(ctx)` when finished; it accepts `NULL`. The context owns the processes that were successfully added to it.
+`mv_context_create(ticks_per_second, max_steps)` creates a context. Both arguments must be positive. The tick rate and its reciprocal (the tick duration) must be finite and positive. Very small positive rates can therefore be rejected. A failure returns `NULL`, including when the operating system random source is unavailable. Call `mv_context_destroy(ctx)` when finished; it accepts `NULL`. The context owns the processes that were successfully added to it.
 
 Do not destroy a context from a process callback or destructor. Such a call is ignored. Destroy it after the tick returns. During context shutdown, adding processes, sending or receiving messages, and sending signals return `MV_BUSY`.
 
-`mv_context_advance(ctx, elapsed_seconds, &steps)` advances the logical clock. It does **not** run process callbacks. Elapsed time must be finite and nonnegative. The call reports the number of steps, limited by `max_steps`. Excess time is recorded by `mv_context_dropped_seconds`. `mv_context_ticks` returns the total clock steps. On `MV_INVALID_ARGUMENT` or `MV_OVERFLOW`, the context and output are unchanged.
+`mv_context_advance(ctx, elapsed_seconds, &steps)` advances the logical clock. It does **not** run process callbacks. Elapsed time must be finite and nonnegative. The call reports the number of steps, limited by `max_steps`. Excess time is recorded by `mv_context_dropped_seconds`. `mv_context_ticks` returns the total clock steps. Both clock getters return zero for a null context. On `MV_INVALID_ARGUMENT` or `MV_OVERFLOW`, the context and output are unchanged.
 
 For a 60-tick-per-second scheduler, initialize `MvCadence cadence = {0}`. Run a process's first activation, then call `mv_cadence_step(&cadence, fps)` on each eligible tick. It returns 1 when the process is due, 0 when it should wait, or -1 for an invalid argument or state. Rates 1 through 59 distribute activations across ticks without accumulated drift. Rates 0 and 60 run on every tick and reset the phase. Do not call it while the process is sleeping or frozen. The Lua `self.fps` field uses the same cadence.
 
