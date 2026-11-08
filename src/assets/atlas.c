@@ -396,15 +396,16 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
         cJSON_ArrayForEach(key, keys) {
             const cJSON *bounds = cJSON_GetObjectItemCaseSensitive(key, "bounds");
             const cJSON *pivot = cJSON_GetObjectItemCaseSensitive(key, "pivot");
-            int frame, bx, by, bw, bh, px, py;
+            int frame, bx, by, bw, bh, px = 0, py = 0;
             if (!object_fields(key, key_fields, 3) ||
-                !object_fields(bounds, rect_fields, 4) || !object_fields(pivot, point_fields, 2) ||
+                !object_fields(bounds, rect_fields, 4) ||
+                (pivot && !object_fields(pivot, point_fields, 2)) ||
                 !integer_field(key, "frame", 0, count - 1, &frame) ||
                 frame <= previous ||
                 !integer_field(bounds, "x", 0, INT_MAX, &bx) || !integer_field(bounds, "y", 0, INT_MAX, &by) ||
                 !integer_field(bounds, "w", 1, INT_MAX, &bw) || !integer_field(bounds, "h", 1, INT_MAX, &bh) ||
-                !integer_field(pivot, "x", INT_MIN, INT_MAX, &px) ||
-                !integer_field(pivot, "y", INT_MIN, INT_MAX, &py)) {
+                (pivot && (!integer_field(pivot, "x", INT_MIN, INT_MAX, &px) ||
+                           !integer_field(pivot, "y", INT_MIN, INT_MAX, &py)))) {
                 if (error) *error = "invalid or unsupported Aseprite pivot slice";
                 goto fail_aseprite;
             }
@@ -416,8 +417,8 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
             previous = frame;
             for (size_t i = (size_t)frame; i < (size_t)end; ++i) {
                 MvAtlasSprite *sprite = &atlas->sprites[i];
-                int64_t x = (int64_t)bx + px - sprite->trim_x;
-                int64_t y = (int64_t)by + py - sprite->trim_y;
+                int64_t x = (pivot ? (int64_t)bx + px : 0) - sprite->trim_x;
+                int64_t y = (pivot ? (int64_t)by + py : 0) - sprite->trim_y;
                 if (bw > sprite->source_width || bh > sprite->source_height ||
                     bx > sprite->source_width - bw || by > sprite->source_height - bh ||
                     x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX) {
