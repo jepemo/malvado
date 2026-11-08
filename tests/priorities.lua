@@ -19,6 +19,10 @@ mv.start(function()
   b_id = process { name = "B" }
   c_id = process { name = "C" }
   assert(mv.get_priority(a_id) == 0)
+  mv.set_priority(a_id, math.maxinteger)
+  assert(mv.get_priority(a_id) == math.maxinteger)
+  mv.set_priority(a_id, math.mininteger)
+  assert(mv.get_priority(a_id) == math.mininteger)
   mv.set_priority(a_id, 5)
   mv.set_priority(b_id, 10)
   mv.set_priority(c_id, 5)

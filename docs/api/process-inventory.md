@@ -35,3 +35,9 @@ These entries describe the implemented alpha.6 additions, not the complete 2.0 i
 | Static world | `mv_collision_world_create`, `mv_collision_world_destroy`, `mv_collision_world_add_rect`, `mv_collision_world_query`, `mv_collision_world_sweep`, `mv_collision_world_move` | `world.create`, `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` |
 
 The world owns its static rectangles. Process colliders are copied into their context. Lua graphic descriptors retain their resources. Pixel masks, automatic colliders for legacy FPG sheets, and world shapes other than static rectangles are not supported.
+
+## Priority comparison with BennuGD2
+
+The [pinned BennuGD2 instance implementation](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/instance.c) clamps priorities to -32768 through 32767 and iterates from the highest occupied priority downward. Its priority buckets insert instances at the head. The source comment on the iterator says “lower priority”, but the implementation decrements from the maximum. These observations describe the pinned source, not a claim of complete scheduler equivalence.
+
+Malvado uses signed 64-bit priorities in C and Lua integers. It runs higher priorities first, preserves creation order for ties, and fixes the order at the start of each tick. See the [C contract](c-contract.md) and [Lua process guide](lua-processes.md). The C `schedule` test checks order and both 64-bit extremes. The headless `priorities` test checks both Lua integer extremes, tie order, and changes during a tick. Malvado does not clamp to BennuGD2's range. Other process semantics and the full reference comparison remain open.
