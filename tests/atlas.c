@@ -54,7 +54,11 @@ main(int argc, char **argv)
     MvAtlas *atlas = mv_atlas_parse(buffer, length, 8, 8, &error);
     assert(atlas && !error && mv_atlas_count(atlas) == 2);
     assert(strcmp(mv_atlas_image(atlas), "red.png") == 0);
-    MvAtlasSprite sprite;
+    MvAtlasSprite sprite = {.id = 99};
+    assert(mv_atlas_image(NULL) == NULL && mv_atlas_count(NULL) == 0);
+    assert(!mv_atlas_find(NULL, 42, &sprite) && sprite.id == 99);
+    assert(!mv_atlas_find(atlas, 42, NULL));
+    assert(!mv_atlas_find(atlas, 999, &sprite) && sprite.id == 99);
     assert(mv_atlas_find(atlas, 42, &sprite));
     assert(!strcmp(sprite.name, "green") && sprite.region.x == 4 && sprite.region.width == 4);
     assert(sprite.pivot_x == 2 && sprite.pivot_y == 4);

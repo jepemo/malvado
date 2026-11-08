@@ -42,10 +42,14 @@ MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, 
  * rejected; error receives a static message. */
 MvAtlas *mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
                                  const char **error);
+/* Destroy an atlas. A NULL pointer is allowed. */
 void mv_atlas_destroy(MvAtlas *atlas);
+/* Return a borrowed path valid until atlas destruction, or NULL for NULL atlas. */
 const char *mv_atlas_image(const MvAtlas *atlas);
+/* Return the sprite count, or 0 for NULL atlas. */
 size_t mv_atlas_count(const MvAtlas *atlas);
-/* Return 1 and copy a sprite on success, or 0 if the ID is not present. */
+/* Copy a sprite on success. Return 0 without changing the output for an
+ * unknown ID or invalid pointer. The copied name is borrowed from the atlas. */
 int mv_atlas_find(const MvAtlas *atlas, int id, MvAtlasSprite *sprite);
 /* Find a sprite by its exact name. Leave the output unchanged on failure. */
 int mv_atlas_find_name(const MvAtlas *atlas, const char *name, MvAtlasSprite *sprite);
