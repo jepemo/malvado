@@ -27,6 +27,19 @@ main(void)
     assert(items[0].slot == 2 && items[1].slot == 0 && items[2].slot == 3);
     assert(items[3].slot == 4 && items[4].slot == 1);
     malvado_schedule_sort(NULL, 0);
+    /* From phase zero, each prefix of 60 eligible ticks has the expected
+     * number of activations, including every supported fractional rate. */
+    for (unsigned fps = 1; fps < 60; ++fps) {
+        MvCadence current = {0};
+        unsigned activations = 0;
+        for (unsigned tick = 1; tick <= 60; ++tick) {
+            int result = mv_cadence_step(&current, fps);
+            assert(result == 0 || result == 1);
+            activations += (unsigned)result;
+            assert(activations == tick * fps / 60);
+        }
+        assert(current.phase == 0);
+    }
     MvCadence cadence = {0};
     int due = 0;
     for (int tick = 0; tick < 60; ++tick)
