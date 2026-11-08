@@ -106,6 +106,18 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "default", 100, 1, &frame) && frame == 2);
     assert(mv_atlas_animation_frame(atlas, "default", 300, 1, &frame) && frame == 1);
     mv_atlas_destroy(atlas);
+    const char *ase_image_field = strstr(buffer, "\"image\":\"red.png\"");
+    assert(ase_image_field);
+    char unicode_image[4096];
+    int image_length = snprintf(unicode_image, sizeof(unicode_image), "%.*s%s%s",
+        (int)(ase_image_field - buffer), buffer, "\"image\":\"ni\\u00f1o.png\"",
+        ase_image_field + strlen("\"image\":\"red.png\""));
+    assert(image_length > 0 && (size_t)image_length < sizeof(unicode_image));
+    atlas = mv_atlas_parse_aseprite(unicode_image, (size_t)image_length, 8, 8, &error);
+    assert(atlas && !strcmp(mv_atlas_image(atlas), "ni\xc3\xb1o.png"));
+    mv_atlas_destroy(atlas);
+    invalid_aseprite_change(buffer, "\"image\":\"red.png\"", "\"image\":\"\xc0\x80\"");
+    invalid_aseprite_change(buffer, "\"image\":\"red.png\"", "\"image\":\"bad\\u007f.png\"");
     const char *filename = strstr(buffer, "\"filename\":\"one\"");
     assert(filename);
     char unicode[4096];

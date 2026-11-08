@@ -360,7 +360,7 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
     if (tag_count > 255) goto fail_aseprite;
     atlas = calloc(1, sizeof(*atlas));
     if (!atlas) goto fail_aseprite;
-    atlas->image = copy_text(cJSON_GetObjectItemCaseSensitive(meta, "image"), 511);
+    atlas->image = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(meta, "image"), 511);
     atlas->sprites = calloc((size_t)count, sizeof(*atlas->sprites));
     atlas->animations = calloc((size_t)tag_count + 1, sizeof(*atlas->animations));
     if (!atlas->image || !atlas->sprites || !atlas->animations) goto fail_aseprite;
