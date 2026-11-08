@@ -259,6 +259,25 @@ int main(void)
     assert(mv_process_signal(ctx, failed_id, MV_SIGNAL_KILL, 0) == MV_NOT_FOUND);
     mv_context_destroy(ctx);
     assert(b.destroyed == 1);
+    /* Tree signals affect current descendants, not later or unrelated processes. */
+    MvContext *tree = mv_context_create(60, 5);
+    assert(tree);
+    MvProcessId tree_root, tree_child, tree_grandchild, outsider, late_child;
+    MvProcessStatus tree_status;
+    assert(mv_process_spawn(tree, 0, 0, idle_step, NULL, NULL, &tree_root) == MV_OK);
+    assert(mv_process_spawn(tree, tree_root, 0, idle_step, NULL, NULL, &tree_child) == MV_OK);
+    assert(mv_process_spawn(tree, tree_child, 0, idle_step, NULL, NULL, &tree_grandchild) == MV_OK);
+    assert(mv_process_spawn(tree, 0, 0, idle_step, NULL, NULL, &outsider) == MV_OK);
+    assert(mv_process_signal(tree, tree_root, MV_SIGNAL_FREEZE, 1) == MV_OK);
+    assert(mv_process_status(tree, tree_root, &tree_status) == MV_OK && tree_status == MV_PROCESS_FROZEN);
+    assert(mv_process_status(tree, tree_child, &tree_status) == MV_OK && tree_status == MV_PROCESS_FROZEN);
+    assert(mv_process_status(tree, tree_grandchild, &tree_status) == MV_OK && tree_status == MV_PROCESS_FROZEN);
+    assert(mv_process_status(tree, outsider, &tree_status) == MV_OK && tree_status == MV_PROCESS_RUNNING);
+    assert(mv_process_spawn(tree, tree_root, 0, idle_step, NULL, NULL, &late_child) == MV_OK);
+    assert(mv_process_status(tree, late_child, &tree_status) == MV_OK && tree_status == MV_PROCESS_RUNNING);
+    assert(mv_process_signal(tree, tree_root, MV_SIGNAL_WAKEUP, 1) == MV_OK);
+    assert(mv_process_status(tree, tree_grandchild, &tree_status) == MV_OK && tree_status == MV_PROCESS_RUNNING);
+    mv_context_destroy(tree);
     MvContext *relations = mv_context_create(60, 5);
     assert(relations);
     State creator = {0}, independent = {0};
