@@ -179,3 +179,96 @@ mv_fpg_copy_rgba(const MvFpg *fpg, int id, int transparent_zero,
     }
     return 1;
 }
+
+static void
+write_be32(uint8_t *p, uint32_t value)
+{
+    p[0] = (uint8_t)(value >> 24); p[1] = (uint8_t)(value >> 16);
+    p[2] = (uint8_t)(value >> 8); p[3] = (uint8_t)value;
+}
+
+static uint32_t
+png_crc(const uint8_t *data, size_t length)
+{
+    uint32_t crc = 0xffffffffU;
+    for (size_t i = 0; i < length; ++i) {
+        crc ^= data[i];
+        for (int bit = 0; bit < 8; ++bit)
+            crc = (crc >> 1) ^ (0xedb88320U & (uint32_t)-(int)(crc & 1));
+    }
+    return crc ^ 0xffffffffU;
+}
+
+static uint8_t *
+png_chunk(uint8_t *out, const char type[4], const uint8_t *data, size_t length)
+{
+    write_be32(out, (uint32_t)length);
+    memcpy(out + 4, type, 4);
+    if (length) memcpy(out + 8, data, length);
+    write_be32(out + 8 + length, png_crc(out + 4, length + 4));
+    return out + length + 12;
+}
+
+size_t
+mv_fpg_png_size(const MvFpg *fpg, int id, int transparent_zero)
+{
+    const Entry *entry = find_entry(fpg, id);
+    if (!entry || (transparent_zero != 0 && transparent_zero != 1)) return 0;
+    size_t raw = ((size_t)entry->width + 1) * (size_t)entry->height;
+    size_t blocks = (raw + 65534) / 65535;
+    /* Signature, IHDR, PLTE, optional tRNS, IDAT, IEND and zlib stream. */
+    return 8 + 25 + 780 + (transparent_zero ? 13 : 0) + 12 + 6 + raw + blocks * 5 + 12;
+}
+
+int
+mv_fpg_copy_png(const MvFpg *fpg, int id, int transparent_zero,
+                uint8_t *output, size_t length)
+{
+    const Entry *entry = find_entry(fpg, id);
+    size_t needed = mv_fpg_png_size(fpg, id, transparent_zero);
+    if (!entry || !output || !needed || length < needed) return 0;
+    static const uint8_t signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+    memcpy(output, signature, 8);
+    uint8_t header[13] = {0};
+    write_be32(header, (uint32_t)entry->width);
+    write_be32(header + 4, (uint32_t)entry->height);
+    header[8] = 8; header[9] = 3;
+    uint8_t *out = png_chunk(output + 8, "IHDR", header, sizeof(header));
+    uint8_t palette[768];
+    const uint8_t *source_palette = mv_fpg_palette(fpg);
+    for (size_t i = 0; i < sizeof(palette); ++i) palette[i] = (uint8_t)(source_palette[i] << 2);
+    out = png_chunk(out, "PLTE", palette, sizeof(palette));
+    if (transparent_zero) {
+        const uint8_t alpha = 0;
+        out = png_chunk(out, "tRNS", &alpha, 1);
+    }
+    size_t raw = ((size_t)entry->width + 1) * (size_t)entry->height;
+    size_t blocks = (raw + 65534) / 65535;
+    size_t compressed = 6 + raw + blocks * 5;
+    write_be32(out, (uint32_t)compressed);
+    memcpy(out + 4, "IDAT", 4);
+    uint8_t *chunk = out + 4;
+    out += 8;
+    *out++ = 0x78; *out++ = 0x01;
+    uint32_t a = 1, b = 0;
+    size_t position = 0;
+    while (position < raw) {
+        size_t remaining = raw - position;
+        uint16_t count = (uint16_t)(remaining > 65535 ? 65535 : remaining);
+        *out++ = remaining <= 65535 ? 1 : 0;
+        *out++ = (uint8_t)count; *out++ = (uint8_t)(count >> 8);
+        uint16_t inverse = (uint16_t)~count;
+        *out++ = (uint8_t)inverse; *out++ = (uint8_t)(inverse >> 8);
+        for (unsigned i = 0; i < count; ++i, ++position) {
+            size_t row_width = (size_t)entry->width + 1;
+            size_t col = position % row_width;
+            uint8_t value = col ? fpg->bytes[entry->pixels_offset + position / row_width * (size_t)entry->width + col - 1] : 0;
+            *out++ = value;
+            a = (a + value) % 65521; b = (b + a) % 65521;
+        }
+    }
+    write_be32(out, b << 16 | a); out += 4;
+    write_be32(out, png_crc(chunk, compressed + 4)); out += 4;
+    png_chunk(out, "IEND", NULL, 0);
+    return 1;
+}

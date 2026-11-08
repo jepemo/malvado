@@ -51,6 +51,14 @@ int mv_fpg_point(const MvFpg *fpg, int id, size_t index, MvFpgPoint *out);
 int mv_fpg_copy_rgba(const MvFpg *fpg, int id, int transparent_zero,
                      uint8_t *output, size_t length);
 
+/* Size and copy an indexed PNG using the original palette and pixel indexes.
+ * transparent_zero selects index 0 transparency (0 or 1). A zero size or
+ * return value means invalid input. Output must not overlap FPG data; on
+ * failure it is unchanged. No gamma correction is applied. */
+size_t mv_fpg_png_size(const MvFpg *fpg, int id, int transparent_zero);
+int mv_fpg_copy_png(const MvFpg *fpg, int id, int transparent_zero,
+                    uint8_t *output, size_t length);
+
 #ifdef __cplusplus
 }
 #endif

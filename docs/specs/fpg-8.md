@@ -1,6 +1,6 @@
 # BennuGD 8-bit FPG import subset
 
-Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; PNG+JSON conversion is pending.
+Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG encoding is implemented in C; JSON conversion is pending.
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -59,6 +59,18 @@ left by two, as in the pinned reader. `transparent_zero` must be 0 or 1; when
 arguments or insufficient space return 0 without changing the buffer. Gamma
 is preserved as raw data and is not applied. Conversion does not change the
 original palette or indices and does not encode PNG.
+
+## Indexed PNG encoding
+
+`mv_fpg_png_size(fpg, id, transparent_zero)` returns the required buffer
+size, or zero for invalid inputs. `mv_fpg_copy_png` writes a complete PNG to a
+caller-owned non-overlapping buffer and returns 1. An invalid input or short
+buffer returns 0 without changing it. The indexed PNG preserves pixel indexes
+and palette colors, converted from six-bit channels by shifting left two bits.
+The optional index-zero transparency is encoded in a `tRNS` chunk. No gamma
+correction or FPG metadata is encoded. The PNG uses uncompressed DEFLATE;
+it can be larger than a compressed image. The APIs need neither Lua nor a
+renderer. They do not create files; the caller owns file handling.
 
 ## Lua reader
 
