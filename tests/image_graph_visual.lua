@@ -80,6 +80,8 @@ local producer = mv.process(function()
   assert(mv.sprite_info(animated_atlas, 3).pivot_x == 3)
   local pivot_file = assert(io.open("tests/fixtures/aseprite/pivot.json", "rb"))
   local pivot_json = pivot_file:read("a")
+  local bad_json = pivot_json:gsub('"image":"red.png"', '"app":"bad\nvalue","image":"red.png"')
+  assert(not pcall(mv.load_aseprite, image, bad_json))
   local pivot_atlas = mv.load_aseprite(image, pivot_json)
   pivot_file:close()
   local partial_json, substitutions = pivot_json:gsub('"bounds":{"x":0,"y":0,"w":8,"h":8}',

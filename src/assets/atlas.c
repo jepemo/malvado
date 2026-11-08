@@ -50,6 +50,8 @@ json_numbers_valid(const char *text, size_t length)
         if (text[i] == '"') {
             ++i;
             while (i < length && text[i] != '"') {
+                if ((unsigned char)text[i] < 32)
+                    return 0;
                 if (text[i] == '\\' && i + 1 < length) {
                     if (text[i + 1] == 'u' && length - i >= 6 &&
                         !memcmp(text + i + 2, "0000", 4))
