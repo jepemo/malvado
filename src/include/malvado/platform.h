@@ -152,7 +152,8 @@ int mv_window_clip_end(void);
 int mv_window_scroll_begin(float x, float y);
 int mv_window_scroll_end(void);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
-/* Return the built-in font width in pixels, or 0 for invalid input or no window. */
+/* Return the built-in font width in pixels, or 0 for invalid input, no window,
+ * or a width that cannot fit in an int. */
 int mv_window_text_width(const char *text, int size);
 /* Load a TTF/OTF font after opening a window. The caller owns the font and
  * must destroy it before closing the window. The initial glyph set covers

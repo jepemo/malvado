@@ -17,6 +17,7 @@
 #undef NDEBUG
 #endif
 #include <assert.h>
+#include <limits.h>
 #include "raylib.h"
 #include "malvado/platform.h"
 #include "runner/runtime.h"
@@ -32,6 +33,11 @@ check_frame(void *user)
     assert(mv_window_text_width("MMMM", 24) > 0);
     assert(mv_window_text_width(NULL, 24) == 0);
     assert(mv_window_text_width("Text", 0) == 0);
+    assert(mv_window_text_width("MMMM", INT_MAX) == 0);
+    assert(mv_window_text_width("MMMMMMMMMMMMMMMM", INT_MAX) == 0);
+    assert(mv_window_text_width("MMMM", 1024) > 0);
+    assert(mv_window_text_width("MMMM", 24) == MeasureText("MMMM", 24));
+    assert(mv_window_text_width("MMMM", 1) == MeasureText("MMMM", 1));
     Image image = LoadImageFromScreen();
     assert(image.data);
     for (int y = 0; y < image.height; ++y) {

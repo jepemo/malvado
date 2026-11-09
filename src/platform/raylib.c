@@ -484,7 +484,14 @@ mv_window_text_width(const char *text, int size)
 {
     if (!text || size < 1 || !IsWindowReady())
         return 0;
-    return MeasureText(text, size);
+    /* Match DrawText's default font size and spacing, but avoid MeasureText's
+     * unchecked float-to-int conversion and integer spacing multiplication. */
+    int font_size = size < 10 ? 10 : size;
+    float width = MeasureTextEx(GetFontDefault(), text, (float)font_size,
+                                (float)(font_size / 10)).x;
+    if (!isfinite(width) || width < 0 || (double)width > INT_MAX)
+        return 0;
+    return (int)width;
 }
 
 MvFont *
