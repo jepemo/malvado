@@ -32,3 +32,20 @@ borrowed name lifetime. The [C example](../../examples/c/atlas/README.md),
 `visual_image_graph` checks Lua sprites and resource lifetime on a graphical
 backend. `asset_api_map` checks names in this table and the API table against
 the public atlas header; it does not certify behavior or structure fields.
+
+## FPG types and ownership
+
+| C types | Lua relationship and lifetime |
+| --- | --- |
+| `MvFpg` | Opaque, caller-owned parsed FPG. Lua exposes a managed object, including in headless mode. |
+| `MvFpgSprite` | A copied C record whose pixel pointer is borrowed from the FPG. Lua metadata and pixel strings are copies. |
+| `MvFpgPoint` | A copied point value. Lua exposes point coordinates and whether a point is defined. |
+| `MvFpgManifest` | Opaque, caller-owned manifest metadata; it does not load PNGs. Lua exposes a managed headless object. |
+| `MvFpgManifestSprite` | A copied C manifest record. Lua exposes copied metadata. |
+
+The [FPG contract](../specs/fpg-8.md) defines format limits, copying, errors,
+and borrowed data. `fpg`, `fpg_png`, `fpg_allocation`, and
+`fpg_manifest_allocation` cover the C API; `lua_fpg` and `lua_fpg_export`
+cover headless Lua. The graphical `visual_fpg_image` test covers image creation.
+`asset_api_map` checks the header's function and type names, not behavior or
+structure fields.

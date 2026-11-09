@@ -22,14 +22,17 @@ def check(header, function_table, type_table):
 def main():
     inventory = (ROOT / "docs/api/asset-inventory.md").read_text(encoding="utf-8")
     table = inventory.split("| Area | C | Lua | Evidence |", 1)[1].split("\n\n", 1)[0]
-    atlas_rows = "\n".join(line for line in table.splitlines() if line.startswith("| Atlas "))
-    type_table = inventory.split("## Atlas types and ownership", 1)[1].split("\n\n", 2)[1]
-    header = (ROOT / "src/include/malvado/atlas.h").read_text(encoding="utf-8")
-    errors = check(header, atlas_rows, type_table)
-    for label, values in zip(("missing functions", "extra functions", "missing types", "extra types"), errors):
-        if values:
-            print(f"atlas: {label}: {', '.join(sorted(values))}")
-    return int(any(errors))
+    failures = False
+    for name, heading in (("atlas", "Atlas"), ("fpg", "FPG")):
+        rows = "\n".join(line for line in table.splitlines() if line.startswith(f"| {heading} "))
+        type_table = inventory.split(f"## {heading} types and ownership", 1)[1].split("\n\n", 2)[1]
+        header = (ROOT / f"src/include/malvado/{name}.h").read_text(encoding="utf-8")
+        errors = check(header, rows, type_table)
+        for label, values in zip(("missing functions", "extra functions", "missing types", "extra types"), errors):
+            if values:
+                print(f"{name}: {label}: {', '.join(sorted(values))}")
+        failures |= any(errors)
+    return int(failures)
 
 
 if __name__ == "__main__":
