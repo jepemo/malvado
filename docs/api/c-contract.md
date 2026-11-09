@@ -14,7 +14,7 @@ Do not destroy a context from a process callback or destructor. Such a call is i
 
 For a 60-tick-per-second scheduler, initialize `MvCadence cadence = {0}`. Run a process's first activation, then call `mv_cadence_step(&cadence, fps)` on each eligible tick. It returns 1 when the process is due, 0 when it should wait, or -1 for an invalid argument or state. At a constant rate from 1 through 59 and phase zero, each 60 eligible ticks produce exactly that many activations. Rates 0 and 60 run on every tick and reset the phase. Do not call it while the process is sleeping or frozen. The Lua `self.fps` field uses the same cadence.
 
-To run processes, call `mv_process_tick` once for each logical step you want to execute. This separation lets you test time and scheduling independently. A recursive tick returns `MV_BUSY`.
+To run processes, call `mv_process_tick` once for each logical step you want to execute. The [C clock example](../../examples/c/clock/README.md) shows the complete loop. This separation lets you test time and scheduling independently. A recursive tick returns `MV_BUSY`.
 
 ## Processes and signals
 
