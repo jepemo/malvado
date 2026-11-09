@@ -60,9 +60,11 @@ main(void)
              mv_resource_data(resource) == &asset;
     if (ok)
         printf("Retained asset: %d\n", asset.value);
+    /* Give the surviving resource to the context before dropping our reference. */
+    int transferred = mv_resource_transfer(resource, NULL) == MV_OK;
     if (mv_resource_release(resource) != MV_OK)
         ok = 0;
-    ok = ok && asset.destroyed == 1;
+    ok = ok && transferred && asset.destroyed == 0;
     mv_context_destroy(ctx);
-    return ok ? 0 : 1;
+    return ok && asset.destroyed == 1 ? 0 : 1;
 }
