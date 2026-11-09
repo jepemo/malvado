@@ -891,6 +891,8 @@ target_include_directories(mixed-collision-test PRIVATE src)
 target_link_libraries(mixed-collision-test PRIVATE malvado_lua_binding)
 add_test(NAME mixed_collision COMMAND mixed-collision-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/mixed_collision.lua)
 set_tests_properties(mixed_collision PROPERTIES TIMEOUT 15)
+add_test(NAME lua_minimal_graphics COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/minimal_graphics.lua)
+set_tests_properties(lua_minimal_graphics PROPERTIES TIMEOUT 15)
 add_test(NAME lua_contextual_world COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/contextual_world.lua)
 add_test(NAME lua_contextual_world_start COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/contextual_world_start.lua)
 set_tests_properties(lua_contextual_world lua_contextual_world_start PROPERTIES

@@ -35,6 +35,10 @@ check_frame(void *user)
     Color background = GetImageColor(image, 25 * image.width / width, 30 * image.height / height);
     Color alpha = GetImageColor(image, 130 * image.width / width, 70 * image.height / height);
     Color outside = GetImageColor(image, 119 * image.width / width, 70 * image.height / height);
+    Color white = GetImageColor(image, 35 * image.width / width, 90 * image.height / height);
+    Color white_outside = GetImageColor(image, 29 * image.width / width, 90 * image.height / height);
+    assert(white.r > 240 && white.g > 240 && white.b > 240 && white.a == 255);
+    assert(white_outside.r < 10 && white_outside.g < 10 && white_outside.b < 10);
     assert(alpha.r >= 120 && alpha.r <= 135 && alpha.g >= 120 && alpha.g <= 135);
     assert(outside.r < 10 && outside.g < 10 && outside.b < 10);
     assert(red.r > 240 && red.g < 10 && red.b < 10);
@@ -42,10 +46,10 @@ check_frame(void *user)
     assert(green.g > 240 && green.r < 10 && green.b < 10);
     assert(background.r < 10 && background.g < 10 && background.b < 10);
     UnloadImage(image);
-    MalvadoProcessInfo processes[4];
+    MalvadoProcessInfo processes[5];
     size_t total;
     int64_t tick;
-    assert(malvado_debug_snapshot(processes, 4, &total, &tick) && total == 4);
+    assert(malvado_debug_snapshot(processes, 5, &total, &tick) && total == 5);
     for (size_t i = 0; i < total; ++i)
         assert(malvado_debug_signal(processes[i].id, "kill"));
 }

@@ -5,7 +5,7 @@ local mv = require("malvado")
 mv.import_globals()
 
 local world = world_create()
-local player_graphic = mv.graphics.circle(16, {color = {80, 190, 255}})
+local player_graphic = circle(16, {color = {80, 190, 255}})
 world:add_rect({x = 300, y = 100, width = 40, height = 280})
 
 local Player = process(function(self)

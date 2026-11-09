@@ -9,6 +9,10 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | Global | Module field |
 | --- | --- |
 | `collision` | `mv.collision` |
+| `rect` | `mv.rect` |
+| `circle` | `mv.circle` |
+| `region` | `mv.region` |
+| `scroll` | `mv.scroll` |
 | `world_create` | `mv.world_create` |
 | `world_move` | `mv.world_move` |
 | `rect_overlaps` | `mv.rect_overlaps` |

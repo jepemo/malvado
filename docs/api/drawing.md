@@ -77,8 +77,9 @@ image and atlas sprite graphics.
 
 Without an explicit collider, a supported graphic also supplies its collision
 shape, using the same pivot and transform. See [collision](collision.md).
-The namespaces `graphics` and `collision` are accessed through `require`; they
-are not installed as globals by `import_globals()`.
+`import_globals()` installs `rect`, `circle`, `region`, and `scroll` as the
+same constructors as `mv.graphics`. The geometric collision constructors stay
+in `mv.collision`; calling the imported `collision(target)` queries processes.
 
 In C, the raylib platform provides `mv_window_draw_transformed_rect` and
 `mv_window_draw_filled_circle` between `mv_window_begin` and `mv_window_end`.
@@ -153,3 +154,32 @@ other processes are unaffected. Scroll does not change process positions,
 collision geometry, scheduling, or `z` order. This initial capability is a
 uniform translation; it does not implement wrapping, parallax, tilemaps, zoom,
 or camera rotation.
+
+
+## Minimal graphic constructors
+
+```lua
+require("malvado").import_globals()
+local Player = process(function(self)
+  self.graph = circle(20, {color = {80, 190, 255}})
+  self.region = region(40, 60, 300, 240)
+  self.scroll = scroll(10, 0)
+  while true do frame() end
+end)
+start(function() Player({x = 100, y = 100}) end)
+```
+
+`rect(width, height, options?)`, `circle(radius, options?)`,
+`region(x, y, width, height)`, and `scroll(x, y)` are available after
+`import_globals()`. The flat module fields (`mv.rect`, `mv.circle`, `mv.region`,
+`mv.scroll`) and existing `mv.graphics` fields contain the same functions.
+They return the same immutable descriptors and use the validation and ownership
+rules above. Shapes default to a center pivot and opaque white; rectangles can
+select `pivot = "top-left"`. RGB and RGBA color tables are supported. Unknown
+shape options raise an error. No `shape` namespace is required.
+
+This increment preserves immediate drawing: `draw_rect` and `draw_box` take
+two corners, and filled/outlined circles keep their existing functions.
+`set_color` affects immediate primitives; it does not change a new descriptor's
+default color. A proposal to change those signatures needs a separate decision.
+An outlined drawing does not change collision geometry into a hollow shape.

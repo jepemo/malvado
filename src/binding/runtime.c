@@ -3755,6 +3755,7 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 
 static const char *const global_names[] = {
     "collision", "world_create", "world_move",
+    "rect", "circle", "region", "scroll",
     "rect_overlaps",
     "rect_contains",
     "process",
@@ -4778,6 +4779,13 @@ open_module(lua_State *L)
     lua_pushcfunction(L, graphic_sprite);
     lua_setfield(L, -2, "sprite");
 #endif
+    /* Copy the closures, including their kind upvalues, rather than creating
+     * separate constructors for the procedural interface. */
+    static const char *const graphic_aliases[] = {"rect", "circle", "region", "scroll"};
+    for (size_t i = 0; i < sizeof(graphic_aliases) / sizeof(graphic_aliases[0]); ++i) {
+        lua_getfield(L, -1, graphic_aliases[i]);
+        lua_setfield(L, -3, graphic_aliases[i]);
+    }
     lua_setfield(L, -2, "graphics");
 #ifdef MALVADO_BUILD_ASSETS
     lua_newtable(L);

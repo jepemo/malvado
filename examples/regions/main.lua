@@ -4,7 +4,7 @@
 local mv = require("malvado")
 mv.import_globals()
 
-local viewport = mv.graphics.region(100, 100, 160, 160)
+local viewport = region(100, 100, 160, 160)
 local Player = process(function(self)
   while not key("escape") do
     if key("left") then self.x = self.x - 3 end
@@ -13,7 +13,7 @@ local Player = process(function(self)
     if key("down") then self.y = self.y + 3 end
     frame()
   end
-end, {defaults = {region = viewport, graph = mv.graphics.rect(60, 60, {
+end, {defaults = {region = viewport, graph = rect(60, 60, {
   color = {80, 190, 255}
 })}})
 

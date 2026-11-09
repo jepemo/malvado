@@ -11,14 +11,14 @@ local Scene = process(function(self)
     if key("right") then camera_x = camera_x + 3 end
     if key("up") then camera_y = camera_y - 3 end
     if key("down") then camera_y = camera_y + 3 end
-    self.scroll = mv.graphics.scroll(camera_x, camera_y)
+    self.scroll = scroll(camera_x, camera_y)
     set_color(255, 165, 70)
     draw_box(280, 180, 340, 240)
     frame()
   end
 end, {defaults = {
-  graph = mv.graphics.rect(80, 60, {pivot = "top-left", color = {80, 190, 255}}),
-  region = mv.graphics.region(40, 60, 300, 240)
+  graph = rect(80, 60, {pivot = "top-left", color = {80, 190, 255}}),
+  region = region(40, 60, 300, 240)
 }})
 
 local Overlay = process(function()
