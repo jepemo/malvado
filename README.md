@@ -1,39 +1,51 @@
 # Malvado
 
-Malvado is a game engine inspired by DIV Games Studio. Write games in Lua with simple processes, or use the C API directly.
+**Small scripts. Living worlds.**
 
-> Malvado 2 is in development. The API and tools can change.
+Malvado is an open-source game engine for making 2D games with **Lua or C**. Inspired by **DIV Games Studio**, it brings process-based game development to a lightweight engine built with C and raylib.
 
-## Hello World
+The idea is simple: give each character, object, or effect its own behavior, then let those little pieces create something bigger together.
 
-A process is a part of your game that runs over time. This one shows a greeting until you press Escape:
+**[Documentation](https://jepemo.github.io/malvado/)** · **[Examples](examples/)** · **[Roadmap](docs/versions/README.md)**
+
+> **Work in progress:** Malvado 2 is in active alpha development. The API and tools may change as the engine evolves.
+
+![Space Asteroids running in Malvado, with a moving spaceship firing at rotating asteroids.](docs/media/space-asteroids.gif)
+
+*[Space Asteroids](examples/space_asteroids/), running in Malvado.*
+
+## Hello, Malvado!
+
+**Give it a shape. Give it a behavior. Let it run.**
+
+In Malvado, a *process* is an independent piece of your game. It has its own state and can keep running from one frame to the next.
 
 ```lua
 require("malvado").import_globals()
 
-local HelloWorld = process(function(self)
-  local font = font(60, 0, 0, 0)
-  write(font, self.x, self.y, self.text)
+local Player = process(function(self)
+  self.graph = circle(16, {color = {80, 190, 255}})
 
   while not key("escape") do
+    if key("left") then self.x = self.x - 3 end
+    if key("right") then self.x = self.x + 3 end
     frame()
   end
 end)
 
 start(function()
-  set_title("Hello world")
-  clear_screen(250, 250, 250)
-  HelloWorld { x = 400, y = 300, text = "Hello World" }
+  clear_screen(25, 30, 45)
+  Player {x = 160, y = 120}
 end)
 ```
 
-`process` defines the behavior. `HelloWorld { ... }` starts it with its own values. `frame()` lets the rest of the game run before the process continues.
+`process()` defines a behavior. `Player { ... }` creates an instance with its own state. `self.graph` gives it a visible shape, and `frame()` lets other processes run before continuing.
 
-## Get started
+Move with **Left** and **Right**. Press **Escape** to exit.
 
-Install [Git](https://git-scm.com/), [mise](https://mise.jdx.dev/getting-started.html), and a C compiler. On Linux, also install the X11 and OpenGL development packages listed in [CI](.github/workflows/ci.yml).
+## Give it a try
 
-Get the source and run Hello World:
+You'll need [Git](https://git-scm.com/), [mise](https://mise.jdx.dev/), and a C compiler. On Linux, you also need the X11 and OpenGL development packages listed in the [CI configuration](.github/workflows/ci.yml).
 
 ```sh
 git clone https://github.com/jepemo/malvado.git
@@ -42,48 +54,40 @@ mise install
 mise run hello
 ```
 
-The first build needs network access to download and verify the pinned dependencies. The example needs a display. Press **Escape** or close the window to exit.
+The first build downloads pinned dependencies. The example opens a window; press **Escape** to close it.
 
-Create and run your own game with the client:
-
-```sh
-./build/malvado new my-game
-./build/malvado run my-game
-```
-
-See [SDK and projects](docs/site/sdk.md) to install the client and export a game.
-
-For local development, install the current build for your user:
+Want to start your own project? Install the development SDK locally:
 
 ```sh
 mise run install
 export PATH="$HOME/.local/share/malvado-dev/bin:$PATH"
-malvado --version
+malvado new my-game
+cd my-game
+malvado run
 ```
 
-Run `mise run uninstall` to remove it. The tasks do not change your shell configuration or your projects. Add the `export PATH` line to your shell configuration if you want it in new terminals. Set `MALVADO_DEV_PREFIX` to use a different installation directory. Use that directory only for the development SDK. The tasks refuse an unmanaged directory or one with extra files.
+See the [SDK guide](docs/site/sdk.md) for more details, including C projects and exporting games on the current host.
 
-## Try more examples
+## Explore
 
-After the build, run these commands from the project directory:
+Malvado already includes:
 
-```sh
-./build/malvado run examples/demo/main.lua
-./build/malvado run examples/space_asteroids/main.lua
-./build/malvado run examples/bench/main.lua
-./build/malvado run examples/sprites/main.lua
-```
+- **Processes with personality.** Give each instance its own state, timing, and lifecycle.
+- **A native core.** The scheduler and engine live in C, with a public C API that does not require Lua.
+- **Lua for quick ideas.** Write game behavior with small scripts and a bundled Lua runtime.
+- **The essentials for 2D.** Graphics, sprites, text, input, and runnable examples.
+- **Tools to get started.** Create, run, and export projects using the `malvado` command on supported development hosts.
 
-See the instructions for [Hello World](examples/helloworld/README.md), the [demo](examples/demo/README.md), [Space Asteroids](examples/space_asteroids/README.md), the [benchmark](examples/bench/README.md), and [sprites](examples/sprites/README.md). The [C and Lua process examples](examples/c/processes/README.md) show both APIs.
+Try the [Space Asteroids example](examples/space_asteroids/), browse the [other examples](examples/), or read the [documentation](https://jepemo.github.io/malvado/).
 
-## Documentation and development
+## What's next?
 
-Read the [documentation](https://jepemo.github.io/malvado/) for more guides. The [alpha.3 testing guide](docs/versions/2.0.0-alpha.3-testing.md) lists the current examples and checks. See the [version plan](docs/versions/README.md) for the project status.
+The current focus is making 2D game development more natural: simpler Lua APIs, assets, animation, and cameras. Rust support, more platforms, and additional graphics modes are on the roadmap, but are **not part of the current alpha**.
 
-Run `mise tasks` to see the development commands. Use `mise run test` for the standard tests, `mise run test-headless` to test Lua without a graphics backend, and `mise run test-c` to test the C core without Lua or raylib. `mise run test-visual` needs a display or virtual display.
+Follow the [version plan](docs/versions/README.md) to see what's implemented and what's still planned.
 
-CMake also works without mise. The [runtime guide](docs/versions/2.0.0-alpha.1.md) explains build options and how to use local dependency sources.
+## Come build with us
 
-## License
+Malvado is a personal open-source project, and curiosity is welcome. If you try it, find a bug, have an idea, or want to contribute, [open an issue](https://github.com/jepemo/malvado/issues).
 
-Malvado 2 uses the [Apache License 2.0](LICENSE). Dependencies keep their own licenses. See [licenses and attribution](docs/development/licensing.md) for details.
+Licensed under [Apache 2.0](LICENSE).
