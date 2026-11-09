@@ -83,6 +83,16 @@ main(int argc, char **argv)
     atlas = mv_atlas_parse(buffer, length, 8, 8, &error);
     assert(atlas && !error);
     int frame = -1;
+    assert(mv_atlas_animation_frame_count(atlas, "flash") == 2);
+    assert(mv_atlas_animation_frame_count(atlas, "missing") == 0);
+    assert(mv_atlas_animation_frame_count(NULL, "flash") == 0);
+    MvAtlasAnimationFrame entry = {99, 99};
+    assert(mv_atlas_animation_frame_at(atlas, "flash", 1, &entry));
+    assert(entry.sprite_id == 42 && entry.duration_ms == 200);
+    assert(!mv_atlas_animation_frame_at(atlas, "flash", 2, &entry));
+    assert(entry.sprite_id == 42 && entry.duration_ms == 200);
+    assert(!mv_atlas_animation_frame_at(atlas, "missing", 0, &entry));
+    assert(!mv_atlas_animation_frame_at(atlas, "flash", 0, NULL));
     assert(mv_atlas_animation_frame(atlas, "flash", 0, 1, &frame) && frame == 7);
     assert(mv_atlas_animation_frame(atlas, "flash", 99, 1, &frame) && frame == 7);
     assert(mv_atlas_animation_frame(atlas, "flash", 100, 1, &frame) && frame == 42);

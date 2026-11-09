@@ -286,6 +286,5 @@ image during rendering.
 
 Modern selection uses `self.file` and `self.graph`. `self.fpg` and
 `self.fpgIndex` retain meaning only in the explicit legacy compatibility profile.
-The existing `mv.graphics.sprite(atlas, id)` remains available. Automatic
-`animation()` playback is still pending; the advanced `animation_frame` sampler
-remains available for explicit time/frame selection.
+The existing `mv.graphics.sprite(atlas, id)` remains available. See [automatic animation](animations.md) for `animation()` playback. The advanced
+`animation_frame` sampler remains available for explicit time/frame selection.

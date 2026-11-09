@@ -7,10 +7,19 @@ See the linked headers and the [process](process-inventory.md),
 [asset](asset-inventory.md), [input](input-inventory.md),
 [audio](audio-inventory.md), and [collision](collision.md) guides.
 
+## [animation.h](../../src/include/malvado/animation.h)
+
+- `mv_animation_advance`
+- `mv_animation_create`
+- `mv_animation_destroy`
+- `mv_animation_sample`
+
 ## [atlas.h](../../src/include/malvado/atlas.h)
 
 - `mv_atlas_animation_color`
 - `mv_atlas_animation_frame`
+- `mv_atlas_animation_frame_at`
+- `mv_atlas_animation_frame_count`
 - `mv_atlas_animation_repeats`
 - `mv_atlas_count`
 - `mv_atlas_destroy`

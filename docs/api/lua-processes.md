@@ -207,8 +207,9 @@ that library inside the process. Assign the result to `self.graph` for automatic
 static drawing. An explicit `graph(library, id)` or `library:graph(id)` does not
 need `self.file`. Changing the file field cannot change an existing descriptor.
 Images can also be assigned directly. See [static graphics](images.md#select-a-static-graphic)
-for lifetime, pivot and context rules. Automatic animation remains a separate
-alpha.6 item.
+for lifetime, pivot and context rules. Assign an `animation()` definition to
+`self.graph` for [automatic playback](animations.md) with independent process
+state and a fixed collider union.
 
 
 ## Process camera

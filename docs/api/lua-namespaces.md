@@ -41,6 +41,8 @@ object methods and process fields are not included in this namespace table.
 | `mv.graphics.rect` | Create a rectangle graphic | [drawing](drawing.md) and [images](images.md) |
 | `mv.graphics.region` | Create a drawing region | [drawing](drawing.md) and [images](images.md) |
 | `mv.graphics.scroll` | Create a scroll descriptor | [drawing](drawing.md) and [images](images.md) |
+| `mv.graphics.animation` | Select automatic animation * | [animations](animations.md) |
+| `mv.graphics.animation_elapsed` | Inspect process playback time * | [animations](animations.md) |
 | `mv.graphics.graph` | Select a static library graphic * | [images](images.md) |
 | `mv.graphics.sprite` | Create an atlas sprite graphic * | [drawing](drawing.md) and [images](images.md) |
 | `mv.collision.circle` | Create a circle shape | [collision](collision.md) |
@@ -70,10 +72,11 @@ a graphics window.
 | Object | Methods | Contract |
 | --- | --- | --- |
 | `camera` | `camera:set`, `camera:move`, `camera:position`, `camera:destroy`, `camera:follow` | [cameras](cameras.md) |
-| `atlas` | `atlas:graph` | [images](images.md) |
+| `animation` | `animation:sample` | [animations](animations.md) |
+| `atlas` | `atlas:graph`, `atlas:animation` | [images](images.md) |
 | `world` | `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | [collision](collision.md) |
-| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph` | [FPG](../specs/fpg-8.md) |
-| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point`, `manifest:graph` | [FPG](../specs/fpg-8.md) |
+| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph`, `fpg:animation` | [FPG](../specs/fpg-8.md) |
+| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point`, `manifest:graph`, `manifest:animation` | [FPG](../specs/fpg-8.md) |
 
 `lua_module_inventory` compares these method names with the runtime. It does
 not certify their semantics. Process handles also have `self:recv`; see the

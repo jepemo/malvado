@@ -4,7 +4,7 @@
 
 See the [namespace inventory](lua-namespaces.md) for functions that are also available through `mv` namespaces.
 
-Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph` selector and atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph`/`animation` selectors and atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |
@@ -66,6 +66,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `music_playing` | `mv.music_playing` |
 | `music_volume` | `mv.music_volume` |
 | `draw_text` | `mv.draw_text` |
+| `animation` | `mv.animation` |
 | `graph` | `mv.graph` |
 | `load_asset` | `mv.load_asset` |
 | `load_image` | `mv.load_image` |

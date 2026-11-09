@@ -30,6 +30,7 @@
 #include "lualib.h"
 #include "malvado/platform.h"
 #include "malvado/camera.h"
+#include "malvado/animation.h"
 #include "malvado/collision.h"
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
@@ -104,7 +105,13 @@ static void lua_process_destroy(void *user);
 static void update_cameras(lua_State *L);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
-typedef struct { lua_Integer id, parent; int reason, collision_invalid; MvProcessRef reference; } LuaSelf;
+typedef struct {
+    lua_Integer id, parent;
+    int reason, collision_invalid;
+    MvProcessRef reference;
+    MvAnimationState animation_state;
+    lua_Integer animation_tick;
+} LuaSelf;
 typedef struct { int x, y, width, height; } LuaRegion;
 typedef struct { float x, y; } LuaScroll;
 typedef struct { MvImage *image; MvResource *resource; } LuaImage;
@@ -115,6 +122,7 @@ typedef struct {
     MvImageRegion region;
     int pivot_x, pivot_y;
 } LuaGraphic;
+typedef struct { MvAnimation *sequence; MvCollisionShape shape; } LuaAnimation;
 typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
 typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
 typedef struct { MvFont *font; MvResource *resource; } LuaFont;
@@ -805,7 +813,11 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
         if (!invalid && !lua_isnil(L, -1)) {
             LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
             LuaImage *image = luaL_testudata(L, -1, "malvado.image");
-            if (graphic) {
+            LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+            if (animation) {
+                shape = animation->shape;
+                present = 1;
+            } else if (graphic) {
                 shape = graphic->shape;
                 present = 1;
             } else if (image && image->image) {
@@ -872,9 +884,19 @@ self_newindex(lua_State *L)
         (!lua_isinteger(L, 3) || lua_tointeger(L, 3) < 0 || lua_tointeger(L, 3) > 60))
         return luaL_error(L, "fps must be an integer in 0..60");
     lua_getiuservalue(L, 1, 1);
+    int graph_changed = 0;
+    if (key && !strcmp(key, "graph")) {
+        raw_option(L, -1, "graph");
+        graph_changed = !lua_rawequal(L, -1, 3);
+        lua_pop(L, 1);
+    }
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
     lua_rawset(L, -3);
+    if (graph_changed) {
+        self->animation_state = (MvAnimationState){0};
+        self->animation_tick = engine.tick_number;
+    }
     if (key && (!strcmp(key, "x") || !strcmp(key, "y") || !strcmp(key, "angle") ||
                 !strcmp(key, "size") || !strcmp(key, "graph") || !strcmp(key, "collider") ||
                 !strcmp(key, "fpg")))
@@ -894,6 +916,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
     if (type == LUA_TUSERDATA &&
         (luaL_testudata(L, source, "malvado.collision_shape") ||
          luaL_testudata(L, source, "malvado.graphic") ||
+         luaL_testudata(L, source, "malvado.animation") ||
          luaL_testudata(L, source, "malvado.region") ||
          luaL_testudata(L, source, "malvado.scroll") ||
          luaL_testudata(L, source, "malvado.image") ||
@@ -1118,7 +1141,7 @@ create_process(lua_State *L)
     handle->id = (lua_Integer)core_id;
     (void)mv_process_set_type(engine.context, core_id, (uint64_t)lua_tointeger(L, lua_upvalueindex(2)));
     engine.next_process_id = handle->id;
-    *draft.self = (LuaSelf){.id = handle->id, .parent = creator,
+    *draft.self = (LuaSelf){.id = handle->id, .parent = creator, .animation_tick = engine.tick_number,
                             .reference = {engine.runtime_id, core_id}};
     engine.items[engine.count++] = (Process) {
         .id = handle->id,
@@ -2658,7 +2681,7 @@ load_atlas_format(lua_State *L, int aseprite)
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     size_t length;
     const char *json = luaL_checklstring(L, 2, &length);
-    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 1);
+    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     const char *error = NULL;
@@ -2930,7 +2953,7 @@ static int
 load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t length,
                  int aseprite, int width, int height)
 {
-    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 1);
+    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     int index = lua_gettop(L);
@@ -3537,6 +3560,27 @@ invalidate_dead_handles(lua_State *L)
     lua_pop(L, 1);
 }
 
+static void
+advance_animations(lua_State *L)
+{
+    if (!lua_checkstack(L, 8)) { engine.failed = 1; return; }
+    for (size_t i = 0; i < engine.count; ++i) {
+        Process *process = &engine.items[i];
+        if (!process->alive || process->state != PROCESS_RUNNING) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+        LuaSelf *self = lua_touserdata(L, -1);
+        lua_getiuservalue(L, -1, 1);
+        raw_option(L, -1, "graph");
+        LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+        if (animation && self->animation_tick < engine.tick_number) {
+            if (!mv_animation_advance(animation->sequence, &self->animation_state, 60))
+                engine.failed = 1;
+        }
+        self->animation_tick = engine.tick_number;
+        lua_pop(L, 3);
+    }
+}
+
 static int
 tick(void)
 {
@@ -3547,6 +3591,7 @@ tick(void)
     if (engine.audio) sweep_audio(engine.L);
     advance_fade();
     sync_processes();
+    advance_animations(engine.L);
     update_cameras(engine.L);
     if (result != MV_OK) {
         if (!engine.failed)
@@ -3634,6 +3679,17 @@ render_graph(lua_State *L, const Process *process)
     lua_getiuservalue(L, -1, 1);
     int fields = lua_gettop(L);
     raw_option(L, fields, "graph");
+    LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+    if (animation) {
+        LuaSelf *self = lua_touserdata(L, -3);
+        MvAnimationSample sample;
+        if (mv_animation_sample(animation->sequence, self->animation_state.elapsed_us, &sample)) {
+            lua_getiuservalue(L, -1, 1);
+            lua_rawgeti(L, -1, (lua_Integer)sample.index + 1);
+            lua_remove(L, -2);
+            lua_replace(L, -2);
+        }
+    }
     LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
     LuaImage *image = luaL_testudata(L, -1, "malvado.image");
     double x, y, angle, scale;
@@ -4258,6 +4314,7 @@ static const char *const global_names[] = {
     "music_playing",
     "music_volume",
     "draw_text",
+    "animation",
     "graph",
     "load_asset",
     "load_image",
@@ -4569,7 +4626,10 @@ process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
         }
         LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
         LuaImage *image = luaL_testudata(L, -1, "malvado.image");
-        if (graphic) {
+        LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+        if (animation) {
+            *shape = animation->shape;
+        } else if (graphic) {
             *shape = graphic->shape;
         } else if (image && image->image) {
             int width = mv_image_width(image->image), height = mv_image_height(image->image);
@@ -5080,6 +5140,194 @@ graph_select(lua_State *L)
     return push_sprite_graphic(L, region, pivot.x, pivot.y, -1);
 }
 
+static int
+animation_gc(lua_State *L)
+{
+    LuaAnimation *animation = luaL_checkudata(L, 1, "malvado.animation");
+    mv_animation_destroy(animation->sequence);
+    animation->sequence = NULL;
+    return 0;
+}
+
+static int
+animation_sample(lua_State *L)
+{
+    LuaAnimation *animation = luaL_checkudata(L, 1, "malvado.animation");
+    double elapsed = luaL_checknumber(L, 2);
+    if (!isfinite(elapsed) || elapsed < 0 || elapsed > 1e12)
+        return luaL_error(L, "invalid animation sample time in milliseconds");
+    MvAnimationSample sample;
+    if (!mv_animation_sample(animation->sequence, (uint64_t)(elapsed * 1000), &sample))
+        return luaL_error(L, "invalid animation descriptor");
+    lua_getiuservalue(L, 1, 1);
+    lua_rawgeti(L, -1, (lua_Integer)sample.index + 1);
+    return 1;
+}
+
+static int
+animation_elapsed(lua_State *L)
+{
+    lua_Integer id = check_process_id(L, 1);
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
+        return luaL_error(L, "process is no longer alive");
+    LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
+    lua_getiuservalue(L, 1, 1);
+    raw_option(L, -1, "graph");
+    if (luaL_testudata(L, -1, "malvado.animation"))
+        lua_pushnumber(L, self->animation_state.elapsed_us / 1000.0);
+    else lua_pushnil(L);
+    return 1;
+}
+
+static int
+animation_select(lua_State *L)
+{
+    int arguments = lua_gettop(L);
+    if (lua_type(L, 1) == LUA_TSTRING || lua_istable(L, 1)) {
+        if (arguments != 1 && arguments != 2)
+            return luaL_error(L, "expected animation(sequence, options?)");
+        push_current_process(L);
+        lua_getiuservalue(L, -1, 1);
+        raw_option(L, -1, "file");
+        if (lua_isnil(L, -1)) return luaL_error(L, "current process has no file");
+        lua_remove(L, -2);
+        lua_remove(L, -2);
+        lua_insert(L, 1);
+    } else if (arguments != 2 && arguments != 3) {
+        return luaL_error(L, "expected animation(library, sequence, options?)");
+    }
+    lua_settop(L, 3);
+    int loop = 1, has_fps = 0;
+    double fps = 8;
+    if (!lua_isnil(L, 3)) {
+        validate_options(L, 3, "fps", "loop");
+        raw_option(L, 3, "loop");
+        if (!lua_isnil(L, -1)) {
+            if (!lua_isboolean(L, -1)) return luaL_error(L, "loop must be a boolean");
+            loop = lua_toboolean(L, -1);
+        }
+        lua_pop(L, 1);
+        raw_option(L, 3, "fps");
+        has_fps = !lua_isnil(L, -1);
+        if (has_fps) fps = luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    int named = lua_type(L, 2) == LUA_TSTRING;
+    LuaAtlas *atlas = named ? luaL_checkudata(L, 1, "malvado.atlas") : NULL;
+    size_t count;
+    const char *name = NULL;
+    int cache = 0;
+    if (named) {
+        if (engine.window) {
+            lua_getiuservalue(L, 1, 1);
+            LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+            if (!image || !image->image)
+                return luaL_error(L, "asset has no visual images; load_asset requires an open window");
+            lua_pop(L, 1);
+        }
+        if (has_fps) return luaL_error(L, "fps is only valid for custom frame lists");
+        size_t length;
+        name = luaL_checklstring(L, 2, &length);
+        if (!length || strlen(name) != length) return luaL_error(L, "invalid animation name");
+        count = mv_atlas_animation_frame_count(atlas->atlas, name);
+        if (!count) return luaL_error(L, "unknown animation");
+        lua_getiuservalue(L, 1, 2);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 1);
+            lua_newtable(L);
+            lua_pushvalue(L, -1);
+            lua_setiuservalue(L, 1, 2);
+        }
+        int variants = lua_gettop(L);
+        lua_rawgeti(L, variants, loop + 1);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 1);
+            lua_newtable(L);
+            lua_newtable(L);
+            lua_pushliteral(L, "v");
+            lua_setfield(L, -2, "__mode");
+            lua_setmetatable(L, -2);
+            lua_pushvalue(L, -1);
+            lua_rawseti(L, variants, loop + 1);
+        }
+        cache = lua_gettop(L);
+        lua_pushvalue(L, 2);
+        lua_rawget(L, cache);
+        if (!lua_isnil(L, -1)) return 1;
+        lua_pop(L, 1);
+    } else {
+        luaL_checktype(L, 2, LUA_TTABLE);
+        count = lua_rawlen(L, 2);
+        if (!count || count > 4096) return luaL_error(L, "animation needs 1..4096 frames");
+        lua_pushnil(L);
+        while (lua_next(L, 2)) {
+            if (!lua_isinteger(L, -2) || lua_tointeger(L, -2) < 1 ||
+                (uint64_t)lua_tointeger(L, -2) > count)
+                return luaL_error(L, "animation frames must be a dense ID list");
+            lua_pop(L, 1);
+        }
+        if (!isfinite(fps) || fps < 1.0 / 3600 || fps > 1000)
+            return luaL_error(L, "animation fps must be in 1/3600..1000");
+    }
+    if (count > 8192) return luaL_error(L, "animation needs at most 8192 expanded frames");
+    LuaAnimation *animation = lua_newuserdatauv(L, sizeof(*animation), 2);
+    *animation = (LuaAnimation){0};
+    luaL_setmetatable(L, "malvado.animation");
+    int descriptor = lua_gettop(L);
+    MvAnimationFrame *frames = lua_newuserdatauv(L, count * sizeof(*frames), 0);
+    lua_createtable(L, (int)count, 0);
+    int graphics = lua_gettop(L);
+    double left = 0, top = 0, right = 0, bottom = 0;
+    for (size_t i = 0; i < count; ++i) {
+        int id;
+        uint64_t duration;
+        if (named) {
+            MvAtlasAnimationFrame frame;
+            if (!mv_atlas_animation_frame_at(atlas->atlas, name, i, &frame))
+                return luaL_error(L, "invalid animation sequence");
+            id = frame.sprite_id;
+            duration = (uint64_t)frame.duration_ms * 1000;
+        } else {
+            lua_rawgeti(L, 2, (lua_Integer)i + 1);
+            lua_Integer value = luaL_checkinteger(L, -1);
+            if (value <= 0 || value > INT_MAX) return luaL_error(L, "invalid animation graph id");
+            id = (int)value;
+            lua_pop(L, 1);
+            duration = (uint64_t)floor(1000000.0 / fps + 0.5);
+        }
+        frames[i] = (MvAnimationFrame){id, duration};
+        lua_pushcfunction(L, graph_select);
+        lua_pushvalue(L, 1);
+        lua_pushinteger(L, id);
+        lua_call(L, 2, 1);
+        LuaGraphic *graphic = lua_touserdata(L, -1);
+        double x = graphic->shape.offset_x - graphic->shape.width / 2;
+        double y = graphic->shape.offset_y - graphic->shape.height / 2;
+        double end_x = x + graphic->shape.width, end_y = y + graphic->shape.height;
+        if (!i || x < left) left = x;
+        if (!i || y < top) top = y;
+        if (!i || end_x > right) right = end_x;
+        if (!i || end_y > bottom) bottom = end_y;
+        lua_rawseti(L, graphics, (lua_Integer)i + 1);
+    }
+    animation->sequence = mv_animation_create(frames, count, loop);
+    if (!animation->sequence) return luaL_error(L, "cannot create animation definition");
+    animation->shape = (MvCollisionShape){.kind = MV_COLLISION_RECT,
+        .width = right - left, .height = bottom - top,
+        .offset_x = (right + left) / 2, .offset_y = (bottom + top) / 2};
+    lua_setiuservalue(L, descriptor, 1);
+    lua_pushvalue(L, 1);
+    lua_setiuservalue(L, descriptor, 2);
+    if (cache) {
+        lua_pushvalue(L, 2);
+        lua_pushvalue(L, descriptor);
+        lua_rawset(L, cache);
+    }
+    lua_pushvalue(L, descriptor);
+    return 1;
+}
+
 #endif
 
 static int
@@ -5145,6 +5393,7 @@ open_module(lua_State *L)
         {"draw_image_region", draw_image_region},
         {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
+        {"animation", animation_select},
         {"graph", graph_select},
         {"load_atlas", load_atlas},
         {"load_aseprite", load_aseprite},
@@ -5290,7 +5539,7 @@ open_module(lua_State *L)
         {"count", fpg_manifest_count}, {"id_at", fpg_manifest_id_at},
         {"transparent_zero", fpg_manifest_transparent}, {"palette", fpg_manifest_palette},
         {"gamma", fpg_manifest_gamma}, {"sprite", fpg_manifest_sprite},
-        {"point", fpg_manifest_point}, {"graph", graph_select}, {NULL, NULL}
+        {"point", fpg_manifest_point}, {"graph", graph_select}, {"animation", animation_select}, {NULL, NULL}
     };
     luaL_setfuncs(L, manifest_methods, 0);
     lua_setfield(L, -2, "__index");
@@ -5304,11 +5553,21 @@ open_module(lua_State *L)
     static const luaL_Reg fpg_methods[] = {
         {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
         {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
-        {"graph", graph_select}, {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
+        {"graph", graph_select}, {"animation", animation_select}, {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
     };
     luaL_setfuncs(L, fpg_methods, 0);
     lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado FPG");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.animation");
+    lua_pushcfunction(L, animation_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    lua_pushcfunction(L, animation_sample);
+    lua_setfield(L, -2, "sample");
+    lua_setfield(L, -2, "__index");
+    lua_pushliteral(L, "malvado animation");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.atlas");
@@ -5317,6 +5576,8 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_pushcfunction(L, graph_select);
     lua_setfield(L, -2, "graph");
+    lua_pushcfunction(L, animation_select);
+    lua_setfield(L, -2, "animation");
     lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado atlas");
     lua_setfield(L, -2, "__metatable");
@@ -5362,6 +5623,10 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "sprite");
     lua_pushcfunction(L, graph_select);
     lua_setfield(L, -2, "graph");
+    lua_pushcfunction(L, animation_select);
+    lua_setfield(L, -2, "animation");
+    lua_pushcfunction(L, animation_elapsed);
+    lua_setfield(L, -2, "animation_elapsed");
 #endif
     /* Copy the closures, including their kind upvalues, rather than creating
      * separate constructors for the procedural interface. */

@@ -67,6 +67,14 @@ int mv_atlas_animation_repeats(const MvAtlas *atlas, const char *name, unsigned 
 int mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapsed_ms,
                              int loop, int *sprite_id);
 
+typedef struct { int sprite_id; unsigned duration_ms; } MvAtlasAnimationFrame;
+/* Inspect the sequence after expanding tag direction. Count
+ * is zero for a missing name. At copies a zero-based entry or returns 0 with
+ * unchanged output on an invalid pointer, name or index. */
+size_t mv_atlas_animation_frame_count(const MvAtlas *atlas, const char *name);
+int mv_atlas_animation_frame_at(const MvAtlas *atlas, const char *name, size_t index,
+                                MvAtlasAnimationFrame *out);
+
 #ifdef __cplusplus
 }
 #endif

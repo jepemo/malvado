@@ -25,7 +25,7 @@ for namespace, name in documentation:gmatch("| `mv%.([%w_]+)%.([%w_]+)` |") do
   local key = namespace .. "." .. name
   assert(not documented[key], "duplicate inventory entry: " .. key)
   documented[key] = true
-  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "sprite" or name == "graph"))
+  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "sprite" or name == "graph" or name == "animation" or name == "animation_elapsed"))
   if optional and not mv.fpg then
     assert(namespace == "fpg" or mv.graphics.sprite == nil)
   else

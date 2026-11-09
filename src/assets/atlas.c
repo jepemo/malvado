@@ -619,3 +619,29 @@ mv_atlas_animation_frame(const MvAtlas *atlas, const char *name, uint64_t elapse
     }
     return 0;
 }
+
+
+size_t
+mv_atlas_animation_frame_count(const MvAtlas *atlas, const char *name)
+{
+    if (!atlas || !name) return 0;
+    for (size_t i = 0; i < atlas->animation_count; ++i)
+        if (!strcmp(atlas->animations[i].name, name)) return atlas->animations[i].count;
+    return 0;
+}
+
+int
+mv_atlas_animation_frame_at(const MvAtlas *atlas, const char *name, size_t index,
+                            MvAtlasAnimationFrame *out)
+{
+    if (!atlas || !name || !out) return 0;
+    for (size_t i = 0; i < atlas->animation_count; ++i) {
+        const Animation *animation = &atlas->animations[i];
+        if (!strcmp(animation->name, name) && index < animation->count) {
+            *out = (MvAtlasAnimationFrame){animation->frames[index].sprite_id,
+                                         (unsigned)animation->frames[index].duration_ms};
+            return 1;
+        }
+    }
+    return 0;
+}
