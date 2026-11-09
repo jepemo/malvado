@@ -19,3 +19,10 @@ assert(not pcall(mv.pad_axis, 0, "left_x\0extra"))
 assert(not pcall(mv.pad_button, 4, "a"))
 assert(not pcall(mv.pad_button, 0, "a\0b"))
 assert(not pcall(mv.pad_axis, 0, "bad"))
+
+for _, name in ipairs({"", "A", "a ", "a\0extra"}) do
+  assert(not pcall(mv.pad_button, 0, name))
+end
+for _, name in ipairs({"", "LEFT_X", "left_x ", "left_x\0extra"}) do
+  assert(not pcall(mv.pad_axis, 0, name))
+end

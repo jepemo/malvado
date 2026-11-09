@@ -89,6 +89,8 @@ main(void)
         assert(mv_key_from_name(name, &key) && key == (MvKey)(MV_KEY_0 + i));
     }
     MvKey unchanged = MV_KEY_A;
+    assert(!mv_key_from_name("", &unchanged) && unchanged == MV_KEY_A);
+    assert(!mv_key_from_name("space ", &unchanged) && unchanged == MV_KEY_A);
     assert(!mv_key_from_name("A", &unchanged) && unchanged == MV_KEY_A);
     assert(!mv_key_from_name("unknown", &unchanged) && unchanged == MV_KEY_A);
     assert(!mv_key_from_name(NULL, &unchanged));
@@ -98,6 +100,8 @@ main(void)
     assert(mv_mouse_button_from_name("left", &button) && button == MV_MOUSE_LEFT);
     assert(mv_mouse_button_from_name("middle", &button) && button == MV_MOUSE_MIDDLE);
     assert(mv_mouse_button_from_name("right", &button) && button == MV_MOUSE_RIGHT);
+    assert(!mv_mouse_button_from_name("Left", &button) && button == MV_MOUSE_RIGHT);
+    assert(!mv_mouse_button_from_name("", &button) && button == MV_MOUSE_RIGHT);
     assert(!mv_mouse_button_from_name("other", &button) && button == MV_MOUSE_RIGHT);
     assert(!mv_mouse_button_from_name(NULL, &button));
     assert(!mv_mouse_button_from_name("left", NULL));

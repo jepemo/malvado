@@ -76,11 +76,13 @@ void mv_window_close(void);
 int mv_window_should_close(void);
 int mv_window_escape_down(void);
 int mv_window_space_down(void);
-/* Parse a supported lowercase key name. Return 1 on success. */
+/* Parse a supported lowercase key name. Return 1 on success, or 0 without
+ * changing the output for an invalid name or NULL argument. No window is needed. */
 int mv_key_from_name(const char *name, MvKey *key);
 /* Return 1 while the key is held. Return 0 for an unsupported key or no window. */
 int mv_key_down(MvKey key);
-/* Parse "left", "middle", or "right". Return 1 on success. */
+/* Parse "left", "middle", or "right". Return 1 on success, or 0 without
+ * changing the output for an invalid name or NULL argument. No window is needed. */
 int mv_mouse_button_from_name(const char *name, MvMouseButton *button);
 /* Write window-relative pixel coordinates. Return 0 and write zeros if no
  * window is open. Return 0 without writing if either pointer is NULL. */
@@ -92,6 +94,8 @@ int mv_mouse_down(MvMouseButton button);
 int mv_pad_connected(int slot);
 int mv_pad_button_down(int slot, MvPadButton button);
 float mv_pad_axis(int slot, MvPadAxis axis);
+/* Parse a case-sensitive control name. Return 1 on success, or 0 without
+ * changing the output for an invalid name or NULL argument. No window is needed. */
 int mv_pad_button_from_name(const char *name, MvPadButton *button);
 int mv_pad_axis_from_name(const char *name, MvPadAxis *axis);
 /* Remove one Unicode scalar from the shared text queue. Return 1 on success.
