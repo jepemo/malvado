@@ -13,6 +13,7 @@ local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 local has_assets = asset_option == "1"
 assert(has_assets or asset_option == "0")
 assert((mv.fpg ~= nil) == has_assets, "FPG namespace does not match the asset build")
+assert((mv.graphics.graph ~= nil) == has_assets, "graph selector does not match the asset build")
 assert((mv.graphics.sprite ~= nil) == has_assets, "sprite descriptor does not match the asset build")
 for name, value in pairs(mv) do
   if type(value) == "table" then
@@ -24,7 +25,7 @@ for namespace, name in documentation:gmatch("| `mv%.([%w_]+)%.([%w_]+)` |") do
   local key = namespace .. "." .. name
   assert(not documented[key], "duplicate inventory entry: " .. key)
   documented[key] = true
-  local optional = namespace == "fpg" or (namespace == "graphics" and name == "sprite")
+  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "sprite" or name == "graph"))
   if optional and not mv.fpg then
     assert(namespace == "fpg" or mv.graphics.sprite == nil)
   else

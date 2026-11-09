@@ -60,3 +60,12 @@ It adds no native C symbols. See the [loader contract](images.md#load-an-asset-b
 relative paths, metadata/GC, format/option errors and original/converted pixels.
 The existing C parser, allocation, conversion and installed SDK tests remain
 the native capability evidence.
+
+
+`graph(id)`, `graph(library, id)`, `library:graph(id)` and `mv.graphics.graph`
+select immutable static descriptors from those libraries. They reuse existing
+native sprite metadata, managed images, draw transforms and collision geometry;
+no native public API changed. See [static selection](images.md#select-a-static-graphic),
+`tests/graph_selection.lua`, `tests/graph_selection_start.lua`, and
+`tests/graph_selection_visual.lua` for context, identity, pivots, resource
+retention and rendering parity. Images can still be assigned directly.

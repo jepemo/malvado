@@ -117,7 +117,7 @@ end, {defaults = {health = 100, stats = {attack = 10}}})
 Enemy {health = 250}
 ```
 
-The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables and threads are rejected. Collision shapes, graphic descriptors, and image userdata are shared; other userdata are rejected. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
+The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables and threads are rejected. Collision shapes, graphic/region/scroll descriptors, images, collision worlds, and asset-library userdata are shared; other userdata are rejected. A shared world remains the same mutable world; only ordinary Lua default tables are deep copied. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
 
 ## Process data
 
@@ -198,3 +198,14 @@ inside the process to move with its existing collider. `collision(Enemy)` querie
 that process against a process constructor or handle. Both names are installed
 by `import_globals()`. Explicit calls remain available; see the
 [collision and world contract](collision.md#contextual-process-and-world-calls).
+
+
+## Process graphics library
+
+`self.file` is an optional library from `load_asset()`. `graph(id)` selects from
+that library inside the process. Assign the result to `self.graph` for automatic
+static drawing. An explicit `graph(library, id)` or `library:graph(id)` does not
+need `self.file`. Changing the file field cannot change an existing descriptor.
+Images can also be assigned directly. See [static graphics](images.md#select-a-static-graphic)
+for lifetime, pivot and context rules. Automatic animation remains a separate
+alpha.6 item.

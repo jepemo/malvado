@@ -1,6 +1,6 @@
 # Sprites
 
-This example animates a cat from six PNG images. The process draws one image at a time and changes it 15 times per second. Press **Escape** to exit.
+This example animates a cat from six PNG images. The process assigns one loaded image to `self.graph` and changes it 15 times per second. Press **Escape** to exit.
 
 Build Malvado, then run this command from the repository root:
 

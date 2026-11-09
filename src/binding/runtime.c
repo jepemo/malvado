@@ -871,7 +871,7 @@ self_newindex(lua_State *L)
     return 0;
 }
 
-/* Copy table graphs without sharing mutable defaults between processes. */
+/* Copy ordinary Lua tables; share the supported native resource references. */
 static void
 copy_default(lua_State *L, int source, int copies, unsigned depth)
 {
@@ -885,7 +885,14 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
          luaL_testudata(L, source, "malvado.graphic") ||
          luaL_testudata(L, source, "malvado.region") ||
          luaL_testudata(L, source, "malvado.scroll") ||
-         luaL_testudata(L, source, "malvado.image"))) {
+         luaL_testudata(L, source, "malvado.image") ||
+         luaL_testudata(L, source, "malvado.collision_world")
+#ifdef MALVADO_BUILD_ASSETS
+         || luaL_testudata(L, source, "malvado.atlas")
+         || luaL_testudata(L, source, "malvado.fpg")
+         || luaL_testudata(L, source, "malvado.fpg_manifest")
+#endif
+         )) {
         lua_pushvalue(L, source);
         return;
     }
@@ -3620,15 +3627,14 @@ render_graph(lua_State *L, const Process *process)
             (void)mv_image_draw_region(image->image, region, transform);
         } else if (graphic->sprite) {
             int graph_index = lua_gettop(L);
-            lua_getiuservalue(L, graph_index, 1);
-            lua_getiuservalue(L, -1, 1);
+            lua_getiuservalue(L, graph_index, 2);
             LuaImage *sprite_image = luaL_testudata(L, -1, "malvado.image");
             if (sprite_image) {
                 MvImageTransform transform = {(float)x, (float)y, (float)graphic->pivot_x,
                                                (float)graphic->pivot_y, (float)scale, (float)angle};
                 (void)mv_image_draw_region(sprite_image->image, graphic->region, transform);
             }
-            lua_pop(L, 2);
+            lua_pop(L, 1);
         } else if (graphic->shape.kind == MV_COLLISION_CIRCLE) {
             double radius = graphic->shape.radius * scale;
             if (isfinite(radius) && radius >= FLT_MIN && radius <= FLT_MAX / 16)
@@ -4050,6 +4056,7 @@ static const char *const global_names[] = {
     "music_playing",
     "music_volume",
     "draw_text",
+    "graph",
     "load_asset",
     "load_image",
     "image_size",
@@ -4762,6 +4769,26 @@ region_create(lua_State *L)
 
 #ifdef MALVADO_BUILD_ASSETS
 static int
+push_sprite_graphic(lua_State *L, MvImageRegion region, int pivot_x, int pivot_y, int image)
+{
+    image = lua_absindex(L, image);
+    LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 2);
+    *graphic = (LuaGraphic){
+        .shape = {.kind = MV_COLLISION_RECT, .width = region.width,
+                  .height = region.height,
+                  .offset_x = region.width / 2.0 - pivot_x,
+                  .offset_y = region.height / 2.0 - pivot_y},
+        .sprite = 1, .region = region, .pivot_x = pivot_x, .pivot_y = pivot_y
+    };
+    luaL_setmetatable(L, "malvado.graphic");
+    lua_pushvalue(L, 1);
+    lua_setiuservalue(L, -2, 1);
+    lua_pushvalue(L, image);
+    lua_setiuservalue(L, -2, 2);
+    return 1;
+}
+
+static int
 graphic_sprite(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
@@ -4769,19 +4796,88 @@ graphic_sprite(lua_State *L)
     MvAtlasSprite sprite;
     if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
         return luaL_error(L, "unknown sprite id");
-    LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 1);
-    *graphic = (LuaGraphic){
-        .shape = {.kind = MV_COLLISION_RECT, .width = sprite.region.width,
-                  .height = sprite.region.height,
-                  .offset_x = sprite.region.width / 2.0 - sprite.pivot_x,
-                  .offset_y = sprite.region.height / 2.0 - sprite.pivot_y},
-        .sprite = 1, .region = sprite.region, .pivot_x = sprite.pivot_x, .pivot_y = sprite.pivot_y
-    };
-    luaL_setmetatable(L, "malvado.graphic");
-    lua_pushvalue(L, 1);
-    lua_setiuservalue(L, -2, 1);
-    return 1;
+    lua_getiuservalue(L, 1, 1);
+    return push_sprite_graphic(L, sprite.region, sprite.pivot_x, sprite.pivot_y, -1);
 }
+
+static int
+graph_select(lua_State *L)
+{
+    int arguments = lua_gettop(L);
+    if (arguments == 1) {
+        push_current_process(L);
+        lua_getiuservalue(L, -1, 1);
+        raw_option(L, -1, "file");
+        if (lua_isnil(L, -1))
+            return luaL_error(L, "current process has no file");
+        lua_replace(L, 2);
+        lua_settop(L, 2);
+        lua_insert(L, 1);
+    } else if (arguments != 2) {
+        return luaL_error(L, "expected graph(id) or graph(library, id)");
+    }
+    lua_Integer id = luaL_checkinteger(L, 2);
+    if (id <= 0 || id > INT_MAX)
+        return luaL_error(L, "unknown graph id");
+    LuaAtlas *atlas = luaL_testudata(L, 1, "malvado.atlas");
+    if (atlas) {
+        if (engine.window) {
+            lua_getiuservalue(L, 1, 1);
+            LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+            if (!image || !image->image)
+                return luaL_error(L, "asset has no visual images; load_asset requires an open window");
+            lua_pop(L, 1);
+        }
+        return graphic_sprite(L);
+    }
+    LuaFpg *fpg = luaL_testudata(L, 1, "malvado.fpg");
+    LuaFpgManifest *manifest = luaL_testudata(L, 1, "malvado.fpg_manifest");
+    if (!fpg && !manifest)
+        return luaL_error(L, "graph requires an atlas, FPG, or loaded FPG manifest");
+    MvImageRegion region = {0};
+    MvFpgPoint pivot = {0};
+    if (fpg) {
+        MvFpgSprite sprite;
+        if (!mv_fpg_sprite(fpg->fpg, (int)id, &sprite))
+            return luaL_error(L, "unknown graph id");
+        region.width = sprite.width;
+        region.height = sprite.height;
+        (void)mv_fpg_point(fpg->fpg, (int)id, 0, &pivot);
+    } else {
+        MvFpgManifestSprite sprite;
+        if (!mv_fpg_manifest_sprite(manifest->manifest, (int)id, &sprite))
+            return luaL_error(L, "unknown graph id");
+        region.width = sprite.width;
+        region.height = sprite.height;
+        (void)mv_fpg_manifest_point(manifest->manifest, (int)id, 0, &pivot);
+    }
+    if (!pivot.defined)
+        pivot.x = pivot.y = 0;
+    int cache_slot = fpg ? 1 : 2;
+    lua_getiuservalue(L, 1, cache_slot);
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setiuservalue(L, 1, cache_slot);
+    }
+    int cache = lua_gettop(L);
+    lua_rawgeti(L, cache, id);
+    if (lua_isnil(L, -1) && engine.window) {
+        if (!fpg)
+            return luaL_error(L, "manifest has no visual images; use load_asset with an open window");
+        lua_pop(L, 1);
+        lua_pushcfunction(L, fpg_image);
+        lua_pushvalue(L, 1);
+        lua_pushinteger(L, id);
+        lua_pushboolean(L, fpg->transparent_zero);
+        lua_call(L, 3, 1);
+        lua_pushvalue(L, -1);
+        lua_rawseti(L, cache, id);
+    }
+    return push_sprite_graphic(L, region, pivot.x, pivot.y, -1);
+}
+
 #endif
 
 static int
@@ -4843,6 +4939,7 @@ open_module(lua_State *L)
         {"draw_image_region", draw_image_region},
         {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
+        {"graph", graph_select},
         {"load_atlas", load_atlas},
         {"load_aseprite", load_aseprite},
         {"sprite_info", sprite_info},
@@ -4974,7 +5071,7 @@ open_module(lua_State *L)
         {"count", fpg_manifest_count}, {"id_at", fpg_manifest_id_at},
         {"transparent_zero", fpg_manifest_transparent}, {"palette", fpg_manifest_palette},
         {"gamma", fpg_manifest_gamma}, {"sprite", fpg_manifest_sprite},
-        {"point", fpg_manifest_point}, {NULL, NULL}
+        {"point", fpg_manifest_point}, {"graph", graph_select}, {NULL, NULL}
     };
     luaL_setfuncs(L, manifest_methods, 0);
     lua_setfield(L, -2, "__index");
@@ -4988,7 +5085,7 @@ open_module(lua_State *L)
     static const luaL_Reg fpg_methods[] = {
         {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
         {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
-        {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
+        {"graph", graph_select}, {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
     };
     luaL_setfuncs(L, fpg_methods, 0);
     lua_setfield(L, -2, "__index");
@@ -4998,6 +5095,10 @@ open_module(lua_State *L)
     luaL_newmetatable(L, "malvado.atlas");
     lua_pushcfunction(L, atlas_gc);
     lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    lua_pushcfunction(L, graph_select);
+    lua_setfield(L, -2, "graph");
+    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado atlas");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
@@ -5027,6 +5128,8 @@ open_module(lua_State *L)
 #ifdef MALVADO_BUILD_ASSETS
     lua_pushcfunction(L, graphic_sprite);
     lua_setfield(L, -2, "sprite");
+    lua_pushcfunction(L, graph_select);
+    lua_setfield(L, -2, "graph");
 #endif
     /* Copy the closures, including their kind upvalues, rather than creating
      * separate constructors for the procedural interface. */

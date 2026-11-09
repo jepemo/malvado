@@ -221,9 +221,10 @@ Load visual assets during initialization after the window opens. With an open
 window, libraries load their images and validate actual image dimensions.
 Without a window, PNG loading fails; FPG and JSON libraries provide metadata
 without loading images. Native-atlas bounds are then checked without a texture
-size, and Aseprite uses its declared canvas dimensions. This metadata-only
-result does not later acquire textures automatically. Use a new visual load
-when a window is available.
+size, and Aseprite uses its declared canvas dimensions. An atlas or manifest loaded this way does not later acquire textures
+automatically. Use a new visual load when a window is available. FPG libraries
+retain pixels and can convert them when a later explicit graph selection needs
+an image.
 
 Returned libraries retain the complete supported native metadata and existing
 lookup methods/functions: IDs, names/raw FPG bytes, palette/gamma, control
@@ -231,3 +232,60 @@ points, pivots, original/cropped sizes and animation timing. No metadata is
 converted to a reduced Lua table. Lua references retain libraries and their
 images; garbage collection and the existing process resource rules release
 them. The low-level loaders and parsers remain available for advanced use.
+
+## Select a static graphic
+
+`graph()` selects one static graphic. It does not advance an animation:
+
+```lua
+require("malvado").import_globals()
+local hero
+local Player = process(function(self)
+  self.file = hero
+  self.graph = graph(42)
+  while true do frame() end
+end)
+start(function()
+  hero = load_asset("hero.json")
+  Player({x = 100, y = 100})
+end)
+```
+
+Use `graph(id)` inside the running process, `graph(library, id)` explicitly,
+or `library:graph(id)`. The explicit namespace is
+`mv.graphics.graph(library, id)`; `mv.graph` is the same function. The selector
+is available with asset support. It accepts atlases (including Aseprite), FPGs
+and converted-FPG manifests. IDs must be positive integers present in the
+library. Invalid IDs/types raise errors. A standalone image is assigned directly
+to `self.graph`, without calling `graph()` or setting `self.file`.
+
+The implicit call uses only the scheduled coroutine's `self.file`. Missing file
+context or calls outside that coroutine raise errors. Explicit calls work
+without a running process and ignore its contextual file. No shared default
+library is stored globally. Both game entry forms use these same rules.
+
+The result is immutable and reusable. It retains its original library and image.
+Changing `self.file` affects later lookups only. Two processes can share one
+descriptor, including when their file fields differ. Clearing/replacing a graph
+releases its references when no other user retains it. A retained process handle
+can retain its fields under the existing process lifetime rules.
+
+Atlas graphs keep the existing trim and pivot calculation. FPG and converted-FPG
+graphs use defined control point 0 as the pivot, or top-left when that point is
+absent/undefined. The automatic collider uses those same bounds/pivots. Explicit
+colliders and `collider=false` keep their established behavior.
+
+Visual loads reuse the library's images. Graph selection from a low-level parsed
+FPG can convert and cache its pixels when a window is open; index 0 is transparent
+by default. Loaded FPGs use the loader's `transparent_zero` option. A manifest
+parsed from JSON alone has no images; load its path with `load_asset` for visual
+use. Headless selection creates static geometry without textures. An atlas or
+manifest loaded without images must be loaded again for visual use; graph lookup
+reports this limitation when a window is open. A descriptor never loads a new
+image during rendering.
+
+Modern selection uses `self.file` and `self.graph`. `self.fpg` and
+`self.fpgIndex` retain meaning only in the explicit legacy compatibility profile.
+The existing `mv.graphics.sprite(atlas, id)` remains available. Automatic
+`animation()` playback is still pending; the advanced `animation_frame` sampler
+remains available for explicit time/frame selection.

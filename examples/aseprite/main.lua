@@ -4,11 +4,13 @@
 require("malvado").import_globals()
 
 local atlas
-local Player = process(function()
+local Player = process(function(self)
+  self.file = atlas
+  self.x, self.y, self.size = 280, 190, 16
   local elapsed = 0
   while not key("escape") do
     local sprite = animation_frame(atlas, "bounce", math.floor(elapsed))
-    draw_sprite(atlas, sprite, 280, 190, 16)
+    self.graph = graph(sprite)
     draw_text("Aseprite animation  |  Escape: exit", 20, 20, 20)
     elapsed = elapsed + 1000 / 60
     frame()

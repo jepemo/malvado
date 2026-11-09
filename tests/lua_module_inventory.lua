@@ -22,7 +22,7 @@ end
 local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 assert(asset_option == "0" or asset_option == "1")
 local has_assets = asset_option == "1"
-local optional = {load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
+local optional = {graph=true, load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
   animation_frame=true, animation_color=true, atlas_pivot_color=true,
   animation_repeats=true, draw_sprite=true}
 for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do
@@ -35,6 +35,7 @@ end
 
 local objects = {world = mv.world.create()}
 if has_assets then
+  objects.atlas = mv.load_asset("tests/fixtures/atlas.json")
   local fpg = mv.fpg.parse(read("tests/fixtures/fpg/bennugd-8.fpg"))
   objects.fpg = fpg
   objects.manifest = mv.fpg.parse_manifest(fpg:json())

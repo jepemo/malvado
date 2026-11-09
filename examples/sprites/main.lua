@@ -9,7 +9,7 @@ local Cat = process(function(self)
   local image = 1
   self.fps = 15
   while not key("escape") do
-    draw_image(images[image], self.x, self.y)
+    self.graph = images[image]
     image = image % #images + 1
     frame()
   end
@@ -19,7 +19,7 @@ start(function()
   set_title("Sprites")
   clear_screen(25, 30, 45)
   for i = 1, 6 do
-    images[i] = load_image("examples/demo/assets/cat/c" .. i .. ".png")
+    images[i] = load_asset("examples/demo/assets/cat/c" .. i .. ".png")
   end
   Cat { x = 360, y = 260 }
 end)

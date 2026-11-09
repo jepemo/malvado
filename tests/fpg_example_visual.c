@@ -24,12 +24,12 @@ static void
 check_frame(void *user)
 {
     int *checked = user;
-    MalvadoProcessInfo process;
+    MalvadoProcessInfo processes[2];
     size_t count;
     int64_t tick;
-    assert(malvado_debug_snapshot(&process, 1, &count, &tick));
+    assert(malvado_debug_snapshot(processes, 2, &count, &tick));
     if (tick < 2 || *checked) return;
-    assert(count == 1);
+    assert(count == 2);
     Image screen = LoadImageFromScreen();
     assert(screen.data);
     int w = screen.width, h = screen.height;
@@ -43,7 +43,8 @@ check_frame(void *user)
     assert(second_red.r >= 250 && second_red.g < 5 && second_red.b < 5);
     UnloadImage(screen);
     *checked = 1;
-    assert(malvado_debug_signal(process.id, "kill"));
+    for (size_t i = 0; i < count; ++i)
+        assert(malvado_debug_signal(processes[i].id, "kill"));
 }
 
 int
