@@ -90,8 +90,33 @@ shows the Lua snapshot API.
 | `mv_process_lineage_snapshot` | `c_process` and `c_long_session` check retained and pruned creation records. Lua `snapshot` reports lineage information, checked by `lineage_snapshot`. |
 | `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `c_process` checks capacities, unchanged output, and capture identity and tick. Lua `snapshot` returns its own copied table; it does not expose these C buffer functions. |
 
-These checks cover the delivered C query and inspection functions. The Lua
-symbol-by-symbol review and the full 2.0 API inventory remain open.
+These checks cover the delivered C query and inspection functions. The full
+2.0 API inventory remains open.
+
+## Lua creation, identity, control, and inspection evidence
+
+The [Lua process control example](../../examples/process-control/README.md)
+runs headless and demonstrates every operation in the table. The
+[inspection example](../../examples/inspection/README.md) shows snapshots and
+flat global functions. `lua_process_control_example` and `inspection_example`
+run these examples. The [process guide](lua-processes.md) defines the contracts;
+the [global](lua-globals.md) and [namespace](lua-namespaces.md) inventories
+map their equivalent exported names.
+
+| Lua symbols | Behavior evidence |
+| --- | --- |
+| `process`, `process.define`, `spawn`, `process.spawn` | [process_defaults](../../tests/process_defaults.lua) checks definition defaults and invalid fields; [process_attachment](../../tests/process_attachment.lua) and [natural_cascade](../../tests/natural_cascade.lua) check attached and independent lifetime and cleanup. `lua_spawn_allocation` checks allocation failures. |
+| `status`, `alive`, process handles | [inspection](../../tests/inspection.lua) checks canonical handles, invalid numeric IDs, dead handles, and released game fields. [process_lifecycle](../../tests/process_lifecycle.lua) checks copied fields and cleanup. |
+| `set_priority`, `get_priority` | [priorities](../../tests/priorities.lua) checks integer boundaries, ordering, changes during a tick, and invalid or dead handles. |
+| `signal`, `signal_tree`, `kill`, `kill_tree` | [signals](../../tests/signals.lua), [signal_relations](../../tests/signal_relations.lua), and [signal_snapshot](../../tests/signal_snapshot.lua) check state transitions, invalid signals, both relations, later children, and termination. |
+| `find`, `children`, `descendants` | [inspection](../../tests/inspection.lua), [signal_relations](../../tests/signal_relations.lua), and [lineage_snapshot](../../tests/lineage_snapshot.lua) check ordering, filters, invalid options, dead ancestors, and canonical handles. |
+| `snapshot` | [inspection](../../tests/inspection.lua) and [lineage_snapshot](../../tests/lineage_snapshot.lua) check copied state, visibility, runtime identity, lineage, and ended processes. |
+
+Each flat operation above is also available through `process`; `process.define`
+is namespace-only. `lua_global_inventory` and `lua_namespace_inventory` check
+the names and alias identities. The checks concern the delivered API, not the
+unselected future 2.0 inventory. Process collision, cadence, and messaging
+are covered by their separate API reviews.
 
 ## Lua entry forms
 
