@@ -18,6 +18,7 @@
 #endif
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 #include "malvado/collision.h"
 
 static MvStepResult
@@ -58,6 +59,16 @@ main(void)
     assert(mv_process_collider_first(ctx, refs[0], 1, &first) == MV_OK && first.id == ids[1]);
     MvProcessInfo info;
     assert(mv_process_info(ctx, first, &info) == MV_OK && info.id == ids[1] && info.type == 1);
+    memset(&info, 0x5a, sizeof(info));
+    unsigned char before[sizeof(info)];
+    memcpy(before, &info, sizeof(info));
+    assert(mv_process_info(NULL, first, &info) == MV_INVALID_ARGUMENT);
+    assert(mv_process_info(ctx, first, NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_process_info(other, first, &info) == MV_INVALID_ARGUMENT);
+    MvProcessRef future = first;
+    future.id = UINT64_MAX;
+    assert(mv_process_info(ctx, future, &info) == MV_NOT_FOUND);
+    assert(memcmp(&info, before, sizeof(info)) == 0);
     int hit = 99;
     assert(mv_process_collider_test(ctx, refs[0], refs[0], &hit) == MV_OK && !hit);
     assert(mv_process_collider_test(ctx, refs[0], refs[1], &hit) == MV_OK && hit);
@@ -87,6 +98,8 @@ main(void)
     assert(mv_process_collider_set(other, refs[0], circle, position) == MV_INVALID_ARGUMENT);
     int killed;
     assert(mv_process_kill(ctx, refs[3], &killed) == MV_OK && killed);
+    assert(mv_process_info(ctx, refs[3], &info) == MV_NOT_FOUND);
+    assert(memcmp(&info, before, sizeof(info)) == 0);
     assert(mv_process_collider_find(ctx, refs[0], 0, out, 3, &count) == MV_OK && count == 0);
     assert(mv_process_collider_first(ctx, refs[0], 0, &first) == MV_OK && first.id == 0);
     hit = 99;
@@ -104,6 +117,9 @@ main(void)
     assert(mv_process_collider_set(ctx, replacement_ref, circle, position) == MV_OK);
     assert(mv_process_collider_find(ctx, refs[0], 0, out, 3, &count) == MV_OK && count == 1);
     assert(out[0].id == replacement && replacement != ids[3]);
+    assert(mv_process_tick(ctx) == MV_OK);
+    assert(mv_process_info(ctx, refs[3], &info) == MV_NOT_FOUND);
+    assert(memcmp(&info, before, sizeof(info)) == 0);
     mv_context_destroy(other);
     mv_context_destroy(ctx);
     return 0;

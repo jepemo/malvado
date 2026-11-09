@@ -51,6 +51,29 @@ The check detects missing or extra type names, not changes to fields or semantic
 semantics. See the [C contract](c-contract.md) and [Lua guide](lua-processes.md)
 for errors, lifecycle, and message ownership.
 
+## C query and inspection evidence
+
+The [C inspection example](../../examples/c/inspection/README.md) runs without
+Lua or a graphics backend. It compares ownership and creation relations, then
+captures process and lineage records. `c_inspection_example` runs it in-tree;
+`installed_core_sdk` also builds and runs it against the relocated SDK. The
+[C contract](c-contract.md#inspect-a-snapshot) defines buffer rules, errors,
+and record lifetime. The [Lua inspection example](../../examples/inspection/README.md)
+shows the Lua snapshot API.
+
+| C symbols | Behavior evidence and Lua relationship |
+| --- | --- |
+| `mv_process_info` | `process_collision` and `c_query_allocation` check live records, invalid references, and allocation-free access. Lua uses process handles. |
+| `mv_process_snapshot`, `mv_process_find` | `c_process` checks filtering, ordering, capacities, and invalid outputs. Lua `snapshot` and `find` are checked by `inspection`. |
+| `mv_process_children`, `mv_process_descendants` | `c_process` checks ownership, filters, truncation, and invalid roots. `signal_relations` checks Lua relations. |
+| `mv_process_creation_children`, `mv_process_creation_descendants` | `c_process` and `c_long_session` check live and ended creators and cleanup. Lua uses a creation relation option; `lineage_snapshot` and `signal_relations` check it. |
+| `mv_process_lineage_snapshot` | `c_process` and `c_long_session` check retained and pruned creation records. Lua `snapshot` reports lineage information, checked by `lineage_snapshot`. |
+| `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `c_process` checks capacities, unchanged output, and capture identity and tick. Lua `snapshot` returns its own copied table; it does not expose these C buffer functions. |
+
+These checks cover the delivered query and inspection functions. They do not
+complete the review of process creation, identity, control, or the full 2.0
+API inventory.
+
 ## Lua entry forms
 
 Both `mv.start(init, options)` and a returned game table with `init`, `width`, `height`, and `title` use the same runtime and scheduler. Initialization runs once before the first scheduled tick. Both forms use the same defaults and report initialization or process failures. They cannot be combined in one run. See [Lua processes](lua-processes.md) for the full options and errors.
