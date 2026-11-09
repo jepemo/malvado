@@ -230,6 +230,11 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME input_api_map_test COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/input_api_map.py)
   set_tests_properties(input_api_map_test PROPERTIES TIMEOUT 15)
+  add_test(NAME audio_api_map COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/check_audio_api_map.py)
+  add_test(NAME audio_api_map_test COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/audio_api_map.py)
+  set_tests_properties(audio_api_map audio_api_map_test PROPERTIES TIMEOUT 15)
 endif()
 if(MALVADO_BUILD_LUA)
   set(MALVADO_SDK_CLI_NAME $<TARGET_FILE_NAME:malvado>)

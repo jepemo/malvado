@@ -21,3 +21,18 @@ null device; they are not registered by the normal macOS visual suite. These
 tests do not establish audible output or physical-device behavior. The optional
 local playback check in the audio guide is separate. This baseline does not
 select additional formats, effects, or mixer APIs for 2.0.
+
+## C audio types
+
+| C type | Lua relationship and lifetime |
+| --- | --- |
+| `MvSound` | Opaque, caller-owned sound or clone. Lua wrappers and playback retain resources as described in the [resource contract](resource-lifetime.md). |
+| `MvMusic` | Opaque, caller-owned stream. Lua wrappers and playback retain it until release. |
+
+The public audio API declares no audio-specific C enum constants. Lua exposes
+flat functions and global aliases; it has no separate audio namespace.
+`audio_api_map` checks C function and type names using the audio, sound, and
+music prefixes. It cannot discover an unrelated name or verify behavior. The
+[global export table](lua-globals.md) and `lua_global_inventory` track Lua
+exports. The [audio guide](audio.md) and [demo](../../examples/audio/README.md)
+describe usage and limits.
