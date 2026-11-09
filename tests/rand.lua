@@ -11,6 +11,13 @@ assert(not pcall(mv.rand, 2, 1))
 assert(not pcall(mv.rand, 1.5, 3))
 assert(not pcall(mv.rand, 0, math.huge))
 
+-- Rejected ranges do not advance the shared Lua generator.
+math.randomseed(12345, 67890)
+local first = math.random(1, 100)
+math.randomseed(12345, 67890)
+assert(not pcall(mv.rand, 2, 1))
+assert(mv.rand(1, 100) == first)
+
 local ranges = {{-5, 5}, {0, 1}, {math.mininteger, math.maxinteger}, {1, 100}}
 math.randomseed(12345, 67890)
 local expected = {}
