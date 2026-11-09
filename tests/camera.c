@@ -18,6 +18,7 @@
 #endif
 #include <assert.h>
 #include <float.h>
+#include <limits.h>
 #include <math.h>
 #include <string.h>
 #include "malvado/camera.h"
@@ -60,5 +61,30 @@ int main(void)
     assert(!mv_camera_center(&camera, NAN, 0, 800, 600));
     assert(!mv_camera_center(&camera, 200, 150, 0, 600));
     assert(camera.x == 50 && camera.y == 30);
+    MvCameraViewport clip;
+    assert(mv_camera_init(&camera, 100, 50, &viewport));
+    MvCameraViewport region = {50, 70, 20, 30};
+    assert(mv_camera_clip(&camera, &region, 640, 480, &clip) == 1);
+    assert(clip.x == 50 && clip.y == 70 && clip.width == 20 && clip.height == 30);
+    assert(mv_camera_project(&camera, 120, 65, 5, 5, &x, &y));
+    assert(x == 55 && y == 70);
+    region = (MvCameraViewport){0, 0, 10, 10};
+    assert(mv_camera_clip(&camera, &region, 640, 480, &clip) == 0);
+    assert(clip.x == 0 && clip.y == 0 && clip.width == 0 && clip.height == 0);
+    viewport = (MvCameraViewport){-10, -20, 30, 40};
+    assert(mv_camera_init(&camera, 0, 0, &viewport));
+    assert(mv_camera_clip(&camera, NULL, 640, 480, &clip) == 1);
+    assert(clip.x == 0 && clip.y == 0 && clip.width == 20 && clip.height == 20);
+    viewport = (MvCameraViewport){INT_MAX - 10, INT_MAX - 10, INT_MAX, INT_MAX};
+    assert(mv_camera_init(&camera, 0, 0, &viewport));
+    assert(mv_camera_clip(&camera, NULL, INT_MAX, INT_MAX, &clip) == 1);
+    assert(clip.x == INT_MAX - 10 && clip.width == 10 && clip.height == 10);
+    MvCameraViewport old_clip = clip;
+    region = (MvCameraViewport){0};
+    assert(mv_camera_clip(&camera, &region, 640, 480, &clip) == -1);
+    assert(!memcmp(&old_clip, &clip, sizeof(clip)));
+    assert(mv_camera_clip(&camera, NULL, 0, 480, &clip) == -1);
+    assert(mv_camera_clip(NULL, NULL, 640, 480, &clip) == -1);
+    assert(mv_camera_clip(&camera, NULL, 640, 480, NULL) == -1);
     return 0;
 }

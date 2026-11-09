@@ -15,6 +15,7 @@ The current guides live in the repository while this site is being built:
 
 - [Processes and frames](https://github.com/jepemo/malvado/blob/master/docs/api/lua-processes.md)
 - [Drawing, images, and sprites](https://github.com/jepemo/malvado/blob/master/docs/api/images.md)
+- [2D cameras](https://github.com/jepemo/malvado/blob/master/docs/api/cameras.md)
 - [Collisions](https://github.com/jepemo/malvado/blob/master/docs/api/collision.md)
 - [SDK and projects](https://github.com/jepemo/malvado/blob/master/docs/site/sdk.md)
 

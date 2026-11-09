@@ -16,6 +16,8 @@
 #include "malvado/camera.h"
 #include <float.h>
 #include <math.h>
+#include <stdint.h>
+#include <stddef.h>
 
 static int
 coordinate_valid(double value)
@@ -95,4 +97,30 @@ mv_camera_center(MvCamera *camera, double target_x, double target_y,
     int width = camera->viewport.width ? camera->viewport.width : window_width;
     int height = camera->viewport.height ? camera->viewport.height : window_height;
     return mv_camera_set(camera, target_x - width / 2.0, target_y - height / 2.0);
+}
+
+
+int
+mv_camera_clip(const MvCamera *camera, const MvCameraViewport *region,
+               int screen_width, int screen_height, MvCameraViewport *out)
+{
+    if (!camera_valid(camera) || !out || screen_width <= 0 || screen_height <= 0 ||
+        (region && (region->width <= 0 || region->height <= 0)))
+        return -1;
+    int64_t left = 0, top = 0, right = screen_width, bottom = screen_height;
+    const MvCameraViewport *clips[] = {&camera->viewport, region};
+    for (size_t i = 0; i < 2; ++i) {
+        const MvCameraViewport *clip = clips[i];
+        if (!clip || !clip->width) continue;
+        if (left < clip->x) left = clip->x;
+        if (top < clip->y) top = clip->y;
+        int64_t clip_right = (int64_t)clip->x + clip->width;
+        int64_t clip_bottom = (int64_t)clip->y + clip->height;
+        if (right > clip_right) right = clip_right;
+        if (bottom > clip_bottom) bottom = clip_bottom;
+    }
+    *out = (MvCameraViewport){0};
+    if (right <= left || bottom <= top) return 0;
+    *out = (MvCameraViewport){(int)left, (int)top, (int)(right - left), (int)(bottom - top)};
+    return 1;
 }

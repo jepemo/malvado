@@ -3867,26 +3867,11 @@ begin_process_region(lua_State *L, const Process *process, const MvCamera *camer
     int width, height;
     if (!mv_window_size(&width, &height)) return 0;
     if (!present && !camera->viewport.width) return 1;
-    int64_t left = 0, top = 0, right = width, bottom = height;
-    if (present) {
-        left = region.x;
-        top = region.y;
-        right = left + region.width;
-        bottom = top + region.height;
-    }
-    if (camera->viewport.width) {
-        const MvCameraViewport *view = &camera->viewport;
-        if (left < view->x) left = view->x;
-        if (top < view->y) top = view->y;
-        if (right > (int64_t)view->x + view->width) right = (int64_t)view->x + view->width;
-        if (bottom > (int64_t)view->y + view->height) bottom = (int64_t)view->y + view->height;
-    }
-    if (left < 0) left = 0;
-    if (top < 0) top = 0;
-    if (right > width) right = width;
-    if (bottom > height) bottom = height;
-    if (right <= left || bottom <= top) return 0;
-    return mv_window_clip_begin((int)left, (int)top, (int)(right - left), (int)(bottom - top)) ? 2 : 0;
+    MvCameraViewport process_region = {region.x, region.y, region.width, region.height};
+    MvCameraViewport clipped;
+    if (mv_camera_clip(camera, present ? &process_region : NULL, width, height, &clipped) <= 0)
+        return 0;
+    return mv_window_clip_begin(clipped.x, clipped.y, clipped.width, clipped.height) ? 2 : 0;
 }
 
 /* Return 1 without a scroll, 2 when active, or 0 for invalid state. */

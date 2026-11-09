@@ -43,6 +43,13 @@ int mv_camera_project(const MvCamera *camera, double world_x, double world_y,
 int mv_camera_center(MvCamera *camera, double target_x, double target_y,
                      int window_width, int window_height);
 
+/* Intersect viewport, optional process region and the screen. Return 1 and a
+ * visible rectangle, 0 and a zero rectangle for an empty intersection, or -1
+ * on invalid input without changing output. Screen dimensions must be positive.
+ * A supplied region must have positive dimensions. No projection is applied. */
+int mv_camera_clip(const MvCamera *camera, const MvCameraViewport *region,
+                   int screen_width, int screen_height, MvCameraViewport *out);
+
 #ifdef __cplusplus
 }
 #endif

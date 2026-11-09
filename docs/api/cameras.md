@@ -106,3 +106,49 @@ and the supplied positive logical dimensions otherwise. It shares Lua's native
 centering calculation. Invalid values return 0 without changing the camera.
 C games own their positions; the native helper does not resolve Lua fields or
 create a second scheduler. Smooth tracking and offset options are deferred.
+
+## Camera, region and scroll together
+
+A camera transforms its associated world content. A process scroll translates
+only that process's drawing. A region is a fixed screen-space clip. For example,
+with camera (100, 50), viewport origin (40, 60), local scroll (5, 5), and a
+world point (120, 65), the projected point is (55, 70).
+
+```lua
+local area = region(40, 60, 300, 240)
+local view = camera_create(100, 50, {viewport = area})
+-- Inside a process:
+self.camera = view
+self.scroll = scroll(5, 5)
+self.region = region(50, 70, 100, 80)
+```
+
+The effective clip is the intersection of viewport, process region and window.
+It does not move with either scroll or camera position. Empty or wholly
+out-of-window intersections skip that process's drawing. The renderer restores
+both clip and translation before the next process. Regions and scroll do not
+change physical process positions or collision geometry.
+
+For a scrollable HUD inventory, set `self.camera = false`, keep a fixed
+`self.region`, and replace `self.scroll` as the content moves. Its region remains
+in screen coordinates. Other HUD/world processes keep their own transforms.
+Draw graphs before that process's immediate commands, then continue in the
+existing z/creation order across all cameras. Persistent text follows all
+processes in screen space, and fades cover the final screen. These operations
+do not create separate camera passes or a split-screen compositor.
+
+C callers can use `mv_camera_clip(camera, region_or_null, width, height, &clip)`
+for the same screen-space intersection. A visible result returns 1; an empty
+intersection returns 0 and a zero rectangle. Invalid values return -1 without
+changing the output. Intersection arithmetic handles viewport/region edges
+outside the integer screen bounds without overflow. Clipping does not project
+a point or change camera position. The renderer uses this native calculation.
+
+| C symbols | Lua relationship | Evidence |
+| --- | --- | --- |
+| `mv_camera_clip` | Camera viewport, process region and screen intersection | `tests/camera.c`, installed SDK, `visual_camera_integration` |
+
+The combined visual regression checks graph/immediate ordering, screen HUD z,
+a clipped inventory, empty and off-screen views, independent cameras, destroyed
+camera recovery, persistent text, and the final fade overlay. Native tests cover
+projection, intersection, numeric boundaries and unchanged outputs on failure.
