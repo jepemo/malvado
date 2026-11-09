@@ -594,6 +594,8 @@ set_tests_properties(mixed_tree PROPERTIES PASS_REGULAR_EXPRESSION "Lua root clo
 add_test(NAME message_gc COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/message_gc.lua)
 add_test(NAME queue_wrap COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/queue_wrap.lua)
 add_test(NAME inspection COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/inspection.lua)
+add_test(NAME lua_process_control_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/examples/process-control/main.lua)
+set_tests_properties(lua_process_control_example PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Process control example complete")
 add_test(NAME inspection_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/examples/inspection/main.lua)
 set_tests_properties(inspection_example PROPERTIES PASS_REGULAR_EXPRESSION "Enemies:" TIMEOUT 15)
 add_test(NAME close_callback COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/close_callback.lua)
