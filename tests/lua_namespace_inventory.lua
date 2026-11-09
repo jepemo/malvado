@@ -6,7 +6,7 @@ local file = assert(io.open("docs/api/lua-namespaces.md", "rb"))
 local documentation = file:read("a")
 file:close()
 
-local namespaces = {"process", "input", "graphics", "collision", "world", "fpg"}
+local namespaces = {"process", "input", "graphics", "collision", "world", "camera", "fpg"}
 local known, documented = {}, {}
 for _, namespace in ipairs(namespaces) do known[namespace] = true end
 local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))

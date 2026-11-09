@@ -117,7 +117,7 @@ end, {defaults = {health = 100, stats = {attack = 10}}})
 Enemy {health = 250}
 ```
 
-The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables and threads are rejected. Collision shapes, graphic/region/scroll descriptors, images, collision worlds, and asset-library userdata are shared; other userdata are rejected. A shared world remains the same mutable world; only ordinary Lua default tables are deep copied. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
+The instance fields override defaults. Each spawn copies the default table graph, including cycles and shared references. Functions and other scalar values are shared. Tables with metatables and threads are rejected. Collision shapes, graphic/region/scroll descriptors, images, cameras, collision worlds, and asset-library userdata are shared; other userdata are rejected. A shared world remains the same mutable world; only ordinary Lua default tables are deep copied. The nesting limit is 256. Instance arguments are applied directly and are not deep copied. Validation of `z` and `fps` uses the resulting fields before the process is created.
 
 ## Process data
 
@@ -209,3 +209,12 @@ need `self.file`. Changing the file field cannot change an existing descriptor.
 Images can also be assigned directly. See [static graphics](images.md#select-a-static-graphic)
 for lifetime, pivot and context rules. Automatic animation remains a separate
 alpha.6 item.
+
+
+## Process camera
+
+`self.camera = nil` uses the main camera; `false` keeps graph/immediate drawing
+in screen space. A camera from `camera_create()` selects an explicit view.
+Camera movement never changes process position or colliders. Use z to order
+HUD content above world content. See [cameras](cameras.md) for projection,
+viewport, validation and lifetime rules.

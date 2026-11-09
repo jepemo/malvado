@@ -21,6 +21,13 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_atlas_parse_aseprite`
 - `mv_atlas_pivot_color`
 
+## [camera.h](../../src/include/malvado/camera.h)
+
+- `mv_camera_init`
+- `mv_camera_move`
+- `mv_camera_project`
+- `mv_camera_set`
+
 ## [collision.h](../../src/include/malvado/collision.h)
 
 - `mv_collision_overlap`

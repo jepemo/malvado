@@ -29,6 +29,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "malvado/platform.h"
+#include "malvado/camera.h"
 #include "malvado/collision.h"
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
@@ -48,6 +49,8 @@ typedef enum {
     PROCESS_FROZEN,
     PROCESS_KILLED
 } ProcessState;
+
+typedef struct { MvCamera value; int closed; } LuaCamera;
 
 typedef struct { MvColor target; unsigned ticks; } FadeRequest;
 
@@ -84,6 +87,7 @@ typedef struct {
     lua_Integer next_type_id;
     lua_Integer tick_number;
     lua_Integer next_text_id;
+    LuaCamera main_camera;
     MvColor background;
     MvColor draw_color;
     MvFade fade;
@@ -846,6 +850,12 @@ self_newindex(lua_State *L)
     const char *key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : NULL;
     if (key && is_read_only_process_field(key))
         return luaL_error(L, "process field is read-only");
+    if (key && strcmp(key, "camera") == 0 && !lua_isnil(L, 3) &&
+        !(lua_isboolean(L, 3) && !lua_toboolean(L, 3))) {
+        LuaCamera *camera = luaL_testudata(L, 3, "malvado.camera");
+        if (!camera || camera->closed)
+            return luaL_error(L, "camera must be a live camera, nil, or false");
+    }
     if (key && strcmp(key, "scroll") == 0 && !lua_isnil(L, 3) &&
         !luaL_testudata(L, 3, "malvado.scroll"))
         return luaL_error(L, "scroll must be a scroll descriptor or nil");
@@ -886,6 +896,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
          luaL_testudata(L, source, "malvado.region") ||
          luaL_testudata(L, source, "malvado.scroll") ||
          luaL_testudata(L, source, "malvado.image") ||
+         luaL_testudata(L, source, "malvado.camera") ||
          luaL_testudata(L, source, "malvado.collision_world")
 #ifdef MALVADO_BUILD_ASSETS
          || luaL_testudata(L, source, "malvado.atlas")
@@ -1016,6 +1027,14 @@ create_process(lua_State *L)
     if (!lua_isnil(L, -1) &&
         (lua_type(L, -1) != LUA_TNUMBER || !isfinite(lua_tonumber(L, -1))))
         return luaL_error(L, "z must be a finite number");
+    lua_pop(L, 1);
+    lua_pushliteral(L, "camera");
+    lua_rawget(L, fields);
+    if (!lua_isnil(L, -1) && !(lua_isboolean(L, -1) && !lua_toboolean(L, -1))) {
+        LuaCamera *camera = luaL_testudata(L, -1, "malvado.camera");
+        if (!camera || camera->closed)
+            return luaL_error(L, "camera must be a live camera, nil, or false");
+    }
     lua_pop(L, 1);
     lua_pushliteral(L, "scroll");
     lua_rawget(L, fields);
@@ -3651,9 +3670,105 @@ render_graph(lua_State *L, const Process *process)
     lua_pop(L, 3);
 }
 
+static LuaCamera *
+check_camera(lua_State *L, int index)
+{
+    LuaCamera *camera = luaL_checkudata(L, index, "malvado.camera");
+    if (camera->closed)
+        luaL_error(L, "camera is destroyed");
+    return camera;
+}
+
+static int
+camera_destroy(lua_State *L)
+{
+    LuaCamera *camera = luaL_checkudata(L, 1, "malvado.camera");
+    camera->closed = 1;
+    return 0;
+}
+
+static int
+camera_create(lua_State *L)
+{
+    double x = luaL_checknumber(L, 1), y = luaL_checknumber(L, 2);
+    MvCameraViewport viewport, *view = NULL;
+    if (!lua_isnoneornil(L, 3)) {
+        validate_options(L, 3, "viewport", NULL);
+        raw_option(L, 3, "viewport");
+        if (!lua_isnil(L, -1)) {
+            LuaRegion *region = luaL_checkudata(L, -1, "malvado.region");
+            viewport = (MvCameraViewport){region->x, region->y, region->width, region->height};
+            view = &viewport;
+        }
+        lua_pop(L, 1);
+    }
+    MvCamera value;
+    if (!mv_camera_init(&value, x, y, view))
+        return luaL_error(L, "invalid camera position or viewport");
+    LuaCamera *camera = lua_newuserdatauv(L, sizeof(*camera), 0);
+    *camera = (LuaCamera){.value = value};
+    luaL_setmetatable(L, "malvado.camera");
+    return 1;
+}
+
+static int
+camera_set(lua_State *L)
+{
+    int explicit = lua_gettop(L) == 3;
+    if (!explicit && lua_gettop(L) != 2)
+        return luaL_error(L, "expected camera_set(x, y) or camera_set(camera, x, y)");
+    LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
+    double x = luaL_checknumber(L, explicit ? 2 : 1);
+    double y = luaL_checknumber(L, explicit ? 3 : 2);
+    if (!mv_camera_set(&camera->value, x, y))
+        return luaL_error(L, "invalid camera position");
+    return 0;
+}
+
+static int
+camera_move(lua_State *L)
+{
+    int explicit = lua_gettop(L) == 3;
+    if (!explicit && lua_gettop(L) != 2)
+        return luaL_error(L, "expected camera_move(dx, dy) or camera_move(camera, dx, dy)");
+    LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
+    double x = luaL_checknumber(L, explicit ? 2 : 1);
+    double y = luaL_checknumber(L, explicit ? 3 : 2);
+    if (!mv_camera_move(&camera->value, x, y))
+        return luaL_error(L, "invalid camera movement");
+    return 0;
+}
+
+static int
+camera_position(lua_State *L)
+{
+    LuaCamera *camera = lua_gettop(L) ? check_camera(L, 1) : &engine.main_camera;
+    lua_pushnumber(L, camera->value.x);
+    lua_pushnumber(L, camera->value.y);
+    return 2;
+}
+
+/* Return NULL only for a closed/invalid explicit camera. Screen-space content
+ * uses an identity camera so region and local scroll retain their contracts. */
+static const MvCamera *
+process_camera(lua_State *L, const Process *process)
+{
+    static const MvCamera screen_space = {0};
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+    lua_getiuservalue(L, -1, 1);
+    raw_option(L, -1, "camera");
+    LuaCamera *stored = luaL_testudata(L, -1, "malvado.camera");
+    const MvCamera *camera;
+    if (lua_isnil(L, -1)) camera = &engine.main_camera.value;
+    else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) camera = &screen_space;
+    else camera = stored && !stored->closed ? &stored->value : NULL;
+    lua_pop(L, 3);
+    return camera;
+}
+
 /* Return 1 for no region, 2 for an active clip, or 0 when fully off-screen. */
 static int
-begin_process_region(lua_State *L, const Process *process)
+begin_process_region(lua_State *L, const Process *process, const MvCamera *camera)
 {
     lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
     lua_getiuservalue(L, -1, 1);
@@ -3663,12 +3778,24 @@ begin_process_region(lua_State *L, const Process *process)
     int present = !lua_isnil(L, -1);
     int valid = stored != NULL;
     lua_pop(L, 3);
-    if (!present) return 1;
-    if (!valid) return 0;
+    if (present && !valid) return 0;
     int width, height;
     if (!mv_window_size(&width, &height)) return 0;
-    int64_t left = region.x, top = region.y;
-    int64_t right = left + region.width, bottom = top + region.height;
+    if (!present && !camera->viewport.width) return 1;
+    int64_t left = 0, top = 0, right = width, bottom = height;
+    if (present) {
+        left = region.x;
+        top = region.y;
+        right = left + region.width;
+        bottom = top + region.height;
+    }
+    if (camera->viewport.width) {
+        const MvCameraViewport *view = &camera->viewport;
+        if (left < view->x) left = view->x;
+        if (top < view->y) top = view->y;
+        if (right > (int64_t)view->x + view->width) right = (int64_t)view->x + view->width;
+        if (bottom > (int64_t)view->y + view->height) bottom = (int64_t)view->y + view->height;
+    }
     if (left < 0) left = 0;
     if (top < 0) top = 0;
     if (right > width) right = width;
@@ -3679,7 +3806,7 @@ begin_process_region(lua_State *L, const Process *process)
 
 /* Return 1 without a scroll, 2 when active, or 0 for invalid state. */
 static int
-begin_process_scroll(lua_State *L, const Process *process)
+begin_process_scroll(lua_State *L, const Process *process, const MvCamera *camera)
 {
     lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
     lua_getiuservalue(L, -1, 1);
@@ -3689,9 +3816,11 @@ begin_process_scroll(lua_State *L, const Process *process)
     int present = !lua_isnil(L, -1);
     int valid = stored != NULL;
     lua_pop(L, 3);
-    if (!present) return 1;
-    if (!valid) return 0;
-    return mv_window_scroll_begin(scroll.x, scroll.y) ? 2 : 0;
+    if (present && !valid) return 0;
+    double x, y;
+    if (!mv_camera_project(camera, 0, 0, scroll.x, scroll.y, &x, &y)) return 0;
+    if (x == 0 && y == 0) return 1;
+    return mv_window_scroll_begin((float)-x, (float)-y) ? 2 : 0;
 }
 
 static void
@@ -3729,9 +3858,11 @@ render(void)
         Process *process = &engine.items[order[p].slot];
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
-        int region = begin_process_region(L, process);
+        const MvCamera *camera = process_camera(L, process);
+        if (!camera) continue;
+        int region = begin_process_region(L, process, camera);
         if (!region) continue;
-        int scroll = begin_process_scroll(L, process);
+        int scroll = begin_process_scroll(L, process, camera);
         if (!scroll) {
             if (region == 2) (void)mv_window_clip_end();
             continue;
@@ -4007,6 +4138,7 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 };
 
 static const char *const global_names[] = {
+    "camera_create", "camera_set", "camera_move",
     "collision", "world_create", "world_move",
     "rect", "circle", "region", "scroll",
     "rect_overlaps",
@@ -4884,6 +5016,9 @@ static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
+        {"camera_create", camera_create},
+        {"camera_set", camera_set},
+        {"camera_move", camera_move},
         {"world_create", world_create},
         {"world_move", world_move},
         {"rect_overlaps", rect_overlaps},
@@ -4984,6 +5119,19 @@ open_module(lua_State *L)
         lua_seti(L, -2, (lua_Integer)i + 1);
     }
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.collider_keys");
+    luaL_newmetatable(L, "malvado.camera");
+    lua_pushcfunction(L, camera_destroy);
+    lua_setfield(L, -2, "__gc");
+    lua_newtable(L);
+    static const luaL_Reg camera_methods[] = {
+        {"set", camera_set}, {"move", camera_move}, {"position", camera_position},
+        {"destroy", camera_destroy}, {NULL, NULL}
+    };
+    luaL_setfuncs(L, camera_methods, 0);
+    lua_setfield(L, -2, "__index");
+    lua_pushliteral(L, "malvado camera");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.graphic");
     lua_pushliteral(L, "malvado graphic");
     lua_setfield(L, -2, "__metatable");
@@ -5114,6 +5262,13 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
+    lua_newtable(L);
+    static const luaL_Reg camera_functions[] = {
+        {"create", camera_create}, {"set", camera_set}, {"move", camera_move},
+        {"position", camera_position}, {NULL, NULL}
+    };
+    luaL_setfuncs(L, camera_functions, 0);
+    lua_setfield(L, -2, "camera");
     lua_newtable(L);
     lua_pushinteger(L, MV_COLLISION_CIRCLE);
     lua_pushcclosure(L, graphic_create, 1);

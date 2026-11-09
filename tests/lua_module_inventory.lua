@@ -33,7 +33,7 @@ for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do
   end
 end
 
-local objects = {world = mv.world.create()}
+local objects = {world = mv.world.create(), camera = mv.camera.create(0, 0)}
 if has_assets then
   objects.atlas = mv.load_asset("tests/fixtures/atlas.json")
   local fpg = mv.fpg.parse(read("tests/fixtures/fpg/bennugd-8.fpg"))
