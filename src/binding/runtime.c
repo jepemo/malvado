@@ -2941,6 +2941,8 @@ write_text(lua_State *L)
         return luaL_error(L, "invalid font");
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
+        return luaL_error(L, "text coordinate is outside the supported range");
     const char *text = luaL_checkstring(L, 4);
     size_t align_length;
     const char *align = luaL_optlstring(L, 5, "left", &align_length);
@@ -2992,6 +2994,8 @@ change_text(lua_State *L)
     int has_font = !lua_isnoneornil(L, 5);
     lua_Integer x = has_x ? luaL_checkinteger(L, 3) : 0;
     lua_Integer y = has_y ? luaL_checkinteger(L, 4) : 0;
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
+        return luaL_error(L, "text coordinate is outside the supported range");
     if (has_font) {
         luaL_checktype(L, 5, LUA_TTABLE);
         lua_getfield(L, 5, "size");
