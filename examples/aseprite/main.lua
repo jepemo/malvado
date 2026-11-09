@@ -7,12 +7,9 @@ local atlas
 local Player = process(function(self)
   self.file = atlas
   self.x, self.y, self.size = 280, 190, 16
-  local elapsed = 0
+  self.graph = animation("bounce")
   while not key("escape") do
-    local sprite = animation_frame(atlas, "bounce", math.floor(elapsed))
-    self.graph = graph(sprite)
     draw_text("Aseprite animation  |  Escape: exit", 20, 20, 20)
-    elapsed = elapsed + 1000 / 60
     frame()
   end
 end)

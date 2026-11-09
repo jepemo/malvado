@@ -71,6 +71,10 @@ playback. It can be larger than an individual frame. Use an explicit `self.colli
 for tighter gameplay geometry, or false to disable it. Nil restores the union.
 World/process collision participation, ordering and transforms remain unchanged.
 
+The [Aseprite example](../../examples/aseprite/) is a runnable named sequence
+with its PNG/JSON included. See the [migration guide](../development/alpha6-api-migration.md)
+for static/manual and explicit namespace alternatives.
+
 ## Explicit sampling
 
 `definition:sample(elapsed_ms)` returns the reusable static frame descriptor at
@@ -108,3 +112,9 @@ The core definition/player has no Lua, asset-parser or graphics dependency.
 The binding handles implicit context, named caching and graph ownership; it uses
 the same native playback math as C callers. C games advance state from their
 existing scheduler callback, not a new animation scheduler.
+
+
+The [native C animation example](../../examples/c/animation/) advances player
+state from the shared scheduler without Lua or graphics. Its definition is
+caller-owned and released after the context stops its users. C-only and
+installed SDK checks run the example.

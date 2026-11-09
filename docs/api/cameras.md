@@ -152,3 +152,12 @@ The combined visual regression checks graph/immediate ordering, screen HUD z,
 a clipped inventory, empty and off-screen views, independent cameras, destroyed
 camera recovery, persistent text, and the final fade overlay. Native tests cover
 projection, intersection, numeric boundaries and unchanged outputs on failure.
+
+
+## Runnable examples
+
+[Camera following](../../examples/camera-follow/) uses the main view and a fixed
+HUD. [Clipped inventory](../../examples/camera-menu/) combines a screen-space
+process, fixed region and local scroll while the world has a camera offset.
+Both have automated behavior and pixel checks; the examples use both Lua entry
+forms. See the [migration guide](../development/alpha6-api-migration.md).

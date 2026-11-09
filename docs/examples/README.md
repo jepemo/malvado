@@ -2,6 +2,15 @@
 
 The new snippets below are proposals, not programs that all run on the current runtime. [Hello World](../../examples/helloworld/README.md), the [demo](../../examples/demo/README.md), [Space Asteroids](../../examples/space_asteroids/README.md), and the [benchmark](../../examples/bench/README.md) run on Malvado 2. The original versions are available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). Keep reference traces and screenshots.
 
+## Alpha.6 runnable examples
+
+The [alpha.6 migration guide](../development/alpha6-api-migration.md) maps the
+nine graphics/assets examples to their implemented APIs and automated checks.
+[Aseprite](../../examples/aseprite/) uses automatic process animation.
+[Camera following](../../examples/camera-follow/) keeps a moving player centered;
+[the clipped inventory](../../examples/camera-menu/) combines screen space,
+regions and local scroll. These examples are implemented, not proposals.
+
 ## First-class C and Lua examples
 
 Each shared engine capability will have a C example that uses the public API and a Lua example that uses the official binding. One program can demonstrate several functions. Documentation pages will link to the actual files, and CI will run them. See [API documentation](../development/api-documentation.md). Give priority to hello, processes/trees/signals, and messages. Add a mixed C/Lua game to verify the shared scheduler and context. The headless C example must build and run without Lua or raylib. The graphics version uses the raylib backend. Snippets and targets remain proposals until the applicable [C architecture](../architecture/c-first.md) is implemented.
