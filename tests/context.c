@@ -14,6 +14,7 @@
  */
 #include <assert.h>
 #include <float.h>
+#include <limits.h>
 #include <math.h>
 #include <stddef.h>
 #include "malvado/malvado.h"
@@ -62,6 +63,20 @@ main(void)
     assert(mv_context_ticks(overflow) == before && steps == previous_steps);
     assert(mv_context_dropped_seconds(overflow) == previous_dropped);
     mv_context_destroy(overflow);
+    /* A tick is too small to change DBL_MAX. Even a large step limit must
+     * finish promptly and preserve the public clock accounting. */
+    MvContext *large = mv_context_create(60, UINT_MAX);
+    assert(large);
+    assert(mv_context_advance(large, DBL_MAX, &steps) == MV_OK);
+    assert(steps == UINT_MAX && mv_context_ticks(large) == UINT_MAX);
+    assert(isfinite(mv_context_dropped_seconds(large)) &&
+           mv_context_dropped_seconds(large) > 0);
+    double large_dropped = mv_context_dropped_seconds(large);
+    steps = 123;
+    assert(mv_context_advance(large, DBL_MAX, &steps) == MV_OVERFLOW);
+    assert(steps == 123 && mv_context_ticks(large) == UINT_MAX);
+    assert(mv_context_dropped_seconds(large) == large_dropped);
+    mv_context_destroy(large);
     mv_context_destroy(a);
     mv_context_destroy(b);
     mv_context_destroy(NULL);

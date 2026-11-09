@@ -30,7 +30,13 @@ unsigned malvado_clock_advance(MalvadoClock *clock, double elapsed) {
     clock->remainder += elapsed;
     unsigned steps = 0;
     while (clock->remainder + clock->tick_seconds * 1e-9 >= clock->tick_seconds && steps < clock->max_steps) {
-        clock->remainder -= clock->tick_seconds;
+        double next = clock->remainder - clock->tick_seconds;
+        if (next == clock->remainder) {
+            /* Further subtractions cannot change this floating-point value. */
+            steps = clock->max_steps;
+            break;
+        }
+        clock->remainder = next;
         if (clock->remainder < 0) clock->remainder = 0;
         steps++;
     }
