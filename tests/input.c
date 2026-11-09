@@ -188,5 +188,24 @@ main(void)
     assert(!mv_utf8_decode("\xe2\x41\x80", 3, &unchanged_codepoint) && unchanged_codepoint == 42);
     assert(!mv_utf8_decode(NULL, 1, &unchanged_codepoint) && unchanged_codepoint == 42);
     assert(!mv_utf8_decode("A", 1, NULL));
+    /* Reject truncated sequences and invalid continuation bytes at every position. */
+    const char four_bytes[] = "\xf0\x90\x80\x80";
+    for (size_t length = 0; length < 4; ++length) {
+        assert(!mv_utf8_decode(four_bytes, length, &unchanged_codepoint));
+        assert(unchanged_codepoint == 42);
+    }
+    for (size_t position = 1; position < 4; ++position) {
+        char invalid[4];
+        memcpy(invalid, four_bytes, sizeof(invalid));
+        invalid[position] = 'A';
+        assert(!mv_utf8_decode(invalid, sizeof(invalid), &unchanged_codepoint));
+        assert(unchanged_codepoint == 42);
+    }
+    assert(!mv_utf8_decode("\xe0\x80\x80", 3, &unchanged_codepoint));
+    assert(!mv_utf8_decode("\xf0\x80\x80\x80", 4, &unchanged_codepoint));
+    assert(!mv_utf8_decode("\x80", 1, &unchanged_codepoint));
+    assert(!mv_utf8_decode("\xf5\x80\x80\x80", 4, &unchanged_codepoint));
+    assert(unchanged_codepoint == 42);
+    assert(mv_utf8_decode("A\xff", 2, &zero) == 1 && zero == 'A');
     return 0;
 }
