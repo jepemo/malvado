@@ -50,7 +50,7 @@ typedef enum {
     PROCESS_KILLED
 } ProcessState;
 
-typedef struct { MvCamera value; int closed; } LuaCamera;
+typedef struct { MvCamera value; int closed, target_ref; } LuaCamera;
 
 typedef struct { MvColor target; unsigned ticks; } FadeRequest;
 
@@ -101,6 +101,7 @@ static MalvadoDebugHook debug_frame_hook;
 static void *debug_frame_user;
 static MvStepResult lua_process_step(MvContext *ctx, MvProcessId id, void *user);
 static void lua_process_destroy(void *user);
+static void update_cameras(lua_State *L);
 
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct { lua_Integer id, parent; int reason, collision_invalid; MvProcessRef reference; } LuaSelf;
@@ -3546,6 +3547,7 @@ tick(void)
     if (engine.audio) sweep_audio(engine.L);
     advance_fade();
     sync_processes();
+    update_cameras(engine.L);
     if (result != MV_OK) {
         if (!engine.failed)
             fprintf(stderr, "Error scheduling processes: %d\n", (int)result);
@@ -3679,10 +3681,19 @@ check_camera(lua_State *L, int index)
     return camera;
 }
 
+static void
+camera_stop_following(lua_State *L, LuaCamera *camera)
+{
+    if (camera->target_ref >= 0)
+        luaL_unref(L, LUA_REGISTRYINDEX, camera->target_ref);
+    camera->target_ref = LUA_NOREF;
+}
+
 static int
 camera_destroy(lua_State *L)
 {
     LuaCamera *camera = luaL_checkudata(L, 1, "malvado.camera");
+    camera_stop_following(L, camera);
     camera->closed = 1;
     return 0;
 }
@@ -3706,8 +3717,12 @@ camera_create(lua_State *L)
     if (!mv_camera_init(&value, x, y, view))
         return luaL_error(L, "invalid camera position or viewport");
     LuaCamera *camera = lua_newuserdatauv(L, sizeof(*camera), 0);
-    *camera = (LuaCamera){.value = value};
+    *camera = (LuaCamera){.value = value, .target_ref = LUA_NOREF};
     luaL_setmetatable(L, "malvado.camera");
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
+    lua_pushvalue(L, -2);
+    lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
+    lua_pop(L, 1);
     return 1;
 }
 
@@ -3722,6 +3737,7 @@ camera_set(lua_State *L)
     double y = luaL_checknumber(L, explicit ? 3 : 2);
     if (!mv_camera_set(&camera->value, x, y))
         return luaL_error(L, "invalid camera position");
+    camera_stop_following(L, camera);
     return 0;
 }
 
@@ -3736,16 +3752,85 @@ camera_move(lua_State *L)
     double y = luaL_checknumber(L, explicit ? 3 : 2);
     if (!mv_camera_move(&camera->value, x, y))
         return luaL_error(L, "invalid camera movement");
+    camera_stop_following(L, camera);
     return 0;
 }
 
 static int
 camera_position(lua_State *L)
 {
-    LuaCamera *camera = lua_gettop(L) ? check_camera(L, 1) : &engine.main_camera;
+    LuaCamera *camera = lua_isnoneornil(L, 1) ? &engine.main_camera : check_camera(L, 1);
     lua_pushnumber(L, camera->value.x);
     lua_pushnumber(L, camera->value.y);
     return 2;
+}
+
+static int
+camera_follow(lua_State *L)
+{
+    int arguments = lua_gettop(L);
+    if (arguments != 1 && arguments != 2)
+        return luaL_error(L, "expected camera_follow(target) or camera_follow(camera, target)");
+    LuaCamera *camera = arguments == 2 ? check_camera(L, 1) : &engine.main_camera;
+    int target = arguments;
+    lua_Integer id = check_process_id(L, target);
+    MvProcessStatus status;
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
+        return luaL_error(L, "camera target is no longer alive");
+    lua_pushvalue(L, target);
+    int reference = luaL_ref(L, LUA_REGISTRYINDEX);
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK) {
+        luaL_unref(L, LUA_REGISTRYINDEX, reference);
+        return luaL_error(L, "camera target is no longer alive");
+    }
+    camera_stop_following(L, camera);
+    camera->target_ref = reference;
+    return 0;
+}
+
+static void
+update_camera(lua_State *L, LuaCamera *camera)
+{
+    if (camera->closed || camera->target_ref < 0) return;
+    lua_rawgeti(L, LUA_REGISTRYINDEX, camera->target_ref);
+    LuaSelf *target = luaL_testudata(L, -1, "malvado.process");
+    MvProcessStatus status;
+    if (!target || mv_process_status(engine.context, (MvProcessId)target->id, &status) != MV_OK) {
+        lua_pop(L, 1);
+        camera_stop_following(L, camera);
+        return;
+    }
+    lua_getiuservalue(L, -1, 1);
+    if (lua_istable(L, -1)) {
+        raw_option(L, -1, "x");
+        raw_option(L, -2, "y");
+        int valid = (lua_isnil(L, -2) || lua_type(L, -2) == LUA_TNUMBER) &&
+                    (lua_isnil(L, -1) || lua_type(L, -1) == LUA_TNUMBER);
+        double x = lua_isnil(L, -2) ? 0 : lua_tonumber(L, -2);
+        double y = lua_isnil(L, -1) ? 0 : lua_tonumber(L, -1);
+        if (valid)
+            (void)mv_camera_center(&camera->value, x, y, engine.width, engine.height);
+        lua_pop(L, 2);
+    }
+    lua_pop(L, 2);
+}
+
+static void
+update_cameras(lua_State *L)
+{
+    if (!lua_checkstack(L, 10)) {
+        engine.failed = 1;
+        return;
+    }
+    update_camera(L, &engine.main_camera);
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        LuaCamera *camera = luaL_testudata(L, -1, "malvado.camera");
+        if (camera) update_camera(L, camera);
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
 }
 
 /* Return NULL only for a closed/invalid explicit camera. Screen-space content
@@ -4138,7 +4223,7 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 };
 
 static const char *const global_names[] = {
-    "camera_create", "camera_set", "camera_move",
+    "camera_create", "camera_set", "camera_move", "camera_follow",
     "collision", "world_create", "world_move",
     "rect", "circle", "region", "scroll",
     "rect_overlaps",
@@ -5016,6 +5101,7 @@ static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
+        {"camera_follow", camera_follow},
         {"camera_create", camera_create},
         {"camera_set", camera_set},
         {"camera_move", camera_move},
@@ -5125,7 +5211,7 @@ open_module(lua_State *L)
     lua_newtable(L);
     static const luaL_Reg camera_methods[] = {
         {"set", camera_set}, {"move", camera_move}, {"position", camera_position},
-        {"destroy", camera_destroy}, {NULL, NULL}
+        {"follow", camera_follow}, {"destroy", camera_destroy}, {NULL, NULL}
     };
     luaL_setfuncs(L, camera_methods, 0);
     lua_setfield(L, -2, "__index");
@@ -5258,6 +5344,12 @@ open_module(lua_State *L)
     lua_setmetatable(L, -2);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.process_handles");
     lua_newtable(L);
+    lua_newtable(L);
+    lua_pushliteral(L, "v");
+    lua_setfield(L, -2, "__mode");
+    lua_setmetatable(L, -2);
+    lua_setfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
+    lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
@@ -5265,7 +5357,7 @@ open_module(lua_State *L)
     lua_newtable(L);
     static const luaL_Reg camera_functions[] = {
         {"create", camera_create}, {"set", camera_set}, {"move", camera_move},
-        {"position", camera_position}, {NULL, NULL}
+        {"position", camera_position}, {"follow", camera_follow}, {NULL, NULL}
     };
     luaL_setfuncs(L, camera_functions, 0);
     lua_setfield(L, -2, "camera");
@@ -5506,6 +5598,7 @@ malvado_run(int argc, char **argv)
         return 2;
     }
     memset(&engine, 0, sizeof(engine));
+    engine.main_camera.target_ref = LUA_NOREF;
     int index = 1;
     if (argc > 1 && strcmp(argv[1], "--headless") == 0) {
         engine.headless = 1;
@@ -5564,6 +5657,7 @@ malvado_run(int argc, char **argv)
     free(engine.items);
     engine.items = NULL;
     engine.count = 0;
+    camera_stop_following(engine.L, &engine.main_camera);
     lua_close(engine.L);
     engine.L = NULL;
     if (engine.audio)

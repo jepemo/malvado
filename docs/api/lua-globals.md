@@ -8,6 +8,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 
 | Global | Module field |
 | --- | --- |
+| `camera_follow` | `mv.camera_follow` |
 | `camera_create` | `mv.camera_create` |
 | `camera_set` | `mv.camera_set` |
 | `camera_move` | `mv.camera_move` |

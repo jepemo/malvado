@@ -38,6 +38,11 @@ int mv_camera_move(MvCamera *camera, double dx, double dy);
 int mv_camera_project(const MvCamera *camera, double world_x, double world_y,
                       double scroll_x, double scroll_y, double *screen_x, double *screen_y);
 
+/* Center a target origin in the viewport, or in the supplied logical window.
+ * Call from the game's existing update flow. Invalid inputs leave state intact. */
+int mv_camera_center(MvCamera *camera, double target_x, double target_y,
+                     int window_width, int window_height);
+
 #ifdef __cplusplus
 }
 #endif

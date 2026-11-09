@@ -47,6 +47,7 @@ object methods and process fields are not included in this namespace table.
 | `mv.collision.rect` | Create a rectangle shape | [collision](collision.md) |
 | `mv.collision.overlap` | Test two transformed shapes | [collision](collision.md) |
 | `mv.world.move` | Move a process explicitly or through its current world | [collision](collision.md) |
+| `mv.camera.follow` | Follow a live process | [cameras](cameras.md) |
 | `mv.camera.create` | Create an explicit camera | [cameras](cameras.md) |
 | `mv.camera.set` | Position a camera | [cameras](cameras.md) |
 | `mv.camera.move` | Move a camera | [cameras](cameras.md) |
@@ -68,7 +69,7 @@ a graphics window.
 
 | Object | Methods | Contract |
 | --- | --- | --- |
-| `camera` | `camera:set`, `camera:move`, `camera:position`, `camera:destroy` | [cameras](cameras.md) |
+| `camera` | `camera:set`, `camera:move`, `camera:position`, `camera:destroy`, `camera:follow` | [cameras](cameras.md) |
 | `atlas` | `atlas:graph` | [images](images.md) |
 | `world` | `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | [collision](collision.md) |
 | `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph` | [FPG](../specs/fpg-8.md) |

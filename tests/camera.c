@@ -51,5 +51,14 @@ int main(void)
     assert(mv_camera_project(&camera, 130, 80, 10, 5, &x, &y) && x == 60 && y == 85);
     assert(mv_camera_set(&camera, FLT_MAX / 64, 0));
     assert(!mv_camera_move(&camera, 1e32, 0));
+    assert(mv_camera_init(&camera, 0, 0, NULL));
+    assert(mv_camera_center(&camera, 100, 80, 100, 80));
+    assert(camera.x == 50 && camera.y == 40);
+    assert(mv_camera_init(&camera, 0, 0, &viewport));
+    assert(mv_camera_center(&camera, 200, 150, 800, 600));
+    assert(camera.x == 50 && camera.y == 30);
+    assert(!mv_camera_center(&camera, NAN, 0, 800, 600));
+    assert(!mv_camera_center(&camera, 200, 150, 0, 600));
+    assert(camera.x == 50 && camera.y == 30);
     return 0;
 }

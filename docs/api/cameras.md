@@ -65,5 +65,44 @@ Do not modify a camera to an invalid value between calls.
 
 | C symbols | Lua relationship | Evidence |
 | --- | --- | --- |
-| `mv_camera_init`, `mv_camera_set`, `mv_camera_move`, `mv_camera_project` | Main/explicit camera operations and projection | `tests/camera.c`, `tests/camera.lua`, installed core SDK consumer |
+| `mv_camera_init`, `mv_camera_set`, `mv_camera_move`, `mv_camera_project`, `mv_camera_center` | Main/explicit camera operations and projection | `tests/camera.c`, `tests/camera.lua`, installed core SDK consumer |
 | `MvCamera`, `MvCameraViewport` | Native value state; Lua retains its own managed association | Same checks; no Lua or backend dependency |
+
+## Follow a process
+
+```lua
+require("malvado").import_globals()
+local Player = process(function(self)
+  self.graph = circle(16)
+  camera_follow(self)
+  while true do
+    self.x = self.x + 3
+    frame()
+  end
+end)
+start(function() Player() end)
+```
+
+`camera_follow(target)` tracks a live process's x/y origin with the main camera.
+Use `camera:follow(target)` or `camera_follow(camera, target)` explicitly.
+Following runs at the end of the existing simulation tick, after process updates
+and removals, and before rendering. It centers the origin within the viewport,
+or within the logical game width/height for a fullscreen camera. It does not
+need a Lua controller process. It works in headless mode too.
+
+A successful set/move cancels following; an invalid request leaves it intact.
+A new follow target replaces the previous target. Calls take effect in scheduler
+call order; the last successful request in a tick wins. Sleeping/frozen targets
+remain valid and use their current position. A terminated target stops following
+and retains the last camera position. Invalid/nonfinite/out-of-range target
+positions retain the last valid position; tracking resumes when they become valid.
+Destroying a camera releases its tracking reference. Tracking does not keep a
+process alive or make it owned by the camera. Unreferenced explicit cameras can
+be collected; the runtime's camera index is weak.
+
+In C, call `mv_camera_center(camera, target_x, target_y, window_width, window_height)`
+from the game's existing update flow. It uses viewport dimensions when present
+and the supplied positive logical dimensions otherwise. It shares Lua's native
+centering calculation. Invalid values return 0 without changing the camera.
+C games own their positions; the native helper does not resolve Lua fields or
+create a second scheduler. Smooth tracking and offset options are deferred.

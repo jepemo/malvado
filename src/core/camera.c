@@ -83,3 +83,16 @@ mv_camera_project(const MvCamera *camera, double world_x, double world_y,
     *screen_y = y;
     return 1;
 }
+
+
+int
+mv_camera_center(MvCamera *camera, double target_x, double target_y,
+                 int window_width, int window_height)
+{
+    if (!camera_valid(camera) || !coordinate_valid(target_x) || !coordinate_valid(target_y) ||
+        window_width <= 0 || window_height <= 0)
+        return 0;
+    int width = camera->viewport.width ? camera->viewport.width : window_width;
+    int height = camera->viewport.height ? camera->viewport.height : window_height;
+    return mv_camera_set(camera, target_x - width / 2.0, target_y - height / 2.0);
+}
