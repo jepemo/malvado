@@ -164,6 +164,16 @@ main(void)
         uint32_t decoded = 0;
         assert(mv_utf8_decode(output, length, &decoded) == length && decoded == characters[i].codepoint);
     }
+    /* Every Unicode scalar must survive an encode/decode round trip. */
+    for (uint32_t scalar = 0; scalar <= 0x10ffff; ++scalar) {
+        if (scalar >= 0xd800 && scalar <= 0xdfff)
+            continue;
+        uint32_t decoded = 0xffffffff;
+        size_t length = mv_utf8_encode(scalar, output);
+        assert(length >= 1 && length <= 4);
+        assert(mv_utf8_decode(output, length, &decoded) == length);
+        assert(decoded == scalar);
+    }
     assert(!mv_utf8_encode(0xd800, output));
     assert(!mv_utf8_encode(0xdfff, output));
     assert(!mv_utf8_encode(0x110000, output));
