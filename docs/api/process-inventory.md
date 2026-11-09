@@ -51,6 +51,26 @@ The check detects missing or extra type names, not changes to fields or semantic
 semantics. See the [C contract](c-contract.md) and [Lua guide](lua-processes.md)
 for errors, lifecycle, and message ownership.
 
+## C creation, identity, and control evidence
+
+The [C control example](../../examples/c/control/README.md) demonstrates the
+separate ownership and creation relations, process state, priority, type, and
+a retained handle. `c_control_example` runs it in-tree and `installed_core_sdk`
+builds and runs it against a relocated SDK. The
+[C process example](../../examples/c/processes/README.md) shows callback and
+destructor lifetime. The [C contract](c-contract.md#processes-and-signals) defines errors,
+ownership, and lifetime; the [Lua guide](lua-processes.md) describes handles and
+process definitions.
+
+| C symbols | Behavior evidence and Lua relationship |
+| --- | --- |
+| `mv_process_spawn`, `mv_process_spawn_related` | `c_process` checks creation, invalid relations, cleanup, and owned and independent descendants. Lua `process_lifecycle` and `natural_cascade` check creation and lifetime. |
+| `mv_process_ref_create`, `mv_process_ref_resolve` | `c_process` and `c_process_handle` check foreign runtimes, ended identities, and unchanged outputs. Lua uses canonical handles instead of these C values. |
+| `mv_process_handle_create`, `mv_process_handle_snapshot`, `mv_process_handle_destroy` | `c_process_handle` checks allocation failure, invalid inputs, termination reasons, and handles after context destruction. Lua `process_lifecycle` checks retained handle behavior. |
+| `mv_process_status`, `mv_process_count` | `c_process` checks live counts, signal states, invalid inputs, and unchanged outputs. Lua `signals` checks state changes. |
+| `mv_process_priority`, `mv_process_set_priority`, `mv_process_set_type` | `c_process` checks type, priority, invalid inputs, and unchanged output; `schedule` checks ordering and integer limits. Lua `priorities` checks its priority API. Native type IDs have no direct Lua equivalent. |
+| `mv_process_signal`, `mv_process_signal_creation_tree`, `mv_process_kill` | `c_process` checks invalid signals, both tree relations, dead references, and cleanup. Lua `signals`, `signal_relations`, and `natural_cascade` check state and lifetime. |
+
 ## C query and inspection evidence
 
 The [C inspection example](../../examples/c/inspection/README.md) runs without
@@ -70,9 +90,8 @@ shows the Lua snapshot API.
 | `mv_process_lineage_snapshot` | `c_process` and `c_long_session` check retained and pruned creation records. Lua `snapshot` reports lineage information, checked by `lineage_snapshot`. |
 | `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `c_process` checks capacities, unchanged output, and capture identity and tick. Lua `snapshot` returns its own copied table; it does not expose these C buffer functions. |
 
-These checks cover the delivered query and inspection functions. They do not
-complete the review of process creation, identity, control, or the full 2.0
-API inventory.
+These checks cover the delivered C query and inspection functions. The Lua
+symbol-by-symbol review and the full 2.0 API inventory remain open.
 
 ## Lua entry forms
 
