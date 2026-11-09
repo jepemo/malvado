@@ -14,6 +14,15 @@ for channel = 1, 3 do
   end
 end
 local task = mv.process(function()
+  for index = 2, 4 do
+    for _, value in ipairs({0x100000000, -0x100000000, math.maxinteger, math.mininteger}) do
+      local args = {"text", 0, 0, 20}
+      args[index] = value
+      assert(not pcall(mv.draw_text, table.unpack(args)))
+    end
+  end
+  assert(mv.snapshot().processes[1].draw_commands == 0)
+  mv.draw_text("text", -2147483648, 2147483647, 20)
   assert(not pcall(mv.draw_box, 5, 5, 4, 6))
   assert(not pcall(mv.draw_rect, 0, 0, 2^40, 1))
   assert(not pcall(mv.draw_circle, 0, 0, -1))
@@ -24,7 +33,7 @@ local task = mv.process(function()
   mv.draw_circle(5, 5, 2)
   mv.draw_fcircle(5, 5, 2)
   local snapshot = mv.snapshot()
-  assert(snapshot.processes[1].draw_commands == 4)
+  assert(snapshot.processes[1].draw_commands == 5)
   mv.frame()
 end)
 mv.start(function() task() end)

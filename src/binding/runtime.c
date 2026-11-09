@@ -2805,9 +2805,12 @@ static int
 text(lua_State *L)
 {
     const char *s = luaL_checkstring(L, 1);
-    int x = luaL_checkinteger(L, 2);
-    int y = luaL_checkinteger(L, 3);
-    int size = luaL_optinteger(L, 4, 20);
+    lua_Integer x = luaL_checkinteger(L, 2);
+    lua_Integer y = luaL_checkinteger(L, 3);
+    lua_Integer size = luaL_optinteger(L, 4, 20);
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX ||
+        size < INT_MIN || size > INT_MAX)
+        return luaL_error(L, "text coordinate or size is outside the supported range");
     if (!engine.active)
         return luaL_error(L, "draw_text must be called inside a process");
 
