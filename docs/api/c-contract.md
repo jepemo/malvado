@@ -82,7 +82,7 @@ Retained references can outlive the context. Release them before closing any gra
 
 Each process has a FIFO queue with room for 1,024 messages. `mv_process_send` returns `MV_QUEUE_FULL` if it is full. `mv_process_receive` returns `MV_QUEUE_EMPTY` if it is empty; it does not block. Unknown or killed recipients return `MV_NOT_FOUND`. A receive failure leaves the output unchanged. Pending messages are released when the recipient ends.
 
-Boolean, integer, and number values are copied. `MV_MESSAGE_BYTES` is copied on send, including embedded zero bytes. The input byte pointer stays with the sender. For `MV_MESSAGE_OPAQUE`, a successful send transfers the opaque pointer and its optional destructor to the queue. On failure, it stays with the sender. Use opaque values only when the recipient knows their meaning.
+Boolean, integer, and number values are copied. `MV_MESSAGE_BYTES` is copied on send, including embedded zero bytes. The input byte pointer stays with the sender. For `MV_MESSAGE_OPAQUE`, a successful send transfers the opaque pointer and its optional destructor to the queue. On failure, it stays with the sender. A failed allocation returns `MV_OUT_OF_MEMORY` and does not add a message to the queue. Use opaque values only when the recipient knows their meaning.
 
 A successful receive transfers the returned message to the receiver. Call `mv_message_release` exactly once after using it. It frees received byte storage or calls the opaque destructor, then clears the message. Do **not** release a borrowed input byte pointer with this function. For example:
 

@@ -23,11 +23,20 @@
 #include "malvado/collision.h"
 
 static int fail_allocation;
+static int allocations_before_failure = -1;
 
 void *test_query_malloc(size_t size)
 {
-    if (fail_allocation) return NULL;
+    if (fail_allocation || allocations_before_failure == 0) return NULL;
+    if (allocations_before_failure > 0) --allocations_before_failure;
     return malloc(size);
+}
+
+static void
+count_release(void *data)
+{
+    int *count = data;
+    ++*count;
 }
 
 static MvStepResult
@@ -53,6 +62,31 @@ main(void)
     assert(mv_process_ref_create(ctx, child, &child_ref) == MV_OK);
     MvCollisionShape shape = {.kind = MV_COLLISION_CIRCLE, .radius = 1};
     MvCollisionTransform transform = {0, 0, 0, 1};
+    char payload[] = "payload";
+    MvMessage bytes = {.type = MV_MESSAGE_BYTES, .value.bytes = {payload, sizeof(payload)}};
+    int releases = 0;
+    MvMessage opaque = {.type = MV_MESSAGE_OPAQUE, .value.opaque = {&releases, count_release}};
+    for (int fail_at = 0; fail_at < 2; ++fail_at) {
+        allocations_before_failure = fail_at;
+        assert(mv_process_send(ctx, root, &bytes) == MV_OUT_OF_MEMORY);
+        allocations_before_failure = -1;
+        size_t count = 99;
+        assert(mv_process_message_count(ctx, root, &count) == MV_OK && count == 0);
+        assert(payload[0] == 'p');
+    }
+    allocations_before_failure = 0;
+    assert(mv_process_send(ctx, root, &opaque) == MV_OUT_OF_MEMORY);
+    allocations_before_failure = -1;
+    assert(releases == 0);
+    assert(mv_process_send(ctx, root, &opaque) == MV_OK);
+    MvMessage received;
+    assert(mv_process_receive(ctx, root, &received) == MV_OK);
+    mv_message_release(&received);
+    assert(releases == 1);
+    assert(mv_process_send(ctx, root, &bytes) == MV_OK);
+    assert(mv_process_receive(ctx, root, &received) == MV_OK);
+    assert(received.type == MV_MESSAGE_BYTES && received.value.bytes.size == sizeof(payload));
+    mv_message_release(&received);
     fail_allocation = 1;
     assert(mv_process_collider_set(ctx, root_ref, shape, transform) == MV_OK);
     assert(mv_process_collider_set(ctx, child_ref, shape, transform) == MV_OK);
