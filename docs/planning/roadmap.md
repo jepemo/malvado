@@ -48,7 +48,7 @@ Do not reimplement the Lua VM. Lua is already implemented in C. Do not use opera
 | P3 / 2.0.0-alpha.3 | Current 2D graphics, input, text, audio, examples, and development workflow | Tagged preview; unchecked validation items remain open |
 | P4 / 2.0.0-alpha.4 | Minimal `malvado` client, C SDK, project creation, execution, and desktop export | Automated create, run, export, and execution checks for C and Lua on macOS/Linux |
 | P5 / 2.0.0-alpha.5 | Process identity, lifecycle, ownership, resources, genealogy, and C/Lua API migration | Contracts and automated lifecycle, graphics, resource, stress, and C/Lua parity checks in [alpha.5](../versions/2.0.0-alpha.5.md) |
-| P6 / 2.0.0-alpha.6 | Define the complete 2.0 API inventory; implement collision, scrolling, regions, and asset importers | Contracts and tests for each delivered family |
+| P6 / 2.0.0-alpha.6 | Simple Lua 2D APIs, unified assets, automatic animation, contextual world calls, main camera and following; bounded inventory decisions | A6-01–12 contracts, examples, native/headless tests, graphics checks and candidate CI in the alpha.6 plan |
 | P7 / 2.0.0-alpha.7 | Rust SDK and multi-language architecture | Shared scheduler, installed SDK, parity and Rust game checks |
 | P8 / 2.0.0-alpha.8 | Complete all remaining agreed 2.0 API families in C, Lua, and Rust | Every in-scope API entry has an implementation, contract, and behavior test |
 | P9 / 2.0.0-alpha.9 | Windows and Android runtimes, packaging, and exports | Automated Windows CI and Android emulator checks where supported |

@@ -17,7 +17,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.3](2.0.0-alpha.3.md) — **complete**: graphics and input. Source tag: `v2.0.0-alpha.3`.
 - [x] [Alpha.4](2.0.0-alpha.4.md) — **complete**: minimal client, SDK, project creation, execution, and desktop packages. Source tag: `v2.0.0-alpha.4`; no release package yet.
 - [x] [Alpha.5](2.0.0-alpha.5.md) — **complete**: process model, C and Lua API, lifecycle, resources, and genealogy. The source revision selected for the tag must pass CI; no tag or release package exists yet.
-- [ ] [Alpha.6](2.0.0-alpha.6.md) — **in progress**: define the full 2.0 API inventory, collision, scrolling, and asset importers.
+- [ ] [Alpha.6](2.0.0-alpha.6.md) — **in progress**: simple Lua 2D APIs, unified assets, automatic animation, contextual world calls, and a main camera; bounded inventory and verification gates.
 - [ ] [Alpha.7](2.0.0-alpha.7.md) — **planned**: multi-language architecture and first-class Rust.
 - [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the agreed 2.0 API in C, Lua, and Rust.
 - [ ] [Alpha.9](2.0.0-alpha.9.md) — **planned**: Android and Windows.
