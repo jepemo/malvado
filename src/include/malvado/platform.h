@@ -194,6 +194,8 @@ int mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTra
 int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransform transform);
 void mv_window_flush(void);
 void mv_window_end(void);
+/* Platform elapsed clock in seconds. The origin depends on the backend;
+ * compare readings from the same backend. Headless returns 0 on clock failure. */
 double mv_platform_time(void);
 void mv_platform_wait(double seconds);
 
