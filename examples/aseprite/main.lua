@@ -18,10 +18,7 @@ end)
 local game = {width = 640, height = 480, title = "Aseprite animation"}
 function game.init()
   clear_screen(25, 30, 45)
-  local image = load_image("examples/aseprite/sheet.png")
-  local file = assert(io.open("examples/aseprite/sheet.json", "rb"))
-  atlas = load_aseprite(image, file:read("a"))
-  file:close()
+  atlas = load_asset("examples/aseprite/sheet.json")
   Player()
 end
 return game

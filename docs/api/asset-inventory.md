@@ -49,3 +49,14 @@ and borrowed data. `fpg`, `fpg_png`, `fpg_allocation`, and
 cover headless Lua. The graphical `visual_fpg_image` test covers image creation.
 `asset_api_map` checks the header's function and type names, not behavior or
 structure fields.
+
+
+## Unified Lua loading
+
+`mv.load_asset(path, options?)`, also imported as `load_asset`, routes supported
+sources to the existing image, atlas, Aseprite, FPG and manifest implementations.
+It adds no native C symbols. See the [loader contract](images.md#load-an-asset-by-path),
+`tests/asset_loader.lua` and `tests/asset_loader_visual.lua` for schema detection,
+relative paths, metadata/GC, format/option errors and original/converted pixels.
+The existing C parser, allocation, conversion and installed SDK tests remain
+the native capability evidence.

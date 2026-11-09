@@ -181,3 +181,53 @@ A single slice named `pivot` can set a custom origin. Keys must have strictly in
 Escaped zero bytes, unescaped control characters in JSON strings, non-JSON whitespace, other extra tag fields, nonempty layers, other slices, rotated frames, unknown fields, duplicate keys, invalid bounds, and metadata over 1 MiB are rejected. It does not import multiple slices, nine-slice centers, layers, or palette data. The automatic process collider covers the cropped rectangle, not the full original canvas or an alpha mask. It does not verify that `meta.image` names the supplied image. Use a suitable export without these features. The error identifies JSON-hash exports, unsupported pixel formats or scales, rotated frames, unsupported tags, multiple slices or pivot slices, and nonempty layers; other invalid or unsupported metadata uses a general error.
 
 C programs can call `mv_atlas_parse_aseprite(json, length, width, height, &error)` without Lua or a graphics backend when asset support is enabled. The caller owns the returned atlas and destroys it with `mv_atlas_destroy`; the error, when provided, is a static string. `mv_atlas_find` returns `source_width`, `source_height`, `trim_x`, and `trim_y` in `MvAtlasSprite`. For the native atlas schema, source size equals the region and the trim offset is zero. Lua sprite drawing uses the crop offset. `mv.sprite_info(atlas, id)` returns a fresh table with `id`, `name`, region `x`, `y`, `width`, `height`, `pivot_x`, `pivot_y`, `source_width`, `source_height`, `trim_x`, and `trim_y`. Unknown IDs and invalid arguments raise an error. Modifying the table does not change the atlas. `mv.sprite_id(atlas, name)` looks up an exact, case-sensitive name and returns its ID or `nil`; names containing a zero byte raise an error. In C, `mv_atlas_find_name(atlas, name, &sprite)` copies the matching sprite and leaves the output unchanged on failure. The [Coric fixture](../../tests/fixtures/aseprite/coric/README.md) is an unmodified Aseprite export. The other test fixtures and the crop-and-pivot example are original Malvado data, not exports from Aseprite. See the [acceptance decision](../specs/assets.md#alpha6-aseprite-acceptance-decision) for their coverage and limits.
+
+
+## Load an asset by path
+
+After `import_globals()`, use `load_asset(path, options?)`. The explicit module
+function is `mv.load_asset`. Both return the same managed image or library:
+
+```lua
+require("malvado").import_globals()
+start(function()
+  local icon = load_asset("icon.png")
+  local hero = load_asset("hero.json")
+  local enemies = load_asset("enemies.fpg")
+end)
+```
+
+The loader recognizes PNG signatures, the supported 8-bit FPG signature, native
+atlas schemas 1/2, Aseprite JSON-array exports, and version 1 converted-FPG
+manifests. It checks JSON structure and then calls the existing native importer
+for full validation. A `.json` suffix alone does not select a format. Unknown,
+ambiguous, malformed and unsupported inputs raise errors. This does not support
+native `.aseprite` files, folders as libraries, or mounted ZIP packages.
+
+The optional `format` is `"png"`, `"fpg"`, `"atlas"`, `"aseprite"`, or
+`"fpg-manifest"`. It selects the importer, which still validates the data.
+Unknown options and format names raise errors. `transparent_zero` is an optional
+boolean only for FPG input, defaulting to true for loaded library graphics.
+Converted FPG PNGs retain the transparency already encoded by the converter.
+Existing `fpg:image(id, transparent_zero)` calls keep their explicit policy.
+
+Paths are relative to the working directory. Referenced atlas/manifest images
+are relative to their metadata file, or use their explicit absolute path.
+Sources must be readable, seekable files of at most 64 MiB; the native parser's
+smaller metadata limits still apply. An empty path, zero byte in a path, missing
+file, read failure or changed source during reading raises an error.
+
+Load visual assets during initialization after the window opens. With an open
+window, libraries load their images and validate actual image dimensions.
+Without a window, PNG loading fails; FPG and JSON libraries provide metadata
+without loading images. Native-atlas bounds are then checked without a texture
+size, and Aseprite uses its declared canvas dimensions. This metadata-only
+result does not later acquire textures automatically. Use a new visual load
+when a window is available.
+
+Returned libraries retain the complete supported native metadata and existing
+lookup methods/functions: IDs, names/raw FPG bytes, palette/gamma, control
+points, pivots, original/cropped sizes and animation timing. No metadata is
+converted to a reduced Lua table. Lua references retain libraries and their
+images; garbage collection and the existing process resource rules release
+them. The low-level loaders and parsers remain available for advanced use.

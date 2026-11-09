@@ -4,9 +4,9 @@
 local mv = require("malvado")
 local original_frame = mv.frame
 local original_animation = mv.animation_frame
-local original_load = mv.load_aseprite
+local original_load = mv.load_asset
 local ticks, seen = 0, {}
-mv.load_aseprite = function(...)
+mv.load_asset = function(...)
   local atlas = original_load(...)
   for id = 1, 3 do
     local info = mv.sprite_info(atlas, id)

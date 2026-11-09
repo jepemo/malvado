@@ -62,6 +62,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `music_playing` | `mv.music_playing` |
 | `music_volume` | `mv.music_volume` |
 | `draw_text` | `mv.draw_text` |
+| `load_asset` | `mv.load_asset` |
 | `load_image` | `mv.load_image` |
 | `image_size` | `mv.image_size` |
 | `draw_image` | `mv.draw_image` |
