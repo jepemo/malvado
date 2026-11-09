@@ -18,7 +18,9 @@
 
 int malvado_clock_init(MalvadoClock *clock, double rate, unsigned max_steps) {
     if (!clock || !isfinite(rate) || rate <= 0 || max_steps == 0) return 0;
-    clock->tick_seconds = 1.0 / rate;
+    double tick_seconds = 1.0 / rate;
+    if (!isfinite(tick_seconds) || tick_seconds <= 0) return 0;
+    clock->tick_seconds = tick_seconds;
     clock->remainder = 0;
     clock->max_steps = max_steps;
     clock->dropped_seconds = 0;

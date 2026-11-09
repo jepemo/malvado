@@ -15,11 +15,14 @@
 
 #include "clock.h"
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 
 int main(void) {
-    MalvadoClock c;
+    MalvadoClock c = {.tick_seconds = 7, .remainder = 2, .max_steps = 3, .dropped_seconds = 4};
     assert(!malvado_clock_init(&c, 0, 5));
+    assert(!malvado_clock_init(&c, DBL_MIN / 16, 5));
+    assert(c.tick_seconds == 7 && c.remainder == 2 && c.max_steps == 3 && c.dropped_seconds == 4);
     assert(malvado_clock_init(&c, 10, 5));
     assert(malvado_clock_advance(&c, 0.04) == 0);
     assert(malvado_clock_advance(&c, 0.06) == 1);

@@ -29,9 +29,6 @@ struct MvContext {
 MvContext *
 mv_context_create(double ticks_per_second, unsigned max_steps)
 {
-    if (!isfinite(ticks_per_second) || ticks_per_second <= 0 ||
-        !isfinite(1.0 / ticks_per_second) || 1.0 / ticks_per_second <= 0)
-        return NULL;
     MvContext *ctx = malloc(sizeof(*ctx));
     if (!ctx)
         return NULL;
