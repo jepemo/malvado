@@ -16,11 +16,24 @@
 #undef NDEBUG
 #endif
 #include <assert.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
 #include "malvado/platform.h"
 
 int
 main(void)
 {
+    mv_platform_wait(NAN);
+    mv_platform_wait(INFINITY);
+    mv_platform_wait(DBL_MAX);
+#ifdef _WIN32
+    mv_platform_wait((double)UINT32_MAX / 1000.0);
+#else
+    mv_platform_wait((double)INT_MAX);
+#endif
+    mv_platform_wait(-1);
+    mv_platform_wait(0);
     double before = mv_platform_time();
     mv_platform_wait(0.04);
     double after = mv_platform_time();

@@ -197,6 +197,9 @@ void mv_window_end(void);
 /* Platform elapsed clock in seconds. The origin depends on the backend;
  * compare readings from the same backend. Headless returns 0 on clock failure. */
 double mv_platform_time(void);
+/* Headless: nonpositive, nonfinite, or unrepresentable durations are ignored.
+ * Durations must be below UINT32_MAX/1000 seconds on Windows and INT_MAX
+ * seconds on other headless platforms. */
 void mv_platform_wait(double seconds);
 
 /* Write monotonic elapsed-time clock seconds with an unspecified origin.

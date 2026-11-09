@@ -108,6 +108,10 @@ C and Lua can exchange booleans, integers, numbers, and binary strings. The Lua 
 is backend-specific; compare readings from the same backend. The headless
 backend uses the monotonic wall clock and returns zero if it cannot read it.
 For an explicit failure result, use `mv_monotonic_time(&seconds)`.
+`mv_platform_wait(seconds)` waits on the headless platform. Nonpositive or
+nonfinite durations are ignored. Durations at or above `UINT32_MAX / 1000.0`
+seconds on Windows or `INT_MAX` seconds on other headless platforms are also
+ignored. The wait can end early if interrupted.
 
 [`platform.h`](../../src/include/malvado/platform.h) provides the initial window adapter. The raylib implementation owns one window and must run on the main thread. `mv_window_escape_down` and `mv_window_space_down` report held keys. The headless implementation cannot open a window and reports both keys as released. These functions are separate from the process context; broader graphics and resource APIs are planned for alpha.3.
 
