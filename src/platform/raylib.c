@@ -717,4 +717,3 @@ void mv_window_end(void)
     capture_text_input();
 }
 double mv_platform_time(void) { return GetTime(); }
-void mv_platform_wait(double seconds) { WaitTime(seconds); }

@@ -20,6 +20,8 @@
 #include <windows.h>
 #endif
 #include "malvado/platform.h"
+#include <limits.h>
+#include <math.h>
 
 int
 mv_monotonic_time(double *seconds)
@@ -39,4 +41,23 @@ mv_monotonic_time(double *seconds)
     *seconds = (double)value.tv_sec + (double)value.tv_nsec / 1e9;
 #endif
     return 1;
+}
+
+void
+mv_platform_wait(double seconds)
+{
+    if (!isfinite(seconds) || seconds <= 0)
+        return;
+#ifdef _WIN32
+    /* UINT32_MAX is the infinite wait sentinel for Sleep. */
+    if (seconds >= (double)UINT32_MAX / 1000.0)
+        return;
+    Sleep((DWORD)(seconds * 1000));
+#else
+    /* Keep the conversion representable even with a 32-bit time_t. */
+    if (seconds >= (double)INT_MAX)
+        return;
+    struct timespec duration = {(time_t)seconds, (long)((seconds - (time_t)seconds) * 1e9)};
+    nanosleep(&duration, NULL);
+#endif
 }

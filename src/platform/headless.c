@@ -16,8 +16,6 @@
 #define _POSIX_C_SOURCE 199309L
 #include "malvado/platform.h"
 #include <time.h>
-#include <limits.h>
-#include <math.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -151,21 +149,4 @@ mv_platform_time(void)
 {
     double seconds;
     return mv_monotonic_time(&seconds) ? seconds : 0;
-}
-void mv_platform_wait(double seconds)
-{
-    if (!isfinite(seconds) || seconds <= 0)
-        return;
-#ifdef _WIN32
-    /* UINT32_MAX is the infinite wait sentinel for Sleep. */
-    if (seconds >= (double)UINT32_MAX / 1000.0)
-        return;
-    Sleep((DWORD)(seconds * 1000));
-#else
-    /* Keep the conversion representable even with a 32-bit time_t. */
-    if (seconds >= (double)INT_MAX)
-        return;
-    struct timespec duration = {(time_t)seconds, (long)((seconds - (time_t)seconds) * 1e9)};
-    nanosleep(&duration, NULL);
-#endif
 }
