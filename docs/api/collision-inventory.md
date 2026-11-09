@@ -29,6 +29,14 @@ process. Neither API implements pixel masks. The [contract](collision.md) includ
 | `MvCollisionWorld` | Opaque C-owned world; Lua world objects manage their lifetime. |
 | `MvCollisionSweep` | Copied C sweep result; Lua returns a result table. |
 
+## C collision constants
+
+| C enum | C constants | Lua relationship |
+| --- | --- | --- |
+| `MvCollisionKind` | `MV_COLLISION_CIRCLE`, `MV_COLLISION_RECT` | Lua constructs descriptors with `mv.collision.circle` or `mv.collision.rect`. |
+
+`public_enum_map` checks the C enum and constant names, not numeric values.
+
 `collision_api_map` checks public function and type names against the header. It
 does not check fields, constants, semantics, or whether every C operation has a
 Lua equivalent.

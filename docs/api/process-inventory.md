@@ -36,6 +36,21 @@ The check detects missing or extra type names, not changes to fields or semantic
 | `MvMessageType`, `MvMessage` | Native message tags and values. Lua exchanges primitive values and binary strings with C; Lua-only objects stay in the VM. |
 | `MvResource`, `MvResourceDestroy` | Native resource and destructor. Lua wrappers retain resources but do not expose C ownership transfer. |
 
+## C process constants
+
+| C enum | C constants | Lua relationship |
+| --- | --- | --- |
+| `MvResult` | `MV_OK`, `MV_INVALID_ARGUMENT`, `MV_OVERFLOW`, `MV_NOT_FOUND`, `MV_OUT_OF_MEMORY`, `MV_BUSY`, `MV_PROCESS_ERROR`, `MV_QUEUE_FULL`, `MV_QUEUE_EMPTY`, `MV_BUFFER_TOO_SMALL` | Lua uses operation-specific errors or results; it does not expose these C codes. |
+| `MvProcessStatus` | `MV_PROCESS_RUNNING`, `MV_PROCESS_SLEEPING`, `MV_PROCESS_FROZEN` | Lua uses `running`, `sleeping`, and `frozen` strings; a dead handle reports `dead`. |
+| `MvEndReason` | `MV_END_KILLED`, `MV_END_RETURNED`, `MV_END_ERROR` | A dead Lua handle reports `killed`, `returned`, or `error`. |
+| `MvSignal` | `MV_SIGNAL_SLEEP`, `MV_SIGNAL_FREEZE`, `MV_SIGNAL_WAKEUP`, `MV_SIGNAL_KILL` | Lua uses matching signal strings and `SIGNAL_*` string constants. |
+| `MvStepResult` | `MV_STEP_YIELD`, `MV_STEP_DONE`, `MV_STEP_ERROR` | C callback results have no direct Lua enum; Lua yields, returns, or raises an error. |
+| `MvMessageType` | `MV_MESSAGE_BOOLEAN`, `MV_MESSAGE_INTEGER`, `MV_MESSAGE_NUMBER`, `MV_MESSAGE_BYTES`, `MV_MESSAGE_OPAQUE` | Lua exchanges primitive values and byte strings with C; Lua objects stay in the VM. |
+
+`public_enum_map` checks C enum and constant names, not their numeric values or
+semantics. See the [C contract](c-contract.md) and [Lua guide](lua-processes.md)
+for errors, lifecycle, and message ownership.
+
 ## Lua entry forms
 
 Both `mv.start(init, options)` and a returned game table with `init`, `width`, `height`, and `title` use the same runtime and scheduler. Initialization runs once before the first scheduled tick. Both forms use the same defaults and report initialization or process failures. They cannot be combined in one run. See [Lua processes](lua-processes.md) for the full options and errors.
