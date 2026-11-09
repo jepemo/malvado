@@ -221,9 +221,16 @@ add_test(NAME atlas COMMAND atlas_test "${CMAKE_CURRENT_SOURCE_DIR}/atlas.json" 
 endif()
 if(HAS_GRAPHICS)
   file(WRITE "${WORK}/game/graphics.c" [=[
+#include <limits.h>
 #include "malvado/platform.h"
 int main(void) {
   if (!mv_window_open(160, 100, "Installed SDK")) return 1;
+  int width = mv_window_text_width("Hello", 20);
+  int overflow = mv_window_text_width("MMMMMMMMMMMMMMMM", INT_MAX);
+  if (width <= 0 || overflow != 0) {
+    mv_window_close();
+    return 1;
+  }
   mv_window_begin((MvColor){0, 0, 0, 255});
   mv_window_draw_text("Hello", 10, 10, 20, (MvColor){255, 255, 255, 255});
   mv_window_end();
