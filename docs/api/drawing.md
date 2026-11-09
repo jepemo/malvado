@@ -25,6 +25,10 @@ Invalid geometry raises an error. Draw commands are valid only inside a running 
 
 In C, call `mv_window_draw_box(x, y, width, height, filled, color)` or `mv_window_draw_circle(x, y, radius, filled, color)` between `mv_window_begin` and `mv_window_end`. Pass 1 for filled or 0 for outlined. The functions return 0 for invalid geometry or no window. C drawing follows call order.
 
+`mv.clear_screen(r, g, b)` sets the background for later frames. Each channel
+must be an integer from 0 to 255. Invalid channels raise an error and leave the
+background unchanged.
+
 ## Fade the screen
 
 `mv.fade_off(ticks)` fades to opaque black, and `mv.fade_on(ticks)` fades back to transparent. The duration defaults to 16 simulation ticks. Calls are queued, so `mv.fade_off(); mv.fade_on()` runs the two transitions in order. The legacy import also supplies these two names. Its argument is a duration in ticks; it does not reproduce the historical speed argument.

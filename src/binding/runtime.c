@@ -1566,9 +1566,9 @@ set_title(lua_State *L)
 static int
 clear_screen(lua_State *L)
 {
-    int r = luaL_checkinteger(L, 1);
-    int g = luaL_checkinteger(L, 2);
-    int b = luaL_checkinteger(L, 3);
+    lua_Integer r = luaL_checkinteger(L, 1);
+    lua_Integer g = luaL_checkinteger(L, 2);
+    lua_Integer b = luaL_checkinteger(L, 3);
     if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)
         return luaL_error(L, "color must be in 0..255");
     engine.background = (MvColor) {
