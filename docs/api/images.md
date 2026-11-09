@@ -25,6 +25,9 @@ mv.start(function()
 end)
 ```
 
+`draw_image` coordinates must be integers that fit a C `int`. Out-of-range
+values raise an error without adding a draw command.
+
 Paths are relative to the current working directory. `load_image` reports an error if the file is not a valid PNG or there is no window. Images are not available in headless mode. Lua keeps an image alive while a draw command uses it. It releases the image when it is no longer used or when the runner closes.
 
 Each Lua process has a `self.z` draw order, initially zero. Set it to a finite number to draw that process in front of lower values. Equal values use process creation order, so later processes draw on top. Changes take effect on the next render. This order applies to process draw commands; persistent text is drawn afterward. It does not change scheduler priority. In C, issue drawing calls in the order you want between `mv_window_begin` and `mv_window_end`.

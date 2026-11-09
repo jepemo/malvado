@@ -1995,8 +1995,10 @@ static int
 draw_image(lua_State *L)
 {
     luaL_checkudata(L, 1, "malvado.image");
-    luaL_checkinteger(L, 2);
-    luaL_checkinteger(L, 3);
+    lua_Integer x = luaL_checkinteger(L, 2);
+    lua_Integer y = luaL_checkinteger(L, 3);
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
+        return luaL_error(L, "image coordinate is outside the supported range");
     if (!engine.active || L != engine.active_thread)
         return luaL_error(L, "draw_image must be called inside a process");
     Process *process = find_process(engine.active_id);

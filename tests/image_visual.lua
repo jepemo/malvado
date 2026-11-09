@@ -5,11 +5,23 @@ local mv = require("malvado")
 assert(not pcall(mv.load_image, "tests/fixtures/red.png"))
 local shared
 local producer = mv.process(function() shared = mv.load_image("tests/fixtures/red.png") end)
-local worker = mv.process(function()
+local worker = mv.process(function(self)
     local image = shared
     assert(image and mv.image_size(image) == 8)
     local width, height = mv.image_size(image)
     assert(width == 8 and height == 8)
+    local function draw_count()
+        for _, process in ipairs(mv.snapshot().processes) do
+            if process.id == self.id then return process.draw_commands end
+        end
+        error("worker missing from snapshot")
+    end
+    local before = draw_count()
+    for _, value in ipairs({0x100000000, -0x100000000, math.maxinteger, math.mininteger}) do
+        assert(not pcall(mv.draw_image, image, value, 0))
+        assert(not pcall(mv.draw_image, image, 0, value))
+    end
+    assert(draw_count() == before)
     local file = assert(io.open("tests/fixtures/atlas.json", "rb"))
     local json = file:read("a")
     file:close()
