@@ -25,7 +25,7 @@ setmetatable(_G, previous_meta)
 assert(meta_calls == 0)
 for name, value in pairs(mv) do
   if name ~= "import_globals" and name ~= "legacy_fpg" and name ~= "unlisted_extension" and
-      (type(value) == "function" or name == "process" or name:match("^[A-Z][A-Z0-9_]*$")) then
+      (type(value) == "function" or name == "process" or name == "collision" or name:match("^[A-Z][A-Z0-9_]*$")) then
     assert(rawget(_G, name) == value, "missing global export: " .. name)
   end
 end
@@ -41,7 +41,7 @@ assert(KEY_UP == mv.KEY_UP and KEY_UP == "up")
 assert(KEY_A == "a" and KEY_0 == "0" and SIGNAL_KILL == "kill")
 assert(mv.key(KEY_UP) == mv.key("up"))
 assert(legacy_fpg == nil and import_globals == nil and unlisted_extension == nil)
-assert(collision == nil and type(mv.collision) == "table")
+assert(collision == mv.collision and type(collision) == "table")
 assert(graphics == nil and type(mv.graphics) == "table")
 
 for _, namespace in ipairs({mv.process, mv.input}) do
@@ -55,7 +55,7 @@ local registry = debug.getregistry()
 local original_globals = registry[2]
 for name, value in pairs(mv) do
   if name ~= "import_globals" and name ~= "legacy_fpg" and name ~= "unlisted_extension" and
-      (type(value) == "function" or name == "process" or name:match("^[A-Z][A-Z0-9_]*$")) then
+      (type(value) == "function" or name == "process" or name == "collision" or name:match("^[A-Z][A-Z0-9_]*$")) then
     local scratch = {[name] = "conflict"}
     registry[2] = scratch
     local imported = pcall(mv.import_globals)

@@ -4,10 +4,13 @@
 
 See the [namespace inventory](lua-namespaces.md) for functions that are also available through `mv` namespaces.
 
-Each global has the same value as the `mv` field shown below. `process` is a callable table. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. Atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. Atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |
+| `collision` | `mv.collision` |
+| `world_create` | `mv.world_create` |
+| `world_move` | `mv.world_move` |
 | `rect_overlaps` | `mv.rect_overlaps` |
 | `rect_contains` | `mv.rect_contains` |
 | `process` | `mv.process` |

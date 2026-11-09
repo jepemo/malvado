@@ -188,3 +188,12 @@ clip. It does not change process coordinates or collision queries. See
 Assign a `graphics.scroll(x, y)` descriptor to `self.scroll` to draw this
 process relative to a world offset. Other processes and collision positions
 are unchanged. See [scrolling](drawing.md#scroll-a-lua-process).
+
+
+## Process world context
+
+Set `self.world` to a world from `world_create()` and call `world_move(dx, dy)`
+inside the process to move with its existing collider. `collision(Enemy)` queries
+that process against a process constructor or handle. Both names are installed
+by `import_globals()`. Explicit calls remain available; see the
+[collision and world contract](collision.md#contextual-process-and-world-calls).

@@ -3754,6 +3754,7 @@ static const struct { const char *name; const char *value; } api_constants[] = {
 };
 
 static const char *const global_names[] = {
+    "collision", "world_create", "world_move",
     "rect_overlaps",
     "rect_contains",
     "process",
@@ -4176,6 +4177,19 @@ world_process_collision(lua_State *L)
     return 1;
 }
 
+/* Context belongs to the scheduled coroutine. A nested user coroutine must
+ * not borrow the active process of its caller. */
+static void
+push_current_process(lua_State *L)
+{
+    if (!engine.active || L != engine.active_thread)
+        luaL_error(L, "operation requires a running process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        luaL_error(L, "current process is no longer alive");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+}
+
 static int
 world_process_move(lua_State *L)
 {
@@ -4232,6 +4246,27 @@ world_process_move(lua_State *L)
     LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
     sync_process_collider(L, self, fields);
     return 1;
+}
+
+static int
+world_move(lua_State *L)
+{
+    int arguments = lua_gettop(L);
+    if (arguments == 2) {
+        push_current_process(L);
+        lua_insert(L, 1);
+        lua_getiuservalue(L, 1, 1);
+        raw_option(L, -1, "world");
+        lua_remove(L, -2);
+        if (lua_isnil(L, -1))
+            return luaL_error(L, "current process has no world");
+        if (!luaL_testudata(L, -1, "malvado.collision_world"))
+            return luaL_error(L, "current process world must be a collision world");
+        lua_insert(L, 1);
+    } else if (arguments != 4) {
+        return luaL_error(L, "expected world_move(dx, dy) or world_move(world, process, dx, dy)");
+    }
+    return world_process_move(L);
 }
 
 static int
@@ -4372,6 +4407,18 @@ process_collision_all(lua_State *L)
 }
 
 static int
+call_collision_namespace(lua_State *L)
+{
+    /* __call supplies the namespace before the single query target. */
+    if (lua_gettop(L) != 2)
+        return luaL_error(L, "expected collision(target)");
+    lua_remove(L, 1);
+    push_current_process(L);
+    lua_insert(L, 1);
+    return process_collision_first(L);
+}
+
+static int
 graphic_create(lua_State *L)
 {
     MvCollisionKind kind = (MvCollisionKind)lua_tointeger(L, lua_upvalueindex(1));
@@ -4492,6 +4539,8 @@ static int
 open_module(lua_State *L)
 {
     static const luaL_Reg functions[] = {
+        {"world_create", world_create},
+        {"world_move", world_move},
         {"rect_overlaps", rect_overlaps},
         {"rect_contains", rect_contains},
         {"process", define_process},
@@ -4741,6 +4790,8 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_pushcfunction(L, world_create);
     lua_setfield(L, -2, "create");
+    lua_pushcfunction(L, world_move);
+    lua_setfield(L, -2, "move");
     lua_setfield(L, -2, "world");
     lua_newtable(L);
     lua_pushinteger(L, MV_COLLISION_CIRCLE);
@@ -4751,6 +4802,10 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "rect");
     lua_pushcfunction(L, collision_overlap);
     lua_setfield(L, -2, "overlap");
+    lua_newtable(L);
+    lua_pushcfunction(L, call_collision_namespace);
+    lua_setfield(L, -2, "__call");
+    lua_setmetatable(L, -2);
     lua_setfield(L, -2, "collision");
     for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
         lua_pushstring(L, api_constants[i].value);

@@ -19,7 +19,7 @@ local Circle = process(function(self)
     self.x = math.max(20, math.min(620, self.x))
     self.y = math.max(20, math.min(460, self.y))
     draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
-    if process.collision(self, Square) then
+    if collision(Square) then
       draw_text("Collision!", 20, 55, 28)
     end
     frame()

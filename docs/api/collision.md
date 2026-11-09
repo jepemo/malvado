@@ -77,11 +77,11 @@ unknown fields, or values outside the C operation's documented limits raise an
 error. It returns a boolean. Touching edges do not overlap. This function does not query processes. Process graphics can supply automatic
 colliders, as described below.
 
-The `collision` namespace is not installed by `import_globals()`. Use
-`require("malvado").collision`. A global `collision(...)` shorthand is not
-provided: process selection and shape geometry have different arguments, and a
-single global name would make their meaning ambiguous. Process collision queries
-are available in the `process` namespace.
+`import_globals()` installs the callable `collision` namespace. Calling
+`collision(target)` queries the running process against a constructor or handle.
+The geometric operations remain explicit as `mv.collision.circle`, `rect`, and
+`overlap`; calling the namespace does not construct or compare shapes. The
+explicit `mv.process.collision(source, target)` query remains available.
 
 
 ## Static world in C
@@ -276,3 +276,45 @@ work without a window.
 A legacy image drawn by legacy `frame()` uses a centered automatic collider.
 A legacy FPG sheet needs an explicit collider; its automatically derived
 collider is not supported.
+
+
+## Contextual process and world calls
+
+```lua
+require("malvado").import_globals()
+local world = world_create()
+world:add_rect({x = 300, y = 100, width = 40, height = 280})
+local Player = process(function(self)
+  self.world = world
+  self.graph = require("malvado").graphics.circle(16)
+  local result = world_move(4, 0)
+  if result.hit then print("Wall", result.id) end
+end)
+start(function() Player({x = 100, y = 200}) end)
+```
+
+`world_create()` is the same function as `mv.world.create()`. A process can
+retain a world in `self.world`, including in its defaults. This association
+does not move it, register it as an obstacle, or make x/y assignments physical.
+The reference keeps the world alive while the process fields retain it.
+Changing or clearing the field changes only future contextual calls.
+
+`world_move(dx, dy)` resolves the actual running process and its `world` field.
+It delegates to `world:move(self, dx, dy)` and returns the same hit table,
+actual displacement, normal, and optional obstacle ID. The explicit
+`world_move(world, player, dx, dy)` works without a running process and ignores
+any contextual world. `mv.world.move` and `mv.world_move` are the same function.
+The method remains available. All forms use the same native sweep and do not slide.
+
+`collision(target)` returns the same canonical handle or `nil` as
+`mv.process.collision(self, target)`, with the same creation ordering,
+self-exclusion, sleeping/frozen participation, and dead-target behavior.
+For an explicit source, use the existing namespace query.
+
+Implicit calls fail outside the scheduled process coroutine, including inside
+a nested user coroutine. A missing or invalid `self.world` raises a useful
+error on movement. Explicit movement validates its world and process handles
+instead. Invalid calls do not move the process. A disabled collider (`false`),
+an automatic collider (`nil`) and an explicit collider keep their existing
+behavior in every form. Worlds and descriptors remain garbage-collected; no
+new native resource or scheduler is introduced by these wrappers.

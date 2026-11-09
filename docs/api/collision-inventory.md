@@ -40,3 +40,15 @@ process. Neither API implements pixel masks. The [contract](collision.md) includ
 `collision_api_map` checks public function and type names against the header. It
 does not check fields, constants, semantics, or whether every C operation has a
 Lua equivalent.
+
+
+## Contextual Lua wrappers
+
+`collision(target)` delegates to `mv.process.collision` for the running process.
+`world_create` aliases `mv.world.create`; `world_move` and `mv.world.move` add
+contextual/explicit access to the existing world movement implementation.
+These wrappers add no native symbols. See the [context contract](collision.md#contextual-process-and-world-calls),
+`tests/contextual_world.lua`, and `tests/contextual_world_start.lua` for results,
+errors, coroutine isolation, collider overrides, retention and both entry forms.
+The collision/world examples exercise contextual queries and movement; explicit
+method/query regressions remain in the existing collision and world tests.

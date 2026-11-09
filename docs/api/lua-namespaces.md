@@ -45,6 +45,7 @@ object methods and process fields are not included in this namespace table.
 | `mv.collision.circle` | Create a circle shape | [collision](collision.md) |
 | `mv.collision.rect` | Create a rectangle shape | [collision](collision.md) |
 | `mv.collision.overlap` | Test two transformed shapes | [collision](collision.md) |
+| `mv.world.move` | Move a process explicitly or through its current world | [collision](collision.md) |
 | `mv.world.create` | Create a static collision world | [collision](collision.md) |
 | `mv.fpg.parse` | Parse an FPG file * | [FPG](../specs/fpg-8.md) |
 | `mv.fpg.parse_manifest` | Parse an FPG manifest * | [FPG](../specs/fpg-8.md) |
