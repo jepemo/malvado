@@ -104,10 +104,11 @@ C and Lua can exchange booleans, integers, numbers, and binary strings. The Lua 
 
 ## Platform and embedding limits
 
-`mv_platform_time()` reads the platform elapsed clock in seconds. The origin
-is backend-specific; compare readings from the same backend. The headless
-backend uses the monotonic wall clock and returns zero if it cannot read it.
-For an explicit failure result, use `mv_monotonic_time(&seconds)`.
+`mv_platform_time()` reads the monotonic elapsed clock in seconds without a
+window on either backend. Its origin is unspecified. It returns zero if the
+clock cannot be read; use `mv_monotonic_time(&seconds)` for an explicit failure
+result. Its origin differs from earlier graphical builds, so do not persist or
+compare absolute readings across runs.
 `mv_platform_wait(seconds)` waits on either backend. Nonpositive or
 nonfinite durations are ignored. Durations at or above `UINT32_MAX / 1000.0`
 seconds on Windows or `INT_MAX` seconds on other platforms are also

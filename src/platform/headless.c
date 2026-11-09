@@ -144,9 +144,3 @@ int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTran
 }
 void mv_window_flush(void) {}
 void mv_window_end(void) {}
-double
-mv_platform_time(void)
-{
-    double seconds;
-    return mv_monotonic_time(&seconds) ? seconds : 0;
-}

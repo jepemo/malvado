@@ -43,6 +43,13 @@ mv_monotonic_time(double *seconds)
     return 1;
 }
 
+double
+mv_platform_time(void)
+{
+    double seconds;
+    return mv_monotonic_time(&seconds) ? seconds : 0;
+}
+
 void
 mv_platform_wait(double seconds)
 {

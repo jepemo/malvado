@@ -716,4 +716,3 @@ void mv_window_end(void)
     drawing_active = 0;
     capture_text_input();
 }
-double mv_platform_time(void) { return GetTime(); }

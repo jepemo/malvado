@@ -36,8 +36,12 @@ main(void)
     mv_platform_wait(0);
     double before, after;
     assert(mv_monotonic_time(&before));
+    double platform_before = mv_platform_time();
     mv_platform_wait(0.04);
+    double platform_after = mv_platform_time();
     assert(mv_monotonic_time(&after));
+    assert(platform_after >= platform_before);
+    assert(platform_after - platform_before >= 0.02);
     assert(after - before >= 0.02);
     return 0;
 }

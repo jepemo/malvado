@@ -194,8 +194,9 @@ int mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTra
 int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTransform transform);
 void mv_window_flush(void);
 void mv_window_end(void);
-/* Platform elapsed clock in seconds. The origin depends on the backend;
- * compare readings from the same backend. Headless returns 0 on clock failure. */
+/* Monotonic elapsed clock in seconds with an unspecified origin. Available
+ * without a window. Return 0 on clock failure. For an explicit failure result,
+ * use mv_monotonic_time. */
 double mv_platform_time(void);
 /* Nonpositive, nonfinite, or unrepresentable durations are ignored.
  * Durations must be below UINT32_MAX/1000 seconds on Windows and INT_MAX
