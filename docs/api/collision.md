@@ -141,7 +141,10 @@ first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
 `angle`, and `size`, including the collider offset. A `false` collider disables
 participation. A process with neither a collider nor a graph returns `nil`.
 When `collider` is `nil`, a supported graphic or image supplies its shape and
-pivot. Direct images use their full bounds and a top-left pivot. An atlas sprite
+pivot. Direct images use their full bounds and default to a top-left pivot. A PNG
+loaded with `pivot = "center"` uses its exact center for both drawing and
+automatic geometry. Explicit colliders use source-space dimensions/offsets and
+receive the process scale/angle once. An atlas sprite
 descriptor uses its region and metadata pivot. A graph of another type without
 an explicit collider raises an error. Invalid, foreign, or dead handles and
 invalid transforms raise an error. Sleeping and frozen processes participate.

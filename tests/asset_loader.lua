@@ -21,6 +21,8 @@ end
 fails("invalid asset path", load_asset, "")
 fails("invalid asset path", load_asset, "tests\0hidden")
 fails("cannot open asset", load_asset, "tests/no-such-asset.json")
+fails("PNG pivot", load_asset, "unused", {pivot = "other"})
+fails("only valid for PNG", load_asset, "tests/fixtures/atlas.json", {pivot = "center"})
 fails("unknown asset format", load_asset, "unused", {format = "zip"})
 fails("unknown", load_asset, "unused", {other = true})
 fails("boolean", load_asset, "unused", {transparent_zero = 1})

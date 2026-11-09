@@ -20,10 +20,17 @@
 #include <float.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct MvImage {
     Texture2D texture;
+    size_t references;
+    char *path;
+    struct MvImage *next;
 };
+/* Weak index: references belong to callers, not the cache. The platform owns
+ * one window; callers release all images before closing it. */
+static MvImage *image_cache;
 typedef struct {
     Sound original;
     size_t references;
@@ -638,19 +645,36 @@ mv_image_load(const char *path)
 {
     if (!path || !IsWindowReady() || !IsFileExtension(path, ".png"))
         return NULL;
+#ifdef _WIN32
+    char *resolved = _fullpath(NULL, path, 0);
+#else
+    char *resolved = realpath(path, NULL);
+#endif
+    if (!resolved) return NULL;
+    for (MvImage *cached = image_cache; cached; cached = cached->next) {
+        if (!strcmp(cached->path, resolved)) {
+            free(resolved);
+            if (cached->references == SIZE_MAX) return NULL;
+            ++cached->references;
+            return cached;
+        }
+    }
     Image source = LoadImage(path);
-    if (!IsImageValid(source))
-        return NULL;
+    if (!IsImageValid(source)) { free(resolved); return NULL; }
     Texture2D texture = LoadTextureFromImage(source);
     UnloadImage(source);
-    if (!IsTextureValid(texture))
-        return NULL;
-    MvImage *image = malloc(sizeof(*image));
+    if (!IsTextureValid(texture)) { free(resolved); return NULL; }
+    MvImage *image = calloc(1, sizeof(*image));
     if (!image) {
         UnloadTexture(texture);
+        free(resolved);
         return NULL;
     }
     image->texture = texture;
+    image->references = 1;
+    image->path = resolved;
+    image->next = image_cache;
+    image_cache = image;
     return image;
 }
 
@@ -665,12 +689,13 @@ mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length)
                     .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
     Texture2D texture = LoadTextureFromImage(source);
     if (!IsTextureValid(texture)) return NULL;
-    MvImage *image = malloc(sizeof(*image));
+    MvImage *image = calloc(1, sizeof(*image));
     if (!image) {
         UnloadTexture(texture);
         return NULL;
     }
     image->texture = texture;
+    image->references = 1;
     return image;
 }
 
@@ -679,6 +704,13 @@ mv_image_destroy(MvImage *image)
 {
     if (!image)
         return;
+    if (--image->references) return;
+    if (image->path) {
+        MvImage **link = &image_cache;
+        while (*link && *link != image) link = &(*link)->next;
+        if (*link) *link = image->next;
+        free(image->path);
+    }
     UnloadTexture(image->texture);
     free(image);
 }

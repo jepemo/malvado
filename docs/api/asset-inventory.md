@@ -70,3 +70,10 @@ no native public API changed. See [static selection](images.md#select-a-static-g
 `tests/graph_selection.lua`, `tests/graph_selection_start.lua`, and
 `tests/graph_selection_visual.lua` for context, identity, pivots, resource
 retention and rendering parity. Images can still be assigned directly.
+
+
+PNG loads now share native textures by resolved path. Each successful C load
+returns one reference that the caller must destroy. Lua image wrappers retain
+independent optional `pivot` metadata. See [PNG ownership and pivots](images.md#shared-png-textures-and-automatic-pivots),
+`visual_image_cache`, `visual_png_pivot`, and `visual_installed_graphics_sdk`
+for lifetime, rendering, collision and installed consumer evidence.

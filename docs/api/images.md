@@ -206,6 +206,9 @@ native `.aseprite` files, folders as libraries, or mounted ZIP packages.
 
 The optional `format` is `"png"`, `"fpg"`, `"atlas"`, `"aseprite"`, or
 `"fpg-manifest"`. It selects the importer, which still validates the data.
+For PNG process graphics, set `pivot = "center"` to rotate and collide around
+the image center. The default is `"top-left"`. See [PNG pivots](#shared-png-textures-and-automatic-pivots).
+
 Unknown options and format names raise errors. `transparent_zero` is an optional
 boolean only for FPG input, defaulting to true for loaded library graphics.
 Converted FPG PNGs retain the transparency already encoded by the converter.
@@ -288,3 +291,48 @@ Modern selection uses `self.file` and `self.graph`. `self.fpg` and
 `self.fpgIndex` retain meaning only in the explicit legacy compatibility profile.
 The existing `mv.graphics.sprite(atlas, id)` remains available. See [automatic animation](animations.md) for `animation()` playback. The advanced
 `animation_frame` sampler remains available for explicit time/frame selection.
+
+## Shared PNG textures and automatic pivots
+
+Repeated PNG loads share the native texture while it is alive. This includes
+`load_asset`, `load_image`, and atlas/manifest image loading. Lua calls can return
+different managed objects with their own drawing metadata; they retain shared
+native image references. Ending the process that loaded one reference does not
+invalidate another process's graph. The cache itself does not pin the texture.
+Existing process/context resource ownership can retain references until cleanup.
+
+The key is the normalized absolute file path (with symlink resolution on POSIX),
+not file content. Equivalent relative/absolute paths share that key. A live
+texture is a snapshot; changing the file does not reload it. Release its last
+native reference before loading a changed version. RGBA-created images are not
+file-cached. This does not add a hot-reload or asset-packaging system.
+
+By default, an image assigned to `self.graph` keeps its top-left origin. Select a
+centered pivot explicitly for rotating actors:
+
+```lua
+self.graph = load_asset("ship.png", {pivot = "center"})
+self.size = 0.1
+self.angle = 45
+```
+
+PNG `pivot` accepts `"center"` or `"top-left"`. Other values and non-PNG pivot
+options raise errors. The center is exactly half the source dimensions, including
+half-pixel centers for odd dimensions. Automatic drawing and collider inference
+use the same pivot, rotation and scale. Pivot options belong to the Lua image
+reference; two references to the same texture can use different pivots.
+Explicit `draw_image` coordinates remain top-left; `draw_image_region` uses the
+pivot supplied in its arguments. Other asset formats retain their metadata pivots.
+
+Automatic PNG colliders still cover the full rectangular source image. Transparency
+or an outlined graphic does not imply pixel-mask collision. For gameplay, set an
+explicit source-space circle/rectangle. The engine applies `self.size` and angle
+once, including the collider offset. Do not scale the collider a second time.
+See [Space Asteroids](../../examples/space_asteroids/) for shared centered sprites
+with explicit source-space geometric approximations.
+
+In C, each successful `mv_image_load` returns one owned reference, which can have
+the same pointer as an earlier load. Call `mv_image_destroy` once per successful
+load, before window close. One release leaves other references valid; the last
+release unloads and removes the cached image. C callers continue to provide
+pivots explicitly through `MvImageTransform`.

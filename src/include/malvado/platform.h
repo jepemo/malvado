@@ -175,8 +175,11 @@ int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color);
 int mv_window_draw_transformed_rect(float x, float y, float width, float height,
                                     float pivot_x, float pivot_y, float angle, MvColor color);
 int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color);
-/* Load a PNG after opening a window. Returns NULL on failure.
- * The caller owns the image and must destroy it before closing the window. */
+/* Load a PNG after opening a window. Returns NULL on failure. Repeated loads
+ * of the same resolved absolute path share the live image/texture. Each success
+ * returns one owned reference: destroy it once per load, before window close.
+ * The weak cache releases the texture with its last reference. Live images do
+ * not reload when their source file changes. RGBA-created images are not cached. */
 MvImage *mv_image_load(const char *path);
 /* Create an image from packed RGBA bytes. Input is borrowed only during the
  * call. Width and height are positive, at most 8192, and length must cover

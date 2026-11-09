@@ -114,7 +114,7 @@ typedef struct {
 } LuaSelf;
 typedef struct { int x, y, width, height; } LuaRegion;
 typedef struct { float x, y; } LuaScroll;
-typedef struct { MvImage *image; MvResource *resource; } LuaImage;
+typedef struct { MvImage *image; MvResource *resource; double pivot_x, pivot_y; } LuaImage;
 typedef struct {
     MvCollisionShape shape;
     MvColor color;
@@ -410,7 +410,7 @@ parse_signal(lua_State *L, int argument)
 }
 
 static void
-validate_options(lua_State *L, int index, const char *first, const char *second)
+validate_options_extra(lua_State *L, int index, const char *first, const char *second, const char *third)
 {
     index = lua_absindex(L, index);
     luaL_checktype(L, index, LUA_TTABLE);
@@ -419,10 +419,17 @@ validate_options(lua_State *L, int index, const char *first, const char *second)
         size_t length = 0;
         const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
         if (!name || strlen(name) != length ||
-            (strcmp(name, first) != 0 && (!second || strcmp(name, second) != 0)))
+            (strcmp(name, first) != 0 && (!second || strcmp(name, second) != 0) &&
+             (!third || strcmp(name, third) != 0)))
             luaL_error(L, "unknown process option");
         lua_pop(L, 1);
     }
+}
+
+static void
+validate_options(lua_State *L, int index, const char *first, const char *second)
+{
+    validate_options_extra(L, index, first, second, NULL);
 }
 
 static void
@@ -824,8 +831,8 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
                 int width = mv_image_width(image->image), height = mv_image_height(image->image);
                 if (width > 0 && height > 0) {
                     shape = (MvCollisionShape){.kind = MV_COLLISION_RECT, .width = width, .height = height,
-                        .offset_x = legacy ? 0 : width / 2.0,
-                        .offset_y = legacy ? 0 : height / 2.0};
+                        .offset_x = legacy ? 0 : width / 2.0 - image->pivot_x,
+                        .offset_y = legacy ? 0 : height / 2.0 - image->pivot_y};
                     present = 1;
                 } else invalid = 1;
             } else invalid = 1;
@@ -3041,9 +3048,9 @@ load_asset(lua_State *L)
     if (!path_length || strlen(path) != path_length)
         return luaL_error(L, "invalid asset path");
     const char *requested = NULL;
-    int transparent = 1, has_transparent = 0;
+    int transparent = 1, has_transparent = 0, has_pivot = 0, centered = 0;
     if (!lua_isnoneornil(L, 2)) {
-        validate_options(L, 2, "format", "transparent_zero");
+        validate_options_extra(L, 2, "format", "transparent_zero", "pivot");
         raw_option(L, 2, "format");
         if (!lua_isnil(L, -1)) {
             size_t length;
@@ -3055,6 +3062,16 @@ load_asset(lua_State *L)
                 return luaL_error(L, "unknown asset format");
         }
         /* Keep the option value rooted until loading completes. */
+        raw_option(L, 2, "pivot");
+        if (!lua_isnil(L, -1)) {
+            size_t length;
+            const char *pivot = luaL_checklstring(L, -1, &length);
+            if (strlen(pivot) != length || (strcmp(pivot, "center") && strcmp(pivot, "top-left")))
+                return luaL_error(L, "PNG pivot must be center or top-left");
+            has_pivot = 1;
+            centered = !strcmp(pivot, "center");
+        }
+        lua_pop(L, 1);
         raw_option(L, 2, "transparent_zero");
         if (!lua_isnil(L, -1)) {
             if (!lua_isboolean(L, -1))
@@ -3073,8 +3090,14 @@ load_asset(lua_State *L)
         lua_pushcfunction(L, load_image);
         lua_pushvalue(L, 1);
         lua_call(L, 1, 1);
+        if (centered) {
+            LuaImage *image = lua_touserdata(L, -1);
+            image->pivot_x = mv_image_width(image->image) / 2.0;
+            image->pivot_y = mv_image_height(image->image) / 2.0;
+        }
         return 1;
     }
+    if (has_pivot) return luaL_error(L, "pivot option is only valid for PNG assets");
 #ifdef MALVADO_BUILD_ASSETS
     int width = INT_MAX, height = INT_MAX;
     AssetFormat detected = length >= 4 && !memcmp(bytes, "fpg\x1a", 4) ? ASSET_FPG :
@@ -3700,7 +3723,8 @@ render_graph(lua_State *L, const Process *process)
         render_number(L, fields, "size", 1, &scale) && scale > 0) {
         if (image) {
             MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
-            MvImageTransform transform = {(float)x, (float)y, 0, 0, (float)scale, (float)angle};
+            MvImageTransform transform = {(float)x, (float)y, (float)image->pivot_x,
+                                          (float)image->pivot_y, (float)scale, (float)angle};
             (void)mv_image_draw_region(image->image, region, transform);
         } else if (graphic->sprite) {
             int graph_index = lua_gettop(L);
@@ -4636,8 +4660,8 @@ process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
             if (width <= 0 || height <= 0)
                 return luaL_error(L, "invalid image for automatic collider");
             *shape = (MvCollisionShape){.kind = MV_COLLISION_RECT,
-                .width = width, .height = height, .offset_x = legacy ? 0 : width / 2.0,
-                .offset_y = legacy ? 0 : height / 2.0};
+                .width = width, .height = height, .offset_x = legacy ? 0 : width / 2.0 - image->pivot_x,
+                .offset_y = legacy ? 0 : height / 2.0 - image->pivot_y};
         } else {
             return luaL_error(L, "unsupported graphic for automatic collider");
         }

@@ -240,6 +240,7 @@ add_test(NAME atlas COMMAND atlas_test "${CMAKE_CURRENT_SOURCE_DIR}/atlas.json" 
 ]=])
 endif()
 if(HAS_GRAPHICS)
+  configure_file("${SOURCE}/tests/fixtures/red.png" "${WORK}/game/red.png" COPYONLY)
   file(WRITE "${WORK}/game/graphics.c" [=[
 #include <limits.h>
 #include "malvado/platform.h"
@@ -251,6 +252,12 @@ int main(void) {
     mv_window_close();
     return 1;
   }
+  MvImage *first = mv_image_load("red.png");
+  MvImage *second = mv_image_load("./red.png");
+  if (!first || first != second) return 1;
+  mv_image_destroy(first);
+  if (mv_image_width(second) != 8) return 1;
+  mv_image_destroy(second);
   mv_window_begin((MvColor){0, 0, 0, 255});
   mv_window_draw_text("Hello", 10, 10, 20, (MvColor){255, 255, 255, 255});
   mv_window_end();
@@ -264,7 +271,7 @@ add_executable(graphics_test graphics.c)
 target_link_libraries(graphics_test PRIVATE Malvado::graphics)
 ]=])
   if(RUN_GRAPHICS)
-    file(APPEND "${WORK}/game/CMakeLists.txt" "add_test(NAME graphics COMMAND graphics_test)\n")
+    file(APPEND "${WORK}/game/CMakeLists.txt" "add_test(NAME graphics COMMAND graphics_test)\nset_tests_properties(graphics PROPERTIES WORKING_DIRECTORY \"${WORK}/game\")\n")
   endif()
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${WORK}/game" -B "${WORK}/build"

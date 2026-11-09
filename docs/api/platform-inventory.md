@@ -22,7 +22,7 @@ existing APIs, not a selection of additional 2.0 features.
 | C types | Meaning and Lua relationship |
 | --- | --- |
 | `MvColor`, `MvFade` | C color and fade state. Lua uses color channels and the runner's fade queue. |
-| `MvImage`, `MvImageRegion`, `MvImageTransform` | Opaque C image and copied region and transform values. Lua uses managed image objects and drawing arguments. |
+| `MvImage`, `MvImageRegion`, `MvImageTransform` | Reference-counted opaque C image and copied region and transform values. File loads share live normalized-path textures; release each returned reference. Lua uses managed image objects and drawing arguments. |
 | `MvFont` | Opaque caller-owned C font. Lua font descriptions retain managed font resources. |
 
 C resources must be destroyed before closing their window. Lua resource wrappers
