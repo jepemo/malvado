@@ -50,6 +50,8 @@ Use the context and its handles on one owner thread, including handle destructio
 
 ## Inspect a snapshot
 
+Try the [C inspection example](../../examples/c/inspection/README.md) to compare ownership, creation history, and snapshots.
+
 `mv_process_snapshot` copies live process records in creation order. Each record contains ID, current parent, creator ID, attachment flag, type, priority, state, and queued-message count. Pass `NULL` for `out` only when capacity is zero. `total` receives the complete number even if the buffer is smaller. The caller owns the copied buffer. Changing a copy does not change the scheduler. An owned child ends with its owner. Independent children have no owner.
 
 `mv_process_find` copies live records of one type in creation order. Type `0` selects all types. It has the same buffer and count rules as `mv_process_snapshot`.
