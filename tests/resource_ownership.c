@@ -31,6 +31,23 @@ release_data(void *value)
     mv_context_destroy(data->ctx);
 }
 
+typedef struct {
+    MvContext *ctx;
+    MvResource *other;
+    int called;
+} ClosingProbe;
+
+static void
+probe_closing(void *value)
+{
+    ClosingProbe *probe = value;
+    MvResource *output = probe->other;
+    assert(mv_resource_create(probe->ctx, NULL, NULL, release_data, &output) == MV_BUSY);
+    assert(output == probe->other);
+    assert(mv_resource_transfer(probe->other, NULL) == MV_BUSY);
+    probe->called++;
+}
+
 static MvStepResult
 finish(MvContext *ctx, MvProcessId id, void *user)
 {
@@ -115,5 +132,25 @@ main(void)
     mv_context_destroy(first);
     assert(promoted.destroyed == 1);
     mv_context_destroy(foreign);
+
+    MvContext *closing = mv_context_create(60, 5);
+    assert(closing);
+    Data guard = {NULL, 0};
+    MvResource *guard_resource;
+    assert(mv_resource_create(closing, NULL, &guard, release_data, &guard_resource) == MV_OK);
+    MvResource *unchanged_output = guard_resource;
+    assert(mv_resource_create(NULL, NULL, &guard, release_data, &unchanged_output) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_create(closing, NULL, &guard, NULL, &unchanged_output) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_create(closing, NULL, &guard, release_data, NULL) == MV_INVALID_ARGUMENT);
+    assert(unchanged_output == guard_resource && guard.destroyed == 0);
+    assert(mv_resource_retain(NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_release(NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_transfer(NULL, NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_resource_data(NULL) == NULL);
+    ClosingProbe probe = {closing, guard_resource, 0};
+    MvResource *probe_resource;
+    assert(mv_resource_create(closing, NULL, &probe, probe_closing, &probe_resource) == MV_OK);
+    mv_context_destroy(closing);
+    assert(probe.called == 1 && guard.destroyed == 1);
     return 0;
 }
