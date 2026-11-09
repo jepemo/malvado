@@ -136,3 +136,16 @@ Each global has the same value as the `mv` field shown below. `process` is a cal
 | `SIGNAL_FREEZE` | `mv.SIGNAL_FREEZE` |
 | `SIGNAL_WAKEUP` | `mv.SIGNAL_WAKEUP` |
 | `SIGNAL_KILL` | `mv.SIGNAL_KILL` |
+
+## Module-only functions
+
+These functions are available from `require("malvado")` and are not installed
+by the normal global import:
+
+- `mv.import_globals`: install the globals listed above, with conflict checks.
+- `mv.legacy_fpg`: load a legacy image sheet or directory. The legacy import
+  exposes it as `fpg`; see the [legacy guide](lua-contract.md#legacy-shim).
+
+The other module tables are mapped in the [namespace inventory](lua-namespaces.md).
+`lua_module_inventory` checks module fields against these two inventories; it
+checks names and kinds, not behavior.

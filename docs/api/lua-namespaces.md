@@ -52,3 +52,20 @@ object methods and process fields are not included in this namespace table.
 The `lua_namespace_inventory` test compares this table with functions exposed
 by the runtime. It checks both asset-enabled and asset-disabled builds when
 those builds run; it does not verify function behavior.
+
+## Object methods
+
+These methods belong to managed objects returned by the namespaces. They are
+not global functions. The linked contracts define arguments, return values,
+errors, and lifetime. FPG methods require asset support; `image` also requires
+a graphics window.
+
+| Object | Methods | Contract |
+| --- | --- | --- |
+| `world` | `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | [collision](collision.md) |
+| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json` | [FPG](../specs/fpg-8.md) |
+| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point` | [FPG](../specs/fpg-8.md) |
+
+`lua_module_inventory` compares these method names with the runtime. It does
+not certify their semantics. Process handles also have `self:recv`; see the
+[process guide](lua-processes.md#send-and-receive-messages).

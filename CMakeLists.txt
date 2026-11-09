@@ -529,6 +529,10 @@ add_test(NAME lua_namespace_inventory COMMAND malvado-run --headless ${CMAKE_CUR
 set_tests_properties(lua_namespace_inventory PROPERTIES TIMEOUT 15
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   ENVIRONMENT "MALVADO_INVENTORY_ASSETS=$<BOOL:${MALVADO_BUILD_ASSETS}>")
+add_test(NAME lua_module_inventory COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/lua_module_inventory.lua)
+set_tests_properties(lua_module_inventory PROPERTIES TIMEOUT 15
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  ENVIRONMENT "MALVADO_INVENTORY_ASSETS=$<BOOL:${MALVADO_BUILD_ASSETS}>")
 add_test(NAME signals COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/signals.lua)
 add_test(NAME messages COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/messages.lua)
 add_test(NAME self_kill COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/self_kill.lua)
