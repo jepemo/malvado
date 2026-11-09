@@ -14,8 +14,11 @@ local task = mv.process(function()
     assert(not pcall(mv.write, f, 0, value, "X"))
   end
   local boundary = mv.write(f, -2147483648, 2147483647, "X")
+  assert(not pcall(mv.write, f, 0, 0, "A\0B"))
   mv.delete_text(boundary)
   id = mv.write(f, 4, 5, "Hola")
+  assert(id == boundary + 1)
+  assert(not pcall(mv.change_text, id, "bad\0text", 10, 10))
   for _, value in ipairs({0x100000000, -0x100000000, math.mininteger, math.maxinteger}) do
     assert(not pcall(mv.change_text, id, "bad", value, 0))
     assert(not pcall(mv.change_text, id, "bad", 0, value))

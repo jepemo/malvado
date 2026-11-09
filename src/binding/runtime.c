@@ -2806,7 +2806,10 @@ draw_sprite(lua_State *L)
 static int
 text(lua_State *L)
 {
-    const char *s = luaL_checkstring(L, 1);
+    size_t text_length;
+    const char *s = luaL_checklstring(L, 1, &text_length);
+    if (strlen(s) != text_length)
+        return luaL_error(L, "text contains a zero byte");
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
     lua_Integer size = luaL_optinteger(L, 4, 20);
@@ -2943,7 +2946,10 @@ write_text(lua_State *L)
     lua_Integer y = luaL_checkinteger(L, 3);
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
         return luaL_error(L, "text coordinate is outside the supported range");
-    const char *text = luaL_checkstring(L, 4);
+    size_t text_length;
+    const char *text = luaL_checklstring(L, 4, &text_length);
+    if (strlen(text) != text_length)
+        return luaL_error(L, "text contains a zero byte");
     size_t align_length;
     const char *align = luaL_optlstring(L, 5, "left", &align_length);
     if (strlen(align) != align_length ||
@@ -2988,7 +2994,10 @@ static int
 change_text(lua_State *L)
 {
     lua_Integer id = luaL_checkinteger(L, 1);
-    const char *text = luaL_checkstring(L, 2);
+    size_t text_length;
+    const char *text = luaL_checklstring(L, 2, &text_length);
+    if (strlen(text) != text_length)
+        return luaL_error(L, "text contains a zero byte");
     int has_x = !lua_isnoneornil(L, 3);
     int has_y = !lua_isnoneornil(L, 4);
     int has_font = !lua_isnoneornil(L, 5);

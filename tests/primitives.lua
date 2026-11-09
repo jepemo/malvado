@@ -21,6 +21,7 @@ local task = mv.process(function()
       assert(not pcall(mv.draw_text, table.unpack(args)))
     end
   end
+  assert(not pcall(mv.draw_text, "A\0B", 0, 0, 20))
   assert(mv.snapshot().processes[1].draw_commands == 0)
   mv.draw_text("text", -2147483648, 2147483647, 20)
   assert(not pcall(mv.draw_box, 5, 5, 4, 6))

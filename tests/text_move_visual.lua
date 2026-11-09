@@ -5,6 +5,7 @@ local mv = require("malvado")
 local task = mv.process(function()
   local text = mv.write(mv.font(24, 255, 0, 0), 10, 10, "Text")
   assert(not pcall(mv.change_text, text, "wrong", 0x100000000, 10, mv.font(24, 0, 255, 0)))
+  assert(not pcall(mv.change_text, text, "wrong\0text", 20, 20))
   local centered = mv.write(mv.font(24, 0, 0, 255), 120, 70, "MMMM", "center")
   local right = mv.write(mv.font(24, 255, 255, 0), 220, 10, "MM", "right")
   for _ = 1, 15 do mv.frame() end
