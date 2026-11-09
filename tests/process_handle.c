@@ -30,6 +30,13 @@ void *test_handle_calloc(size_t count, size_t size)
     return calloc(count, size);
 }
 
+static void
+count_resource_destroy(void *data)
+{
+    int *count = data;
+    ++*count;
+}
+
 static MvStepResult
 step(MvContext *ctx, MvProcessId id, void *user)
 {
@@ -52,6 +59,15 @@ main(void)
     MvProcessRef owner_ref, child_ref;
     assert(mv_process_ref_create(ctx, owner, &owner_ref) == MV_OK);
     assert(mv_process_ref_create(ctx, child, &child_ref) == MV_OK);
+    int resource_destroyed = 0;
+    MvResource *resource = NULL;
+    fail_allocation = 1;
+    assert(mv_resource_create(ctx, &owner_ref, &resource_destroyed,
+                              count_resource_destroy, &resource) == MV_OUT_OF_MEMORY);
+    fail_allocation = 0;
+    assert(resource == NULL && resource_destroyed == 0);
+    assert(mv_resource_create(ctx, &owner_ref, &resource_destroyed,
+                              count_resource_destroy, &resource) == MV_OK);
     MvProcessHandle *handle = NULL, *owner_handle = NULL;
     MvProcessHandle *unchanged = (MvProcessHandle *)&waiting;
     assert(mv_process_handle_create(NULL, child_ref, &unchanged) == MV_INVALID_ARGUMENT);
@@ -82,6 +98,7 @@ main(void)
     assert(mv_process_handle_create(ctx, child_ref, &unchanged) == MV_NOT_FOUND);
     assert(unchanged == (MvProcessHandle *)&waiting);
     assert(mv_process_tick(ctx) == MV_OK);
+    assert(resource_destroyed == 1);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_process_handle_snapshot(handle, &info) == MV_OK && !info.alive && info.reason == MV_END_KILLED);
     MvProcessId last_id = child;
