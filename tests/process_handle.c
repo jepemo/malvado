@@ -84,6 +84,18 @@ main(void)
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_process_handle_snapshot(handle, &info) == MV_OK && !info.alive && info.reason == MV_END_KILLED);
+    MvProcessId last_id = child;
+    for (int i = 0; i < 32; ++i) {
+        MvProcessId next;
+        assert(mv_process_spawn(ctx, 0, 0, step, NULL, &done, &next) == MV_OK);
+        assert(next > last_id);
+        assert(mv_process_tick(ctx) == MV_OK);
+        MvProcessId resolved = 0;
+        assert(mv_process_ref_resolve(ctx, child_ref, &resolved) == MV_OK && resolved == child);
+        assert(mv_process_handle_snapshot(handle, &info) == MV_OK && !info.alive &&
+               info.reference.id == child && info.reason == MV_END_KILLED);
+        last_id = next;
+    }
     assert(mv_process_spawn(ctx, 0, 0, step, NULL, &done, &returned) == MV_OK);
     assert(mv_process_spawn(ctx, 0, 0, step, NULL, &error, &failed) == MV_OK);
     MvProcessRef returned_ref, failed_ref;

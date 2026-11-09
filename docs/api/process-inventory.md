@@ -59,3 +59,9 @@ Malvado snapshots the live targets for each tree signal; later children do not i
 The pinned BennuGD2 [instance creation code](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/instance.c#L395) records a father and links the new instance into its sibling list. Its [destructor](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/instance.c#L529) removes the instance from its father's and siblings' links. Those functions alone do not establish all child lifetime behavior, so this comparison does not claim scheduler equivalence.
 
 Malvado separates creation ancestry from ownership. An owned child ends with its owner; an independent child can survive its creator and retains its creator ID. C `c_process` checks natural owner return with attached and independent descendants, including a frozen child. Headless Lua `natural_cascade` checks both lifetimes, the retained creator ID, and the creation query. See the [C contract](c-contract.md) and [Lua guide](lua-processes.md).
+
+## Process identifier comparison with BennuGD2
+
+The pinned BennuGD2 [identifier allocator](https://github.com/SplinterGU/BennuGD2/blob/baf8dc1b744d47dae58fc20c139dd44656907911/core/bgdrtm/instance.c#L248) searches for a free identifier and wraps to the start of its configured range when needed. An identifier can therefore be reused after an instance ends. This observation is limited to that allocator.
+
+Malvado issues increasing IDs within each context and does not reuse them. A C process reference also carries runtime identity; a retained handle preserves the ended process identity and reason. The C `c_process_handle` test checks repeated creation after termination and rejects references from another context. The Lua `natural_cascade` test checks a later ID and the earlier dead handle. See the [C contract](c-contract.md) and [Lua guide](lua-processes.md).
