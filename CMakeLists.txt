@@ -245,6 +245,11 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME public_enum_map_test COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/public_enum_map.py)
   set_tests_properties(public_enum_map public_enum_map_test PROPERTIES TIMEOUT 15)
+  add_test(NAME family_review COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/check_family_review.py)
+  add_test(NAME family_review_test COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/family_review.py)
+  set_tests_properties(family_review family_review_test PROPERTIES TIMEOUT 15)
 endif()
 if(MALVADO_BUILD_LUA)
   set(MALVADO_SDK_CLI_NAME $<TARGET_FILE_NAME:malvado>)

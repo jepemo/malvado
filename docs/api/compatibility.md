@@ -14,6 +14,8 @@ The 2.0 scope is the complete agreed Malvado API, excluding graphics modes 7, 8,
 
 ## Families and work sequence
 
+The [alpha.6 family review](family-review.md) records the pinned inputs, delivered scope, and unresolved decisions for these rows.
+
 | Family | Target | Minimum example | Difference to verify |
 | --- | --- | --- | --- |
 | Process, family, signals, and lookup | C core + Lua binding | Parent creates children; sleep/freeze/kill-tree | Order, immediate/deferred children, collision/get_id return |
