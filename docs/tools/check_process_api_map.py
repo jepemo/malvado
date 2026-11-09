@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that the process API map covers all functions in malvado.h."""
+"""Check C function and type names in the process API map."""
 
 from pathlib import Path
 import re
@@ -13,9 +13,20 @@ table = text.split("| Area | C baseline | Lua baseline |", 1)[1].split("\n\n", 1
 mapped = set(re.findall(r"`(mv_[a-z][a-z0-9_]*)`", table))
 missing = sorted(names - mapped)
 extra = sorted(mapped - names)
-if missing or extra:
+type_pattern = (r"\}\s*(Mv\w+)\s*;|typedef\s+(?:struct\s+\w+|uint64_t)\s+(Mv\w+)\s*;"
+                r"|typedef\s+[^;{}]+\(\*(Mv\w+)\)\s*\(")
+types = {a or b or c for a, b, c in re.findall(type_pattern, header)}
+type_table = text.split("| C types | Meaning and Lua relationship |", 1)[1].split("\n\n", 1)[0]
+mapped_types = set(re.findall(r"`(Mv\w+)`", type_table))
+missing_types = sorted(types - mapped_types)
+extra_types = sorted(mapped_types - types)
+if missing or extra or missing_types or extra_types:
     if missing:
         print("Missing from process API map: " + ", ".join(missing))
     if extra:
         print("Not declared in malvado.h: " + ", ".join(extra))
+    if missing_types:
+        print("Missing types from process API map: " + ", ".join(missing_types))
+    if extra_types:
+        print("Types not declared in malvado.h: " + ", ".join(extra_types))
     raise SystemExit(1)

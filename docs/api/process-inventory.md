@@ -14,9 +14,27 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
 
 The table maps the public functions in `malvado.h`, not every future 2.0 API.
-`process_api_map` checks C function coverage when Python is available. It does
+`process_api_map` checks C function and type-name coverage when Python is available. It does
 not establish semantic parity: Lua has no general native clock or resource
 transfer API, and native process type IDs differ from Lua process definitions.
+
+## Process types and values
+
+This map covers the public types in `malvado.h`. The C definitions and detailed
+contracts are in the [header](../../src/include/malvado/malvado.h) and
+[C contract](c-contract.md); Lua behavior is in the [process guide](lua-processes.md).
+The check detects missing or extra type names, not changes to fields or semantics.
+
+| C types | Meaning and Lua relationship |
+| --- | --- |
+| `MvContext`, `MvCadence` | Context and cadence state are C-managed. Lua uses the runner and `self.fps`. |
+| `MvResult` | C result codes; Lua operations generally report errors or return `nil` as documented per operation. |
+| `MvProcessId`, `MvRuntimeId`, `MvProcessRef`, `MvProcessHandle` | C identity and handle types. Lua uses process handles and exposes IDs and snapshot runtime identity. |
+| `MvProcessStatus`, `MvEndReason`, `MvSignal` | C enums. Lua exposes state and reason strings, and signal strings and `SIGNAL_*` constants. |
+| `MvStepResult`, `MvProcessStep`, `MvProcessDestroy` | Native callback result and callbacks; Lua uses process coroutines and Lua cleanup. |
+| `MvProcessInfo`, `MvProcessHandleInfo`, `MvLineageInfo`, `MvInspectionHeader` | Copied C inspection values. Lua exposes process handles and snapshot tables, not these structs. |
+| `MvMessageType`, `MvMessage` | Native message tags and values. Lua exchanges primitive values and binary strings with C; Lua-only objects stay in the VM. |
+| `MvResource`, `MvResourceDestroy` | Native resource and destructor. Lua wrappers retain resources but do not expose C ownership transfer. |
 
 ## Lua entry forms
 
