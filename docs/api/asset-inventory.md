@@ -18,3 +18,17 @@ The C importers work without Lua or a graphics backend when asset support is ena
 Lua atlas and image creation needs a graphics runtime. FPG parsing and metadata are
 available in headless Lua. Imported atlas names and paths, FPG raw metadata, and
 resource lifetimes follow their respective contracts; they are not interchangeable.
+
+## Atlas types and ownership
+
+| C types | Lua relationship and lifetime |
+| --- | --- |
+| `MvAtlas` | Opaque, caller-owned metadata. Lua atlas objects are managed and retain their image. |
+| `MvAtlasSprite` | A copied C record; its name is borrowed from the atlas. Lua `sprite_info` returns an independent table. |
+
+The [atlas contract](images.md) defines validation, metadata, errors, and the
+borrowed name lifetime. The [C example](../../examples/c/atlas/README.md),
+`atlas`, `atlas_allocation`, and `c_atlas_example` exercise parsing and lookup.
+`visual_image_graph` checks Lua sprites and resource lifetime on a graphical
+backend. `asset_api_map` checks names in this table and the API table against
+the public atlas header; it does not certify behavior or structure fields.
