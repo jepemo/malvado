@@ -90,19 +90,16 @@ ASan/UBSan-instrumented backend. The native libraries are instrumented; Rust
 itself is not. The macOS runtime uses the existing leak-detection limitation
 from the sanitizer task. Linux CI runs the graphical sanitizer check under Xvfb.
 
-Linux LeakSanitizer excludes the GLX extension-query stack recorded in
-[CI job 129876608971](https://github.com/jepemo/malvado/actions/runs/42829814334/job/129876608971).
-That job reported two 128-byte reallocations through `glXQueryExtensionsString`.
-The filter matches `extensionSupportedGLX` only; leak detection remains enabled
-for other stacks. A standalone negative fixture verifies that an unrelated
-native allocation still fails. Core and asset sanitizer modes do not use this
-filter. No third-party source is changed.
+Linux LeakSanitizer keeps detection enabled for Malvado allocations. The
+verification-only pixel helper pins loaded Mesa/LLVM provider modules so
+exit-time reports keep their module names and global roots. Games never call
+that helper. Native window/context and image cleanup still run normally.
+The graphical filter excludes provider-module allocation stacks (`libgallium`,
+DRI and LLVM) and the observed GLX extension-query stack. It does not suppress
+Malvado draw or allocation frames. Core and asset modes do not use the filter.
+A negative fixture verifies that unrelated native allocations still fail.
 
-The normal Linux graphics suite uses Mesa llvmpipe. The sanitizer invocation
-selects `GALLIUM_DRIVER=softpipe` and `DRAW_USE_LLVM=0`, so pixel and ownership
-checks also run without the LLVM shader JIT. This follows the supported
-[Mesa renderer controls](https://docs.mesa3d.org/envvars.html#gallium-driver).
-Job 129889149968 passed the leak-filter negative fixture, then reported two
-56-byte allocations in unloaded provider frames under `rlDrawRenderBatch` with
-llvmpipe/LLVM 20.1.2. The sanitizer driver selection avoids adding a broad draw
-stack suppression; leak detection stays enabled. Core/asset checks are unchanged.
+This limit is based on [GLX query evidence](https://github.com/jepemo/malvado/actions/runs/42829814334/job/129876608971)
+and [unloaded drawing-provider stacks](https://github.com/jepemo/malvado/actions/runs/42833417060/job/129889149968).
+Changing to softpipe did not remove provider allocations, so tests retain the
+default renderer. Provider leak freedom is not claimed by these checks.

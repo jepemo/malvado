@@ -68,6 +68,7 @@ def main():
                ASAN_OPTIONS="detect_leaks=0" if sys.platform == "darwin" else "detect_leaks=1",
                UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     if args.graphics and sys.platform.startswith("linux"):
+        env["MALVADO_PIN_TEST_PROVIDERS"] = "1"
         env["LSAN_OPTIONS"] = f"suppressions={ROOT / 'tools/lsan-graphics.supp'}:print_suppressions=1"
         verify_leak_filter(compiler, flags, env, work)
     # Miri checks Rust future ownership separately; these native tests exercise

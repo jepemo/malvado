@@ -181,8 +181,7 @@ jobs:
           sleep 2
           mise run test-visual
           mise run test-rust-graphics
-          # Keep driver JIT allocations out of leak checks; normal graphics above use llvmpipe.
-          GALLIUM_DRIVER=softpipe DRAW_USE_LLVM=0 mise run test-rust-graphics-sanitize
+          mise run test-rust-graphics-sanitize
           mise run test-g0
         env:
           DISPLAY: ':99'
