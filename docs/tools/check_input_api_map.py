@@ -7,7 +7,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)
 FUNCTION = re.compile(r"\b(mv_[a-z][a-z0-9_]*)\s*\(")
-INPUT_PREFIXES = ("mv_key_", "mv_mouse_", "mv_pad_", "mv_text_input_", "mv_utf8_")
+INPUT_PREFIXES = ("mv_input_", "mv_key_", "mv_mouse_", "mv_pad_", "mv_text_input_", "mv_utf8_")
 INPUT_WINDOW = {"mv_window_escape_down", "mv_window_space_down"}
 ENUMS = ("MvKey", "MvMouseButton", "MvPadButton", "MvPadAxis")
 

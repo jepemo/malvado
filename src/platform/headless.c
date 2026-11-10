@@ -15,6 +15,7 @@
 
 #define _POSIX_C_SOURCE 199309L
 #include "malvado/platform.h"
+#include "input_internal.h"
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
@@ -25,7 +26,7 @@ int mv_window_open(int width, int height, const char *title)
     (void)width; (void)height; (void)title;
     return 0;
 }
-void mv_window_close(void) {}
+void mv_window_close(void) { mv_keyboard_reset(); }
 int mv_window_set_title(const char *title) { (void)title; return 0; }
 int mv_window_size(int *width, int *height)
 {

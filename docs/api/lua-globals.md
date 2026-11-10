@@ -48,6 +48,8 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `clear_screen` | `mv.clear_screen` |
 | `key` | `mv.key` |
 | `key_down` | `mv.key_down` |
+| `key_pressed` | `mv.key_pressed` |
+| `key_released` | `mv.key_released` |
 | `mouse_position` | `mv.mouse_position` |
 | `mouse_button` | `mv.mouse_button` |
 | `pad_connected` | `mv.pad_connected` |

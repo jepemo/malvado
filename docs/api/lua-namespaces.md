@@ -31,6 +31,8 @@ object methods and process fields are not included in this namespace table.
 | `mv.process.collision` | Find the first colliding process | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.collisions` | List colliding processes | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.input.key_down` | Check a held key | [input](input-inventory.md) |
+| `mv.input.key_pressed` | Check a press in the current tick | [keyboard](keyboard.md) |
+| `mv.input.key_released` | Check a release in the current tick | [keyboard](keyboard.md) |
 | `mv.input.mouse_position` | Read pointer position | [input](input-inventory.md) |
 | `mv.input.mouse_button` | Check a held mouse button | [input](input-inventory.md) |
 | `mv.input.pad_connected` | Check a controller slot | [input](input-inventory.md) |

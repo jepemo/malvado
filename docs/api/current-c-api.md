@@ -148,8 +148,11 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_image_load`
 - `mv_image_region_valid`
 - `mv_image_width`
+- `mv_input_tick`
 - `mv_key_down`
 - `mv_key_from_name`
+- `mv_key_pressed`
+- `mv_key_released`
 - `mv_monotonic_time`
 - `mv_mouse_button_from_name`
 - `mv_mouse_down`

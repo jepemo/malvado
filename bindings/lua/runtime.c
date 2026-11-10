@@ -1636,15 +1636,31 @@ clear_screen(lua_State *L)
 }
 
 static int
-key(lua_State *L)
+query_key(lua_State *L, int (*query)(MvKey))
 {
     size_t length;
     const char *s = luaL_checklstring(L, 1, &length);
     MvKey parsed;
     if (strlen(s) != length || !mv_key_from_name(s, &parsed))
         return luaL_error(L, "unsupported key: %s", s);
-    lua_pushboolean(L, !engine.headless && mv_key_down(parsed));
+    lua_pushboolean(L, !engine.headless && query(parsed));
     return 1;
+}
+
+static int
+key(lua_State *L)
+{
+    return query_key(L, mv_key_down);
+}
+static int
+key_pressed(lua_State *L)
+{
+    return query_key(L, mv_key_pressed);
+}
+static int
+key_released(lua_State *L)
+{
+    return query_key(L, mv_key_released);
 }
 
 static int
@@ -3607,6 +3623,8 @@ advance_animations(lua_State *L)
 static int
 tick(void)
 {
+    if (engine.window)
+        mv_input_tick();
     engine.in_tick = 1;
     engine.tick_number++;
     MvResult result = mv_process_tick(engine.context);
@@ -4320,6 +4338,8 @@ static const char *const global_names[] = {
     "clear_screen",
     "key",
     "key_down",
+    "key_pressed",
+    "key_released",
     "mouse_position",
     "mouse_button",
     "pad_connected",
@@ -5392,6 +5412,8 @@ open_module(lua_State *L)
         {"time_seconds", time_seconds},
         {"clear_screen", clear_screen},
         {"key", key},
+        {"key_pressed", key_pressed},
+        {"key_released", key_released},
         {"mouse_position", mouse_position},
         {"mouse_button", mouse_button},
         {"pad_connected", pad_connected},
@@ -5722,7 +5744,8 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "key_down");
     lua_newtable(L);
     static const char *const input_functions[] = {
-        "key_down", "mouse_position", "mouse_button", "pad_connected", "pad_button",
+        "key_down", "key_pressed", "key_released", "mouse_position", "mouse_button",
+        "pad_connected", "pad_button",
         "pad_axis", "text_input_next"
     };
     for (size_t i = 0; i < sizeof(input_functions) / sizeof(input_functions[0]); ++i) {

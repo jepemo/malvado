@@ -81,6 +81,16 @@ int mv_window_space_down(void);
 int mv_key_from_name(const char *name, MvKey *key);
 /* Return 1 while the key is held. Return 0 for an unsupported key or no window. */
 int mv_key_down(MvKey key);
+/* Commit buffered keyboard transitions once before each logical simulation
+ * tick, not once per process. mv_window_end captures platform events. Frames
+ * without ticks retain pending events; extra catch-up ticks see no repeat.
+ * The Lua runner calls this automatically. Use on the window owner thread. */
+void mv_input_tick(void);
+/* Non-consuming transition snapshots for the current logical tick. Return 0
+ * for unsupported keys or no window. Both can be true if press and release
+ * were observed between ticks. These are not OS autorepeat or text events. */
+int mv_key_pressed(MvKey key);
+int mv_key_released(MvKey key);
 /* Parse "left", "middle", or "right". Return 1 on success, or 0 without
  * changing the output for an invalid name or NULL argument. No window is needed. */
 int mv_mouse_button_from_name(const char *name, MvMouseButton *button);

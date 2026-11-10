@@ -15,6 +15,66 @@
 
 #include <string.h>
 #include "malvado/platform.h"
+#include "input_internal.h"
+
+/* The platform owns one window. Events accumulate between logical ticks;
+ * queries never mutate or consume the committed snapshot. */
+static struct {
+    int open;
+    unsigned char pressed[MV_KEY_BACKSPACE + 1], released[MV_KEY_BACKSPACE + 1];
+    unsigned char pending_pressed[MV_KEY_BACKSPACE + 1], pending_released[MV_KEY_BACKSPACE + 1];
+} keyboard;
+
+static int
+supported_key(MvKey key)
+{
+    return (key >= MV_KEY_0 && key <= MV_KEY_9) ||
+           (key >= MV_KEY_A && key <= MV_KEY_Z) ||
+           (key >= MV_KEY_ESCAPE && key <= MV_KEY_BACKSPACE);
+}
+
+void
+mv_keyboard_reset(void)
+{
+    memset(&keyboard, 0, sizeof(keyboard));
+}
+
+void
+mv_keyboard_open(void)
+{
+    mv_keyboard_reset();
+    keyboard.open = 1;
+}
+
+void
+mv_keyboard_sample(MvKey key, int pressed, int released)
+{
+    if (!keyboard.open || !supported_key(key))
+        return;
+    keyboard.pending_pressed[key] |= pressed != 0;
+    keyboard.pending_released[key] |= released != 0;
+}
+
+void
+mv_input_tick(void)
+{
+    memcpy(keyboard.pressed, keyboard.pending_pressed, sizeof(keyboard.pressed));
+    memcpy(keyboard.released, keyboard.pending_released, sizeof(keyboard.released));
+    memset(keyboard.pending_pressed, 0, sizeof(keyboard.pending_pressed));
+    memset(keyboard.pending_released, 0, sizeof(keyboard.pending_released));
+}
+
+int
+mv_key_pressed(MvKey key)
+{
+    return keyboard.open && supported_key(key) && keyboard.pressed[key];
+}
+
+int
+mv_key_released(MvKey key)
+{
+    return keyboard.open && supported_key(key) && keyboard.released[key];
+}
 
 int
 mv_pad_button_from_name(const char *name, MvPadButton *button)

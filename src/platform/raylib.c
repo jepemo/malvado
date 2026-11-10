@@ -19,6 +19,7 @@
 #endif
 
 #include "malvado/platform.h"
+#include "input_internal.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include <math.h>
@@ -317,6 +318,7 @@ int mv_window_open(int width, int height, const char *title)
     text_count = 0;
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
+    mv_keyboard_open();
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
     return 1;
@@ -348,6 +350,7 @@ mv_window_size(int *width, int *height)
 void mv_window_close(void)
 {
     if (IsWindowReady()) CloseWindow();
+    mv_keyboard_reset();
     drawing_active = 0;
     clip_active = 0;
     scroll_active = 0;
@@ -358,11 +361,9 @@ int mv_window_should_close(void) { return WindowShouldClose(); }
 int mv_window_escape_down(void) { return mv_key_down(MV_KEY_ESCAPE); }
 int mv_window_space_down(void) { return mv_key_down(MV_KEY_SPACE); }
 
-int
-mv_key_down(MvKey key)
+static int
+key_code(MvKey key)
 {
-    if (!IsWindowReady())
-        return 0;
     int code;
     if (key >= MV_KEY_A && key <= MV_KEY_Z)
         code = KEY_A + (key - MV_KEY_A);
@@ -379,10 +380,27 @@ mv_key_down(MvKey key)
         case MV_KEY_ENTER: code = KEY_ENTER; break;
         case MV_KEY_TAB: code = KEY_TAB; break;
         case MV_KEY_BACKSPACE: code = KEY_BACKSPACE; break;
-        default: return 0;
+        default: return KEY_NULL;
         }
     }
-    return IsKeyDown(code);
+    return code;
+}
+
+int
+mv_key_down(MvKey key)
+{
+    int code = key_code(key);
+    return IsWindowReady() && code != KEY_NULL && IsKeyDown(code);
+}
+
+static void
+capture_keyboard(void)
+{
+    for (int key = MV_KEY_0; key <= MV_KEY_BACKSPACE; ++key) {
+        int code = key_code((MvKey)key);
+        if (code != KEY_NULL)
+            mv_keyboard_sample((MvKey)key, IsKeyPressed(code), IsKeyReleased(code));
+    }
 }
 
 int
@@ -759,4 +777,5 @@ void mv_window_end(void)
     EndDrawing();
     drawing_active = 0;
     capture_text_input();
+    capture_keyboard();
 }

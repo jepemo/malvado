@@ -49,7 +49,9 @@ The [input inventory](input-inventory.md) maps the C and Lua APIs to examples an
 
 The input namespace also provides `mv.input.key_down` and the other input functions. After `import_globals()`, `key_down` is the same function. Key names are also available as constants, including in `mv.input`. For example, use `mv.key(mv.KEY_UP)` or `mv.key(mv.KEY_A)`. After `import_globals()`, use `key(KEY_UP)`. Constants are strings, so `mv.KEY_UP` and `"up"` have the same value. Constants cover letters, digits, and the named keys above. Signal constants are `SIGNAL_SLEEP`, `SIGNAL_FREEZE`, `SIGNAL_WAKEUP`, and `SIGNAL_KILL`. They also have string values.
 
-The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. It returns 0 without changing the output for an invalid name or null argument. Read key state on the window thread. Name conversion does not require a window.
+The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. Use `key_pressed(name)`
+or `key_released(name)` for non-consuming transitions in the current logical
+tick; see the [keyboard contract](keyboard.md). In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. It returns 0 without changing the output for an invalid name or null argument. Read key state on the window thread. Name conversion does not require a window.
 
 Use `local x, y = mv.mouse_position()` for the pointer position in window pixels. The top-left corner is `(0, 0)`. Use `mv.mouse_button("left")`, `"middle"`, or `"right"` to check whether a button is held. An unknown name raises an error. In headless mode the position is `(0, 0)` and all buttons are released.
 

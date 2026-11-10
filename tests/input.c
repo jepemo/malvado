@@ -77,6 +77,7 @@ main(void)
         MvKey key = MV_KEY_SPACE;
         assert(mv_key_from_name(cases[i].name, &key) && key == cases[i].key);
         assert(!mv_key_down(key));
+        assert(!mv_key_pressed(key) && !mv_key_released(key));
     }
     for (int i = 0; i < 26; ++i) {
         char name[] = {(char)('a' + i), '\0'};
