@@ -135,3 +135,44 @@ unsafe extern "C" {
     pub fn mv_key_pressed(key: c_int) -> c_int;
     pub fn mv_key_released(key: c_int) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_window_clip_begin(x: c_int, y: c_int, width: c_int, height: c_int) -> c_int;
+    pub fn mv_window_clip_end() -> c_int;
+    pub fn mv_window_scroll_begin(x: f32, y: f32) -> c_int;
+    pub fn mv_window_scroll_end() -> c_int;
+    pub fn mv_window_draw_text(
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        color: MvColor,
+    ) -> ();
+    pub fn mv_window_text_width(text: *const c_char, size: c_int) -> c_int;
+    pub fn mv_window_draw_box(
+        x: c_int,
+        y: c_int,
+        width: c_int,
+        height: c_int,
+        filled: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_window_draw_circle(
+        x: c_int,
+        y: c_int,
+        radius: c_int,
+        filled: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_window_draw_transformed_rect(
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        pivot_x: f32,
+        pivot_y: f32,
+        angle: f32,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_window_draw_filled_circle(x: f32, y: f32, radius: f32, color: MvColor) -> c_int;
+}

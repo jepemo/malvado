@@ -25,3 +25,9 @@ name = "keyboard"
 path = "tests/keyboard.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "drawing"
+path = "tests/drawing.rs"
+harness = false
+required-features = ["graphics"]

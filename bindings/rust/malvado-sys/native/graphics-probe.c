@@ -25,6 +25,16 @@ _Static_assert(_Generic(&mv_input_tick, void (*)(void): 1, default: 0), "mv_inpu
 _Static_assert(_Generic(&mv_key_down, int (*)(MvKey): 1, default: 0), "mv_key_down signature");
 _Static_assert(_Generic(&mv_key_pressed, int (*)(MvKey): 1, default: 0), "mv_key_pressed signature");
 _Static_assert(_Generic(&mv_key_released, int (*)(MvKey): 1, default: 0), "mv_key_released signature");
+_Static_assert(_Generic(&mv_window_clip_begin, int (*)(int, int, int, int): 1, default: 0), "mv_window_clip_begin signature");
+_Static_assert(_Generic(&mv_window_clip_end, int (*)(void): 1, default: 0), "mv_window_clip_end signature");
+_Static_assert(_Generic(&mv_window_scroll_begin, int (*)(float, float): 1, default: 0), "mv_window_scroll_begin signature");
+_Static_assert(_Generic(&mv_window_scroll_end, int (*)(void): 1, default: 0), "mv_window_scroll_end signature");
+_Static_assert(_Generic(&mv_window_draw_text, void (*)(const char *, int, int, int, MvColor): 1, default: 0), "mv_window_draw_text signature");
+_Static_assert(_Generic(&mv_window_text_width, int (*)(const char *, int): 1, default: 0), "mv_window_text_width signature");
+_Static_assert(_Generic(&mv_window_draw_box, int (*)(int, int, int, int, int, MvColor): 1, default: 0), "mv_window_draw_box signature");
+_Static_assert(_Generic(&mv_window_draw_circle, int (*)(int, int, int, int, MvColor): 1, default: 0), "mv_window_draw_circle signature");
+_Static_assert(_Generic(&mv_window_draw_transformed_rect, int (*)(float, float, float, float, float, float, float, MvColor): 1, default: 0), "mv_window_draw_transformed_rect signature");
+_Static_assert(_Generic(&mv_window_draw_filled_circle, int (*)(float, float, float, MvColor): 1, default: 0), "mv_window_draw_filled_circle signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));

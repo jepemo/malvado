@@ -23,14 +23,18 @@ def consumer(prefix, profile):
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
         + ',features=["graphics"]}\n')
     (game / "src/main.rs").write_text(
-        'use malvado::{Error, window::{Window, Color}};\n'
+        'use malvado::{Error, drawing::Rectangle, window::{Window, Color}};\n'
         'fn main() -> Result<(), Error> {\n'
         ' let window = Window::open(160, 120, "Installed Rust window")?;\n'
         ' assert_eq!(window.size(), (160,120));\n'
         ' window.input_tick();\n'
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
-        ' drop(window.frame(Color {r:10,g:20,b:30,a:255})?);\n'
+        ' let frame = window.frame(Color {r:10,g:20,b:30,a:255})?;\n'
+        ' frame.with_clip(Rectangle {x:0,y:0,width:80,height:60}, |frame| {\n'
+        '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, Color {r:255,g:0,b:0,a:255})\n'
+        ' })?;\n'
+        ' drop(frame);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)

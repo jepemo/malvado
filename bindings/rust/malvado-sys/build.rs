@@ -161,6 +161,17 @@ fn main() {
         .unwrap();
     }
     if graphics {
+        let checks = std::fs::read_to_string(output.join("graphics-checks-library.txt")).unwrap();
+        let checks = PathBuf::from(checks.trim()).canonicalize().unwrap();
+        assert!(
+            checks.starts_with(output.canonicalize().unwrap()),
+            "verification archive outside probe build"
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            checks.parent().unwrap().display()
+        );
+        println!("cargo:rustc-link-lib=static=graphics-checks");
         for (file, archive, link) in [
             (
                 "graphics-library.txt",

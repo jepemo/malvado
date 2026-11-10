@@ -27,6 +27,8 @@ pub mod animation;
 pub mod atlas;
 pub mod camera;
 pub mod collision;
+#[cfg(feature = "graphics")]
+pub mod drawing;
 mod engine;
 mod resource;
 mod task;
