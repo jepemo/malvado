@@ -267,12 +267,14 @@ fn detached_spawn_from_destructor_keeps_the_native_historical_creator() {
                 process: p.clone(),
                 output: out,
             };
-            p.frame().await;
+            pending::<()>().await;
             Ok(())
         })
         .unwrap();
     engine.tick().unwrap();
+    assert!(root.kill().unwrap());
     engine.tick().unwrap();
+    assert_eq!(root.snapshot().unwrap().reason, Some(EndReason::Killed));
     let child = spawned.borrow();
     let child = child.as_ref().unwrap();
     assert_eq!(child.snapshot().unwrap().creator_id, root.id());
@@ -487,4 +489,27 @@ fn native_resources_release_once_for_return_error_panic_and_cancellation() {
         drop(engine);
         assert_eq!(count.get(), 1);
     }
+}
+
+#[test]
+fn failed_registration_to_a_dead_process_releases_the_untransferred_value() {
+    let saved = Rc::new(RefCell::new(None));
+    let out = saved.clone();
+    let mut engine = Engine::new().unwrap();
+    engine
+        .spawn(SpawnOptions::default(), move |p| async move {
+            *out.borrow_mut() = Some(p);
+            Ok(())
+        })
+        .unwrap();
+    engine.tick().unwrap();
+    let count = Rc::new(Cell::new(0));
+    let token = saved.borrow();
+    assert!(matches!(
+        token.as_ref().unwrap().resource(Count(count.clone())),
+        Err(Error::NotFound)
+    ));
+    assert_eq!(count.get(), 1);
+    drop(engine);
+    assert_eq!(count.get(), 1);
 }
