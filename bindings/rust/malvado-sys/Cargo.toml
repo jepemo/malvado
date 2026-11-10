@@ -6,3 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 links = "malvado_core"
 description = "Checked native FFI for the Malvado engine"
+
+[features]
+default = []
+assets = []

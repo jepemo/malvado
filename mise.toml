@@ -128,3 +128,7 @@ run = "python3 tools/test_rust_sanitize.py"
 [tasks.test-headless-no-cargo]
 description = "Build and test Lua without Cargo on the native build PATH"
 run = "python3 tools/test_lua_no_cargo.py"
+
+[tasks.test-rust-assets]
+description = "Test optional Rust atlas services against relocated assets SDKs"
+run = "python3 tools/test_rust_assets.py"

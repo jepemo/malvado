@@ -639,3 +639,6 @@ unsafe extern "C" {
         tick_rate: u32,
     ) -> c_int;
 }
+
+#[cfg(feature = "assets")]
+pub mod assets;

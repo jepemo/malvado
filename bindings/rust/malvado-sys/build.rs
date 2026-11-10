@@ -28,6 +28,7 @@ fn main() {
         println!("cargo:rerun-if-env-changed={name}");
     }
     println!("cargo:rerun-if-changed=native");
+    let assets = env::var_os("CARGO_FEATURE_ASSETS").is_some();
     let host = env::var("HOST").unwrap();
     let target = env::var("TARGET").unwrap();
     assert_eq!(
@@ -64,6 +65,10 @@ fn main() {
         .arg("-B")
         .arg(&output)
         .arg(format!("-DCMAKE_BUILD_TYPE={config}"))
+        .arg(format!(
+            "-DMALVADO_RUST_ASSETS={}",
+            if assets { "ON" } else { "OFF" }
+        ))
         .arg(format!(
             "-DCMAKE_C_FLAGS={}",
             env::var("CFLAGS").unwrap_or_default()
@@ -120,5 +125,35 @@ fn main() {
         library.parent().unwrap().display()
     );
     println!("cargo:rustc-link-lib=static=malvado_core");
+    if assets {
+        let asset_library = std::fs::read_to_string(output.join("assets-library.txt")).unwrap();
+        let asset_library = PathBuf::from(asset_library.trim()).canonicalize().unwrap();
+        assert!(
+            asset_library.starts_with(&prefix),
+            "assets library outside MALVADO_SDK_PREFIX"
+        );
+        assert_eq!(asset_library.file_name().unwrap(), "libmalvado_assets.a");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            asset_library.parent().unwrap().display()
+        );
+        println!("cargo:rustc-link-lib=static=malvado_assets");
+        let probe = if output.join("assets-probe").exists() {
+            output.join("assets-probe")
+        } else {
+            output.join(config).join("assets-probe")
+        };
+        let layout = run(&mut Command::new(probe));
+        let values: Vec<usize> = String::from_utf8(layout.stdout)
+            .unwrap()
+            .split_whitespace()
+            .map(|v| v.parse().expect("invalid assets ABI probe"))
+            .collect();
+        std::fs::write(
+            PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("assets-layout.rs"),
+            format!("{values:?}"),
+        )
+        .unwrap();
+    }
     println!("cargo:rustc-link-lib=m");
 }

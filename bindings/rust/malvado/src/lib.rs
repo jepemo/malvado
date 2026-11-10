@@ -23,6 +23,8 @@
 //! # Ok::<(), Error>(())
 //! ```
 pub mod animation;
+#[cfg(feature = "assets")]
+pub mod atlas;
 pub mod camera;
 pub mod collision;
 mod engine;
@@ -38,6 +40,8 @@ pub use task::Frame;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
     Abi(&'static str),
+    /// Static diagnostic from the native asset parser.
+    Asset(&'static str),
     Closed,
     ForeignContext,
     InvalidArgument,
