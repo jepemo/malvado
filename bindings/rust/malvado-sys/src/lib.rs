@@ -419,6 +419,17 @@ const _: () = {
         offset_of!(MvCollisionSweep, normal_y),
         MV_COLLISION_CIRCLE as usize,
         MV_COLLISION_RECT as usize,
+        size_of::<MvCameraViewport>(),
+        align_of::<MvCameraViewport>(),
+        offset_of!(MvCameraViewport, x),
+        offset_of!(MvCameraViewport, y),
+        offset_of!(MvCameraViewport, width),
+        offset_of!(MvCameraViewport, height),
+        size_of::<MvCamera>(),
+        align_of::<MvCamera>(),
+        offset_of!(MvCamera, x),
+        offset_of!(MvCamera, y),
+        offset_of!(MvCamera, viewport),
     ];
     assert!(
         native.len() == rust.len(),
@@ -523,4 +534,53 @@ mod tests {
             assert_eq!(state.drops, 1);
         }
     }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvCameraViewport {
+    pub x: c_int,
+    pub y: c_int,
+    pub width: c_int,
+    pub height: c_int,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvCamera {
+    pub x: f64,
+    pub y: f64,
+    pub viewport: MvCameraViewport,
+}
+unsafe extern "C" {
+    pub fn mv_camera_init(
+        camera: *mut MvCamera,
+        x: f64,
+        y: f64,
+        viewport: *const MvCameraViewport,
+    ) -> c_int;
+    pub fn mv_camera_set(camera: *mut MvCamera, x: f64, y: f64) -> c_int;
+    pub fn mv_camera_move(camera: *mut MvCamera, dx: f64, dy: f64) -> c_int;
+    pub fn mv_camera_project(
+        camera: *const MvCamera,
+        world_x: f64,
+        world_y: f64,
+        scroll_x: f64,
+        scroll_y: f64,
+        screen_x: *mut f64,
+        screen_y: *mut f64,
+    ) -> c_int;
+    pub fn mv_camera_center(
+        camera: *mut MvCamera,
+        target_x: f64,
+        target_y: f64,
+        window_width: c_int,
+        window_height: c_int,
+    ) -> c_int;
+    pub fn mv_camera_clip(
+        camera: *const MvCamera,
+        region: *const MvCameraViewport,
+        screen_width: c_int,
+        screen_height: c_int,
+        out: *mut MvCameraViewport,
+    ) -> c_int;
 }

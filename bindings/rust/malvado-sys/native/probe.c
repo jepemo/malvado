@@ -14,6 +14,7 @@
  */
 #include "malvado/malvado.h"
 #include "malvado/collision.h"
+#include "malvado/camera.h"
 #include <stdio.h>
 #include <string.h>
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
@@ -65,6 +66,12 @@ _Static_assert(_Generic(&mv_collision_world_add_rect, int (*)(MvCollisionWorld *
 _Static_assert(_Generic(&mv_collision_world_query, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, size_t *): 1, default: 0), "mv_collision_world_query signature");
 _Static_assert(_Generic(&mv_collision_world_sweep, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_sweep signature");
 _Static_assert(_Generic(&mv_collision_world_move, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform *, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_move signature");
+_Static_assert(_Generic(&mv_camera_init, int (*)(MvCamera *, double, double, const MvCameraViewport *): 1, default: 0), "mv_camera_init signature");
+_Static_assert(_Generic(&mv_camera_set, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_set signature");
+_Static_assert(_Generic(&mv_camera_move, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_move signature");
+_Static_assert(_Generic(&mv_camera_project, int (*)(const MvCamera *, double, double, double, double, double *, double *): 1, default: 0), "mv_camera_project signature");
+_Static_assert(_Generic(&mv_camera_center, int (*)(MvCamera *, double, double, int, int): 1, default: 0), "mv_camera_center signature");
+_Static_assert(_Generic(&mv_camera_clip, int (*)(const MvCamera *, const MvCameraViewport *, int, int, MvCameraViewport *): 1, default: 0), "mv_camera_clip signature");
 int main(void) {
     if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }
@@ -146,5 +153,14 @@ int main(void) {
     printf("%zu ", offsetof(MvCollisionSweep, normal_y));
     _Static_assert(sizeof(MvCollisionKind) == sizeof(int), "collision enum size");
     printf("%u %u ", (unsigned)MV_COLLISION_CIRCLE, (unsigned)MV_COLLISION_RECT);
+    printf("%zu %zu ", sizeof(MvCameraViewport), _Alignof(MvCameraViewport));
+    printf("%zu ", offsetof(MvCameraViewport, x));
+    printf("%zu ", offsetof(MvCameraViewport, y));
+    printf("%zu ", offsetof(MvCameraViewport, width));
+    printf("%zu ", offsetof(MvCameraViewport, height));
+    printf("%zu %zu ", sizeof(MvCamera), _Alignof(MvCamera));
+    printf("%zu ", offsetof(MvCamera, x));
+    printf("%zu ", offsetof(MvCamera, y));
+    printf("%zu ", offsetof(MvCamera, viewport));
     return 0;
 }
