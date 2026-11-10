@@ -1,0 +1,8 @@
+1 parent 40
+1 slow 1
+2 parent 41
+2 child 7
+3 child 8
+5 slow 2
+9 slow 3
+closed 3

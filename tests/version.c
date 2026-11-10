@@ -17,6 +17,9 @@
 #include "expected-version.h"
 #endif
 #include "malvado/malvado.h"
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <string.h>
 
