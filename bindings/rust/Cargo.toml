@@ -1,6 +1,6 @@
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 [workspace]
-members = ["malvado-sys"]
+members = ["malvado-sys", "malvado"]
 resolver = "2"
 
 [workspace.package]

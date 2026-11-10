@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
+name = "malvado"
+version = "2.0.0-alpha.7"
+dependencies = [
+ "malvado-sys",
+]
+
+[[package]]
 name = "malvado-sys"
 version = "2.0.0-alpha.7"

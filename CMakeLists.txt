@@ -490,7 +490,7 @@ add_test(NAME alpha7_baseline_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:alpha7-baseline-test>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
   -DLUA_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/alpha7_baseline.lua
-  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/alpha7_baseline.txt
+  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/alpha7_baseline.txt
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
 set_tests_properties(alpha7_baseline_parity PROPERTIES TIMEOUT 25)
 add_test(NAME c_lua_parity COMMAND ${CMAKE_COMMAND}

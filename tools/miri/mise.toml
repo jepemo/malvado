@@ -1,0 +1,4 @@
+# Malvado 2; SPDX-License-Identifier: Apache-2.0
+# Optional proof toolchain; normal C/Lua/Rust builds keep the root stable pin.
+[tools]
+rust = { version = "nightly-2026-11-01", profile = "minimal", components = ["miri", "rust-src"] }

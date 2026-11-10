@@ -18,7 +18,13 @@ fn run(command: &mut Command) -> Output {
 }
 
 fn main() {
-    for name in ["MALVADO_SDK_PREFIX", "CC", "CMAKE_GENERATOR"] {
+    for name in [
+        "MALVADO_SDK_PREFIX",
+        "CC",
+        "CMAKE_GENERATOR",
+        "CFLAGS",
+        "LDFLAGS",
+    ] {
         println!("cargo:rerun-if-env-changed={name}");
     }
     println!("cargo:rerun-if-changed=native");
@@ -58,6 +64,14 @@ fn main() {
         .arg("-B")
         .arg(&output)
         .arg(format!("-DCMAKE_BUILD_TYPE={config}"))
+        .arg(format!(
+            "-DCMAKE_C_FLAGS={}",
+            env::var("CFLAGS").unwrap_or_default()
+        ))
+        .arg(format!(
+            "-DCMAKE_EXE_LINKER_FLAGS={}",
+            env::var("LDFLAGS").unwrap_or_default()
+        ))
         .arg(format!("-DMALVADO_SDK_PREFIX={}", prefix.display()))
         .arg(format!(
             "-DEXPECTED_VERSION={}",

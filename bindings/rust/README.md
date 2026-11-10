@@ -1,8 +1,8 @@
 # Rust native SDK
 
-This workspace currently provides `malvado-sys`, the unsafe native boundary.
-It is not yet a safe game API. Async processes and graphics wrappers remain
-in the [alpha.7 checklist](../../docs/versions/2.0.0-alpha.7.md).
+This workspace provides `malvado`, the safe owner-thread async process API,
+and `malvado-sys`, the unsafe native boundary. Graphics wrappers and the full
+lifecycle matrix remain in the [alpha.7 checklist](../../docs/versions/2.0.0-alpha.7.md).
 
 Use the project toolchain and run all local SDK checks:
 
@@ -60,3 +60,18 @@ SDK prefixes cannot contain newlines, carriage returns or semicolons.
 No crates.io package, graphics wrapper, player export, or completed alpha.7
 release is implied. The development engine and crate identifiers now read
 `2.0.0-alpha.7`; the milestone is still in progress.
+
+## Scheduler proof checks
+
+After `mise run test-rust` installs a local native SDK:
+
+```sh
+mise install --cd tools/miri rust
+mise run test-rust-miri
+mise run test-rust-sanitize
+```
+
+The optional dated nightly provides Miri without changing the stable root
+toolchain. Miri checks pure future/waker ownership. The sanitizer task requires
+Clang and checks native C callbacks with ASan/UBSan; Rust itself is not sanitizer
+instrumented. See the [proof and limitations](../../docs/versions/2.0.0-alpha.7-scheduler.md).

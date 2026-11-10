@@ -1,0 +1,10 @@
+[package]
+name = "malvado"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Safe owner-thread processes for the Malvado native scheduler"
+
+[dependencies]
+malvado-sys = { path = "../malvado-sys", version = "=2.0.0-alpha.7" }

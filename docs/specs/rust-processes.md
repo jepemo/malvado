@@ -1,6 +1,6 @@
-# Rust process and scheduler design proposal
+# Rust process and scheduler design
 
-Status: unvalidated design, not an available API. The owner prefers a struct with an async `run`; macro names and field syntax remain open. Native process properties are authoritative: do not mirror `x`, `y`, `z`, `angle` or `size` in Rust user state. Recommend typed state plus a context-bound process handle with checked native property accessors; generated convenience is optional after safety validation. `z` remains 2D draw order.
+Status: the owned-future adapter is implemented and verified for A7.3; see the [proof and limits](../versions/2.0.0-alpha.7-scheduler.md). A struct can use an owned async `run(self, ProcessContext)`. Macros and visual field syntax remain outside this proof. Native process properties are authoritative: do not mirror `x`, `y`, `z`, `angle` or `size` in Rust user state. Recommend typed state plus a context-bound process handle with checked native property accessors; generated convenience is optional after safety validation. `z` remains 2D draw order.
 
 ## Execution and lifetime
 
@@ -19,3 +19,7 @@ Native safe points decide when destruction occurs. Natural Ready, external kill,
 Wrap every Rust callback entering through C with `catch_unwind` when unwinding is enabled; convert panic to a documented process failure and clean up at the safe point. No unwind crosses C. `panic=abort` terminates the program and cannot be recovered; specify this limitation. Test destructor panics separately and avoid double panic across FFI. Shared resources use native retain/release and do not outlive their context without an explicit native guarantee.
 
 Before expanding the SDK, demonstrate deterministic frame traces, local values across suspension, spawn timing, stop/sleep/freeze, self/external kill, shutdown, wake races, panic containment and exactly-once Drop under sanitizers and Miri where applicable. Redesign if sound lifetimes require unchecked aliases, wake handling creates a second scheduler, or safe-point cleanup cannot be guaranteed. Macro ergonomics never override safety.
+
+The implemented ownership/wake decision and current test evidence are recorded
+in the proof linked above. Earlier alternatives in this design explain the
+constraints; they do not add another supported process API.
