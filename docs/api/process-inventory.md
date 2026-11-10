@@ -4,6 +4,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 
 | Area | C baseline | Lua baseline |
 | --- | --- | --- |
+| Native version discovery | `mv_abi_version`, `mv_version_string` | C SDK queries; no Lua equivalent required. See the [alpha.7 baseline](../versions/2.0.0-alpha.7-baseline.md). |
 | Runtime and start | `mv_context_create`, `mv_context_destroy`, `mv_context_runtime_id`, `mv_context_advance`, `mv_context_ticks`, `mv_context_dropped_seconds` | A returned game table or `mv.start()` |
 | Process creation | `mv_process_spawn`, `mv_process_spawn_related` | `mv.process`, `mv.process.define`, `mv.process.spawn` |
 | Identity and lifetime | `mv_process_ref_create`, `mv_process_ref_resolve`, `mv_process_handle_create`, `mv_process_handle_snapshot`, `mv_process_handle_destroy` | Canonical process handles; dead handles retain identity, status, and reason |

@@ -119,3 +119,16 @@ ignored. The wait can end early if interrupted.
 [`platform.h`](../../src/include/malvado/platform.h) provides the initial window adapter. The raylib implementation owns one window and must run on the main thread. `mv_window_escape_down` and `mv_window_space_down` report held keys. The headless implementation cannot open a window and reports both keys as released. These functions are separate from the process context; broader graphics and resource APIs are planned for alpha.3.
 
 The current `malvado-run` owns its Lua VM and context. Only one runner can be active at a time; a nested `malvado_run` returns exit code 2. `malvado_debug_context` is an experimental runner-thread diagnostic hook, used by the [mixed C/Lua test](../../tests/mixed_host.c). It is not a stable API for attaching a binding to an arbitrary host VM. IPC, a GUI, and a LuaRocks module for an external interpreter are not part of alpha.2.
+
+## Native version discovery
+
+Call `mv_abi_version()` before other engine operations when checking a binding.
+Require an exact match with the supported `MV_ABI_VERSION`. This integer changes
+when public signatures, layouts, calling conventions, or ownership contracts
+change incompatibly. It does not describe optional backends or target architecture.
+
+`mv_version_string()` returns immutable library-owned release text. Do not free
+or modify it. Both queries allocate nothing and need no context or platform
+initialization. Their results remain valid after context destruction. A library
+without these symbols cannot satisfy this binding contract. SDK discovery and
+Rust mismatch diagnostics remain part of alpha.7 work.

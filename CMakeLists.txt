@@ -46,7 +46,7 @@ if(MALVADO_BUILD_ASSETS)
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
-add_library(malvado_core STATIC src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
+add_library(malvado_core STATIC src/core/version.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
 target_include_directories(malvado_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -56,6 +56,7 @@ if(UNIX)
 elseif(WIN32)
   target_link_libraries(malvado_core PUBLIC bcrypt)
 endif()
+target_compile_definitions(malvado_core PRIVATE MALVADO_VERSION_STRING="${MALVADO_VERSION_STRING}")
 set_target_properties(malvado_core PROPERTIES EXPORT_NAME core)
 install(TARGETS malvado_core EXPORT MalvadoTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY src/include/malvado DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
@@ -212,6 +213,11 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+add_executable(version-test tests/version.c)
+target_link_libraries(version-test PRIVATE malvado_core)
+target_compile_definitions(version-test PRIVATE MALVADO_VERSION_STRING="${MALVADO_VERSION_STRING}")
+add_test(NAME c_version COMMAND version-test)
+set_tests_properties(c_version PROPERTIES TIMEOUT 15)
 find_package(Python3 QUIET COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
   add_test(NAME c_api_inventory COMMAND ${Python3_EXECUTABLE}

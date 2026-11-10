@@ -83,6 +83,7 @@ See the linked headers and the [process](process-inventory.md),
 
 ## [malvado.h](../../src/include/malvado/malvado.h)
 
+- `mv_abi_version`
 - `mv_cadence_step`
 - `mv_context_advance`
 - `mv_context_create`
@@ -125,6 +126,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_resource_release`
 - `mv_resource_retain`
 - `mv_resource_transfer`
+- `mv_version_string`
 
 ## [platform.h](../../src/include/malvado/platform.h)
 

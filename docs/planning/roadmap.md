@@ -115,4 +115,4 @@ This layout is a proposal; do not create empty code directories for it. Research
 
 ## Recommended next implementation
 
-Continue with the API inventory in [alpha.6](../versions/2.0.0-alpha.6.md). See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.
+Continue with the native inventory and Rust integration gates in [alpha.7](../versions/2.0.0-alpha.7.md). Alpha.6 is accepted. See [versions](../versions/README.md) for the checklist and [CLI](../specs/cli.md) for later exporters.

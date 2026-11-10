@@ -23,6 +23,18 @@
 extern "C" {
 #endif
 
+/* Native ABI revision, independent of the release version. Increment when a
+ * public layout, signature, calling convention, or ownership contract changes
+ * incompatibly. Bindings must require an exact match before other engine calls.
+ * This does not check target architecture, optional backends, or SDK provenance. */
+#define MV_ABI_VERSION UINT32_C(1)
+/** These queries need no context or platform initialization. They allocate
+ * nothing and are safe before any other engine call. The release string is
+ * immutable library-owned storage; do not free or modify it. A matching ABI
+ * revision does not guarantee that an optional feature is available. */
+uint32_t mv_abi_version(void);
+const char *mv_version_string(void);
+
 typedef struct MvContext MvContext;
 
 /* Cadence for a 60-tick-per-second scheduler. Initialize to {0}. Run the
