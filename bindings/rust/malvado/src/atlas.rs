@@ -140,9 +140,152 @@ impl Drop for Atlas {
 ///     atlas.sprite(7).unwrap().name
 /// }
 /// ```
+/// Animation views also borrow the owning atlas.
+/// ```compile_fail
+/// use malvado::atlas::Atlas;
+/// fn invalid(json: &str) {
+///     let clip = {
+///         let atlas = Atlas::parse(json, 8, 8).unwrap();
+///         atlas.animation_named("walk").unwrap().unwrap()
+///     };
+///     clip.sample(0, true);
+/// }
+/// ```
 /// Atlas access stays on its creating thread.
 /// ```compile_fail
 /// use malvado::atlas::Atlas;
 /// fn invalid(atlas: Atlas) { std::thread::spawn(move || drop(atlas)); }
 /// ```
 mod ownership_contract {}
+
+/// One expanded sequence frame. Durations use the atlas format's milliseconds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ClipFrame {
+    pub sprite_id: i32,
+    pub duration_ms: u32,
+}
+/// A named expanded sequence borrowing its owning atlas.
+pub struct Clip<'a> {
+    atlas: &'a Atlas,
+    name: CString,
+    count: usize,
+}
+impl Atlas {
+    /// Import an unrotated Aseprite array export with native validation.
+    pub fn parse_aseprite(json: &str, width: i32, height: i32) -> Result<Self, Error> {
+        Self::parse_with(json, width, height, ffi::mv_atlas_parse_aseprite)
+    }
+    /// Optional imported pivot-slice color as RGBA channels.
+    pub fn pivot_color(&self) -> Option<[u8; 4]> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: live atlas, exclusive output initialized only on success.
+        if unsafe { ffi::mv_atlas_pivot_color(self.native.as_ptr(), out.as_mut_ptr()) } == 0 {
+            return None;
+        }
+        // SAFETY: successful query initializes all four channels.
+        Some(color(unsafe { out.assume_init() }))
+    }
+    pub fn animation_named(&self, name: &str) -> Result<Option<Clip<'_>>, Error> {
+        let name = CString::new(name).map_err(|_| Error::InvalidArgument)?;
+        // SAFETY: live atlas and terminated name, no retained caller pointers.
+        let count =
+            unsafe { ffi::mv_atlas_animation_frame_count(self.native.as_ptr(), name.as_ptr()) };
+        Ok((count != 0).then_some(Clip {
+            atlas: self,
+            name,
+            count,
+        }))
+    }
+}
+impl Clip<'_> {
+    pub fn len(&self) -> usize {
+        self.count
+    }
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+    pub fn frame(&self, index: usize) -> Option<ClipFrame> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: atlas borrow and owned C name stay live; native validates index.
+        if unsafe {
+            ffi::mv_atlas_animation_frame_at(
+                self.atlas.native.as_ptr(),
+                self.name.as_ptr(),
+                index,
+                out.as_mut_ptr(),
+            )
+        } == 0
+        {
+            return None;
+        }
+        // SAFETY: successful query initialized both output fields.
+        let out = unsafe { out.assume_init() };
+        Some(ClipFrame {
+            sprite_id: out.sprite_id,
+            duration_ms: out.duration_ms,
+        })
+    }
+    /// Sample the expanded native sequence; non-looping clips hold the last frame.
+    pub fn sample(&self, elapsed_ms: u64, looping: bool) -> i32 {
+        let mut id = 0;
+        // SAFETY: immutable atlas keeps this known nonempty sequence live.
+        let valid = unsafe {
+            ffi::mv_atlas_animation_frame(
+                self.atlas.native.as_ptr(),
+                self.name.as_ptr(),
+                elapsed_ms,
+                looping.into(),
+                &mut id,
+            )
+        };
+        assert_eq!(valid, 1, "live atlas sequence");
+        id
+    }
+    pub fn color(&self) -> Option<[u8; 4]> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: live atlas and name; output initialized only on success.
+        if unsafe {
+            ffi::mv_atlas_animation_color(
+                self.atlas.native.as_ptr(),
+                self.name.as_ptr(),
+                out.as_mut_ptr(),
+            )
+        } == 0
+        {
+            return None;
+        }
+        // SAFETY: successful query initializes all four channels.
+        Some(color(unsafe { out.assume_init() }))
+    }
+    /// Explicit repeat metadata. None means unspecified; zero is preserved.
+    /// Native sampling and converted playback do not apply this count.
+    pub fn repeats(&self) -> Option<u32> {
+        let mut out = 0;
+        // SAFETY: live atlas, owned name and exclusive output.
+        let valid = unsafe {
+            ffi::mv_atlas_animation_repeats(
+                self.atlas.native.as_ptr(),
+                self.name.as_ptr(),
+                &mut out,
+            )
+        };
+        (valid != 0).then_some(out)
+    }
+    /// Copy expanded frames into an independent owned native animation.
+    /// Graph IDs remain metadata and do not retain images. Repeat count is not applied.
+    pub fn to_animation(&self, looping: bool) -> Result<crate::animation::Animation, Error> {
+        let frames: Vec<_> = (0..self.count)
+            .map(|index| {
+                let frame = self.frame(index).expect("live expanded atlas sequence");
+                crate::animation::Frame {
+                    graph_id: frame.sprite_id,
+                    duration_us: u64::from(frame.duration_ms) * 1000,
+                }
+            })
+            .collect();
+        crate::animation::Animation::new(&frames, looping)
+    }
+}
+fn color(value: ffi::MvColor) -> [u8; 4] {
+    [value.r, value.g, value.b, value.a]
+}

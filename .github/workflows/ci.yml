@@ -29,6 +29,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang lld
       - run: mise run test-rust-sanitize
+      - run: mise run test-rust-assets-sanitize
   sdk-package:
     name: Build SDK archive (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

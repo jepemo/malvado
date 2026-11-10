@@ -132,3 +132,7 @@ run = "python3 tools/test_lua_no_cargo.py"
 [tasks.test-rust-assets]
 description = "Test optional Rust atlas services against relocated assets SDKs"
 run = "python3 tools/test_rust_assets.py"
+
+[tasks.test-rust-assets-sanitize]
+description = "Test Rust atlas ownership against ASan/UBSan native assets"
+run = "python3 tools/test_rust_sanitize.py --assets"

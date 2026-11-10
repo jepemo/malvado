@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test Rust callbacks against an ASan/UBSan-instrumented installed native core."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
+import argparse
 import os
 from pathlib import Path
 import shutil
@@ -8,7 +9,6 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-WORK = ROOT / "build-rust-sanitize"
 
 
 def run(*command, env=None):
@@ -16,16 +16,20 @@ def run(*command, env=None):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--assets", action="store_true", help="also verify native atlas services")
+    args = parser.parse_args()
+    work = ROOT / ("build-rust-assets-sanitize" if args.assets else "build-rust-sanitize")
     compiler = shutil.which("clang")
     if compiler is None:
         raise SystemExit("Rust sanitizer checks require clang")
     flags = "-fsanitize=address,undefined -fno-omit-frame-pointer"
-    prefix = WORK / "installed sdk"
-    run("cmake", "-S", str(ROOT), "-B", str(WORK), "-DCMAKE_BUILD_TYPE=Debug",
-        "-DMALVADO_BUILD_LUA=OFF", "-DMALVADO_BUILD_RAYLIB=OFF", "-DMALVADO_BUILD_ASSETS=OFF",
+    prefix = work / "installed sdk"
+    run("cmake", "-S", str(ROOT), "-B", str(work), "-DCMAKE_BUILD_TYPE=Debug",
+        "-DMALVADO_BUILD_LUA=OFF", "-DMALVADO_BUILD_RAYLIB=OFF", f"-DMALVADO_BUILD_ASSETS={'ON' if args.assets else 'OFF'}",
         "-DCMAKE_INSTALL_LIBDIR=lib", f"-DCMAKE_C_COMPILER={compiler}", f"-DCMAKE_C_FLAGS={flags}")
-    run("cmake", "--build", str(WORK), "--target", "malvado_core", "--parallel")
-    run("cmake", "--install", str(WORK), "--prefix", str(prefix))
+    run("cmake", "--build", str(work), "--target", "malvado_core", *(["malvado_assets"] if args.assets else []), "--parallel")
+    run("cmake", "--install", str(work), "--prefix", str(prefix))
     runtime_dir = Path(subprocess.check_output([compiler, "-print-runtime-dir"], text=True).strip())
     rustflags = ["-C", f"linker={compiler}"]
     # rustc passes -nodefaultlibs, which suppresses Clang's sanitizer runtime.
@@ -45,14 +49,14 @@ def main():
     if not runtime.is_file():
         raise SystemExit(f"Clang sanitizer runtime is missing: {runtime}")
     env = dict(os.environ, CC=compiler, CFLAGS=flags, LDFLAGS=flags,
-               MALVADO_SDK_PREFIX=str(prefix), CARGO_TARGET_DIR=str(WORK / "cargo"),
+               MALVADO_SDK_PREFIX=str(prefix), CARGO_TARGET_DIR=str(work / "cargo"),
                CARGO_ENCODED_RUSTFLAGS="\x1f".join(rustflags),
                ASAN_OPTIONS="detect_leaks=0" if sys.platform == "darwin" else "detect_leaks=1",
                UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     # Miri checks Rust future ownership separately; these native tests exercise
     # the real C scheduler, safe points, handles, and callback boundaries.
     run("cargo", "test", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
-        "--workspace", "--tests", env=env)
+        "--workspace", "--tests", *(["--features", "malvado/assets"] if args.assets else []), env=env)
 
 
 if __name__ == "__main__":

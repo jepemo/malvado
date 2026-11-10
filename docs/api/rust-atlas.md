@@ -40,3 +40,41 @@ invalid data and dimensions, lookup behavior, input copying, resource retention,
 an offline consumer from a relocated installed SDK, missing-assets diagnostics,
 and deliberate header-layout mismatch rejection. Shared C/Rust JSON fixtures
 are read from `tests/fixtures`; the C atlas tests also exercise them.
+
+## Aseprite and animation clips
+
+`Atlas::parse_aseprite` imports an unrotated Aseprite JSON array export. The
+native parser validates trim offsets, original canvas sizes, animated pivot
+slices, durations and supported metadata. Unsupported exports fail explicitly.
+Sprites keep their native generated IDs and exact names. `pivot_color()` returns
+optional imported RGBA channels as `[u8; 4]`.
+
+`animation_named(name)` returns an optional borrowed `Clip`. Each clip exposes
+`len`, `frame(index)`, `sample(elapsed_ms, looping)`, optional `color()` and
+optional `repeats()`. Native expansion preserves forward, reverse, ping-pong and
+reverse ping-pong order. An invalid index returns `None`. Looping samples wrap;
+non-looping samples hold the final frame. An explicit repeat count of zero
+stays `Some(0)`; unspecified counts return `None`. Repeats are metadata and do
+not change sampling behavior. Names with embedded NUL return `InvalidArgument`.
+
+`clip.to_animation(looping)` copies the expanded sequence into the existing
+owned native `Animation`, converting milliseconds to microseconds exactly.
+The result survives atlas destruction. Its explicit fixed-tick playback uses
+the existing C accumulator. It does not apply repeat metadata, retain graphical
+assets, assign graphs, or advance processes automatically. These parts remain
+in A7.6. See the [camera and animation guide](rust-camera-animation.md).
+
+Tests use the same schema 2, Aseprite pivot and ping-pong fixtures as the C suite.
+They check frame boundaries, end/loop behavior, directions, colors, repeat
+metadata, trim/pivot values, unsupported input, invalid names/indexes, borrowed
+clip lifetimes, and owned playback after atlas destruction. The relocated
+external consumer imports a clip and samples its independent native animation.
+
+`mise run test-rust-assets-sanitize` runs Rust ownership and atlas tests against
+ASan/UBSan-instrumented native core, asset parser and JSON library. Rust code
+itself is not sanitizer-instrumented. Both host CI jobs run this check.
+
+Local verification passed: 57 Rust tests and 14 doctests in each profile with
+assets enabled, 58 native C tests in each profile, Clippy, format, and the
+relocated Debug/Release consumers. Both sanitizer modes pass. The default
+core-only SDK checks also pass without enabling assets.

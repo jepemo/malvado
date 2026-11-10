@@ -3,7 +3,6 @@
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -25,7 +24,7 @@ def rejected(prefix, expected):
     print(f"PASS: {expected}", flush=True)
 
 
-def consumer(prefix):
+def consumer(prefix, profile):
     game = WORK / "external assets game"
     (game / "src").mkdir(parents=True, exist_ok=True)
     sdk = prefix / "share/malvado/rust/malvado"
@@ -34,14 +33,20 @@ def consumer(prefix):
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
         + ',features=["assets"]}\n')
     fixture = (ROOT / "tests/fixtures/atlas.json").read_text()
+    aseprite = (ROOT / "tests/fixtures/aseprite/pingpong.json").read_text()
     (game / "src/main.rs").write_text(
         'use malvado::{atlas::Atlas, Error};\n'
         'fn main() -> Result<(), Error> {\n'
         ' let atlas = Atlas::parse(' + json.dumps(fixture) + ', 8, 8)?;\n'
         ' assert_eq!(atlas.sprite_named("green")?.unwrap().id, 42);\n'
         ' assert_eq!(atlas.image(), "red.png");\n'
+        ' let imported = Atlas::parse_aseprite(' + json.dumps(aseprite) + ', 8, 8)?;\n'
+        ' let clip = imported.animation_named("bounce")?.unwrap();\n'
+        ' assert_eq!(clip.repeats(), Some(3));\n'
+        ' let animation = clip.to_animation(true)?; drop(imported);\n'
+        ' assert_eq!(animation.sample(600_000).graph_id, 2);\n'
         ' Ok(())\n}\n')
-    run("cargo", "run", "--offline", cwd=game,
+    run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)
 
 
@@ -68,7 +73,8 @@ def main():
         run(*args, env=env)
         run("cargo", "clippy", "--manifest-path", MANIFEST, "--workspace",
             "--all-targets", "--features", "malvado/assets", "--", "-D", "warnings", env=env)
-        consumer(prefix)
+        run("ctest", "--test-dir", str(build), "-C", profile, "--output-on-failure")
+        consumer(prefix, profile)
     # A core-only SDK remains usable by default and rejects explicit assets.
     core = WORK / "core-only"
     run("cmake", "-S", str(ROOT), "-B", str(core), "-DMALVADO_BUILD_LUA=OFF",
