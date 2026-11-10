@@ -1,6 +1,6 @@
 # Rust integration migration plan
 
-Status: proposal; begin only after alpha.6 acceptance and owner review. No engine or directory migration is authorized by this plan.
+Status: in progress after alpha.6 acceptance. Native inventory and installed sys SDK are complete; see [alpha.7](../versions/2.0.0-alpha.7.md). The scheduler proof is next. No engine or directory migration is authorized by this plan.
 
 1. Inventory native symbols, installed headers, ABI, build options, existing `src/` paths, CLI templates and resource contracts. Establish a C/Lua trace baseline and identify missing public operations.
 2. Create `bindings/rust/` only when implementation starts. Keep CMake as native owner and Cargo as Rust owner. Install a C SDK to a temporary prefix for CI and external consumers. Add optional `mise run test-rust`; preserve existing C/Lua commands without invoking Cargo.

@@ -22,6 +22,7 @@ The Malvado 2 runtime uses C and raylib, with Lua as the main interface, coopera
 14. [SDK, tools, and LuaRocks distribution](development/distribution.md).
 15. [C style](development/c-style.md) and [licenses and attribution](development/licensing.md).
 16. [C and Lua API documentation and examples](development/api-documentation.md).
+17. [Rust sys SDK setup and checks](../bindings/rust/README.md) and [alpha.7 progress](versions/2.0.0-alpha.7.md).
 
 The [historical API list](history/legacy-api.md) is for guidance. It is not a verified specification or the new API. Earlier plans remain in [history](history/README.md). Earlier examples depend on LÖVE. The [initial C runtime](versions/2.0.0-alpha.1.md) has its own example.
 
