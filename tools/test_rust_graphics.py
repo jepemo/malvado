@@ -27,10 +27,28 @@ def consumer(prefix, profile):
         'fn main() -> Result<(), Error> {\n'
         ' let window = Window::open(160, 120, "Installed Rust window")?;\n'
         ' assert_eq!(window.size(), (160,120));\n'
+        ' window.input_tick();\n'
+        ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
+        ' assert!(!window.key_released(malvado::window::Key::Space));\n'
         ' drop(window.frame(Color {r:10,g:20,b:30,a:255})?);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)
+
+
+def capture(command, env=None):
+    result = subprocess.run(command, env=env, cwd=ROOT, text=True, capture_output=True, timeout=180)
+    print(result.stdout, end="", flush=True)
+    print(result.stderr, end="", file=sys.stderr, flush=True)
+    result.check_returncode()
+    return result.stdout
+
+
+def parity(output, prefix):
+    expected = (ROOT / "bindings/rust/malvado/tests/fixtures/keyboard.txt").read_text().splitlines() * 2
+    actual = [line.removeprefix(prefix) for line in output.splitlines() if line.startswith(prefix)]
+    if actual != expected:
+        raise RuntimeError(f"{prefix} keyboard trace mismatch: {actual!r}")
 
 
 def main():
@@ -58,7 +76,22 @@ def main():
         cargo = ["cargo", "test", "--manifest-path", MANIFEST, "--workspace", "--all-features"]
         if profile == "Release":
             cargo.append("--release")
-        run(*cargo, env=env, timeout=180)
+        output = capture(cargo, env=env)
+        parity(output, "rust-key: ")
+        output = capture([str(build / "key-edges-visual-test"), str(ROOT / "tests/key_edges_visual.lua")])
+        parity(output, "native-key: ")
+        parity(output, "lua-key: ")
+        if sys.platform.startswith("linux"):
+            if shutil.which("xdotool") is None:
+                raise RuntimeError("Linux keyboard injection requires xdotool")
+            command = ["cargo", "test", "--manifest-path", MANIFEST, "-p", "malvado",
+                       "--all-features", "--test", "keyboard", "--no-run", "--message-format=json"]
+            if profile == "Release": command.append("--release")
+            artifacts = capture(command, env=env)
+            executable = next(json.loads(line)["executable"] for line in artifacts.splitlines()
+                              if line.startswith("{") and json.loads(line).get("executable"))
+            run("sh", str(ROOT / "tests/keys_visual.sh"), "Malvado Rust keys", executable,
+                "--physical", env=env, timeout=30)
         run("cargo", "clippy", "--manifest-path", MANIFEST, "--workspace",
             "--all-targets", "--all-features", "--", "-D", "warnings", env=env)
         consumer(prefix, profile)

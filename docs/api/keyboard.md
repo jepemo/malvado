@@ -73,8 +73,23 @@ and reopening the runner. The existing Linux keyboard injection test also checks
 actual backend press/release transitions. Headless Lua tests cover validation,
 module/global/namespace aliases, and neutral state.
 
-Rust window/input services are still pending in alpha.7 A7.6. Their typed key
-queries must use these same native snapshots and commit once per window tick;
-the headless Rust process Engine must not depend on a graphics backend. There
-is no claimed Rust live-keyboard wrapper yet. The keyboard gate remains open
-until all three languages have the required platform integration and evidence.
+Rust provides `Window::key_down`, `Window::key_pressed` and
+`Window::key_released` with the typed `Key` enum under the `graphics` feature.
+The host calls `Window::input_tick()` once before its shared logical tick,
+then runs `Engine::tick()`. Processes can share an `Rc<Window>` for queries;
+reads use the same native snapshot and never consume an edge. The window and
+all its readers stay on the application main thread. Rendering through a frame
+guard captures backend events on drop, but does not commit a logical tick.
+
+The default headless Rust Engine has no window or live input service; enabling
+this feature does not create one implicitly. Invalid keys cannot be constructed
+through the safe enum. The C unavailable/invalid-key rules remain unchanged.
+See the [Rust window guide](rust-window.md) for ownership and host-loop usage.
+
+`test-rust-graphics` compares one shared five-tick golden trace against native
+C, Lua and Rust readers in both profiles, including multiple readers and a
+30 FPS process. The Rust fixture also checks zero-tick frames, catch-up ticks,
+non-consuming queries and reset after closing/reopening. Linux runs the same
+real keyboard injection script against the C and Rust backends, including held
+state, one press and one release for each tested key. Lua headless validation
+and the audio example action checks remain in the existing native suites.

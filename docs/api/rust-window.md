@@ -11,7 +11,6 @@ let window = Window::open(640, 480, "Game")?;
 for _ in 0..3 {
     if window.should_close() { break; }
     let frame = window.frame(Color { r: 20, g: 30, b: 40, a: 255 })?;
-    // Draw through delivered frame operations when available.
     drop(frame); // End drawing and process platform events.
 }
 # Ok::<(), malvado::Error>(())
@@ -43,3 +42,37 @@ reopening, main-thread checks, and compile-time frame/thread lifetimes. Both
 profiles run from relocated graphics SDKs, including an offline external
 consumer. Linux CI runs under Xvfb. Local macOS also runs these checks; no macOS
 CI display capability is claimed.
+
+## Keyboard and the native process tick
+
+```rust
+use malvado::{Engine, window::{Window, Key, Color}};
+let mut engine = Engine::new()?;
+let window = Window::open(640, 480, "Game")?;
+for _ in 0..3 {
+    window.input_tick(); // Once for the shared logical tick, before all readers.
+    if window.key_pressed(Key::Escape) { break; }
+    engine.tick()?;
+    drop(window.frame(Color { r: 20, g: 30, b: 40, a: 255 })?);
+}
+# Ok::<(), malvado::Error>(())
+```
+
+`Key` covers the same digits, letters and named controls as C and Lua. The
+installed-header probe checks each value. `key_down` reads held state;
+`key_pressed` and `key_released` read non-consuming logical-tick snapshots.
+They do not add text input, autorepeat or per-process key history.
+
+`input_tick` commits the native pending edges. Call it once for the shared
+window tick, including catch-up ticks, before `Engine::tick` or other readers.
+Do not call it separately in each process or context. Frames without ticks
+retain pending edges. Catch-up ticks clear them without replay. Both edges
+can be true when both transitions were observed between ticks. A slower,
+sleeping or frozen process can miss a transition in a tick it does not run.
+See the [shared keyboard timing contract](keyboard.md).
+
+An `Rc<Window>` lets owned process futures query this one native service without
+another input cache. The host remains responsible for commit timing. Dropping
+all window owners resets input; reopening starts neutral. The default headless
+Engine still has no live-window service. Mouse, controllers, text entry and
+other platform families remain in A7.6.

@@ -19,3 +19,9 @@ name = "window"
 path = "tests/window.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "keyboard"
+path = "tests/keyboard.rs"
+harness = false
+required-features = ["graphics"]

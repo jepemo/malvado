@@ -19,12 +19,15 @@
 #undef NDEBUG
 #endif
 #include <assert.h>
+#include <stdio.h>
 
 static void
 capture(void *user)
 {
     unsigned *tick = user;
     ++*tick;
+    printf("native-key: %u %d %d\n", *tick, mv_key_pressed(MV_KEY_SPACE),
+           mv_key_released(MV_KEY_SPACE));
     if (*tick == 1 || *tick == 4)
         mv_keyboard_sample(MV_KEY_SPACE, 1, 0);
     if (*tick == 3 || *tick == 4)

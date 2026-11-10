@@ -136,3 +136,76 @@ fn main_thread() -> bool {
     // SAFETY: the Linux thread ID query has no arguments or retained state.
     unsafe { gettid() as u32 == std::process::id() }
 }
+
+/// Supported physical keys. Values are checked against the installed C enum.
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Key {
+    Digit0 = ffi::MV_KEY_0,
+    Digit1 = ffi::MV_KEY_1,
+    Digit2 = ffi::MV_KEY_2,
+    Digit3 = ffi::MV_KEY_3,
+    Digit4 = ffi::MV_KEY_4,
+    Digit5 = ffi::MV_KEY_5,
+    Digit6 = ffi::MV_KEY_6,
+    Digit7 = ffi::MV_KEY_7,
+    Digit8 = ffi::MV_KEY_8,
+    Digit9 = ffi::MV_KEY_9,
+    A = ffi::MV_KEY_A,
+    B = ffi::MV_KEY_B,
+    C = ffi::MV_KEY_C,
+    D = ffi::MV_KEY_D,
+    E = ffi::MV_KEY_E,
+    F = ffi::MV_KEY_F,
+    G = ffi::MV_KEY_G,
+    H = ffi::MV_KEY_H,
+    I = ffi::MV_KEY_I,
+    J = ffi::MV_KEY_J,
+    K = ffi::MV_KEY_K,
+    L = ffi::MV_KEY_L,
+    M = ffi::MV_KEY_M,
+    N = ffi::MV_KEY_N,
+    O = ffi::MV_KEY_O,
+    P = ffi::MV_KEY_P,
+    Q = ffi::MV_KEY_Q,
+    R = ffi::MV_KEY_R,
+    S = ffi::MV_KEY_S,
+    T = ffi::MV_KEY_T,
+    U = ffi::MV_KEY_U,
+    V = ffi::MV_KEY_V,
+    W = ffi::MV_KEY_W,
+    X = ffi::MV_KEY_X,
+    Y = ffi::MV_KEY_Y,
+    Z = ffi::MV_KEY_Z,
+    Escape = ffi::MV_KEY_ESCAPE,
+    Space = ffi::MV_KEY_SPACE,
+    Left = ffi::MV_KEY_LEFT,
+    Right = ffi::MV_KEY_RIGHT,
+    Up = ffi::MV_KEY_UP,
+    Down = ffi::MV_KEY_DOWN,
+    Enter = ffi::MV_KEY_ENTER,
+    Tab = ffi::MV_KEY_TAB,
+    Backspace = ffi::MV_KEY_BACKSPACE,
+}
+impl Window {
+    /// Commit buffered transitions once before a shared logical simulation tick.
+    /// Do not call this per process. Reads never consume a transition.
+    pub fn input_tick(&self) {
+        // SAFETY: live owner-thread window, native global snapshot update.
+        unsafe {
+            ffi::mv_input_tick();
+        }
+    }
+    pub fn key_down(&self, key: Key) -> bool {
+        // SAFETY: typed supported key and live owner-thread window.
+        unsafe { ffi::mv_key_down(key as i32) != 0 }
+    }
+    pub fn key_pressed(&self, key: Key) -> bool {
+        // SAFETY: reads the shared native snapshot without mutation.
+        unsafe { ffi::mv_key_pressed(key as i32) != 0 }
+    }
+    pub fn key_released(&self, key: Key) -> bool {
+        // SAFETY: reads the shared native snapshot without mutation.
+        unsafe { ffi::mv_key_released(key as i32) != 0 }
+    }
+}
