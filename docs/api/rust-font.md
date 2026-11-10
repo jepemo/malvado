@@ -41,3 +41,9 @@ input, rendered glyphs, Unicode selection versus fallback, process resource
 cleanup before draw completion, clone/drop, and final window shutdown/reopen.
 The native graphical sanitizer task covers this path with its documented driver
 limits. This service does not create persistent text objects or auto-layout.
+
+The native font implementation also passed both profiles and the combined
+asset/graphics sanitizer run in the
+[Linux job on `902cfc5`](https://github.com/jepemo/malvado/actions/runs/42850359460/job/129949030566).
+The available local macOS display passes the same checks. Runner limitations
+and provider-allocation exclusions follow the [window contract](rust-window.md).

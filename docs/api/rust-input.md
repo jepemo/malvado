@@ -48,3 +48,18 @@ also runs real mouse/button and text injection against Rust with the existing
 C/Lua scripts in Debug/Release. The relocated consumer and native graphical
 sanitizers cover these wrappers. Connected-controller button/axis state is not
 claimed as tested on runners without that device or a controller emulator.
+
+## Alpha.7 host acceptance
+
+Implementation commit `902cfc5` passed the
+[Linux graphics job](https://github.com/jepemo/malvado/actions/runs/42850359460/job/129949030566).
+Both profiles run the existing keyboard, mouse and text scripts against Rust,
+plus C/Lua backend checks and native graphical sanitizers. The Rust executable
+verifies pointer coordinates, all three held mouse buttons and release, and
+queued `aZ9` text from actual backend events. Deterministic native sampling
+covers the remaining Unicode/filter/capacity/reset boundaries.
+
+Local macOS passes the same installed SDK, Unicode, neutral controller and
+sanitizer checks. Local standard and headless C/Lua suites pass 163 tests each;
+the default core-only Rust SDK regression also passes. Connected-controller
+state is outside the recorded runner evidence, as stated above.
