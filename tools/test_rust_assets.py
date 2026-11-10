@@ -34,6 +34,7 @@ def consumer(prefix, profile):
         + ',features=["assets"]}\n')
     fixture = (ROOT / "tests/fixtures/atlas.json").read_text()
     aseprite = (ROOT / "tests/fixtures/aseprite/pingpong.json").read_text()
+    fpg = (ROOT / "tests/fixtures/fpg/bennugd-8.fpg").read_bytes()
     (game / "src/main.rs").write_text(
         'use malvado::{atlas::Atlas, Error};\n'
         'fn main() -> Result<(), Error> {\n'
@@ -45,6 +46,9 @@ def consumer(prefix, profile):
         ' assert_eq!(clip.repeats(), Some(3));\n'
         ' let animation = clip.to_animation(true)?; drop(imported);\n'
         ' assert_eq!(animation.sample(600_000).graph_id, 2);\n'
+        ' let library = malvado::fpg::Fpg::parse(&' + str(list(fpg)) + ')?;\n'
+        ' assert_eq!(library.sprite(7).unwrap().pixels, &[0,1,1,0]);\n'
+        ' assert_eq!(library.point(7,0).unwrap().x, 1);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)

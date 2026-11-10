@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-//! Optional native atlas declarations. All borrowed data ends with the atlas.
-use std::ffi::{c_char, c_int};
+//! Optional native atlas and FPG declarations. All borrowed data ends with the atlas.
+use std::ffi::{c_char, c_int, c_void};
 #[repr(C)]
 pub struct MvAtlas {
     _private: [u8; 0],
@@ -121,6 +121,28 @@ const _: () = {
         align_of::<MvAtlasAnimationFrame>(),
         offset_of!(MvAtlasAnimationFrame, sprite_id),
         offset_of!(MvAtlasAnimationFrame, duration_ms),
+        size_of::<MvFpgSprite>(),
+        align_of::<MvFpgSprite>(),
+        offset_of!(MvFpgSprite, id),
+        offset_of!(MvFpgSprite, width),
+        offset_of!(MvFpgSprite, height),
+        offset_of!(MvFpgSprite, name),
+        offset_of!(MvFpgSprite, filename),
+        offset_of!(MvFpgSprite, point_count),
+        offset_of!(MvFpgSprite, pixels),
+        size_of::<MvFpgPoint>(),
+        align_of::<MvFpgPoint>(),
+        offset_of!(MvFpgPoint, x),
+        offset_of!(MvFpgPoint, y),
+        offset_of!(MvFpgPoint, defined),
+        size_of::<MvFpgManifestSprite>(),
+        align_of::<MvFpgManifestSprite>(),
+        offset_of!(MvFpgManifestSprite, id),
+        offset_of!(MvFpgManifestSprite, width),
+        offset_of!(MvFpgManifestSprite, height),
+        offset_of!(MvFpgManifestSprite, name),
+        offset_of!(MvFpgManifestSprite, filename),
+        offset_of!(MvFpgManifestSprite, point_count),
     ];
     assert!(
         native.len() == rust.len(),
@@ -132,3 +154,102 @@ const _: () = {
         i += 1;
     }
 };
+
+#[repr(C)]
+pub struct MvFpg {
+    _private: [u8; 0],
+}
+#[repr(C)]
+pub struct MvFpgManifest {
+    _private: [u8; 0],
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MvFpgSprite {
+    pub id: c_int,
+    pub width: c_int,
+    pub height: c_int,
+    pub name: [u8; 32],
+    pub filename: [u8; 12],
+    pub point_count: usize,
+    pub pixels: *const u8,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MvFpgPoint {
+    pub x: c_int,
+    pub y: c_int,
+    pub defined: c_int,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MvFpgManifestSprite {
+    pub id: c_int,
+    pub width: c_int,
+    pub height: c_int,
+    pub name: [u8; 32],
+    pub filename: [u8; 12],
+    pub point_count: usize,
+}
+unsafe extern "C" {
+    pub fn mv_fpg_parse(
+        data: *const c_void,
+        length: usize,
+        error: *mut *const c_char,
+    ) -> *mut MvFpg;
+    pub fn mv_fpg_destroy(fpg: *mut MvFpg) -> ();
+    pub fn mv_fpg_count(fpg: *const MvFpg) -> usize;
+    pub fn mv_fpg_palette(fpg: *const MvFpg) -> *const u8;
+    pub fn mv_fpg_gamma(fpg: *const MvFpg) -> *const u8;
+    pub fn mv_fpg_sprite(fpg: *const MvFpg, id: c_int, out: *mut MvFpgSprite) -> c_int;
+    pub fn mv_fpg_at(fpg: *const MvFpg, index: usize, out: *mut MvFpgSprite) -> c_int;
+    pub fn mv_fpg_point(fpg: *const MvFpg, id: c_int, index: usize, out: *mut MvFpgPoint) -> c_int;
+    pub fn mv_fpg_copy_rgba(
+        fpg: *const MvFpg,
+        id: c_int,
+        transparent_zero: c_int,
+        output: *mut u8,
+        length: usize,
+    ) -> c_int;
+    pub fn mv_fpg_png_size(fpg: *const MvFpg, id: c_int, transparent_zero: c_int) -> usize;
+    pub fn mv_fpg_copy_png(
+        fpg: *const MvFpg,
+        id: c_int,
+        transparent_zero: c_int,
+        output: *mut u8,
+        length: usize,
+    ) -> c_int;
+    pub fn mv_fpg_manifest_parse(
+        json: *const c_char,
+        length: usize,
+        error: *mut *const c_char,
+    ) -> *mut MvFpgManifest;
+    pub fn mv_fpg_manifest_destroy(manifest: *mut MvFpgManifest) -> ();
+    pub fn mv_fpg_manifest_count(manifest: *const MvFpgManifest) -> usize;
+    pub fn mv_fpg_manifest_transparent_zero(manifest: *const MvFpgManifest) -> c_int;
+    pub fn mv_fpg_manifest_palette(manifest: *const MvFpgManifest) -> *const u8;
+    pub fn mv_fpg_manifest_gamma(manifest: *const MvFpgManifest) -> *const u8;
+    pub fn mv_fpg_manifest_at(
+        manifest: *const MvFpgManifest,
+        index: usize,
+        out: *mut MvFpgManifestSprite,
+    ) -> c_int;
+    pub fn mv_fpg_manifest_sprite(
+        manifest: *const MvFpgManifest,
+        id: c_int,
+        out: *mut MvFpgManifestSprite,
+    ) -> c_int;
+    pub fn mv_fpg_manifest_point(
+        manifest: *const MvFpgManifest,
+        id: c_int,
+        index: usize,
+        out: *mut MvFpgPoint,
+    ) -> c_int;
+    pub fn mv_fpg_json_size(fpg: *const MvFpg, transparent_zero: c_int) -> usize;
+    pub fn mv_fpg_copy_json(
+        fpg: *const MvFpg,
+        transparent_zero: c_int,
+        output: *mut c_char,
+        length: usize,
+    ) -> c_int;
+}

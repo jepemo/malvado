@@ -30,6 +30,8 @@ pub mod collision;
 #[cfg(feature = "graphics")]
 pub mod drawing;
 mod engine;
+#[cfg(feature = "assets")]
+pub mod fpg;
 #[cfg(feature = "graphics")]
 pub mod image;
 mod resource;
