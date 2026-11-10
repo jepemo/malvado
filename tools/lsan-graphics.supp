@@ -1,0 +1,4 @@
+# Ubuntu Xvfb/GLX: two 128-byte reallocations during glXQueryExtensionsString.
+# Observed in CI 42829814334, job 129876608971, with unloaded provider frames.
+# Match only that extension-query stack, not InitWindow or Malvado allocations.
+leak:extensionSupportedGLX

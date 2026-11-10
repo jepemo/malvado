@@ -87,3 +87,11 @@ window shutdown/reopen, and native keyboard snapshot ownership against an
 ASan/UBSan-instrumented backend. The native libraries are instrumented; Rust
 itself is not. The macOS runtime uses the existing leak-detection limitation
 from the sanitizer task. Linux CI runs the graphical sanitizer check under Xvfb.
+
+Linux LeakSanitizer excludes the GLX extension-query stack recorded in
+[CI job 129876608971](https://github.com/jepemo/malvado/actions/runs/42829814334/job/129876608971).
+That job reported two 128-byte reallocations through `glXQueryExtensionsString`.
+The filter matches `extensionSupportedGLX` only; leak detection remains enabled
+for other stacks. A standalone negative fixture verifies that an unrelated
+native allocation still fails. Core and asset sanitizer modes do not use this
+filter. No third-party source is changed.

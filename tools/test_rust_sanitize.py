@@ -15,6 +15,17 @@ def run(*command, env=None):
     subprocess.run(command, cwd=ROOT, env=env, check=True)
 
 
+def verify_leak_filter(compiler, flags, env, work):
+    fixture = work / "lsan-scope"
+    run(compiler, *flags.split(), "-g", "-fno-inline", "-O0",
+        str(ROOT / "tests/lsan_scope.c"), "-o", str(fixture))
+    for mode, should_pass in (("glx", True), ("owned", False)):
+        result = subprocess.run([str(fixture), mode], env=env, text=True, capture_output=True)
+        if (result.returncode == 0) != should_pass or (not should_pass and "LeakSanitizer" not in result.stderr):
+            raise RuntimeError(f"leak filter fixture failed: {mode}\n{result.stdout}\n{result.stderr}")
+    print("PASS: GLX filter preserves detection of unrelated native leaks", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--assets", action="store_true", help="also verify native atlas services")
@@ -56,6 +67,9 @@ def main():
                CARGO_ENCODED_RUSTFLAGS="\x1f".join(rustflags),
                ASAN_OPTIONS="detect_leaks=0" if sys.platform == "darwin" else "detect_leaks=1",
                UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+    if args.graphics and sys.platform.startswith("linux"):
+        env["LSAN_OPTIONS"] = f"suppressions={ROOT / 'tools/lsan-graphics.supp'}:print_suppressions=1"
+        verify_leak_filter(compiler, flags, env, work)
     # Miri checks Rust future ownership separately; these native tests exercise
     # the real C scheduler, safe points, handles, and callback boundaries.
     features = (["malvado/assets"] if args.assets else []) + (["malvado/graphics"] if args.graphics else [])
