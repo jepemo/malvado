@@ -39,6 +39,12 @@ fn main() {
         assert!(matches!(window.frame(Color::default()), Err(Error::Busy)));
         drop(frame);
         drop(window.frame(Color::default()).unwrap());
+        let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _frame = window.frame(Color::default()).unwrap();
+            panic!("verify frame cleanup during unwind");
+        }));
+        assert!(unwound.is_err());
+        drop(window.frame(Color::default()).unwrap());
         // Forget is safe: owner cleanup must finish the active native frame.
         std::mem::forget(window.frame(Color::default()).unwrap());
     }

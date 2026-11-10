@@ -132,6 +132,7 @@ live owner while its context exists. Context shutdown forbids later transfers.
 Resource creation consumes the Rust value; on a native creation error Rust drops
 it rather than transferring it to C. Each successful retain needs one release;
 `try_clone()` reports native overflow. The wrappers stay on their owner thread.
-Destructor panics are contained at the native resource callback. These generic
-Rust values do not keep a graphics window or audio device open; the dedicated
-platform wrappers remain A7.6 work.
+Destructor panics are contained at the native resource callback. The resource manager retains only the value it owns; it does not infer platform
+dependencies. A retained `Window` value keeps its native window open until its
+last owner releases it. Other platform resources still require dedicated A7.6
+lifetime contracts. See the [window guide](rust-window.md).

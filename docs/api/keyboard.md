@@ -2,11 +2,11 @@
 
 Use three operations:
 
-| Lua | C | Meaning |
-| --- | --- | --- |
-| `key(name)` | `mv_key_down(key)` | The key is currently held. Existing behavior is unchanged. |
-| `key_pressed(name)` | `mv_key_pressed(key)` | A press was observed for this logical tick. |
-| `key_released(name)` | `mv_key_released(key)` | A release was observed for this logical tick. |
+| Lua | C | Rust (`Window`) | Meaning |
+| --- | --- | --- | --- |
+| `key(name)` | `mv_key_down(key)` | `key_down(Key)` | The key is currently held. Existing behavior is unchanged. |
+| `key_pressed(name)` | `mv_key_pressed(key)` | `key_pressed(Key)` | A press was observed for this logical tick. |
+| `key_released(name)` | `mv_key_released(key)` | `key_released(Key)` | A release was observed for this logical tick. |
 
 Lua also exposes these operations through the existing `mv` module and input
 namespace. `key_down` remains the established alias of `key`. Names and `KEY_*`
@@ -93,3 +93,20 @@ non-consuming queries and reset after closing/reopening. Linux runs the same
 real keyboard injection script against the C and Rust backends, including held
 state, one press and one release for each tested key. Lua headless validation
 and the audio example action checks remain in the existing native suites.
+
+## Alpha.7 acceptance
+
+The Linux graphics job passed on implementation commit `df0780c`:
+[host evidence](https://github.com/jepemo/malvado/actions/runs/42828851508/job/129873230624).
+It runs the existing automated C/Lua input and audio-action checks, then the
+Rust graphics task in Debug and Release. The task compares the shared five-tick
+trace from all three languages and uses `keys_visual.sh` to verify actual Rust
+backend held state, seven presses, seven releases, and Escape. Repeated reads
+and an extra catch-up tick do not duplicate the injected actions.
+
+Local macOS passes the same installed SDK and shared-trace checks in both
+profiles. Physical backend injection is Linux evidence. Native graphical
+ASan/UBSan checks are also available through `test-rust-graphics-sanitize`;
+Rust itself is not sanitizer-instrumented. The default core and optional asset
+SDK regressions pass, as does the standard C/Lua suite with 163 tests.
+A7.12 is complete; other input devices and the remaining A7.6 families stay open.

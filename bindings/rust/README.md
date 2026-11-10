@@ -48,8 +48,8 @@ increment the ABI revision before changing any other query contract.
 The supported product is the existing `libmalvado_core.a` archive with its
 math-library dependency. Dynamic-only SDKs are explicitly rejected: Malvado
 does not currently build a shared core product. There is no dynamic-loader
-path to configure for the static core. A future graphics wrapper must add and
-test its backend dependencies rather than assume this core-only link suffices.
+path to configure for the static core. The optional graphics feature checks and links its static raylib/backend
+archives and supported host dependencies separately.
 Cargo's `links` key prevents duplicate sys packages for the same native engine.
 
 The host C compiler must match the Rust target. The executable probe detects
@@ -58,7 +58,7 @@ Windows and Android are not supported by this initial SDK. A CMake package
 which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns or semicolons.
 
-No crates.io package, graphics wrapper, player export, or completed alpha.7
+No crates.io package, complete graphics API, player export, or completed alpha.7
 release is implied. The development engine and crate identifiers now read
 `2.0.0-alpha.7`; the milestone is still in progress.
 

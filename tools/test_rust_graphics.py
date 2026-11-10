@@ -51,6 +51,17 @@ def parity(output, prefix):
         raise RuntimeError(f"{prefix} keyboard trace mismatch: {actual!r}")
 
 
+def rejected(prefix, expected):
+    env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
+               CARGO_TARGET_DIR=str(WORK / "rejections"))
+    result = subprocess.run(["cargo", "check", "--manifest-path", MANIFEST,
+                             "-p", "malvado", "--features", "graphics"],
+                            env=env, text=True, capture_output=True)
+    if result.returncode == 0 or expected not in result.stdout + result.stderr:
+        raise RuntimeError(f"expected graphics SDK rejection {expected!r}\n{result.stdout}\n{result.stderr}")
+    print(f"PASS: {expected}", flush=True)
+
+
 def main():
     for profile in ("Debug", "Release"):
         build = WORK / profile / "native"
@@ -95,16 +106,20 @@ def main():
         run("cargo", "clippy", "--manifest-path", MANIFEST, "--workspace",
             "--all-targets", "--all-features", "--", "-D", "warnings", env=env)
         consumer(prefix, profile)
-    # Feature selection must fail clearly for a core-only installed SDK.
-    core = ROOT / "build-rust/Release/relocated sdk"
-    if core.is_dir():
-        env = dict(os.environ, MALVADO_SDK_PREFIX=str(core),
-                   CARGO_TARGET_DIR=str(WORK / "rejections"))
-        result = subprocess.run(["cargo", "check", "--manifest-path", MANIFEST,
-                                 "-p", "malvado", "--features", "graphics"],
-                                env=env, text=True, capture_output=True)
-        if result.returncode == 0 or "Malvado_FOUND to FALSE" not in result.stdout + result.stderr:
-            raise RuntimeError("core-only SDK did not reject graphics feature\n" + result.stdout + result.stderr)
+    # Verify feature discovery even when this task runs before the core suite.
+    core = WORK / "core-only"
+    run("cmake", "-S", str(ROOT), "-B", str(core), "-DMALVADO_BUILD_LUA=OFF",
+        "-DMALVADO_BUILD_RAYLIB=OFF", "-DMALVADO_BUILD_ASSETS=OFF",
+        "-DCMAKE_INSTALL_LIBDIR=lib", "-DFETCHCONTENT_FULLY_DISCONNECTED=ON")
+    run("cmake", "--build", str(core), "--target", "malvado_core", "--parallel")
+    run("cmake", "--install", str(core), "--prefix", str(core / "sdk"))
+    rejected(core / "sdk", "Malvado_FOUND to FALSE")
+    drift = WORK / "drift sdk"
+    if drift.exists(): shutil.rmtree(drift)
+    shutil.copytree(prefix, drift)
+    header = drift / "include/malvado/platform.h"
+    header.write_text(header.read_text().replace("unsigned char r, g, b, a;", "unsigned int r, g, b, a;"))
+    rejected(drift, "graphics ABI layout/value mismatch")
     run("cargo", "fmt", "--manifest-path", MANIFEST, "--all", "--", "--check")
 
 

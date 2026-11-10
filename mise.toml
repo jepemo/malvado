@@ -140,3 +140,7 @@ run = "python3 tools/test_rust_sanitize.py --assets"
 [tasks.test-rust-graphics]
 description = "Test Rust window and input against relocated graphics SDKs (requires display)"
 run = "python3 tools/test_rust_graphics.py"
+
+[tasks.test-rust-graphics-sanitize]
+description = "Test Rust window/input ownership against ASan/UBSan native graphics (requires display)"
+run = "python3 tools/test_rust_sanitize.py --graphics"

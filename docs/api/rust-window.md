@@ -76,3 +76,14 @@ another input cache. The host remains responsible for commit timing. Dropping
 all window owners resets input; reopening starts neutral. The default headless
 Engine still has no live-window service. Mouse, controllers, text entry and
 other platform families remain in A7.6.
+
+The SDK consumer also checks that a core-only prefix rejects the graphics
+feature and that a changed native color layout fails before graphics calls.
+Reconfiguring the same CMake consumer from one SDK prefix to another resolves
+raylib from the new prefix rather than a cached path.
+
+`mise run test-rust-graphics-sanitize` checks frame cleanup (including unwind),
+window shutdown/reopen, and native keyboard snapshot ownership against an
+ASan/UBSan-instrumented backend. The native libraries are instrumented; Rust
+itself is not. The macOS runtime uses the existing leak-detection limitation
+from the sanitizer task. Linux CI runs the graphical sanitizer check under Xvfb.
