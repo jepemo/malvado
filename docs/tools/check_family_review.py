@@ -32,7 +32,7 @@ def check(compatibility, review, catalog):
         for reference in references:
             if reference not in reference_names:
                 errors.append("unknown reference: " + "/".join(reference))
-        if "Unresolved:" not in row:
+        if "Disposition:" not in row or "Unresolved:" in row:
             errors.append("missing remaining decision: " + family)
     for family in sorted(set(families) - seen):
         errors.append("missing family: " + family)

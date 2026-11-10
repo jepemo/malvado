@@ -18,5 +18,5 @@ bounds. It calls Lua's `math.random`, whose state is set with `math.randomseed`.
 A rejected reversed range does not consume a random value. The `lua_rand` test
 checks that behavior, inclusive fixed bounds, full Lua integer bounds, and
 seeded parity with Lua's generator. The C engine does not expose a corresponding
-random API; any future C/Lua random-stream decision remains open in the
-[family review](family-review.md).
+random API; the [family review](family-review.md) excludes an engine random-stream API
+from 2.0.

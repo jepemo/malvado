@@ -21,6 +21,8 @@ class FamilyReviewTest(unittest.TestCase):
         self.assertEqual(check(compatibility, review, catalog), [])
         changed = review.replace("bennugd2/libmod_misc/GET_ID", "bennugd2/libmod_misc/NOT_A_FUNCTION")
         self.assertIn("unknown reference: bennugd2/libmod_misc/NOT_A_FUNCTION", check(compatibility, changed, catalog))
+        unresolved = review.replace("Disposition:", "Unresolved:")
+        self.assertTrue(any("missing remaining decision" in error for error in check(compatibility, unresolved, catalog)))
         changed = review.replace("| FLIC/CD-ROM |", "| Removed family |")
         errors = check(compatibility, changed, catalog)
         self.assertIn("missing family: FLIC/CD-ROM", errors)
