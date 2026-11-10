@@ -89,6 +89,33 @@ const _: () = {
         offset_of!(MvImageTransform, pivot_y),
         offset_of!(MvImageTransform, scale),
         offset_of!(MvImageTransform, rotation),
+        size_of::<MvMouseButton>(),
+        align_of::<MvMouseButton>(),
+        MV_MOUSE_LEFT as usize,
+        MV_MOUSE_MIDDLE as usize,
+        MV_MOUSE_RIGHT as usize,
+        size_of::<MvPadButton>(),
+        align_of::<MvPadButton>(),
+        MV_PAD_A as usize,
+        MV_PAD_B as usize,
+        MV_PAD_X as usize,
+        MV_PAD_Y as usize,
+        MV_PAD_UP as usize,
+        MV_PAD_DOWN as usize,
+        MV_PAD_LEFT as usize,
+        MV_PAD_RIGHT as usize,
+        MV_PAD_LB as usize,
+        MV_PAD_RB as usize,
+        MV_PAD_BACK as usize,
+        MV_PAD_START as usize,
+        size_of::<MvPadAxis>(),
+        align_of::<MvPadAxis>(),
+        MV_PAD_LEFT_X as usize,
+        MV_PAD_LEFT_Y as usize,
+        MV_PAD_RIGHT_X as usize,
+        MV_PAD_RIGHT_Y as usize,
+        MV_PAD_LEFT_TRIGGER as usize,
+        MV_PAD_RIGHT_TRIGGER as usize,
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -260,3 +287,37 @@ unsafe extern "C" {
         color: MvColor,
     ) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_mouse_position(x: *mut c_int, y: *mut c_int) -> c_int;
+    pub fn mv_mouse_down(button: MvMouseButton) -> c_int;
+    pub fn mv_pad_connected(slot: c_int) -> c_int;
+    pub fn mv_pad_button_down(slot: c_int, button: MvPadButton) -> c_int;
+    pub fn mv_pad_axis(slot: c_int, axis: MvPadAxis) -> f32;
+    pub fn mv_text_input_next(codepoint: *mut u32) -> c_int;
+}
+
+pub type MvMouseButton = c_int;
+pub const MV_MOUSE_LEFT: c_int = 1;
+pub const MV_MOUSE_MIDDLE: c_int = 2;
+pub const MV_MOUSE_RIGHT: c_int = 3;
+pub type MvPadButton = c_int;
+pub const MV_PAD_A: c_int = 0;
+pub const MV_PAD_B: c_int = 1;
+pub const MV_PAD_X: c_int = 2;
+pub const MV_PAD_Y: c_int = 3;
+pub const MV_PAD_UP: c_int = 4;
+pub const MV_PAD_DOWN: c_int = 5;
+pub const MV_PAD_LEFT: c_int = 6;
+pub const MV_PAD_RIGHT: c_int = 7;
+pub const MV_PAD_LB: c_int = 8;
+pub const MV_PAD_RB: c_int = 9;
+pub const MV_PAD_BACK: c_int = 10;
+pub const MV_PAD_START: c_int = 11;
+pub type MvPadAxis = c_int;
+pub const MV_PAD_LEFT_X: c_int = 0;
+pub const MV_PAD_LEFT_Y: c_int = 1;
+pub const MV_PAD_RIGHT_X: c_int = 2;
+pub const MV_PAD_RIGHT_Y: c_int = 3;
+pub const MV_PAD_LEFT_TRIGGER: c_int = 4;
+pub const MV_PAD_RIGHT_TRIGGER: c_int = 5;

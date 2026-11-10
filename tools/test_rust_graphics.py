@@ -31,6 +31,11 @@ def consumer(prefix, profile):
         ' let window = Rc::new(Window::open(160, 120, "Installed Rust window")?);\n'
         ' assert_eq!(window.size(), (160,120));\n'
         ' window.input_tick();\n'
+        ' let _position = window.mouse_position();\n'
+        ' assert!(!window.pad_connected(255));\n'
+        ' assert!(!window.pad_button_down(255, malvado::window::PadButton::A));\n'
+        ' assert_eq!(window.pad_axis(255, malvado::window::PadAxis::LeftX), 0.0);\n'
+        ' assert_eq!(window.text_input_next(), None);\n'
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
         ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
@@ -107,14 +112,19 @@ def main():
         if sys.platform.startswith("linux"):
             if shutil.which("xdotool") is None:
                 raise RuntimeError("Linux keyboard injection requires xdotool")
-            command = ["cargo", "test", "--manifest-path", MANIFEST, "-p", "malvado",
-                       "--all-features", "--test", "keyboard", "--no-run", "--message-format=json"]
-            if profile == "Release": command.append("--release")
-            artifacts = capture(command, env=env)
-            executable = next(json.loads(line)["executable"] for line in artifacts.splitlines()
-                              if line.startswith("{") and json.loads(line).get("executable"))
-            run("sh", str(ROOT / "tests/keys_visual.sh"), "Malvado Rust keys", executable,
-                "--physical", env=env, timeout=30)
+            for target, scripts in [
+                ("keyboard", [("keys_visual.sh", "Malvado Rust keys", "--physical")]),
+                ("input", [("mouse_visual.sh", "Malvado Rust mouse", "--mouse"),
+                           ("text_input_visual.sh", "Malvado Rust text input", "--text")]),
+            ]:
+                command = ["cargo", "test", "--manifest-path", MANIFEST, "-p", "malvado",
+                           "--all-features", "--test", target, "--no-run", "--message-format=json"]
+                if profile == "Release": command.append("--release")
+                artifacts = capture(command, env=env)
+                executable = next(json.loads(line)["executable"] for line in artifacts.splitlines()
+                                  if line.startswith("{") and json.loads(line).get("executable"))
+                for script, title, mode in scripts:
+                    run("sh", str(ROOT / "tests" / script), title, executable, mode, env=env, timeout=30)
         run("cargo", "clippy", "--manifest-path", MANIFEST, "--workspace",
             "--all-targets", "--all-features", "--", "-D", "warnings", env=env)
         consumer(prefix, profile)

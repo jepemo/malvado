@@ -20,4 +20,7 @@
 void mv_keyboard_open(void);
 void mv_keyboard_reset(void);
 void mv_keyboard_sample(MvKey key, int pressed, int released);
+/* Append an observed scalar to the backend text queue; ignore unavailable
+ * input, NUL, invalid scalars and a full queue. Headless sampling is neutral. */
+void mv_text_input_sample(uint32_t codepoint);
 #endif

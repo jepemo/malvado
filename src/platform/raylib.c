@@ -444,20 +444,23 @@ mv_text_input_next(uint32_t *codepoint)
     return 1;
 }
 
+void
+mv_text_input_sample(uint32_t codepoint)
+{
+    if (!IsWindowReady() || codepoint == 0 || codepoint > 0x10ffff ||
+        (codepoint >= 0xd800 && codepoint <= 0xdfff) || text_count == TEXT_QUEUE_CAPACITY)
+        return;
+    size_t end = (text_head + text_count) % TEXT_QUEUE_CAPACITY;
+    text_queue[end] = codepoint;
+    ++text_count;
+}
+
 static void
 capture_text_input(void)
 {
     int value;
-    while ((value = GetCharPressed()) != 0) {
-        uint32_t codepoint = (uint32_t)value;
-        if (codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff))
-            continue;
-        if (text_count < TEXT_QUEUE_CAPACITY) {
-            size_t end = (text_head + text_count) % TEXT_QUEUE_CAPACITY;
-            text_queue[end] = codepoint;
-            ++text_count;
-        }
-    }
+    while ((value = GetCharPressed()) != 0)
+        mv_text_input_sample((uint32_t)value);
 }
 void mv_window_begin(MvColor c)
 {

@@ -15,10 +15,11 @@ for names, return values, errors, thread rules, and headless behavior.
 The keyboard, mouse, controller, and text APIs use the platform adapter; they do
 not require a second scheduler. Held input is updated when the window processes
 events. Keyboard edges are buffered at frame end and committed once per logical
-tick with `mv_input_tick`; the Lua runner commits automatically. Queries are
-non-consuming. See the [keyboard edge contract](keyboard.md). The C adapter returns zero or false for unavailable input. Lua rejects
+tick with `mv_input_tick`; the Lua runner commits automatically. Held-state and keyboard transition queries are non-consuming. Text input
+consumes one scalar from its shared queue. See the [keyboard edge contract](keyboard.md). The C adapter returns zero or false for unavailable input. Lua rejects
 invalid names and slots, and returns neutral input in headless mode. The C UTF-8
-helpers do not need a window. The input guide defines queue and ownership limits.
+helpers do not need a window. Rust uses typed controls and `char`; see the
+[Rust input guide](rust-input.md). The input guide defines queue and ownership limits.
 
 The keyboard, mouse, and text event tests require a supported Linux display and
 `xdotool`; they are not registered in every build. The controller tests check

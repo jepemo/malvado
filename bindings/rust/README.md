@@ -106,3 +106,7 @@ The [FPG guide](../../docs/api/rust-fpg.md) covers the accepted uncompressed
 BennuGD 8-bit subset, indexed data, conversion and metadata manifests. The
 optional graphics bridge creates owned images without keeping FPG data alive.
 Full DIV FPG compatibility and other binary variants are not claimed.
+
+The [font guide](../../docs/api/rust-font.md) covers owned TTF/OTF and selected
+Unicode glyphs. The [input guide](../../docs/api/rust-input.md) covers typed
+mouse/gamepad queries and consuming native Unicode text.

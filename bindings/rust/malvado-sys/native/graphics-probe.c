@@ -48,6 +48,12 @@ _Static_assert(_Generic(&mv_font_load_codepoints, MvFont * (*)(const char *, int
 _Static_assert(_Generic(&mv_font_destroy, void (*)(MvFont *): 1, default: 0), "mv_font_destroy signature");
 _Static_assert(_Generic(&mv_font_text_width, int (*)(const MvFont *, const char *, int): 1, default: 0), "mv_font_text_width signature");
 _Static_assert(_Generic(&mv_font_draw, int (*)(const MvFont *, const char *, int, int, int, MvColor): 1, default: 0), "mv_font_draw signature");
+_Static_assert(_Generic(&mv_mouse_position, int (*)(int *, int *): 1, default: 0), "mv_mouse_position signature");
+_Static_assert(_Generic(&mv_mouse_down, int (*)(MvMouseButton): 1, default: 0), "mv_mouse_down signature");
+_Static_assert(_Generic(&mv_pad_connected, int (*)(int): 1, default: 0), "mv_pad_connected signature");
+_Static_assert(_Generic(&mv_pad_button_down, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_down signature");
+_Static_assert(_Generic(&mv_pad_axis, float (*)(int, MvPadAxis): 1, default: 0), "mv_pad_axis signature");
+_Static_assert(_Generic(&mv_text_input_next, int (*)(uint32_t *): 1, default: 0), "mv_text_input_next signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
@@ -113,5 +119,29 @@ int main(void)
     printf("%zu ", offsetof(MvImageTransform, pivot_y));
     printf("%zu ", offsetof(MvImageTransform, scale));
     printf("%zu ", offsetof(MvImageTransform, rotation));
+    printf("%zu %zu ", sizeof(MvMouseButton), _Alignof(MvMouseButton));
+    printf("%u ", (unsigned)MV_MOUSE_LEFT);
+    printf("%u ", (unsigned)MV_MOUSE_MIDDLE);
+    printf("%u ", (unsigned)MV_MOUSE_RIGHT);
+    printf("%zu %zu ", sizeof(MvPadButton), _Alignof(MvPadButton));
+    printf("%u ", (unsigned)MV_PAD_A);
+    printf("%u ", (unsigned)MV_PAD_B);
+    printf("%u ", (unsigned)MV_PAD_X);
+    printf("%u ", (unsigned)MV_PAD_Y);
+    printf("%u ", (unsigned)MV_PAD_UP);
+    printf("%u ", (unsigned)MV_PAD_DOWN);
+    printf("%u ", (unsigned)MV_PAD_LEFT);
+    printf("%u ", (unsigned)MV_PAD_RIGHT);
+    printf("%u ", (unsigned)MV_PAD_LB);
+    printf("%u ", (unsigned)MV_PAD_RB);
+    printf("%u ", (unsigned)MV_PAD_BACK);
+    printf("%u ", (unsigned)MV_PAD_START);
+    printf("%zu %zu ", sizeof(MvPadAxis), _Alignof(MvPadAxis));
+    printf("%u ", (unsigned)MV_PAD_LEFT_X);
+    printf("%u ", (unsigned)MV_PAD_LEFT_Y);
+    printf("%u ", (unsigned)MV_PAD_RIGHT_X);
+    printf("%u ", (unsigned)MV_PAD_RIGHT_Y);
+    printf("%u ", (unsigned)MV_PAD_LEFT_TRIGGER);
+    printf("%u ", (unsigned)MV_PAD_RIGHT_TRIGGER);
     return 0;
 }

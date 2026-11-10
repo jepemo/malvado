@@ -215,3 +215,79 @@ impl Window {
         unsafe { ffi::mv_key_released(key as i32) != 0 }
     }
 }
+
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MouseButton {
+    Left = ffi::MV_MOUSE_LEFT,
+    Middle = ffi::MV_MOUSE_MIDDLE,
+    Right = ffi::MV_MOUSE_RIGHT,
+}
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PadButton {
+    A = ffi::MV_PAD_A,
+    B = ffi::MV_PAD_B,
+    X = ffi::MV_PAD_X,
+    Y = ffi::MV_PAD_Y,
+    Up = ffi::MV_PAD_UP,
+    Down = ffi::MV_PAD_DOWN,
+    Left = ffi::MV_PAD_LEFT,
+    Right = ffi::MV_PAD_RIGHT,
+    LeftBumper = ffi::MV_PAD_LB,
+    RightBumper = ffi::MV_PAD_RB,
+    Back = ffi::MV_PAD_BACK,
+    Start = ffi::MV_PAD_START,
+}
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PadAxis {
+    LeftX = ffi::MV_PAD_LEFT_X,
+    LeftY = ffi::MV_PAD_LEFT_Y,
+    RightX = ffi::MV_PAD_RIGHT_X,
+    RightY = ffi::MV_PAD_RIGHT_Y,
+    LeftTrigger = ffi::MV_PAD_LEFT_TRIGGER,
+    RightTrigger = ffi::MV_PAD_RIGHT_TRIGGER,
+}
+
+impl Window {
+    /// Logical-window pointer coordinates, without camera or scroll transforms.
+    pub fn mouse_position(&self) -> (i32, i32) {
+        let (mut x, mut y) = (0, 0);
+        // SAFETY: distinct live outputs and the retained owner-thread window.
+        unsafe {
+            ffi::mv_mouse_position(&mut x, &mut y);
+        }
+        (x, y)
+    }
+    /// Non-consuming held state for one supported pointer button.
+    pub fn mouse_down(&self, button: MouseButton) -> bool {
+        // SAFETY: supported typed button on the live native window.
+        unsafe { ffi::mv_mouse_down(button as i32) != 0 }
+    }
+    /// Native slots are 0..3. Invalid/disconnected slots return neutral values.
+    pub fn pad_connected(&self, slot: u8) -> bool {
+        // SAFETY: integer slot; native code validates availability and bounds.
+        unsafe { ffi::mv_pad_connected(slot.into()) != 0 }
+    }
+    /// Non-consuming held state; unavailable or invalid slots return false.
+    pub fn pad_button_down(&self, slot: u8, button: PadButton) -> bool {
+        // SAFETY: supported typed button; C validates the slot and connection.
+        unsafe { ffi::mv_pad_button_down(slot.into(), button as i32) != 0 }
+    }
+    /// Sticks use -1..1 and triggers 0..1. Missing slots/axes return zero.
+    pub fn pad_axis(&self, slot: u8, axis: PadAxis) -> f32 {
+        // SAFETY: supported typed axis; C handles missing devices/axes and clamps.
+        unsafe { ffi::mv_pad_axis(slot.into(), axis as i32) }
+    }
+    /// Pop one Unicode scalar from the shared native queue. This consumes input;
+    /// keyboard and button held-state queries do not consume anything.
+    pub fn text_input_next(&self) -> Option<char> {
+        let mut codepoint = 0;
+        // SAFETY: exclusive valid output on the live window owner thread.
+        if unsafe { ffi::mv_text_input_next(&mut codepoint) } == 0 {
+            return None;
+        }
+        char::from_u32(codepoint)
+    }
+}
