@@ -49,6 +49,11 @@ def consumer(prefix, profile):
         ' let library = malvado::fpg::Fpg::parse(&' + str(list(fpg)) + ')?;\n'
         ' assert_eq!(library.sprite(7).unwrap().pixels, &[0,1,1,0]);\n'
         ' assert_eq!(library.point(7,0).unwrap().x, 1);\n'
+        ' assert_eq!(library.rgba(7,true)?[7], 255);\n'
+        ' assert!(library.png(7,true)?.starts_with(b"\\x89PNG\\r\\n\\x1a\\n"));\n'
+        ' let manifest = malvado::fpg::Manifest::parse(&library.json(true)?)?;\n'
+        ' drop(library); assert!(manifest.transparent_zero());\n'
+        ' assert_eq!(manifest.sprite(7).unwrap().width, 2);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)

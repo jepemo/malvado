@@ -130,11 +130,11 @@ description = "Build and test Lua without Cargo on the native build PATH"
 run = "python3 tools/test_lua_no_cargo.py"
 
 [tasks.test-rust-assets]
-description = "Test optional Rust atlas services against relocated assets SDKs"
+description = "Test optional Rust asset services against relocated SDKs"
 run = "python3 tools/test_rust_assets.py"
 
 [tasks.test-rust-assets-sanitize]
-description = "Test Rust atlas ownership against ASan/UBSan native assets"
+description = "Test Rust asset ownership against ASan/UBSan native assets"
 run = "python3 tools/test_rust_sanitize.py --assets"
 
 [tasks.test-rust-graphics]
@@ -142,5 +142,5 @@ description = "Test Rust window and input against relocated graphics SDKs (requi
 run = "python3 tools/test_rust_graphics.py"
 
 [tasks.test-rust-graphics-sanitize]
-description = "Test Rust window/input ownership against ASan/UBSan native graphics (requires display)"
-run = "python3 tools/test_rust_sanitize.py --graphics"
+description = "Test Rust platform and asset ownership with native ASan/UBSan (requires display)"
+run = "python3 tools/test_rust_sanitize.py --graphics --assets"

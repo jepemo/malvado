@@ -101,3 +101,8 @@ Run `mise run test-rust-graphics` with a real or virtual display.
 The [drawing and image guide](../../docs/api/rust-drawing.md) covers immediate
 shapes/text, scoped clip/scroll, owned PNG/RGBA images and queued-frame retention.
 These services do not assign process graphs or collect process draws yet.
+
+The [FPG guide](../../docs/api/rust-fpg.md) covers the accepted uncompressed
+BennuGD 8-bit subset, indexed data, conversion and metadata manifests. The
+optional graphics bridge creates owned images without keeping FPG data alive.
+Full DIV FPG compatibility and other binary variants are not claimed.

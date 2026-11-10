@@ -120,6 +120,82 @@ fn main() {
             },
         );
     }
+    #[cfg(feature = "assets")]
+    {
+        use std::io::Write;
+        let bytes = std::fs::read(fixture.with_file_name("fpg").join("bennugd-8.fpg")).unwrap();
+        let fpg = malvado::fpg::Fpg::parse(&bytes).unwrap();
+        let image = fpg.image(window.clone(), 7, true).unwrap();
+        let png = fpg.png(7, true).unwrap();
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path =
+            std::env::temp_dir().join(format!("malvado-fpg-{}-{nonce}.png", std::process::id()));
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .unwrap();
+        file.write_all(&png).unwrap();
+        drop(file);
+        let exported = Image::load(window.clone(), &path).unwrap();
+        std::fs::remove_file(path).unwrap();
+        drop(fpg); // Both GPU images are independent of the source library.
+        let region = Rectangle {
+            x: 0,
+            y: 0,
+            width: 2,
+            height: 2,
+        };
+        frame
+            .image_region(
+                &image,
+                region,
+                Transform {
+                    position: (120.0, 10.0),
+                    scale: 10.0,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        frame
+            .image_region(
+                &exported,
+                region,
+                Transform {
+                    position: (120.0, 50.0),
+                    scale: 10.0,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        drop(image);
+        drop(exported);
+        pixel(125, 15, background);
+        pixel(
+            135,
+            15,
+            Color {
+                r: 252,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+        pixel(125, 55, background);
+        pixel(
+            135,
+            55,
+            Color {
+                r: 252,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+    }
     // Queued references survive both resource/context cleanup and caller drops.
     drop(resource);
     drop(engine);

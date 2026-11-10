@@ -85,3 +85,118 @@ fn preserve_raw_names_gamma_and_native_resource_retention() {
     assert_eq!(retained.gamma()[0], 23);
     assert_eq!(retained.sprite(42).unwrap().pixels, [2, 1]);
 }
+
+#[test]
+fn rgba_and_png_conversion_policy_and_missing_ids() {
+    let fpg = Fpg::parse(DATA).unwrap();
+    assert_eq!(
+        fpg.rgba(7, true).unwrap(),
+        [0, 0, 0, 0, 252, 0, 0, 255, 252, 0, 0, 255, 0, 0, 0, 0]
+    );
+    assert_eq!(&fpg.rgba(7, false).unwrap()[..4], [0, 0, 0, 255]);
+    assert_eq!(
+        fpg.rgba(42, false).unwrap(),
+        [0, 252, 0, 255, 252, 0, 0, 255]
+    );
+    assert_eq!(fpg.rgba(999, true), Err(Error::NotFound));
+    assert_eq!(fpg.png(-1, false), Err(Error::NotFound));
+    for transparent in [false, true] {
+        let png = fpg.png(7, transparent).unwrap();
+        assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
+        assert_eq!(u32::from_be_bytes(png[16..20].try_into().unwrap()), 2);
+        assert_eq!(u32::from_be_bytes(png[20..24].try_into().unwrap()), 2);
+        assert_eq!((png[24], png[25]), (8, 3)); // indexed 8-bit output
+        assert_eq!(png.windows(4).any(|w| w == b"tRNS"), transparent);
+    }
+}
+#[test]
+fn metadata_round_trip_preserves_original_bytes_and_points() {
+    use malvado::fpg::Manifest;
+    let mut data = DATA.to_vec();
+    data[8 + 768] = 23;
+    let name = 8 + 768 + 576 + 8;
+    data[name..name + 32].fill(0xff);
+    let fpg = Fpg::parse(&data).unwrap();
+    assert_eq!(
+        fpg.rgba(42, false).unwrap(),
+        [0, 252, 0, 255, 252, 0, 0, 255]
+    );
+    for transparent in [false, true] {
+        let json = fpg.json(transparent).unwrap();
+        assert!(!json.as_bytes().contains(&0));
+        let manifest = Manifest::parse(&json).unwrap();
+        assert_eq!(manifest.len(), 2);
+        assert!(!manifest.is_empty());
+        assert_eq!(manifest.transparent_zero(), transparent);
+        assert_eq!(manifest.palette(), fpg.palette());
+        assert_eq!(manifest.gamma(), fpg.gamma());
+        for id in [7, 42] {
+            assert_eq!(manifest.sprite(id), Some(fpg.sprite(id).unwrap().info));
+            for index in 0..3 {
+                assert_eq!(manifest.point(id, index), fpg.point(id, index));
+            }
+        }
+        assert_eq!(manifest.at(0).unwrap().id, 7);
+        assert_eq!(manifest.at(1).unwrap().id, 42);
+        assert_eq!(manifest.sprite(-1), None);
+        assert_eq!(manifest.at(usize::MAX), None);
+        assert_eq!(manifest.point(999, 0), None);
+    }
+    let json = fpg.json(true).unwrap();
+    drop(fpg);
+    let engine = Engine::new().unwrap();
+    let manifest = engine.resource(Manifest::parse(&json).unwrap()).unwrap();
+    drop(json);
+    drop(engine);
+    assert_eq!(manifest.sprite(7).unwrap().name, [0xff; 32]);
+    assert_eq!(manifest.gamma()[0], 23);
+    assert_eq!(
+        manifest.point(7, 1),
+        Some(Point {
+            x: -1,
+            y: -1,
+            defined: false
+        })
+    );
+}
+#[test]
+fn manifest_rejects_bad_structure_and_embedded_zero() {
+    use malvado::fpg::Manifest;
+    for json in ["", "{}", "null", "\0", "not json"] {
+        assert!(matches!(Manifest::parse(json), Err(Error::Asset(_))));
+    }
+    let json = Fpg::parse(DATA).unwrap().json(true).unwrap();
+    for invalid in [
+        json.replace("\"schema\":1", "\"schema\":99"),
+        json.replace("\"id\":7", "\"id\":42"),
+    ] {
+        assert!(Manifest::parse(&invalid).is_err());
+    }
+}
+
+#[test]
+fn independent_thread_owners_can_import_json_assets() {
+    let workers: Vec<_> = (0..8)
+        .map(|_| {
+            std::thread::spawn(|| {
+                for _ in 0..20 {
+                    let fpg = Fpg::parse(DATA).unwrap();
+                    let json = fpg.json(true).unwrap();
+                    let manifest = malvado::fpg::Manifest::parse(&json).unwrap();
+                    assert_eq!(manifest.sprite(7).unwrap().width, 2);
+                    assert!(malvado::fpg::Manifest::parse("bad").is_err());
+                    let atlas = malvado::atlas::Atlas::parse(
+                        include_str!("../../../../tests/fixtures/atlas.json"),
+                        8,
+                        8,
+                    )
+                    .unwrap();
+                    assert_eq!(atlas.sprite(42).unwrap().name, "green");
+                }
+            })
+        })
+        .collect();
+    for worker in workers {
+        worker.join().unwrap();
+    }
+}

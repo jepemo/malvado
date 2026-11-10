@@ -78,3 +78,8 @@ Local verification passed: 57 Rust tests and 14 doctests in each profile with
 assets enabled, 58 native C tests in each profile, Clippy, format, and the
 relocated Debug/Release consumers. Both sanitizer modes pass. The default
 core-only SDK checks also pass without enabling assets.
+
+Safe Rust JSON asset constructors serialize access to the native parser
+error state. Independent thread owners can import assets concurrently; each
+result remains local to its creating thread. Do not overlap imports with raw
+C/Lua JSON parser calls on other threads.

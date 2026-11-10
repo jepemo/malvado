@@ -1,5 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-//! Optional native atlas and FPG declarations. All borrowed data ends with the atlas.
+//! Optional native atlas and FPG declarations. All borrowed data ends with its native owner.
 use std::ffi::{c_char, c_int, c_void};
 #[repr(C)]
 pub struct MvAtlas {

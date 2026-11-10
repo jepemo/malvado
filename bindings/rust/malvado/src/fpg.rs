@@ -147,3 +147,189 @@ fn parse_error(error: *const c_char) -> Error {
 /// fn invalid(fpg: Fpg) { std::thread::spawn(move || drop(fpg)); }
 /// ```
 mod ownership_contract {}
+
+impl Fpg {
+    /// Return RGBA with six-bit palette channels shifted left by two. No gamma correction.
+    pub fn rgba(&self, id: i32, transparent_zero: bool) -> Result<Vec<u8>, Error> {
+        let sprite = self.sprite(id).ok_or(Error::NotFound)?;
+        let length = sprite.pixels.len().checked_mul(4).ok_or(Error::Overflow)?;
+        copied(length, |out| {
+            // SAFETY: separate initialized output with exactly the required size.
+            unsafe {
+                ffi::mv_fpg_copy_rgba(
+                    self.native.as_ptr(),
+                    id,
+                    transparent_zero.into(),
+                    out.as_mut_ptr(),
+                    out.len(),
+                )
+            }
+        })
+    }
+    /// Encode an indexed PNG without creating a file. Palette indexes are preserved.
+    pub fn png(&self, id: i32, transparent_zero: bool) -> Result<Vec<u8>, Error> {
+        self.sprite(id).ok_or(Error::NotFound)?;
+        // SAFETY: live immutable native library and a typed boolean policy.
+        let length =
+            unsafe { ffi::mv_fpg_png_size(self.native.as_ptr(), id, transparent_zero.into()) };
+        copied(length, |out| {
+            // SAFETY: native sizing precedes the copy, with no source aliasing.
+            unsafe {
+                ffi::mv_fpg_copy_png(
+                    self.native.as_ptr(),
+                    id,
+                    transparent_zero.into(),
+                    out.as_mut_ptr(),
+                    out.len(),
+                )
+            }
+        })
+    }
+    /// Encode lossless native metadata JSON. The returned string excludes the C terminator.
+    pub fn json(&self, transparent_zero: bool) -> Result<String, Error> {
+        // SAFETY: live immutable native library; size includes the terminator.
+        let length =
+            unsafe { ffi::mv_fpg_json_size(self.native.as_ptr(), transparent_zero.into()) };
+        let mut bytes = copied(length, |out| {
+            // SAFETY: distinct correctly sized output buffer; C writes valid UTF-8 JSON.
+            unsafe {
+                ffi::mv_fpg_copy_json(
+                    self.native.as_ptr(),
+                    transparent_zero.into(),
+                    out.as_mut_ptr().cast(),
+                    out.len(),
+                )
+            }
+        })?;
+        if bytes.pop() != Some(0) {
+            return Err(Error::InvalidArgument);
+        }
+        String::from_utf8(bytes).map_err(|_| Error::InvalidArgument)
+    }
+    /// Create an independently owned image; the FPG data need not remain alive.
+    #[cfg(feature = "graphics")]
+    pub fn image(
+        &self,
+        window: Rc<crate::window::Window>,
+        id: i32,
+        transparent_zero: bool,
+    ) -> Result<crate::image::Image, Error> {
+        let info = self.sprite(id).ok_or(Error::NotFound)?.info;
+        let rgba = self.rgba(id, transparent_zero)?;
+        crate::image::Image::from_rgba(window, info.width, info.height, &rgba)
+    }
+}
+fn copied(length: usize, copy: impl FnOnce(&mut [u8]) -> i32) -> Result<Vec<u8>, Error> {
+    if length == 0 {
+        return Err(Error::InvalidArgument);
+    }
+    let mut out = Vec::new();
+    out.try_reserve_exact(length)
+        .map_err(|_| Error::OutOfMemory)?;
+    out.resize(length, 0);
+    if copy(&mut out) != 1 {
+        return Err(Error::InvalidArgument);
+    }
+    Ok(out)
+}
+
+/// Owned immutable converted-FPG metadata. No pixels or PNG files are loaded.
+pub struct Manifest {
+    native: NonNull<ffi::MvFpgManifest>,
+    local: PhantomData<Rc<()>>,
+}
+impl Manifest {
+    pub fn parse(json: &str) -> Result<Self, Error> {
+        sys::check_abi().map_err(Error::Abi)?;
+        let mut error = std::ptr::null();
+        let _json = crate::asset::json_guard();
+        // SAFETY: the native parser borrows JSON for this call, owns its result,
+        // and returns static diagnostics only.
+        let native =
+            unsafe { ffi::mv_fpg_manifest_parse(json.as_ptr().cast(), json.len(), &mut error) };
+        Ok(Self {
+            native: NonNull::new(native).ok_or_else(|| parse_error(error))?,
+            local: PhantomData,
+        })
+    }
+    pub fn len(&self) -> usize {
+        // SAFETY: live owned manifest.
+        unsafe { ffi::mv_fpg_manifest_count(self.native.as_ptr()) }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+    pub fn transparent_zero(&self) -> bool {
+        // SAFETY: live manifests return only 0 or 1, never the NULL sentinel.
+        unsafe { ffi::mv_fpg_manifest_transparent_zero(self.native.as_ptr()) == 1 }
+    }
+    pub fn palette(&self) -> &[u8; 768] {
+        // SAFETY: a live manifest owns the entire fixed-size block.
+        unsafe { &*ffi::mv_fpg_manifest_palette(self.native.as_ptr()).cast::<[u8; 768]>() }
+    }
+    pub fn gamma(&self) -> &[u8; 576] {
+        // SAFETY: a live manifest owns the entire fixed-size block.
+        unsafe { &*ffi::mv_fpg_manifest_gamma(self.native.as_ptr()).cast::<[u8; 576]>() }
+    }
+    pub fn sprite(&self, id: i32) -> Option<SpriteInfo> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: output is initialized only on lookup success.
+        if unsafe { ffi::mv_fpg_manifest_sprite(self.native.as_ptr(), id, out.as_mut_ptr()) } == 0 {
+            return None;
+        }
+        // SAFETY: successful lookup initialized the whole record.
+        Some(manifest_value(unsafe { out.assume_init() }))
+    }
+    pub fn at(&self, index: usize) -> Option<SpriteInfo> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: native enumeration validates the index before writing output.
+        if unsafe { ffi::mv_fpg_manifest_at(self.native.as_ptr(), index, out.as_mut_ptr()) } == 0 {
+            return None;
+        }
+        // SAFETY: successful lookup initialized the whole record.
+        Some(manifest_value(unsafe { out.assume_init() }))
+    }
+    pub fn point(&self, id: i32, index: usize) -> Option<Point> {
+        let mut out = MaybeUninit::uninit();
+        // SAFETY: valid output storage, initialized only on native success.
+        if unsafe { ffi::mv_fpg_manifest_point(self.native.as_ptr(), id, index, out.as_mut_ptr()) }
+            == 0
+        {
+            return None;
+        }
+        // SAFETY: successful lookup initialized the whole record.
+        Some(point_value(unsafe { out.assume_init() }))
+    }
+}
+impl Drop for Manifest {
+    fn drop(&mut self) {
+        // SAFETY: release the unique native allocation once after borrows end.
+        unsafe {
+            ffi::mv_fpg_manifest_destroy(self.native.as_ptr());
+        }
+    }
+}
+fn manifest_value(value: ffi::MvFpgManifestSprite) -> SpriteInfo {
+    SpriteInfo {
+        id: value.id,
+        width: value.width,
+        height: value.height,
+        name: value.name,
+        filename: value.filename,
+        point_count: value.point_count,
+    }
+}
+/// Manifest palette borrows cannot escape their owner.
+/// ```compile_fail
+/// use malvado::fpg::Manifest;
+/// fn invalid(json: &str) -> &[u8;768] {
+///     let manifest = Manifest::parse(json).unwrap();
+///     manifest.palette()
+/// }
+/// ```
+/// Native metadata destruction stays on the creating thread.
+/// ```compile_fail
+/// use malvado::fpg::Manifest;
+/// fn invalid(manifest: Manifest) { std::thread::spawn(move || drop(manifest)); }
+/// ```
+mod manifest_ownership_contract {}

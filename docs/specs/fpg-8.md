@@ -1,6 +1,8 @@
 # BennuGD 8-bit FPG import subset
 
 Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter and C and Lua JSON metadata readers are implemented.
+The Rust `assets` SDK also wraps native reading, conversion and manifests; with
+`graphics` it creates owned images. See the [Rust FPG guide](../api/rust-fpg.md).
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).
@@ -178,3 +180,11 @@ helper. The `fpg` object can still be inspected in headless mode, but image
 creation requires a window.
 
 Manifest numeric fields must be exact integers, including when written with a decimal point or exponent. Manifest parsing accepts only JSON whitespace outside strings. It rejects other unescaped control characters.
+
+## JSON parser threading
+
+The native atlas, Aseprite and FPG-manifest JSON parsers use cJSON, which writes
+a global error record. Native callers must serialize these imports across
+threads. Safe Rust constructors coordinate their own calls; raw C/Lua imports
+on other threads must not overlap them. Binary FPG reading and conversion do
+not use that JSON parser. Each returned object still has one owner thread.

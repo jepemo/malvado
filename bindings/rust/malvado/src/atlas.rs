@@ -52,6 +52,7 @@ impl Atlas {
     ) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         let mut error = std::ptr::null();
+        let _json = crate::asset::json_guard();
         // SAFETY: buffer is borrowed for this call; the native result owns a copy.
         let native = unsafe { parse(json.as_ptr().cast(), json.len(), width, height, &mut error) };
         let Some(native) = NonNull::new(native) else {
