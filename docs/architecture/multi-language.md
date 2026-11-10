@@ -24,7 +24,19 @@ For bindings, handwritten declarations avoid libclang and generated noise but ne
 
 ## Repository and compatibility
 
-Keep `src/`, existing examples and CMake install/include paths in alpha.7. Add only the Rust workspace and its actual tests/examples; do not move the whole tree or split the CLI for symmetry. Introduce `examples/rust/` alongside existing examples; share licensed assets when practical. Later evaluate organized language directories and `engine/` only with migration, exporter, install and history plans. External games remain independent Cargo projects.
+Keep `src/`, existing examples and CMake install/include paths in alpha.7. The owner approved one bounded layout change: move `src/binding/` to `bindings/lua/` beside the Rust workspace, tracked by A7.11. The move is planned, not implemented. Grouping language adapters makes their responsibility clear; each keeps its own build tool and internal structure. Do not move the whole tree or split the CLI for symmetry. Introduce `examples/rust/` alongside existing examples; share licensed assets when practical. Later evaluate `engine/` or a wider example reorganization only with migration, exporter, install and history plans. External games remain independent Cargo projects.
+
+The planned layout is:
+
+```text
+src/core/                 shared native behavior and scheduler
+src/include/malvado/      public C API
+src/platform/             native platform adapters
+bindings/lua/             Lua adapter, built by CMake
+bindings/rust/            Rust workspace, managed by Cargo
+```
+
+The C API stays with the core; it is not a separate language adapter. Keep the Lua move separate from extracting shared behavior for Rust parity. See the [migration steps](../development/rust-migration.md#lua-binding-relocation-a711) for acceptance and verification.
 
 Recommend matching crate and engine alpha versions initially, with an explicit native API/ABI version query and compatibility check. The C ABI is not frozen: exact supported native version and build configuration must be checked; reject unknown combinations. CLI and SDK releases identify compatible versions, and exported games ship their required native libraries and notices. Before crates.io publication verify licensing, source availability, dependency discovery, ABI matrix, documentation, clean consumer builds and release ownership. No publication is authorized here.
 
