@@ -2,13 +2,13 @@
 
 ## 1. Project principles
 
-Malvado is a game engine inspired by DIV Games Studio. It uses a C core and provides C and Lua APIs.
+Malvado is a game engine inspired by DIV Games Studio. It uses a C core with first-class language APIs.
 
 Follow these principles:
 
 - **Simplicity first.** Make game development easy. Prefer small, clear APIs over complex abstractions.
 - **Developer experience matters.** Keep common tasks short and intuitive. Prefer useful defaults and explicit behavior.
-- **One engine, two languages.** C and Lua are first-class APIs. Both use the same core behavior and process scheduler.
+- **One engine, three languages.** C, Lua, and Rust are first-class APIs over the same core behavior and process scheduler. Identify unavailable capabilities explicitly.
 - **Explicit behavior.** Define ownership, lifetime, errors, and side effects. Avoid hidden state and surprising behavior.
 - **Maintainability over cleverness.** Prefer code that is easy to read, test, debug, and extend.
 - **No speculative complexity.** Do not introduce features, dependencies, or abstractions for hypothetical future requirements.
@@ -19,7 +19,7 @@ Preserve the process-based programming model that defines Malvado. Do not introd
 
 - Keep the core usable without Lua or a graphics backend.
 - Keep platform-specific code separate from the core when this has a clear purpose.
-- Avoid duplicate implementations of the same behavior in C and Lua.
+- Avoid duplicate implementations of the same behavior in C, Lua, and Rust.
 - Follow the existing architecture and documented contracts.
 - Prefer composition and small, focused components over large, tightly coupled subsystems.
 - Do not expose internal implementation details through public APIs unless necessary.
@@ -29,7 +29,7 @@ For public API changes:
 - Choose clear and consistent names.
 - Define parameters, return values, errors, and edge cases.
 - Define ownership and cleanup rules when applicable.
-- Consider C and Lua behavior together.
+- Consider C, Lua, and Rust behavior together.
 - Update relevant documentation, examples, and tests.
 - Preserve established behavior unless the change explicitly revises its contract.
 
@@ -85,6 +85,19 @@ Make user-facing documentation friendly, welcoming, and easy to follow.
 Use the original root `README.md` as a reference for its approachable, example-led style.
 
 Keep documentation and examples consistent with the implemented API. Do not present planned features as available.
+
+### Example policy
+
+- Keep public runnable examples under the root `examples/` directory. Keep language bindings, verification fixtures, and benchmark tools in their own components.
+- Organize the selected teaching catalog by topic. Each selected example must have aligned C, Lua, and Rust versions with the same learning objective, observable behavior, controls, and assets where applicable.
+- Use the idiomatic API of each language. Alignment does not require identical source structure or extra API styles.
+- Keep examples simple, clear, small, and minimal. Feature examples teach one main concept. A few small minigames show how concepts work together.
+- Write useful English comments that explain intent, process timing, ownership, and cleanup where needed. Avoid comments that only repeat the code.
+- Give each example one shared README with the objective, language entry points, requirements, commands, expected behavior, controls, and asset licenses. Share assets without keeping divergent copies.
+- Verify the aligned versions with compilation and bounded execution, shared traces or behavior checks, and automated graphics/input checks when applicable. Tests are not a substitute for runnable teaching examples.
+- Record missing language variants as incomplete work. Do not present an example as aligned until all three versions run with delivered APIs and pass their required checks.
+
+The [example policy and migration plan](docs/examples/README.md) defines the target layout and milestone responsibilities. Existing examples remain at their current paths until their migration updates builds, tests, links, asset resolution, and export behavior together.
 
 ## 5. Development workflow
 
