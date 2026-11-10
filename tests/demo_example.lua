@@ -17,6 +17,7 @@ if not interactive then
     [16] = "down", [18] = "enter", [20] = "escape", [22] = "escape"
   }
   mv.key = function(key) return keys[ticks] == key end
+  mv.key_pressed = mv.key
   mv.frame = function() ticks = ticks + 1; frame() end
 end
 

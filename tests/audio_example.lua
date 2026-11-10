@@ -11,10 +11,16 @@ mv.frame = function()
   ticks = ticks + 1
   frame()
 end
-mv.key = function(key)
+mv.key_pressed = function(key)
   return (key == "1" and ticks == 0)
     or (key == "2" and ticks == 1)
     or (key == "space" and ticks == 2)
+end
+-- Hold action keys after their initial edge: the demo must not replay them.
+mv.key = function(key)
+  return (key == "1" and ticks < 8)
+    or (key == "2" and ticks >= 1 and ticks < 8)
+    or (key == "space" and ticks >= 2 and ticks < 8)
     or (key == "escape" and ticks >= 8)
 end
 mv.play_sound = function(sound)

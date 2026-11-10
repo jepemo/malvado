@@ -3,21 +3,12 @@
 
 require("malvado").import_globals()
 local sound, copy, music
-local previous = {}
-
-local function pressed(name)
-  local down = key(name)
-  local result = down and not previous[name]
-  previous[name] = down
-  return result
-end
-
 local Demo = process(function()
   local looping = false
   while not key("escape") do
-    if pressed("1") then play_sound(sound) end
-    if pressed("2") then play_sound(copy) end
-    if pressed("space") then
+    if key_pressed("1") then play_sound(sound) end
+    if key_pressed("2") then play_sound(copy) end
+    if key_pressed("space") then
       looping = not looping
       if looping then play_music(music) else stop_music(music) end
     end

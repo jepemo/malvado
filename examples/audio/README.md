@@ -11,3 +11,6 @@ Build Malvado and run this command from the repository root:
 Press **1** and **2** close together to play two independent effects. Press **Space** to start or stop a repeating stream. Press **Escape** to exit. The audio device and a display are required.
 
 The tone file was generated for this example and contains no third-party audio.
+
+Actions use native `key_pressed` snapshots, so holding a key does not replay an
+effect or toggle the stream each tick. Escape uses held `key`.
