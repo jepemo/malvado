@@ -24,6 +24,9 @@ jobs:
       - name: Install optional Rust proof toolchain
         run: mise install --cd tools/miri rust
       - run: mise run test-rust-miri
+      - name: Install Linux Rust sanitizer linker
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang lld
       - run: mise run test-rust-sanitize
   sdk-package:
     name: Build SDK archive (${{ matrix.os }})

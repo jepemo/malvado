@@ -35,6 +35,9 @@ def main():
         rustflags += ["-C", f"link-arg={runtime}", "-C", f"link-arg=-Wl,-rpath,{runtime_dir}"]
     else:
         import platform
+        if shutil.which("ld.lld") is None:
+            raise SystemExit("Linux Rust sanitizer checks require the lld linker")
+        rustflags += ["-C", "link-arg=-fuse-ld=lld"]
         runtime = runtime_dir / f"libclang_rt.asan-{platform.machine()}.a"
         rustflags += ["-C", "link-arg=-Wl,--whole-archive", "-C", f"link-arg={runtime}",
                       "-C", "link-arg=-Wl,--no-whole-archive", "-C", "link-arg=-ldl",

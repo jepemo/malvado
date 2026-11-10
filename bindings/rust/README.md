@@ -75,7 +75,7 @@ mise run test-rust-sanitize
 
 The optional dated nightly provides Miri without changing the stable root
 toolchain. Miri checks pure future/waker ownership. The sanitizer task requires
-Clang and checks native C callbacks with ASan/UBSan; Rust itself is not sanitizer
+Clang (and lld on Linux) and checks native C callbacks with ASan/UBSan; Rust itself is not sanitizer
 instrumented. See the [proof and limitations](../../docs/versions/2.0.0-alpha.7-scheduler.md).
 
 For safe game processes, start with the [Rust process guide](../../docs/api/rust-processes.md)
