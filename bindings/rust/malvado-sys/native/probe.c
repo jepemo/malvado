@@ -15,6 +15,7 @@
 #include "malvado/malvado.h"
 #include "malvado/collision.h"
 #include "malvado/camera.h"
+#include "malvado/animation.h"
 #include <stdio.h>
 #include <string.h>
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
@@ -72,6 +73,10 @@ _Static_assert(_Generic(&mv_camera_move, int (*)(MvCamera *, double, double): 1,
 _Static_assert(_Generic(&mv_camera_project, int (*)(const MvCamera *, double, double, double, double, double *, double *): 1, default: 0), "mv_camera_project signature");
 _Static_assert(_Generic(&mv_camera_center, int (*)(MvCamera *, double, double, int, int): 1, default: 0), "mv_camera_center signature");
 _Static_assert(_Generic(&mv_camera_clip, int (*)(const MvCamera *, const MvCameraViewport *, int, int, MvCameraViewport *): 1, default: 0), "mv_camera_clip signature");
+_Static_assert(_Generic(&mv_animation_create, MvAnimation * (*)(const MvAnimationFrame *, size_t, int): 1, default: 0), "mv_animation_create signature");
+_Static_assert(_Generic(&mv_animation_destroy, void (*)(MvAnimation *): 1, default: 0), "mv_animation_destroy signature");
+_Static_assert(_Generic(&mv_animation_sample, int (*)(const MvAnimation *, uint64_t, MvAnimationSample *): 1, default: 0), "mv_animation_sample signature");
+_Static_assert(_Generic(&mv_animation_advance, int (*)(const MvAnimation *, MvAnimationState *, unsigned): 1, default: 0), "mv_animation_advance signature");
 int main(void) {
     if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }
@@ -162,5 +167,15 @@ int main(void) {
     printf("%zu ", offsetof(MvCamera, x));
     printf("%zu ", offsetof(MvCamera, y));
     printf("%zu ", offsetof(MvCamera, viewport));
+    printf("%zu %zu ", sizeof(MvAnimationFrame), _Alignof(MvAnimationFrame));
+    printf("%zu ", offsetof(MvAnimationFrame, graph_id));
+    printf("%zu ", offsetof(MvAnimationFrame, duration_us));
+    printf("%zu %zu ", sizeof(MvAnimationSample), _Alignof(MvAnimationSample));
+    printf("%zu ", offsetof(MvAnimationSample, index));
+    printf("%zu ", offsetof(MvAnimationSample, graph_id));
+    printf("%zu %zu ", sizeof(MvAnimationState), _Alignof(MvAnimationState));
+    printf("%zu ", offsetof(MvAnimationState, elapsed_us));
+    printf("%zu ", offsetof(MvAnimationState, remainder));
+    printf("%zu ", offsetof(MvAnimationState, tick_rate));
     return 0;
 }

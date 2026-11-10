@@ -22,6 +22,7 @@
 //! while engine.process_count() != 0 { engine.tick()?; }
 //! # Ok::<(), Error>(())
 //! ```
+pub mod animation;
 pub mod camera;
 pub mod collision;
 mod engine;

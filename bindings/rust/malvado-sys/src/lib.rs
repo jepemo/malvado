@@ -430,6 +430,19 @@ const _: () = {
         offset_of!(MvCamera, x),
         offset_of!(MvCamera, y),
         offset_of!(MvCamera, viewport),
+        size_of::<MvAnimationFrame>(),
+        align_of::<MvAnimationFrame>(),
+        offset_of!(MvAnimationFrame, graph_id),
+        offset_of!(MvAnimationFrame, duration_us),
+        size_of::<MvAnimationSample>(),
+        align_of::<MvAnimationSample>(),
+        offset_of!(MvAnimationSample, index),
+        offset_of!(MvAnimationSample, graph_id),
+        size_of::<MvAnimationState>(),
+        align_of::<MvAnimationState>(),
+        offset_of!(MvAnimationState, elapsed_us),
+        offset_of!(MvAnimationState, remainder),
+        offset_of!(MvAnimationState, tick_rate),
     ];
     assert!(
         native.len() == rust.len(),
@@ -582,5 +595,47 @@ unsafe extern "C" {
         screen_width: c_int,
         screen_height: c_int,
         out: *mut MvCameraViewport,
+    ) -> c_int;
+}
+
+#[repr(C)]
+pub struct MvAnimation {
+    _private: [u8; 0],
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvAnimationFrame {
+    pub graph_id: c_int,
+    pub duration_us: u64,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvAnimationSample {
+    pub index: usize,
+    pub graph_id: c_int,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvAnimationState {
+    pub elapsed_us: u64,
+    pub remainder: u32,
+    pub tick_rate: u32,
+}
+unsafe extern "C" {
+    pub fn mv_animation_create(
+        frames: *const MvAnimationFrame,
+        count: usize,
+        r#loop: c_int,
+    ) -> *mut MvAnimation;
+    pub fn mv_animation_destroy(animation: *mut MvAnimation) -> ();
+    pub fn mv_animation_sample(
+        animation: *const MvAnimation,
+        elapsed_us: u64,
+        out: *mut MvAnimationSample,
+    ) -> c_int;
+    pub fn mv_animation_advance(
+        animation: *const MvAnimation,
+        state: *mut MvAnimationState,
+        tick_rate: u32,
     ) -> c_int;
 }

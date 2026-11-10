@@ -85,3 +85,7 @@ The [native collision/world guide](../../docs/api/rust-collision.md) covers
 explicit geometry and process colliders. It does not promise graph-derived
 colliders or contextual process movement. `malvado/examples/world.rs` is a
 bounded headless example.
+
+The [camera and animation guide](../../docs/api/rust-camera-animation.md) covers
+native camera values and explicit fixed-tick playback without a graphics
+backend. Automatic process camera selection and graph animation remain pending.
