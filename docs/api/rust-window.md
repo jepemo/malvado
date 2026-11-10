@@ -97,3 +97,12 @@ The filter matches `extensionSupportedGLX` only; leak detection remains enabled
 for other stacks. A standalone negative fixture verifies that an unrelated
 native allocation still fails. Core and asset sanitizer modes do not use this
 filter. No third-party source is changed.
+
+The normal Linux graphics suite uses Mesa llvmpipe. The sanitizer invocation
+selects `GALLIUM_DRIVER=softpipe` and `DRAW_USE_LLVM=0`, so pixel and ownership
+checks also run without the LLVM shader JIT. This follows the supported
+[Mesa renderer controls](https://docs.mesa3d.org/envvars.html#gallium-driver).
+Job 129889149968 passed the leak-filter negative fixture, then reported two
+56-byte allocations in unloaded provider frames under `rlDrawRenderBatch` with
+llvmpipe/LLVM 20.1.2. The sanitizer driver selection avoids adding a broad draw
+stack suppression; leak detection stays enabled. Core/asset checks are unchanged.
