@@ -18,14 +18,16 @@ checks missing, incomplete, incompatible, and dynamic-only SDKs and builds an
 independent offline consumer from the installed crate sources. No native source-tree
 paths are needed by that consumer. The same task runs in macOS/Linux CI.
 
-For an independent Cargo project, depend on `<prefix>/share/malvado/rust/malvado-sys`
+For an independent Cargo project, depend on `<prefix>/share/malvado/rust/malvado`
 by path and set `MALVADO_SDK_PREFIX` to your installed native SDK:
 
 ```sh
 MALVADO_SDK_PREFIX="/path/to/installed sdk" cargo test
 ```
 
-The crate currently declares context, cadence, process identity/lifecycle and
+## Unsafe native boundary
+
+`malvado-sys` declares context, cadence, process identity/lifecycle and
 resource operations. See the installed `malvado/malvado.h` for pointer,
 ownership, errors and thread rules. Raw calls are unsafe. Call `check_abi()`
 before other native operations. Return values are C integers, not Rust enums;
@@ -75,3 +77,7 @@ The optional dated nightly provides Miri without changing the stable root
 toolchain. Miri checks pure future/waker ownership. The sanitizer task requires
 Clang and checks native C callbacks with ASan/UBSan; Rust itself is not sanitizer
 instrumented. See the [proof and limitations](../../docs/versions/2.0.0-alpha.7-scheduler.md).
+
+For safe game processes, start with the [Rust process guide](../../docs/api/rust-processes.md)
+and `malvado/examples/counter.rs`. The unsafe sys crate is not an alternate
+recommended gameplay style.

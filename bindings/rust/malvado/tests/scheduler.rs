@@ -266,10 +266,7 @@ fn panic_and_async_error_have_native_error_reason_and_safe_cleanup() {
                 Err(Error::Closed)
             })
             .unwrap();
-        assert_eq!(
-            engine.tick(),
-            Err(Error::Native(malvado_sys::MV_PROCESS_ERROR))
-        );
+        assert_eq!(engine.tick(), Err(Error::Process));
         assert_eq!(drops.get(), 1);
         assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Error));
         assert_eq!(engine.process_count(), 0);

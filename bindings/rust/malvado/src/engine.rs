@@ -9,11 +9,20 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 
 fn result(code: i32) -> Result<(), Error> {
-    if code == sys::MV_OK {
-        Ok(())
-    } else {
-        Err(Error::Native(code))
-    }
+    let error = match code {
+        sys::MV_OK => return Ok(()),
+        sys::MV_INVALID_ARGUMENT => Error::InvalidArgument,
+        sys::MV_OVERFLOW => Error::Overflow,
+        sys::MV_NOT_FOUND => Error::NotFound,
+        sys::MV_OUT_OF_MEMORY => Error::OutOfMemory,
+        sys::MV_BUSY => Error::Busy,
+        sys::MV_PROCESS_ERROR => Error::Process,
+        sys::MV_QUEUE_FULL => Error::QueueFull,
+        sys::MV_QUEUE_EMPTY => Error::QueueEmpty,
+        sys::MV_BUFFER_TOO_SMALL => Error::BufferTooSmall,
+        other => Error::UnexpectedNative(other),
+    };
+    Err(error)
 }
 
 struct Runtime {
@@ -34,8 +43,8 @@ impl Engine {
     pub fn new() -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: fixed valid native clock settings; this owner destroys once.
-        let native = NonNull::new(unsafe { sys::mv_context_create(60.0, 5) })
-            .ok_or(Error::Native(sys::MV_OUT_OF_MEMORY))?;
+        let native =
+            NonNull::new(unsafe { sys::mv_context_create(60.0, 5) }).ok_or(Error::OutOfMemory)?;
         Ok(Self {
             runtime: Rc::new(Runtime {
                 native: Cell::new(Some(native)),
@@ -140,14 +149,15 @@ impl Handle {
                 sys::MV_PROCESS_RUNNING => Status::Running,
                 sys::MV_PROCESS_SLEEPING => Status::Sleeping,
                 sys::MV_PROCESS_FROZEN => Status::Frozen,
-                _ => return Err(Error::Native(sys::MV_PROCESS_ERROR)),
+                _ => return Err(Error::UnexpectedNative(info.process.status)),
             };
             (Some(status), None)
         } else {
             let reason = match info.reason {
                 sys::MV_END_KILLED => EndReason::Killed,
                 sys::MV_END_RETURNED => EndReason::Returned,
-                _ => EndReason::Error,
+                sys::MV_END_ERROR => EndReason::Error,
+                _ => return Err(Error::UnexpectedNative(info.reason)),
             };
             (None, Some(reason))
         };
@@ -280,7 +290,7 @@ where
     Fut: Future<Output = Result<(), Error>> + 'static,
 {
     if options.fps > 60 {
-        return Err(Error::Native(sys::MV_INVALID_ARGUMENT));
+        return Err(Error::InvalidArgument);
     }
     let ctx = runtime.live()?;
     let task = Box::new(NativeTask {
@@ -304,12 +314,12 @@ where
             &mut id,
         )
     };
-    if code != sys::MV_OK {
+    if let Err(error) = result(code) {
         // SAFETY: failed spawn never takes responsibility for user.
         unsafe {
             drop(Box::from_raw(user));
         }
-        return Err(Error::Native(code));
+        return Err(error);
     }
     let mut reference = sys::MvProcessRef::default();
     let mut native = std::ptr::null_mut();

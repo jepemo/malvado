@@ -28,14 +28,23 @@ mod task;
 pub use engine::{Engine, Handle, ProcessContext, Snapshot, SpawnOptions};
 pub use task::Frame;
 
-/// Native failures preserve the C result code. A process error includes an
-/// async return error or a contained panic; its native end reason is Error.
+/// Typed failures from the engine. Process includes an async return error or
+/// a contained panic; its native end reason is Error.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
     Abi(&'static str),
     Closed,
     ForeignContext,
-    Native(i32),
+    InvalidArgument,
+    Overflow,
+    NotFound,
+    OutOfMemory,
+    Busy,
+    Process,
+    QueueFull,
+    QueueEmpty,
+    BufferTooSmall,
+    UnexpectedNative(i32),
 }
 impl std::fmt::Display for Error {
     fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -63,3 +72,45 @@ pub enum EndReason {
     Returned,
     Error,
 }
+/// Engine access is local to its owner thread. Moving it to another thread is
+/// rejected, also when a process is suspended.
+/// ```compile_fail
+/// let mut engine = malvado::Engine::new().unwrap();
+/// std::thread::spawn(move || engine.tick());
+/// ```
+/// Process futures own their state. A borrowed mutable local cannot escape
+/// into a native process whose lifetime extends past the spawn call.
+/// ```compile_fail
+/// use malvado::{Engine, SpawnOptions};
+/// let engine = Engine::new().unwrap();
+/// let mut state = 0;
+/// engine.spawn(SpawnOptions::default(), |_| async {
+///     state += 1;
+///     Ok(())
+/// }).unwrap();
+/// state += 1;
+/// ```
+/// Once state moves into a process, external code cannot keep another mutable
+/// owner. This prevents aliases to data across an await.
+/// ```compile_fail
+/// use malvado::{Engine, SpawnOptions};
+/// let engine = Engine::new().unwrap();
+/// let mut state = vec![1];
+/// engine.spawn(SpawnOptions::default(), move |p| async move {
+///     let borrowed = &mut state;
+///     p.frame().await;
+///     borrowed.push(2);
+///     Ok(())
+/// }).unwrap();
+/// state.push(3);
+/// ```
+/// A process token cannot recursively drive the native scheduler.
+/// ```compile_fail
+/// use malvado::{Engine, SpawnOptions};
+/// let engine = Engine::new().unwrap();
+/// engine.spawn(SpawnOptions::default(), |mut p| async move {
+///     p.tick()?;
+///     Ok(())
+/// }).unwrap();
+/// ```
+mod ownership_contract {}

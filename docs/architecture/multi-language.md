@@ -1,6 +1,6 @@
 # Multi-language architecture proposal
 
-Status: native boundary and installed sys SDK implemented in alpha.7 after alpha.6 acceptance. See the [SDK evidence](../versions/2.0.0-alpha.7-rust-sdk.md). Safe Rust APIs and scheduler integration below still require proof. The owner has chosen a C-first engine, one scheduler, and first-class Lua, C, and Rust; struct-based async processes are the preferred experience, not finalized syntax.
+Status: native boundary and installed sys SDK implemented in alpha.7 after alpha.6 acceptance. See the [SDK evidence](../versions/2.0.0-alpha.7-rust-sdk.md). The owned-future adapter and safe process API are implemented; see the [scheduler proof](../versions/2.0.0-alpha.7-scheduler.md). Full lifecycle/resource and graphics parity remain open. The owner has chosen a C-first engine, one scheduler, and first-class Lua, C, and Rust; struct-based async processes are the preferred experience, not finalized syntax.
 
 ## Boundary and existing baseline
 

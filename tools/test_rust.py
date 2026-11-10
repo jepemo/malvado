@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "build-rust"
 
 
-def run(*args, env=None, cwd=ROOT):
-    subprocess.run(args, cwd=cwd, env=env, check=True)
+def run(*args, env=None, cwd=ROOT, timeout=None):
+    subprocess.run(args, cwd=cwd, env=env, timeout=timeout, check=True)
 
 
 def reject_sdk(label, prefix, expected):
@@ -79,9 +79,16 @@ def external_consumer(prefix):
     (game / "src").mkdir(parents=True, exist_ok=True)
     (game / "Cargo.toml").write_text(
         '[package]\nname = "sdk-consumer"\nversion = "0.0.0"\nedition = "2024"\n'
-        '[dependencies]\nmalvado-sys = { path = '
-        + json.dumps(os.path.relpath(sdk / 'malvado-sys', game)) + ' }\n')
-    (game / "src/main.rs").write_text('fn main() { malvado_sys::check_abi().unwrap(); }\n')
+        '[dependencies]\nmalvado = { path = '
+        + json.dumps(os.path.relpath(sdk / 'malvado', game)) + ' }\n')
+    (game / "src/main.rs").write_text(
+        'use malvado::{Engine, Error, SpawnOptions};\n'
+        'fn main() -> Result<(), Error> {\n'
+        '    let mut engine = Engine::new()?;\n'
+        '    engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
+        '    engine.tick()?; engine.tick()?;\n'
+        '    assert_eq!(engine.process_count(), 0);\n'
+        '    Ok(())\n}\n')
     env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix))
     run("cargo", "run", "--offline", env=env, cwd=game)
 
@@ -110,6 +117,11 @@ def main():
         if config == "Release":
             cargo.append("--release")
         run(*cargo, env=env)
+        example = ["cargo", "run", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
+                   "-p", "malvado", "--example", "counter"]
+        if config == "Release":
+            example.append("--release")
+        run(*example, env=env, timeout=30)
         run("cargo", "clippy", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
             "--workspace", "--all-targets", "--", "-D", "warnings", env=env)
     diagnostics(prefix)
