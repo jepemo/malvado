@@ -1,6 +1,6 @@
 # Rust integration migration plan
 
-Status: in progress after alpha.6 acceptance. Native inventory and installed sys SDK are complete; see [alpha.7](../versions/2.0.0-alpha.7.md). The scheduler proof is next. The owner also approved the bounded Lua binding relocation in A7.11. No wider engine or directory migration is included.
+Status: in progress after alpha.6 acceptance. Native inventory and installed sys SDK are complete; see [alpha.7](../versions/2.0.0-alpha.7.md). The scheduler proof and safe process API are complete; the full lifecycle/resource matrix is next. The owner also approved the bounded Lua binding relocation in A7.11. No wider engine or directory migration is included.
 
 1. Inventory native symbols, installed headers, ABI, build options, existing `src/` paths, CLI templates and resource contracts. Establish a C/Lua trace baseline and identify missing public operations.
 2. Create `bindings/rust/` only when implementation starts. Keep CMake as native owner and Cargo as Rust owner. Install a C SDK to a temporary prefix for CI and external consumers. Add optional `mise run test-rust`; preserve existing C/Lua commands without invoking Cargo.
@@ -14,7 +14,7 @@ Keep current source, CLI and examples in place; moving them into `engine/` or `c
 
 ## Lua binding relocation (A7.11)
 
-Status: relocated to `bindings/lua/`; acceptance checks remain in A7.11. Complete after A7.2 and before
+Status: complete in alpha.7 A7.11; see the [acceptance evidence](../versions/2.0.0-alpha.7-layout.md). Complete after A7.2 and before
 changing Lua binding behavior for A7.6 or validating final packages in A7.9.
 This item does not block the independent Rust scheduler proof in A7.3.
 

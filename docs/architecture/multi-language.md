@@ -24,7 +24,7 @@ For bindings, handwritten declarations avoid libclang and generated noise but ne
 
 ## Repository and compatibility
 
-Keep `src/`, existing examples and CMake install/include paths in alpha.7. The owner approved one bounded layout change: move `src/binding/` to `bindings/lua/` beside the Rust workspace, tracked by A7.11. The relocation is implemented; A7.11 tracks its verification. Grouping language adapters makes their responsibility clear; each keeps its own build tool and internal structure. Do not move the whole tree or split the CLI for symmetry. Introduce `examples/rust/` alongside existing examples; share licensed assets when practical. Later evaluate `engine/` or a wider example reorganization only with migration, exporter, install and history plans. External games remain independent Cargo projects.
+Keep `src/`, existing examples and CMake install/include paths in alpha.7. The owner approved one bounded layout change: move `src/binding/` to `bindings/lua/` beside the Rust workspace, tracked by A7.11. The relocation and A7.11 acceptance checks are complete. Grouping language adapters makes their responsibility clear; each keeps its own build tool and internal structure. Do not move the whole tree or split the CLI for symmetry. Introduce `examples/rust/` alongside existing examples; share licensed assets when practical. Later evaluate `engine/` or a wider example reorganization only with migration, exporter, install and history plans. External games remain independent Cargo projects.
 
 The planned layout is:
 
