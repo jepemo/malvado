@@ -22,6 +22,7 @@
 //! while engine.process_count() != 0 { engine.tick()?; }
 //! # Ok::<(), Error>(())
 //! ```
+pub mod collision;
 mod engine;
 mod resource;
 mod task;
@@ -46,6 +47,8 @@ pub enum Error {
     QueueFull,
     QueueEmpty,
     BufferTooSmall,
+    /// Native rectangle insertion rejected input, allocation, or capacity.
+    WorldInsert,
     UnexpectedNative(i32),
 }
 impl std::fmt::Display for Error {

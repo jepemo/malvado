@@ -13,6 +13,7 @@
  * See LICENSE for details.
  */
 #include "malvado/malvado.h"
+#include "malvado/collision.h"
 #include <stdio.h>
 #include <string.h>
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
@@ -50,6 +51,20 @@ _Static_assert(_Generic(&mv_process_creation_children, MvResult (*)(MvContext *,
 _Static_assert(_Generic(&mv_process_creation_descendants, MvResult (*)(MvContext *, uint64_t, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_creation_descendants signature");
 _Static_assert(_Generic(&mv_process_lineage_snapshot, MvResult (*)(MvContext *, MvLineageInfo *, size_t, size_t *): 1, default: 0), "lineage signature");
 _Static_assert(_Generic(&mv_process_signal_creation_tree, MvResult (*)(MvContext *, uint64_t, MvSignal): 1, default: 0), "creation tree signal signature");
+_Static_assert(_Generic(&mv_rect_overlaps, int (*)(MvRect, MvRect): 1, default: 0), "mv_rect_overlaps signature");
+_Static_assert(_Generic(&mv_rect_contains, int (*)(MvRect, double, double): 1, default: 0), "mv_rect_contains signature");
+_Static_assert(_Generic(&mv_collision_overlap, int (*)(MvCollisionShape, MvCollisionTransform, MvCollisionShape, MvCollisionTransform): 1, default: 0), "mv_collision_overlap signature");
+_Static_assert(_Generic(&mv_process_collider_set, MvResult (*)(MvContext *, MvProcessRef, MvCollisionShape, MvCollisionTransform): 1, default: 0), "mv_process_collider_set signature");
+_Static_assert(_Generic(&mv_process_collider_clear, MvResult (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_process_collider_clear signature");
+_Static_assert(_Generic(&mv_process_collider_test, MvResult (*)(MvContext *, MvProcessRef, MvProcessRef, int *): 1, default: 0), "mv_process_collider_test signature");
+_Static_assert(_Generic(&mv_process_collider_first, MvResult (*)(MvContext *, MvProcessRef, uint64_t, MvProcessRef *): 1, default: 0), "mv_process_collider_first signature");
+_Static_assert(_Generic(&mv_process_collider_find, MvResult (*)(MvContext *, MvProcessRef, uint64_t, MvProcessRef *, size_t, size_t *): 1, default: 0), "mv_process_collider_find signature");
+_Static_assert(_Generic(&mv_collision_world_create, MvCollisionWorld * (*)(void): 1, default: 0), "mv_collision_world_create signature");
+_Static_assert(_Generic(&mv_collision_world_destroy, void (*)(MvCollisionWorld *): 1, default: 0), "mv_collision_world_destroy signature");
+_Static_assert(_Generic(&mv_collision_world_add_rect, int (*)(MvCollisionWorld *, MvRect, size_t *): 1, default: 0), "mv_collision_world_add_rect signature");
+_Static_assert(_Generic(&mv_collision_world_query, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, size_t *): 1, default: 0), "mv_collision_world_query signature");
+_Static_assert(_Generic(&mv_collision_world_sweep, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_sweep signature");
+_Static_assert(_Generic(&mv_collision_world_move, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform *, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_move signature");
 int main(void) {
     if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }
@@ -106,5 +121,30 @@ int main(void) {
     printf("%u ", (unsigned)MV_END_ERROR);
     printf("%zu %zu %zu %zu %zu ", sizeof(MvLineageInfo), _Alignof(MvLineageInfo),
            offsetof(MvLineageInfo, id), offsetof(MvLineageInfo, creator_id), offsetof(MvLineageInfo, alive));
+    printf("%zu %zu ", sizeof(MvRect), _Alignof(MvRect));
+    printf("%zu ", offsetof(MvRect, x));
+    printf("%zu ", offsetof(MvRect, y));
+    printf("%zu ", offsetof(MvRect, width));
+    printf("%zu ", offsetof(MvRect, height));
+    printf("%zu %zu ", sizeof(MvCollisionShape), _Alignof(MvCollisionShape));
+    printf("%zu ", offsetof(MvCollisionShape, kind));
+    printf("%zu ", offsetof(MvCollisionShape, width));
+    printf("%zu ", offsetof(MvCollisionShape, height));
+    printf("%zu ", offsetof(MvCollisionShape, radius));
+    printf("%zu ", offsetof(MvCollisionShape, offset_x));
+    printf("%zu ", offsetof(MvCollisionShape, offset_y));
+    printf("%zu %zu ", sizeof(MvCollisionTransform), _Alignof(MvCollisionTransform));
+    printf("%zu ", offsetof(MvCollisionTransform, x));
+    printf("%zu ", offsetof(MvCollisionTransform, y));
+    printf("%zu ", offsetof(MvCollisionTransform, angle));
+    printf("%zu ", offsetof(MvCollisionTransform, scale));
+    printf("%zu %zu ", sizeof(MvCollisionSweep), _Alignof(MvCollisionSweep));
+    printf("%zu ", offsetof(MvCollisionSweep, hit));
+    printf("%zu ", offsetof(MvCollisionSweep, id));
+    printf("%zu ", offsetof(MvCollisionSweep, fraction));
+    printf("%zu ", offsetof(MvCollisionSweep, normal_x));
+    printf("%zu ", offsetof(MvCollisionSweep, normal_y));
+    _Static_assert(sizeof(MvCollisionKind) == sizeof(int), "collision enum size");
+    printf("%u %u ", (unsigned)MV_COLLISION_CIRCLE, (unsigned)MV_COLLISION_RECT);
     return 0;
 }

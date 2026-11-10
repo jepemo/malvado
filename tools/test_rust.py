@@ -83,11 +83,17 @@ def external_consumer(prefix):
         + json.dumps(os.path.relpath(sdk / 'malvado', game)) + ' }\n')
     (game / "src/main.rs").write_text(
         'use malvado::{Engine, Error, SpawnOptions};\n'
+        'use malvado::collision::{Rect, Shape, Transform, World};\n'
         'fn main() -> Result<(), Error> {\n'
         '    let mut engine = Engine::new()?;\n'
         '    engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
         '    engine.tick()?; engine.tick()?;\n'
         '    assert_eq!(engine.process_count(), 0);\n'
+        '    let mut world = World::new()?;\n'
+        '    world.add_rect(Rect { x: 10.0, y: 0.0, width: 10.0, height: 10.0 })?;\n'
+        '    let mut position = Transform { y: 5.0, ..Default::default() };\n'
+        '    world.move_by(Shape::circle(1.0)?, &mut position, 100.0, 0.0)?;\n'
+        '    assert_eq!(position.x, 9.0);\n'
         '    Ok(())\n}\n')
     env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix))
     run("cargo", "run", "--offline", env=env, cwd=game)
@@ -117,11 +123,12 @@ def main():
         if config == "Release":
             cargo.append("--release")
         run(*cargo, env=env)
-        example = ["cargo", "run", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
-                   "-p", "malvado", "--example", "counter"]
-        if config == "Release":
-            example.append("--release")
-        run(*example, env=env, timeout=30)
+        for name in ("counter", "world"):
+            example = ["cargo", "run", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
+                       "-p", "malvado", "--example", name]
+            if config == "Release":
+                example.append("--release")
+            run(*example, env=env, timeout=30)
         run("cargo", "clippy", "--manifest-path", str(ROOT / "bindings/rust/Cargo.toml"),
             "--workspace", "--all-targets", "--", "-D", "warnings", env=env)
     diagnostics(prefix)

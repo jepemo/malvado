@@ -1,0 +1,4 @@
+sweep hit=1 fraction=0.090000 normal=-1,0
+move x=9.000000 y=5.000000 clear=1
+slide x=9.000000 y=6.000000
+failure unchanged=1

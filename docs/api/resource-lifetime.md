@@ -30,3 +30,14 @@ A renderer or audio backend must not access a native object after its last refer
 Use a context and its resource manager on one owner thread. Use window, image, and font operations on the window thread, and audio operations on the audio device owner thread. Calls on one context must not race context destruction. A retained reference does not make a graphics object usable after its window or an audio object usable after its device closes. Direct C callers must release those objects before closing the corresponding platform service.
 
 On runner shutdown, stop process execution and reject new spawns. Close process state and release process-owned resources, then release game-owned resources and Lua references. Finish or discard queued drawing and audio work before closing the window and audio device. A retained C reference can outlive a context only when its destructor and underlying data remain safe after the context and relevant platform services close. The caller is responsible for that condition.
+
+## Rust native resources
+
+The Rust `Resource<T>` wrapper implements the native owner/retain/transfer
+contract for owned Rust values. `Engine::resource` selects context ownership;
+`ProcessContext::resource` selects its live process. Retained wrappers expose
+shared data and release one native reference on Drop. They can outlive their
+owner and context; transfer requires a live same-context owner or context.
+See the [Rust process guide](rust-processes.md#native-resource-ownership).
+These generic resources do not extend graphics or audio device lifetime;
+those platform wrappers remain alpha.7 A7.6 work.

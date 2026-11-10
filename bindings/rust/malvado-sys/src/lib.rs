@@ -64,6 +64,47 @@ pub struct MvLineageInfo {
     pub creator_id: u64,
     pub alive: c_int,
 }
+#[repr(C)]
+pub struct MvCollisionWorld {
+    _private: [u8; 0],
+}
+pub const MV_COLLISION_CIRCLE: c_int = 0;
+pub const MV_COLLISION_RECT: c_int = 1;
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvRect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvCollisionShape {
+    pub kind: c_int,
+    pub width: f64,
+    pub height: f64,
+    pub radius: f64,
+    pub offset_x: f64,
+    pub offset_y: f64,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvCollisionTransform {
+    pub x: f64,
+    pub y: f64,
+    pub angle: f64,
+    pub scale: f64,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvCollisionSweep {
+    pub hit: c_int,
+    pub id: usize,
+    pub fraction: f64,
+    pub normal_x: f64,
+    pub normal_y: f64,
+}
 pub type MvProcessStep = Option<unsafe extern "C" fn(*mut MvContext, u64, *mut c_void) -> c_int>;
 pub type MvProcessDestroy = Option<unsafe extern "C" fn(*mut c_void)>;
 pub type MvResourceDestroy = Option<unsafe extern "C" fn(*mut c_void)>;
@@ -91,6 +132,70 @@ pub const MV_END_KILLED: c_int = 0;
 pub const MV_END_RETURNED: c_int = 1;
 pub const MV_END_ERROR: c_int = 2;
 unsafe extern "C" {
+    pub fn mv_rect_overlaps(a: MvRect, b: MvRect) -> c_int;
+    pub fn mv_rect_contains(rect: MvRect, x: f64, y: f64) -> c_int;
+    pub fn mv_collision_overlap(
+        a: MvCollisionShape,
+        at: MvCollisionTransform,
+        b: MvCollisionShape,
+        bt: MvCollisionTransform,
+    ) -> c_int;
+    pub fn mv_process_collider_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        shape: MvCollisionShape,
+        transform: MvCollisionTransform,
+    ) -> c_int;
+    pub fn mv_process_collider_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
+    pub fn mv_process_collider_test(
+        ctx: *mut MvContext,
+        a: MvProcessRef,
+        b: MvProcessRef,
+        overlap: *mut c_int,
+    ) -> c_int;
+    pub fn mv_process_collider_first(
+        ctx: *mut MvContext,
+        source: MvProcessRef,
+        type_id: u64,
+        out: *mut MvProcessRef,
+    ) -> c_int;
+    pub fn mv_process_collider_find(
+        ctx: *mut MvContext,
+        source: MvProcessRef,
+        type_id: u64,
+        out: *mut MvProcessRef,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_collision_world_create() -> *mut MvCollisionWorld;
+    pub fn mv_collision_world_destroy(world: *mut MvCollisionWorld) -> ();
+    pub fn mv_collision_world_add_rect(
+        world: *mut MvCollisionWorld,
+        rect: MvRect,
+        id: *mut usize,
+    ) -> c_int;
+    pub fn mv_collision_world_query(
+        world: *const MvCollisionWorld,
+        shape: MvCollisionShape,
+        transform: MvCollisionTransform,
+        id: *mut usize,
+    ) -> c_int;
+    pub fn mv_collision_world_sweep(
+        world: *const MvCollisionWorld,
+        shape: MvCollisionShape,
+        transform: MvCollisionTransform,
+        dx: f64,
+        dy: f64,
+        out: *mut MvCollisionSweep,
+    ) -> c_int;
+    pub fn mv_collision_world_move(
+        world: *const MvCollisionWorld,
+        shape: MvCollisionShape,
+        transform: *mut MvCollisionTransform,
+        dx: f64,
+        dy: f64,
+        out: *mut MvCollisionSweep,
+    ) -> c_int;
     pub fn mv_abi_version() -> u32;
     pub fn mv_version_string() -> *const c_char;
     pub fn mv_context_create(rate: f64, max_steps: u32) -> *mut MvContext;
@@ -285,6 +390,35 @@ const _: () = {
         offset_of!(MvLineageInfo, id),
         offset_of!(MvLineageInfo, creator_id),
         offset_of!(MvLineageInfo, alive),
+        size_of::<MvRect>(),
+        align_of::<MvRect>(),
+        offset_of!(MvRect, x),
+        offset_of!(MvRect, y),
+        offset_of!(MvRect, width),
+        offset_of!(MvRect, height),
+        size_of::<MvCollisionShape>(),
+        align_of::<MvCollisionShape>(),
+        offset_of!(MvCollisionShape, kind),
+        offset_of!(MvCollisionShape, width),
+        offset_of!(MvCollisionShape, height),
+        offset_of!(MvCollisionShape, radius),
+        offset_of!(MvCollisionShape, offset_x),
+        offset_of!(MvCollisionShape, offset_y),
+        size_of::<MvCollisionTransform>(),
+        align_of::<MvCollisionTransform>(),
+        offset_of!(MvCollisionTransform, x),
+        offset_of!(MvCollisionTransform, y),
+        offset_of!(MvCollisionTransform, angle),
+        offset_of!(MvCollisionTransform, scale),
+        size_of::<MvCollisionSweep>(),
+        align_of::<MvCollisionSweep>(),
+        offset_of!(MvCollisionSweep, hit),
+        offset_of!(MvCollisionSweep, id),
+        offset_of!(MvCollisionSweep, fraction),
+        offset_of!(MvCollisionSweep, normal_x),
+        offset_of!(MvCollisionSweep, normal_y),
+        MV_COLLISION_CIRCLE as usize,
+        MV_COLLISION_RECT as usize,
     ];
     assert!(
         native.len() == rust.len(),

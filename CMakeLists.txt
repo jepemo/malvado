@@ -379,6 +379,10 @@ if(MALVADO_BUILD_ASSETS)
   add_test(NAME atlas COMMAND atlas-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/atlas.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/animated-atlas.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/array.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/trimmed.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/pingpong.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/pivot.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/coric/coric.json)
   set_tests_properties(atlas PROPERTIES TIMEOUT 15)
 endif()
+add_executable(alpha7-world-test tests/alpha7_world.c)
+target_link_libraries(alpha7-world-test PRIVATE malvado_core)
+add_test(NAME c_alpha7_world COMMAND alpha7-world-test)
+set_tests_properties(c_alpha7_world PROPERTIES TIMEOUT 15)
 add_executable(alpha7-lifecycle-test tests/alpha7_lifecycle.c)
 target_link_libraries(alpha7-lifecycle-test PRIVATE malvado_core)
 add_test(NAME c_alpha7_lifecycle COMMAND alpha7-lifecycle-test)
@@ -490,6 +494,13 @@ if(MALVADO_CAN_EXPORT)
     set_tests_properties(dev_sdk_install PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   endif()
 endif()
+add_test(NAME alpha7_world_parity COMMAND ${CMAKE_COMMAND}
+  -DC_PROGRAM=$<TARGET_FILE:alpha7-world-test>
+  -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
+  -DLUA_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/alpha7_world.lua
+  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/world.txt
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
+set_tests_properties(alpha7_world_parity PROPERTIES TIMEOUT 25)
 add_test(NAME alpha7_lifecycle_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:alpha7-lifecycle-test>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>

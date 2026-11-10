@@ -1,8 +1,7 @@
 # Rust native SDK
 
 This workspace provides `malvado`, the safe owner-thread async process API,
-and `malvado-sys`, the unsafe native boundary. Graphics wrappers and the full
-lifecycle matrix remain in the [alpha.7 checklist](../../docs/versions/2.0.0-alpha.7.md).
+and `malvado-sys`, the unsafe native boundary. Graphics and platform resource wrappers remain in the [alpha.7 checklist](../../docs/versions/2.0.0-alpha.7.md).
 
 Use the project toolchain and run all local SDK checks:
 
@@ -81,3 +80,8 @@ instrumented. See the [proof and limitations](../../docs/versions/2.0.0-alpha.7-
 For safe game processes, start with the [Rust process guide](../../docs/api/rust-processes.md)
 and `malvado/examples/counter.rs`. The unsafe sys crate is not an alternate
 recommended gameplay style.
+
+The [native collision/world guide](../../docs/api/rust-collision.md) covers
+explicit geometry and process colliders. It does not promise graph-derived
+colliders or contextual process movement. `malvado/examples/world.rs` is a
+bounded headless example.
