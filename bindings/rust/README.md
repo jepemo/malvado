@@ -11,7 +11,7 @@ mise install
 mise run test-rust
 ```
 
-`mise` pins Rust, CMake and Python. The task builds C-only Debug and Release
+`mise` pins Rust, CMake and Python, including the required Clippy and rustfmt components. The task builds C-only Debug and Release
 SDKs without Cargo on their native build PATH, installs and relocates each SDK
 to a path with spaces, then runs Rust tests, clippy and formatting. It also
 checks missing, incomplete, incompatible, and dynamic-only SDKs and builds an

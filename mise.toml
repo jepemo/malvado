@@ -4,7 +4,7 @@
 [tools]
 cmake = "3.31.6"
 python = "3.11.16"
-rust = "1.99.1"
+rust = { version = "1.99.1", profile = "minimal", components = ["clippy", "rustfmt"] }
 
 [tasks.configure]
 description = "Configure the standard debug build"
