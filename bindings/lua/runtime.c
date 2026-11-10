@@ -37,7 +37,7 @@
 #include "malvado/fpg.h"
 #include "cJSON.h"
 #endif
-#include "binding/globals.h"
+#include "globals.h"
 #include "core/clock.h"
 #include "core/process.h"
 #include "core/schedule.h"

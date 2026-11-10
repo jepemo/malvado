@@ -1,7 +1,7 @@
 # Malvado 2; project created by Jeremías Pérez and contributors.
 # SPDX-License-Identifier: Apache-2.0
 
-file(READ "${SOURCE}/src/binding/runtime.c" runtime)
+file(READ "${SOURCE}/bindings/lua/runtime.c" runtime)
 file(READ "${SOURCE}/docs/api/lua-globals.md" documentation)
 string(REGEX MATCH "static const char \\*const global_names\\[\\] = \\{[^}]*\\}" exports "${runtime}")
 if(NOT exports)

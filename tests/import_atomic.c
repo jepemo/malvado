@@ -12,7 +12,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * See LICENSE for details.
  */
-#include "binding/globals.h"
+#include "globals.h"
 #include "lauxlib.h"
 #include "lualib.h"
 #ifdef NDEBUG

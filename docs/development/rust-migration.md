@@ -14,7 +14,7 @@ Keep current source, CLI and examples in place; moving them into `engine/` or `c
 
 ## Lua binding relocation (A7.11)
 
-Status: approved for alpha.7; not implemented. Complete after A7.2 and before
+Status: relocated to `bindings/lua/`; acceptance checks remain in A7.11. Complete after A7.2 and before
 changing Lua binding behavior for A7.6 or validating final packages in A7.9.
 This item does not block the independent Rust scheduler proof in A7.3.
 

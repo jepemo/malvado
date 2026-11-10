@@ -88,7 +88,7 @@ src/include/malvado/   C API and opaque types
 src/core/              processes, scheduler, messages, clock, assets
 src/modules/           graphics, text, input, sound, and utility functions
 src/platform/raylib/   window, GPU, audio, and platform integration
-src/bindings/lua/      C API registration and userdata
+bindings/lua/      C API registration and userdata
 src/tooling/           shared C services for projects, assets, and export
 src/cli/               command interface to those services
 src/gui/               UI, preferences, and isolated graphics adapter
