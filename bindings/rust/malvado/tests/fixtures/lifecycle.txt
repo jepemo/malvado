@@ -1,0 +1,6 @@
+owned=1 created=2
+ownership: frozen running
+parent: returned attached: killed
+dead creator: 1 descendant
+creation: frozen
+remaining=0

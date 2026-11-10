@@ -135,7 +135,7 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
             })
             .unwrap();
         engine.tick().unwrap();
-        engine.signal(&h, signal, false).unwrap();
+        engine.signal(&h, signal).unwrap();
         assert_eq!(
             h.snapshot().unwrap().status,
             Some(if signal == Signal::Sleep {
@@ -148,7 +148,7 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
             engine.tick().unwrap();
         }
         assert_eq!(count.get(), 5);
-        engine.signal(&h, Signal::Wake, false).unwrap();
+        engine.signal(&h, Signal::Wake).unwrap();
         engine.tick().unwrap();
         assert_eq!(count.get(), 6);
         assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Returned));
@@ -330,7 +330,7 @@ fn wake_after_shutdown_and_saved_process_tokens_are_safe() {
     std::thread::spawn(move || waker.wake()).join().unwrap();
     let process = saved_context.borrow();
     let process = process.as_ref().unwrap();
-    assert_eq!(process.signal(&h, Signal::Wake, false), Err(Error::Closed));
+    assert_eq!(process.signal(&h, Signal::Wake), Err(Error::Closed));
     assert!(matches!(
         process.spawn(SpawnOptions::default(), |_| async { Ok(()) }),
         Err(Error::Closed)

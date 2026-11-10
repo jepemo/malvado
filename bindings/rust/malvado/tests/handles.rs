@@ -54,7 +54,7 @@ fn foreign_handles_cannot_signal_same_numbered_local_processes() {
     assert_eq!(ah.id(), bh.id());
     assert!(ah != bh);
     assert_eq!(
-        a.signal(&bh, Signal::Kill, true),
+        a.signal_tree(&bh, Signal::Kill, malvado::Relation::Ownership),
         Err(Error::ForeignContext)
     );
     assert!(ah.snapshot().unwrap().alive);

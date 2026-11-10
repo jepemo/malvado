@@ -43,6 +43,13 @@ _Static_assert(_Generic(&mv_resource_transfer, MvResult (*)(MvResource *, const 
 _Static_assert(_Generic(&mv_resource_retain, MvResult (*)(MvResource *): 1, default: 0), "mv_resource_retain signature");
 _Static_assert(_Generic(&mv_resource_release, MvResult (*)(MvResource *): 1, default: 0), "mv_resource_release signature");
 _Static_assert(_Generic(&mv_resource_data, void * (*)(const MvResource *): 1, default: 0), "mv_resource_data signature");
+_Static_assert(_Generic(&mv_process_find, MvResult (*)(MvContext *, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_find signature");
+_Static_assert(_Generic(&mv_process_children, MvResult (*)(MvContext *, uint64_t, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_children signature");
+_Static_assert(_Generic(&mv_process_descendants, MvResult (*)(MvContext *, uint64_t, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_descendants signature");
+_Static_assert(_Generic(&mv_process_creation_children, MvResult (*)(MvContext *, uint64_t, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_creation_children signature");
+_Static_assert(_Generic(&mv_process_creation_descendants, MvResult (*)(MvContext *, uint64_t, uint64_t, MvProcessInfo *, size_t, size_t *): 1, default: 0), "mv_process_creation_descendants signature");
+_Static_assert(_Generic(&mv_process_lineage_snapshot, MvResult (*)(MvContext *, MvLineageInfo *, size_t, size_t *): 1, default: 0), "lineage signature");
+_Static_assert(_Generic(&mv_process_signal_creation_tree, MvResult (*)(MvContext *, uint64_t, MvSignal): 1, default: 0), "creation tree signal signature");
 int main(void) {
     if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }
@@ -97,5 +104,7 @@ int main(void) {
     printf("%u ", (unsigned)MV_END_KILLED);
     printf("%u ", (unsigned)MV_END_RETURNED);
     printf("%u ", (unsigned)MV_END_ERROR);
+    printf("%zu %zu %zu %zu %zu ", sizeof(MvLineageInfo), _Alignof(MvLineageInfo),
+           offsetof(MvLineageInfo, id), offsetof(MvLineageInfo, creator_id), offsetof(MvLineageInfo, alive));
     return 0;
 }

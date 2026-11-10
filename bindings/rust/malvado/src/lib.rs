@@ -23,9 +23,11 @@
 //! # Ok::<(), Error>(())
 //! ```
 mod engine;
+mod resource;
 mod task;
 
-pub use engine::{Engine, Handle, ProcessContext, Snapshot, SpawnOptions};
+pub use engine::{Engine, Handle, LineageEntry, ProcessContext, Relation, Snapshot, SpawnOptions};
+pub use resource::Resource;
 pub use task::Frame;
 
 /// Typed failures from the engine. Process includes an async return error or

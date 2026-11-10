@@ -79,9 +79,16 @@ before creating a process. Spawn errors do not transfer the caller's factory.
 
 `process.spawn` records the current process as creator. Attached children have
 that process as owner and end with it; detached children have no owner. A child
-created during a tick first runs at the next tick. `signal(target, signal, tree)`
-uses the native ownership tree when tree is true. Creation-tree queries and the
-complete lifecycle/resource stress matrix remain A7.5 work.
+created during a tick first runs at the next tick. `signal(target, signal)` targets one process.
+`signal_tree(target, signal, Relation::Ownership)` follows ownership;
+`Relation::Creation` follows historical creation, including detached children
+and descendants of an ended creator. The relation is explicit rather than a
+boolean flag. `handle.children(relation, type_id)` and
+`handle.descendants(relation, type_id)` return owned handles in native creation
+order; type zero selects every type. `engine.find(type_id)` also includes sleeping
+and frozen processes. `engine.lineage()` copies retained creation nodes. Dead
+ancestors remain only while live descendants need them. Ownership queries on
+a dead owner fail; creation queries can still return its live descendants.
 
 `process.frame().await` waits for the next eligible activation. Native Sleep and
 Freeze suspend execution; Wake resumes it with locals intact. Wakes only mark
@@ -104,3 +111,27 @@ payload may be retained to avoid unwinding across C. `panic=abort`, double-panic
 aborts and aborting panic hooks cannot be caught. See the
 [scheduler proof](../versions/2.0.0-alpha.7-scheduler.md) for safety evidence and
 limits. Native graphics/audio resource lifetime is not yet wrapped by this API.
+
+## Native resource ownership
+
+`engine.resource(value)` creates a context-owned resource.
+`process.resource(value)` creates a resource owned by that live process.
+`Resource<T>` owns one independent retained reference and exposes shared access
+through `Deref`; it does not provide `DerefMut`. Values must own their data and
+be `'static`. Use explicit safe interior mutability when shared updates are
+needed. Native ownership and the retained reference have separate lifetimes.
+
+Dropping a wrapper releases its retained reference. The value drops once after
+both the owner and all retained references release it. A retained reference can
+outlive the process or engine; `try_clone()` and shared reads still work then.
+`resource.transfer_to(Some(&handle))` changes the native owner; None promotes it
+to the same context. Foreign, dead or closed owners fail without changing the
+previous ownership. A retained resource whose owner ended can acquire a new
+live owner while its context exists. Context shutdown forbids later transfers.
+
+Resource creation consumes the Rust value; on a native creation error Rust drops
+it rather than transferring it to C. Each successful retain needs one release;
+`try_clone()` reports native overflow. The wrappers stay on their owner thread.
+Destructor panics are contained at the native resource callback. These generic
+Rust values do not keep a graphics window or audio device open; the dedicated
+platform wrappers remain A7.6 work.

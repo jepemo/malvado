@@ -57,6 +57,13 @@ pub struct MvProcessHandleInfo {
     pub process: MvProcessInfo,
     pub reason: c_int,
 }
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvLineageInfo {
+    pub id: u64,
+    pub creator_id: u64,
+    pub alive: c_int,
+}
 pub type MvProcessStep = Option<unsafe extern "C" fn(*mut MvContext, u64, *mut c_void) -> c_int>;
 pub type MvProcessDestroy = Option<unsafe extern "C" fn(*mut c_void)>;
 pub type MvResourceDestroy = Option<unsafe extern "C" fn(*mut c_void)>;
@@ -112,6 +119,52 @@ unsafe extern "C" {
         user: *mut c_void,
         out: *mut u64,
     ) -> c_int;
+    pub fn mv_process_find(
+        ctx: *mut MvContext,
+        type_id: u64,
+        out: *mut MvProcessInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_children(
+        ctx: *mut MvContext,
+        root: u64,
+        type_id: u64,
+        out: *mut MvProcessInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_descendants(
+        ctx: *mut MvContext,
+        root: u64,
+        type_id: u64,
+        out: *mut MvProcessInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_creation_children(
+        ctx: *mut MvContext,
+        root: u64,
+        type_id: u64,
+        out: *mut MvProcessInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_creation_descendants(
+        ctx: *mut MvContext,
+        root: u64,
+        type_id: u64,
+        out: *mut MvProcessInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_lineage_snapshot(
+        ctx: *mut MvContext,
+        out: *mut MvLineageInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_signal_creation_tree(ctx: *mut MvContext, root: u64, signal: c_int) -> c_int;
     pub fn mv_process_tick(ctx: *mut MvContext) -> c_int;
     pub fn mv_process_count(ctx: *const MvContext) -> usize;
     pub fn mv_process_signal(ctx: *mut MvContext, id: u64, signal: c_int, tree: c_int) -> c_int;
@@ -227,6 +280,11 @@ const _: () = {
         MV_END_KILLED as usize,
         MV_END_RETURNED as usize,
         MV_END_ERROR as usize,
+        size_of::<MvLineageInfo>(),
+        align_of::<MvLineageInfo>(),
+        offset_of!(MvLineageInfo, id),
+        offset_of!(MvLineageInfo, creator_id),
+        offset_of!(MvLineageInfo, alive),
     ];
     assert!(
         native.len() == rust.len(),
