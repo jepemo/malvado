@@ -13,6 +13,11 @@
  * See LICENSE for details.
  */
 
+/* realpath is a POSIX.1-2008 interface, including under strict C11 builds. */
+#if !defined(_WIN32) && !defined(_XOPEN_SOURCE)
+#define _XOPEN_SOURCE 700
+#endif
+
 #include "malvado/platform.h"
 #include "raylib.h"
 #include "rlgl.h"
