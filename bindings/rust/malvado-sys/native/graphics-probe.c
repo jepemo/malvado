@@ -35,6 +35,14 @@ _Static_assert(_Generic(&mv_window_draw_box, int (*)(int, int, int, int, int, Mv
 _Static_assert(_Generic(&mv_window_draw_circle, int (*)(int, int, int, int, MvColor): 1, default: 0), "mv_window_draw_circle signature");
 _Static_assert(_Generic(&mv_window_draw_transformed_rect, int (*)(float, float, float, float, float, float, float, MvColor): 1, default: 0), "mv_window_draw_transformed_rect signature");
 _Static_assert(_Generic(&mv_window_draw_filled_circle, int (*)(float, float, float, MvColor): 1, default: 0), "mv_window_draw_filled_circle signature");
+_Static_assert(_Generic(&mv_image_load, MvImage * (*)(const char *): 1, default: 0), "mv_image_load signature");
+_Static_assert(_Generic(&mv_image_from_rgba, MvImage * (*)(int, int, const uint8_t *, size_t): 1, default: 0), "mv_image_from_rgba signature");
+_Static_assert(_Generic(&mv_image_destroy, void (*)(MvImage *): 1, default: 0), "mv_image_destroy signature");
+_Static_assert(_Generic(&mv_image_width, int (*)(const MvImage *): 1, default: 0), "mv_image_width signature");
+_Static_assert(_Generic(&mv_image_height, int (*)(const MvImage *): 1, default: 0), "mv_image_height signature");
+_Static_assert(_Generic(&mv_image_draw, void (*)(const MvImage *, int, int): 1, default: 0), "mv_image_draw signature");
+_Static_assert(_Generic(&mv_image_region_valid, int (*)(const MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_image_region_valid signature");
+_Static_assert(_Generic(&mv_image_draw_region, int (*)(const MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_image_draw_region signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
@@ -88,5 +96,17 @@ int main(void)
     printf("%u ", (unsigned)MV_KEY_ENTER);
     printf("%u ", (unsigned)MV_KEY_TAB);
     printf("%u ", (unsigned)MV_KEY_BACKSPACE);
+    printf("%zu %zu ", sizeof(MvImageRegion), _Alignof(MvImageRegion));
+    printf("%zu ", offsetof(MvImageRegion, x));
+    printf("%zu ", offsetof(MvImageRegion, y));
+    printf("%zu ", offsetof(MvImageRegion, width));
+    printf("%zu ", offsetof(MvImageRegion, height));
+    printf("%zu %zu ", sizeof(MvImageTransform), _Alignof(MvImageTransform));
+    printf("%zu ", offsetof(MvImageTransform, x));
+    printf("%zu ", offsetof(MvImageTransform, y));
+    printf("%zu ", offsetof(MvImageTransform, pivot_x));
+    printf("%zu ", offsetof(MvImageTransform, pivot_y));
+    printf("%zu ", offsetof(MvImageTransform, scale));
+    printf("%zu ", offsetof(MvImageTransform, rotation));
     return 0;
 }

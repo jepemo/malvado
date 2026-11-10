@@ -34,7 +34,9 @@ resets its input. A new window can then be opened.
 
 The caller controls rendering and simulation timing. This service does not
 create another scheduler, advance `Engine`, or derive process graphics.
-Image/font/audio ownership and process draw collection remain in A7.6.
+Owned image and immediate drawing services are described in the
+[drawing guide](rust-drawing.md). Fonts, audio and process draw collection remain
+in A7.6.
 
 `mise run test-rust-graphics` requires a display. It verifies actual open, title,
 size, frame pairing, nested rejection, forgotten guard cleanup, duplicate open,

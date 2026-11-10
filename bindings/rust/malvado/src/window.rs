@@ -3,7 +3,7 @@
 use crate::Error;
 use malvado_sys::{self as sys, graphics as ffi};
 use std::{
-    cell::Cell,
+    cell::{Cell, RefCell},
     ffi::CString,
     marker::PhantomData,
     rc::Rc,
@@ -75,7 +75,10 @@ impl Window {
         unsafe {
             ffi::mv_window_begin(background);
         }
-        Ok(Frame { window: self })
+        Ok(Frame {
+            window: self,
+            images: RefCell::new(Vec::new()),
+        })
     }
 }
 impl Drop for Window {
@@ -93,7 +96,8 @@ impl Drop for Window {
 }
 /// A live render frame borrows its window and cannot outlive it.
 pub struct Frame<'a> {
-    window: &'a Window,
+    pub(crate) window: &'a Window,
+    pub(crate) images: RefCell<Vec<crate::image::Image>>,
 }
 impl Drop for Frame<'_> {
     fn drop(&mut self) {

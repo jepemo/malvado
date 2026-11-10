@@ -75,6 +75,20 @@ const _: () = {
         MV_KEY_ENTER as usize,
         MV_KEY_TAB as usize,
         MV_KEY_BACKSPACE as usize,
+        size_of::<MvImageRegion>(),
+        align_of::<MvImageRegion>(),
+        offset_of!(MvImageRegion, x),
+        offset_of!(MvImageRegion, y),
+        offset_of!(MvImageRegion, width),
+        offset_of!(MvImageRegion, height),
+        size_of::<MvImageTransform>(),
+        align_of::<MvImageTransform>(),
+        offset_of!(MvImageTransform, x),
+        offset_of!(MvImageTransform, y),
+        offset_of!(MvImageTransform, pivot_x),
+        offset_of!(MvImageTransform, pivot_y),
+        offset_of!(MvImageTransform, scale),
+        offset_of!(MvImageTransform, rotation),
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -175,4 +189,50 @@ unsafe extern "C" {
         color: MvColor,
     ) -> c_int;
     pub fn mv_window_draw_filled_circle(x: f32, y: f32, radius: f32, color: MvColor) -> c_int;
+}
+
+#[repr(C)]
+pub struct MvImage {
+    _private: [u8; 0],
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvImageRegion {
+    pub x: c_int,
+    pub y: c_int,
+    pub width: c_int,
+    pub height: c_int,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MvImageTransform {
+    pub x: f32,
+    pub y: f32,
+    pub pivot_x: f32,
+    pub pivot_y: f32,
+    pub scale: f32,
+    pub rotation: f32,
+}
+unsafe extern "C" {
+    pub fn mv_image_load(path: *const c_char) -> *mut MvImage;
+    pub fn mv_image_from_rgba(
+        width: c_int,
+        height: c_int,
+        pixels: *const u8,
+        length: usize,
+    ) -> *mut MvImage;
+    pub fn mv_image_destroy(image: *mut MvImage) -> ();
+    pub fn mv_image_width(image: *const MvImage) -> c_int;
+    pub fn mv_image_height(image: *const MvImage) -> c_int;
+    pub fn mv_image_draw(image: *const MvImage, x: c_int, y: c_int) -> ();
+    pub fn mv_image_region_valid(
+        image: *const MvImage,
+        region: MvImageRegion,
+        transform: MvImageTransform,
+    ) -> c_int;
+    pub fn mv_image_draw_region(
+        image: *const MvImage,
+        region: MvImageRegion,
+        transform: MvImageTransform,
+    ) -> c_int;
 }

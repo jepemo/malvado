@@ -23,14 +23,17 @@ def consumer(prefix, profile):
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
         + ',features=["graphics"]}\n')
     (game / "src/main.rs").write_text(
-        'use malvado::{Error, drawing::Rectangle, window::{Window, Color}};\n'
+        'use malvado::{Error, drawing::Rectangle, image::Image, window::{Window, Color}};\n'
+        'use std::rc::Rc;\n'
         'fn main() -> Result<(), Error> {\n'
-        ' let window = Window::open(160, 120, "Installed Rust window")?;\n'
+        ' let window = Rc::new(Window::open(160, 120, "Installed Rust window")?);\n'
         ' assert_eq!(window.size(), (160,120));\n'
         ' window.input_tick();\n'
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
+        ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
         ' let frame = window.frame(Color {r:10,g:20,b:30,a:255})?;\n'
+        ' frame.image(&image, (50,50))?; drop(image);\n'
         ' frame.with_clip(Rectangle {x:0,y:0,width:80,height:60}, |frame| {\n'
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, Color {r:255,g:0,b:0,a:255})\n'
         ' })?;\n'

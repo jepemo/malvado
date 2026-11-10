@@ -97,3 +97,7 @@ Default features still link only the core and need no JSON library.
 Enable `graphics` for the [owned window service](../../docs/api/rust-window.md).
 The SDK must contain static graphics and raylib libraries.
 Run `mise run test-rust-graphics` with a real or virtual display.
+
+The [drawing and image guide](../../docs/api/rust-drawing.md) covers immediate
+shapes/text, scoped clip/scroll, owned PNG/RGBA images and queued-frame retention.
+These services do not assign process graphs or collect process draws yet.
