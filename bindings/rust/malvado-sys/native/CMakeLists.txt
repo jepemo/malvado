@@ -1,0 +1,17 @@
+# Malvado 2; SPDX-License-Identifier: Apache-2.0
+cmake_minimum_required(VERSION 3.20)
+project(malvado_rust_probe C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_FIND_USE_PACKAGE_REGISTRY OFF)
+set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY OFF)
+unset(Malvado_DIR CACHE)
+find_package(Malvado CONFIG REQUIRED COMPONENTS core
+  PATHS "${MALVADO_SDK_PREFIX}" NO_DEFAULT_PATH)
+get_target_property(core_type Malvado::core TYPE)
+if(NOT core_type STREQUAL "STATIC_LIBRARY")
+  message(FATAL_ERROR "Rust currently requires a static Malvado core SDK")
+endif()
+add_executable(probe probe.c)
+target_link_libraries(probe PRIVATE Malvado::core)
+target_compile_definitions(probe PRIVATE EXPECTED_VERSION="${EXPECTED_VERSION}")
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/native-library.txt" CONTENT "$<TARGET_FILE:Malvado::core>")

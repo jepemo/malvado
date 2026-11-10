@@ -4,6 +4,7 @@
 [tools]
 cmake = "3.31.6"
 python = "3.11.16"
+rust = "1.99.1"
 
 [tasks.configure]
 description = "Configure the standard debug build"
@@ -111,3 +112,7 @@ run = "cmake --build build-g0 --config Debug --target gui-g0-raygui gui-g0-imgui
 description = "Smoke test the GUI prototypes (requires a display)"
 depends = ["build-g0"]
 run = "ctest --test-dir build-g0 -C Debug -R '^visual_(gui|imgui|imgui_raylib)_g0$' --output-on-failure"
+
+[tasks.test-rust]
+description = "Test Rust against a relocated installed C-only SDK"
+run = "python3 tools/test_rust.py"

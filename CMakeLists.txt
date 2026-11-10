@@ -67,6 +67,10 @@ configure_package_config_file(tools/cmake/MalvadoConfig.cmake.in
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/MalvadoConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Malvado)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado)
+# Install crate sources without invoking Cargo or requiring a Rust toolchain.
+install(DIRECTORY bindings/rust/ DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/rust
+  PATTERN target EXCLUDE)
+install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/rust)
 install(FILES "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt" DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado)
 
 add_executable(example-c-control examples/c/control/main.c)

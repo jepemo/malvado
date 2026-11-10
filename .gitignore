@@ -5,3 +5,6 @@ docs/website/build
 /build-*/
 /vendor/
 /docs/api/upstream/
+
+# Cargo workspace outputs
+/bindings/rust/target/
