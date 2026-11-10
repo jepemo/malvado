@@ -41,7 +41,7 @@ pin_test_providers(void)
     while (fgets(line, sizeof(line), maps)) {
         char *path = strchr(line, '/');
         if (!path || (!strstr(path, "/dri/") && !strstr(path, "/libgallium") &&
-                      !strstr(path, "/libLLVM") && !strstr(path, "/libGLX_mesa")))
+                      !strstr(path, "/libLLVM")))
             continue;
         path[strcspn(path, "\n")] = '\0';
         if (!dlopen(path, RTLD_LAZY | RTLD_NODELETE)) {

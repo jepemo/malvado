@@ -91,9 +91,11 @@ itself is not. The macOS runtime uses the existing leak-detection limitation
 from the sanitizer task. Linux CI runs the graphical sanitizer check under Xvfb.
 
 Linux LeakSanitizer keeps detection enabled for Malvado allocations. The
-verification-only pixel helper pins loaded Mesa/LLVM provider modules so
+verification-only pixel helper pins loaded DRI/Gallium/LLVM modules so
 exit-time reports keep their module names and global roots. Games never call
-that helper. Native window/context and image cleanup still run normally.
+that helper. GLX display-provider modules are not pinned, so close/reopen can
+reset their display state. Native window/context and image cleanup still run
+normally.
 The graphical filter excludes provider-module allocation stacks (`libgallium`,
 DRI and LLVM) and the observed GLX extension-query stack. It does not suppress
 Malvado draw or allocation frames. Core and asset modes do not use the filter.
