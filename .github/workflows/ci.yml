@@ -102,8 +102,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
       - name: Build and test
         run: mise run test
-      - name: Test Lua with headless backend
-        run: mise run test-headless
+      - name: Test Lua with headless backend and no Cargo
+        run: mise run test-headless-no-cargo
   c-core:
     name: C core without Lua or raylib (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

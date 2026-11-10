@@ -124,3 +124,7 @@ run = 'MALVADO_SDK_PREFIX="$PWD/build-rust/Debug/relocated sdk" mise exec --cd t
 [tasks.test-rust-sanitize]
 description = "Test Rust callbacks with an ASan/UBSan native core"
 run = "python3 tools/test_rust_sanitize.py"
+
+[tasks.test-headless-no-cargo]
+description = "Build and test Lua without Cargo on the native build PATH"
+run = "python3 tools/test_lua_no_cargo.py"
