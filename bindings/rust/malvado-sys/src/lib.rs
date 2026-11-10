@@ -642,3 +642,6 @@ unsafe extern "C" {
 
 #[cfg(feature = "assets")]
 pub mod assets;
+
+#[cfg(feature = "graphics")]
+pub mod graphics;

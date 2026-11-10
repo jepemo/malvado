@@ -10,3 +10,4 @@ description = "Checked native FFI for the Malvado engine"
 [features]
 default = []
 assets = []
+graphics = []

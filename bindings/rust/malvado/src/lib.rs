@@ -30,6 +30,8 @@ pub mod collision;
 mod engine;
 mod resource;
 mod task;
+#[cfg(feature = "graphics")]
+pub mod window;
 
 pub use engine::{Engine, Handle, LineageEntry, ProcessContext, Relation, Snapshot, SpawnOptions};
 pub use resource::Resource;
@@ -42,6 +44,8 @@ pub enum Error {
     Abi(&'static str),
     /// Static diagnostic from the native asset parser.
     Asset(&'static str),
+    /// Failure from an initialized or requested platform service.
+    Platform(&'static str),
     Closed,
     ForeignContext,
     InvalidArgument,

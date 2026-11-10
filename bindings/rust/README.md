@@ -93,3 +93,7 @@ backend. Automatic process camera selection and graph animation remain pending.
 Enable the optional `assets` feature for [native atlas metadata](../../docs/api/rust-atlas.md).
 The installed C SDK must include assets. Verify it with `mise run test-rust-assets`.
 Default features still link only the core and need no JSON library.
+
+Enable `graphics` for the [owned window service](../../docs/api/rust-window.md).
+The SDK must contain static graphics and raylib libraries.
+Run `mise run test-rust-graphics` with a real or virtual display.

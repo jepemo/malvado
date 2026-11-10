@@ -28,6 +28,7 @@ fn main() {
         println!("cargo:rerun-if-env-changed={name}");
     }
     println!("cargo:rerun-if-changed=native");
+    let graphics = env::var_os("CARGO_FEATURE_GRAPHICS").is_some();
     let assets = env::var_os("CARGO_FEATURE_ASSETS").is_some();
     let host = env::var("HOST").unwrap();
     let target = env::var("TARGET").unwrap();
@@ -65,6 +66,10 @@ fn main() {
         .arg("-B")
         .arg(&output)
         .arg(format!("-DCMAKE_BUILD_TYPE={config}"))
+        .arg(format!(
+            "-DMALVADO_RUST_GRAPHICS={}",
+            if graphics { "ON" } else { "OFF" }
+        ))
         .arg(format!(
             "-DMALVADO_RUST_ASSETS={}",
             if assets { "ON" } else { "OFF" }
@@ -151,6 +156,54 @@ fn main() {
             .collect();
         std::fs::write(
             PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("assets-layout.rs"),
+            format!("{values:?}"),
+        )
+        .unwrap();
+    }
+    if graphics {
+        for (file, archive, link) in [
+            (
+                "graphics-library.txt",
+                "libmalvado_platform_raylib.a",
+                "malvado_platform_raylib",
+            ),
+            ("raylib-library.txt", "libraylib.a", "raylib"),
+        ] {
+            let library = std::fs::read_to_string(output.join(file)).unwrap();
+            let library = PathBuf::from(library.trim()).canonicalize().unwrap();
+            assert!(
+                library.starts_with(&prefix),
+                "graphics dependency outside MALVADO_SDK_PREFIX"
+            );
+            assert_eq!(library.file_name().unwrap(), archive);
+            println!(
+                "cargo:rustc-link-search=native={}",
+                library.parent().unwrap().display()
+            );
+            println!("cargo:rustc-link-lib=static={link}");
+        }
+        if target.contains("apple-darwin") {
+            for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation"] {
+                println!("cargo:rustc-link-lib=framework={framework}");
+            }
+        } else {
+            for library in ["GL", "dl", "pthread"] {
+                println!("cargo:rustc-link-lib={library}");
+            }
+        }
+        let probe = if output.join("graphics-probe").exists() {
+            output.join("graphics-probe")
+        } else {
+            output.join(config).join("graphics-probe")
+        };
+        let layout = run(&mut Command::new(probe));
+        let values: Vec<usize> = String::from_utf8(layout.stdout)
+            .unwrap()
+            .split_whitespace()
+            .map(|v| v.parse().expect("invalid graphics ABI probe"))
+            .collect();
+        std::fs::write(
+            PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("graphics-layout.rs"),
             format!("{values:?}"),
         )
         .unwrap();

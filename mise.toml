@@ -136,3 +136,7 @@ run = "python3 tools/test_rust_assets.py"
 [tasks.test-rust-assets-sanitize]
 description = "Test Rust atlas ownership against ASan/UBSan native assets"
 run = "python3 tools/test_rust_sanitize.py --assets"
+
+[tasks.test-rust-graphics]
+description = "Test Rust window and input against relocated graphics SDKs (requires display)"
+run = "python3 tools/test_rust_graphics.py"

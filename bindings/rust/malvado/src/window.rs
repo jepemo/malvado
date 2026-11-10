@@ -1,0 +1,138 @@
+// Malvado 2; SPDX-License-Identifier: Apache-2.0
+//! One owner-thread window. The caller controls simulation and render timing.
+use crate::Error;
+use malvado_sys::{self as sys, graphics as ffi};
+use std::{
+    cell::Cell,
+    ffi::CString,
+    marker::PhantomData,
+    rc::Rc,
+    sync::atomic::{AtomicBool, Ordering},
+};
+
+pub use ffi::MvColor as Color;
+static WINDOW_OWNED: AtomicBool = AtomicBool::new(false);
+
+/// The only safe Rust window owner. Open it on the application main thread.
+/// It is independent of Engine; dropping it closes the native window.
+/// Do not open/close the same native window through another host while owned.
+pub struct Window {
+    drawing: Cell<bool>,
+    local: PhantomData<Rc<()>>,
+}
+impl Window {
+    pub fn open(width: i32, height: i32, title: &str) -> Result<Self, Error> {
+        sys::check_abi().map_err(Error::Abi)?;
+        if width <= 0 || height <= 0 {
+            return Err(Error::InvalidArgument);
+        }
+        let title = CString::new(title).map_err(|_| Error::InvalidArgument)?;
+        if !main_thread() {
+            return Err(Error::Platform(
+                "window requires the application main thread",
+            ));
+        }
+        WINDOW_OWNED
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| Error::Busy)?;
+        // SAFETY: this thread acquired the single window lease. C copies title.
+        if unsafe { ffi::mv_window_open(width, height, title.as_ptr()) } == 0 {
+            WINDOW_OWNED.store(false, Ordering::Release);
+            return Err(Error::Platform("window open failed"));
+        }
+        Ok(Self {
+            drawing: Cell::new(false),
+            local: PhantomData,
+        })
+    }
+    pub fn set_title(&self, title: &str) -> Result<(), Error> {
+        let title = CString::new(title).map_err(|_| Error::InvalidArgument)?;
+        // SAFETY: owner thread, live window and terminated string.
+        if unsafe { ffi::mv_window_set_title(title.as_ptr()) } == 0 {
+            return Err(Error::Platform("window title failed"));
+        }
+        Ok(())
+    }
+    pub fn size(&self) -> (i32, i32) {
+        let (mut width, mut height) = (0, 0);
+        // SAFETY: distinct stack outputs and owner-thread window.
+        unsafe {
+            ffi::mv_window_size(&mut width, &mut height);
+        }
+        (width, height)
+    }
+    pub fn should_close(&self) -> bool {
+        // SAFETY: live owner-thread window.
+        unsafe { ffi::mv_window_should_close() != 0 }
+    }
+    /// Begin one render frame. Dropping its guard ends drawing and polls events.
+    /// Nested frames return Busy. This does not advance the process scheduler.
+    pub fn frame(&self, background: Color) -> Result<Frame<'_>, Error> {
+        if self.drawing.replace(true) {
+            return Err(Error::Busy);
+        }
+        // SAFETY: this window owns the only active frame.
+        unsafe {
+            ffi::mv_window_begin(background);
+        }
+        Ok(Frame { window: self })
+    }
+}
+impl Drop for Window {
+    fn drop(&mut self) {
+        // SAFETY: the unique window owner runs on its creating thread. Finish
+        // a forgotten frame before closing; ordinary guards already ended it.
+        unsafe {
+            if self.drawing.replace(false) {
+                ffi::mv_window_end();
+            }
+            ffi::mv_window_close();
+        }
+        WINDOW_OWNED.store(false, Ordering::Release);
+    }
+}
+/// A live render frame borrows its window and cannot outlive it.
+pub struct Frame<'a> {
+    window: &'a Window,
+}
+impl Drop for Frame<'_> {
+    fn drop(&mut self) {
+        // SAFETY: the borrowed window remains live; only one guard can exist.
+        unsafe {
+            ffi::mv_window_end();
+        }
+        self.window.drawing.set(false);
+    }
+}
+/// Window and frame ownership stay on the creating thread.
+/// ```compile_fail
+/// use malvado::window::Window;
+/// fn invalid(window: Window) { std::thread::spawn(move || drop(window)); }
+/// ```
+/// A frame cannot outlive its window.
+/// ```compile_fail
+/// use malvado::window::{Window, Color};
+/// let frame = {
+///     let window = Window::open(160, 120, "game").unwrap();
+///     window.frame(Color::default()).unwrap()
+/// };
+/// drop(frame);
+/// ```
+mod ownership_contract {}
+
+#[cfg(target_os = "macos")]
+fn main_thread() -> bool {
+    unsafe extern "C" {
+        fn pthread_main_np() -> std::ffi::c_int;
+    }
+    // SAFETY: this system query has no pointers or initialization requirement.
+    unsafe { pthread_main_np() != 0 }
+}
+#[cfg(target_os = "linux")]
+fn main_thread() -> bool {
+    unsafe extern "C" {
+        fn gettid() -> std::ffi::c_int;
+    }
+    // SAFETY: the Linux thread ID query has no arguments or retained state.
+    unsafe { gettid() as u32 == std::process::id() }
+}

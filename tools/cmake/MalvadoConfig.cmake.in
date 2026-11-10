@@ -9,6 +9,8 @@ if("graphics" IN_LIST Malvado_FIND_COMPONENTS)
     include(CMakeFindDependencyMacro)
     find_dependency(OpenGL)
     find_dependency(Threads)
+    # An SDK prefix can change when a consumer reconfigures the same build.
+    unset(_malvado_raylib CACHE)
     find_library(_malvado_raylib NAMES raylib PATHS "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@" NO_DEFAULT_PATH)
     if(NOT _malvado_raylib)
       set(Malvado_NOT_FOUND_MESSAGE "The SDK raylib library is missing")

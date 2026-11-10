@@ -180,6 +180,7 @@ jobs:
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
           mise run test-visual
+          mise run test-rust-graphics
           mise run test-g0
         env:
           DISPLAY: ':99'
