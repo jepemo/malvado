@@ -22,8 +22,10 @@ def consumer(prefix, profile):
         '[package]\nname="graphics-consumer"\nversion="0.0.0"\nedition="2024"\n'
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
         + ',features=["graphics"]}\n')
+    for name in ("AnonymousPro-Bold.ttf", "OFL.txt"):
+        shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
     (game / "src/main.rs").write_text(
-        'use malvado::{Error, drawing::Rectangle, image::Image, window::{Window, Color}};\n'
+        'use malvado::{Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
         'fn main() -> Result<(), Error> {\n'
         ' let window = Rc::new(Window::open(160, 120, "Installed Rust window")?);\n'
@@ -32,7 +34,10 @@ def consumer(prefix, profile):
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
         ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
+        ' let font = Font::load(window.clone(), "AnonymousPro-Bold.ttf", 24)?;\n'
+        ' assert!(font.text_width("Café", 24)? > 0);\n'
         ' let frame = window.frame(Color {r:10,g:20,b:30,a:255})?;\n'
+        ' frame.font_text(&font, "Café", (10,70), 24, Color {r:255,g:255,b:255,a:255})?; drop(font);\n'
         ' frame.image(&image, (50,50))?; drop(image);\n'
         ' frame.with_clip(Rectangle {x:0,y:0,width:80,height:60}, |frame| {\n'
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, Color {r:255,g:0,b:0,a:255})\n'

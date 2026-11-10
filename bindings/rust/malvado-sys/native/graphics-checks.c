@@ -70,3 +70,33 @@ malvado_test_pixel(int x, int y, int r, int g, int b)
     UnloadImage(screen);
     return abs((int)pixel.r - r) < 8 && abs((int)pixel.g - g) < 8 && abs((int)pixel.b - b) < 8;
 }
+
+uint64_t
+malvado_test_frame_hash(int *light)
+{
+    mv_window_flush();
+#ifdef __linux__
+    pin_test_providers();
+#endif
+    Image screen = LoadImageFromScreen();
+    if (!screen.data)
+        return 0;
+    if (!light) {
+        UnloadImage(screen);
+        return 0;
+    }
+    *light = 0;
+    uint64_t hash = UINT64_C(14695981039346656037);
+    for (int y = 0; y < screen.height; ++y) {
+        for (int x = 0; x < screen.width; ++x) {
+            Color pixel = GetImageColor(screen, x, y);
+            if (pixel.r > 100 && pixel.g > 100 && pixel.b > 100)
+                ++*light;
+            hash = (hash ^ pixel.r) * UINT64_C(1099511628211);
+            hash = (hash ^ pixel.g) * UINT64_C(1099511628211);
+            hash = (hash ^ pixel.b) * UINT64_C(1099511628211);
+        }
+    }
+    UnloadImage(screen);
+    return hash;
+}

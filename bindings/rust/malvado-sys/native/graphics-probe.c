@@ -43,6 +43,11 @@ _Static_assert(_Generic(&mv_image_height, int (*)(const MvImage *): 1, default: 
 _Static_assert(_Generic(&mv_image_draw, void (*)(const MvImage *, int, int): 1, default: 0), "mv_image_draw signature");
 _Static_assert(_Generic(&mv_image_region_valid, int (*)(const MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_image_region_valid signature");
 _Static_assert(_Generic(&mv_image_draw_region, int (*)(const MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_image_draw_region signature");
+_Static_assert(_Generic(&mv_font_load, MvFont * (*)(const char *, int): 1, default: 0), "mv_font_load signature");
+_Static_assert(_Generic(&mv_font_load_codepoints, MvFont * (*)(const char *, int, const uint32_t *, size_t): 1, default: 0), "mv_font_load_codepoints signature");
+_Static_assert(_Generic(&mv_font_destroy, void (*)(MvFont *): 1, default: 0), "mv_font_destroy signature");
+_Static_assert(_Generic(&mv_font_text_width, int (*)(const MvFont *, const char *, int): 1, default: 0), "mv_font_text_width signature");
+_Static_assert(_Generic(&mv_font_draw, int (*)(const MvFont *, const char *, int, int, int, MvColor): 1, default: 0), "mv_font_draw signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));

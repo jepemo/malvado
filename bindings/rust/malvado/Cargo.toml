@@ -37,3 +37,9 @@ name = "images"
 path = "tests/images.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "fonts"
+path = "tests/fonts.rs"
+harness = false
+required-features = ["graphics"]

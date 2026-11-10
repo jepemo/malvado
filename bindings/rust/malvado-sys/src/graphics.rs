@@ -236,3 +236,27 @@ unsafe extern "C" {
         transform: MvImageTransform,
     ) -> c_int;
 }
+
+#[repr(C)]
+pub struct MvFont {
+    _private: [u8; 0],
+}
+unsafe extern "C" {
+    pub fn mv_font_load(path: *const c_char, base_size: c_int) -> *mut MvFont;
+    pub fn mv_font_load_codepoints(
+        path: *const c_char,
+        base_size: c_int,
+        codepoints: *const u32,
+        count: usize,
+    ) -> *mut MvFont;
+    pub fn mv_font_destroy(font: *mut MvFont) -> ();
+    pub fn mv_font_text_width(font: *const MvFont, text: *const c_char, size: c_int) -> c_int;
+    pub fn mv_font_draw(
+        font: *const MvFont,
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        color: MvColor,
+    ) -> c_int;
+}

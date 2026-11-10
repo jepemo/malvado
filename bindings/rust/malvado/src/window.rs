@@ -78,6 +78,7 @@ impl Window {
         Ok(Frame {
             window: self,
             images: RefCell::new(Vec::new()),
+            fonts: RefCell::new(Vec::new()),
         })
     }
 }
@@ -98,6 +99,7 @@ impl Drop for Window {
 pub struct Frame<'a> {
     pub(crate) window: &'a Window,
     pub(crate) images: RefCell<Vec<crate::image::Image>>,
+    pub(crate) fonts: RefCell<Vec<crate::font::Font>>,
 }
 impl Drop for Frame<'_> {
     fn drop(&mut self) {
