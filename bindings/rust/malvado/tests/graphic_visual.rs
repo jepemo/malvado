@@ -193,4 +193,78 @@ fn main() {
             .unwrap();
         pixel(90, 70, (255, 0, 0));
     }
+    use malvado::{Engine, Signal, graphic::Graphic};
+    let engine = Engine::new().unwrap();
+    let mut actors = Vec::new();
+    for color in [
+        red,
+        Color {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        },
+    ] {
+        let actor = engine
+            .spawn(Default::default(), |p| async move {
+                loop {
+                    p.frame().await;
+                }
+            })
+            .unwrap();
+        actor.set_position(20.0, 20.0).unwrap();
+        actor
+            .set_graphic(Graphic {
+                geometry: rect,
+                color,
+            })
+            .unwrap();
+        actors.push(actor);
+    }
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(20, 20, (0, 255, 0));
+    }
+    actors[0].set_z(10.0).unwrap();
+    engine.signal(&actors[0], Signal::Freeze).unwrap();
+    engine.signal(&actors[1], Signal::Sleep).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(20, 20, (255, 0, 0));
+    }
+    actors[0].set_scale(0.0).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(20, 20, (0, 0, 0));
+    }
+    actors[0].set_scale(1.0).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame
+            .with_clip(
+                Rectangle {
+                    x: 0,
+                    y: 0,
+                    width: 5,
+                    height: 5,
+                },
+                |frame| {
+                    frame.process_graphics(&engine)?;
+                    Ok(())
+                },
+            )
+            .unwrap();
+        pixel(20, 20, (0, 0, 0));
+        frame.process_graphics(&engine).unwrap();
+        pixel(20, 20, (255, 0, 0));
+    }
+    actors[0].clear_graphic().unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(20, 20, (0, 0, 0));
+    }
 }

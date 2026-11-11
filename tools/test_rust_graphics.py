@@ -26,7 +26,7 @@ def consumer(prefix, profile):
         shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
     shutil.copyfile(ROOT / "tests/fixtures/silence.wav", game / "silence.wav")
     (game / "src/main.rs").write_text(
-        'use malvado::{Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
+        'use malvado::{Engine, graphic::{Graphic, Geometry}, Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
         'fn main() -> Result<(), Error> {\n'
         ' let mut fade = malvado::fade::Fade::new()?;\n'
@@ -58,6 +58,7 @@ def consumer(prefix, profile):
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, state.color())\n'
         ' })?;\n'
         ' let geometry = malvado::graphic::Geometry::rectangle(10.0,10.0,malvado::graphic::Pivot::TopLeft)?;\n'
+        ' let engine = Engine::new()?; let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?; actor.set_graphic(Graphic { geometry: Geometry::circle(3.0)?, color: state.color() })?; frame.process_graphics(&engine)?; actor.clear_graphic()?;\n'
         ' frame.graphic(geometry, malvado::collision::Transform::default(), Color {r:255,g:0,b:0,a:255})?;\n'
         ' frame.fade(&fade)?; drop(frame);\n'
         ' Ok(())\n}\n')

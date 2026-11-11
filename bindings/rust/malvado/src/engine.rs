@@ -41,6 +41,11 @@ pub struct Engine {
     runtime: Rc<Runtime>,
 }
 impl Engine {
+    #[cfg(feature = "graphics")]
+    pub(crate) fn native_context(&self) -> Result<*mut sys::MvContext, Error> {
+        self.runtime.live()
+    }
+
     pub fn new() -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: fixed valid native clock settings; this owner destroys once.

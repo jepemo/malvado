@@ -114,3 +114,34 @@ Color/Graphic size, alignment and offsets; color-header drift is rejected by
 the core probe. Native graphical ASan/UBSan exercises the primitive pass.
 Linux CI and the remaining asset graph/resource integration are not certified
 by these local checks.
+
+## Rust process graphics
+
+Core-only consumers can create `graphic::Graphic { geometry, color }`, assign
+it with `actor.set_graphic(value)?`, copy it with `actor.graphic()?`, and remove
+it with `actor.clear_graphic()?`. `graphic::Color` and `window::Color` refer to
+the same four-byte value; the graphics feature is needed only for the window
+and drawing. Graph snapshots and later edits to local copies do not mutate the
+process. Cloned handles share native assignment. Dead and closed handles return
+`NotFound` and `Closed`. No Rust graph object owns a process or external asset.
+
+With the graphics feature, call `frame.process_graphics(&engine)?` after the
+host's tick. It runs the native primitive pass. It does not poll futures or
+add a second scheduler. Draw your other content and fade at explicit points.
+Clip/scroll scopes apply, and invalid render transforms hide graphs while the
+pass succeeds. Rust's `process_graphic` tests check defaults, copy independence,
+shared handles, sleep/freeze, clear and dead/closed handles. The graphics pixel
+fixture checks ordering, visibility, clear, invalid-scale hiding and scope
+restoration. Installed core and graphical consumers exercise both boundaries.
+
+The `Graphic` rustdoc example is runnable without a graphics backend. Migration
+of public C/Lua/Rust teaching examples remains A7.8 work. Image, sprite and
+animation process graphs are not available through `Graphic` yet.
+
+A7.6ag local macOS evidence: `test-rust` and `test-rust-graphics` pass in
+Debug/Release, including relocated offline core/graphics consumers, signature
+and layout checks, drift diagnostics, Clippy and formatting. The new core-only
+Graphic doctest passes in both profiles. `test-rust-graphics-sanitize` passes
+with the new graph lifetime and process-pass pixel fixtures. Rust itself is not
+sanitizer-instrumented. Linux CI and the remaining asset graph integration
+remain open.
