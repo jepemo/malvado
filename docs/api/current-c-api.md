@@ -113,11 +113,13 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_kill`
 - `mv_process_lineage_snapshot`
 - `mv_process_message_count`
+- `mv_process_position`
 - `mv_process_priority`
 - `mv_process_receive`
 - `mv_process_ref_create`
 - `mv_process_ref_resolve`
 - `mv_process_send`
+- `mv_process_set_position`
 - `mv_process_set_priority`
 - `mv_process_set_type`
 - `mv_process_set_z`

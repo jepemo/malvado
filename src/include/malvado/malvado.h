@@ -148,6 +148,14 @@ MvResult mv_context_runtime_id(MvContext *ctx, MvRuntimeId *out);
 MvResult mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out);
 MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *out);
 
+/* Native process position starts at (0, 0). Set both finite coordinates
+ * atomically. Get requires distinct non-NULL outputs. Foreign references and
+ * invalid values return MV_INVALID_ARGUMENT; dead processes return MV_NOT_FOUND.
+ * Failure preserves state and outputs. Owner-thread only, no allocation.
+ * This storage does not yet drive Lua fields, rendering or colliders. */
+MvResult mv_process_position(MvContext *ctx, MvProcessRef process, double *x, double *y);
+MvResult mv_process_set_position(MvContext *ctx, MvProcessRef process, double x, double y);
+
 /* Visual depth is independent of scheduler priority. New processes start at 0.
  * Read/write a live context-bound process. z must be finite. Failure leaves
  * the process/output unchanged. These operations do not allocate or draw. */

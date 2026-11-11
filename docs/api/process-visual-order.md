@@ -74,3 +74,19 @@ same phases, scheduler-priority independence, closed handles, copied order and
 sleeping exclusion and frozen visibility. Existing visual draw-order fixtures
 cover ties and later process drawings. Installed signature/layout checks,
 Debug/Release, a relocated consumer and native sanitizers cover the Rust SDK.
+
+## Native position storage
+
+`mv_process_position(ctx, reference, &x, &y)` copies the native coordinates.
+Outputs must be non-NULL and distinct. `mv_process_set_position(ctx, reference,
+x, y)` sets both coordinates atomically. New processes start at `(0, 0)`.
+Coordinates must be finite; negative and extreme finite coordinates are accepted.
+Both functions use the depth API identity and error rules. Failure preserves
+state and outputs. Ticks do not change the stored position. No allocation,
+rendering or collider update occurs.
+
+This is native storage for the pending visual-property migration. Lua `self.x`
+and `self.y`, world movement and automatic rendering still use the existing Lua
+fields. Do not combine the two stores as a shared gameplay position yet.
+`process_position` verifies defaults, extremes, invalid inputs, output aliasing,
+foreign/dead references, tick persistence and atomic failure.

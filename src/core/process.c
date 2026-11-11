@@ -41,6 +41,7 @@ typedef struct {
     uint64_t type;
     int64_t priority;
     double z;
+    double x, y;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
@@ -835,6 +836,34 @@ mv_process_set_z(MvContext *ctx, MvProcessRef reference, double z)
     if (result != MV_OK)
         return result;
     item->z = z;
+    return MV_OK;
+}
+
+MvResult
+mv_process_position(MvContext *ctx, MvProcessRef reference, double *x, double *y)
+{
+    if (!x || !y || x == y)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    *x = item->x;
+    *y = item->y;
+    return MV_OK;
+}
+
+MvResult
+mv_process_set_position(MvContext *ctx, MvProcessRef reference, double x, double y)
+{
+    if (!isfinite(x) || !isfinite(y))
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->x = x;
+    item->y = y;
     return MV_OK;
 }
 
