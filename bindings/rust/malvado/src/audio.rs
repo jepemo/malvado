@@ -322,6 +322,7 @@ mod tests {
         let device = Rc::downgrade(&audio.device);
         let path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/fixtures/silence.wav");
+        assert!(Music::load(audio.clone(), path.with_file_name("empty.wav"), false).is_err());
         let sound = Sound::load(audio.clone(), &path).unwrap();
         let weak = Rc::downgrade(&sound.data);
         sound.play().unwrap();

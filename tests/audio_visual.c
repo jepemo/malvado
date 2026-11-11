@@ -65,6 +65,7 @@ main(int argc, char **argv)
     mv_sound_destroy(second_copy);
     assert(!mv_music_load("tests/fixtures/silence.wav", 2));
     assert(!mv_music_load("tests/fixtures/missing.wav", 0));
+    assert(!mv_music_load("tests/fixtures/empty.wav", 0));
     MvMusic *music = mv_music_load("tests/fixtures/silence.wav", 1);
     assert(music);
     assert(mv_music_set_volume(music, 0.5f));

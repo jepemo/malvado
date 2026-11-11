@@ -24,6 +24,7 @@ fn main() {
         Music::load(audio.clone(), "bad\0path", false),
         Err(Error::InvalidArgument)
     ));
+    assert!(Music::load(audio.clone(), path.with_file_name("empty.wav"), false).is_err());
     for extension in ["wav", "ogg"] {
         let music = Music::load(audio.clone(), path.with_extension(extension), true).unwrap();
         let other = Music::load(audio.clone(), path.with_extension(extension), false).unwrap();

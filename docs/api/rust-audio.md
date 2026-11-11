@@ -105,3 +105,10 @@ physical output, latency, device hotplug, or subjective sound quality.
 Audio acceptance: Debug/Release, installed consumer and native ASan/UBSan
 pass on macOS. Linux null-device execution is included in the graphics CI job;
 its result must be recorded before final A7.6 closure.
+
+Linux sanitizer regression: the raylib 5.5 WAV decoder allocation survived
+`UnloadMusicStream`. The native adapter now frees that context through raylib's
+allocator after decoder shutdown, including wrapper allocation and invalid-stream
+failure paths. OGG cleanup stays in raylib. A version assertion requires review
+on a provider upgrade. Empty WAV rejection is covered by C and Rust fixtures.
+No third-party source or leak suppression was changed.

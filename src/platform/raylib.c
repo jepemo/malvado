@@ -48,6 +48,7 @@ struct MvSound {
 };
 struct MvMusic {
     Music stream;
+    int wav;
 };
 struct MvFont {
     Font font;
@@ -223,22 +224,39 @@ mv_sound_set_volume(MvSound *sound, float volume)
     return 1;
 }
 
+/* raylib 5.5 uninitializes dr_wav but does not free its separately allocated
+ * WAV context. Keep this provider-specific cleanup in the adapter, including
+ * load failure paths. Other formats release their context in raylib itself. */
+static void
+destroy_music_stream(Music stream, int wav)
+{
+    _Static_assert(RAYLIB_VERSION_MAJOR == 5 && RAYLIB_VERSION_MINOR == 5,
+                   "Review WAV context cleanup when upgrading raylib");
+    UnloadMusicStream(stream);
+    if (wav)
+        MemFree(stream.ctxData);
+}
+
 MvMusic *
 mv_music_load(const char *path, int loop)
 {
     if (!path || !IsAudioDeviceReady() || (loop != 0 && loop != 1) ||
         (!IsFileExtension(path, ".wav") && !IsFileExtension(path, ".ogg")))
         return NULL;
+    int wav = IsFileExtension(path, ".wav");
     Music stream = LoadMusicStream(path);
-    if (!IsMusicValid(stream))
+    if (!IsMusicValid(stream)) {
+        destroy_music_stream(stream, wav);
         return NULL;
+    }
     MvMusic *music = malloc(sizeof(*music));
     if (!music) {
-        UnloadMusicStream(stream);
+        destroy_music_stream(stream, wav);
         return NULL;
     }
     stream.looping = loop != 0;
     music->stream = stream;
+    music->wav = wav;
     return music;
 }
 
@@ -247,7 +265,7 @@ mv_music_destroy(MvMusic *music)
 {
     if (!music)
         return;
-    UnloadMusicStream(music->stream);
+    destroy_music_stream(music->stream, music->wav);
     free(music);
 }
 
