@@ -95,3 +95,17 @@ and mismatches return false. Native atlases require region containment; Aseprite
 requires the exact declared sheet dimensions. Failed checks leave metadata and
 borrowed sprite/animation views unchanged. This also works after Library releases
 its source. See [native image validation](asset-library-metadata.md#validate-metadata-against-an-image).
+
+## Atlas textures
+
+With `assets` and `graphics`, `TextureAtlas::new(atlas, image)` pairs owned
+metadata with a shared native image. Construction checks every region against
+actual image dimensions. Aseprite sheet dimensions must match exactly.
+`TextureAtlas::load(window, library)` loads the referenced sheet relative to the
+library source path. It accepts Atlas and Aseprite metadata. Other library
+formats return `InvalidArgument`.
+
+The texture retains its window. Metadata and image access remain available
+through `metadata()` and `image()`. Files must exist during loading; the library
+metadata itself uses its owned snapshot. Failed construction releases its input
+owners. No process graph assignment or animation update is implicit.

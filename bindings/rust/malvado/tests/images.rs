@@ -97,6 +97,29 @@ fn main() {
     {
         let json = std::fs::read_to_string(fixture.with_file_name("atlas.json")).unwrap();
         let atlas = malvado::atlas::Atlas::parse(&json, 8, 8).unwrap();
+        let wrong = Image::from_rgba(window.clone(), 1, 1, &[0; 4]).unwrap();
+        assert!(matches!(
+            malvado::atlas::TextureAtlas::new(
+                malvado::atlas::Atlas::parse(&json, 8, 8).unwrap(),
+                wrong
+            ),
+            Err(Error::InvalidArgument)
+        ));
+        let library =
+            malvado::asset::Library::open(fixture.with_file_name("atlas.json"), None).unwrap();
+        let textured = malvado::atlas::TextureAtlas::load(window.clone(), library).unwrap();
+        assert_eq!(textured.image().size(), (8, 8));
+        let temp =
+            std::env::temp_dir().join(format!("malvado-texture-{}.json", std::process::id()));
+        std::fs::write(&temp, json.replace("red.png", "missing-texture.png")).unwrap();
+        let missing = malvado::asset::Library::open(&temp, None).unwrap();
+        std::fs::remove_file(&temp).unwrap();
+        assert!(malvado::atlas::TextureAtlas::load(window.clone(), missing).is_err());
+
+        assert_eq!(
+            textured.metadata().sprite(7).unwrap(),
+            atlas.sprite(7).unwrap()
+        );
         let region = atlas.sprite(7).unwrap().region.into();
         frame
             .image_region(

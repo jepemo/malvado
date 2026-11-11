@@ -21,7 +21,7 @@ def consumer(prefix, profile):
     (game / "Cargo.toml").write_text(
         '[package]\nname="graphics-consumer"\nversion="0.0.0"\nedition="2024"\n'
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
-        + ',features=["graphics"]}\n')
+        + ',features=["graphics","assets"]}\n')
     for name in ("AnonymousPro-Bold.ttf", "OFL.txt"):
         shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
     shutil.copyfile(ROOT / "tests/fixtures/silence.wav", game / "silence.wav")
@@ -48,6 +48,8 @@ def consumer(prefix, profile):
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
         ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
+        ' let atlas = malvado::atlas::Atlas::parse(r#"{"schema":1,"kind":"graphics-library","image":"unused.png","sprites":[{"id":7,"name":"red","x":0,"y":0,"width":1,"height":1}]}"#,1,1)?;\n'
+        ' let textured = malvado::atlas::TextureAtlas::new(atlas,image.clone())?; assert_eq!(textured.metadata().len(),1); assert_eq!(textured.image().size(),(1,1)); drop(textured);\n'
         ' let font = Font::load(window.clone(), "AnonymousPro-Bold.ttf", 24)?;\n'
         ' assert!(font.text_width("Café", 24)? > 0);\n'
         ' let mut state = malvado::drawing::DrawState::new()?; state.set_background((10,20,30));\n'

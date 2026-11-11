@@ -307,3 +307,54 @@ impl Clip<'_> {
 fn color(value: ffi::MvColor) -> [u8; 4] {
     [value.r, value.g, value.b, value.a]
 }
+
+/// An atlas paired with a validated native image. Both stay on the window
+/// thread. Construction consumes metadata and shares the immutable texture.
+#[cfg(feature = "graphics")]
+pub struct TextureAtlas {
+    atlas: Atlas,
+    image: crate::image::Image,
+}
+#[cfg(feature = "graphics")]
+impl TextureAtlas {
+    /// Reject image bounds before retaining either value. Aseprite dimensions
+    /// must match exactly. Failure drops the supplied owners normally.
+    pub fn new(atlas: Atlas, image: crate::image::Image) -> Result<Self, Error> {
+        let (width, height) = image.size();
+        if !atlas.validate_image(width, height) {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(Self { atlas, image })
+    }
+    /// Load the referenced sheet relative to the metadata source path. Accept
+    /// only atlas/Aseprite libraries; other formats return InvalidArgument.
+    /// Image loading follows the native path cache; metadata uses the snapshot.
+    pub fn load(
+        window: Rc<crate::window::Window>,
+        library: crate::asset::Library,
+    ) -> Result<Self, Error> {
+        let crate::asset::Metadata::Atlas(atlas) = library.metadata() else {
+            return Err(Error::InvalidArgument);
+        };
+        let path = library.source().image_path(atlas.image())?;
+        let image = crate::image::Image::load(window, path)?;
+        let crate::asset::Metadata::Atlas(atlas) = library.into_metadata() else {
+            unreachable!()
+        };
+        Self::new(atlas, image)
+    }
+    pub fn metadata(&self) -> &Atlas {
+        &self.atlas
+    }
+    pub fn image(&self) -> &crate::image::Image {
+        &self.image
+    }
+}
+/// Textured atlases retain owner-thread window resources.
+/// ```compile_fail
+/// fn invalid(atlas: malvado::atlas::TextureAtlas) {
+///     std::thread::spawn(move || drop(atlas));
+/// }
+/// ```
+#[cfg(feature = "graphics")]
+mod texture_ownership_contract {}
