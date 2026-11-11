@@ -267,4 +267,87 @@ fn main() {
         frame.process_graphics(&engine).unwrap();
         pixel(20, 20, (0, 0, 0));
     }
+    use malvado::camera::{Camera, Selection, Viewport};
+    let actor = engine
+        .spawn(Default::default(), |p| async move {
+            loop {
+                p.frame().await;
+            }
+        })
+        .unwrap();
+    actor.set_position(60.0, 50.0).unwrap();
+    actor
+        .set_graphic(Graphic {
+            geometry: rect,
+            color: red,
+        })
+        .unwrap();
+    engine
+        .main_camera()
+        .unwrap()
+        .set_position(10.0, 5.0)
+        .unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(50, 45, (255, 0, 0));
+        pixel(60, 50, (0, 0, 0));
+    }
+    actor.set_camera(Selection::Screen).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(60, 50, (255, 0, 0));
+    }
+    let camera = engine
+        .create_camera(
+            Camera::new(
+                60.0,
+                50.0,
+                Some(Viewport {
+                    x: 80,
+                    y: 10,
+                    width: 20,
+                    height: 20,
+                }),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    actor
+        .set_camera(Selection::Explicit(camera.clone()))
+        .unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(80, 10, (255, 0, 0));
+        pixel(79, 10, (0, 0, 0));
+    }
+    camera.close().unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(80, 10, (0, 0, 0));
+    }
+    actor.set_camera(Selection::Main).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame
+            .with_clip(
+                Rectangle {
+                    x: 40,
+                    y: 35,
+                    width: 20,
+                    height: 20,
+                },
+                |frame| {
+                    frame.with_scroll((5.0, 5.0), |frame| {
+                        frame.process_graphics(&engine)?;
+                        pixel(45, 40, (255, 0, 0));
+                        Ok(())
+                    })
+                },
+            )
+            .unwrap();
+    }
 }

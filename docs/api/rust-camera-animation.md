@@ -1,7 +1,8 @@
 # Rust camera and animation values
 
 These services use the installed C core. They need no graphics backend. They do
-not select a process camera, load graphs, or update a process automatically.
+not load graphs or update a process automatically. Context-owned camera
+identities and process selection are available below.
 
 ## Cameras
 
@@ -23,6 +24,63 @@ it returns `None` for an empty intersection. Screen dimensions must be positive.
 Invalid inputs return `Error::InvalidArgument` and preserve camera state.
 No allocation or cleanup is required. The game controls when to center or move
 its camera; these values do not add an update loop.
+
+## Registered cameras and process selection
+
+`engine.main_camera()?` returns the canonical context-owned main camera.
+`engine.create_camera(value)?` registers a copied Camera value and returns a
+`CameraHandle`. Clones share identity; `snapshot()` returns an independent
+Camera copy. `replace`, `set_position` and `move_by` update native values.
+
+```rust
+use malvado::{Engine, Error, camera::{Camera, Selection}};
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let view = engine.create_camera(Camera::new(10.0, 20.0, None)?)?;
+actor.set_camera(Selection::Explicit(view.clone()))?;
+view.move_by(1.0, 2.0)?;
+assert_eq!(actor.resolve_camera()?.position(), (11.0, 22.0));
+view.close()?;
+assert!(matches!(actor.resolve_camera(), Err(Error::NotFound)));
+actor.set_camera(Selection::Screen)?;
+assert_eq!(actor.resolve_camera()?.position(), (0.0, 0.0));
+# Ok::<(), Error>(())
+```
+
+Use `Selection::Main`, `Screen` or `Explicit(handle)` with `set_camera`.
+`camera_selection` copies identity, including a closed explicit selection.
+`resolve_camera` copies the effective value; a closed selected view returns
+`NotFound` and hides that process in the native primitive drawing pass.
+Foreign context selection returns `ForeignContext` without changing the current
+selection. Main cannot be closed (`InvalidArgument`). Explicit close is
+idempotent. After engine shutdown camera operations return `Closed`.
+
+The context owns registrations until close or shutdown. Dropping a handle does
+not close the view, so selected processes keep their camera when a temporary
+handle leaves scope. Use close to release an unneeded explicit view. Handles
+stay on the owner thread, while copied Camera snapshots remain independent.
+No window is needed for these services. Registration/selection never ticks,
+starts a scheduler, follows a target or changes process world coordinates.
+
+`frame.process_graphics(&engine)?` now applies native selection and viewport.
+It composes and restores host clip/scroll; the default full-window case remains
+batched. Per-process native region/command storage remains A7.6 work. Immediate
+frame drawing is still explicit; use a snapshot's project/clip operations for
+custom drawing. Lua-owned and borrowed camera userdata use the same core; see
+[the native ownership contract](cameras.md#context-owned-camera-identities-and-selection).
+
+`Follow::update_handle(&camera, window_size)?` applies an existing Follow value
+to a registered camera. Both identities must belong to the same context. Call
+it after the native tick, as for copied cameras. Errors preserve native camera
+values; a closed camera returns `NotFound` even for an inactive follower. Manual
+camera writes do not clear the separate Follow object: call `clear()` to stop.
+
+`camera_registry.rs` verifies identity, aliases versus snapshots, explicit close,
+main protection, selection/reset, foreign/dead/closed errors, follow updates and
+context cleanup with open cameras. Owner-thread and runnable doctests check the
+public usage. Native and Rust pixel fixtures verify main/explicit/screen views,
+closed-view hiding, viewport boundaries and host scope composition. Installed
+core/graphics consumers exercise registered selection through relocated SDKs.
 
 ## Follow a process
 
@@ -61,8 +119,8 @@ Camera values remain independently copied. Follow state is separate: moving or
 centering a Rust camera does not clear it. Call `clear()` when switching to
 manual control, or replace the follower with `Follow::new(&other)?` to retarget.
 Followers stay on the owner thread. Independent followers can select the same
-target without retaining process state. Main/explicit camera identity and
-automatic process camera selection remain A7.6 work.
+target without retaining process state. Context-owned camera identity and process selection are available above;
+following still uses the explicit host update flow.
 
 `camera.rs` tests follow the C/Lua golden trace and check viewport behavior,
 sleep/freeze, invalid geometry/dimensions, independent follow state, explicit
@@ -118,3 +176,12 @@ installed signature checks, Clippy/format and native ASan/UBSan integration
 pass. The runnable Follow example and owner-thread compile failure also pass
 as doctests in both profiles. Linux CI and native main/explicit camera ownership
 remain open; these checks do not certify automatic Rust process camera selection.
+
+A7.6am macOS evidence: Rust core and graphics Debug/Release suites pass with
+registered-camera tests and relocated installed consumers. The registered-camera
+usage and owner-thread doctests pass in both profiles. Clippy/format and native
+graphical ASan/UBSan pass, including open-camera context cleanup and viewport
+pixels; Rust itself is not instrumented. Native scope/coordinate-boundary pixel
+checks pass after the default full-window batching adjustment. The isolated
+full graphics rerun passed after an earlier keyboard fixture failure. Linux CI
+and the remaining asset/command/region services remain open.

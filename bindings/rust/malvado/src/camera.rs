@@ -25,7 +25,7 @@ impl Viewport {
 /// A copied native camera. None selects the full logical window.
 #[derive(Clone, Copy, Debug)]
 pub struct Camera {
-    native: sys::MvCamera,
+    pub(crate) native: sys::MvCamera,
 }
 impl Camera {
     pub fn new(x: f64, y: f64, viewport: Option<Viewport>) -> Result<Self, Error> {
@@ -187,5 +187,141 @@ impl Follow {
             self.target = None;
         }
         Ok(self.is_following())
+    }
+}
+
+/// Context-owned camera identity.
+/// ```
+/// use malvado::{Engine, Error, camera::{Camera, Selection}};
+/// let engine = Engine::new()?;
+/// let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+/// let view = engine.create_camera(Camera::new(10.0, 20.0, None)?)?;
+/// actor.set_camera(Selection::Explicit(view.clone()))?;
+/// view.move_by(1.0, 2.0)?;
+/// assert_eq!(actor.resolve_camera()?.position(), (11.0, 22.0));
+/// view.close()?;
+/// assert!(matches!(actor.resolve_camera(), Err(Error::NotFound)));
+/// actor.set_camera(Selection::Screen)?;
+/// assert_eq!(actor.resolve_camera()?.position(), (0.0, 0.0));
+/// # Ok::<(), Error>(())
+/// ```
+/// Clones share the same camera. Dropping a
+/// handle does not close it; close explicitly or drop the engine. Owner-thread only.
+/// ```compile_fail
+/// let engine = malvado::Engine::new().unwrap();
+/// let camera = engine.main_camera().unwrap();
+/// std::thread::spawn(move || drop(camera));
+/// ```
+#[derive(Clone)]
+pub struct CameraHandle {
+    pub(crate) runtime: std::rc::Rc<crate::engine::Runtime>,
+    pub(crate) reference: sys::MvCameraRef,
+}
+impl CameraHandle {
+    pub fn id(&self) -> u64 {
+        self.reference.id
+    }
+    pub fn snapshot(&self) -> Result<Camera, Error> {
+        let mut native = sys::MvCamera::default();
+        // SAFETY: checked owner-thread context, fixed identity and live output.
+        result(unsafe { sys::mv_camera_get(self.runtime.live()?, self.reference, &mut native) })?;
+        Ok(Camera { native })
+    }
+    pub fn replace(&self, value: Camera) -> Result<(), Error> {
+        // SAFETY: copied camera value, checked identity and owner-thread context.
+        result(unsafe { sys::mv_camera_put(self.runtime.live()?, self.reference, value.native) })
+    }
+    pub fn set_position(&self, x: f64, y: f64) -> Result<(), Error> {
+        let mut value = self.snapshot()?;
+        value.set_position(x, y)?;
+        self.replace(value)
+    }
+    pub fn move_by(&self, dx: f64, dy: f64) -> Result<(), Error> {
+        let mut value = self.snapshot()?;
+        value.move_by(dx, dy)?;
+        self.replace(value)
+    }
+    /// Idempotent explicit close. The main camera cannot be closed.
+    pub fn close(&self) -> Result<(), Error> {
+        // SAFETY: fixed context-bound camera identity; native validates it.
+        result(unsafe { sys::mv_camera_close(self.runtime.live()?, self.reference) })
+    }
+}
+#[derive(Clone)]
+pub enum Selection {
+    Main,
+    Screen,
+    Explicit(CameraHandle),
+}
+impl Handle {
+    pub fn set_camera(&self, selection: Selection) -> Result<(), Error> {
+        let reference = match selection {
+            Selection::Main => None,
+            Selection::Screen => Some(sys::MvCameraRef::default()),
+            Selection::Explicit(camera) => {
+                if !std::rc::Rc::ptr_eq(&self.inner.runtime, &camera.runtime) {
+                    return Err(Error::ForeignContext);
+                }
+                Some(camera.reference)
+            }
+        };
+        // SAFETY: fixed process identity and copied optional camera reference.
+        result(unsafe {
+            sys::mv_process_camera_set(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                reference.as_ref().map_or(std::ptr::null(), |r| r),
+            )
+        })
+    }
+    pub fn camera_selection(&self) -> Result<Selection, Error> {
+        let mut reference = sys::MvCameraRef::default();
+        // SAFETY: checked runtime/identity and initialized output.
+        result(unsafe {
+            sys::mv_process_camera_get(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut reference,
+            )
+        })?;
+        Ok(match reference.id {
+            0 => Selection::Screen,
+            1 => Selection::Main,
+            _ => Selection::Explicit(CameraHandle {
+                runtime: self.inner.runtime.clone(),
+                reference,
+            }),
+        })
+    }
+    pub fn resolve_camera(&self) -> Result<Camera, Error> {
+        let mut native = sys::MvCamera::default();
+        // SAFETY: checked process identity, output and live owner-thread context.
+        result(unsafe {
+            sys::mv_process_camera_resolve(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut native,
+            )
+        })?;
+        Ok(Camera { native })
+    }
+}
+impl Follow {
+    /// Follow into a registered camera after the native tick. Both identities
+    /// must share a context. Manual camera writes do not clear this Follow value.
+    pub fn update_handle(
+        &mut self,
+        camera: &CameraHandle,
+        window: (i32, i32),
+    ) -> Result<bool, Error> {
+        if let Some(target) = &self.target
+            && !std::rc::Rc::ptr_eq(&target.inner.runtime, &camera.runtime)
+        {
+            return Err(Error::ForeignContext);
+        }
+        let mut value = camera.snapshot()?;
+        let active = self.update(&mut value, window)?;
+        camera.replace(value)?;
+        Ok(active)
     }
 }

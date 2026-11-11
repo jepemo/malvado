@@ -41,6 +41,30 @@ pub struct Engine {
     runtime: Rc<Runtime>,
 }
 impl Engine {
+    pub fn main_camera(&self) -> Result<crate::camera::CameraHandle, Error> {
+        let mut reference = sys::MvCameraRef::default();
+        // SAFETY: live owner-thread context and initialized output.
+        result(unsafe { sys::mv_camera_main(self.runtime.live()?, &mut reference) })?;
+        Ok(crate::camera::CameraHandle {
+            runtime: self.runtime.clone(),
+            reference,
+        })
+    }
+    pub fn create_camera(
+        &self,
+        value: crate::camera::Camera,
+    ) -> Result<crate::camera::CameraHandle, Error> {
+        let mut reference = sys::MvCameraRef::default();
+        // SAFETY: checked runtime and copied validated camera value. Context owns it.
+        result(unsafe {
+            sys::mv_camera_create(self.runtime.live()?, value.native, &mut reference)
+        })?;
+        Ok(crate::camera::CameraHandle {
+            runtime: self.runtime.clone(),
+            reference,
+        })
+    }
+
     #[cfg(feature = "graphics")]
     pub(crate) fn native_context(&self) -> Result<*mut sys::MvContext, Error> {
         self.runtime.live()
