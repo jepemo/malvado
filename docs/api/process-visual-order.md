@@ -59,7 +59,7 @@ assert_eq!(visible[0].id(), actor.id());
 # Ok::<(), Error>(())
 ```
 
-Position, angle, scale, process graph storage and automatic draw-command
+Angle, scale, process graph storage and automatic draw-command
 collection remain open in A7.6. An ordered handle query is not a renderer.
 
 ## Verification
@@ -85,9 +85,21 @@ Both functions use the depth API identity and error rules. Failure preserves
 state and outputs. Ticks do not change the stored position. No allocation,
 rendering or collider update occurs.
 
-This is native storage for the pending visual-property migration. Lua `self.x`
-and `self.y`, world movement and automatic rendering still use the existing Lua
-fields. Do not combine the two stores as a shared gameplay position yet.
+Lua `self.x` and `self.y` share valid numeric coordinates with this native
+storage. Spawn/default values, assignments and world movement update C.
+Getters, graph rendering, camera follow, world queries and Lua process collision
+queries read native changes, including for sleeping or frozen targets. No Lua
+activation is required before a graph reflects a native move. Direct C collider
+queries still use the transform explicitly registered with the collider API;
+the Lua adapter refreshes its derived colliders before Lua queries.
+
+Lua preserves integer/float presentation while its value matches C. Setting
+`nil` resets that coordinate to zero. To preserve the existing Lua visual error
+contract, non-number and non-finite assignments remain local invalid overrides.
+They do not change the last valid native coordinate. Native writes do not clear
+these overrides. Assign a finite number or `nil` in Lua to clear one. Rendering,
+world queries and colliders retain their existing handling of invalid fields.
+Numeric strings retain their existing per-operation conversion behavior.
 `process_position` verifies defaults, extremes, invalid inputs, output aliasing,
 foreign/dead references, tick persistence and atomic failure.
 
@@ -104,3 +116,9 @@ Host verification for A7.6x/y: `mise run test-c` (56 tests),
 `mise run test-rust` (Debug/Release, Clippy, formatting and relocated consumer),
 and `mise run test-rust-sanitize` all pass on macOS. Linux CI and automatic
 visual integration are not certified by these local checks.
+
+`native_lua_process_position` checks C/Lua round trips, native world-move
+writeback, collider refresh, integer presentation, nil reset and invalid Lua
+overrides. `visual_native_process_position` checks pixels before and after a
+native move of a frozen Lua process. Existing camera, world, graph and collision
+fixtures cover the unchanged Lua contracts.

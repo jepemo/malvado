@@ -256,7 +256,7 @@ impl Handle {
         })?;
         Ok(killed != 0)
     }
-    /// Copy native position. Automatic rendering and Lua fields are not connected yet.
+    /// Copy native position. Lua numeric fields and graph rendering share this state.
     pub fn position(&self) -> Result<(f64, f64), Error> {
         let (mut x, mut y) = (0.0, 0.0);
         // SAFETY: live owner-thread context, fixed identity and distinct outputs.

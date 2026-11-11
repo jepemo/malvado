@@ -681,6 +681,49 @@ push_owner(lua_State *L, lua_Integer id)
     lua_pushnil(L);
 }
 
+/* Numeric positions live in C. Lua keeps number presentation and invalid
+ * visual overrides. Invalid values retain the existing hide/error behavior. */
+static void
+refresh_process_position(lua_State *L, LuaSelf *self, int fields)
+{
+    fields = lua_absindex(L, fields);
+    double x, y;
+    if (mv_process_position(engine.context, self->reference, &x, &y) != MV_OK)
+        return;
+    const char *names[] = {"x", "y"};
+    double values[] = {x, y};
+    for (unsigned i = 0; i < 2; ++i) {
+        raw_option(L, fields, names[i]);
+        int empty = lua_isnil(L, -1);
+        int numeric = lua_type(L, -1) == LUA_TNUMBER && isfinite(lua_tonumber(L, -1));
+        int matches = (empty && values[i] == 0) ||
+                      (numeric && lua_tonumber(L, -1) == values[i]);
+        lua_pop(L, 1);
+        if ((empty || numeric) && !matches) {
+            lua_pushstring(L, names[i]);
+            if (values[i] == 0) lua_pushinteger(L, 0);
+            else lua_pushnumber(L, values[i]);
+            lua_rawset(L, fields);
+        }
+    }
+}
+
+static void
+set_process_coordinate(lua_State *L, LuaSelf *self, const char *name, int value)
+{
+    int empty = lua_isnil(L, value);
+    if (!empty && (lua_type(L, value) != LUA_TNUMBER || !isfinite(lua_tonumber(L, value))))
+        return;
+    double x, y;
+    if (mv_process_position(engine.context, self->reference, &x, &y) != MV_OK)
+        luaL_error(L, "process is no longer alive");
+    double coordinate = empty ? 0 : lua_tonumber(L, value);
+    if (!strcmp(name, "x")) x = coordinate;
+    else y = coordinate;
+    if (mv_process_set_position(engine.context, self->reference, x, y) != MV_OK)
+        luaL_error(L, "cannot set process position");
+}
+
 static int
 self_index(lua_State *L)
 {
@@ -726,6 +769,13 @@ self_index(lua_State *L)
     }
     if (key && strcmp(key, "parent") == 0) {
         push_owner(L, self->id);
+        return 1;
+    }
+    if (key && (!strcmp(key, "x") || !strcmp(key, "y"))) {
+        lua_getiuservalue(L, 1, 1);
+        refresh_process_position(L, self, -1);
+        raw_option(L, -1, key);
+        if (lua_isnil(L, -1)) lua_pushinteger(L, 0);
         return 1;
     }
     if (key && strcmp(key, "z") == 0) {
@@ -807,13 +857,14 @@ collider_number(lua_State *L, int fields, const char *name, double fallback, dou
     return valid && isfinite(*out);
 }
 
-/* The Lua fields remain authoritative. Invalid fields remove the native
+/* Native position supplies valid coordinates. Invalid Lua fields remove the native
  * collider until corrected; collision queries report the invalid state. */
 static void
 sync_process_collider(lua_State *L, LuaSelf *self, int fields)
 {
     MvProcessRef reference = self->reference;
     fields = lua_absindex(L, fields);
+    refresh_process_position(L, self, fields);
     MvCollisionShape shape = {0};
     int present = 0, invalid = 0;
     Process *slot = find_process_slot((lua_Integer)reference.id);
@@ -909,6 +960,8 @@ self_newindex(lua_State *L)
         lua_rawset(L, -3);
         return 0;
     }
+    if (key && (!strcmp(key, "x") || !strcmp(key, "y")))
+        set_process_coordinate(L, self, key, 3);
     lua_getiuservalue(L, 1, 1);
     int graph_changed = 0;
     if (key && !strcmp(key, "graph")) {
@@ -1184,6 +1237,12 @@ create_process(lua_State *L)
     raw_option(L, fields, "z");
     if (!lua_isnil(L, -1))
         (void)mv_process_set_z(engine.context, draft.self->reference, lua_tonumber(L, -1));
+    lua_pop(L, 1);
+    raw_option(L, fields, "x");
+    set_process_coordinate(L, draft.self, "x", -1);
+    lua_pop(L, 1);
+    raw_option(L, fields, "y");
+    set_process_coordinate(L, draft.self, "y", -1);
     lua_pop(L, 1);
     sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
@@ -3712,6 +3771,7 @@ render_graph(lua_State *L, const Process *process)
     lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
     lua_getiuservalue(L, -1, 1);
     int fields = lua_gettop(L);
+    refresh_process_position(L, lua_touserdata(L, -2), fields);
     raw_option(L, fields, "graph");
     LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
     if (animation) {
@@ -3885,6 +3945,7 @@ update_camera(lua_State *L, LuaCamera *camera)
     }
     lua_getiuservalue(L, -1, 1);
     if (lua_istable(L, -1)) {
+        refresh_process_position(L, target, -1);
         raw_option(L, -1, "x");
         raw_option(L, -2, "y");
         int valid = (lua_isnil(L, -2) || lua_type(L, -2) == LUA_TNUMBER) &&
@@ -4698,6 +4759,7 @@ world_process_collision(lua_State *L)
         return luaL_error(L, "process is no longer alive");
     lua_getiuservalue(L, 2, 1);
     int fields = lua_gettop(L);
+    refresh_process_position(L, luaL_checkudata(L, 2, "malvado.process"), fields);
     MvCollisionShape shape;
     Process *slot = find_process_slot(id);
     if (!process_collider(L, fields, slot && slot->legacy_frame, &shape)) {
@@ -4750,6 +4812,7 @@ world_process_move(lua_State *L)
         return luaL_error(L, "invalid movement");
     lua_getiuservalue(L, 2, 1);
     int fields = lua_gettop(L);
+    refresh_process_position(L, luaL_checkudata(L, 2, "malvado.process"), fields);
     MvCollisionTransform transform = {
         shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
         shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
@@ -4783,13 +4846,15 @@ world_process_move(lua_State *L)
         lua_pushinteger(L, (lua_Integer)result.id);
         lua_setfield(L, -2, "id");
     }
+    LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
+    if (mv_process_set_position(engine.context, self->reference, transform.x, transform.y) != MV_OK)
+        return luaL_error(L, "cannot set process position");
     lua_pushliteral(L, "x");
     lua_pushnumber(L, transform.x);
     lua_rawset(L, fields);
     lua_pushliteral(L, "y");
     lua_pushnumber(L, transform.y);
     lua_rawset(L, fields);
-    LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
     sync_process_collider(L, self, fields);
     return 1;
 }
@@ -4850,6 +4915,16 @@ process_collision_query(lua_State *L, int multiple)
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
+    /* Native hosts can move Lua processes between ticks. Refresh before any
+     * query, including sleeping/frozen targets and constructor filters. */
+    for (size_t i = 0; i < engine.count; ++i) {
+        if (!engine.items[i].alive) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, engine.items[i].self_ref);
+        LuaSelf *self = lua_touserdata(L, -1);
+        lua_getiuservalue(L, -1, 1);
+        sync_process_collider(L, self, -1);
+        lua_pop(L, 2);
+    }
     if (source->collision_invalid)
         return luaL_error(L, "invalid process collider or transform");
     MvProcessRef source_ref = source->reference;

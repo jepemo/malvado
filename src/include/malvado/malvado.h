@@ -152,7 +152,8 @@ MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *o
  * atomically. Get requires distinct non-NULL outputs. Foreign references and
  * invalid values return MV_INVALID_ARGUMENT; dead processes return MV_NOT_FOUND.
  * Failure preserves state and outputs. Owner-thread only, no allocation.
- * This storage does not yet drive Lua fields, rendering or colliders. */
+ * Lua valid numeric fields and graph rendering share this storage. Collider
+ * transforms set through the C collider API remain explicit. */
 MvResult mv_process_position(MvContext *ctx, MvProcessRef process, double *x, double *y);
 MvResult mv_process_set_position(MvContext *ctx, MvProcessRef process, double x, double y);
 

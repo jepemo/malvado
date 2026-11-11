@@ -10,7 +10,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Identity and lifetime | `mv_process_ref_create`, `mv_process_ref_resolve`, `mv_process_handle_create`, `mv_process_handle_snapshot`, `mv_process_handle_destroy` | Canonical process handles; dead handles retain identity, status, and reason |
 | State and control | `mv_process_status`, `mv_process_count`, `mv_process_priority`, `mv_process_set_priority`, `mv_process_set_type`, `mv_process_signal`, `mv_process_kill` | `status`, `alive`, `get_priority`, `set_priority`, `signal`, `kill` |
 | Queries and trees | `mv_process_find`, `mv_process_children`, `mv_process_descendants`, `mv_process_creation_children`, `mv_process_creation_descendants`, `mv_process_signal_creation_tree` | `find`, `children`, `descendants`, `signal_tree`, `kill_tree` |
-| Native position | `mv_process_position`, `mv_process_set_position` | Not yet connected to Lua fields or automatic colliders/rendering. |
+| Native position | `mv_process_position`, `mv_process_set_position` | `self.x`, `self.y`; shared numeric position, Lua-derived colliders and graph rendering. |
 | Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
 | Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `self:recv()`, `frame`, `self.fps` |
