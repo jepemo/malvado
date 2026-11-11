@@ -168,3 +168,11 @@ use this same native geometry instead of computing their own local rectangle.
 rotated/scaled overlap, signed integer extremes and failed-output preservation.
 Existing headless sprite/collider and graphical asset fixtures check the Lua
 migration. Installed probes check the new core signature.
+
+Rust exposes the same operation as `collision::Shape::sprite((width, height),
+(pivot_x, pivot_y))`. It returns a copied collider or InvalidArgument for
+nonpositive dimensions. Use the shape with existing overlap queries or local
+process collider binding. Arbitrary sprite pivots are not added to primitive
+process drawing; image assignment and texture retention remain separate work.
+The Rust tests check transformed overlap, copied values and integer boundaries.
+The installed core-only consumer calls this constructor without graphics.

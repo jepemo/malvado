@@ -40,3 +40,58 @@ fn native_geometry_and_pivot_overlap() {
     assert!(Geometry::circle(f32::MIN_POSITIVE.into()).is_ok());
     assert!(Geometry::circle((f32::MAX / 16.0).into()).is_ok());
 }
+
+#[test]
+fn sprite_pivot_rotation_scale_and_boundaries() {
+    let geometry = Shape::sprite((4, 4), (-2, 7)).unwrap();
+    let point = Shape::circle(0.5).unwrap();
+    let transform = Transform {
+        x: 20.0,
+        y: 20.0,
+        angle: 90.0,
+        scale: 2.0,
+    };
+    assert!(
+        geometry
+            .overlaps(
+                transform,
+                point,
+                Transform {
+                    x: 30.0,
+                    y: 28.0,
+                    ..Default::default()
+                }
+            )
+            .unwrap()
+    );
+    assert!(
+        !geometry
+            .overlaps(
+                transform,
+                point,
+                Transform {
+                    x: 20.0,
+                    y: 20.0,
+                    ..Default::default()
+                }
+            )
+            .unwrap()
+    );
+    assert!(Shape::sprite((i32::MAX, i32::MAX), (i32::MIN, i32::MAX)).is_ok());
+    for size in [(0, 1), (1, 0), (-1, 1), (1, -1)] {
+        assert!(Shape::sprite(size, (0, 0)).is_err());
+    }
+    let copy = geometry;
+    assert!(
+        copy.overlaps(
+            transform,
+            point,
+            Transform {
+                x: 30.0,
+                y: 28.0,
+                ..Default::default()
+            }
+        )
+        .unwrap()
+    );
+}

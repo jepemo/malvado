@@ -69,6 +69,20 @@ pub struct Shape {
     pub(crate) native: sys::MvCollisionShape,
 }
 impl Shape {
+    /// Local cropped sprite geometry. Pivots may be outside the image.
+    /// Importers supply pivots already adjusted for trim. No image is retained.
+    pub fn sprite(size: (i32, i32), pivot: (i32, i32)) -> Result<Self, Error> {
+        sys::check_abi().map_err(Error::Abi)?;
+        let mut native = sys::MvCollisionShape::default();
+        // SAFETY: exclusive output and copied integers, no retention.
+        let valid =
+            unsafe { sys::mv_graphic_sprite(size.0, size.1, pivot.0, pivot.1, &mut native) };
+        if valid != 1 {
+            return Err(Error::InvalidArgument);
+        }
+        Self::validated(native)
+    }
+
     pub fn circle(radius: f64) -> Result<Self, Error> {
         Self::validated(sys::MvCollisionShape {
             kind: sys::MV_COLLISION_CIRCLE,
