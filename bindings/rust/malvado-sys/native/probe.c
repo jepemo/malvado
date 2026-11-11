@@ -73,6 +73,12 @@ _Static_assert(_Generic(&mv_process_world_move_selected, MvResult (*)(MvContext 
 _Static_assert(_Generic(&mv_process_world_query, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, size_t *): 1, default: 0), "mv_process_world_query signature");
 _Static_assert(_Generic(&mv_process_world_move, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, double, double, MvCollisionSweep *): 1, default: 0), "mv_process_world_move signature");
 _Static_assert(_Generic(&mv_collision_world_move, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform *, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_move signature");
+_Static_assert(_Generic(&mv_process_region_set, MvResult (*)(MvContext *, MvProcessRef, const MvCameraViewport *): 1, default: 0), "mv_process_region_set signature");
+_Static_assert(_Generic(&mv_process_region_get, MvResult (*)(MvContext *, MvProcessRef, MvCameraViewport *, int *): 1, default: 0), "mv_process_region_get signature");
+_Static_assert(_Generic(&mv_process_scroll_set, MvResult (*)(MvContext *, MvProcessRef, float, float): 1, default: 0), "mv_process_scroll_set signature");
+_Static_assert(_Generic(&mv_process_scroll_get, MvResult (*)(MvContext *, MvProcessRef, float *, float *): 1, default: 0), "mv_process_scroll_get signature");
+_Static_assert(_Generic(&mv_process_view_clip, MvResult (*)(MvContext *, MvProcessRef, const MvCameraViewport *, int, int, MvCameraViewport *): 1, default: 0), "mv_process_view_clip signature");
+_Static_assert(_Generic(&mv_process_view_offset, MvResult (*)(MvContext *, MvProcessRef, double *, double *): 1, default: 0), "mv_process_view_offset signature");
 _Static_assert(_Generic(&mv_camera_main, MvResult (*)(MvContext *, MvCameraRef *): 1, default: 0), "mv_camera_main signature");
 _Static_assert(_Generic(&mv_camera_create, MvResult (*)(MvContext *, MvCamera, MvCameraRef *): 1, default: 0), "mv_camera_create signature");
 _Static_assert(_Generic(&mv_camera_get, MvResult (*)(MvContext *, MvCameraRef, MvCamera *): 1, default: 0), "mv_camera_get signature");

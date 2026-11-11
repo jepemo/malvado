@@ -235,8 +235,8 @@ cannot leave a process registered after a constructor error.
 
 The native primitive process pass now applies the selected camera and viewport.
 It intersects viewport and host clip, composes host scroll, and restores both
-host scopes before return. Lua graph-before-command ordering and process-local
-region/scroll behavior remain in the existing runner. Camera follow timing
+host scopes before return. Lua graph-before-command ordering remains in the existing runner.
+Process-local region/scroll now use the shared native descriptors below. Camera follow timing
 remains explicit; registration does not introduce a scheduler or automatic
 updates outside the existing host tick flow.
 
@@ -255,3 +255,52 @@ Installed probes verify all new signatures and CameraRef layout. One graphics
 attempt failed in the existing keyboard visual fixture; the isolated fixture
 and complete isolated graphics rerun passed without keyboard changes. Linux CI
 and remaining asset/command services are not certified by this local evidence.
+
+## Process region and local scroll
+
+Each process stores an optional copied screen-space region and a local scroll.
+New processes have no region and scroll `(0, 0)`. These values need no window,
+resources or scheduler. They change drawing only: world position, colliders,
+process state and lifetime stay unchanged.
+
+Use `mv_process_region_set(ctx, ref, &region)` to copy a region; NULL clears it.
+Dimensions must be positive. Origins can use the full signed integer range.
+`mv_process_region_get` writes a presence flag and copies a present region. An
+absent region leaves the rectangle output unchanged. Both output pointers are
+required and their storage must not overlap.
+
+`mv_process_scroll_set(ctx, ref, x, y)` copies finite floats with absolute values
+at most `FLT_MAX / 16`. The getter requires two distinct non-NULL outputs.
+Invalid inputs preserve stored values and outputs. These operations require a
+live process in the same context on the owner thread. Dead processes return
+`MV_NOT_FOUND`; NULL contexts and foreign references are invalid.
+
+`mv_process_view_clip` intersects the selected camera viewport, process region,
+optional host clip and logical screen. It writes a zero rectangle for an empty
+intersection. Screen and clip dimensions must be positive, even when the
+intersection is empty. `mv_process_view_offset` projects world origin through
+the selected camera and local scroll. The drawing position is world position
+plus this offset minus host scroll. Projection retains the camera numeric
+limits. Both composition helpers return `MV_NOT_FOUND` for a closed selected
+camera and preserve outputs on errors. Descriptor access remains available
+until process death, including when its camera is closed.
+
+Lua keeps `self.region = region_create(...)`, `self.scroll = scroll_create(...)`
+and nil to reset. Reads use native values and retain an existing immutable
+userdata when its value matches. Native zero scroll reads as nil unless a
+matching explicit zero-scroll userdata is already stored. Native writes take
+effect on the next draw, including frozen processes. Graphs and process drawing
+commands use the same native descriptors. The native primitive pass composes
+process and host scopes and restores host clip and scroll before return.
+
+`process_view` checks defaults, copied values, composition, large integer
+endpoints, numeric limits, invalid/foreign/dead calls and output preservation.
+`native_lua_process_view` checks immediate mixed-language reads/writes and Lua
+userdata identity. `visual_native_process_view` changes and clears native
+region/scroll while a Lua actor is frozen, checks clipping/hiding/restoration,
+and verifies unchanged world coordinates. Existing camera and scope visuals
+also remain required.
+
+A7.6an local macOS checks pass: C-only (64), standard/headless (184 each),
+and visual (61). Installed Rust sys probes check all six native signatures.
+This evidence does not certify Linux CI or the remaining A7.6 services.

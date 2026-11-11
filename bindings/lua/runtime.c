@@ -682,6 +682,60 @@ push_owner(lua_State *L, lua_Integer id)
 }
 
 static void
+set_process_view(lua_State *L, LuaSelf *self, const char *key, int value)
+{
+    MvResult result;
+    if (!strcmp(key, "region")) {
+        LuaRegion *region = luaL_testudata(L, value, "malvado.region");
+        MvCameraViewport native = region ? (MvCameraViewport){region->x, region->y, region->width, region->height} : (MvCameraViewport){0};
+        result = mv_process_region_set(engine.context, self->reference, region ? &native : NULL);
+    } else {
+        LuaScroll *scroll = luaL_testudata(L, value, "malvado.scroll");
+        result = mv_process_scroll_set(engine.context, self->reference, scroll ? scroll->x : 0, scroll ? scroll->y : 0);
+    }
+    if (result != MV_OK) luaL_error(L, "cannot set process visual descriptor");
+}
+
+static void
+push_process_view(lua_State *L, LuaSelf *self, const char *key)
+{
+    lua_getiuservalue(L, 1, 1);
+    int fields = lua_gettop(L);
+    raw_option(L, fields, key);
+    if (!strcmp(key, "region")) {
+        MvCameraViewport value;
+        int present;
+        if (mv_process_region_get(engine.context, self->reference, &value, &present) != MV_OK)
+            luaL_error(L, "process is no longer alive");
+        LuaRegion *old = luaL_testudata(L, -1, "malvado.region");
+        if (present && old && old->x == value.x && old->y == value.y && old->width == value.width && old->height == value.height) return;
+        lua_pop(L, 1);
+        if (!present) lua_pushnil(L);
+        else {
+            LuaRegion *region = lua_newuserdatauv(L, sizeof(*region), 0);
+            *region = (LuaRegion){value.x, value.y, value.width, value.height};
+            luaL_setmetatable(L, "malvado.region");
+        }
+    } else {
+        float x, y;
+        if (mv_process_scroll_get(engine.context, self->reference, &x, &y) != MV_OK)
+            luaL_error(L, "process is no longer alive");
+        LuaScroll *old = luaL_testudata(L, -1, "malvado.scroll");
+        if ((old && old->x == x && old->y == y) || (lua_isnil(L, -1) && x == 0 && y == 0)) return;
+        lua_pop(L, 1);
+        if (x == 0 && y == 0) lua_pushnil(L);
+        else {
+            LuaScroll *scroll = lua_newuserdatauv(L, sizeof(*scroll), 0);
+            *scroll = (LuaScroll){x, y};
+            luaL_setmetatable(L, "malvado.scroll");
+        }
+    }
+    lua_pushstring(L, key);
+    lua_pushvalue(L, -2);
+    lua_rawset(L, fields);
+}
+
+static void
 set_process_camera(lua_State *L, LuaSelf *self, int value)
 {
     MvCameraRef screen = {0};
@@ -885,6 +939,10 @@ self_index(lua_State *L)
     }
     if (key && strcmp(key, "parent") == 0) {
         push_owner(L, self->id);
+        return 1;
+    }
+    if (key && (!strcmp(key, "region") || !strcmp(key, "scroll"))) {
+        push_process_view(L, self, key);
         return 1;
     }
     if (key && !strcmp(key, "camera")) {
@@ -1115,6 +1173,8 @@ self_newindex(lua_State *L)
         set_process_property(L, self, key, 3);
     if (key && !strcmp(key, "camera"))
         set_process_camera(L, self, 3);
+    if (key && (!strcmp(key, "region") || !strcmp(key, "scroll")))
+        set_process_view(L, self, key, 3);
     lua_getiuservalue(L, 1, 1);
     int graph_changed = 0;
     if (key && !strcmp(key, "graph")) {
@@ -1422,6 +1482,12 @@ create_process(lua_State *L)
     lua_pop(L, 1);
     raw_option(L, fields, "camera");
     set_process_camera(L, draft.self, -1);
+    lua_pop(L, 1);
+    raw_option(L, fields, "region");
+    set_process_view(L, draft.self, "region", -1);
+    lua_pop(L, 1);
+    raw_option(L, fields, "scroll");
+    set_process_view(L, draft.self, "scroll", -1);
     lua_pop(L, 1);
     sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
@@ -4217,21 +4283,14 @@ process_camera(lua_State *L, const Process *process, MvCamera *out)
 static int
 begin_process_region(lua_State *L, const Process *process, const MvCamera *camera)
 {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-    lua_getiuservalue(L, -1, 1);
-    lua_getfield(L, -1, "region");
-    LuaRegion *stored = luaL_testudata(L, -1, "malvado.region");
-    LuaRegion region = stored ? *stored : (LuaRegion){0};
-    int present = !lua_isnil(L, -1);
-    int valid = stored != NULL;
-    lua_pop(L, 3);
-    if (present && !valid) return 0;
-    int width, height;
-    if (!mv_window_size(&width, &height)) return 0;
+    (void)L;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    MvCameraViewport region, clipped;
+    int present, width, height;
+    if (mv_process_region_get(engine.context, reference, &region, &present) != MV_OK ||
+        !mv_window_size(&width, &height)) return 0;
     if (!present && !camera->viewport.width) return 1;
-    MvCameraViewport process_region = {region.x, region.y, region.width, region.height};
-    MvCameraViewport clipped;
-    if (mv_camera_clip(camera, present ? &process_region : NULL, width, height, &clipped) <= 0)
+    if (mv_process_view_clip(engine.context, reference, NULL, width, height, &clipped) != MV_OK || !clipped.width)
         return 0;
     return mv_window_clip_begin(clipped.x, clipped.y, clipped.width, clipped.height) ? 2 : 0;
 }
@@ -4240,17 +4299,11 @@ begin_process_region(lua_State *L, const Process *process, const MvCamera *camer
 static int
 begin_process_scroll(lua_State *L, const Process *process, const MvCamera *camera)
 {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-    lua_getiuservalue(L, -1, 1);
-    lua_getfield(L, -1, "scroll");
-    LuaScroll *stored = luaL_testudata(L, -1, "malvado.scroll");
-    LuaScroll scroll = stored ? *stored : (LuaScroll){0};
-    int present = !lua_isnil(L, -1);
-    int valid = stored != NULL;
-    lua_pop(L, 3);
-    if (present && !valid) return 0;
+    (void)L;
+    (void)camera;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
     double x, y;
-    if (!mv_camera_project(camera, 0, 0, scroll.x, scroll.y, &x, &y)) return 0;
+    if (mv_process_view_offset(engine.context, reference, &x, &y) != MV_OK) return 0;
     if (x == 0 && y == 0) return 1;
     return mv_window_scroll_begin((float)-x, (float)-y) ? 2 : 0;
 }

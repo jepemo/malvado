@@ -60,6 +60,9 @@ typedef struct {
     double x, y;
     double angle, scale;
     uint64_t camera_id;
+    int has_region;
+    MvCameraViewport region;
+    float scroll_x, scroll_y;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
@@ -339,6 +342,93 @@ mv_process_camera_resolve(MvContext *ctx, MvProcessRef reference, MvCamera *out)
     if (result != MV_OK) return result;
     if (!camera.id) { *out = (MvCamera){0}; return MV_OK; }
     return mv_camera_get(ctx, camera, out);
+}
+
+MvResult
+mv_process_region_set(MvContext *ctx, MvProcessRef reference, const MvCameraViewport *region)
+{
+    if (region && (region->width <= 0 || region->height <= 0)) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    if (region) item->region = *region;
+    item->has_region = region != NULL;
+    return MV_OK;
+}
+
+MvResult
+mv_process_region_get(MvContext *ctx, MvProcessRef reference, MvCameraViewport *region, int *present)
+{
+    if (!region || !present || present == &region->x || present == &region->y ||
+        present == &region->width || present == &region->height) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    if (item->has_region) *region = item->region;
+    *present = item->has_region;
+    return MV_OK;
+}
+
+MvResult
+mv_process_scroll_set(MvContext *ctx, MvProcessRef reference, float x, float y)
+{
+    if (!isfinite(x) || !isfinite(y) || fabsf(x) > FLT_MAX / 16 || fabsf(y) > FLT_MAX / 16)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    item->scroll_x = x;
+    item->scroll_y = y;
+    return MV_OK;
+}
+
+MvResult
+mv_process_scroll_get(MvContext *ctx, MvProcessRef reference, float *x, float *y)
+{
+    if (!x || !y || x == y) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    *x = item->scroll_x;
+    *y = item->scroll_y;
+    return MV_OK;
+}
+
+MvResult
+mv_process_view_clip(MvContext *ctx, MvProcessRef reference, const MvCameraViewport *host,
+                     int width, int height, MvCameraViewport *out)
+{
+    if (!out || width <= 0 || height <= 0 || (host && (host->width <= 0 || host->height <= 0)))
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    MvCamera camera;
+    result = mv_process_camera_resolve(ctx, reference, &camera);
+    if (result != MV_OK) return result;
+    MvCameraViewport clipped;
+    int visible = mv_camera_clip(&camera, item->has_region ? &item->region : NULL, width, height, &clipped);
+    if (visible < 0) return MV_INVALID_ARGUMENT;
+    if (visible && host) {
+        MvCamera intersection = {.viewport = clipped};
+        if (mv_camera_clip(&intersection, host, width, height, &clipped) < 0)
+            return MV_INVALID_ARGUMENT;
+    }
+    *out = clipped;
+    return MV_OK;
+}
+
+MvResult
+mv_process_view_offset(MvContext *ctx, MvProcessRef reference, double *x, double *y)
+{
+    if (!x || !y || x == y) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    MvCamera camera;
+    result = mv_process_camera_resolve(ctx, reference, &camera);
+    if (result != MV_OK) return result;
+    return mv_camera_project(&camera, 0, 0, item->scroll_x, item->scroll_y, x, y) ? MV_OK : MV_INVALID_ARGUMENT;
 }
 
 MvResult

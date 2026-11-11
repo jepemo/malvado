@@ -47,6 +47,12 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_camera_get`
 - `mv_process_camera_resolve`
 - `mv_process_camera_set`
+- `mv_process_region_get`
+- `mv_process_region_set`
+- `mv_process_scroll_get`
+- `mv_process_scroll_set`
+- `mv_process_view_clip`
+- `mv_process_view_offset`
 
 ## [collision.h](../../src/include/malvado/collision.h)
 

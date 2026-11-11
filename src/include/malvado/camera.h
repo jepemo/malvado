@@ -47,6 +47,28 @@ MvResult mv_process_camera_set(MvContext *ctx, MvProcessRef process, const MvCam
 MvResult mv_process_camera_get(MvContext *ctx, MvProcessRef process, MvCameraRef *out);
 MvResult mv_process_camera_resolve(MvContext *ctx, MvProcessRef process, MvCamera *out);
 
+/* Copied process visual descriptors. Region is screen-space, with positive
+ * dimensions; NULL clears it. Scroll starts at zero and uses finite float
+ * coordinates with magnitude <= FLT_MAX/16. Neither changes world coordinates,
+ * colliders or scheduling. Get requires non-NULL outputs; scroll outputs must
+ * be distinct; region/present storage must not overlap. Absent region leaves
+ * region output unchanged and writes present=0.
+ * Errors preserve outputs/state; foreign/invalid inputs are MV_INVALID_ARGUMENT,
+ * dead processes are MV_NOT_FOUND. Owner-thread, no allocation or retention. */
+MvResult mv_process_region_set(MvContext *ctx, MvProcessRef process, const MvCameraViewport *region);
+MvResult mv_process_region_get(MvContext *ctx, MvProcessRef process, MvCameraViewport *region, int *present);
+MvResult mv_process_scroll_set(MvContext *ctx, MvProcessRef process, float x, float y);
+MvResult mv_process_scroll_get(MvContext *ctx, MvProcessRef process, float *x, float *y);
+/* Compose selected camera, process region and optional host screen-space clip.
+ * Empty intersections write a zero rectangle. Screen dimensions must be positive.
+ * Offset projects world origin through selected camera and local scroll, without
+ * host scroll. Apply it to drawing only. Closed cameras return MV_NOT_FOUND.
+ * Errors preserve outputs; offset requires distinct non-NULL outputs.
+ * Both operations require live context-bound processes. */
+MvResult mv_process_view_clip(MvContext *ctx, MvProcessRef process, const MvCameraViewport *host,
+                              int width, int height, MvCameraViewport *out);
+MvResult mv_process_view_offset(MvContext *ctx, MvProcessRef process, double *x, double *y);
+
 /* Initialize a camera. NULL viewport selects the full window. Coordinates must
  * be finite with magnitude <= FLT_MAX / 64; explicit viewport dimensions must
  * be positive. Return 1 on success, 0 without changing outputs on failure.

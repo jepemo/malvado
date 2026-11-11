@@ -707,15 +707,19 @@ mv_window_draw_process_graphics(MvContext *ctx)
         if (fabs(transform.x) > FLT_MAX / 16 || fabs(transform.y) > FLT_MAX / 16)
             continue;
         MvCamera camera;
-        MvCameraViewport visible;
+        MvCameraViewport visible, region;
+        int has_region;
+        double offset_x, offset_y;
         if (mv_process_camera_resolve(ctx, ref, &camera) != MV_OK ||
-            mv_camera_clip(&camera, saved_clip ? &clip : NULL, width, height, &visible) <= 0)
+            mv_process_region_get(ctx, ref, &region, &has_region) != MV_OK ||
+            mv_process_view_clip(ctx, ref, saved_clip ? &clip : NULL, width, height, &visible) != MV_OK || !visible.width ||
+            mv_process_view_offset(ctx, ref, &offset_x, &offset_y) != MV_OK)
             continue;
-        transform.x += camera.viewport.x - camera.x - scroll_x;
-        transform.y += camera.viewport.y - camera.y - scroll_y;
+        transform.x += offset_x - scroll_x;
+        transform.y += offset_y - scroll_y;
         /* Keep the default full-window pass batched. Explicit viewport/host
          * clipping still needs a per-process scissor intersection. */
-        if (!saved_clip && !camera.viewport.width) {
+        if (!saved_clip && !camera.viewport.width && !has_region) {
             (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
             continue;
         }

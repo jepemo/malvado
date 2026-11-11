@@ -653,6 +653,43 @@ pub struct MvCameraRef {
     pub id: u64,
 }
 unsafe extern "C" {
+    pub fn mv_process_region_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        region: *const MvCameraViewport,
+    ) -> c_int;
+    pub fn mv_process_region_get(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        region: *mut MvCameraViewport,
+        present: *mut c_int,
+    ) -> c_int;
+    pub fn mv_process_scroll_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: f32,
+        y: f32,
+    ) -> c_int;
+    pub fn mv_process_scroll_get(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: *mut f32,
+        y: *mut f32,
+    ) -> c_int;
+    pub fn mv_process_view_clip(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        host: *const MvCameraViewport,
+        width: c_int,
+        height: c_int,
+        out: *mut MvCameraViewport,
+    ) -> c_int;
+    pub fn mv_process_view_offset(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: *mut f64,
+        y: *mut f64,
+    ) -> c_int;
     pub fn mv_camera_main(ctx: *mut MvContext, out: *mut MvCameraRef) -> c_int;
     pub fn mv_camera_create(ctx: *mut MvContext, value: MvCamera, out: *mut MvCameraRef) -> c_int;
     pub fn mv_camera_get(ctx: *mut MvContext, camera: MvCameraRef, out: *mut MvCamera) -> c_int;
