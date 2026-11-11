@@ -366,3 +366,37 @@ once with `mv_image_destroy`. Retention does not copy pixels or retain the
 window. Keep the window open until every reference is released, and use these
 operations on its owner thread. Rust `Image::clone` already shares its safe
 owner and needs no change.
+
+## Native process image graphs
+
+`mv_process_image_set(ctx, process, graphic)` selects an owned reference to an
+image region. `MvImageGraphic` contains the image, region and signed pixel
+pivot. The region must fit the live image. A pivot may lie outside the region.
+The descriptor is copied. The caller keeps its original image reference.
+
+A process has one selected graph. Assigning an image replaces a primitive or
+previous image. `mv_process_graphic_set` replaces an image with a primitive.
+`mv_process_graphic_clear` clears either kind. Replacement, process cleanup and
+context destruction release the stored image reference. Failed assignment
+preserves the old graph and caller ownership.
+
+`mv_process_image_get` copies the descriptor and writes a presence flag. Its
+image pointer is borrowed until replacement or process cleanup. Call
+`mv_image_retain` before keeping it independently. When no image is selected,
+the descriptor stays unchanged and presence is zero. NULL output pointers fail.
+Invalid/foreign references return `MV_INVALID_ARGUMENT`; ended processes return
+`MV_NOT_FOUND`. Other failures include allocation or reference overflow.
+
+`mv_window_draw_process_graphics` draws primitive and image graphs in one native
+z/creation-order pass. Native position, angle, scale, camera, region and scroll
+apply to images. Sleeping processes are excluded; frozen processes stay visible.
+The pass flushes queued texture uses before returning. The host can then clear
+a graph or clean up its process in the same frame.
+The default graph-bound collider uses the sprite region and pivot immediately.
+Explicit local, disabled and fixed colliders keep their existing behavior.
+
+The C host must keep the window open through process/context cleanup. Image
+references do not retain a C window. Only the window owner thread may assign,
+query, clear or draw image graphs. The unsafe Rust sys declarations are available;
+safe Rust assignment and Lua image-graph migration are still incomplete. Existing
+Lua image graph behavior is unchanged. Automatic animation remains separate.

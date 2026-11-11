@@ -17,6 +17,7 @@
 #undef NDEBUG
 #endif
 #include "malvado/graphic.h"
+#include "../src/core/process.h"
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -29,8 +30,40 @@ static MvStepResult step(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_YIELD;
 }
 
+static void released(void *data) { ++*(int *)data; }
+
+static void owned_visual_cleanup(void)
+{
+    MvContext *ctx = mv_context_create(60, 4);
+    MvProcessId id;
+    MvProcessRef ref;
+    MvCollisionShape shape;
+    assert(mv_graphic_sprite(3, 5, -2, 9, &shape));
+    assert(mv_process_spawn(ctx, 0, 0, step, NULL, NULL, &id) == MV_OK);
+    assert(mv_process_ref_create(ctx, id, &ref) == MV_OK);
+    int count = 0;
+    assert(malvado_process_visual_set(ctx, ref, shape, &count, released) == MV_OK);
+    assert(malvado_process_visual_set(ctx, ref, shape, &count, released) == MV_OK && count == 1);
+    assert(mv_process_graphic_clear(ctx, ref) == MV_OK && count == 2);
+    assert(mv_process_graphic_clear(ctx, ref) == MV_OK && count == 2);
+    assert(malvado_process_visual_set(ctx, ref, shape, &count, released) == MV_OK);
+    MvGraphic primitive = {.color = {255, 0, 0, 255}};
+    assert(mv_graphic_circle(2, &primitive.shape));
+    assert(mv_process_graphic_set(ctx, ref, primitive) == MV_OK && count == 3);
+    assert(malvado_process_visual_set(ctx, ref, shape, &count, released) == MV_OK);
+    int killed;
+    assert(mv_process_kill(ctx, ref, &killed) == MV_OK && count == 3);
+    assert(mv_process_tick(ctx) == MV_OK && count == 4);
+    assert(mv_process_spawn(ctx, 0, 0, step, NULL, NULL, &id) == MV_OK);
+    assert(mv_process_ref_create(ctx, id, &ref) == MV_OK);
+    assert(malvado_process_visual_set(ctx, ref, shape, &count, released) == MV_OK);
+    mv_context_destroy(ctx);
+    assert(count == 5);
+}
+
 int main(void)
 {
+    owned_visual_cleanup();
     MvContext *ctx = mv_context_create(60, 4), *other = mv_context_create(60, 4);
     assert(ctx && other);
     MvProcessId id;

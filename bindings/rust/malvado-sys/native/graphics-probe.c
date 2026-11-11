@@ -189,6 +189,12 @@ int main(void)
     printf("%zu %zu ", sizeof(MvDrawState), _Alignof(MvDrawState));
     printf("%zu ", offsetof(MvDrawState, color));
     printf("%zu ", offsetof(MvDrawState, background));
+    printf("%zu ", sizeof(MvImageGraphic));
+    printf("%zu ", _Alignof(MvImageGraphic));
+    printf("%zu ", offsetof(MvImageGraphic, image));
+    printf("%zu ", offsetof(MvImageGraphic, region));
+    printf("%zu ", offsetof(MvImageGraphic, pivot_x));
+    printf("%zu ", offsetof(MvImageGraphic, pivot_y));
     return 0;
 }
 
@@ -203,3 +209,6 @@ _Static_assert(_Generic(&mv_resource_adopt_music, MvResult (*)(MvContext *, cons
 _Static_assert(_Generic(&mv_image_from_png, MvImage * (*)(const uint8_t *, size_t): 1, default: 0), "mv_image_from_png signature");
 
 _Static_assert(_Generic(&mv_image_retain, int (*)(MvImage *): 1, default: 0), "mv_image_retain signature");
+
+_Static_assert(_Generic(&mv_process_image_set, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic): 1, default: 0), "mv_process_image_set signature");
+_Static_assert(_Generic(&mv_process_image_get, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic *, int *): 1, default: 0), "mv_process_image_get signature");

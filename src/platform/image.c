@@ -14,6 +14,8 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
+#include "../core/process.h"
 #include "malvado/platform.h"
 
 int
@@ -33,4 +35,45 @@ mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTransfo
            isfinite(region.height * transform.scale) &&
            isfinite(transform.pivot_x * transform.scale) &&
            isfinite(transform.pivot_y * transform.scale);
+}
+
+static void
+release_image_graph(void *data)
+{
+    MvImageGraphic *graphic = data;
+    mv_image_destroy(graphic->image);
+    free(graphic);
+}
+
+MvResult
+mv_process_image_set(MvContext *ctx, MvProcessRef process, MvImageGraphic graphic)
+{
+    void *previous;
+    MvResult result = malvado_process_visual_get(ctx, process, &previous);
+    if (result != MV_OK) return result;
+    MvCollisionShape shape;
+    MvImageTransform transform = {0, 0, (float)graphic.pivot_x, (float)graphic.pivot_y, 1, 0};
+    if (!mv_image_region_valid(graphic.image, graphic.region, transform) ||
+        !mv_graphic_sprite(graphic.region.width, graphic.region.height,
+                           graphic.pivot_x, graphic.pivot_y, &shape))
+        return MV_INVALID_ARGUMENT;
+    MvImageGraphic *owned = malloc(sizeof(*owned));
+    if (!owned) return MV_OUT_OF_MEMORY;
+    if (!mv_image_retain(graphic.image)) { free(owned); return MV_OVERFLOW; }
+    *owned = graphic;
+    result = malvado_process_visual_set(ctx, process, shape, owned, release_image_graph);
+    if (result != MV_OK) release_image_graph(owned);
+    return result;
+}
+
+MvResult
+mv_process_image_get(MvContext *ctx, MvProcessRef process, MvImageGraphic *out, int *present)
+{
+    if (!out || !present) return MV_INVALID_ARGUMENT;
+    void *data;
+    MvResult result = malvado_process_visual_get(ctx, process, &data);
+    if (result != MV_OK) return result;
+    if (data) *out = *(MvImageGraphic *)data;
+    *present = data != NULL;
+    return MV_OK;
 }

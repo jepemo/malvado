@@ -70,6 +70,8 @@ typedef struct {
     int killed, attached;
     int has_graphic;
     MvGraphic graphic;
+    void *graphic_data;
+    MvResourceDestroy graphic_destroy;
     ColliderMode collider_mode;
     int has_collider;
     MvCollisionShape collider;
@@ -431,6 +433,45 @@ mv_process_view_offset(MvContext *ctx, MvProcessRef reference, double *x, double
     return mv_camera_project(&camera, 0, 0, item->scroll_x, item->scroll_y, x, y) ? MV_OK : MV_INVALID_ARGUMENT;
 }
 
+static void
+release_graphic_data(Process *item)
+{
+    void *data = item->graphic_data;
+    MvResourceDestroy destroy = item->graphic_destroy;
+    item->graphic_data = NULL;
+    item->graphic_destroy = NULL;
+    if (destroy) destroy(data);
+}
+
+MvResult
+malvado_process_visual_set(MvContext *ctx, MvProcessRef ref,
+                          MvCollisionShape shape, void *data, MvResourceDestroy destroy)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result != MV_OK) return result;
+    MvCollisionBounds bounds;
+    if (!data || !destroy || !mv_collision_bounds(shape, (MvCollisionTransform){0, 0, 0, 1}, &bounds))
+        return MV_INVALID_ARGUMENT;
+    release_graphic_data(item);
+    item->graphic = (MvGraphic){.shape = shape};
+    item->has_graphic = 1;
+    item->graphic_data = data;
+    item->graphic_destroy = destroy;
+    return MV_OK;
+}
+
+MvResult
+malvado_process_visual_get(MvContext *ctx, MvProcessRef ref, void **data)
+{
+    if (!data) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result != MV_OK) return result;
+    *data = item->graphic_data;
+    return MV_OK;
+}
+
 MvResult
 mv_process_graphic_set(MvContext *ctx, MvProcessRef reference, MvGraphic graphic)
 {
@@ -453,6 +494,7 @@ mv_process_graphic_set(MvContext *ctx, MvProcessRef reference, MvGraphic graphic
         return MV_INVALID_ARGUMENT;
     }
     graphic.shape = checked;
+    release_graphic_data(item);
     item->graphic = graphic;
     item->has_graphic = 1;
     return MV_OK;
@@ -467,9 +509,9 @@ mv_process_graphic_get(MvContext *ctx, MvProcessRef reference, MvGraphic *graphi
     MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK)
         return result;
-    if (item->has_graphic)
+    if (item->has_graphic && !item->graphic_data)
         *graphic = item->graphic;
-    *present = item->has_graphic;
+    *present = item->has_graphic && !item->graphic_data;
     return MV_OK;
 }
 
@@ -480,6 +522,7 @@ mv_process_graphic_clear(MvContext *ctx, MvProcessRef reference)
     MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK)
         return result;
+    release_graphic_data(item);
     item->has_graphic = 0;
     return MV_OK;
 }
@@ -912,6 +955,7 @@ void mv_processes_destroy(MvProcesses *p)
             free(node);
             node = next;
         }
+        release_graphic_data(&p->items[i]);
         if (p->items[i].destroy) p->items[i].destroy(p->items[i].user);
     }
     while (p->resources) {
@@ -1721,6 +1765,7 @@ MvResult mv_process_tick(MvContext *ctx)
             free(node);
             node = next;
         }
+        release_graphic_data(&p->items[i]);
         p->cleanup_lineage = lineage;
         if (destroy) destroy(user);
         release_owned_resources(p, lineage->id);

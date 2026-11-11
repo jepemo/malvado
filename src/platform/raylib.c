@@ -665,6 +665,20 @@ mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, M
         top_left ? 0 : (float)(checked.height / 2), (float)transform.angle, color);
 }
 
+static void
+draw_selected_graph(MvGraphic graphic, const MvImageGraphic *image,
+                    MvCollisionTransform transform)
+{
+    if (!image) {
+        (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+        return;
+    }
+    MvImageTransform visual = {(float)transform.x, (float)transform.y,
+        (float)image->pivot_x, (float)image->pivot_y,
+        (float)transform.scale, (float)transform.angle};
+    (void)mv_image_draw_region(image->image, image->region, visual);
+}
+
 int
 mv_window_draw_process_graphics(MvContext *ctx)
 {
@@ -692,10 +706,12 @@ mv_window_draw_process_graphics(MvContext *ctx)
     if (saved_clip) (void)mv_window_clip_end();
     for (size_t i = 0; i < total; ++i) {
         MvProcessRef ref;
-        MvGraphic graphic;
-        int present;
+        MvGraphic graphic = {0};
+        MvImageGraphic image;
+        int present, has_image;
         if (mv_process_ref_create(ctx, items[i].id, &ref) != MV_OK ||
-            mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK || !present)
+            mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK ||
+            mv_process_image_get(ctx, ref, &image, &has_image) != MV_OK || (!present && !has_image))
             continue;
         MvCollisionTransform transform;
         if (mv_process_position(ctx, ref, &transform.x, &transform.y) != MV_OK ||
@@ -720,14 +736,17 @@ mv_window_draw_process_graphics(MvContext *ctx)
         /* Keep the default full-window pass batched. Explicit viewport/host
          * clipping still needs a per-process scissor intersection. */
         if (!saved_clip && !camera.viewport.width && !has_region) {
-            (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+            draw_selected_graph(graphic, has_image ? &image : NULL, transform);
             continue;
         }
         if (mv_window_clip_begin(visible.x, visible.y, visible.width, visible.height)) {
-            (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+            draw_selected_graph(graphic, has_image ? &image : NULL, transform);
             (void)mv_window_clip_end();
         }
     }
+    /* Complete queued texture uses before the host can replace a graph or
+     * destroy its process/context. No process callbacks run during this pass. */
+    mv_window_flush();
     if (saved_clip) (void)mv_window_clip_begin(clip.x, clip.y, clip.width, clip.height);
     if (saved_scroll) (void)mv_window_scroll_begin(scroll_x, scroll_y);
     free(items);

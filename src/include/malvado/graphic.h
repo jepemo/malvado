@@ -28,8 +28,9 @@ typedef struct { MvCollisionShape shape; MvColor color; } MvGraphic;
  * idempotent. Foreign/invalid inputs return MV_INVALID_ARGUMENT; dead processes
  * return MV_NOT_FOUND. Failure preserves state and outputs. Owner-thread only.
  * Fixed colliders remain independent; new processes derive colliders from this
- * primitive by default. Image/animation graphs are not stored
- * by this primitive service. */
+ * primitive by default. A platform image graph replaces this primitive: get
+ * reports absent while an image is selected. Set replaces either graph kind;
+ * clear releases either kind. Automatic animation is not part of this service. */
 MvResult mv_process_graphic_set(MvContext *ctx, MvProcessRef process, MvGraphic graphic);
 MvResult mv_process_graphic_get(MvContext *ctx, MvProcessRef process, MvGraphic *graphic, int *present);
 MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);

@@ -279,6 +279,27 @@ int mv_image_width(const MvImage *image);
 int mv_image_height(const MvImage *image);
 /* Draw the image at its top-left position between begin and end. */
 void mv_image_draw(const MvImage *image, int x, int y);
+/* One selected image graph, mutually exclusive with a primitive graph.
+ * Set copies the descriptor and retains its image. The region must fit the
+ * image; signed pivots can lie outside it. Replacement, graphic_clear, process
+ * cleanup and context shutdown release the reference exactly once.
+ * The native process drawing pass flushes texture uses before returning, so
+ * later graph replacement or process cleanup in that frame is safe.
+ * Get copies a borrowed image reference, valid until graph replacement/cleanup;
+ * retain it explicitly for independent ownership. Absent get leaves out alone
+ * and writes present=0. NULL outputs fail. Errors preserve state and outputs.
+ * Keep the window open through process/context cleanup. Owner-thread only.
+ * Default bound colliders use this sprite geometry; fixed/local/disabled
+ * collider selection remains unchanged. Headless set fails for absent images.
+ * Rust safe process assignment and Lua graph migration remain unavailable. */
+typedef struct {
+    MvImage *image;
+    MvImageRegion region;
+    int pivot_x, pivot_y;
+} MvImageGraphic;
+MvResult mv_process_image_set(MvContext *ctx, MvProcessRef process, MvImageGraphic graphic);
+MvResult mv_process_image_get(MvContext *ctx, MvProcessRef process, MvImageGraphic *out, int *present);
+
 /* Region and pivot use source pixels. Position uses window pixels; rotation
  * is clockwise in degrees. Scale must be positive. Returns 1 if valid. */
 int mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTransform transform);

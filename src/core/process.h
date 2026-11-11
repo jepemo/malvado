@@ -24,4 +24,10 @@ MvProcesses *mv_processes_create(MvContext *ctx);
 void mv_processes_destroy(MvProcesses *processes);
 int mv_processes_can_destroy(const MvProcesses *processes);
 MvProcesses *mv_context_processes(MvContext *ctx);
+/* Private platform graph ownership. Success takes data; callbacks must only
+ * release platform objects and must not call the process/context API. */
+#include "malvado/collision.h"
+MvResult malvado_process_visual_set(MvContext *ctx, MvProcessRef ref,
+    MvCollisionShape shape, void *data, MvResourceDestroy destroy);
+MvResult malvado_process_visual_get(MvContext *ctx, MvProcessRef ref, void **data);
 #endif

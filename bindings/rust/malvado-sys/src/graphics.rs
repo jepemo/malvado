@@ -130,6 +130,12 @@ const _: () = {
         align_of::<MvDrawState>(),
         offset_of!(MvDrawState, color),
         offset_of!(MvDrawState, background),
+        size_of::<MvImageGraphic>(),
+        align_of::<MvImageGraphic>(),
+        offset_of!(MvImageGraphic, image),
+        offset_of!(MvImageGraphic, region),
+        offset_of!(MvImageGraphic, pivot_x),
+        offset_of!(MvImageGraphic, pivot_y),
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -447,5 +453,27 @@ unsafe extern "C" {
         owner: *const crate::MvProcessRef,
         data: *mut MvMusic,
         out: *mut *mut crate::MvResource,
+    ) -> c_int;
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct MvImageGraphic {
+    pub image: *mut MvImage,
+    pub region: MvImageRegion,
+    pub pivot_x: c_int,
+    pub pivot_y: c_int,
+}
+unsafe extern "C" {
+    pub fn mv_process_image_set(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        graphic: MvImageGraphic,
+    ) -> c_int;
+    pub fn mv_process_image_get(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        out: *mut MvImageGraphic,
+        present: *mut c_int,
     ) -> c_int;
 }

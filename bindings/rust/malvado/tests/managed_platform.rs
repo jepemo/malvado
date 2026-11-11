@@ -30,6 +30,26 @@ fn main() {
         assert_eq!(ffi::mv_image_retain(image), 1);
         ffi::mv_image_destroy(image);
         assert_eq!(ffi::mv_image_width(cached), 8);
+        let graphic = ffi::MvImageGraphic {
+            image,
+            region: ffi::MvImageRegion {
+                x: 0,
+                y: 0,
+                width: 8,
+                height: 8,
+            },
+            pivot_x: 4,
+            pivot_y: 4,
+        };
+        assert_eq!(ffi::mv_process_image_set(ctx, owner, graphic), 0);
+        let mut copied = graphic;
+        let mut present = 0;
+        assert_eq!(
+            ffi::mv_process_image_get(ctx, owner, &mut copied, &mut present),
+            0
+        );
+        assert_eq!(present, 1);
+        assert_eq!(copied.image, image);
         let font = ffi::mv_font_load(path("fonts/AnonymousPro-Bold.ttf").as_ptr(), 24);
         let sound = ffi::mv_sound_load(path("silence.wav").as_ptr());
         let clone = ffi::mv_sound_clone(sound);
