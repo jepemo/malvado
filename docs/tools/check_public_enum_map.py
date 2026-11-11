@@ -27,6 +27,7 @@ def main():
     docs = ROOT / "docs/api"
     maps = [((docs / file).read_text(encoding="utf-8"), heading) for file, heading in (
         ("process-inventory.md", "| C enum | C constants | Lua relationship |"),
+        ("asset-inventory.md", "| C enum | C constants | Lua relationship |"),
         ("collision-inventory.md", "| C enum | C constants | Lua relationship |"),
         ("input-inventory.md", "| C type | C constants | Lua relationship |"))]
     errors = compare(headers, maps)

@@ -14,6 +14,17 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_animation_destroy`
 - `mv_animation_sample`
 
+## [asset.h](../../src/include/malvado/asset.h)
+
+- `mv_asset_source_data`
+- `mv_asset_source_destroy`
+- `mv_asset_source_dimensions`
+- `mv_asset_source_format`
+- `mv_asset_source_image_path`
+- `mv_asset_source_image_path_size`
+- `mv_asset_source_open`
+- `mv_asset_source_path`
+
 ## [atlas.h](../../src/include/malvado/atlas.h)
 
 - `mv_atlas_animation_color`

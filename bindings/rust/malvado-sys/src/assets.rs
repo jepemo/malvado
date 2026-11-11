@@ -143,6 +143,14 @@ const _: () = {
         offset_of!(MvFpgManifestSprite, name),
         offset_of!(MvFpgManifestSprite, filename),
         offset_of!(MvFpgManifestSprite, point_count),
+        size_of::<c_int>(),
+        align_of::<c_int>(),
+        MV_ASSET_UNKNOWN as usize,
+        MV_ASSET_PNG as usize,
+        MV_ASSET_FPG as usize,
+        MV_ASSET_ATLAS as usize,
+        MV_ASSET_ASEPRITE as usize,
+        MV_ASSET_FPG_MANIFEST as usize,
     ];
     assert!(
         native.len() == rust.len(),
@@ -260,5 +268,41 @@ unsafe extern "C" {
         owner: *const crate::MvProcessRef,
         data: *mut MvAtlas,
         out: *mut *mut crate::MvResource,
+    ) -> c_int;
+}
+
+#[repr(C)]
+pub struct MvAssetSource {
+    _private: [u8; 0],
+}
+pub const MV_ASSET_UNKNOWN: c_int = 0;
+pub const MV_ASSET_PNG: c_int = 1;
+pub const MV_ASSET_FPG: c_int = 2;
+pub const MV_ASSET_ATLAS: c_int = 3;
+pub const MV_ASSET_ASEPRITE: c_int = 4;
+pub const MV_ASSET_FPG_MANIFEST: c_int = 5;
+unsafe extern "C" {
+    pub fn mv_asset_source_open(
+        path: *const c_char,
+        error: *mut *const c_char,
+    ) -> *mut MvAssetSource;
+    pub fn mv_asset_source_destroy(source: *mut MvAssetSource);
+    pub fn mv_asset_source_path(source: *const MvAssetSource) -> *const c_char;
+    pub fn mv_asset_source_data(source: *const MvAssetSource, length: *mut usize) -> *const c_char;
+    pub fn mv_asset_source_format(source: *const MvAssetSource) -> c_int;
+    pub fn mv_asset_source_dimensions(
+        source: *const MvAssetSource,
+        width: *mut c_int,
+        height: *mut c_int,
+    ) -> c_int;
+    pub fn mv_asset_source_image_path_size(
+        source: *const MvAssetSource,
+        image: *const c_char,
+    ) -> usize;
+    pub fn mv_asset_source_image_path(
+        source: *const MvAssetSource,
+        image: *const c_char,
+        out: *mut c_char,
+        capacity: usize,
     ) -> c_int;
 }

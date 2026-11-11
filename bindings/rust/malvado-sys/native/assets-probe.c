@@ -13,6 +13,7 @@
  * See LICENSE for details.
  */
 #include "malvado/atlas.h"
+#include "malvado/asset.h"
 #include "malvado/fpg.h"
 #include <stdio.h>
 _Static_assert(_Generic(&mv_atlas_parse, MvAtlas * (*)(const char *, size_t, int, int, const char **): 1, default: 0), "mv_atlas_parse signature");
@@ -94,7 +95,30 @@ int main(void)
     printf("%zu ", offsetof(MvFpgManifestSprite, name));
     printf("%zu ", offsetof(MvFpgManifestSprite, filename));
     printf("%zu ", offsetof(MvFpgManifestSprite, point_count));
+    printf("%zu %zu ", sizeof(MvAssetFormat), _Alignof(MvAssetFormat));
+    printf("%zu ", (size_t)MV_ASSET_UNKNOWN);
+    printf("%zu ", (size_t)MV_ASSET_PNG);
+    printf("%zu ", (size_t)MV_ASSET_FPG);
+    printf("%zu ", (size_t)MV_ASSET_ATLAS);
+    printf("%zu ", (size_t)MV_ASSET_ASEPRITE);
+    printf("%zu ", (size_t)MV_ASSET_FPG_MANIFEST);
     return 0;
 }
 
 _Static_assert(_Generic(&mv_resource_adopt_atlas, MvResult (*)(MvContext *, const MvProcessRef *, MvAtlas *, MvResource **): 1, default: 0), "mv_resource_adopt_atlas signature");
+
+_Static_assert(_Generic(&mv_asset_source_open, MvAssetSource * (*)(const char *, const char **): 1, default: 0), "mv_asset_source_open signature");
+
+_Static_assert(_Generic(&mv_asset_source_destroy, void (*)(MvAssetSource *): 1, default: 0), "mv_asset_source_destroy signature");
+
+_Static_assert(_Generic(&mv_asset_source_path, const char * (*)(const MvAssetSource *): 1, default: 0), "mv_asset_source_path signature");
+
+_Static_assert(_Generic(&mv_asset_source_data, const char * (*)(const MvAssetSource *, size_t *): 1, default: 0), "mv_asset_source_data signature");
+
+_Static_assert(_Generic(&mv_asset_source_format, MvAssetFormat (*)(const MvAssetSource *): 1, default: 0), "mv_asset_source_format signature");
+
+_Static_assert(_Generic(&mv_asset_source_dimensions, int (*)(const MvAssetSource *, int *, int *): 1, default: 0), "mv_asset_source_dimensions signature");
+
+_Static_assert(_Generic(&mv_asset_source_image_path_size, size_t (*)(const MvAssetSource *, const char *): 1, default: 0), "mv_asset_source_image_path_size signature");
+
+_Static_assert(_Generic(&mv_asset_source_image_path, int (*)(const MvAssetSource *, const char *, char *, size_t): 1, default: 0), "mv_asset_source_image_path signature");

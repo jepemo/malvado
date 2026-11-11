@@ -7,6 +7,7 @@ for inputs, errors, ownership, examples, and limitations.
 
 | Area | C | Lua | Evidence |
 | --- | --- | --- | --- |
+| Asset source and routing | `mv_asset_source_open`, `mv_asset_source_destroy`, `mv_asset_source_path`, `mv_asset_source_data`, `mv_asset_source_format`, `mv_asset_source_dimensions`, `mv_asset_source_image_path_size`, `mv_asset_source_image_path` | Native-backed `load_asset` source/routing and image paths | `asset_source`, `lua_asset_loader`, installed signatures |
 | Atlas import and lifetime | `mv_atlas_parse`, `mv_atlas_parse_aseprite`, `mv_atlas_destroy`, `mv_resource_adopt_atlas` | `mv.load_atlas`, `mv.load_aseprite`; managed atlas | `atlas`, `atlas_allocation`, `visual_image` |
 | Atlas sprite lookup | `mv_atlas_count`, `mv_atlas_image`, `mv_atlas_find`, `mv_atlas_find_name` | `mv.sprite_info`, `mv.sprite_id` | `atlas`, `visual_image_graph` |
 | Atlas animation and pivot metadata | `mv_atlas_animation_frame_count`, `mv_atlas_animation_frame_at`, `mv_atlas_animation_frame`, `mv_atlas_animation_color`, `mv_atlas_animation_repeats`, `mv_atlas_pivot_color` | `mv.animation_frame`, `mv.animation_color`, `mv.animation_repeats`, `mv.atlas_pivot_color` | `atlas`, `visual_image_graph`, `visual_image` |
@@ -77,3 +78,14 @@ returns one reference that the caller must destroy. Lua image wrappers retain
 independent optional `pivot` metadata. See [PNG ownership and pivots](images.md#shared-png-textures-and-automatic-pivots),
 `visual_image_cache`, `visual_png_pivot`, and `visual_installed_graphics_sdk`
 for lifetime, rendering, collision and installed consumer evidence.
+
+## Asset types and ownership
+
+| C types | Lua relationship and lifetime |
+| --- | --- |
+| `MvAssetSource` | Owned file snapshot; Lua guards it until import completes. No image or parsed metadata is retained. |
+| `MvAssetFormat` | Routing hint from source content, not format validation. |
+
+| C enum | C constants | Lua relationship |
+| --- | --- | --- |
+| `MvAssetFormat` | `MV_ASSET_UNKNOWN`, `MV_ASSET_PNG`, `MV_ASSET_FPG`, `MV_ASSET_ATLAS`, `MV_ASSET_ASEPRITE`, `MV_ASSET_FPG_MANIFEST` | Native content detection for `load_asset`; explicit format options still override routing. |

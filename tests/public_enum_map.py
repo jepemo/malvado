@@ -17,6 +17,7 @@ class EnumMapTest(unittest.TestCase):
         docs = ROOT / "docs/api"
         maps = [((docs / name).read_text(encoding="utf-8"), heading) for name, heading in (
             ("process-inventory.md", "| C enum | C constants | Lua relationship |"),
+            ("asset-inventory.md", "| C enum | C constants | Lua relationship |"),
             ("collision-inventory.md", "| C enum | C constants | Lua relationship |"),
             ("input-inventory.md", "| C type | C constants | Lua relationship |"))]
         self.assertTrue(all(not item for item in compare(headers, maps)))

@@ -23,7 +23,7 @@ def main():
     inventory = (ROOT / "docs/api/asset-inventory.md").read_text(encoding="utf-8")
     table = inventory.split("| Area | C | Lua | Evidence |", 1)[1].split("\n\n", 1)[0]
     failures = False
-    for name, heading in (("atlas", "Atlas"), ("fpg", "FPG")):
+    for name, heading in (("atlas", "Atlas"), ("fpg", "FPG"), ("asset", "Asset")):
         rows = "\n".join(line for line in table.splitlines() if line.startswith(f"| {heading} "))
         type_table = inventory.split(f"## {heading} types and ownership", 1)[1].split("\n\n", 2)[1]
         header = (ROOT / f"src/include/malvado/{name}.h").read_text(encoding="utf-8")

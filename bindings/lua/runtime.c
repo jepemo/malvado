@@ -35,7 +35,7 @@
 #ifdef MALVADO_BUILD_ASSETS
 #include "malvado/atlas.h"
 #include "malvado/fpg.h"
-#include "cJSON.h"
+#include "malvado/asset.h"
 #endif
 #include "globals.h"
 #include "core/clock.h"
@@ -3219,6 +3219,32 @@ draw_sprite(lua_State *L)
 }
 #endif
 
+#ifdef MALVADO_BUILD_ASSETS
+typedef struct { MvAssetSource *source; } LuaAssetSource;
+static int
+asset_source_gc(lua_State *L)
+{
+    LuaAssetSource *value = luaL_checkudata(L, 1, "malvado.asset_source");
+    mv_asset_source_destroy(value->source);
+    value->source = NULL;
+    return 0;
+}
+static const char *
+read_asset_file(lua_State *L, const char *path, size_t *length)
+{
+    LuaAssetSource *value = lua_newuserdatauv(L, sizeof(*value), 0);
+    value->source = NULL;
+    if (luaL_newmetatable(L, "malvado.asset_source")) {
+        lua_pushcfunction(L, asset_source_gc);
+        lua_setfield(L, -2, "__gc");
+    }
+    lua_setmetatable(L, -2);
+    const char *error = NULL;
+    value->source = mv_asset_source_open(path, &error);
+    if (!value->source) luaL_error(L, "%s: %s", error, path);
+    return mv_asset_source_data(value->source, length);
+}
+#else
 /* Read a bounded source without keeping a FILE open across Lua allocations. */
 static const char *
 read_asset_file(lua_State *L, const char *path, size_t *length)
@@ -3246,75 +3272,24 @@ read_asset_file(lua_State *L, const char *path, size_t *length)
     return bytes;
 }
 
+#endif
 #ifdef MALVADO_BUILD_ASSETS
 static void
-push_asset_path(lua_State *L, const char *source, const char *image)
+push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 {
-    const char *slash = strrchr(source, '/');
-    int absolute = image[0] == '/';
-#ifdef _WIN32
-    const char *backslash = strrchr(source, '\\');
-    if (backslash && (!slash || backslash > slash))
-        slash = backslash;
-    absolute = absolute || image[0] == '\\' || (image[0] && image[1] == ':');
-#endif
-    if (absolute || !slash) {
-        lua_pushstring(L, image);
-        return;
-    }
-    lua_pushlstring(L, source, (size_t)(slash - source) + 1);
-    lua_pushstring(L, image);
-    lua_concat(L, 2);
-}
-
-static void
-push_asset_image(lua_State *L, const char *source, const char *image)
-{
+    size_t size = mv_asset_source_image_path_size(source, image);
+    if (!size) luaL_error(L, "invalid asset image path");
     lua_pushcfunction(L, load_image);
-    push_asset_path(L, source, image);
+    char *path = lua_newuserdatauv(L, size, 0);
+    if (!mv_asset_source_image_path(source, image, path, size))
+        luaL_error(L, "cannot resolve asset image path");
+    lua_pushstring(L, path);
+    lua_remove(L, -2);
     lua_call(L, 1, 1);
 }
 
-typedef enum { ASSET_UNKNOWN, ASSET_PNG, ASSET_FPG, ASSET_ATLAS,
-               ASSET_ASEPRITE, ASSET_MANIFEST } AssetFormat;
-
-/* Routing only: the existing native importer validates the complete schema
- * before any referenced image is opened. Never infer a JSON dialect by suffix. */
-static AssetFormat
-asset_json_format(const char *bytes, size_t length, int *width, int *height)
-{
-    if (memchr(bytes, '\0', length) || length > 16 * 1024 * 1024)
-        return ASSET_UNKNOWN;
-    cJSON *root = cJSON_ParseWithLengthOpts(bytes, length + 1, NULL, 1);
-    if (!root)
-        return ASSET_UNKNOWN;
-    const cJSON *kind = cJSON_GetObjectItemCaseSensitive(root, "kind");
-    const cJSON *meta = cJSON_GetObjectItemCaseSensitive(root, "meta");
-    const cJSON *frames = cJSON_GetObjectItemCaseSensitive(root, "frames");
-    AssetFormat format = ASSET_UNKNOWN;
-    if (cJSON_IsString(kind) && !meta && !frames) {
-        if (!strcmp(kind->valuestring, "graphics-library"))
-            format = ASSET_ATLAS;
-        else if (!strcmp(kind->valuestring, "malvado-fpg-8"))
-            format = ASSET_MANIFEST;
-    } else if (!kind && meta && frames) {
-        format = ASSET_ASEPRITE;
-        const cJSON *size = cJSON_GetObjectItemCaseSensitive(meta, "size");
-        const cJSON *w = cJSON_GetObjectItemCaseSensitive(size, "w");
-        const cJSON *h = cJSON_GetObjectItemCaseSensitive(size, "h");
-        if (cJSON_IsNumber(w) && cJSON_IsNumber(h) &&
-            w->valuedouble >= 1 && w->valuedouble <= INT_MAX &&
-            h->valuedouble >= 1 && h->valuedouble <= INT_MAX) {
-            *width = (int)w->valuedouble;
-            *height = (int)h->valuedouble;
-        }
-    }
-    cJSON_Delete(root);
-    return format;
-}
-
 static int
-load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t length,
+load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, const char *bytes, size_t length,
                  int aseprite, int width, int height)
 {
     LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
@@ -3327,7 +3302,7 @@ load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t lengt
     if (!atlas->atlas)
         return luaL_error(L, "%s: %s", path, error);
     if (engine.window) {
-        push_asset_image(L, path, mv_atlas_image(atlas->atlas));
+        push_asset_image(L, source, mv_atlas_image(atlas->atlas));
         LuaImage *image = lua_touserdata(L, -1);
         MvAtlas *validated = aseprite ?
             mv_atlas_parse_aseprite(bytes, length, mv_image_width(image->image),
@@ -3348,16 +3323,16 @@ load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t lengt
 }
 
 static int
-load_asset_library(lua_State *L, const char *path, const char *bytes, size_t length,
-                   AssetFormat format, int transparent)
+load_asset_library(lua_State *L, MvAssetSource *source, const char *path, const char *bytes, size_t length,
+                   MvAssetFormat format, int transparent)
 {
-    lua_pushcfunction(L, format == ASSET_FPG ? fpg_parse : fpg_manifest_parse);
+    lua_pushcfunction(L, format == MV_ASSET_FPG ? fpg_parse : fpg_manifest_parse);
     lua_pushlstring(L, bytes, length);
     lua_call(L, 1, 1);
     int library = lua_gettop(L);
     lua_newtable(L);
     int images = lua_gettop(L);
-    if (format == ASSET_FPG) {
+    if (format == MV_ASSET_FPG) {
         LuaFpg *fpg = lua_touserdata(L, library);
         fpg->transparent_zero = transparent;
         if (engine.window) {
@@ -3381,7 +3356,7 @@ load_asset_library(lua_State *L, const char *path, const char *bytes, size_t len
                 (void)mv_fpg_manifest_at(manifest->manifest, i, &sprite);
                 char name[32];
                 (void)snprintf(name, sizeof(name), "%d.png", sprite.id);
-                push_asset_image(L, path, name);
+                push_asset_image(L, source, name);
                 LuaImage *image = lua_touserdata(L, -1);
                 if (mv_image_width(image->image) != sprite.width ||
                     mv_image_height(image->image) != sprite.height)
@@ -3440,7 +3415,12 @@ load_asset(lua_State *L)
     }
     size_t length;
     const char *bytes = read_asset_file(L, path, &length);
+#ifdef MALVADO_BUILD_ASSETS
+    MvAssetSource *source = ((LuaAssetSource *)lua_touserdata(L, -1))->source;
+    int png = mv_asset_source_format(source) == MV_ASSET_PNG;
+#else
     int png = length >= 8 && !memcmp(bytes, "\x89PNG\r\n\x1a\n", 8);
+#endif
     if ((requested && !strcmp(requested, "png")) || (!requested && png)) {
         if (has_transparent)
             return luaL_error(L, "transparent_zero is only valid for FPG assets");
@@ -3457,21 +3437,20 @@ load_asset(lua_State *L)
     if (has_pivot) return luaL_error(L, "pivot option is only valid for PNG assets");
 #ifdef MALVADO_BUILD_ASSETS
     int width = INT_MAX, height = INT_MAX;
-    AssetFormat detected = length >= 4 && !memcmp(bytes, "fpg\x1a", 4) ? ASSET_FPG :
-                           asset_json_format(bytes, length, &width, &height);
-    AssetFormat format = detected;
+    (void)mv_asset_source_dimensions(source, &width, &height);
+    MvAssetFormat format = mv_asset_source_format(source);
     if (requested) {
-        if (!strcmp(requested, "fpg")) format = ASSET_FPG;
-        else if (!strcmp(requested, "atlas")) format = ASSET_ATLAS;
-        else if (!strcmp(requested, "aseprite")) format = ASSET_ASEPRITE;
-        else format = ASSET_MANIFEST;
+        if (!strcmp(requested, "fpg")) format = MV_ASSET_FPG;
+        else if (!strcmp(requested, "atlas")) format = MV_ASSET_ATLAS;
+        else if (!strcmp(requested, "aseprite")) format = MV_ASSET_ASEPRITE;
+        else format = MV_ASSET_FPG_MANIFEST;
     }
-    if (has_transparent && format != ASSET_FPG)
+    if (has_transparent && format != MV_ASSET_FPG)
         return luaL_error(L, "transparent_zero is only valid for FPG assets");
-    if (format == ASSET_ATLAS || format == ASSET_ASEPRITE)
-        return load_asset_atlas(L, path, bytes, length, format == ASSET_ASEPRITE, width, height);
-    if (format == ASSET_FPG || format == ASSET_MANIFEST)
-        return load_asset_library(L, path, bytes, length, format, transparent);
+    if (format == MV_ASSET_ATLAS || format == MV_ASSET_ASEPRITE)
+        return load_asset_atlas(L, source, path, bytes, length, format == MV_ASSET_ASEPRITE, width, height);
+    if (format == MV_ASSET_FPG || format == MV_ASSET_FPG_MANIFEST)
+        return load_asset_library(L, source, path, bytes, length, format, transparent);
     return luaL_error(L, "unknown or ambiguous asset schema/format: %s", path);
 #else
     (void)transparent;

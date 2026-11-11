@@ -217,7 +217,10 @@ Existing `fpg:image(id, transparent_zero)` calls keep their explicit policy.
 Paths are relative to the working directory. Referenced atlas/manifest images
 are relative to their metadata file, or use their explicit absolute path.
 Sources must be readable, seekable files of at most 64 MiB; the native parser's
-smaller metadata limits still apply. An empty path, zero byte in a path, missing
+smaller metadata limits still apply. Asset-enabled builds use the shared
+[native source and path service](asset-sources.md) for reading and routing.
+Detection is a hint; the selected importer still validates the complete format.
+An empty path, zero byte in a path, missing
 file, read failure or changed source during reading raises an error.
 
 Load visual assets during initialization after the window opens. With an open

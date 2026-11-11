@@ -33,7 +33,7 @@ option(MALVADO_BUILD_ASSETS "Build JSON atlas metadata support" ${MALVADO_ASSETS
 if(MALVADO_BUILD_ASSETS)
   FetchContent_Declare(cjson URL https://github.com/DaveGamble/cJSON/archive/refs/tags/v1.7.19.tar.gz URL_HASH SHA256=7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562 DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR no-cmake)
   FetchContent_MakeAvailable(cjson)
-  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/managed.c src/assets/fpg.c src/assets/fpg_manifest.c ${cjson_SOURCE_DIR}/cJSON.c)
+  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/source.c src/assets/managed.c src/assets/fpg.c src/assets/fpg_manifest.c ${cjson_SOURCE_DIR}/cJSON.c)
   target_include_directories(malvado_assets PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -448,6 +448,18 @@ if(MALVADO_BUILD_ASSETS)
   add_test(NAME c_atlas_example COMMAND example-c-atlas)
   set_tests_properties(c_atlas_example PROPERTIES TIMEOUT 15
     PASS_REGULAR_EXPRESSION "ship.png: ship, sprite 7, frame 7")
+  add_executable(asset-source-test tests/asset_source.c)
+  target_link_libraries(asset-source-test PRIVATE malvado_assets)
+  add_test(NAME asset_source COMMAND asset-source-test "${CMAKE_CURRENT_BINARY_DIR}/asset source.bin")
+  set_tests_properties(asset_source PROPERTIES TIMEOUT 20)
+  add_library(asset-source-allocation OBJECT src/assets/source.c)
+  target_include_directories(asset-source-allocation PRIVATE src/include ${cjson_SOURCE_DIR})
+  target_compile_definitions(asset-source-allocation PRIVATE malloc=test_source_malloc calloc=test_source_calloc free=test_source_free)
+  add_executable(asset-source-allocation-test tests/asset_source_allocation.c $<TARGET_OBJECTS:asset-source-allocation>)
+  target_include_directories(asset-source-allocation-test PRIVATE ${cjson_SOURCE_DIR})
+  target_link_libraries(asset-source-allocation-test PRIVATE malvado_assets)
+  add_test(NAME asset_source_allocation COMMAND asset-source-allocation-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/atlas.json)
+  set_tests_properties(asset_source_allocation PROPERTIES TIMEOUT 15)
   add_executable(atlas-resource-test tests/atlas_resource.c)
   target_link_libraries(atlas-resource-test PRIVATE malvado_assets)
   add_test(NAME atlas_resource COMMAND atlas-resource-test)
