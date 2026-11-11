@@ -69,6 +69,31 @@ let overlay = fade.color();
 `QueueFull` when all pending slots are occupied. `active` includes pending
 requests. Rendering does not advance the queue.
 
+## Draw the overlay
+
+In C, `mv_window_draw_fade(color)` draws across the whole logical window.
+In Rust, `frame.fade(&fade)` draws the queue's current color. Neither operation
+advances a transition. Call it after all scene drawing and after clip/scroll
+scopes have ended. Later drawings can cover the overlay. Rust keeps this order
+explicit; the Lua runner applies it after persistent text.
+
+The native call returns 0 without drawing if no frame is active, if a clip or
+scroll scope is active, or with the headless backend. Rust scopes reject the
+call with `InvalidArgument` and preserve their previous drawing state. A fully
+transparent overlay succeeds without changing pixels. Each frame starts fresh;
+there is no persistent overlay attached to the window.
+
+```rust,no_run
+# use malvado::{Error, fade::Fade, window::{Color, Window}};
+# let window = Window::open(160, 120, "Fade")?;
+# let fade = Fade::new()?;
+let frame = window.frame(Color { r: 255, g: 255, b: 255, a: 255 })?;
+frame.text("Scene", (10, 10), 20, Color::default())?;
+frame.fade(&fade)?; // Last drawing before the frame ends.
+drop(frame);
+# Ok::<(), Error>(())
+```
+
 ## Verification
 
 `fade_queue` checks native invalid/NULL calls, duration limits, full-queue
@@ -77,4 +102,7 @@ channels. `alpha7_fade_parity` compares a fixed C/Lua trace against the same
 fixture read by Rust. `lua_fade` and `visual_fade` preserve existing Lua timing
 and overlay behavior. `test-rust-graphics` covers Debug/Release, copied values,
 installed signatures/layouts, and a relocated consumer. The graphical sanitizer
-suite checks the native paths as well.
+suite checks the native paths as well. The main-thread `fade_visual` fixture
+checks rendered color and alpha composition, transparent no-op, whole-window
+coverage after scope restoration, rejected scoped calls without state changes,
+frame reset and repeated renders without simulation steps.

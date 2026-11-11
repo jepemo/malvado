@@ -28,6 +28,7 @@ main(void)
     assert(!mv_fade_queue_push(NULL, white, 1));
     assert(!mv_fade_queue_step(NULL));
     assert(!mv_fade_queue_active(NULL));
+    assert(!mv_window_draw_fade(white));
     assert(!mv_fade_queue_active(&queue));
     assert(!mv_fade_queue_step(&queue));
     memcpy(&before, &queue, sizeof(queue));

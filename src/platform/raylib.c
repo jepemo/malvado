@@ -629,6 +629,19 @@ mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvCol
 }
 
 int
+mv_window_draw_fade(MvColor color)
+{
+    if (!drawing_active || clip_active || scroll_active)
+        return 0;
+    int width, height;
+    if (!mv_window_size(&width, &height))
+        return 0;
+    if (color.a == 0)
+        return 1;
+    return mv_window_draw_box(0, 0, width, height, 1, color);
+}
+
+int
 mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color)
 {
     if (!IsWindowReady() || width <= 0 || height <= 0 || (filled != 0 && filled != 1) ||

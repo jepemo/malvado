@@ -56,7 +56,7 @@ def consumer(prefix, profile):
         ' frame.with_clip(Rectangle {x:0,y:0,width:80,height:60}, |frame| {\n'
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, Color {r:255,g:0,b:0,a:255})\n'
         ' })?;\n'
-        ' drop(frame);\n'
+        ' frame.fade(&fade)?; drop(frame);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)

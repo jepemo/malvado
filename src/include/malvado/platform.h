@@ -55,6 +55,11 @@ int mv_fade_queue_push(MvFadeQueue *queue, MvColor target, unsigned ticks);
 int mv_fade_queue_step(MvFadeQueue *queue);
 /* Return 1 while a timed transition or pending request remains, otherwise 0. */
 int mv_fade_queue_active(const MvFadeQueue *queue);
+/* Draw a full-window overlay in the active frame. Call after scene drawing.
+ * Return 0 without drawing outside a frame or inside a clip/scroll scope.
+ * Return 1 on success, including a transparent no-op. Does not advance fades. */
+int mv_window_draw_fade(MvColor color);
+
 
 typedef enum {
     MV_KEY_0 = '0', MV_KEY_1, MV_KEY_2, MV_KEY_3, MV_KEY_4,

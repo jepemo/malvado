@@ -194,6 +194,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_close`
 - `mv_window_draw_box`
 - `mv_window_draw_circle`
+- `mv_window_draw_fade`
 - `mv_window_draw_filled_circle`
 - `mv_window_draw_text`
 - `mv_window_draw_transformed_rect`

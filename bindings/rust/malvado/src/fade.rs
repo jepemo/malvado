@@ -42,3 +42,13 @@ impl Fade {
         self.native.fade.current
     }
 }
+
+impl crate::window::Frame<'_> {
+    /// Draw the current overlay over the whole window, without advancing it.
+    /// Call after scene drawing and after clip/scroll scopes have ended.
+    /// An active scope returns InvalidArgument without drawing or changing it.
+    pub fn fade(&self, fade: &Fade) -> Result<(), Error> {
+        // SAFETY: a live owner-thread frame; C rejects active clip/scroll scopes.
+        crate::drawing::valid(unsafe { ffi::mv_window_draw_fade(fade.color()) })
+    }
+}

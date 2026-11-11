@@ -77,6 +77,7 @@ _Static_assert(_Generic(&mv_music_set_volume, int (*)(MvMusic *, float): 1, defa
 _Static_assert(_Generic(&mv_fade_queue_push, int (*)(MvFadeQueue *, MvColor, unsigned): 1, default: 0), "mv_fade_queue_push signature");
 _Static_assert(_Generic(&mv_fade_queue_step, int (*)(MvFadeQueue *): 1, default: 0), "mv_fade_queue_step signature");
 _Static_assert(_Generic(&mv_fade_queue_active, int (*)(const MvFadeQueue *): 1, default: 0), "mv_fade_queue_active signature");
+_Static_assert(_Generic(&mv_window_draw_fade, int (*)(MvColor): 1, default: 0), "mv_window_draw_fade signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));

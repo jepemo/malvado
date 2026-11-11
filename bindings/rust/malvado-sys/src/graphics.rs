@@ -400,4 +400,5 @@ unsafe extern "C" {
     pub fn mv_fade_queue_push(queue: *mut MvFadeQueue, target: MvColor, ticks: u32) -> c_int;
     pub fn mv_fade_queue_step(queue: *mut MvFadeQueue) -> c_int;
     pub fn mv_fade_queue_active(queue: *const MvFadeQueue) -> c_int;
+    pub fn mv_window_draw_fade(color: MvColor) -> c_int;
 }

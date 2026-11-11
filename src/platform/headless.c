@@ -146,3 +146,10 @@ int mv_image_draw_region(const MvImage *image, MvImageRegion region, MvImageTran
 }
 void mv_window_flush(void) {}
 void mv_window_end(void) {}
+
+int
+mv_window_draw_fade(MvColor color)
+{
+    (void)color;
+    return 0;
+}

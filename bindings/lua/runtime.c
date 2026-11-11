@@ -4048,11 +4048,7 @@ render(void)
         if (region == 2) (void)mv_window_clip_end();
     }
     render_texts(L);
-    if (engine.fade.fade.current.a != 0) {
-        int width, height;
-        if (mv_window_size(&width, &height))
-            (void)mv_window_draw_box(0, 0, width, height, 1, engine.fade.fade.current);
-    }
+    (void)mv_window_draw_fade(engine.fade.fade.current);
     free(order);
     if (debug_frame_hook) {
         mv_window_flush();
