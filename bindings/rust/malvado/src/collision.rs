@@ -183,6 +183,55 @@ impl World {
         })?;
         Ok(if hit { Some(id) } else { None })
     }
+    /// Query with the process's native position, angle and scale.
+    /// None disables geometry. Registered process colliders remain separate.
+    pub fn query_process(
+        &self,
+        process: &Handle,
+        shape: Option<Shape>,
+    ) -> Result<Option<usize>, Error> {
+        let shape = shape.map(|s| s.native);
+        let mut id = 0;
+        // SAFETY: borrowed live world, owner-thread context, copied optional
+        // geometry and valid output. Native checks process liveness.
+        result(unsafe {
+            sys::mv_process_world_query(
+                process.inner.runtime.live()?,
+                process.inner.reference,
+                self.native.as_ptr(),
+                shape.as_ref().map_or(std::ptr::null(), |s| s),
+                &mut id,
+            )
+        })?;
+        Ok(if id == 0 { None } else { Some(id) })
+    }
+    /// Move a live process atomically using its native visual properties.
+    /// None applies free movement. Failure preserves position; collider
+    /// registration stays explicit. Does not tick or activate the process.
+    pub fn move_process(
+        &self,
+        process: &Handle,
+        shape: Option<Shape>,
+        dx: f64,
+        dy: f64,
+    ) -> Result<Sweep, Error> {
+        let shape = shape.map(|s| s.native);
+        let mut out = sys::MvCollisionSweep::default();
+        // SAFETY: borrowed world, context-bound identity, copied optional shape
+        // and initialized output. Native commits position only on success.
+        result(unsafe {
+            sys::mv_process_world_move(
+                process.inner.runtime.live()?,
+                process.inner.reference,
+                self.native.as_ptr(),
+                shape.as_ref().map_or(std::ptr::null(), |s| s),
+                dx,
+                dy,
+                &mut out,
+            )
+        })?;
+        Ok(out.into())
+    }
     pub fn sweep(
         &self,
         shape: Shape,

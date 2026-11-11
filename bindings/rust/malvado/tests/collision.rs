@@ -289,32 +289,143 @@ fn world_trace_matches_c_and_lua_process_movement() {
     let mut world = World::new().unwrap();
     world.add_rect(wall()).unwrap();
     let shape = Shape::circle(1.0).unwrap();
+    let engine = Engine::new().unwrap();
+    let actor = engine
+        .spawn(Default::default(), |p| async move {
+            loop {
+                p.frame().await;
+            }
+        })
+        .unwrap();
+    actor.set_position(0.0, 5.0).unwrap();
     let mut position = start();
     let sweep = world.sweep(shape, position, 100.0, 0.0).unwrap();
     assert_eq!(sweep.hit, Some(1));
     assert_eq!((sweep.normal_x, sweep.normal_y), (-1.0, 0.0));
     let mut trace = format!("sweep hit=1 fraction={:.6} normal=-1,0\n", sweep.fraction);
     assert_eq!(
-        world.move_by(shape, &mut position, 100.0, 0.0).unwrap().hit,
+        world
+            .move_process(&actor, Some(shape), 100.0, 0.0)
+            .unwrap()
+            .hit,
         Some(1)
     );
-    assert_eq!(world.query(shape, position).unwrap(), None);
+    (position.x, position.y) = actor.position().unwrap();
+    assert_eq!(world.query_process(&actor, Some(shape)).unwrap(), None);
     trace.push_str(&format!(
         "move x={:.6} y={:.6} clear=1\n",
         position.x, position.y
     ));
     assert_eq!(
-        world.move_by(shape, &mut position, 0.0, 1.0).unwrap().hit,
+        world
+            .move_process(&actor, Some(shape), 0.0, 1.0)
+            .unwrap()
+            .hit,
         None
     );
+    (position.x, position.y) = actor.position().unwrap();
     trace.push_str(&format!("slide x={:.6} y={:.6}\n", position.x, position.y));
-    position.x = 11.0;
-    let original = position;
+    actor.set_position(11.0, 6.0).unwrap();
+    let original = actor.position().unwrap();
     assert_eq!(
-        world.move_by(shape, &mut position, 1.0, 0.0),
+        world.move_process(&actor, Some(shape), 1.0, 0.0),
         Err(Error::InvalidArgument)
     );
-    assert_eq!(position, original);
+    assert_eq!(actor.position().unwrap(), original);
     trace.push_str("failure unchanged=1\n");
     assert_eq!(trace, include_str!("fixtures/world.txt"));
+}
+
+#[test]
+fn contextual_world_movement_properties_errors_and_lifetime() {
+    let mut engine = Engine::new().unwrap();
+    let actor = engine
+        .spawn(Default::default(), |p| async move {
+            loop {
+                p.frame().await;
+            }
+        })
+        .unwrap();
+    let mut world = World::new().unwrap();
+    world
+        .add_rect(Rect {
+            x: 10.0,
+            y: -10.0,
+            width: 10.0,
+            height: 20.0,
+        })
+        .unwrap();
+    let shape = Shape::rectangle(4.0, 2.0).unwrap();
+    actor.set_angle(90.0).unwrap();
+    actor.set_scale(2.0).unwrap();
+    assert_eq!(
+        world
+            .move_process(&actor, Some(shape), 100.0, 0.0)
+            .unwrap()
+            .hit,
+        Some(1)
+    );
+    let contact = actor.position().unwrap();
+    assert!((contact.0 - 8.0).abs() < 1e-12);
+    assert_eq!(actor.angle().unwrap(), 90.0);
+    assert_eq!(actor.scale().unwrap(), 2.0);
+    assert_eq!(world.query_process(&actor, Some(shape)).unwrap(), None);
+    for signal in [Signal::Sleep, Signal::Freeze] {
+        engine.signal(&actor, signal).unwrap();
+        world.move_process(&actor, None, 0.0, 1.0).unwrap();
+        engine.tick().unwrap();
+    }
+    assert_eq!(actor.position().unwrap().1, 2.0);
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, f64::MAX] {
+        let before = actor.position().unwrap();
+        assert_eq!(
+            world.move_process(&actor, None, value, 0.0),
+            Err(Error::InvalidArgument)
+        );
+        assert_eq!(
+            world.move_process(&actor, None, 0.0, value),
+            Err(Error::InvalidArgument)
+        );
+        assert_eq!(actor.position().unwrap(), before);
+    }
+    actor.set_position(11.0, 0.0).unwrap();
+    assert_eq!(world.query_process(&actor, Some(shape)).unwrap(), Some(1));
+    assert_eq!(
+        world.move_process(&actor, Some(shape), 1.0, 0.0),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(actor.position().unwrap(), (11.0, 0.0));
+    actor.set_scale(0.0).unwrap();
+    assert_eq!(
+        world.query_process(&actor, Some(shape)),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(
+        world.move_process(&actor, Some(shape), 1.0, 0.0),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(world.query_process(&actor, None).unwrap(), None);
+    assert_eq!(
+        world.move_process(&actor, None, 100.0, 0.0).unwrap().hit,
+        None
+    );
+    assert_eq!(actor.position().unwrap(), (111.0, 0.0));
+    actor.set_position(f64::MAX, 0.0).unwrap();
+    assert_eq!(
+        world.move_process(&actor, None, f64::MAX / 16.0, 0.0),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(actor.position().unwrap(), (f64::MAX, 0.0));
+    actor.kill().unwrap();
+    assert_eq!(world.query_process(&actor, None), Err(Error::NotFound));
+    assert_eq!(
+        world.move_process(&actor, None, 1.0, 0.0),
+        Err(Error::NotFound)
+    );
+    drop(engine);
+    assert_eq!(world.query_process(&actor, None), Err(Error::Closed));
+    assert_eq!(
+        world.move_process(&actor, None, 1.0, 0.0),
+        Err(Error::Closed)
+    );
 }

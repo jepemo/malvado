@@ -59,9 +59,46 @@ Type zero selects all types. Missing colliders give no hits; sleeping and frozen
 processes are included. Dead or closed handles return the corresponding error.
 Failed collider updates leave the previous native collider unchanged.
 
-These methods do not yet derive colliders from graphics, select assets, update
-native visual properties, or apply contextual movement to a process. The Lua
-`world:move(process, ...)` helper already does that composition; sharing it with
-C/Rust still belongs to A7.6. This explicit native geometry layer does not close
+Collider registration does not derive geometry from graphics or follow later
+visual-property changes. Contextual world movement is available below. Graph
+selection and automatic collider derivation still belong to A7.6. This explicit native geometry layer does not close
 the full A7.6 graphics/input/audio/resource gate. See the
 [collision contract](collision.md) for the shared math and native limits.
+
+## Move a process through a world
+
+`world.query_process(&actor, Some(shape))?` uses the actor's native x/y,
+angle and scale. It returns the first overlapping world rectangle ID or `None`.
+`world.move_process(&actor, Some(shape), dx, dy)?` atomically updates the
+actor's x/y with the same native movement used by Lua. Pass `None` to disable
+geometry and apply free movement. A registered process collider is not selected
+or updated implicitly. Explicit shape selection keeps ownership and side effects
+clear while the native graph service is still pending.
+
+```rust,no_run
+use malvado::{Engine, Error};
+use malvado::collision::{World, Rect, Shape};
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) })?;
+actor.set_position(0.0, 5.0)?;
+let mut world = World::new()?;
+world.add_rect(Rect { x: 10.0, y: 0.0, width: 10.0, height: 10.0 })?;
+let contact = world.move_process(&actor, Some(Shape::circle(1.0)?), 100.0, 0.0)?;
+assert_eq!(actor.position()?, (9.0, 5.0));
+assert_eq!(contact.hit, Some(1));
+# Ok::<(), Error>(())
+```
+
+Calls borrow the world and handle, copy optional geometry, and retain nothing.
+They do not run a tick or poll a future. Sleep and freeze do not prevent an
+explicit move. Failed movement preserves position; native errors return
+`InvalidArgument`, `NotFound`, or `Closed`. Displacement must be finite and
+within the native `DBL_MAX / 16` limit. World can still outlive the engine;
+using a closed process handle returns `Closed`. Shape-independent movement
+ignores angle/scale, including nonpositive scale.
+
+The C, Lua and Rust contextual movement tests share the existing world golden
+trace. Rust also checks scaled/rotated shape movement, free movement, sleep and
+freeze, invalid displacement, initial overlap, nonpositive scale, overflow and
+dead/closed handles. Installed-header probes check both signatures. The bounded
+`world` SDK example uses this path; public example migration remains A7.8 work.

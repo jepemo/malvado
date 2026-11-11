@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::Error;
-use malvado::collision::{Rect, Shape, Transform, World};
+use malvado::collision::{Rect, Shape, World};
+use malvado::{Engine, Error};
 
 fn main() -> Result<(), Error> {
     let mut world = World::new()?;
@@ -11,13 +11,17 @@ fn main() -> Result<(), Error> {
         height: 10.0,
     })?;
     let shape = Shape::circle(1.0)?;
-    let mut position = Transform {
-        y: 5.0,
-        ..Default::default()
-    };
-    let contact = world.move_by(shape, &mut position, 100.0, 0.0)?;
-    println!("x={} y={} hit={:?}", position.x, position.y, contact.hit);
-    assert_eq!(position.x, 9.0);
+    let engine = Engine::new()?;
+    let actor = engine.spawn(Default::default(), |p| async move {
+        p.frame().await;
+        Ok(())
+    })?;
+    actor.set_position(0.0, 5.0)?;
+    // The native operation updates the process without activating its future.
+    let contact = world.move_process(&actor, Some(shape), 100.0, 0.0)?;
+    let (x, y) = actor.position()?;
+    println!("x={x} y={y} hit={:?}", contact.hit);
+    assert_eq!(x, 9.0);
     assert_eq!(contact.hit, Some(1));
     Ok(())
 }

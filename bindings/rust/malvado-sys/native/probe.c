@@ -67,6 +67,8 @@ _Static_assert(_Generic(&mv_collision_world_destroy, void (*)(MvCollisionWorld *
 _Static_assert(_Generic(&mv_collision_world_add_rect, int (*)(MvCollisionWorld *, MvRect, size_t *): 1, default: 0), "mv_collision_world_add_rect signature");
 _Static_assert(_Generic(&mv_collision_world_query, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, size_t *): 1, default: 0), "mv_collision_world_query signature");
 _Static_assert(_Generic(&mv_collision_world_sweep, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_sweep signature");
+_Static_assert(_Generic(&mv_process_world_query, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, size_t *): 1, default: 0), "mv_process_world_query signature");
+_Static_assert(_Generic(&mv_process_world_move, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, double, double, MvCollisionSweep *): 1, default: 0), "mv_process_world_move signature");
 _Static_assert(_Generic(&mv_collision_world_move, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform *, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_move signature");
 _Static_assert(_Generic(&mv_camera_init, int (*)(MvCamera *, double, double, const MvCameraViewport *): 1, default: 0), "mv_camera_init signature");
 _Static_assert(_Generic(&mv_camera_set, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_set signature");

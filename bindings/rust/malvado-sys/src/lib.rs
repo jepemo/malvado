@@ -188,6 +188,22 @@ unsafe extern "C" {
         dy: f64,
         out: *mut MvCollisionSweep,
     ) -> c_int;
+    pub fn mv_process_world_query(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        world: *const MvCollisionWorld,
+        shape: *const MvCollisionShape,
+        out: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_world_move(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        world: *const MvCollisionWorld,
+        shape: *const MvCollisionShape,
+        dx: f64,
+        dy: f64,
+        out: *mut MvCollisionSweep,
+    ) -> c_int;
     pub fn mv_collision_world_move(
         world: *const MvCollisionWorld,
         shape: MvCollisionShape,
