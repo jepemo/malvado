@@ -16,6 +16,8 @@
 #ifndef MALVADO_CAMERA_H
 #define MALVADO_CAMERA_H
 
+#include "malvado/malvado.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,6 +44,18 @@ int mv_camera_project(const MvCamera *camera, double world_x, double world_y,
  * Call from the game's existing update flow. Invalid inputs leave state intact. */
 int mv_camera_center(MvCamera *camera, double target_x, double target_y,
                      int window_width, int window_height);
+
+/* Update a caller-owned follow target after the native tick and removals.
+ * target is a context-bound process reference, or all-zero for no target.
+ * A live target is centered from native x/y, even when sleeping or frozen.
+ * An ended target is cleared and the final camera position is preserved.
+ * Return MV_OK, or MV_INVALID_ARGUMENT for NULL inputs, foreign/malformed
+ * references or invalid camera/window/target geometry. Failure preserves both
+ * camera and target. The context must be live on its owner thread. Nothing is
+ * allocated, retained, scheduled or destroyed; copied follow references do not
+ * keep processes or resources alive. An inactive target is a no-op. */
+MvResult mv_camera_follow_step(MvCamera *camera, MvContext *ctx,
+                               MvProcessRef *target, int window_width, int window_height);
 
 /* Intersect viewport, optional process region and the screen. Return 1 and a
  * visible rectangle, 0 and a zero rectangle for an empty intersection, or -1

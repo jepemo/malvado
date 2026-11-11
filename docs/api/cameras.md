@@ -161,3 +161,38 @@ HUD. [Clipped inventory](../../examples/camera-menu/) combines a screen-space
 process, fixed region and local scroll while the world has a camera offset.
 Both have automated behavior and pixel checks; the examples use both Lua entry
 forms. See the [migration guide](../development/alpha6-api-migration.md).
+
+## Native process follow update
+
+`mv_camera_follow_step(&camera, ctx, &target, width, height)` centers a camera
+from a process's native x/y. `target` is a context-bound `MvProcessRef`; an
+all-zero reference means no target. Call once after the existing native tick
+and process removals. The call does not tick, poll, allocate or retain a process.
+Sleeping, frozen and not-yet-activated targets use their current native position.
+
+When the target ends, the operation clears the reference and preserves the
+last camera position. It returns `MV_OK` for an active update, a cleared dead
+target or an inactive no-op. NULL inputs, malformed/foreign references, invalid
+camera geometry, nonpositive window dimensions and out-of-range target geometry
+return `MV_INVALID_ARGUMENT` without changing camera or follow state. Context
+and pointer lifetimes remain the caller's responsibility. Viewport centering
+uses the existing camera math. Copied target references are independent values.
+
+Lua uses this operation at its existing end-of-tick update point for main and
+explicit cameras. Lua keeps its target userdata reference to check local invalid
+visual overrides. These overrides still preserve the last valid camera position.
+`camera_set`, `camera_move`, destroy and target replacement keep their current
+stop-following behavior. Main/explicit camera identity and process camera
+selection remain Lua-owned; this service closes target tracking only.
+
+`c_camera_follow` verifies foreign/NULL/malformed references, failure atomicity,
+viewport/copy behavior, sleep/freeze, explicit kill, attached-child death, natural
+return and exactly-once destruction while a follow reference still exists.
+`alpha7_camera_follow_parity` compares C/Lua follow, frozen, viewport and ended
+phases with one fixed golden trace. Existing headless and visual camera fixtures
+check invalid local coordinates, replacement, shutdown and rendering behavior.
+
+A7.6ad local macOS checks pass: C-only (59 tests), standard/headless
+(175 tests each), and visual (57 tests). The expanded native destruction cases
+and C/Lua parity also pass after the safe-point test correction. Linux CI and
+native main/explicit camera ownership remain outside this local evidence.

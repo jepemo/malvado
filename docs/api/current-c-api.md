@@ -34,6 +34,7 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_camera_center`
 - `mv_camera_clip`
+- `mv_camera_follow_step`
 - `mv_camera_init`
 - `mv_camera_move`
 - `mv_camera_project`

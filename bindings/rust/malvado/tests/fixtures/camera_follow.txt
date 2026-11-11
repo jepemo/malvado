@@ -1,0 +1,4 @@
+follow x=50 y=40
+frozen x=70 y=50
+viewport x=100 y=60
+ended x=100 y=60

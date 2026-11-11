@@ -217,6 +217,10 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+add_executable(camera-follow-test tests/camera_follow.c)
+target_link_libraries(camera-follow-test PRIVATE malvado_core)
+add_test(NAME c_camera_follow COMMAND camera-follow-test)
+set_tests_properties(c_camera_follow PROPERTIES TIMEOUT 15)
 add_executable(process-world-test tests/process_world.c)
 target_link_libraries(process-world-test PRIVATE malvado_core)
 add_test(NAME process_world COMMAND process-world-test)
@@ -535,6 +539,13 @@ if(MALVADO_CAN_EXPORT)
     set_tests_properties(dev_sdk_install PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   endif()
 endif()
+add_test(NAME alpha7_camera_follow_parity COMMAND ${CMAKE_COMMAND}
+  -DC_PROGRAM=$<TARGET_FILE:camera-follow-test>
+  -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
+  -DLUA_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/alpha7_camera_follow.lua
+  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/camera_follow.txt
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
+set_tests_properties(alpha7_camera_follow_parity PROPERTIES TIMEOUT 25)
 add_test(NAME alpha7_world_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:alpha7-world-test>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>

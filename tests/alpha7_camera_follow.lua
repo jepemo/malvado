@@ -1,0 +1,25 @@
+-- Malvado 2; SPDX-License-Identifier: Apache-2.0
+local mv = require("malvado")
+local function trace(phase, camera)
+  local x, y = mv.camera.position(camera)
+  print(string.format("%s x=%.0f y=%.0f", phase, x, y))
+end
+local Actor = mv.process(function() while true do mv.frame() end end)
+local Controller = mv.process(function()
+  local target = Actor {x = 100, y = 80}
+  mv.camera.follow(target)
+  mv.frame()
+  trace("follow")
+  mv.signal(target, "freeze")
+  target.x, target.y = 120, 90
+  mv.frame()
+  trace("frozen")
+  local camera = mv.camera.create(0, 0, {viewport = mv.graphics.region(10, 20, 40, 60)})
+  camera:follow(target)
+  mv.frame()
+  trace("viewport", camera)
+  mv.kill(target)
+  mv.frame()
+  trace("ended", camera)
+end)
+mv.start(function() Controller() end, {width = 100, height = 80})

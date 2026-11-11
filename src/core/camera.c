@@ -100,6 +100,30 @@ mv_camera_center(MvCamera *camera, double target_x, double target_y,
 }
 
 
+MvResult
+mv_camera_follow_step(MvCamera *camera, MvContext *ctx, MvProcessRef *target,
+                      int window_width, int window_height)
+{
+    if (!camera_valid(camera) || !ctx || !target || window_width <= 0 || window_height <= 0)
+        return MV_INVALID_ARGUMENT;
+    if (!target->id) {
+        if (target->runtime.high || target->runtime.low || target->runtime.sequence)
+            return MV_INVALID_ARGUMENT;
+        return MV_OK;
+    }
+    double x, y;
+    MvResult result = mv_process_position(ctx, *target, &x, &y);
+    if (result == MV_NOT_FOUND) {
+        *target = (MvProcessRef){0};
+        return MV_OK;
+    }
+    if (result != MV_OK)
+        return result;
+    if (!mv_camera_center(camera, x, y, window_width, window_height))
+        return MV_INVALID_ARGUMENT;
+    return MV_OK;
+}
+
 int
 mv_camera_clip(const MvCamera *camera, const MvCameraViewport *region,
                int screen_width, int screen_height, MvCameraViewport *out)

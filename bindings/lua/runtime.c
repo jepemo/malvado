@@ -52,7 +52,7 @@ typedef enum {
     PROCESS_KILLED
 } ProcessState;
 
-typedef struct { MvCamera value; int closed, target_ref; } LuaCamera;
+typedef struct { MvCamera value; MvProcessRef target; int closed, target_ref; } LuaCamera;
 
 typedef struct {
     lua_Integer id;
@@ -3851,6 +3851,7 @@ camera_stop_following(lua_State *L, LuaCamera *camera)
     if (camera->target_ref >= 0)
         luaL_unref(L, LUA_REGISTRYINDEX, camera->target_ref);
     camera->target_ref = LUA_NOREF;
+    camera->target = (MvProcessRef){0};
 }
 
 static int
@@ -3949,6 +3950,7 @@ camera_follow(lua_State *L)
     }
     camera_stop_following(L, camera);
     camera->target_ref = reference;
+    camera->target = ((LuaSelf *)lua_touserdata(L, target))->reference;
     return 0;
 }
 
@@ -3956,10 +3958,17 @@ static void
 update_camera(lua_State *L, LuaCamera *camera)
 {
     if (camera->closed || camera->target_ref < 0) return;
+    MvCamera next = camera->value;
+    if (mv_camera_follow_step(&next, engine.context, &camera->target,
+                              engine.width, engine.height) != MV_OK)
+        return;
+    if (!camera->target.id) {
+        camera_stop_following(L, camera);
+        return;
+    }
     lua_rawgeti(L, LUA_REGISTRYINDEX, camera->target_ref);
     LuaSelf *target = luaL_testudata(L, -1, "malvado.process");
-    MvProcessStatus status;
-    if (!target || mv_process_status(engine.context, (MvProcessId)target->id, &status) != MV_OK) {
+    if (!target) {
         lua_pop(L, 1);
         camera_stop_following(L, camera);
         return;
@@ -3973,8 +3982,8 @@ update_camera(lua_State *L, LuaCamera *camera)
                     (lua_isnil(L, -1) || lua_type(L, -1) == LUA_TNUMBER);
         double x = lua_isnil(L, -2) ? 0 : lua_tonumber(L, -2);
         double y = lua_isnil(L, -1) ? 0 : lua_tonumber(L, -1);
-        if (valid)
-            (void)mv_camera_center(&camera->value, x, y, engine.width, engine.height);
+        if (valid && isfinite(x) && isfinite(y))
+            camera->value = next;
         lua_pop(L, 2);
     }
     lua_pop(L, 2);
