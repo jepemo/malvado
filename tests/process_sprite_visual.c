@@ -21,6 +21,15 @@
 #include "runner/runtime.h"
 #include "malvado/platform.h"
 
+static MvProcessRef target;
+static MvStepResult idle(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)ctx;
+    (void)id;
+    (void)user;
+    return MV_STEP_YIELD;
+}
+
 static void frame(void *user)
 {
     int *stage = user;
@@ -39,19 +48,38 @@ static void frame(void *user)
         assert(present && ((graph.region.width == 4 && graph.region.height == 8) ||
                             (graph.region.width == 2 && graph.region.height == 2)));
         assert(pixel.r > 240 && pixel.g < 10);
+        MvProcessId id;
+        assert(mv_process_spawn(ctx, 0, 0, idle, NULL, NULL, &id) == MV_OK);
+        assert(mv_process_ref_create(ctx, id, &target) == MV_OK);
+        MvGraphic point = {0};
+        assert(mv_graphic_circle(0.25, &point.shape));
+        assert(mv_process_graphic_set(ctx, target, point) == MV_OK);
+        assert(mv_process_set_position(ctx, target, 13, 11) == MV_OK);
+        int overlap;
+        assert(mv_process_collider_test(ctx, ref, target, &overlap) == MV_OK);
+        assert(overlap == (graph.region.width == 4));
         const uint8_t pixels[] = {0,255,0,255, 0,255,0,255, 0,255,0,255, 0,255,0,255};
         MvImage *image = mv_image_from_rgba(2,2,pixels,sizeof(pixels));
         assert(image);
         assert(mv_process_image_set(ctx, ref, (MvImageGraphic){image,{0,0,2,2},0,0}) == MV_OK);
         mv_image_destroy(image);
+        /* Query C immediately: no Lua refresh, tick or render may repair it. */
+        assert(mv_process_collider_test(ctx, ref, target, &overlap) == MV_OK && !overlap);
+        assert(mv_process_set_position(ctx, ref, 12, 10) == MV_OK);
+        assert(mv_process_collider_test(ctx, ref, target, &overlap) == MV_OK && overlap);
+        assert(mv_process_set_position(ctx, ref, 10, 10) == MV_OK);
+        assert(mv_process_collider_test(ctx, ref, target, &overlap) == MV_OK && !overlap);
         assert(mv_process_signal(ctx, ref.id, MV_SIGNAL_FREEZE, 0) == MV_OK);
     } else if (*stage == 1) {
         assert(present && graph.region.width == 2 && pixel.g > 240 && pixel.r < 10);
         assert(mv_process_graphic_clear(ctx, ref) == MV_OK);
+        int overlap = 9;
+        assert(mv_process_collider_test(ctx, ref, target, &overlap) == MV_OK && !overlap);
     } else {
         assert(!present && pixel.r < 10 && pixel.g < 10);
         int killed;
         assert(mv_process_kill(ctx, ref, &killed) == MV_OK && killed);
+        assert(mv_process_kill(ctx, target, &killed) == MV_OK && killed);
     }
     ++*stage;
 }

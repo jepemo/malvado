@@ -1152,7 +1152,7 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
             } else if (graphic) {
                 shape = graphic->shape;
                 present = 1;
-                bound = !graphic->sprite;
+                bound = !graphic->sprite || self->native_sprite;
             } else if (image && image->image) {
                 int width = mv_image_width(image->image), height = mv_image_height(image->image);
                 if (width > 0 && height > 0) {

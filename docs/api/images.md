@@ -427,4 +427,11 @@ sprite values retain their image through the existing resource manager.
 Metadata-only sprites without a loaded image keep their headless behavior.
 Whole-image Lua values, fractional PNG pivots, legacy sheets and automatic
 animation retain their existing paths. These paths are not migrated by this
-storage change. Native graph-bound collider integration is tracked separately.
+storage change.
+
+Visual sprite colliders use the selected native graph by default. Native image
+replacement, position, angle and scale changes affect collision queries without
+a Lua refresh, tick or render. Clearing the native graph removes that automatic
+geometry. Lua local overrides, disabled colliders and invalid-property behavior
+keep their existing precedence. Metadata-only and animation colliders keep
+their existing paths.
