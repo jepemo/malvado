@@ -27,6 +27,8 @@ pub mod animation;
 mod asset;
 #[cfg(feature = "assets")]
 pub mod atlas;
+#[cfg(feature = "graphics")]
+pub mod audio;
 pub mod camera;
 pub mod collision;
 #[cfg(feature = "graphics")]

@@ -110,3 +110,7 @@ Full DIV FPG compatibility and other binary variants are not claimed.
 The [font guide](../../docs/api/rust-font.md) covers owned TTF/OTF and selected
 Unicode glyphs. The [input guide](../../docs/api/rust-input.md) covers typed
 mouse/gamepad queries and consuming native Unicode text.
+
+The [audio guide](../../docs/api/rust-audio.md) covers the independent audio
+device, owned WAV instances, independent clones and explicit playback maintenance.
+Audio currently uses the optional `graphics` platform feature.

@@ -24,10 +24,15 @@ def consumer(prefix, profile):
         + ',features=["graphics"]}\n')
     for name in ("AnonymousPro-Bold.ttf", "OFL.txt"):
         shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
+    shutil.copyfile(ROOT / "tests/fixtures/silence.wav", game / "silence.wav")
     (game / "src/main.rs").write_text(
         'use malvado::{Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
         'fn main() -> Result<(), Error> {\n'
+        ' let audio = Rc::new(malvado::audio::Audio::open()?);\n'
+        ' let sound = malvado::audio::Sound::load(audio.clone(), "silence.wav")?;\n'
+        ' let copy = sound.try_clone()?; sound.play()?; copy.play()?; sound.stop()?;\n'
+        ' copy.pause()?; audio.update(); copy.resume()?; copy.stop()?; drop(copy); drop(sound); drop(audio);\n'
         ' let window = Rc::new(Window::open(160, 120, "Installed Rust window")?);\n'
         ' assert_eq!(window.size(), (160,120));\n'
         ' window.input_tick();\n'
@@ -80,6 +85,8 @@ def rejected(prefix, expected):
 
 
 def main():
+    if sys.platform.startswith("linux"):
+        os.environ["ALSA_CONFIG_PATH"] = str(ROOT / "tests/alsa-null.conf")
     for profile in ("Debug", "Release"):
         build = WORK / profile / "native"
         staged = WORK / profile / "staged"

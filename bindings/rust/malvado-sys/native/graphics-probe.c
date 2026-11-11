@@ -54,6 +54,17 @@ _Static_assert(_Generic(&mv_pad_connected, int (*)(int): 1, default: 0), "mv_pad
 _Static_assert(_Generic(&mv_pad_button_down, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_down signature");
 _Static_assert(_Generic(&mv_pad_axis, float (*)(int, MvPadAxis): 1, default: 0), "mv_pad_axis signature");
 _Static_assert(_Generic(&mv_text_input_next, int (*)(uint32_t *): 1, default: 0), "mv_text_input_next signature");
+_Static_assert(_Generic(&mv_audio_open, int (*)(void): 1, default: 0), "mv_audio_open signature");
+_Static_assert(_Generic(&mv_audio_close, void (*)(void): 1, default: 0), "mv_audio_close signature");
+_Static_assert(_Generic(&mv_sound_load, MvSound * (*)(const char *): 1, default: 0), "mv_sound_load signature");
+_Static_assert(_Generic(&mv_sound_clone, MvSound * (*)(const MvSound *): 1, default: 0), "mv_sound_clone signature");
+_Static_assert(_Generic(&mv_sound_destroy, void (*)(MvSound *): 1, default: 0), "mv_sound_destroy signature");
+_Static_assert(_Generic(&mv_sound_play, int (*)(MvSound *): 1, default: 0), "mv_sound_play signature");
+_Static_assert(_Generic(&mv_sound_stop, int (*)(MvSound *): 1, default: 0), "mv_sound_stop signature");
+_Static_assert(_Generic(&mv_sound_pause, int (*)(MvSound *): 1, default: 0), "mv_sound_pause signature");
+_Static_assert(_Generic(&mv_sound_resume, int (*)(MvSound *): 1, default: 0), "mv_sound_resume signature");
+_Static_assert(_Generic(&mv_sound_playing, int (*)(const MvSound *): 1, default: 0), "mv_sound_playing signature");
+_Static_assert(_Generic(&mv_sound_set_volume, int (*)(MvSound *, float): 1, default: 0), "mv_sound_set_volume signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));

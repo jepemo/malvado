@@ -127,7 +127,7 @@ impl Drop for Frame<'_> {
 mod ownership_contract {}
 
 #[cfg(target_os = "macos")]
-fn main_thread() -> bool {
+pub(crate) fn main_thread() -> bool {
     unsafe extern "C" {
         fn pthread_main_np() -> std::ffi::c_int;
     }
@@ -135,7 +135,7 @@ fn main_thread() -> bool {
     unsafe { pthread_main_np() != 0 }
 }
 #[cfg(target_os = "linux")]
-fn main_thread() -> bool {
+pub(crate) fn main_thread() -> bool {
     unsafe extern "C" {
         fn gettid() -> std::ffi::c_int;
     }

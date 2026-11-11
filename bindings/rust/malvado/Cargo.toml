@@ -49,3 +49,9 @@ name = "input"
 path = "tests/input.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "audio"
+path = "tests/audio.rs"
+harness = false
+required-features = ["graphics"]

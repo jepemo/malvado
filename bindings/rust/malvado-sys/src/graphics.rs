@@ -321,3 +321,21 @@ pub const MV_PAD_RIGHT_X: c_int = 2;
 pub const MV_PAD_RIGHT_Y: c_int = 3;
 pub const MV_PAD_LEFT_TRIGGER: c_int = 4;
 pub const MV_PAD_RIGHT_TRIGGER: c_int = 5;
+
+#[repr(C)]
+pub struct MvSound {
+    _private: [u8; 0],
+}
+unsafe extern "C" {
+    pub fn mv_audio_open() -> c_int;
+    pub fn mv_audio_close();
+    pub fn mv_sound_load(path: *const c_char) -> *mut MvSound;
+    pub fn mv_sound_clone(sound: *const MvSound) -> *mut MvSound;
+    pub fn mv_sound_destroy(sound: *mut MvSound);
+    pub fn mv_sound_play(sound: *mut MvSound) -> c_int;
+    pub fn mv_sound_stop(sound: *mut MvSound) -> c_int;
+    pub fn mv_sound_pause(sound: *mut MvSound) -> c_int;
+    pub fn mv_sound_resume(sound: *mut MvSound) -> c_int;
+    pub fn mv_sound_playing(sound: *const MvSound) -> c_int;
+    pub fn mv_sound_set_volume(sound: *mut MvSound, volume: f32) -> c_int;
+}
