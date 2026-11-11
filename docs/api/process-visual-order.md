@@ -59,7 +59,7 @@ assert_eq!(visible[0].id(), actor.id());
 # Ok::<(), Error>(())
 ```
 
-Angle, scale, process graph storage and automatic draw-command
+Process graph storage and automatic draw-command
 collection remain open in A7.6. An ordered handle query is not a renderer.
 
 ## Verification
@@ -122,3 +122,53 @@ writeback, collider refresh, integer presentation, nil reset and invalid Lua
 overrides. `visual_native_process_position` checks pixels before and after a
 native move of a frozen Lua process. Existing camera, world, graph and collision
 fixtures cover the unchanged Lua contracts.
+
+## Shared angle and scale
+
+`mv_process_angle` and `mv_process_scale` copy a live process value.
+`mv_process_set_angle` and `mv_process_set_scale` store a finite double.
+Angle uses degrees and starts at zero. Scale starts at one. Values are not
+normalized or clamped. Zero and negative scale can be stored, but hide Lua
+graphs and invalidate derived colliders, as before. Large finite values keep
+the existing per-operation rendering and collision limits. Failure preserves
+state and outputs. Ownership, context identity and errors match position.
+These functions do not allocate or update explicitly registered C colliders.
+
+Lua `self.angle` and `self.size` share these native values. Defaults, spawn
+options, assignments, graph rendering, world operations and derived collider
+queries use them. Assigning `nil` resets angle to zero or size to one. Lua keeps
+the same number presentation and local invalid override rules as position.
+Native changes reach frozen graphs without a Lua activation.
+
+Rust uses `handle.angle()?`, `handle.set_angle(degrees)?`, `handle.scale()?` and
+`handle.set_scale(factor)?`. These are copied native values with the same
+closed/dead handle errors as position. Collider registration stays explicit in
+Rust; these properties do not introduce automatic Rust graph drawing.
+
+```rust,no_run
+# use malvado::{Engine, Error};
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {
+    loop { p.frame().await; }
+})?;
+actor.set_angle(90.0)?;
+actor.set_scale(2.0)?;
+assert_eq!(actor.angle()?, 90.0);
+assert_eq!(actor.scale()?, 2.0);
+# Ok::<(), Error>(())
+```
+
+`process_visual_properties` verifies native defaults, finite extremes,
+nonpositive scale, failed writes, NULL/foreign contexts and dead references.
+The mixed C/Lua fixture also checks angle/scale reads and writes, scaled world
+movement, nil reset and invalid overrides. The frozen-process pixel fixture
+checks rotation, scale, zero-scale hiding and restoration. Rust position tests
+cover these properties, invalid inputs, dead/closed handles and installed
+signature checks. The relocated SDK consumer checks fractional position,
+rotation and scale without source-tree SDK paths.
+
+Host verification for A7.6z/aa on macOS: C-only (57 tests), standard and
+headless (172 tests each), visual (57 tests), Rust Debug/Release with Clippy,
+format checks and the relocated SDK consumer, and native ASan/UBSan Rust
+integration all pass. This is local host evidence; Linux CI acceptance and
+automatic Rust process graph drawing remain open.

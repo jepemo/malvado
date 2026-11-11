@@ -42,6 +42,7 @@ typedef struct {
     int64_t priority;
     double z;
     double x, y;
+    double angle, scale;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
@@ -600,7 +601,7 @@ static MvResult spawn_related(MvContext *ctx, MvProcessId creator_id, MvProcessI
     MvProcessId next = lineage->id;
     p->items[p->count++] = (Process){.id = next, .parent = parent, .creator_id = creator_id,
         .lineage = lineage, .priority = priority, .attached = attached,
-        .status = MV_PROCESS_RUNNING, .step = step, .destroy = destroy, .user = user};
+        .scale = 1, .status = MV_PROCESS_RUNNING, .step = step, .destroy = destroy, .user = user};
     *id = next;
     return MV_OK;
 }
@@ -864,6 +865,58 @@ mv_process_set_position(MvContext *ctx, MvProcessRef reference, double x, double
         return result;
     item->x = x;
     item->y = y;
+    return MV_OK;
+}
+
+MvResult
+mv_process_angle(MvContext *ctx, MvProcessRef reference, double *out)
+{
+    if (!out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    *out = item->angle;
+    return MV_OK;
+}
+
+MvResult
+mv_process_set_angle(MvContext *ctx, MvProcessRef reference, double value)
+{
+    if (!isfinite(value))
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->angle = value;
+    return MV_OK;
+}
+
+MvResult
+mv_process_scale(MvContext *ctx, MvProcessRef reference, double *out)
+{
+    if (!out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    *out = item->scale;
+    return MV_OK;
+}
+
+MvResult
+mv_process_set_scale(MvContext *ctx, MvProcessRef reference, double value)
+{
+    if (!isfinite(value))
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->scale = value;
     return MV_OK;
 }
 

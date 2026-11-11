@@ -97,6 +97,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_context_runtime_id`
 - `mv_context_ticks`
 - `mv_message_release`
+- `mv_process_angle`
 - `mv_process_children`
 - `mv_process_count`
 - `mv_process_creation_children`
@@ -118,9 +119,12 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_receive`
 - `mv_process_ref_create`
 - `mv_process_ref_resolve`
+- `mv_process_scale`
 - `mv_process_send`
+- `mv_process_set_angle`
 - `mv_process_set_position`
 - `mv_process_set_priority`
+- `mv_process_set_scale`
 - `mv_process_set_type`
 - `mv_process_set_z`
 - `mv_process_signal`

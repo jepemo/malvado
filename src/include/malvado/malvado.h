@@ -157,6 +157,15 @@ MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *o
 MvResult mv_process_position(MvContext *ctx, MvProcessRef process, double *x, double *y);
 MvResult mv_process_set_position(MvContext *ctx, MvProcessRef process, double x, double y);
 
+/* Visual angle is in degrees, initially 0; scale is initially 1. All finite
+ * values are stored without normalization. Nonpositive scale hides Lua graphs
+ * and invalidates derived colliders. Identity/error/ownership rules match
+ * position. Setters do not modify explicitly registered C collider transforms. */
+MvResult mv_process_angle(MvContext *ctx, MvProcessRef process, double *out);
+MvResult mv_process_set_angle(MvContext *ctx, MvProcessRef process, double angle);
+MvResult mv_process_scale(MvContext *ctx, MvProcessRef process, double *out);
+MvResult mv_process_set_scale(MvContext *ctx, MvProcessRef process, double scale);
+
 /* Visual depth is independent of scheduler priority. New processes start at 0.
  * Read/write a live context-bound process. z must be finite. Failure leaves
  * the process/output unchanged. These operations do not allocate or draw. */

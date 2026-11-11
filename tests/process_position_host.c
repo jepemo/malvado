@@ -29,9 +29,16 @@ static void between_ticks(void *user)
     if (mv_process_position(ctx, ref, &x, &y) != MV_OK) return;
     if (*stage == 0 && x == 4 && y == 6) {
         assert(mv_process_set_position(ctx, ref, 12, 8) == MV_OK);
+        assert(mv_process_set_angle(ctx, ref, 90) == MV_OK);
+        assert(mv_process_set_scale(ctx, ref, 2) == MV_OK);
         ++*stage;
-    } else if (*stage == 1 && x == 19 && y == 8) {
+    } else if (*stage == 1 && x == 19.5 && y == 8) {
+        double angle, scale;
+        assert(mv_process_angle(ctx, ref, &angle) == MV_OK && angle == 180);
+        assert(mv_process_scale(ctx, ref, &scale) == MV_OK && scale == .5);
         assert(mv_process_set_position(ctx, ref, -2, 5) == MV_OK);
+        assert(mv_process_set_angle(ctx, ref, 270) == MV_OK);
+        assert(mv_process_set_scale(ctx, ref, 3) == MV_OK);
         ++*stage;
     }
 }

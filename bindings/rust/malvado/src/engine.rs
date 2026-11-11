@@ -277,6 +277,38 @@ impl Handle {
             sys::mv_process_set_position(self.inner.runtime.live()?, self.inner.reference, x, y)
         })
     }
+    /// Copy native visual angle. Collider transforms remain explicit in Rust.
+    pub fn angle(&self) -> Result<f64, Error> {
+        let mut value = 0.0;
+        // SAFETY: live owner-thread context, fixed identity and valid output.
+        result(unsafe {
+            sys::mv_process_angle(self.inner.runtime.live()?, self.inner.reference, &mut value)
+        })?;
+        Ok(value)
+    }
+    /// Store finite angle without normalization. Does not update colliders.
+    pub fn set_angle(&self, value: f64) -> Result<(), Error> {
+        // SAFETY: live owner-thread context; native validates identity and value.
+        result(unsafe {
+            sys::mv_process_set_angle(self.inner.runtime.live()?, self.inner.reference, value)
+        })
+    }
+    /// Copy native visual scale. Collider transforms remain explicit in Rust.
+    pub fn scale(&self) -> Result<f64, Error> {
+        let mut value = 0.0;
+        // SAFETY: live owner-thread context, fixed identity and valid output.
+        result(unsafe {
+            sys::mv_process_scale(self.inner.runtime.live()?, self.inner.reference, &mut value)
+        })?;
+        Ok(value)
+    }
+    /// Store finite scale without normalization. Does not update colliders.
+    pub fn set_scale(&self, value: f64) -> Result<(), Error> {
+        // SAFETY: live owner-thread context; native validates identity and value.
+        result(unsafe {
+            sys::mv_process_set_scale(self.inner.runtime.live()?, self.inner.reference, value)
+        })
+    }
     pub fn z(&self) -> Result<f64, Error> {
         let mut z = 0.0;
         // SAFETY: checked owner-thread runtime, immutable identity and output.

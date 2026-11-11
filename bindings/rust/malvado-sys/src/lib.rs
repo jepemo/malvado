@@ -679,6 +679,10 @@ unsafe extern "C" {
         x: f64,
         y: f64,
     ) -> c_int;
+    pub fn mv_process_angle(ctx: *mut MvContext, process: MvProcessRef, out: *mut f64) -> c_int;
+    pub fn mv_process_set_angle(ctx: *mut MvContext, process: MvProcessRef, value: f64) -> c_int;
+    pub fn mv_process_scale(ctx: *mut MvContext, process: MvProcessRef, out: *mut f64) -> c_int;
+    pub fn mv_process_set_scale(ctx: *mut MvContext, process: MvProcessRef, value: f64) -> c_int;
     pub fn mv_process_z(ctx: *mut MvContext, process: MvProcessRef, out: *mut f64) -> c_int;
     pub fn mv_process_set_z(ctx: *mut MvContext, process: MvProcessRef, z: f64) -> c_int;
     pub fn mv_process_draw_order(

@@ -96,6 +96,7 @@ def external_consumer(prefix):
         '    let mut engine = Engine::new()?; assert!(engine.draw_order()?.is_empty());\n'
         '    let handle = engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
         '    handle.set_position(-1.5, 2.25)?; assert_eq!(handle.position()?, (-1.5, 2.25));\n'
+        '    handle.set_angle(90.0)?; handle.set_scale(2.0)?; assert_eq!(handle.angle()?, 90.0); assert_eq!(handle.scale()?, 2.0);\n'
         '    handle.set_z(-3.5)?; assert_eq!(handle.z()?, -3.5); assert_eq!(engine.draw_order()?[0].id(), handle.id());\n'
         '    engine.tick()?; engine.tick()?;\n'
         '    assert_eq!(engine.process_count(), 0);\n'

@@ -82,6 +82,10 @@ _Static_assert(_Generic(&mv_graphic_rect, int (*)(double, double, int, MvCollisi
 _Static_assert(_Generic(&mv_graphic_circle, int (*)(double, MvCollisionShape *): 1, default: 0), "mv_graphic_circle signature");
 _Static_assert(_Generic(&mv_process_position, MvResult (*)(MvContext *, MvProcessRef, double *, double *): 1, default: 0), "mv_process_position signature");
 _Static_assert(_Generic(&mv_process_set_position, MvResult (*)(MvContext *, MvProcessRef, double, double): 1, default: 0), "mv_process_set_position signature");
+_Static_assert(_Generic(&mv_process_angle, MvResult (*)(MvContext *, MvProcessRef, double *): 1, default: 0), "mv_process_angle signature");
+_Static_assert(_Generic(&mv_process_set_angle, MvResult (*)(MvContext *, MvProcessRef, double): 1, default: 0), "mv_process_set_angle signature");
+_Static_assert(_Generic(&mv_process_scale, MvResult (*)(MvContext *, MvProcessRef, double *): 1, default: 0), "mv_process_scale signature");
+_Static_assert(_Generic(&mv_process_set_scale, MvResult (*)(MvContext *, MvProcessRef, double): 1, default: 0), "mv_process_set_scale signature");
 _Static_assert(_Generic(&mv_process_z, MvResult (*)(MvContext *, MvProcessRef, double *): 1, default: 0), "mv_process_z signature");
 _Static_assert(_Generic(&mv_process_set_z, MvResult (*)(MvContext *, MvProcessRef, double): 1, default: 0), "mv_process_set_z signature");
 _Static_assert(_Generic(&mv_process_draw_order, MvResult (*)(MvContext *, MvProcessDrawInfo *, size_t, size_t *): 1, default: 0), "mv_process_draw_order signature");
