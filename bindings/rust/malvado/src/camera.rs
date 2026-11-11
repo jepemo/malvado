@@ -254,6 +254,117 @@ pub enum Selection {
     Explicit(CameraHandle),
 }
 impl Handle {
+    /// Copy a screen-space clipping region. None restores the camera viewport.
+    /// Invalid dimensions leave the stored region unchanged.
+    pub fn set_region(&self, region: Option<Viewport>) -> Result<(), Error> {
+        let region = region.map(Viewport::native);
+        // SAFETY: checked process identity and optional copied input; no retention.
+        result(unsafe {
+            sys::mv_process_region_set(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                region.as_ref().map_or(std::ptr::null(), |r| r),
+            )
+        })
+    }
+    pub fn region(&self) -> Result<Option<Viewport>, Error> {
+        let mut out = sys::MvCameraViewport::default();
+        let mut present = 0;
+        // SAFETY: distinct stack outputs and checked live context.
+        result(unsafe {
+            sys::mv_process_region_get(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut out,
+                &mut present,
+            )
+        })?;
+        Ok((present != 0).then_some(Viewport {
+            x: out.x,
+            y: out.y,
+            width: out.width,
+            height: out.height,
+        }))
+    }
+    /// Local drawing offset, subtracted after camera projection. Does not move
+    /// world coordinates or colliders. Values must be finite with absolute
+    /// values at most f32::MAX/16.
+    pub fn set_scroll(&self, scroll: (f32, f32)) -> Result<(), Error> {
+        // SAFETY: copied scalars and checked owner-thread process identity.
+        result(unsafe {
+            sys::mv_process_scroll_set(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                scroll.0,
+                scroll.1,
+            )
+        })
+    }
+    pub fn scroll(&self) -> Result<(f32, f32), Error> {
+        let (mut x, mut y) = (0.0, 0.0);
+        // SAFETY: distinct outputs, no retention.
+        result(unsafe {
+            sys::mv_process_scroll_get(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut x,
+                &mut y,
+            )
+        })?;
+        Ok((x, y))
+    }
+    /// Intersect selected camera, region, optional host clip and logical screen.
+    /// None means no visible area. A closed selected camera returns NotFound.
+    pub fn view_clip(
+        &self,
+        host: Option<Viewport>,
+        screen: (i32, i32),
+    ) -> Result<Option<Viewport>, Error> {
+        let host = host.map(Viewport::native);
+        let mut out = sys::MvCameraViewport::default();
+        // SAFETY: copied optional input and distinct output, checked context.
+        result(unsafe {
+            sys::mv_process_view_clip(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                host.as_ref().map_or(std::ptr::null(), |v| v),
+                screen.0,
+                screen.1,
+                &mut out,
+            )
+        })?;
+        Ok((out.width > 0).then_some(Viewport {
+            x: out.x,
+            y: out.y,
+            width: out.width,
+            height: out.height,
+        }))
+    }
+    /// Project world origin through the selected camera and local scroll.
+    /// Host scroll is separate. This operation needs no window or tick.
+    /// ```
+    /// use malvado::{Engine, camera::Viewport};
+    /// let engine = Engine::new()?;
+    /// let actor = engine.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+    /// actor.set_scroll((3.0, 4.0))?;
+    /// actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
+    /// assert_eq!(actor.view_offset()?, (-3.0, -4.0));
+    /// assert_eq!(actor.view_clip(None, (100, 80))?, actor.region()?);
+    /// # Ok::<(), malvado::Error>(())
+    /// ```
+    pub fn view_offset(&self) -> Result<(f64, f64), Error> {
+        let (mut x, mut y) = (0.0, 0.0);
+        // SAFETY: distinct outputs, checked process and owner-thread context.
+        result(unsafe {
+            sys::mv_process_view_offset(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut x,
+                &mut y,
+            )
+        })?;
+        Ok((x, y))
+    }
     pub fn set_camera(&self, selection: Selection) -> Result<(), Error> {
         let reference = match selection {
             Selection::Main => None,

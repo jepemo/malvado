@@ -64,7 +64,8 @@ starts a scheduler, follows a target or changes process world coordinates.
 
 `frame.process_graphics(&engine)?` now applies native selection and viewport.
 It composes and restores host clip/scroll; the default full-window case remains
-batched. Per-process native region/command storage remains A7.6 work. Immediate
+batched. Process region/scroll use the native descriptors below. Process command
+collection remains A7.6 work. Immediate
 frame drawing is still explicit; use a snapshot's project/clip operations for
 custom drawing. Lua-owned and borrowed camera userdata use the same core; see
 [the native ownership contract](cameras.md#context-owned-camera-identities-and-selection).
@@ -81,6 +82,48 @@ context cleanup with open cameras. Owner-thread and runnable doctests check the
 public usage. Native and Rust pixel fixtures verify main/explicit/screen views,
 closed-view hiding, viewport boundaries and host scope composition. Installed
 core/graphics consumers exercise registered selection through relocated SDKs.
+
+## Process region and local scroll
+
+Use handle methods to assign copied native descriptors. No window or tick is
+needed to read values or compose the effective view.
+
+```rust
+use malvado::{Engine, camera::Viewport};
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+actor.set_scroll((3.0, 4.0))?;
+actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
+assert_eq!(actor.view_offset()?, (-3.0, -4.0));
+assert_eq!(actor.view_clip(None, (100, 80))?, actor.region()?);
+# Ok::<(), malvado::Error>(())
+```
+
+`set_region(None)` clears clipping beyond the selected camera viewport.
+`region()` returns an independent optional value. Dimensions must be positive;
+origins can use the full i32 range. `set_scroll((x, y))` copies finite f32 values
+with absolute values at most `f32::MAX / 16`; `scroll()` reads them back. Zero is
+the default and reset value. Invalid setters return `InvalidArgument` without
+changing stored state.
+
+`view_clip(host, screen)` intersects camera viewport, process region, optional
+host clip and screen. Empty intersections return `None`. Screen and clip
+dimensions must be positive. `view_offset()` projects world origin through the
+selected camera and local scroll; host scroll stays separate. Projection uses
+the native numeric limits. A closed selected camera returns `NotFound` from
+composition, while stored descriptors remain accessible. Dead handles return
+`NotFound`; after engine shutdown they return `Closed`.
+
+`frame.process_graphics(&engine)` applies these values immediately, including
+for frozen processes. It composes and restores host clip/scroll. These methods
+never change process world position, colliders, status or scheduling. See the
+[shared native contract](cameras.md#process-region-and-local-scroll).
+
+`process_view.rs` checks defaults, copied/shared handle values, frozen state,
+composition, boundary/error atomicity and dead/closed lifetimes. The graphics
+fixture checks local scroll, region/host intersections, host scope restoration,
+offscreen hiding and reset pixels. Installed core and graphics consumers use
+all six safe methods. The runnable example also runs as a doctest.
 
 ## Follow a process
 
@@ -185,3 +228,9 @@ pixels; Rust itself is not instrumented. Native scope/coordinate-boundary pixel
 checks pass after the default full-window batching adjustment. The isolated
 full graphics rerun passed after an earlier keyboard fixture failure. Linux CI
 and the remaining asset/command/region services remain open.
+
+A7.6ao local macOS evidence: Rust core and graphics suites pass in Debug and
+Release, including the new view methods, runnable doctest and installed offline
+consumers. Clippy/format and native graphical ASan/UBSan integration pass. Rust
+itself is not sanitizer-instrumented, and macOS leak detection is disabled.
+Linux CI and remaining A7.6 services are outside this local evidence.

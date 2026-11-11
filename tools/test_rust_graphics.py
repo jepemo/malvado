@@ -60,6 +60,7 @@ def consumer(prefix, profile):
         ' let geometry = malvado::graphic::Geometry::rectangle(10.0,10.0,malvado::graphic::Pivot::TopLeft)?;\n'
         ' let engine = Engine::new()?; let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?; actor.set_graphic(Graphic { geometry: Geometry::circle(3.0)?, color: state.color() })?; frame.process_graphics(&engine)?; actor.clear_graphic()?;\n'
         ' let camera = engine.create_camera(malvado::camera::Camera::new(0.0,0.0,None)?)?; actor.set_camera(malvado::camera::Selection::Explicit(camera.clone()))?; frame.process_graphics(&engine)?; camera.close()?; actor.set_camera(malvado::camera::Selection::Main)?;\n'
+        '    let region = malvado::camera::Viewport { x: 1, y: 2, width: 30, height: 40 }; actor.set_region(Some(region))?; assert_eq!(actor.region()?, Some(region)); actor.set_scroll((3.0,4.0))?; assert_eq!(actor.scroll()?, (3.0,4.0)); assert_eq!(actor.view_offset()?, (-3.0,-4.0)); assert_eq!(actor.view_clip(None,(100,80))?, Some(region)); actor.set_region(None)?; actor.set_scroll((0.0,0.0))?;\n'
         ' frame.graphic(geometry, malvado::collision::Transform::default(), Color {r:255,g:0,b:0,a:255})?;\n'
         ' frame.fade(&fade)?; drop(frame);\n'
         ' Ok(())\n}\n')

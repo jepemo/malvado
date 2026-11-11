@@ -350,4 +350,68 @@ fn main() {
             )
             .unwrap();
     }
+    actor.set_scroll((10.0, 5.0)).unwrap();
+    actor
+        .set_region(Some(Viewport {
+            x: 36,
+            y: 36,
+            width: 3,
+            height: 3,
+        }))
+        .unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame
+            .with_clip(
+                Rectangle {
+                    x: 37,
+                    y: 36,
+                    width: 5,
+                    height: 5,
+                },
+                |frame| {
+                    frame.with_scroll((2.0, 2.0), |frame| {
+                        frame.process_graphics(&engine)?;
+                        pixel(37, 37, (255, 0, 0));
+                        pixel(36, 37, (0, 0, 0));
+                        pixel(39, 37, (0, 0, 0));
+                        // Native process drawing must restore both host scopes.
+                        frame.rectangle(
+                            Rectangle {
+                                x: 42,
+                                y: 40,
+                                width: 1,
+                                height: 1,
+                            },
+                            true,
+                            red,
+                        )?;
+                        pixel(40, 38, (255, 0, 0));
+                        Ok(())
+                    })
+                },
+            )
+            .unwrap();
+    }
+    actor
+        .set_region(Some(Viewport {
+            x: 200,
+            y: 200,
+            width: 10,
+            height: 10,
+        }))
+        .unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(40, 40, (0, 0, 0));
+    }
+    actor.set_region(None).unwrap();
+    actor.set_scroll((0.0, 0.0)).unwrap();
+    {
+        let frame = window.frame(black).unwrap();
+        frame.process_graphics(&engine).unwrap();
+        pixel(50, 45, (255, 0, 0));
+    }
+    assert_eq!(actor.position().unwrap(), (60.0, 50.0));
 }
