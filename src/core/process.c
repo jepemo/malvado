@@ -18,6 +18,7 @@
 #include "entropy.h"
 #include "schedule.h"
 #include <stdint.h>
+#include <float.h>
 #include <math.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -917,6 +918,56 @@ mv_process_set_scale(MvContext *ctx, MvProcessRef reference, double value)
     if (result != MV_OK)
         return result;
     item->scale = value;
+    return MV_OK;
+}
+
+MvResult
+mv_process_world_query(MvContext *ctx, MvProcessRef reference,
+                       const MvCollisionWorld *world, const MvCollisionShape *shape,
+                       size_t *out)
+{
+    if (!world || !out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    size_t id = 0;
+    if (shape) {
+        MvCollisionTransform transform = {item->x, item->y, item->angle, item->scale};
+        if (mv_collision_world_query(world, *shape, transform, &id) < 0)
+            return MV_INVALID_ARGUMENT;
+    }
+    *out = id;
+    return MV_OK;
+}
+
+MvResult
+mv_process_world_move(MvContext *ctx, MvProcessRef reference,
+                      const MvCollisionWorld *world, const MvCollisionShape *shape,
+                      double dx, double dy, MvCollisionSweep *out)
+{
+    if (!world || !out || !isfinite(dx) || !isfinite(dy) ||
+        fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    MvCollisionTransform transform = {item->x, item->y, item->angle, item->scale};
+    MvCollisionSweep sweep = {.fraction = 1};
+    if (shape) {
+        if (mv_collision_world_move(world, *shape, &transform, dx, dy, &sweep) < 0)
+            return MV_INVALID_ARGUMENT;
+    } else {
+        transform.x += dx;
+        transform.y += dy;
+    }
+    if (!isfinite(transform.x) || !isfinite(transform.y))
+        return MV_INVALID_ARGUMENT;
+    item->x = transform.x;
+    item->y = transform.y;
+    *out = sweep;
     return MV_OK;
 }
 

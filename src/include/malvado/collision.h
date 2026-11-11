@@ -95,6 +95,24 @@ int mv_collision_world_move(const MvCollisionWorld *world, MvCollisionShape shap
                             MvCollisionTransform *transform, double dx, double dy,
                             MvCollisionSweep *out);
 
+/* Contextual world operations use the live process x/y, angle and scale.
+ * shape is borrowed for this call; NULL means no collider. Query writes a
+ * one-based world ID or 0. Move atomically commits x/y and the sweep result.
+ * With no shape, move applies the full displacement and returns no hit.
+ * dx/dy must be finite and at most DBL_MAX/16 in magnitude. Geometry, numeric
+ * limits and initial overlap follow the world operations above. Invalid input
+ * returns MV_INVALID_ARGUMENT; dead processes return MV_NOT_FOUND. Failure
+ * preserves position and outputs. Foreign references are invalid. Owner-thread
+ * only; no allocation, callbacks, ownership transfer or process activation.
+ * These calls do not change explicitly registered process colliders. */
+MvResult mv_process_world_query(MvContext *ctx, MvProcessRef process,
+                                const MvCollisionWorld *world,
+                                const MvCollisionShape *shape, size_t *out);
+MvResult mv_process_world_move(MvContext *ctx, MvProcessRef process,
+                               const MvCollisionWorld *world,
+                               const MvCollisionShape *shape, double dx, double dy,
+                               MvCollisionSweep *out);
+
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);
 int mv_rect_contains(MvRect rect, double x, double y);

@@ -321,3 +321,36 @@ instead. Invalid calls do not move the process. A disabled collider (`false`),
 an automatic collider (`nil`) and an explicit collider keep their existing
 behavior in every form. Worlds and descriptors remain garbage-collected; no
 new native resource or scheduler is introduced by these wrappers.
+
+## Contextual process movement
+
+`mv_process_world_query(ctx, process, world, shape, &id)` uses native process
+x/y, angle and scale. It writes a one-based world ID, or zero for no overlap.
+`mv_process_world_move(ctx, process, world, shape, dx, dy, &result)` uses the
+same properties and commits the permitted x/y atomically. Both borrow `world`
+and the optional shape for this call. Passing NULL for the shape disables world
+collisions: query returns zero and move applies the full displacement.
+No graph or registered process collider is selected implicitly.
+
+Both operations require a live owner-thread context and a context-bound live
+process. Foreign references, NULL world/output, invalid geometry or numeric
+limits return `MV_INVALID_ARGUMENT`. Dead processes return `MV_NOT_FOUND`.
+The move displacement must be finite and at most `DBL_MAX / 16` in magnitude.
+Initial overlap and unsupported sweep transforms follow the existing world
+rules. Failure preserves process position and output. Sleep and freeze do not
+prevent an explicit host move. These calls do not tick, allocate, retain data,
+change angle/scale, or update explicitly registered C collider transforms.
+
+Lua `world:collision` without a hypothetical position and `world:move` use these
+operations for native numeric properties. Lua still selects explicit or
+graph-derived geometry and refreshes its derived collider after movement.
+Hypothetical query positions and local invalid visual overrides retain their
+existing conversion/error path. The core world geometry remains shared in all
+paths. `process_world` checks identity, atomic errors, fast/slide movement,
+rotation/scale, no-shape movement and numeric boundaries. `alpha7_world_parity`
+compares the contextual C/Lua trace with the existing golden fixture.
+
+A7.6ab local macOS verification: `mise run test-c` (58 tests),
+`mise run test` and `mise run test-headless` (173 tests each), and
+`mise run test-visual` (57 tests) pass. This is host evidence, not Linux CI
+acceptance or automatic graph selection in C/Rust.

@@ -4763,6 +4763,20 @@ process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
 }
 
 static int
+native_process_transform(lua_State *L, int fields)
+{
+    const char *names[] = {"x", "y", "angle", "size"};
+    for (unsigned i = 0; i < 4; ++i) {
+        raw_option(L, fields, names[i]);
+        int valid = lua_isnil(L, -1) ||
+                    (lua_type(L, -1) == LUA_TNUMBER && isfinite(lua_tonumber(L, -1)));
+        lua_pop(L, 1);
+        if (!valid) return 0;
+    }
+    return 1;
+}
+
+static int
 world_process_collision(lua_State *L)
 {
     lua_settop(L, 3);
@@ -4796,7 +4810,15 @@ world_process_collision(lua_State *L)
         transform.y = shape_option(L, 3, "y", transform.y);
     }
     size_t hit;
-    int result = mv_collision_world_query(world, shape, transform, &hit);
+    int result;
+    if (lua_isnil(L, 3) && native_process_transform(L, fields)) {
+        LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
+        if (mv_process_world_query(engine.context, self->reference, world, &shape, &hit) != MV_OK)
+            return luaL_error(L, "invalid process collision transform");
+        result = hit != 0;
+    } else {
+        result = mv_collision_world_query(world, shape, transform, &hit);
+    }
     if (result < 0)
         return luaL_error(L, "invalid process collision transform");
     if (result)
@@ -4844,7 +4866,15 @@ world_process_move(lua_State *L)
     MvCollisionShape shape;
     MvCollisionSweep result = {.fraction = 1};
     Process *slot = find_process_slot(id);
-    if (!process_collider(L, fields, slot && slot->legacy_frame, &shape)) {
+    int present = process_collider(L, fields, slot && slot->legacy_frame, &shape);
+    LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
+    lua_createtable(L, 0, 6);
+    if (native_process_transform(L, fields)) {
+        if (mv_process_world_move(engine.context, self->reference, world,
+                                  present ? &shape : NULL, dx, dy, &result) != MV_OK)
+            return luaL_error(L, "invalid movement or initial collision");
+        (void)mv_process_position(engine.context, self->reference, &transform.x, &transform.y);
+    } else if (!present) {
         transform.x += dx;
         transform.y += dy;
     } else if (mv_collision_world_move(world, shape, &transform, dx, dy, &result) < 0) {
@@ -4852,7 +4882,6 @@ world_process_move(lua_State *L)
     }
     if (!isfinite(transform.x) || !isfinite(transform.y))
         return luaL_error(L, "invalid movement destination");
-    lua_createtable(L, 0, 6);
     lua_pushboolean(L, result.hit);
     lua_setfield(L, -2, "hit");
     lua_pushnumber(L, transform.x - old_x);
@@ -4867,7 +4896,6 @@ world_process_move(lua_State *L)
         lua_pushinteger(L, (lua_Integer)result.id);
         lua_setfield(L, -2, "id");
     }
-    LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
     if (mv_process_set_position(engine.context, self->reference, transform.x, transform.y) != MV_OK)
         return luaL_error(L, "cannot set process position");
     lua_pushliteral(L, "x");
