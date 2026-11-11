@@ -46,7 +46,7 @@ if(MALVADO_BUILD_ASSETS)
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
-add_library(malvado_core STATIC src/core/version.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
+add_library(malvado_core STATIC src/core/version.c src/core/graphic.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
 target_include_directories(malvado_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -217,6 +217,10 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+add_executable(graphic-geometry-test tests/graphic_geometry.c)
+target_link_libraries(graphic-geometry-test PRIVATE malvado_core)
+add_test(NAME graphic_geometry COMMAND graphic-geometry-test)
+
 add_executable(version-test tests/version.c)
 target_link_libraries(version-test PRIVATE malvado_core)
 target_compile_definitions(version-test PRIVATE MALVADO_VERSION_STRING="${MALVADO_VERSION_STRING}")

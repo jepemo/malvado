@@ -42,6 +42,7 @@
 #include "core/process.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
+#include "malvado/graphic.h"
 #include "runner/runtime.h"
 
 typedef enum {
@@ -4973,12 +4974,10 @@ graphic_create(lua_State *L)
         graphic.shape.height = luaL_checknumber(L, 2);
         options = 3;
     }
-    MvCollisionTransform identity = {0, 0, 0, 1};
-    if (mv_collision_overlap(graphic.shape, identity, graphic.shape, identity) < 0 ||
-        (kind == MV_COLLISION_CIRCLE && (graphic.shape.radius < FLT_MIN || graphic.shape.radius > FLT_MAX / 16)) ||
-        (kind == MV_COLLISION_RECT &&
-         (graphic.shape.width < FLT_MIN || graphic.shape.height < FLT_MIN ||
-          graphic.shape.width > FLT_MAX / 16 || graphic.shape.height > FLT_MAX / 16)))
+    int valid = kind == MV_COLLISION_CIRCLE
+        ? mv_graphic_circle(graphic.shape.radius, &graphic.shape)
+        : mv_graphic_rect(graphic.shape.width, graphic.shape.height, 0, &graphic.shape);
+    if (!valid)
         return luaL_error(L, "invalid graphic dimensions");
     if (!lua_isnoneornil(L, options)) {
         validate_options(L, options, "color", "pivot");
@@ -5017,8 +5016,7 @@ graphic_create(lua_State *L)
         lua_pop(L, 1);
     }
     if (graphic.top_left) {
-        graphic.shape.offset_x = graphic.shape.width / 2;
-        graphic.shape.offset_y = graphic.shape.height / 2;
+        (void)mv_graphic_rect(graphic.shape.width, graphic.shape.height, 1, &graphic.shape);
     }
     LuaGraphic *stored = lua_newuserdatauv(L, sizeof(*stored), 0);
     *stored = graphic;

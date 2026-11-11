@@ -81,6 +81,11 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_fpg_point`
 - `mv_fpg_sprite`
 
+## [graphic.h](../../src/include/malvado/graphic.h)
+
+- `mv_graphic_circle`
+- `mv_graphic_rect`
+
 ## [malvado.h](../../src/include/malvado/malvado.h)
 
 - `mv_abi_version`
