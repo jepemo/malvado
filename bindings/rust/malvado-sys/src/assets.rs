@@ -151,6 +151,12 @@ const _: () = {
         MV_ASSET_ATLAS as usize,
         MV_ASSET_ASEPRITE as usize,
         MV_ASSET_FPG_MANIFEST as usize,
+        size_of::<MvAssetMetadata>(),
+        align_of::<MvAssetMetadata>(),
+        offset_of!(MvAssetMetadata, format),
+        offset_of!(MvAssetMetadata, atlas),
+        offset_of!(MvAssetMetadata, fpg),
+        offset_of!(MvAssetMetadata, manifest),
     ];
     assert!(
         native.len() == rust.len(),
@@ -305,4 +311,23 @@ unsafe extern "C" {
         out: *mut c_char,
         capacity: usize,
     ) -> c_int;
+}
+
+/// Owning record. Do not shallow-copy it. Move pointers by clearing their fields.
+#[repr(C)]
+#[derive(Default)]
+pub struct MvAssetMetadata {
+    pub format: c_int,
+    pub atlas: *mut MvAtlas,
+    pub fpg: *mut MvFpg,
+    pub manifest: *mut MvFpgManifest,
+}
+unsafe extern "C" {
+    pub fn mv_asset_metadata_parse(
+        source: *const MvAssetSource,
+        format: c_int,
+        out: *mut MvAssetMetadata,
+        error: *mut *const c_char,
+    ) -> c_int;
+    pub fn mv_asset_metadata_destroy(metadata: *mut MvAssetMetadata);
 }

@@ -102,6 +102,9 @@ int main(void)
     printf("%zu ", (size_t)MV_ASSET_ATLAS);
     printf("%zu ", (size_t)MV_ASSET_ASEPRITE);
     printf("%zu ", (size_t)MV_ASSET_FPG_MANIFEST);
+    printf("%zu %zu ", sizeof(MvAssetMetadata), _Alignof(MvAssetMetadata));
+    printf("%zu %zu ", offsetof(MvAssetMetadata, format), offsetof(MvAssetMetadata, atlas));
+    printf("%zu %zu ", offsetof(MvAssetMetadata, fpg), offsetof(MvAssetMetadata, manifest));
     return 0;
 }
 
@@ -122,3 +125,6 @@ _Static_assert(_Generic(&mv_asset_source_dimensions, int (*)(const MvAssetSource
 _Static_assert(_Generic(&mv_asset_source_image_path_size, size_t (*)(const MvAssetSource *, const char *): 1, default: 0), "mv_asset_source_image_path_size signature");
 
 _Static_assert(_Generic(&mv_asset_source_image_path, int (*)(const MvAssetSource *, const char *, char *, size_t): 1, default: 0), "mv_asset_source_image_path signature");
+
+_Static_assert(_Generic(&mv_asset_metadata_parse, int (*)(const MvAssetSource *, MvAssetFormat, MvAssetMetadata *, const char **): 1, default: 0), "mv_asset_metadata_parse signature");
+_Static_assert(_Generic(&mv_asset_metadata_destroy, void (*)(MvAssetMetadata *): 1, default: 0), "mv_asset_metadata_destroy signature");

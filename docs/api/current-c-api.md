@@ -16,6 +16,8 @@ See the linked headers and the [process](process-inventory.md),
 
 ## [asset.h](../../src/include/malvado/asset.h)
 
+- `mv_asset_metadata_destroy`
+- `mv_asset_metadata_parse`
 - `mv_asset_source_data`
 - `mv_asset_source_destroy`
 - `mv_asset_source_dimensions`

@@ -3274,6 +3274,31 @@ read_asset_file(lua_State *L, const char *path, size_t *length)
 
 #endif
 #ifdef MALVADO_BUILD_ASSETS
+typedef struct { MvAssetMetadata metadata; } LuaAssetMetadata;
+static int
+asset_metadata_gc(lua_State *L)
+{
+    LuaAssetMetadata *value = luaL_checkudata(L, 1, "malvado.asset_metadata");
+    mv_asset_metadata_destroy(&value->metadata);
+    return 0;
+}
+
+static MvAssetMetadata *
+parse_asset_metadata(lua_State *L, MvAssetSource *source, MvAssetFormat format, const char *path)
+{
+    LuaAssetMetadata *value = lua_newuserdatauv(L, sizeof(*value), 0);
+    value->metadata = (MvAssetMetadata){0};
+    if (luaL_newmetatable(L, "malvado.asset_metadata")) {
+        lua_pushcfunction(L, asset_metadata_gc);
+        lua_setfield(L, -2, "__gc");
+    }
+    lua_setmetatable(L, -2);
+    const char *error = NULL;
+    if (!mv_asset_metadata_parse(source, format, &value->metadata, &error))
+        luaL_error(L, "%s: %s", path, error);
+    return &value->metadata;
+}
+
 static void
 push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 {
@@ -3290,17 +3315,15 @@ push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 
 static int
 load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, const char *bytes, size_t length,
-                 int aseprite, int width, int height)
+                 int aseprite, MvAssetMetadata *metadata)
 {
     LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     int index = lua_gettop(L);
     const char *error = NULL;
-    atlas->atlas = aseprite ? mv_atlas_parse_aseprite(bytes, length, width, height, &error) :
-                             mv_atlas_parse(bytes, length, width, height, &error);
-    if (!atlas->atlas)
-        return luaL_error(L, "%s: %s", path, error);
+    atlas->atlas = metadata->atlas;
+    metadata->atlas = NULL;
     if (engine.window) {
         push_asset_image(L, source, mv_atlas_image(atlas->atlas));
         LuaImage *image = lua_touserdata(L, -1);
@@ -3323,12 +3346,23 @@ load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, const ch
 }
 
 static int
-load_asset_library(lua_State *L, MvAssetSource *source, const char *path, const char *bytes, size_t length,
-                   MvAssetFormat format, int transparent)
+load_asset_library(lua_State *L, MvAssetSource *source, const char *path,
+                   MvAssetMetadata *metadata, int transparent)
 {
-    lua_pushcfunction(L, format == MV_ASSET_FPG ? fpg_parse : fpg_manifest_parse);
-    lua_pushlstring(L, bytes, length);
-    lua_call(L, 1, 1);
+    MvAssetFormat format = metadata->format;
+    if (format == MV_ASSET_FPG) {
+        LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 1);
+        *value = (LuaFpg){0};
+        luaL_setmetatable(L, "malvado.fpg");
+        value->fpg = metadata->fpg;
+        metadata->fpg = NULL;
+    } else {
+        LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 2);
+        *value = (LuaFpgManifest){0};
+        luaL_setmetatable(L, "malvado.fpg_manifest");
+        value->manifest = metadata->manifest;
+        metadata->manifest = NULL;
+    }
     int library = lua_gettop(L);
     lua_newtable(L);
     int images = lua_gettop(L);
@@ -3436,8 +3470,6 @@ load_asset(lua_State *L)
     }
     if (has_pivot) return luaL_error(L, "pivot option is only valid for PNG assets");
 #ifdef MALVADO_BUILD_ASSETS
-    int width = INT_MAX, height = INT_MAX;
-    (void)mv_asset_source_dimensions(source, &width, &height);
     MvAssetFormat format = mv_asset_source_format(source);
     if (requested) {
         if (!strcmp(requested, "fpg")) format = MV_ASSET_FPG;
@@ -3447,11 +3479,10 @@ load_asset(lua_State *L)
     }
     if (has_transparent && format != MV_ASSET_FPG)
         return luaL_error(L, "transparent_zero is only valid for FPG assets");
-    if (format == MV_ASSET_ATLAS || format == MV_ASSET_ASEPRITE)
-        return load_asset_atlas(L, source, path, bytes, length, format == MV_ASSET_ASEPRITE, width, height);
-    if (format == MV_ASSET_FPG || format == MV_ASSET_FPG_MANIFEST)
-        return load_asset_library(L, source, path, bytes, length, format, transparent);
-    return luaL_error(L, "unknown or ambiguous asset schema/format: %s", path);
+    MvAssetMetadata *metadata = parse_asset_metadata(L, source, format, path);
+    if (metadata->atlas)
+        return load_asset_atlas(L, source, path, bytes, length, metadata->format == MV_ASSET_ASEPRITE, metadata);
+    return load_asset_library(L, source, path, metadata, transparent);
 #else
     (void)transparent;
     return luaL_error(L, "asset format requires asset support (only PNG is available)");

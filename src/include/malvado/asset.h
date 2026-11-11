@@ -16,6 +16,8 @@
 #ifndef MALVADO_ASSET_H
 #define MALVADO_ASSET_H
 #include <stddef.h>
+#include "malvado/atlas.h"
+#include "malvado/fpg.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -54,6 +56,29 @@ int mv_asset_source_dimensions(const MvAssetSource *source, int *width, int *hei
  * not overlap source storage or image. No file is opened by these operations. */
 size_t mv_asset_source_image_path_size(const MvAssetSource *source, const char *image);
 int mv_asset_source_image_path(const MvAssetSource *source, const char *image, char *out, size_t capacity);
+
+/* Owned library metadata. Initialize to {0}. Success has exactly one non-NULL
+ * pointer; format distinguishes native atlas and Aseprite. Do not shallow-copy
+ * owning records. To move a pointer into another owner, set its field to NULL.
+ * Destroy releases remaining pointers once and resets the record to {0}.
+ * Metadata owns no image, device, context or source reference. */
+typedef struct {
+    MvAssetFormat format;
+    MvAtlas *atlas;
+    MvFpg *fpg;
+    MvFpgManifest *manifest;
+} MvAssetMetadata;
+/* Select and call the existing complete library importer. UNKNOWN uses the
+ * source hint; explicit formats override it. PNG/unknown/invalid formats fail.
+ * Atlas bounds use advisory Aseprite dimensions or INT_MAX without an image;
+ * hosts must validate against actual image dimensions before rendering.
+ * Return 1 and transfer copied metadata into an empty out record, or 0 with
+ * unchanged out and a static optional error. The source is borrowed only during
+ * the call. No partial metadata survives failure. Destroy old out data before
+ * reuse. Serialize with other native JSON parsing. Owner-thread only. */
+int mv_asset_metadata_parse(const MvAssetSource *source, MvAssetFormat format,
+                            MvAssetMetadata *out, const char **error);
+void mv_asset_metadata_destroy(MvAssetMetadata *metadata);
 #ifdef __cplusplus
 }
 #endif

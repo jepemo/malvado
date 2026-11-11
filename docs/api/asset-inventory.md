@@ -7,6 +7,7 @@ for inputs, errors, ownership, examples, and limitations.
 
 | Area | C | Lua | Evidence |
 | --- | --- | --- | --- |
+| Asset unified library metadata | `mv_asset_metadata_parse`, `mv_asset_metadata_destroy` | Shared `load_asset` metadata dispatch and guarded ownership | `asset_metadata`, Lua loader and installed record/signature checks |
 | Asset source and routing | `mv_asset_source_open`, `mv_asset_source_destroy`, `mv_asset_source_path`, `mv_asset_source_data`, `mv_asset_source_format`, `mv_asset_source_dimensions`, `mv_asset_source_image_path_size`, `mv_asset_source_image_path` | Native-backed `load_asset` source/routing and image paths | `asset_source`, `lua_asset_loader`, installed signatures |
 | Atlas import and lifetime | `mv_atlas_parse`, `mv_atlas_parse_aseprite`, `mv_atlas_destroy`, `mv_resource_adopt_atlas` | `mv.load_atlas`, `mv.load_aseprite`; managed atlas | `atlas`, `atlas_allocation`, `visual_image` |
 | Atlas sprite lookup | `mv_atlas_count`, `mv_atlas_image`, `mv_atlas_find`, `mv_atlas_find_name` | `mv.sprite_info`, `mv.sprite_id` | `atlas`, `visual_image_graph` |
@@ -83,6 +84,7 @@ for lifetime, rendering, collision and installed consumer evidence.
 
 | C types | Lua relationship and lifetime |
 | --- | --- |
+| `MvAssetMetadata` | Owned, non-copyable library metadata record; pointers move to Lua wrappers. |
 | `MvAssetSource` | Owned file snapshot; Lua guards it until import completes. No image or parsed metadata is retained. |
 | `MvAssetFormat` | Routing hint from source content, not format validation. |
 

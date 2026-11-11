@@ -120,3 +120,7 @@ owner-thread compile-fail doctests pass. The relocated offline assets consumer
 uses every Source method without source-tree dependencies. Native ASan/UBSan
 integration covers native allocation and destruction; Rust itself is not
 sanitizer-instrumented.
+
+For validated atlas/Aseprite/FPG/manifest data, use the
+[unified metadata dispatcher](asset-library-metadata.md) after source reading.
+Source detection remains available independently.
