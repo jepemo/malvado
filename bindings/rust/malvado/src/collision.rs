@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 //! Native collision math and owned static worlds. These explicit shape/value
-//! operations do not yet derive graphics or mutate process visual properties.
+//! operations share native primitive-graph collider selection and transforms.
 use crate::engine::{acquire, collect_native, result};
 use crate::{Error, Handle};
 use malvado_sys as sys;
@@ -298,6 +298,39 @@ impl Drop for World {
 }
 
 impl Handle {
+    /// Bind a copied local override to current native visual properties.
+    /// ```
+    /// use malvado::{Engine, graphic::{Graphic, Geometry, Color}};
+    /// let engine = Engine::new()?;
+    /// let a = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// let b = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
+    /// a.set_graphic(graphic)?;
+    /// b.set_graphic(graphic)?;
+    /// b.set_position(3.0, 0.0)?;
+    /// assert!(a.collides_with(&b)?);
+    /// a.clear_collider()?;
+    /// assert!(!a.collides_with(&b)?);
+    /// a.bind_collider(None)?;
+    /// assert!(a.collides_with(&b)?);
+    /// # Ok::<(), malvado::Error>(())
+    /// ```
+    /// None restores primitive graph selection. Clear disables selection;
+    /// set_collider keeps an independent fixed transform instead.
+    pub fn bind_collider(&self, shape: Option<Shape>) -> Result<(), Error> {
+        let shape = shape.map(|s| s.native);
+        // SAFETY: live owner-thread context and copied optional input. Native
+        // validates selected geometry/transform before committing selection.
+        result(unsafe {
+            sys::mv_process_collider_bind(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                shape.as_ref().map_or(std::ptr::null(), |shape| shape),
+            )
+        })
+    }
+
+    /// Register an independent fixed transform; visual property changes do not move it.
     pub fn set_collider(&self, shape: Shape, transform: Transform) -> Result<(), Error> {
         // SAFETY: context-bound live identity; native copies validated values.
         result(unsafe {
@@ -309,6 +342,7 @@ impl Handle {
             )
         })
     }
+    /// Disable all collider selection until bind_collider or set_collider.
     pub fn clear_collider(&self) -> Result<(), Error> {
         // SAFETY: context bound identity, checked by native code.
         result(unsafe {

@@ -99,7 +99,7 @@ def external_consumer(prefix):
         '    handle.set_angle(90.0)?; handle.set_scale(2.0)?; assert_eq!(handle.angle()?, 90.0); assert_eq!(handle.scale()?, 2.0);\n'
         '    let process_world = World::new()?; process_world.move_process(&handle, None, 1.0, 0.0)?; assert_eq!(handle.position()?, (-0.5, 2.25)); assert_eq!(process_world.query_process(&handle, None)?, None);\n'
         '    let mut follow = malvado::camera::Follow::new(&handle)?; assert!(follow.update(&mut camera, (100, 80))?); assert_eq!(camera.position(), (-50.5, -37.75));\n'
-        '    let graph = malvado::graphic::Graphic { geometry, color: malvado::graphic::Color { r: 1, g: 2, b: 3, a: 4 } }; handle.set_graphic(graph)?; assert_eq!(handle.graphic()?.unwrap().color.a, 4); handle.clear_graphic()?;\n'
+        '    let graph = malvado::graphic::Graphic { geometry, color: malvado::graphic::Color { r: 1, g: 2, b: 3, a: 4 } }; handle.set_graphic(graph)?; handle.bind_collider(None)?; handle.bind_collider(Some(Shape::circle(1.0)?))?; handle.bind_collider(None)?; assert_eq!(handle.graphic()?.unwrap().color.a, 4); handle.clear_graphic()?;\n'
         '    handle.set_z(-3.5)?; assert_eq!(handle.z()?, -3.5); assert_eq!(engine.draw_order()?[0].id(), handle.id());\n'
         '    engine.tick()?; engine.tick()?;\n'
         '    assert_eq!(engine.process_count(), 0);\n'

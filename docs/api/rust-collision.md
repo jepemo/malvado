@@ -59,11 +59,56 @@ Type zero selects all types. Missing colliders give no hits; sleeping and frozen
 processes are included. Dead or closed handles return the corresponding error.
 Failed collider updates leave the previous native collider unchanged.
 
-Collider registration does not derive geometry from graphics or follow later
-visual-property changes. Contextual world movement is available below. Graph
-selection and automatic collider derivation still belong to A7.6. This explicit native geometry layer does not close
+Fixed registration does not follow visual-property changes. New processes now
+derive colliders from primitive graphs by default; see the bound selection
+contract below. Asset graph collider derivation remains A7.6 work. This explicit native geometry layer does not close
 the full A7.6 graphics/input/audio/resource gate. See the
 [collision contract](collision.md) for the shared math and native limits.
+
+## Automatic primitive and local colliders
+
+New process handles use their assigned primitive graph for collision geometry.
+Current native x/y, angle and scale apply on every collision query. Changing a
+property or graph, clearing a graph, or calling contextual world movement takes
+effect without rendering or another engine tick. These operations need no window.
+
+Use `actor.bind_collider(Some(shape))?` to select a copied local override that
+follows those same properties. `actor.bind_collider(None)?` restores primitive
+graph selection. A local override survives graph clearing and replacement.
+`clear_collider()` disables all selection until the next bind or fixed set.
+`set_collider(shape, transform)` retains its independent fixed-transform
+contract. A failed bind preserves the previous selection.
+
+```rust
+use malvado::{Engine, graphic::{Graphic, Geometry, Color}};
+let engine = Engine::new()?;
+let a = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let b = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
+a.set_graphic(graphic)?;
+b.set_graphic(graphic)?;
+b.set_position(3.0, 0.0)?;
+assert!(a.collides_with(&b)?);
+a.clear_collider()?;
+assert!(!a.collides_with(&b)?);
+a.bind_collider(None)?;
+assert!(a.collides_with(&b)?);
+# Ok::<(), malvado::Error>(())
+```
+
+Bind validates the current selected shape/transform and returns
+`InvalidArgument` for invalid geometry or numeric limits. Invalid bound source
+properties make queries return `InvalidArgument`; explicit invalid targets also
+return that error. Type queries skip invalid candidates. Repairing properties
+restores bound geometry on the next query. Dead/closed handles return
+`NotFound`/`Closed`. Sleep and freeze retain collision geometry. No shape pointer,
+process resource, activation, tick or extra scheduler is retained or created.
+
+`bound_collider.rs` shares the C/Lua golden trace and checks property/graph
+changes, world writeback, local override, clear/restore, invalid-source recovery,
+local offsets/rotation, fixed-transform independence and failed binds, plus
+handle lifetime errors. The installed SDK consumer calls bind with and without
+a local shape; the signature probe rejects an incompatible SDK.
 
 ## Move a process through a world
 
@@ -102,3 +147,10 @@ trace. Rust also checks scaled/rotated shape movement, free movement, sleep and
 freeze, invalid displacement, initial overlap, nonpositive scale, overflow and
 dead/closed handles. Installed-header probes check both signatures. The bounded
 `world` SDK example uses this path; public example migration remains A7.8 work.
+
+A7.6ai macOS host evidence: `test-rust` passes in Debug/Release with installed
+signature checks, the relocated SDK consumer, Clippy and formatting. Final
+bound traces pass in both profiles, and the runnable bind doctest passes in
+both profiles. `test-rust-graphics-sanitize` passes with the bound collider
+fixtures; native C uses ASan/UBSan and Rust itself is not instrumented. Linux CI
+and asset graph/world geometry selection remain open.
