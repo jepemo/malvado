@@ -56,7 +56,9 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_collider_set`
 - `mv_process_collider_test`
 - `mv_process_world_move`
+- `mv_process_world_move_selected`
 - `mv_process_world_query`
+- `mv_process_world_query_selected`
 - `mv_rect_contains`
 - `mv_rect_overlaps`
 

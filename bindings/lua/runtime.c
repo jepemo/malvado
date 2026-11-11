@@ -4899,7 +4899,9 @@ world_process_collision(lua_State *L)
     int result;
     if (lua_isnil(L, 3) && native_process_transform(L, fields)) {
         LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
-        if (mv_process_world_query(engine.context, self->reference, world, &shape, &hit) != MV_OK)
+        sync_process_collider(L, self, fields);
+        if (self->collision_invalid ||
+            mv_process_world_query_selected(engine.context, self->reference, world, &hit) != MV_OK)
             return luaL_error(L, "invalid process collision transform");
         result = hit != 0;
     } else {
@@ -4954,10 +4956,11 @@ world_process_move(lua_State *L)
     Process *slot = find_process_slot(id);
     int present = process_collider(L, fields, slot && slot->legacy_frame, &shape);
     LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
+    sync_process_collider(L, self, fields);
     lua_createtable(L, 0, 6);
     if (native_process_transform(L, fields)) {
-        if (mv_process_world_move(engine.context, self->reference, world,
-                                  present ? &shape : NULL, dx, dy, &result) != MV_OK)
+        if (self->collision_invalid ||
+            mv_process_world_move_selected(engine.context, self->reference, world, dx, dy, &result) != MV_OK)
             return luaL_error(L, "invalid movement or initial collision");
         (void)mv_process_position(engine.context, self->reference, &transform.x, &transform.y);
     } else if (!present) {

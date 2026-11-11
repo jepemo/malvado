@@ -406,3 +406,47 @@ A7.6ah local macOS evidence: C-only (61 tests), standard/headless (179 each)
 and visual (59) pass. The updated mixed C/Lua host and final golden trace also
 pass in targeted checks. Installed-header probes verify the new bind signature.
 Linux CI and asset graph collider derivation are not certified by these checks.
+
+## World operations with selected geometry
+
+`mv_process_world_query_selected(ctx, ref, world, &id)` queries the collider
+selected by the process. `mv_process_world_move_selected(ctx, ref, world,
+dx, dy, &result)` moves with the same selection. Primitive graph and local
+bound selections use current native visual properties. Disabled selection or
+an absent graph gives no query hit and applies free movement.
+
+Fixed registrations use their explicit collider transform. A selected move
+translates both that collider and the native process origin by the permitted
+displacement. Their existing offset is preserved in native double arithmetic.
+Angle and scale remain unchanged. Manual property writes still leave fixed
+colliders independent. This explicit move contract keeps selected world queries
+and process collision queries consistent when collider and process origins differ.
+
+The world and process must be live on the owner thread. No world/shape pointer
+is retained; no allocation, callback, tick or activation occurs. Query writes
+a one-based rectangle ID or zero. Invalid selection, unsupported sweep geometry,
+initial overlap, NULL inputs or numeric overflow returns `MV_INVALID_ARGUMENT`.
+Dead processes return `MV_NOT_FOUND`; foreign references are invalid. Movement
+validates both process and collider destinations before committing either one.
+Failures preserve positions, selection and outputs. Displacement obeys the
+existing finite `DBL_MAX / 16` limit. A valid selected collider can still move
+while the process sleeps or freezes.
+
+Lua `world:collision` at the current position and `world:move` use selected
+geometry after the existing binding validation/synchronization. Hypothetical
+query positions and local invalid/numeric-string overrides keep their existing
+conversion path. Asset shapes remain supplied by the Lua binding; this step
+does not add native image/animation graph storage.
+
+The older explicit-shape process/world calls keep their contract. In those
+calls NULL still means free movement, and fixed registrations are not changed.
+`selected_world` checks graph/local/disabled/fixed selection, scaled/rotated
+geometry, sliding, frozen movement, offset preservation, initial overlap,
+invalid geometry/input and destination-overflow atomicity, NULL/foreign/dead
+references and unchanged output buffers. The existing world golden trace now
+runs the selected native path in C and Lua.
+
+A7.6aj macOS evidence: C-only (62 tests), standard/headless (180 each) and
+visual (59) pass. Final selected-world and golden parity checks pass after
+adding absent-graph and output-buffer cases. Installed-header probes check
+both selected signatures. Linux CI and native asset graph ownership remain open.

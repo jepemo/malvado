@@ -1105,6 +1105,74 @@ mv_process_world_move(MvContext *ctx, MvProcessRef reference,
     return MV_OK;
 }
 
+MvResult
+mv_process_world_query_selected(MvContext *ctx, MvProcessRef reference,
+                                const MvCollisionWorld *world, size_t *out)
+{
+    if (!world || !out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    result = refresh_collider(item);
+    if (result != MV_OK)
+        return result;
+    size_t id = 0;
+    if (item->has_collider &&
+        mv_collision_world_query(world, item->collider, item->collider_transform, &id) < 0)
+        return MV_INVALID_ARGUMENT;
+    *out = id;
+    return MV_OK;
+}
+
+MvResult
+mv_process_world_move_selected(MvContext *ctx, MvProcessRef reference,
+                               const MvCollisionWorld *world, double dx, double dy,
+                               MvCollisionSweep *out)
+{
+    if (!world || !out || !isfinite(dx) || !isfinite(dy) ||
+        fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    result = refresh_collider(item);
+    if (result != MV_OK)
+        return result;
+    MvCollisionSweep sweep = {.fraction = 1};
+    double x = item->x + dx, y = item->y + dy;
+    MvCollisionTransform transform = item->collider_transform;
+    MvCollisionBounds bounds;
+    if (item->has_collider) {
+        if (mv_collision_world_move(world, item->collider, &transform, dx, dy, &sweep) < 0)
+            return MV_INVALID_ARGUMENT;
+        x = transform.x;
+        y = transform.y;
+        if (item->collider_mode == COLLIDER_FIXED) {
+            /* Preserve the fixed collider's offset from the process origin.
+             * Validate both destinations before committing either one. */
+            if (item->x != item->collider_transform.x)
+                x = item->x + (transform.x - item->collider_transform.x);
+            if (item->y != item->collider_transform.y)
+                y = item->y + (transform.y - item->collider_transform.y);
+        }
+        if (!mv_collision_bounds(item->collider, transform, &bounds))
+            return MV_INVALID_ARGUMENT;
+    }
+    if (!isfinite(x) || !isfinite(y))
+        return MV_INVALID_ARGUMENT;
+    item->x = x;
+    item->y = y;
+    if (item->has_collider) {
+        item->collider_transform = transform;
+        item->collider_bounds = bounds;
+    }
+    *out = sweep;
+    return MV_OK;
+}
+
 static int
 draw_info_less(MvProcessDrawInfo left, MvProcessDrawInfo right)
 {

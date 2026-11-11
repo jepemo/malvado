@@ -122,6 +122,25 @@ MvResult mv_process_world_move(MvContext *ctx, MvProcessRef process,
                                const MvCollisionShape *shape, double dx, double dy,
                                MvCollisionSweep *out);
 
+/* Use the process's selected collider: primitive graph, bound local override,
+ * fixed registration, or disabled/absent. No collider means no query hit and
+ * free movement. Bound selection follows current process properties. A fixed
+ * selection queries its registered transform; selected movement translates both
+ * that transform and native x/y by the permitted displacement, preserving their
+ * offset. Other visual-property writes still leave fixed colliders independent.
+ * Move commits process position, collider destination and result atomically.
+ * Query writes a one-based ID or zero. Invalid selected geometry, numeric
+ * limits, initial overlap or NULL inputs return MV_INVALID_ARGUMENT. Dead
+ * processes return MV_NOT_FOUND; foreign references are invalid. Failure
+ * preserves positions, selection and outputs. Same displacement limits as the
+ * explicit-shape operations above. Owner-thread only; no allocation, callbacks,
+ * process activation or retained world. */
+MvResult mv_process_world_query_selected(MvContext *ctx, MvProcessRef process,
+                                         const MvCollisionWorld *world, size_t *out);
+MvResult mv_process_world_move_selected(MvContext *ctx, MvProcessRef process,
+                                        const MvCollisionWorld *world,
+                                        double dx, double dy, MvCollisionSweep *out);
+
 /* Return 1 for intersection, 0 for none, or -1 for invalid input. */
 int mv_rect_overlaps(MvRect a, MvRect b);
 int mv_rect_contains(MvRect rect, double x, double y);

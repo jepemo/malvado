@@ -11,7 +11,7 @@ collision features or certify compatibility with historical APIs.
 | Rectangle tests | `mv_rect_overlaps`, `mv_rect_contains` | `mv.rect_overlaps`, `mv.rect_contains` | `collision`, `lua_collision` |
 | Transformed shapes | `mv_collision_overlap` | `mv.collision.circle`, `mv.collision.rect`, `mv.collision.overlap` | `collision`, `lua_collision` |
 | Process colliders | `mv_process_collider_bind`, `mv_process_collider_set`, `mv_process_collider_clear`, `mv_process_collider_test`, `mv_process_collider_first`, `mv_process_collider_find` | `self.collider`, `mv.process.collision`, `mv.process.collisions` | `process_collision`, `lua_process_collisions`, `mixed_collision` |
-| Process world operations | `mv_process_world_query`, `mv_process_world_move` | `world:collision`, `world:move` with native numeric properties | `process_world`, `lua_world_process`, `alpha7_world_parity` |
+| Process world operations | `mv_process_world_query`, `mv_process_world_move`, `mv_process_world_query_selected`, `mv_process_world_move_selected` | `world:collision`, `world:move` with native numeric properties | `process_world`, `lua_world_process`, `alpha7_world_parity` |
 | World and movement | `mv_collision_world_create`, `mv_collision_world_destroy`, `mv_collision_world_add_rect`, `mv_collision_world_query`, `mv_collision_world_sweep`, `mv_collision_world_move` | `mv.world.create` and `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | `collision`, `lua_collision`, `lua_world_process`, `collision_allocation` |
 
 The C API accepts copied values and explicit transforms. Lua manages descriptor
