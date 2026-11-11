@@ -5523,17 +5523,15 @@ graph_select(lua_State *L)
             return luaL_error(L, "unknown graph id");
         region.width = sprite.width;
         region.height = sprite.height;
-        (void)mv_fpg_point(fpg->fpg, (int)id, 0, &pivot);
+        (void)mv_fpg_pivot(fpg->fpg, (int)id, &pivot);
     } else {
         MvFpgManifestSprite sprite;
         if (!mv_fpg_manifest_sprite(manifest->manifest, (int)id, &sprite))
             return luaL_error(L, "unknown graph id");
         region.width = sprite.width;
         region.height = sprite.height;
-        (void)mv_fpg_manifest_point(manifest->manifest, (int)id, 0, &pivot);
+        (void)mv_fpg_manifest_pivot(manifest->manifest, (int)id, &pivot);
     }
-    if (!pivot.defined)
-        pivot.x = pivot.y = 0;
     int cache_slot = fpg ? 1 : 2;
     lua_getiuservalue(L, 1, cache_slot);
     if (!lua_istable(L, -1)) {

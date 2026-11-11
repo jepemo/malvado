@@ -60,6 +60,30 @@ main(int argc, char **argv)
     const char *error = NULL;
     MvFpg *fpg = mv_fpg_parse(data, length, &error);
     assert(fpg && !error && mv_fpg_count(fpg) == 2);
+    /* Point zero can be undefined or signed outside the image bounds. */
+    uint8_t variant[2048];
+    memcpy(variant, data, length);
+    size_t point_offset = 8 + 768 + 576 + 64;
+    for (int mode = 0; mode < 2; ++mode) {
+        variant[point_offset] = 0xff;
+        variant[point_offset + 1] = 0xff;
+        variant[point_offset + 2] = mode ? 2 : 0xff;
+        variant[point_offset + 3] = mode ? 0 : 0xff;
+        MvFpg *copy = mv_fpg_parse(variant, length, &error);
+        assert(copy);
+        MvFpgPoint pivot;
+        assert(mv_fpg_pivot(copy, 7, &pivot) && pivot.defined);
+        assert(pivot.x == (mode ? -1 : 0) && pivot.y == (mode ? 2 : 0));
+        size_t size = mv_fpg_json_size(copy, 1);
+        char *json_copy = malloc(size);
+        assert(json_copy && mv_fpg_copy_json(copy, 1, json_copy, size));
+        MvFpgManifest *converted = mv_fpg_manifest_parse(json_copy, size - 1, &error);
+        assert(converted && mv_fpg_manifest_pivot(converted, 7, &pivot));
+        assert(pivot.x == (mode ? -1 : 0) && pivot.y == (mode ? 2 : 0));
+        free(json_copy);
+        mv_fpg_manifest_destroy(converted);
+        mv_fpg_destroy(copy);
+    }
     const uint8_t *palette = mv_fpg_palette(fpg);
     assert(palette && palette[3] == 63 && palette[4] == 0 && palette[7] == 63);
     assert(mv_fpg_gamma(fpg) && mv_fpg_gamma(fpg)[575] == 0);
@@ -71,6 +95,12 @@ main(int argc, char **argv)
     assert(sprite.width == 2 && sprite.height == 2 && !memcmp(sprite.name, "red", 4));
     assert(sprite.point_count == 2 && sprite.pixels[0] == 0 && sprite.pixels[1] == 1);
     MvFpgPoint point;
+    assert(mv_fpg_pivot(fpg, 7, &point) && point.x == 1 && point.y == 0 && point.defined);
+    assert(mv_fpg_pivot(fpg, 42, &point) && point.x == 0 && point.y == 0 && point.defined);
+    point = (MvFpgPoint){123, -456, 0};
+    assert(!mv_fpg_pivot(fpg, -1, &point) && point.x == 123 && point.y == -456 && !point.defined);
+    assert(!mv_fpg_pivot(NULL, 7, &point) && point.x == 123);
+    assert(!mv_fpg_pivot(fpg, 7, NULL));
     assert(mv_fpg_point(fpg, 7, 0, &point) && point.defined && point.x == 1 && point.y == 0);
     assert(mv_fpg_point(fpg, 7, 1, &point) && !point.defined);
     assert(!mv_fpg_point(fpg, 7, 2, &point) && !point.defined);
@@ -111,6 +141,12 @@ main(int argc, char **argv)
     assert(metadata.width == 2 && metadata.height == 2 && metadata.point_count == 2);
     assert(!memcmp(metadata.name, "red", 4));
     assert(!mv_fpg_manifest_sprite(manifest, 8, &metadata) && metadata.id == 7);
+    assert(mv_fpg_manifest_pivot(manifest, 7, &point) && point.x == 1 && point.y == 0 && point.defined);
+    assert(mv_fpg_manifest_pivot(manifest, 42, &point) && point.x == 0 && point.y == 0 && point.defined);
+    point = (MvFpgPoint){123, -456, 0};
+    assert(!mv_fpg_manifest_pivot(manifest, -1, &point) && point.x == 123 && point.y == -456 && !point.defined);
+    assert(!mv_fpg_manifest_pivot(NULL, 7, &point) && point.x == 123);
+    assert(!mv_fpg_manifest_pivot(manifest, 7, NULL));
     assert(mv_fpg_manifest_point(manifest, 7, 0, &point) && point.x == 1 && point.defined);
     assert(mv_fpg_manifest_point(manifest, 7, 1, &point) && !point.defined);
     assert(!mv_fpg_manifest_point(manifest, 7, 2, &point) && !point.defined);

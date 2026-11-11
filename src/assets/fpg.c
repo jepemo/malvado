@@ -346,3 +346,18 @@ mv_fpg_copy_json(const MvFpg *fpg, int transparent_zero, char *output, size_t le
     fpg_json(fpg, transparent_zero, output);
     return 1;
 }
+
+int
+mv_fpg_pivot(const MvFpg *library, int id, MvFpgPoint *out)
+{
+    MvFpgSprite sprite;
+    if (!out || !mv_fpg_sprite(library, id, &sprite))
+        return 0;
+    MvFpgPoint point = {0};
+    (void)mv_fpg_point(library, id, 0, &point);
+    if (!point.defined)
+        point.x = point.y = 0;
+    point.defined = 1;
+    *out = point;
+    return 1;
+}

@@ -188,3 +188,12 @@ a global error record. Native callers must serialize these imports across
 threads. Safe Rust constructors coordinate their own calls; raw C/Lua imports
 on other threads must not overlap them. Binary FPG reading and conversion do
 not use that JSON parser. Each returned object still has one owner thread.
+
+### Native visual pivot
+
+`mv_fpg_pivot` and `mv_fpg_manifest_pivot` resolve control point 0 for visual
+selection. A defined point keeps its signed coordinates, including points
+outside the image. A missing or undefined point selects `(0, 0)`. Success
+writes an `MvFpgPoint` with `defined = 1`. An invalid library, missing ID or NULL
+output returns 0 and leaves the output unchanged. The query allocates nothing
+and needs no graphics backend. Lua graph selection uses this same native rule.

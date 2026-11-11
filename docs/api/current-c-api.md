@@ -107,11 +107,13 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_fpg_manifest_gamma`
 - `mv_fpg_manifest_palette`
 - `mv_fpg_manifest_parse`
+- `mv_fpg_manifest_pivot`
 - `mv_fpg_manifest_point`
 - `mv_fpg_manifest_sprite`
 - `mv_fpg_manifest_transparent_zero`
 - `mv_fpg_palette`
 - `mv_fpg_parse`
+- `mv_fpg_pivot`
 - `mv_fpg_png_size`
 - `mv_fpg_point`
 - `mv_fpg_sprite`

@@ -45,6 +45,11 @@ int mv_fpg_sprite(const MvFpg *fpg, int id, MvFpgSprite *out);
 /* Enumerate sprites in file order with a zero-based index. */
 int mv_fpg_at(const MvFpg *fpg, size_t index, MvFpgSprite *out);
 int mv_fpg_point(const MvFpg *fpg, int id, size_t index, MvFpgPoint *out);
+/* Resolve the visual pivot: defined control point 0, otherwise (0, 0).
+ * Success writes a defined point. Invalid library/ID/NULL output returns 0
+ * without modifying output. No image, context or allocation is needed. */
+int mv_fpg_pivot(const MvFpg *fpg, int id, MvFpgPoint *out);
+
 /* Convert to width * height RGBA bytes. Each six-bit channel is shifted left
  * by two. transparent_zero is 0 (opaque) or 1 (index 0 transparent). The
  * output must not overlap FPG data. On invalid input the output is unchanged. */
@@ -81,6 +86,9 @@ const uint8_t *mv_fpg_manifest_gamma(const MvFpgManifest *manifest);
 int mv_fpg_manifest_at(const MvFpgManifest *manifest, size_t index, MvFpgManifestSprite *out);
 int mv_fpg_manifest_sprite(const MvFpgManifest *manifest, int id, MvFpgManifestSprite *out);
 int mv_fpg_manifest_point(const MvFpgManifest *manifest, int id, size_t index, MvFpgPoint *out);
+
+/* Same pivot contract as mv_fpg_pivot, over converted metadata. */
+int mv_fpg_manifest_pivot(const MvFpgManifest *manifest, int id, MvFpgPoint *out);
 
 /* Versioned FPG metadata JSON. Size includes the terminating zero byte.
  * transparent_zero must match PNG encoding. The caller supplies a

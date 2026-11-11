@@ -185,3 +185,18 @@ mv_fpg_manifest_point(const MvFpgManifest *m, int id, size_t index, MvFpgPoint *
     *out = entry->points[index];
     return 1;
 }
+
+int
+mv_fpg_manifest_pivot(const MvFpgManifest *library, int id, MvFpgPoint *out)
+{
+    MvFpgManifestSprite sprite;
+    if (!out || !mv_fpg_manifest_sprite(library, id, &sprite))
+        return 0;
+    MvFpgPoint point = {0};
+    (void)mv_fpg_manifest_point(library, id, 0, &point);
+    if (!point.defined)
+        point.x = point.y = 0;
+    point.defined = 1;
+    *out = point;
+    return 1;
+}
