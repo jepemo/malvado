@@ -123,3 +123,6 @@ rectangle/circle bounds and pivots without the graphics feature.
 
 [Drawing defaults](../../docs/api/draw-state.md) are copied native values used
 as explicit background and color arguments. They install no global Rust state.
+
+[Process visual order](../../docs/api/process-visual-order.md) covers native
+process depth and ordered visible handles without a graphics dependency.

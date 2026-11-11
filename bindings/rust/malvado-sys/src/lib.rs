@@ -443,6 +443,10 @@ const _: () = {
         offset_of!(MvAnimationState, elapsed_us),
         offset_of!(MvAnimationState, remainder),
         offset_of!(MvAnimationState, tick_rate),
+        size_of::<MvProcessDrawInfo>(),
+        align_of::<MvProcessDrawInfo>(),
+        offset_of!(MvProcessDrawInfo, id),
+        offset_of!(MvProcessDrawInfo, z),
     ];
     assert!(
         native.len() == rust.len(),
@@ -654,4 +658,21 @@ unsafe extern "C" {
         out: *mut MvCollisionShape,
     ) -> c_int;
     pub fn mv_graphic_circle(radius: f64, out: *mut MvCollisionShape) -> c_int;
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvProcessDrawInfo {
+    pub id: MvProcessId,
+    pub z: f64,
+}
+unsafe extern "C" {
+    pub fn mv_process_z(ctx: *mut MvContext, process: MvProcessRef, out: *mut f64) -> c_int;
+    pub fn mv_process_set_z(ctx: *mut MvContext, process: MvProcessRef, z: f64) -> c_int;
+    pub fn mv_process_draw_order(
+        ctx: *mut MvContext,
+        out: *mut MvProcessDrawInfo,
+        capacity: usize,
+        total: *mut usize,
+    ) -> c_int;
 }

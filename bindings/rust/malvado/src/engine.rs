@@ -59,6 +59,19 @@ impl Engine {
     {
         spawn(&self.runtime, 0, 0, options, run)
     }
+    /// Snapshot visible process order. Sleeping processes are excluded; frozen
+    /// ones remain. Later mutations do not reorder the returned handles.
+    pub fn draw_order(&self) -> Result<Vec<Handle>, Error> {
+        let ctx = self.runtime.live()?;
+        // SAFETY: the shared helper owns the initialized output buffer.
+        let records = collect_native(|out, capacity, total| unsafe {
+            sys::mv_process_draw_order(ctx, out, capacity, total)
+        })?;
+        records
+            .into_iter()
+            .map(|record| acquire(&self.runtime, record.id))
+            .collect()
+    }
     pub fn tick(&mut self) -> Result<(), Error> {
         // SAFETY: the unique Engine borrow prevents reentrant tick/destruction.
         result(unsafe { sys::mv_process_tick(self.runtime.live()?) })
@@ -242,6 +255,20 @@ impl Handle {
             )
         })?;
         Ok(killed != 0)
+    }
+    pub fn z(&self) -> Result<f64, Error> {
+        let mut z = 0.0;
+        // SAFETY: checked owner-thread runtime, immutable identity and output.
+        result(unsafe {
+            sys::mv_process_z(self.inner.runtime.live()?, self.inner.reference, &mut z)
+        })?;
+        Ok(z)
+    }
+    pub fn set_z(&self, z: f64) -> Result<(), Error> {
+        // SAFETY: live owner-thread context; native validates identity and z.
+        result(unsafe {
+            sys::mv_process_set_z(self.inner.runtime.live()?, self.inner.reference, z)
+        })
     }
     pub fn set_priority(&self, priority: i64) -> Result<(), Error> {
         // SAFETY: handle fixes the context; the C API validates liveness.
