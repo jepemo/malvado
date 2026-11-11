@@ -843,3 +843,13 @@ unsafe extern "C" {
         total: *mut usize,
     ) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_graphic_sprite(
+        width: c_int,
+        height: c_int,
+        pivot_x: c_int,
+        pivot_y: c_int,
+        out: *mut MvCollisionShape,
+    ) -> c_int;
+}

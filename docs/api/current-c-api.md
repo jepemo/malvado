@@ -120,6 +120,7 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_graphic_circle`
 - `mv_graphic_rect`
+- `mv_graphic_sprite`
 - `mv_process_graphic_clear`
 - `mv_process_graphic_get`
 - `mv_process_graphic_set`

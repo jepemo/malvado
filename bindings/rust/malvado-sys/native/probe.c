@@ -222,3 +222,5 @@ int main(void) {
     printf("%zu %zu %zu %zu ", sizeof(MvCameraRef), _Alignof(MvCameraRef), offsetof(MvCameraRef, runtime), offsetof(MvCameraRef, id));
     return 0;
 }
+
+_Static_assert(_Generic(&mv_graphic_sprite, int (*)(int, int, int, int, MvCollisionShape *): 1, default: 0), "mv_graphic_sprite signature");

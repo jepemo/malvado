@@ -40,6 +40,12 @@ MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
  * Failure leaves out unchanged. Values own no resources and can be copied. */
 int mv_graphic_rect(double width, double height, int top_left, MvCollisionShape *out);
 int mv_graphic_circle(double radius, MvCollisionShape *out);
+/* Copied local sprite rectangle from positive pixel dimensions and a pivot in
+ * cropped-image coordinates. Pivots can use the full signed int range, including
+ * outside the rectangle. Original-canvas trim adjustment belongs to the importer.
+ * Return 1, or 0 without changing out for NULL/nonpositive dimensions.
+ * No image, backend, process or resource is required or retained. */
+int mv_graphic_sprite(int width, int height, int pivot_x, int pivot_y, MvCollisionShape *out);
 #ifdef __cplusplus
 }
 #endif

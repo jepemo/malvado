@@ -149,3 +149,22 @@ Graphic doctest passes in both profiles. `test-rust-graphics-sanitize` passes
 with the new graph lifetime and process-pass pixel fixtures. Rust itself is not
 sanitizer-instrumented. Linux CI and the remaining asset graph integration
 remain open.
+
+## Local sprite geometry
+
+`mv_graphic_sprite(width, height, pivot_x, pivot_y, &shape)` creates a copied
+local rectangle from cropped sprite dimensions. Dimensions are positive signed
+integers. Pivots can use the full signed integer range, including points outside
+the rectangle. The local center is `(width / 2 - pivot_x, height / 2 - pivot_y)`.
+The importer must first adjust an original-canvas pivot for trim offsets.
+
+The function returns 1 on success, or 0 without changing the output for invalid
+dimensions or NULL output. It needs no image, metadata owner, process, window or
+backend. Rotation and scale use the existing native collision transform. It
+does not assign an image graph or retain a texture. Lua sprite descriptors now
+use this same native geometry instead of computing their own local rectangle.
+
+`sprite_geometry` checks centered, corner and external pivots, odd dimensions,
+rotated/scaled overlap, signed integer extremes and failed-output preservation.
+Existing headless sprite/collider and graphical asset fixtures check the Lua
+migration. Installed probes check the new core signature.

@@ -42,3 +42,12 @@ mv_graphic_circle(double radius, MvCollisionShape *out)
     *out = (MvCollisionShape){.kind = MV_COLLISION_CIRCLE, .radius = radius};
     return 1;
 }
+
+int
+mv_graphic_sprite(int width, int height, int pivot_x, int pivot_y, MvCollisionShape *out)
+{
+    if (!out || width <= 0 || height <= 0) return 0;
+    *out = (MvCollisionShape){.kind = MV_COLLISION_RECT, .width = width, .height = height,
+        .offset_x = width / 2.0 - pivot_x, .offset_y = height / 2.0 - pivot_y};
+    return 1;
+}

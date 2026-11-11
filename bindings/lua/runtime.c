@@ -5457,12 +5457,10 @@ push_sprite_graphic(lua_State *L, MvImageRegion region, int pivot_x, int pivot_y
     image = lua_absindex(L, image);
     LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 2);
     *graphic = (LuaGraphic){
-        .shape = {.kind = MV_COLLISION_RECT, .width = region.width,
-                  .height = region.height,
-                  .offset_x = region.width / 2.0 - pivot_x,
-                  .offset_y = region.height / 2.0 - pivot_y},
         .sprite = 1, .region = region, .pivot_x = pivot_x, .pivot_y = pivot_y
     };
+    if (!mv_graphic_sprite(region.width, region.height, pivot_x, pivot_y, &graphic->shape))
+        return luaL_error(L, "invalid sprite geometry");
     luaL_setmetatable(L, "malvado.graphic");
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
