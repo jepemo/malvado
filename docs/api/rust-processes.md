@@ -110,7 +110,7 @@ panic preserves the existing native end reason. An exceptional secondary panic
 payload may be retained to avoid unwinding across C. `panic=abort`, double-panic
 aborts and aborting panic hooks cannot be caught. See the
 [scheduler proof](../versions/2.0.0-alpha.7-scheduler.md) for safety evidence and
-limits. Native graphics/audio resource lifetime is not yet wrapped by this API.
+limits. Dedicated graphics and audio wrappers define their platform lifetimes.
 
 ## Native resource ownership
 
@@ -132,7 +132,10 @@ live owner while its context exists. Context shutdown forbids later transfers.
 Resource creation consumes the Rust value; on a native creation error Rust drops
 it rather than transferring it to C. Each successful retain needs one release;
 `try_clone()` reports native overflow. The wrappers stay on their owner thread.
-Destructor panics are contained at the native resource callback. The resource manager retains only the value it owns; it does not infer platform
-dependencies. A retained `Window` value keeps its native window open until its
-last owner releases it. Other platform resources still require dedicated A7.6
-lifetime contracts. See the [window guide](rust-window.md).
+Destructor panics are contained at the native resource callback. The resource
+manager retains only the value it owns; it does not infer platform dependencies.
+Owned `Image` and `Font` values retain their window; `Sound` and `Music` retain
+their audio service. They can be placed in Resource wrappers and keep those
+services live until final destruction. Native raw-pointer adoption does not
+retain a device. See [managed platform resources](managed-platform-resources.md)
+and the [window guide](rust-window.md).

@@ -41,3 +41,11 @@ owner and context; transfer requires a live same-context owner or context.
 See the [Rust process guide](rust-processes.md#native-resource-ownership).
 These generic resources do not extend graphics or audio device lifetime;
 those platform wrappers remain alpha.7 A7.6 work.
+
+## Native typed adoption
+
+C hosts can register loaded images, fonts, sounds and music without custom
+destructor callbacks. Lua uses the same constructors for loads and clones.
+See [managed platform resources](managed-platform-resources.md) for ownership
+transfer, failure cleanup and platform lifetime rules. Safe Rust uses owned
+values in the existing Resource wrapper; raw native adoption is unsafe.

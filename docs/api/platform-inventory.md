@@ -9,6 +9,7 @@ existing APIs, not a selection of additional 2.0 features.
 
 | Area | C | Lua | Evidence |
 | --- | --- | --- | --- |
+| Native resource adoption | `mv_resource_adopt_image`, `mv_resource_adopt_font`, `mv_resource_adopt_sound`, `mv_resource_adopt_music` | Managed image/font/sound/music loads and sound clones | `platform_resource_adoption`, Rust `managed_platform`, installed signatures |
 | Drawing defaults | `mv_draw_state_init`, `mv_draw_state_color`, `mv_draw_state_background` | `mv.set_color`, `mv.clear_screen` | `draw_state`, `lua_primitives`, `visual_draw_order` |
 | Window | `mv_window_open`, `mv_window_close`, `mv_window_should_close`, `mv_window_set_title`, `mv_window_size` | `mv.start` or returned game table; `mv.set_title`, `mv.window_size` | `lua_start_options`, `lua_start_parity`, `visual_c_window` |
 | Frame and primitives | `mv_window_begin`, `mv_window_end`, `mv_window_flush`, `mv_window_draw_box`, `mv_window_draw_circle`, `mv_window_draw_transformed_rect`, `mv_window_draw_filled_circle`, `mv_window_draw_graphic`, `mv_window_draw_process_graphics` | `mv.clear_screen`, `mv.set_color`, `mv.draw_box`, `mv.draw_rect`, `mv.draw_circle`, `mv.draw_fcircle`, `mv.graphics.rect`, `mv.graphics.circle` | `lua_primitives`, `visual_graphics_process`, `visual_draw_order` |

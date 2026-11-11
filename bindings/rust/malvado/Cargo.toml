@@ -73,3 +73,9 @@ name = "graphic_visual"
 path = "tests/graphic_visual.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "managed_platform"
+path = "tests/managed_platform.rs"
+harness = false
+required-features = ["graphics"]

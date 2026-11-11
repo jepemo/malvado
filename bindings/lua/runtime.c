@@ -2057,8 +2057,31 @@ text_input_next(lua_State *L)
     return 1;
 }
 
+typedef MvResult (*AdoptResource)(MvContext *, const MvProcessRef *, void *, MvResource **);
+
+static MvResult
+adopt_image(MvContext *ctx, const MvProcessRef *owner, void *data, MvResource **out)
+{
+    return mv_resource_adopt_image(ctx, owner, data, out);
+}
+static MvResult
+adopt_font(MvContext *ctx, const MvProcessRef *owner, void *data, MvResource **out)
+{
+    return mv_resource_adopt_font(ctx, owner, data, out);
+}
+static MvResult
+adopt_sound(MvContext *ctx, const MvProcessRef *owner, void *data, MvResource **out)
+{
+    return mv_resource_adopt_sound(ctx, owner, data, out);
+}
+static MvResult
+adopt_music(MvContext *ctx, const MvProcessRef *owner, void *data, MvResource **out)
+{
+    return mv_resource_adopt_music(ctx, owner, data, out);
+}
+
 static MvResource *
-manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy)
+manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy, AdoptResource adopt)
 {
     MvResource *resource = NULL;
     MvProcessRef owner;
@@ -2070,7 +2093,8 @@ manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy)
         }
         owner_ref = &owner;
     }
-    if (mv_resource_create(engine.context, owner_ref, data, destroy, &resource) != MV_OK) {
+    if ((adopt ? adopt(engine.context, owner_ref, data, &resource) :
+         mv_resource_create(engine.context, owner_ref, data, destroy, &resource)) != MV_OK) {
         destroy(data);
         luaL_error(L, "could not manage native resource");
     }
@@ -2150,7 +2174,7 @@ load_sound(lua_State *L)
         return luaL_error(L, "could not load WAV sound: %s", path);
     MvSound *native = sound->sound;
     sound->sound = NULL;
-    sound->resource = manage_native_resource(L, native, destroy_managed_sound);
+    sound->resource = manage_native_resource(L, native, destroy_managed_sound, adopt_sound);
     sound->sound = native;
     return 1;
 }
@@ -2167,7 +2191,7 @@ clone_sound(lua_State *L)
         return luaL_error(L, "could not create sound instance");
     MvSound *native = copy->sound;
     copy->sound = NULL;
-    copy->resource = manage_native_resource(L, native, destroy_managed_sound);
+    copy->resource = manage_native_resource(L, native, destroy_managed_sound, adopt_sound);
     copy->sound = native;
     return 1;
 }
@@ -2271,7 +2295,7 @@ load_music(lua_State *L)
         return luaL_error(L, "could not load music: %s", path);
     MvMusic *native = music->music;
     music->music = NULL;
-    music->resource = manage_native_resource(L, native, destroy_managed_music);
+    music->resource = manage_native_resource(L, native, destroy_managed_music, adopt_music);
     music->music = native;
     return 1;
 }
@@ -2334,7 +2358,7 @@ manage_image(lua_State *L, LuaImage *image)
 {
     MvImage *native = image->image;
     image->image = NULL;
-    image->resource = manage_native_resource(L, native, destroy_managed_image);
+    image->resource = manage_native_resource(L, native, destroy_managed_image, adopt_image);
     image->image = native;
 }
 
@@ -3030,7 +3054,7 @@ load_atlas_format(lua_State *L, int aseprite)
         return luaL_error(L, "%s", error);
     MvAtlas *native = atlas->atlas;
     atlas->atlas = NULL;
-    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas);
+    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, NULL);
     atlas->atlas = native;
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
@@ -3313,7 +3337,7 @@ load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t lengt
     }
     MvAtlas *native = atlas->atlas;
     atlas->atlas = NULL;
-    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas);
+    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, NULL);
     atlas->atlas = native;
     return 1;
 }
@@ -3545,7 +3569,7 @@ load_font(lua_State *L)
         return luaL_error(L, "could not load TTF or OTF font: %s", path);
     MvFont *native = font->font;
     font->font = NULL;
-    font->resource = manage_native_resource(L, native, destroy_managed_font);
+    font->resource = manage_native_resource(L, native, destroy_managed_font, adopt_font);
     font->font = native;
     lua_createtable(L, 4, 2);
     lua_pushvalue(L, -2);

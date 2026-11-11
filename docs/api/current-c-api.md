@@ -216,6 +216,10 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_pad_connected`
 - `mv_platform_time`
 - `mv_platform_wait`
+- `mv_resource_adopt_font`
+- `mv_resource_adopt_image`
+- `mv_resource_adopt_music`
+- `mv_resource_adopt_sound`
 - `mv_sound_clone`
 - `mv_sound_destroy`
 - `mv_sound_load`

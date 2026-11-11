@@ -191,3 +191,11 @@ int main(void)
     printf("%zu ", offsetof(MvDrawState, background));
     return 0;
 }
+
+_Static_assert(_Generic(&mv_resource_adopt_image, MvResult (*)(MvContext *, const MvProcessRef *, MvImage *, MvResource **): 1, default: 0), "mv_resource_adopt_image signature");
+
+_Static_assert(_Generic(&mv_resource_adopt_font, MvResult (*)(MvContext *, const MvProcessRef *, MvFont *, MvResource **): 1, default: 0), "mv_resource_adopt_font signature");
+
+_Static_assert(_Generic(&mv_resource_adopt_sound, MvResult (*)(MvContext *, const MvProcessRef *, MvSound *, MvResource **): 1, default: 0), "mv_resource_adopt_sound signature");
+
+_Static_assert(_Generic(&mv_resource_adopt_music, MvResult (*)(MvContext *, const MvProcessRef *, MvMusic *, MvResource **): 1, default: 0), "mv_resource_adopt_music signature");

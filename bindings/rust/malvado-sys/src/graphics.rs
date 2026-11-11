@@ -420,3 +420,30 @@ unsafe extern "C" {
     pub fn mv_draw_state_color(state: *mut MvDrawState, r: i64, g: i64, b: i64, a: i64) -> c_int;
     pub fn mv_draw_state_background(state: *mut MvDrawState, r: i64, g: i64, b: i64) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_resource_adopt_image(
+        ctx: *mut crate::MvContext,
+        owner: *const crate::MvProcessRef,
+        data: *mut MvImage,
+        out: *mut *mut crate::MvResource,
+    ) -> c_int;
+    pub fn mv_resource_adopt_font(
+        ctx: *mut crate::MvContext,
+        owner: *const crate::MvProcessRef,
+        data: *mut MvFont,
+        out: *mut *mut crate::MvResource,
+    ) -> c_int;
+    pub fn mv_resource_adopt_sound(
+        ctx: *mut crate::MvContext,
+        owner: *const crate::MvProcessRef,
+        data: *mut MvSound,
+        out: *mut *mut crate::MvResource,
+    ) -> c_int;
+    pub fn mv_resource_adopt_music(
+        ctx: *mut crate::MvContext,
+        owner: *const crate::MvProcessRef,
+        data: *mut MvMusic,
+        out: *mut *mut crate::MvResource,
+    ) -> c_int;
+}

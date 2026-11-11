@@ -112,6 +112,20 @@ typedef struct MvImage MvImage;
 typedef struct MvSound MvSound;
 typedef struct MvMusic MvMusic;
 typedef struct MvFont MvFont;
+/* Transfer one caller-owned native reference into the context resource manager.
+ * Success owns data and writes a borrowed resource pointer; retain it for
+ * each independent use. Failure leaves data with the caller and out unchanged.
+ * Data must be non-NULL, live, and not already transferred. For cached images,
+ * each successful load supplies one independently transferable reference.
+ * NULL owner selects the context; other owners must be live in that context.
+ * Transfer/release follow mv_resource_* rules. No extra platform lifetime is
+ * retained: keep the window/audio device open until final native destruction.
+ * These calls do not load, clone, play, stop or update resources. Owner-thread. */
+MvResult mv_resource_adopt_image(MvContext *ctx, const MvProcessRef *owner, MvImage *data, MvResource **out);
+MvResult mv_resource_adopt_font(MvContext *ctx, const MvProcessRef *owner, MvFont *data, MvResource **out);
+MvResult mv_resource_adopt_sound(MvContext *ctx, const MvProcessRef *owner, MvSound *data, MvResource **out);
+MvResult mv_resource_adopt_music(MvContext *ctx, const MvProcessRef *owner, MvMusic *data, MvResource **out);
+
 typedef struct { int x, y, width, height; } MvImageRegion;
 typedef struct {
     float x, y;
