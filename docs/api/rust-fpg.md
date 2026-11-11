@@ -94,3 +94,43 @@ because cJSON writes a global error record. Independent thread owners can call
 these safe constructors; each result still stays on its creating thread.
 Raw C/Lua JSON parser calls on other threads must not overlap those imports.
 Concurrent cross-language parsing is not exposed as a supported Rust workflow.
+
+## Owned texture collections
+
+Enable both `assets` and `graphics`. `Textures::new(window, fpg,
+transparent_zero)` converts every sprite through the native RGBA service.
+`Textures::load(window, library)` accepts FPG and converted manifest libraries.
+FPG loads use index-zero transparency; use `new` to choose opaque conversion.
+Manifest loads read `<id>.png` relative to the metadata source directory. Each
+PNG must match its declared dimensions exactly. PNG alpha is preserved; palette
+and transparency metadata do not recolor the loaded PNG.
+
+Loading is eager. A failure releases all images already acquired. The collection
+owns its metadata and image references. `len`, `is_empty`, `metadata`, `sprite(id)`
+and zero-based `at(index)` provide inspection and selection. Enumeration keeps
+native file order. Missing IDs and indexes return `None`. Raw names retain their
+original encoding; this collection does not add text-name lookup.
+
+Selected values use the same `atlas::SpriteImage` as atlas textures. They share
+the image, copy the native pivot and region, and can outlive the collection.
+`Frame::sprite` draws them with the existing frame retention and validation.
+`shape()` provides explicit local collider geometry. No process assignment or
+automatic animation is implied.
+
+`Fpg::pivot(id)` and `Manifest::pivot(id)` call the shared native visual rule:
+a defined control point zero keeps its signed coordinates; absent or undefined
+point zero selects `(0, 0)`. A missing sprite returns `None`. These queries need
+no window. Texture construction, selection and cleanup stay on the window
+owner thread.
+
+```rust
+use malvado::{asset::Library, fpg::Textures, window::{Color, Window}};
+use std::rc::Rc;
+let window = Rc::new(Window::open(320, 240, "FPG sprites")?);
+let textures = Textures::load(window.clone(), Library::open("graphics.fpg", None)?)?;
+let sprite = textures.sprite(7).ok_or(malvado::Error::NotFound)?;
+let frame = window.frame(Color { r: 0, g: 0, b: 0, a: 255 })?;
+frame.sprite(&sprite, (160.0, 120.0), 1.0, 0.0)?;
+drop(frame);
+# Ok::<(), malvado::Error>(())
+```

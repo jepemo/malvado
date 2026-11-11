@@ -130,3 +130,6 @@ _Static_assert(_Generic(&mv_asset_metadata_parse, int (*)(const MvAssetSource *,
 _Static_assert(_Generic(&mv_asset_metadata_destroy, void (*)(MvAssetMetadata *): 1, default: 0), "mv_asset_metadata_destroy signature");
 
 _Static_assert(_Generic(&mv_atlas_validate_image, int (*)(const MvAtlas *, int, int): 1, default: 0), "mv_atlas_validate_image signature");
+
+_Static_assert(_Generic(&mv_fpg_pivot, int (*)(const MvFpg *, int, MvFpgPoint *): 1, default: 0), "mv_fpg_pivot signature");
+_Static_assert(_Generic(&mv_fpg_manifest_pivot, int (*)(const MvFpgManifest *, int, MvFpgPoint *): 1, default: 0), "mv_fpg_manifest_pivot signature");

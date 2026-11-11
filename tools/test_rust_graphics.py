@@ -25,6 +25,7 @@ def consumer(prefix, profile):
     for name in ("AnonymousPro-Bold.ttf", "OFL.txt"):
         shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
     shutil.copyfile(ROOT / "tests/fixtures/silence.wav", game / "silence.wav")
+    shutil.copyfile(ROOT / "tests/fixtures/fpg/bennugd-8.fpg", game / "sprites.fpg")
     (game / "src/main.rs").write_text(
         'use malvado::{Engine, graphic::{Graphic, Geometry}, Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
@@ -50,12 +51,13 @@ def consumer(prefix, profile):
         ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
         ' let atlas = malvado::atlas::Atlas::parse(r#"{"schema":1,"kind":"graphics-library","image":"unused.png","sprites":[{"id":7,"name":"red","x":0,"y":0,"width":1,"height":1}]}"#,1,1)?;\n'
         ' let textured = malvado::atlas::TextureAtlas::new(atlas,image.clone())?; assert_eq!(textured.metadata().len(),1); assert_eq!(textured.image().size(),(1,1)); let sprite = textured.sprite(7).unwrap(); assert!(textured.sprite_named("red")?.is_some()); sprite.shape()?; let _ = (sprite.region(),sprite.pivot()); drop(textured);\n'
+        ' let fpg = malvado::fpg::Fpg::parse(&std::fs::read("sprites.fpg").unwrap())?; assert_eq!(fpg.pivot(7),Some((1,0))); std::fs::write("library.json",fpg.json(true)?).unwrap(); for i in 0..fpg.len() {let id=fpg.at(i).unwrap().info.id; std::fs::write(format!("{id}.png"),fpg.png(id,true)?).unwrap();} let converted = malvado::fpg::Textures::load(window.clone(),malvado::asset::Library::open("library.json",None)?)?; let malvado::asset::Metadata::Manifest(m)=converted.metadata() else {unreachable!()}; assert_eq!(m.pivot(7),Some((1,0))); drop(converted); let loaded=malvado::fpg::Textures::load(window.clone(),malvado::asset::Library::open("sprites.fpg",None)?)?; drop(loaded); let textures = malvado::fpg::Textures::new(window.clone(),fpg,true)?; assert_eq!(textures.len(),2); assert!(!textures.is_empty()); let _ = textures.metadata(); let _ = textures.at(1); let fpg_sprite = textures.sprite(7).unwrap(); drop(textures);\n'
         ' let font = Font::load(window.clone(), "AnonymousPro-Bold.ttf", 24)?;\n'
         ' assert!(font.text_width("Café", 24)? > 0);\n'
         ' let mut state = malvado::drawing::DrawState::new()?; state.set_background((10,20,30));\n'
         ' state.set_color(Color {r:255,g:0,b:0,a:255}); let frame = window.frame(state.background())?;\n'
         ' frame.font_text(&font, "Café", (10,70), 24, Color {r:255,g:255,b:255,a:255})?; drop(font);\n'
-        ' frame.sprite(&sprite, (60.0,50.0), 1.0, 0.0)?; drop(sprite); frame.image(&image, (50,50))?; drop(image);\n'
+        ' frame.sprite(&fpg_sprite, (70.0,50.0), 1.0, 0.0)?; drop(fpg_sprite); frame.sprite(&sprite, (60.0,50.0), 1.0, 0.0)?; drop(sprite); frame.image(&image, (50,50))?; drop(image);\n'
         ' frame.with_clip(Rectangle {x:0,y:0,width:80,height:60}, |frame| {\n'
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, state.color())\n'
         ' })?;\n'

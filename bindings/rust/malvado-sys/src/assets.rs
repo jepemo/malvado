@@ -217,6 +217,12 @@ unsafe extern "C" {
     pub fn mv_fpg_gamma(fpg: *const MvFpg) -> *const u8;
     pub fn mv_fpg_sprite(fpg: *const MvFpg, id: c_int, out: *mut MvFpgSprite) -> c_int;
     pub fn mv_fpg_at(fpg: *const MvFpg, index: usize, out: *mut MvFpgSprite) -> c_int;
+    pub fn mv_fpg_pivot(fpg: *const MvFpg, id: c_int, out: *mut MvFpgPoint) -> c_int;
+    pub fn mv_fpg_manifest_pivot(
+        manifest: *const MvFpgManifest,
+        id: c_int,
+        out: *mut MvFpgPoint,
+    ) -> c_int;
     pub fn mv_fpg_point(fpg: *const MvFpg, id: c_int, index: usize, out: *mut MvFpgPoint) -> c_int;
     pub fn mv_fpg_copy_rgba(
         fpg: *const MvFpg,

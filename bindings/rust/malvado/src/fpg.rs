@@ -94,6 +94,18 @@ impl Fpg {
         // SAFETY: successful lookup initialized the complete record.
         Some(self.sprite_value(unsafe { out.assume_init() }))
     }
+    /// Native visual pivot, with origin fallback for missing/undefined point 0.
+    /// Missing sprite IDs return None.
+    pub fn pivot(&self, id: i32) -> Option<(i32, i32)> {
+        let mut out = ffi::MvFpgPoint {
+            x: 0,
+            y: 0,
+            defined: 0,
+        };
+        // SAFETY: live immutable metadata and distinct output, no retention.
+        (unsafe { ffi::mv_fpg_pivot(self.native.as_ptr(), id, &mut out) } == 1)
+            .then_some((out.x, out.y))
+    }
     pub fn point(&self, id: i32, index: usize) -> Option<Point> {
         let mut out = MaybeUninit::uninit();
         // SAFETY: output is initialized only on native lookup success.
@@ -309,6 +321,18 @@ impl Manifest {
         // SAFETY: successful lookup initialized the whole record.
         Some(manifest_value(unsafe { out.assume_init() }))
     }
+    /// Native visual pivot, with origin fallback for missing/undefined point 0.
+    /// Missing sprite IDs return None.
+    pub fn pivot(&self, id: i32) -> Option<(i32, i32)> {
+        let mut out = ffi::MvFpgPoint {
+            x: 0,
+            y: 0,
+            defined: 0,
+        };
+        // SAFETY: live immutable metadata and distinct output, no retention.
+        (unsafe { ffi::mv_fpg_manifest_pivot(self.native.as_ptr(), id, &mut out) } == 1)
+            .then_some((out.x, out.y))
+    }
     pub fn point(&self, id: i32, index: usize) -> Option<Point> {
         let mut out = MaybeUninit::uninit();
         // SAFETY: valid output storage, initialized only on native success.
@@ -353,3 +377,93 @@ fn manifest_value(value: ffi::MvFpgManifestSprite) -> SpriteInfo {
 /// fn invalid(manifest: Manifest) { std::thread::spawn(move || drop(manifest)); }
 /// ```
 mod manifest_ownership_contract {}
+
+/// Eagerly loaded FPG or converted-manifest textures, in source file order.
+/// A failed load releases every image already created. Selected sprites may
+/// outlive this collection and its metadata. No process graph is assigned.
+#[cfg(feature = "graphics")]
+pub struct Textures {
+    metadata: crate::asset::Metadata,
+    sprites: Vec<(i32, crate::atlas::SpriteImage)>,
+}
+#[cfg(feature = "graphics")]
+impl Textures {
+    pub fn new(
+        window: Rc<crate::window::Window>,
+        fpg: Fpg,
+        transparent_zero: bool,
+    ) -> Result<Self, Error> {
+        let mut sprites = Vec::new();
+        sprites
+            .try_reserve_exact(fpg.len())
+            .map_err(|_| Error::OutOfMemory)?;
+        for index in 0..fpg.len() {
+            let id = fpg.at(index).expect("native file order").info.id;
+            let image = fpg.image(window.clone(), id, transparent_zero)?;
+            let pivot = fpg.pivot(id).expect("native sprite pivot");
+            sprites.push((id, crate::atlas::SpriteImage::whole(image, pivot)));
+        }
+        Ok(Self {
+            metadata: crate::asset::Metadata::Fpg(fpg),
+            sprites,
+        })
+    }
+    /// FPG uses index-zero transparency. For another policy use new().
+    /// Converted manifests load <id>.png relative to the source path and
+    /// require exact dimensions. Their PNG alpha is preserved as stored.
+    /// Atlas libraries return InvalidArgument.
+    pub fn load(
+        window: Rc<crate::window::Window>,
+        library: crate::asset::Library,
+    ) -> Result<Self, Error> {
+        match library.metadata() {
+            crate::asset::Metadata::Fpg(_) => {
+                let crate::asset::Metadata::Fpg(fpg) = library.into_metadata() else {
+                    unreachable!()
+                };
+                Self::new(window, fpg, true)
+            }
+            crate::asset::Metadata::Manifest(manifest) => {
+                let mut sprites = Vec::new();
+                sprites
+                    .try_reserve_exact(manifest.len())
+                    .map_err(|_| Error::OutOfMemory)?;
+                for index in 0..manifest.len() {
+                    let info = manifest.at(index).expect("native file order");
+                    let path = library.source().image_path(format!("{}.png", info.id))?;
+                    let image = crate::image::Image::load(window.clone(), path)?;
+                    if image.size() != (info.width, info.height) {
+                        return Err(Error::InvalidArgument);
+                    }
+                    let pivot = manifest.pivot(info.id).expect("native manifest pivot");
+                    sprites.push((info.id, crate::atlas::SpriteImage::whole(image, pivot)));
+                }
+                Ok(Self {
+                    metadata: library.into_metadata(),
+                    sprites,
+                })
+            }
+            _ => Err(Error::InvalidArgument),
+        }
+    }
+    pub fn metadata(&self) -> &crate::asset::Metadata {
+        &self.metadata
+    }
+    pub fn len(&self) -> usize {
+        self.sprites.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.sprites.is_empty()
+    }
+    /// Clone a shared texture reference by native ID; missing IDs return None.
+    pub fn sprite(&self, id: i32) -> Option<crate::atlas::SpriteImage> {
+        self.sprites
+            .iter()
+            .find(|(entry, _)| *entry == id)
+            .map(|(_, sprite)| sprite.clone())
+    }
+    /// Zero-based source order, returning the ID and shared selected sprite.
+    pub fn at(&self, index: usize) -> Option<(i32, crate::atlas::SpriteImage)> {
+        self.sprites.get(index).cloned()
+    }
+}

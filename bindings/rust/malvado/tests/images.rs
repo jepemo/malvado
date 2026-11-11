@@ -175,6 +175,112 @@ fn main() {
         use std::io::Write;
         let bytes = std::fs::read(fixture.with_file_name("fpg").join("bennugd-8.fpg")).unwrap();
         let fpg = malvado::fpg::Fpg::parse(&bytes).unwrap();
+        assert_eq!(fpg.pivot(7), Some((1, 0)));
+        assert_eq!(fpg.pivot(42), Some((0, 0)));
+        assert_eq!(fpg.pivot(-1), None);
+        let textures = malvado::fpg::Textures::new(
+            window.clone(),
+            malvado::fpg::Fpg::parse(&bytes).unwrap(),
+            true,
+        )
+        .unwrap();
+        assert_eq!(textures.len(), 2);
+        assert!(!textures.is_empty());
+        assert_eq!(textures.at(1).unwrap().0, 42);
+        assert!(textures.at(usize::MAX).is_none());
+        assert!(textures.sprite(-1).is_none());
+        assert!(matches!(
+            textures.metadata(),
+            malvado::asset::Metadata::Fpg(_)
+        ));
+        let opaque = malvado::fpg::Textures::new(
+            window.clone(),
+            malvado::fpg::Fpg::parse(&bytes).unwrap(),
+            false,
+        )
+        .unwrap();
+        frame
+            .sprite(&opaque.sprite(7).unwrap(), (151.0, 50.0), 1.0, 0.0)
+            .unwrap();
+        drop(opaque);
+        pixel(
+            150,
+            50,
+            Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+        let selected = textures.sprite(7).unwrap();
+        assert_eq!(selected.pivot(), (1, 0));
+        selected.shape().unwrap();
+        drop(textures);
+        frame.sprite(&selected, (131.0, 50.0), 1.0, 0.0).unwrap();
+        drop(selected);
+        pixel(
+            131,
+            50,
+            Color {
+                r: 252,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+        let dir =
+            std::env::temp_dir().join(format!("malvado manifest textures {}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.json");
+        std::fs::write(&path, fpg.json(true).unwrap()).unwrap();
+        for index in 0..fpg.len() {
+            let id = fpg.at(index).unwrap().info.id;
+            std::fs::write(dir.join(format!("{id}.png")), fpg.png(id, true).unwrap()).unwrap();
+        }
+        let library = malvado::asset::Library::open(&path, None).unwrap();
+        let converted = malvado::fpg::Textures::load(window.clone(), library).unwrap();
+        assert_eq!(converted.len(), 2);
+        let malvado::asset::Metadata::Manifest(metadata) = converted.metadata() else {
+            unreachable!()
+        };
+        assert_eq!(metadata.pivot(7), Some((1, 0)));
+        assert_eq!(metadata.pivot(42), Some((0, 0)));
+        assert_eq!(metadata.pivot(-1), None);
+        let selected = converted.at(0).unwrap().1;
+        drop(converted);
+        // A partial load must release its first image when a later file fails.
+        std::fs::remove_file(dir.join("42.png")).unwrap();
+        let library = malvado::asset::Library::open(&path, None).unwrap();
+        assert!(malvado::fpg::Textures::load(window.clone(), library).is_err());
+        std::fs::copy(&fixture, dir.join("7.png")).unwrap();
+        let library = malvado::asset::Library::open(&path, None).unwrap();
+        // The selected sprite still retains its cached image. Release it before
+        // checking a replacement file at the same native cache path.
+        frame.sprite(&selected, (141.0, 50.0), 1.0, 0.0).unwrap();
+        drop(selected);
+        // A distinct path avoids intentionally retained frame cache references.
+        let wrong = dir.join("wrong");
+        std::fs::create_dir_all(&wrong).unwrap();
+        std::fs::copy(&fixture, wrong.join("7.png")).unwrap();
+        std::fs::write(wrong.join("library.json"), fpg.json(true).unwrap()).unwrap();
+        let bad = malvado::asset::Library::open(wrong.join("library.json"), None).unwrap();
+        assert!(matches!(
+            malvado::fpg::Textures::load(window.clone(), bad),
+            Err(Error::InvalidArgument)
+        ));
+        drop(library);
+        std::fs::remove_dir_all(dir).unwrap();
+        pixel(
+            141,
+            50,
+            Color {
+                r: 252,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
         let image = fpg.image(window.clone(), 7, true).unwrap();
         let png = fpg.png(7, true).unwrap();
         let nonce = std::time::SystemTime::now()

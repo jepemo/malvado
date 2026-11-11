@@ -390,6 +390,19 @@ impl TextureAtlas {
 }
 #[cfg(feature = "graphics")]
 impl SpriteImage {
+    pub(crate) fn whole(image: crate::image::Image, pivot: (i32, i32)) -> Self {
+        let (width, height) = image.size();
+        Self {
+            image,
+            region: Region {
+                x: 0,
+                y: 0,
+                width,
+                height,
+            },
+            pivot,
+        }
+    }
     pub fn region(&self) -> Region {
         self.region
     }
