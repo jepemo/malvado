@@ -256,6 +256,7 @@ pub struct MvImageTransform {
 }
 unsafe extern "C" {
     pub fn mv_image_load(path: *const c_char) -> *mut MvImage;
+    pub fn mv_image_from_png(data: *const u8, length: usize) -> *mut MvImage;
     pub fn mv_image_from_rgba(
         width: c_int,
         height: c_int,

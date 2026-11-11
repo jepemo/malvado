@@ -204,6 +204,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_image_destroy`
 - `mv_image_draw`
 - `mv_image_draw_region`
+- `mv_image_from_png`
 - `mv_image_from_rgba`
 - `mv_image_height`
 - `mv_image_load`

@@ -57,6 +57,15 @@ impl Image {
         let native = unsafe { ffi::mv_image_load(path.as_ptr()) };
         Self::owned(native, window)
     }
+    /// Decode PNG bytes through the native backend without a path cache.
+    /// Input is borrowed only during this call; the image retains its window.
+    pub fn from_png(window: Rc<Window>, bytes: &[u8]) -> Result<Self, Error> {
+        // SAFETY: live owner-thread window and a borrowed complete byte slice.
+        Self::owned(
+            unsafe { ffi::mv_image_from_png(bytes.as_ptr(), bytes.len()) },
+            window,
+        )
+    }
     /// Copy packed RGBA bytes into a native texture. No caller buffer is retained.
     pub fn from_rgba(
         window: Rc<Window>,

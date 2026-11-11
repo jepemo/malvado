@@ -32,6 +32,15 @@ fn main() {
             Err(Error::InvalidArgument)
         ));
     }
+    let mut png = std::fs::read(&fixture).unwrap();
+    for length in 0..24 {
+        assert!(Image::from_png(window.clone(), &png[..length]).is_err());
+    }
+    assert!(Image::from_png(window.clone(), b"not png").is_err());
+    let decoded = Image::from_png(window.clone(), &png).unwrap();
+    png.fill(0);
+    assert!(Image::from_png(window.clone(), &png).is_err());
+    assert_eq!(decoded.size(), (8, 8));
     let first = Image::load(window.clone(), &fixture).unwrap();
     let second = Image::load(window.clone(), &fixture).unwrap();
     assert_eq!(first.size(), (8, 8));
@@ -93,6 +102,18 @@ fn main() {
         )
         .unwrap();
     frame.image(&second, (80, 10)).unwrap();
+    frame.image(&decoded, (80, 30)).unwrap();
+    drop(decoded);
+    pixel(
+        81,
+        31,
+        Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    );
     #[cfg(feature = "assets")]
     {
         let json = std::fs::read_to_string(fixture.with_file_name("atlas.json")).unwrap();

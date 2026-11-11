@@ -127,6 +127,8 @@ int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color)
     return 0;
 }
 MvImage *mv_image_load(const char *path) { (void)path; return NULL; }
+MvImage *mv_image_from_png(const uint8_t *data, size_t length)
+{ (void)data; (void)length; return NULL; }
 MvImage *mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length)
 {
     (void)width; (void)height; (void)pixels; (void)length;

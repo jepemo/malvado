@@ -264,6 +264,12 @@ MvImage *mv_image_load(const char *path);
  * width * height * 4 bytes. Requires an open graphics window. Returns an
  * owned image or NULL; destroy it before closing the window. */
 MvImage *mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length);
+/* Decode a borrowed PNG buffer of 1..64 MiB into an independent image.
+ * Requires an open owner-thread window. No path cache or input retention.
+ * NULL, invalid/non-PNG input, dimensions outside 1..8192, missing
+ * window, or allocation/backend failure returns NULL. Destroy before closing
+ * the window, as for mv_image_from_rgba. */
+MvImage *mv_image_from_png(const uint8_t *data, size_t length);
 void mv_image_destroy(MvImage *image);
 int mv_image_width(const MvImage *image);
 int mv_image_height(const MvImage *image);

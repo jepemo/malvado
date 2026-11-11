@@ -32,10 +32,30 @@ main(void)
     assert(!mv_image_from_rgba(INT_MAX, 2, pixels, sizeof(pixels)));
     assert(!mv_image_from_rgba(2, 2, NULL, sizeof(pixels)));
     assert(!mv_image_from_rgba(2, 2, pixels, sizeof(pixels) - 1));
+    Image source = {.data = (void *)pixels, .width = 2, .height = 2,
+                    .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+    int png_size = 0;
+    unsigned char *png = ExportImageToMemory(source, ".png", &png_size);
+    assert(png && png_size > 24);
+    assert(!mv_image_from_png(NULL, (size_t)png_size));
+    assert(!mv_image_from_png(png, SIZE_MAX));
+    for (int size = 0; size < 24; ++size)
+        assert(!mv_image_from_png(png, (size_t)size));
+    unsigned char saved = png[0];
+    png[0] = 0;
+    assert(!mv_image_from_png(png, (size_t)png_size));
+    png[0] = saved;
+    saved = png[16];
+    png[16] = 1;
+    assert(!mv_image_from_png(png, (size_t)png_size));
+    png[16] = saved;
+    MvImage *decoded = mv_image_from_png(png, (size_t)png_size);
+    assert(decoded && mv_image_width(decoded) == 2 && mv_image_height(decoded) == 2);
+    MemFree(png);
     MvImage *image = mv_image_from_rgba(2, 2, pixels, sizeof(pixels));
     assert(image && mv_image_width(image) == 2 && mv_image_height(image) == 2);
     mv_window_begin((MvColor){30, 40, 50, 255});
-    assert(mv_image_draw_region(image, (MvImageRegion){0, 0, 2, 2},
+    assert(mv_image_draw_region(decoded, (MvImageRegion){0, 0, 2, 2},
                                 (MvImageTransform){10, 10, 0, 0, 10, 0}));
     mv_window_flush();
     Image screen = LoadImageFromScreen();
@@ -52,6 +72,7 @@ main(void)
     UnloadImage(screen);
     mv_window_end();
     mv_image_destroy(image);
+    mv_image_destroy(decoded);
     mv_window_close();
     return 0;
 }

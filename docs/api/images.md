@@ -339,3 +339,20 @@ the same pointer as an earlier load. Call `mv_image_destroy` once per successful
 load, before window close. One release leaves other references valid; the last
 release unloads and removes the cached image. C callers continue to provide
 pivots explicitly through `MvImageTransform`.
+
+## PNG bytes in memory
+
+`mv_image_from_png(data, length)` decodes PNG bytes with the native backend.
+It needs an open window on the owner thread. The input is borrowed for the
+call only. The returned image owns an independent texture and has no path
+cache entry. Release it with `mv_image_destroy` before closing the window.
+
+The input limit is 64 MiB. Image dimensions must be in `1..8192`. The native
+loader checks the signature and dimensions before decoding. The backend
+validates the encoded pixels; this API does not promise strict PNG archive or
+checksum validation. Invalid input, missing graphics support and backend or
+allocation failure return NULL. No file is opened.
+
+Rust `Image::from_png(window, bytes)` uses this operation. It retains the window
+and reports native failure as `Error::Platform`, like other image constructors.
+The input bytes can be changed or released after success.

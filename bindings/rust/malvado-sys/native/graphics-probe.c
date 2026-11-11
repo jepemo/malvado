@@ -199,3 +199,5 @@ _Static_assert(_Generic(&mv_resource_adopt_font, MvResult (*)(MvContext *, const
 _Static_assert(_Generic(&mv_resource_adopt_sound, MvResult (*)(MvContext *, const MvProcessRef *, MvSound *, MvResource **): 1, default: 0), "mv_resource_adopt_sound signature");
 
 _Static_assert(_Generic(&mv_resource_adopt_music, MvResult (*)(MvContext *, const MvProcessRef *, MvMusic *, MvResource **): 1, default: 0), "mv_resource_adopt_music signature");
+
+_Static_assert(_Generic(&mv_image_from_png, MvImage * (*)(const uint8_t *, size_t): 1, default: 0), "mv_image_from_png signature");

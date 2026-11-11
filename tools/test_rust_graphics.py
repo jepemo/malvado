@@ -26,6 +26,7 @@ def consumer(prefix, profile):
         shutil.copyfile(ROOT / "tests/fixtures/fonts" / name, game / name)
     shutil.copyfile(ROOT / "tests/fixtures/silence.wav", game / "silence.wav")
     shutil.copyfile(ROOT / "tests/fixtures/fpg/bennugd-8.fpg", game / "sprites.fpg")
+    shutil.copyfile(ROOT / "tests/fixtures/red.png", game / "red.png")
     (game / "src/main.rs").write_text(
         'use malvado::{Engine, graphic::{Graphic, Geometry}, Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
@@ -48,6 +49,7 @@ def consumer(prefix, profile):
         ' assert_eq!(window.text_input_next(), None);\n'
         ' assert!(!window.key_pressed(malvado::window::Key::Space));\n'
         ' assert!(!window.key_released(malvado::window::Key::Space));\n'
+        ' let decoded = Image::from_png(window.clone(), &std::fs::read("red.png").unwrap())?; assert_eq!(decoded.size(),(8,8)); drop(decoded);\n'
         ' let image = Image::from_rgba(window.clone(), 1, 1, &[255,0,0,255])?;\n'
         ' let atlas = malvado::atlas::Atlas::parse(r#"{"schema":1,"kind":"graphics-library","image":"unused.png","sprites":[{"id":7,"name":"red","x":0,"y":0,"width":1,"height":1}]}"#,1,1)?;\n'
         ' let textured = malvado::atlas::TextureAtlas::new(atlas,image.clone())?; assert_eq!(textured.metadata().len(),1); assert_eq!(textured.image().size(),(1,1)); let sprite = textured.sprite(7).unwrap(); assert!(textured.sprite_named("red")?.is_some()); sprite.shape()?; let _ = (sprite.region(),sprite.pivot()); drop(textured);\n'

@@ -862,6 +862,35 @@ mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t length)
     return image;
 }
 
+MvImage *
+mv_image_from_png(const uint8_t *data, size_t length)
+{
+    static const uint8_t signature[] = {137, 80, 78, 71, 13, 10, 26, 10};
+    if (!IsWindowReady() || !data || length < 24 || length > 64u * 1024u * 1024u ||
+        memcmp(data, signature, sizeof(signature)) || memcmp(data + 12, "IHDR", 4))
+        return NULL;
+    /* Bound dimensions before asking the backend to allocate decoded pixels. */
+    for (size_t offset = 16; offset <= 20; offset += 4) {
+        uint32_t dimension = ((uint32_t)data[offset] << 24) |
+            ((uint32_t)data[offset + 1] << 16) | ((uint32_t)data[offset + 2] << 8) |
+            data[offset + 3];
+        if (!dimension || dimension > 8192) return NULL;
+    }
+    Image source = LoadImageFromMemory(".png", data, (int)length);
+    if (!IsImageValid(source)) return NULL;
+    Texture2D texture = LoadTextureFromImage(source);
+    UnloadImage(source);
+    if (!IsTextureValid(texture)) return NULL;
+    MvImage *image = calloc(1, sizeof(*image));
+    if (!image) {
+        UnloadTexture(texture);
+        return NULL;
+    }
+    image->texture = texture;
+    image->references = 1;
+    return image;
+}
+
 void
 mv_image_destroy(MvImage *image)
 {
