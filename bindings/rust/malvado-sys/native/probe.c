@@ -80,6 +80,8 @@ _Static_assert(_Generic(&mv_animation_sample, int (*)(const MvAnimation *, uint6
 _Static_assert(_Generic(&mv_animation_advance, int (*)(const MvAnimation *, MvAnimationState *, unsigned): 1, default: 0), "mv_animation_advance signature");
 _Static_assert(_Generic(&mv_graphic_rect, int (*)(double, double, int, MvCollisionShape *): 1, default: 0), "mv_graphic_rect signature");
 _Static_assert(_Generic(&mv_graphic_circle, int (*)(double, MvCollisionShape *): 1, default: 0), "mv_graphic_circle signature");
+_Static_assert(_Generic(&mv_process_position, MvResult (*)(MvContext *, MvProcessRef, double *, double *): 1, default: 0), "mv_process_position signature");
+_Static_assert(_Generic(&mv_process_set_position, MvResult (*)(MvContext *, MvProcessRef, double, double): 1, default: 0), "mv_process_set_position signature");
 _Static_assert(_Generic(&mv_process_z, MvResult (*)(MvContext *, MvProcessRef, double *): 1, default: 0), "mv_process_z signature");
 _Static_assert(_Generic(&mv_process_set_z, MvResult (*)(MvContext *, MvProcessRef, double): 1, default: 0), "mv_process_set_z signature");
 _Static_assert(_Generic(&mv_process_draw_order, MvResult (*)(MvContext *, MvProcessDrawInfo *, size_t, size_t *): 1, default: 0), "mv_process_draw_order signature");

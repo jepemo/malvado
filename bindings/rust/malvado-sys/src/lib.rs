@@ -667,6 +667,18 @@ pub struct MvProcessDrawInfo {
     pub z: f64,
 }
 unsafe extern "C" {
+    pub fn mv_process_position(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: *mut f64,
+        y: *mut f64,
+    ) -> c_int;
+    pub fn mv_process_set_position(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: f64,
+        y: f64,
+    ) -> c_int;
     pub fn mv_process_z(ctx: *mut MvContext, process: MvProcessRef, out: *mut f64) -> c_int;
     pub fn mv_process_set_z(ctx: *mut MvContext, process: MvProcessRef, z: f64) -> c_int;
     pub fn mv_process_draw_order(

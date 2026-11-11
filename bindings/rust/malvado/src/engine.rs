@@ -256,6 +256,27 @@ impl Handle {
         })?;
         Ok(killed != 0)
     }
+    /// Copy native position. Automatic rendering and Lua fields are not connected yet.
+    pub fn position(&self) -> Result<(f64, f64), Error> {
+        let (mut x, mut y) = (0.0, 0.0);
+        // SAFETY: live owner-thread context, fixed identity and distinct outputs.
+        result(unsafe {
+            sys::mv_process_position(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                &mut x,
+                &mut y,
+            )
+        })?;
+        Ok((x, y))
+    }
+    /// Set both finite native coordinates atomically, without updating colliders.
+    pub fn set_position(&self, x: f64, y: f64) -> Result<(), Error> {
+        // SAFETY: live owner-thread context; native validates identity and coordinates.
+        result(unsafe {
+            sys::mv_process_set_position(self.inner.runtime.live()?, self.inner.reference, x, y)
+        })
+    }
     pub fn z(&self) -> Result<f64, Error> {
         let mut z = 0.0;
         // SAFETY: checked owner-thread runtime, immutable identity and output.
