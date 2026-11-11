@@ -26,6 +26,10 @@ fn main() {
         let image = ffi::mv_image_load(path("red.png").as_ptr());
         let cached = ffi::mv_image_load(path("red.png").as_ptr());
         assert!(!image.is_null() && image == cached);
+        assert_eq!(ffi::mv_image_retain(ptr::null_mut()), 0);
+        assert_eq!(ffi::mv_image_retain(image), 1);
+        ffi::mv_image_destroy(image);
+        assert_eq!(ffi::mv_image_width(cached), 8);
         let font = ffi::mv_font_load(path("fonts/AnonymousPro-Bold.ttf").as_ptr(), 24);
         let sound = ffi::mv_sound_load(path("silence.wav").as_ptr());
         let clone = ffi::mv_sound_clone(sound);

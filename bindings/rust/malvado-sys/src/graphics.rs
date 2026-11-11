@@ -263,6 +263,7 @@ unsafe extern "C" {
         pixels: *const u8,
         length: usize,
     ) -> *mut MvImage;
+    pub fn mv_image_retain(image: *mut MvImage) -> c_int;
     pub fn mv_image_destroy(image: *mut MvImage) -> ();
     pub fn mv_image_width(image: *const MvImage) -> c_int;
     pub fn mv_image_height(image: *const MvImage) -> c_int;

@@ -52,6 +52,11 @@ main(void)
     MvImage *decoded = mv_image_from_png(png, (size_t)png_size);
     assert(decoded && mv_image_width(decoded) == 2 && mv_image_height(decoded) == 2);
     MemFree(png);
+    assert(!mv_image_retain(NULL));
+    assert(mv_image_retain(decoded));
+    mv_image_destroy(decoded);
+    assert(mv_image_width(decoded) == 2);
+
     MvImage *image = mv_image_from_rgba(2, 2, pixels, sizeof(pixels));
     assert(image && mv_image_width(image) == 2 && mv_image_height(image) == 2);
     mv_window_begin((MvColor){30, 40, 50, 255});

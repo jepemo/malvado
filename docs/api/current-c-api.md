@@ -209,6 +209,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_image_height`
 - `mv_image_load`
 - `mv_image_region_valid`
+- `mv_image_retain`
 - `mv_image_width`
 - `mv_input_tick`
 - `mv_key_down`

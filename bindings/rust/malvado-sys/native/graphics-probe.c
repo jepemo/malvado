@@ -201,3 +201,5 @@ _Static_assert(_Generic(&mv_resource_adopt_sound, MvResult (*)(MvContext *, cons
 _Static_assert(_Generic(&mv_resource_adopt_music, MvResult (*)(MvContext *, const MvProcessRef *, MvMusic *, MvResource **): 1, default: 0), "mv_resource_adopt_music signature");
 
 _Static_assert(_Generic(&mv_image_from_png, MvImage * (*)(const uint8_t *, size_t): 1, default: 0), "mv_image_from_png signature");
+
+_Static_assert(_Generic(&mv_image_retain, int (*)(MvImage *): 1, default: 0), "mv_image_retain signature");

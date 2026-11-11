@@ -356,3 +356,13 @@ allocation failure return NULL. No file is opened.
 Rust `Image::from_png(window, bytes)` uses this operation. It retains the window
 and reports native failure as `Error::Platform`, like other image constructors.
 The input bytes can be changed or released after success.
+
+## Native image references
+
+`mv_image_retain(image)` acquires one more reference to a live image, including
+an uncached RGBA or PNG-buffer image. It returns 1 on success. NULL or reference
+overflow returns 0 without changing the image. Destroy each acquired reference
+once with `mv_image_destroy`. Retention does not copy pixels or retain the
+window. Keep the window open until every reference is released, and use these
+operations on its owner thread. Rust `Image::clone` already shares its safe
+owner and needs no change.

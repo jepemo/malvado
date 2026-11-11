@@ -891,6 +891,14 @@ mv_image_from_png(const uint8_t *data, size_t length)
     return image;
 }
 
+int
+mv_image_retain(MvImage *image)
+{
+    if (!image || image->references == SIZE_MAX) return 0;
+    ++image->references;
+    return 1;
+}
+
 void
 mv_image_destroy(MvImage *image)
 {

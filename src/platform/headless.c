@@ -134,6 +134,7 @@ MvImage *mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t
     (void)width; (void)height; (void)pixels; (void)length;
     return NULL;
 }
+int mv_image_retain(MvImage *image) { (void)image; return 0; }
 void mv_image_destroy(MvImage *image) { (void)image; }
 int mv_image_width(const MvImage *image) { (void)image; return 0; }
 int mv_image_height(const MvImage *image) { (void)image; return 0; }

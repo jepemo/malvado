@@ -270,6 +270,10 @@ MvImage *mv_image_from_rgba(int width, int height, const uint8_t *pixels, size_t
  * window, or allocation/backend failure returns NULL. Destroy before closing
  * the window, as for mv_image_from_rgba. */
 MvImage *mv_image_from_png(const uint8_t *data, size_t length);
+/* Acquire another owned reference to a live image. Return 0 for NULL or
+ * reference overflow, with no change. Each success needs one destroy call.
+ * This does not retain the window; use only on its owner thread. */
+int mv_image_retain(MvImage *image);
 void mv_image_destroy(MvImage *image);
 int mv_image_width(const MvImage *image);
 int mv_image_height(const MvImage *image);
