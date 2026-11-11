@@ -181,3 +181,28 @@ fn native_metadata_adoption_and_retained_lookup() {
         assert_eq!(sys::mv_resource_release(resource), sys::MV_OK);
     }
 }
+
+#[test]
+fn validate_image_after_metadata_only_loading() {
+    use malvado::asset::{Library, Metadata};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    for (path, exact) in [
+        ("tests/fixtures/atlas.json", false),
+        ("examples/aseprite/sheet.json", true),
+    ] {
+        let Metadata::Atlas(atlas) = Library::open(root.join(path), None)
+            .unwrap()
+            .into_metadata()
+        else {
+            unreachable!()
+        };
+        assert!(atlas.validate_image(8, 8));
+        for (w, h) in [(0, 8), (8, 0), (-1, 8), (7, 8), (8, 7)] {
+            assert!(!atlas.validate_image(w, h));
+        }
+        assert_eq!(atlas.validate_image(16, 16), !exact);
+        assert_eq!(atlas.validate_image(i32::MAX, i32::MAX), !exact);
+        assert!(atlas.validate_image(8, 8));
+        assert!(!atlas.is_empty());
+    }
+}

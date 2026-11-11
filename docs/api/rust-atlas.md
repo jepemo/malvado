@@ -88,3 +88,10 @@ To open atlas, Aseprite, FPG or manifest files through one metadata entry point,
 use [Library](asset-library-metadata.md#safe-rust-library-loading). It preserves
 the Source for referenced-image paths and returns these same owned metadata
 wrappers. Actual texture dimensions still require validation before drawing.
+
+`atlas.validate_image(width, height)` checks actual image dimensions through
+native metadata, without a window, allocation or JSON reparse. Invalid dimensions
+and mismatches return false. Native atlases require region containment; Aseprite
+requires the exact declared sheet dimensions. Failed checks leave metadata and
+borrowed sprite/animation views unchanged. This also works after Library releases
+its source. See [native image validation](asset-library-metadata.md#validate-metadata-against-an-image).

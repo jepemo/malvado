@@ -80,6 +80,13 @@ impl Atlas {
             local: PhantomData,
         })
     }
+    /// Validate actual image dimensions without reparsing or mutating metadata.
+    /// Aseprite requires the declared sheet size; other atlases require regions
+    /// to fit. Invalid dimensions return false. No window is needed.
+    pub fn validate_image(&self, width: i32, height: i32) -> bool {
+        // SAFETY: live immutable atlas and copied dimensions, no retention.
+        unsafe { ffi::mv_atlas_validate_image(self.native.as_ptr(), width, height) == 1 }
+    }
     pub fn len(&self) -> usize {
         // SAFETY: live owned atlas.
         unsafe { ffi::mv_atlas_count(self.native.as_ptr()) }
