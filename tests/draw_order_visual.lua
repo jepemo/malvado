@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local image
 local Red = mv.process(function(self)
-  assert(self.z == 10)
+  assert(self.z == 10 and math.type(self.z) == "integer")
   assert(not pcall(function() self.z = 0 / 0 end))
   for tick = 1, 40 do
     if tick == 16 then self.z = -1 end

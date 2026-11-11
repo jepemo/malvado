@@ -148,6 +148,22 @@ MvResult mv_context_runtime_id(MvContext *ctx, MvRuntimeId *out);
 MvResult mv_process_ref_create(MvContext *ctx, MvProcessId id, MvProcessRef *out);
 MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *out);
 
+/* Visual depth is independent of scheduler priority. New processes start at 0.
+ * Read/write a live context-bound process. z must be finite. Failure leaves
+ * the process/output unchanged. These operations do not allocate or draw. */
+MvResult mv_process_z(MvContext *ctx, MvProcessRef process, double *out);
+MvResult mv_process_set_z(MvContext *ctx, MvProcessRef process, double z);
+typedef struct { MvProcessId id; double z; } MvProcessDrawInfo;
+/* Copy visible live processes in ascending z, then creation-ID order. Sleeping
+ * and killed processes are excluded; frozen and not-yet-activated processes
+ * are included. This is an ordering query, not graph/draw-command collection.
+ * Query with out=NULL, capacity=0. With insufficient nonzero capacity, return
+ * MV_BUFFER_TOO_SMALL, write required total, and leave out unchanged. Invalid
+ * arguments leave outputs unchanged. No allocation or scheduler step occurs. */
+MvResult mv_process_draw_order(MvContext *ctx, MvProcessDrawInfo *out,
+                               size_t capacity, size_t *total);
+
+
 /** Acquire an owned handle for a live process. On failure, out is unchanged.
  * A handle preserves its identity and termination reason after the process
  * or context ends. It does not retain the process or its resources. */

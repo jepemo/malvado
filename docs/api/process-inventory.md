@@ -10,6 +10,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Identity and lifetime | `mv_process_ref_create`, `mv_process_ref_resolve`, `mv_process_handle_create`, `mv_process_handle_snapshot`, `mv_process_handle_destroy` | Canonical process handles; dead handles retain identity, status, and reason |
 | State and control | `mv_process_status`, `mv_process_count`, `mv_process_priority`, `mv_process_set_priority`, `mv_process_set_type`, `mv_process_signal`, `mv_process_kill` | `status`, `alive`, `get_priority`, `set_priority`, `signal`, `kill` |
 | Queries and trees | `mv_process_find`, `mv_process_children`, `mv_process_descendants`, `mv_process_creation_children`, `mv_process_creation_descendants`, `mv_process_signal_creation_tree` | `find`, `children`, `descendants`, `signal_tree`, `kill_tree` |
+| Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
 | Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `self:recv()`, `frame`, `self.fps` |
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
@@ -33,7 +34,7 @@ The check detects missing or extra type names, not changes to fields or semantic
 | `MvProcessId`, `MvRuntimeId`, `MvProcessRef`, `MvProcessHandle` | C identity and handle types. Lua uses process handles and exposes IDs and snapshot runtime identity. |
 | `MvProcessStatus`, `MvEndReason`, `MvSignal` | C enums. Lua exposes state and reason strings, and signal strings and `SIGNAL_*` constants. |
 | `MvStepResult`, `MvProcessStep`, `MvProcessDestroy` | Native callback result and callbacks; Lua uses process coroutines and Lua cleanup. |
-| `MvProcessInfo`, `MvProcessHandleInfo`, `MvLineageInfo`, `MvInspectionHeader` | Copied C inspection values. Lua exposes process handles and snapshot tables, not these structs. |
+| `MvProcessDrawInfo`, `MvProcessInfo`, `MvProcessHandleInfo`, `MvLineageInfo`, `MvInspectionHeader` | Copied C inspection values. Lua exposes process handles and snapshot tables, not these structs. |
 | `MvMessageType`, `MvMessage` | Native message tags and values. Lua exchanges primitive values and binary strings with C; Lua-only objects stay in the VM. |
 | `MvResource`, `MvResourceDestroy` | Native resource and destructor. Lua wrappers retain resources but do not expose C ownership transfer. |
 

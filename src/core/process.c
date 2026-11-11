@@ -40,6 +40,7 @@ typedef struct {
     Genealogy *lineage;
     uint64_t type;
     int64_t priority;
+    double z;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
@@ -808,6 +809,95 @@ MvResult mv_process_status(MvContext *ctx, MvProcessId id, MvProcessStatus *stat
     Process *item = find(mv_context_processes(ctx), id, 0);
     if (!item) return MV_NOT_FOUND;
     *status = item->status;
+    return MV_OK;
+}
+
+MvResult
+mv_process_z(MvContext *ctx, MvProcessRef reference, double *out)
+{
+    if (!out)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    *out = item->z;
+    return MV_OK;
+}
+
+MvResult
+mv_process_set_z(MvContext *ctx, MvProcessRef reference, double z)
+{
+    if (!isfinite(z))
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->z = z;
+    return MV_OK;
+}
+
+static int
+draw_info_less(MvProcessDrawInfo left, MvProcessDrawInfo right)
+{
+    return left.z < right.z || (left.z == right.z && left.id < right.id);
+}
+
+/* In-place heap sort keeps the buffer query allocation-free on every libc.
+ * The unique creation ID makes equal-depth ordering deterministic. */
+static void
+draw_sift_down(MvProcessDrawInfo *items, size_t count, size_t root)
+{
+    while (root < count / 2) {
+        size_t child = root * 2 + 1;
+        if (child + 1 < count && draw_info_less(items[child], items[child + 1]))
+            ++child;
+        if (!draw_info_less(items[root], items[child]))
+            return;
+        MvProcessDrawInfo swap = items[root];
+        items[root] = items[child];
+        items[child] = swap;
+        root = child;
+    }
+}
+
+static void
+sort_draw_info(MvProcessDrawInfo *items, size_t count)
+{
+    for (size_t root = count / 2; root > 0; --root)
+        draw_sift_down(items, count, root - 1);
+    for (size_t end = count; end > 1; --end) {
+        MvProcessDrawInfo swap = items[0];
+        items[0] = items[end - 1];
+        items[end - 1] = swap;
+        draw_sift_down(items, end - 1, 0);
+    }
+}
+
+MvResult
+mv_process_draw_order(MvContext *ctx, MvProcessDrawInfo *out, size_t capacity, size_t *total)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !total || (capacity && !out))
+        return MV_INVALID_ARGUMENT;
+    size_t count = 0;
+    for (size_t i = 0; i < p->count; ++i)
+        if (!p->items[i].killed && p->items[i].status != MV_PROCESS_SLEEPING)
+            ++count;
+    *total = count;
+    if (!capacity)
+        return MV_OK;
+    if (capacity < count)
+        return MV_BUFFER_TOO_SMALL;
+    size_t index = 0;
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (!item->killed && item->status != MV_PROCESS_SLEEPING)
+            out[index++] = (MvProcessDrawInfo){item->id, item->z};
+    }
+    if (count > 1)
+        sort_draw_info(out, count);
     return MV_OK;
 }
 

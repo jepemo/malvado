@@ -102,6 +102,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_creation_children`
 - `mv_process_creation_descendants`
 - `mv_process_descendants`
+- `mv_process_draw_order`
 - `mv_process_find`
 - `mv_process_handle_create`
 - `mv_process_handle_destroy`
@@ -119,6 +120,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_send`
 - `mv_process_set_priority`
 - `mv_process_set_type`
+- `mv_process_set_z`
 - `mv_process_signal`
 - `mv_process_signal_creation_tree`
 - `mv_process_snapshot`
@@ -126,6 +128,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_spawn_related`
 - `mv_process_status`
 - `mv_process_tick`
+- `mv_process_z`
 - `mv_resource_create`
 - `mv_resource_data`
 - `mv_resource_release`

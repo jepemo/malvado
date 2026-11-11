@@ -728,6 +728,20 @@ self_index(lua_State *L)
         push_owner(L, self->id);
         return 1;
     }
+    if (key && strcmp(key, "z") == 0) {
+        double z;
+        if (mv_process_z(engine.context, self->reference, &z) != MV_OK)
+            return luaL_error(L, "process is no longer alive");
+        /* Keep Lua integer/float readback while its native rendering value
+         * matches. The table entry is presentation data, never the sort key. */
+        lua_getiuservalue(L, 1, 1);
+        raw_option(L, -1, "z");
+        if (lua_type(L, -1) == LUA_TNUMBER && lua_tonumber(L, -1) == z)
+            return 1;
+        if (z == 0) lua_pushinteger(L, 0);
+        else lua_pushnumber(L, z);
+        return 1;
+    }
     if (key && strcmp(key, "priority") == 0) {
         int64_t priority;
         if (mv_process_priority(engine.context, (MvProcessId)self->id, &priority) != MV_OK)
@@ -886,6 +900,15 @@ self_newindex(lua_State *L)
     if (key && strcmp(key, "fps") == 0 &&
         (!lua_isinteger(L, 3) || lua_tointeger(L, 3) < 0 || lua_tointeger(L, 3) > 60))
         return luaL_error(L, "fps must be an integer in 0..60");
+    if (key && strcmp(key, "z") == 0) {
+        if (mv_process_set_z(engine.context, self->reference, lua_tonumber(L, 3)) != MV_OK)
+            return luaL_error(L, "process is no longer alive");
+        lua_getiuservalue(L, 1, 1);
+        lua_pushliteral(L, "z");
+        lua_pushvalue(L, 3);
+        lua_rawset(L, -3);
+        return 0;
+    }
     lua_getiuservalue(L, 1, 1);
     int graph_changed = 0;
     if (key && !strcmp(key, "graph")) {
@@ -1158,6 +1181,10 @@ create_process(lua_State *L)
         .first = 1,
         .alive = 1
     };
+    raw_option(L, fields, "z");
+    if (!lua_isnil(L, -1))
+        (void)mv_process_set_z(engine.context, draft.self->reference, lua_tonumber(L, -1));
+    lua_pop(L, 1);
     sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
     return 1;
@@ -3669,21 +3696,6 @@ render_image_region(lua_State *L, int command, LuaImage *image)
     (void)mv_image_draw_region(image->image, region, transform);
 }
 
-typedef struct {
-    size_t slot;
-    lua_Number z;
-} DrawOrder;
-
-static int
-compare_draw_order(const void *a, const void *b)
-{
-    const DrawOrder *left = a;
-    const DrawOrder *right = b;
-    if (left->z < right->z) return -1;
-    if (left->z > right->z) return 1;
-    return (left->slot > right->slot) - (left->slot < right->slot);
-}
-
 static int
 render_number(lua_State *L, int fields, const char *name, double fallback, double *value)
 {
@@ -3964,6 +3976,16 @@ begin_process_scroll(lua_State *L, const Process *process, const MvCamera *camer
     return mv_window_scroll_begin((float)-x, (float)-y) ? 2 : 0;
 }
 
+/* Spawn appends increasing native IDs; tick cleanup preserves survivor order.
+ * Keep ordered rendering O(n log n) without a second slot map or allocation. */
+static int
+compare_render_id(const void *key, const void *entry)
+{
+    MvProcessId id = *(const MvProcessId *)key;
+    MvProcessId candidate = (MvProcessId)((const Process *)entry)->id;
+    return (id > candidate) - (id < candidate);
+}
+
 static void
 render(void)
 {
@@ -3972,31 +3994,24 @@ render(void)
         engine.failed = 1;
         return;
     }
-    size_t count = engine.count;
-    if (count > SIZE_MAX / sizeof(DrawOrder)) {
+    size_t count;
+    if (mv_process_draw_order(engine.context, NULL, 0, &count) != MV_OK ||
+        count > SIZE_MAX / sizeof(MvProcessDrawInfo)) {
         engine.failed = 1;
         return;
     }
-    DrawOrder *order = count ? malloc(count * sizeof(*order)) : NULL;
-    if (count && !order) {
-        fprintf(stderr, "Unable to allocate draw order\n");
+    MvProcessDrawInfo *order = count ? malloc(count * sizeof(*order)) : NULL;
+    if ((count && !order) ||
+        mv_process_draw_order(engine.context, order, count, &count) != MV_OK) {
+        free(order);
         engine.failed = 1;
         return;
     }
-    for (size_t i = 0; i < count; ++i) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, engine.items[i].self_ref);
-        lua_getiuservalue(L, -1, 1);
-        lua_pushliteral(L, "z");
-        lua_rawget(L, -2);
-        lua_Number z = lua_type(L, -1) == LUA_TNUMBER ? lua_tonumber(L, -1) : 0;
-        order[i] = (DrawOrder){i, isfinite(z) ? z : 0};
-        lua_pop(L, 3);
-    }
-    if (count > 1)
-        qsort(order, count, sizeof(*order), compare_draw_order);
     mv_window_begin(engine.draw.background);
     for (size_t p = 0; p < count; p++) {
-        Process *process = &engine.items[order[p].slot];
+        Process *process = engine.count ? bsearch(&order[p].id, engine.items,
+            engine.count, sizeof(*engine.items), compare_render_id) : NULL;
+        if (!process) continue;
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
         const MvCamera *camera = process_camera(L, process);
