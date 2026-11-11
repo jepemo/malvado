@@ -9,6 +9,7 @@ existing APIs, not a selection of additional 2.0 features.
 
 | Area | C | Lua | Evidence |
 | --- | --- | --- | --- |
+| Drawing defaults | `mv_draw_state_init`, `mv_draw_state_color`, `mv_draw_state_background` | `mv.set_color`, `mv.clear_screen` | `draw_state`, `lua_primitives`, `visual_draw_order` |
 | Window | `mv_window_open`, `mv_window_close`, `mv_window_should_close`, `mv_window_set_title`, `mv_window_size` | `mv.start` or returned game table; `mv.set_title`, `mv.window_size` | `lua_start_options`, `lua_start_parity`, `visual_c_window` |
 | Frame and primitives | `mv_window_begin`, `mv_window_end`, `mv_window_flush`, `mv_window_draw_box`, `mv_window_draw_circle`, `mv_window_draw_transformed_rect`, `mv_window_draw_filled_circle`, `mv_window_draw_graphic` | `mv.clear_screen`, `mv.set_color`, `mv.draw_box`, `mv.draw_rect`, `mv.draw_circle`, `mv.draw_fcircle`, `mv.graphics.rect`, `mv.graphics.circle` | `lua_primitives`, `visual_graphics_process`, `visual_draw_order` |
 | Clipping and scroll | `mv_window_clip_begin`, `mv_window_clip_end`, `mv_window_scroll_begin`, `mv_window_scroll_end` | `mv.graphics.region`, `mv.graphics.scroll`, process `region` and `scroll` | `lua_graphics_process`, `visual_process_region`, `visual_process_scroll`, `visual_window_clip`, `visual_window_scroll` |
@@ -21,7 +22,7 @@ existing APIs, not a selection of additional 2.0 features.
 
 | C types | Meaning and Lua relationship |
 | --- | --- |
-| `MvColor`, `MvFade`, `MvFadeTransition`, `MvFadeQueue` | C color and fade state. Lua uses color channels and the shared native queue. |
+| `MvDrawState`, `MvColor`, `MvFade`, `MvFadeTransition`, `MvFadeQueue` | C color and fade state. Lua uses color channels and the shared native queue. |
 | `MvImage`, `MvImageRegion`, `MvImageTransform` | Reference-counted opaque C image and copied region and transform values. File loads share live normalized-path textures; release each returned reference. Lua uses managed image objects and drawing arguments. |
 | `MvFont` | Opaque caller-owned C font. Lua font descriptions retain managed font resources. |
 

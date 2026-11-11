@@ -25,6 +25,17 @@ extern "C" {
 #endif
 
 typedef struct { unsigned char r, g, b, a; } MvColor;
+/* Copied runner drawing defaults. Initialize with mv_draw_state_init; fields
+ * are read-only to callers. This value owns no window, process or resources. */
+typedef struct { MvColor color, background; } MvDrawState;
+/* Default to opaque white drawing and opaque black background. NULL fails. */
+int mv_draw_state_init(MvDrawState *state);
+/* Channels must be in 0..255. Return 1 on success, 0 for NULL/invalid channels.
+ * Failure preserves the whole state. Background alpha is always 255.
+ * These operations do not draw or change any platform-global state. */
+int mv_draw_state_color(MvDrawState *state, int64_t r, int64_t g, int64_t b, int64_t a);
+int mv_draw_state_background(MvDrawState *state, int64_t r, int64_t g, int64_t b);
+
 typedef struct {
     MvColor current, start, target;
     unsigned duration, elapsed;

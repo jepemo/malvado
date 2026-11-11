@@ -4,6 +4,8 @@
 local mv = require("malvado")
 assert(not pcall(mv.draw_box, 0, 0, 5, 5))
 assert(not pcall(mv.set_color, -1, 0, 0))
+local ok, message = pcall(mv.set_color, -1, nil, nil)
+assert(not ok and message:find("color must be in 0..255", 1, true))
 assert(not pcall(mv.set_color, 0, 0, 256))
 mv.clear_screen(0, 127, 255)
 for channel = 1, 3 do

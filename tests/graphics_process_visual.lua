@@ -10,6 +10,8 @@ local translucent = rect(20, 10, {color = {255, 255, 255, 128}})
 local shape = mv.process(function() while true do mv.frame() end end)
 mv.start(function()
   mv.clear_screen(0, 0, 0)
+  -- Failure must leave the black background unchanged.
+  assert(not pcall(mv.clear_screen, 255, 256, 255))
   assert(not pcall(mv.clear_screen, 0x100000000, 128, 128))
   shape({graph = red, x = 20, y = 20, angle = 90})
   shape({graph = blue, x = 80, y = 40, size = 2})

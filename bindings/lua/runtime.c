@@ -88,8 +88,7 @@ typedef struct {
     lua_Integer tick_number;
     lua_Integer next_text_id;
     LuaCamera main_camera;
-    MvColor background;
-    MvColor draw_color;
+    MvDrawState draw;
     MvFadeQueue fade;
 } Engine;
 static Engine engine;
@@ -1514,13 +1513,14 @@ fade_color(lua_State *L)
 static int
 set_color(lua_State *L)
 {
-    lua_Integer values[4];
+    lua_Integer values[4] = {0, 0, 0, 255};
+    MvDrawState next = engine.draw;
     for (int i = 0; i < 4; ++i) {
         values[i] = i == 3 ? luaL_optinteger(L, i + 1, 255) : luaL_checkinteger(L, i + 1);
-        if (values[i] < 0 || values[i] > 255)
+        if (!mv_draw_state_color(&next, values[0], values[1], values[2], values[3]))
             return luaL_error(L, "color must be in 0..255");
     }
-    engine.draw_color = (MvColor){values[0], values[1], values[2], values[3]};
+    engine.draw = next;
     return 0;
 }
 
@@ -1560,7 +1560,7 @@ draw_primitive(lua_State *L)
         lua_seti(L, -2, i + 2);
     }
     const unsigned char channels[] = {
-        engine.draw_color.r, engine.draw_color.g, engine.draw_color.b, engine.draw_color.a
+        engine.draw.color.r, engine.draw.color.g, engine.draw.color.b, engine.draw.color.a
     };
     for (int i = 0; i < 4; ++i) {
         lua_pushinteger(L, channels[i]);
@@ -1611,11 +1611,8 @@ clear_screen(lua_State *L)
     lua_Integer r = luaL_checkinteger(L, 1);
     lua_Integer g = luaL_checkinteger(L, 2);
     lua_Integer b = luaL_checkinteger(L, 3);
-    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)
+    if (!mv_draw_state_background(&engine.draw, r, g, b))
         return luaL_error(L, "color must be in 0..255");
-    engine.background = (MvColor) {
-        r, g, b, 255
-    };
     return 0;
 }
 
@@ -3997,7 +3994,7 @@ render(void)
     }
     if (count > 1)
         qsort(order, count, sizeof(*order), compare_draw_order);
-    mv_window_begin(engine.background);
+    mv_window_begin(engine.draw.background);
     for (size_t p = 0; p < count; p++) {
         Process *process = &engine.items[order[p].slot];
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
@@ -5874,8 +5871,7 @@ malvado_run(int argc, char **argv)
         fprintf(stderr, "Usage: malvado-run [--headless] game.lua\n");
         return 2;
     }
-    engine.background = (MvColor){0, 0, 0, 255};
-    engine.draw_color = (MvColor){255, 255, 255, 255};
+    (void)mv_draw_state_init(&engine.draw);
     engine.context = mv_context_create(60, 5);
     if (!engine.context) {
         fprintf(stderr, "Could not create Malvado context\n");

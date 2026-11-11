@@ -5,6 +5,8 @@ local mv = require("malvado")
 local function draw_frames(count)
   for _ = 1, count do
     mv.set_color(255, 255, 255)
+    -- Invalid updates must not partially replace the white command color.
+    assert(not pcall(mv.set_color, 0, 0, 256))
     mv.draw_box(0, 0, 64, 64)
     mv.frame()
   end
