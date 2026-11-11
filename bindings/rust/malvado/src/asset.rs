@@ -292,3 +292,49 @@ impl Library {
         self.metadata
     }
 }
+
+/// An owned visual asset. Construction needs a window; metadata-only hosts
+/// should keep using Library. All variants retain their native image owners.
+#[cfg(feature = "graphics")]
+pub enum Visual {
+    Image(crate::image::Image),
+    Atlas(crate::atlas::TextureAtlas),
+    Fpg(crate::fpg::Textures),
+}
+#[cfg(feature = "graphics")]
+impl Visual {
+    /// Open once and dispatch by native content routing, or an explicit format.
+    /// PNG uses snapshot bytes. Library references load relative to the source
+    /// path. FPG uses index-zero transparency; manifest PNG alpha is preserved.
+    pub fn open(
+        window: Rc<crate::window::Window>,
+        path: impl AsRef<Path>,
+        format: Option<Format>,
+    ) -> Result<Self, Error> {
+        Self::from_source(window, Source::open(path)?, format)
+    }
+    /// Consume a snapshot without rereading its file. Referenced images must
+    /// still exist. Failure releases source, metadata and partial image loads.
+    pub fn from_source(
+        window: Rc<crate::window::Window>,
+        source: Source,
+        format: Option<Format>,
+    ) -> Result<Self, Error> {
+        let format = match format {
+            None | Some(Format::Unknown) => source.format(),
+            Some(format) => format,
+        };
+        if format == Format::Png {
+            return crate::image::Image::from_png(window, source.bytes()).map(Self::Image);
+        }
+        let library = Library::from_source(source, Some(format))?;
+        match library.metadata() {
+            Metadata::Atlas(_) => {
+                crate::atlas::TextureAtlas::load(window, library).map(Self::Atlas)
+            }
+            Metadata::Fpg(_) | Metadata::Manifest(_) => {
+                crate::fpg::Textures::load(window, library).map(Self::Fpg)
+            }
+        }
+    }
+}

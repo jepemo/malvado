@@ -116,6 +116,71 @@ fn main() {
     );
     #[cfg(feature = "assets")]
     {
+        use malvado::asset::{Format, Source, Visual};
+        let copied =
+            std::env::temp_dir().join(format!("malvado visual {}.data", std::process::id()));
+        std::fs::copy(&fixture, &copied).unwrap();
+        let source = Source::open(&copied).unwrap();
+        std::fs::remove_file(&copied).unwrap();
+        let Visual::Image(snapshot) = Visual::from_source(window.clone(), source, None).unwrap()
+        else {
+            unreachable!()
+        };
+        frame.image(&snapshot, (90, 30)).unwrap();
+        drop(snapshot);
+        pixel(
+            91,
+            31,
+            Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+        assert!(Visual::open(window.clone(), &fixture, Some(Format::Atlas)).is_err());
+        assert!(
+            Visual::open(
+                window.clone(),
+                fixture.with_file_name("atlas.json"),
+                Some(Format::Png)
+            )
+            .is_err()
+        );
+        assert!(Visual::open(window.clone(), "bad\0path", None).is_err());
+        assert!(Visual::open(window.clone(), fixture.with_file_name("missing"), None).is_err());
+        let Visual::Atlas(atlas_visual) = Visual::open(
+            window.clone(),
+            fixture.with_file_name("atlas.json"),
+            Some(Format::Unknown),
+        )
+        .unwrap() else {
+            unreachable!()
+        };
+        assert_eq!(atlas_visual.metadata().len(), 2);
+        drop(atlas_visual);
+        let aseprite =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../examples/aseprite/sheet.json");
+        let Visual::Atlas(imported) = Visual::open(window.clone(), aseprite, None).unwrap() else {
+            unreachable!()
+        };
+        assert!(!imported.metadata().is_empty());
+        drop(imported);
+        std::fs::write(&copied, b"unknown binary content").unwrap();
+        let unknown = Source::open(&copied).unwrap();
+        std::fs::remove_file(&copied).unwrap();
+        assert!(Visual::from_source(window.clone(), unknown, None).is_err());
+
+        let Visual::Fpg(fpg_visual) = Visual::open(
+            window.clone(),
+            fixture.with_file_name("fpg").join("bennugd-8.fpg"),
+            None,
+        )
+        .unwrap() else {
+            unreachable!()
+        };
+        assert_eq!(fpg_visual.len(), 2);
+        drop(fpg_visual);
         let json = std::fs::read_to_string(fixture.with_file_name("atlas.json")).unwrap();
         let atlas = malvado::atlas::Atlas::parse(&json, 8, 8).unwrap();
         let wrong = Image::from_rgba(window.clone(), 1, 1, &[0; 4]).unwrap();
@@ -193,6 +258,7 @@ fn main() {
     }
     #[cfg(feature = "assets")]
     {
+        use malvado::asset::Visual;
         use std::io::Write;
         let bytes = std::fs::read(fixture.with_file_name("fpg").join("bennugd-8.fpg")).unwrap();
         let fpg = malvado::fpg::Fpg::parse(&bytes).unwrap();
@@ -261,6 +327,17 @@ fn main() {
         }
         let library = malvado::asset::Library::open(&path, None).unwrap();
         let converted = malvado::fpg::Textures::load(window.clone(), library).unwrap();
+        let Visual::Fpg(visual) = Visual::open(window.clone(), &path, None).unwrap() else {
+            unreachable!()
+        };
+        assert_eq!(visual.len(), 2);
+        let selected_visual = visual.sprite(7).unwrap();
+        drop(visual);
+        frame
+            .sprite(&selected_visual, (136.0, 50.0), 1.0, 0.0)
+            .unwrap();
+        drop(selected_visual);
+
         assert_eq!(converted.len(), 2);
         let malvado::asset::Metadata::Manifest(metadata) = converted.metadata() else {
             unreachable!()

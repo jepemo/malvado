@@ -128,3 +128,27 @@ retention. Invalid geometry fails before drawing. `region()` and `pivot()`
 return copied geometry. `shape()` creates local collision geometry through the
 native sprite constructor. Registering that shape and updating its transform
 remain explicit host operations. These sprites do not assign process graphs.
+
+## Unified visual loading
+
+With `assets` and `graphics`, `asset::Visual::open(window, path, format)` loads
+PNG images, native atlases, Aseprite sheets, FPG files and converted manifests.
+`None` or `Some(Format::Unknown)` uses native content routing. Another format
+selects that native importer explicitly. Invalid content returns an error.
+
+The result is an owned enum: `Visual::Image(Image)`,
+`Visual::Atlas(TextureAtlas)` or `Visual::Fpg(fpg::Textures)`. Match the variant
+to use its image, sprite, animation metadata or collection operations. The
+loader does not assign a process graph or start automatic animation.
+
+`Visual::from_source(window, source, format)` consumes an existing snapshot.
+It does not reopen the source file. PNG decoding uses the snapshot bytes;
+atlas and FPG metadata use the native dispatcher. Referenced atlas sheets and
+manifest PNG files must still exist, relative to the original source path.
+FPG uses index-zero transparency. Manifest PNG alpha is preserved. Use the
+specific constructors to choose another FPG transparency policy.
+
+All image creation and cleanup stays on the window owner thread. Selected
+sprites and frame draws retain their image data after the Visual is dropped.
+A failed load releases its source, metadata and any partial texture collection.
+Use `Library` instead when a headless host needs metadata only.
