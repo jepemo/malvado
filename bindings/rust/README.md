@@ -117,3 +117,6 @@ Audio currently uses the optional `graphics` platform feature.
 
 The [fade guide](../../docs/api/fades.md) covers the shared native FIFO and
 copied Rust values with explicit tick advancement.
+
+[Simple graphic geometry](../../docs/api/graphic-geometry.md) supplies native
+rectangle/circle bounds and pivots without the graphics feature.

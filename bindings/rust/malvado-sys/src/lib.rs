@@ -645,3 +645,13 @@ pub mod assets;
 
 #[cfg(feature = "graphics")]
 pub mod graphics;
+
+unsafe extern "C" {
+    pub fn mv_graphic_rect(
+        width: f64,
+        height: f64,
+        top_left: c_int,
+        out: *mut MvCollisionShape,
+    ) -> c_int;
+    pub fn mv_graphic_circle(radius: f64, out: *mut MvCollisionShape) -> c_int;
+}

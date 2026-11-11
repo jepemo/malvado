@@ -16,6 +16,7 @@
 #include "malvado/collision.h"
 #include "malvado/camera.h"
 #include "malvado/animation.h"
+#include "malvado/graphic.h"
 #include <stdio.h>
 #include <string.h>
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
@@ -77,6 +78,8 @@ _Static_assert(_Generic(&mv_animation_create, MvAnimation * (*)(const MvAnimatio
 _Static_assert(_Generic(&mv_animation_destroy, void (*)(MvAnimation *): 1, default: 0), "mv_animation_destroy signature");
 _Static_assert(_Generic(&mv_animation_sample, int (*)(const MvAnimation *, uint64_t, MvAnimationSample *): 1, default: 0), "mv_animation_sample signature");
 _Static_assert(_Generic(&mv_animation_advance, int (*)(const MvAnimation *, MvAnimationState *, unsigned): 1, default: 0), "mv_animation_advance signature");
+_Static_assert(_Generic(&mv_graphic_rect, int (*)(double, double, int, MvCollisionShape *): 1, default: 0), "mv_graphic_rect signature");
+_Static_assert(_Generic(&mv_graphic_circle, int (*)(double, MvCollisionShape *): 1, default: 0), "mv_graphic_circle signature");
 int main(void) {
     if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }

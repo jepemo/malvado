@@ -91,7 +91,7 @@ impl Shape {
             ..self.native
         })
     }
-    fn validated(native: sys::MvCollisionShape) -> Result<Self, Error> {
+    pub(crate) fn validated(native: sys::MvCollisionShape) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         let shape = Self { native };
         shape.overlaps(Transform::default(), shape, Transform::default())?;

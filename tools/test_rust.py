@@ -85,6 +85,8 @@ def external_consumer(prefix):
         'use malvado::{Engine, Error, SpawnOptions};\n'
         'use malvado::collision::{Rect, Shape, Transform, World};\n'
         'fn main() -> Result<(), Error> {\n'
+        ' let geometry = malvado::graphic::Geometry::rectangle(20.0, 10.0, malvado::graphic::Pivot::TopLeft)?;\n'
+        ' let _shape = geometry.collider(); let _circle = malvado::graphic::Geometry::circle(5.0)?;\n'
         '    let mut camera = malvado::camera::Camera::new(0.0, 0.0, None)?;\n'
         '    camera.center((200.0, 150.0), (800, 600))?;\n'
         '    assert_eq!(camera.project((210.0, 160.0), (0.0, 0.0))?, (410.0, 310.0));\n'

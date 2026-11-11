@@ -40,6 +40,7 @@ pub mod fade;
 pub mod font;
 #[cfg(feature = "assets")]
 pub mod fpg;
+pub mod graphic;
 #[cfg(feature = "graphics")]
 pub mod image;
 mod resource;
