@@ -629,6 +629,37 @@ mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvCol
 }
 
 int
+mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, MvColor color)
+{
+    if (!drawing_active || !isfinite(transform.x) || !isfinite(transform.y) ||
+        !isfinite(transform.angle) || !isfinite(transform.scale) || transform.scale <= 0 ||
+        fabs(transform.x) > FLT_MAX / 16 || fabs(transform.y) > FLT_MAX / 16 ||
+        fabs(transform.angle) > FLT_MAX / 16 || transform.scale > FLT_MAX / 16)
+        return 0;
+    MvCollisionShape checked;
+    if (shape.kind == MV_COLLISION_CIRCLE) {
+        if (shape.offset_x != 0 || shape.offset_y != 0 ||
+            !mv_graphic_circle(shape.radius, &checked) ||
+            !mv_graphic_circle(shape.radius * transform.scale, &checked))
+            return 0;
+        return mv_window_draw_filled_circle((float)transform.x, (float)transform.y,
+                                             (float)checked.radius, color);
+    }
+    if (shape.kind != MV_COLLISION_RECT)
+        return 0;
+    int top_left = shape.offset_x != 0 || shape.offset_y != 0;
+    if (!mv_graphic_rect(shape.width, shape.height, top_left, &checked) ||
+        checked.offset_x != shape.offset_x || checked.offset_y != shape.offset_y ||
+        !mv_graphic_rect(shape.width * transform.scale, shape.height * transform.scale,
+                         top_left, &checked))
+        return 0;
+    return mv_window_draw_transformed_rect((float)transform.x, (float)transform.y,
+        (float)checked.width, (float)checked.height,
+        top_left ? 0 : (float)(checked.width / 2),
+        top_left ? 0 : (float)(checked.height / 2), (float)transform.angle, color);
+}
+
+int
 mv_window_draw_fade(MvColor color)
 {
     if (!drawing_active || clip_active || scroll_active)

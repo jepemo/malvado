@@ -97,7 +97,7 @@ if(MALVADO_BUILD_RAYLIB)
   target_include_directories(malvado_platform_raylib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-  target_link_libraries(malvado_platform_raylib PUBLIC
+  target_link_libraries(malvado_platform_raylib PUBLIC malvado_core
     $<BUILD_INTERFACE:raylib> $<INSTALL_INTERFACE:Malvado::raylib>)
   set_target_properties(malvado_platform_raylib PROPERTIES EXPORT_NAME graphics)
   install(TARGETS malvado_platform_raylib EXPORT MalvadoGraphicsTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

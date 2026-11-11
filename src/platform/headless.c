@@ -153,3 +153,12 @@ mv_window_draw_fade(MvColor color)
     (void)color;
     return 0;
 }
+
+int
+mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, MvColor color)
+{
+    (void)shape;
+    (void)transform;
+    (void)color;
+    return 0;
+}

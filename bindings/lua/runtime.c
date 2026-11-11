@@ -3738,17 +3738,9 @@ render_graph(lua_State *L, const Process *process)
                 (void)mv_image_draw_region(sprite_image->image, graphic->region, transform);
             }
             lua_pop(L, 1);
-        } else if (graphic->shape.kind == MV_COLLISION_CIRCLE) {
-            double radius = graphic->shape.radius * scale;
-            if (isfinite(radius) && radius >= FLT_MIN && radius <= FLT_MAX / 16)
-                (void)mv_window_draw_filled_circle((float)x, (float)y, (float)radius, graphic->color);
         } else {
-            double width = graphic->shape.width * scale, height = graphic->shape.height * scale;
-            if (isfinite(width) && isfinite(height) && width >= FLT_MIN && height >= FLT_MIN &&
-                width <= FLT_MAX / 16 && height <= FLT_MAX / 16)
-                (void)mv_window_draw_transformed_rect((float)x, (float)y, (float)width, (float)height,
-                    graphic->top_left ? 0 : (float)(width / 2),
-                    graphic->top_left ? 0 : (float)(height / 2), (float)angle, graphic->color);
+            (void)mv_window_draw_graphic(graphic->shape,
+                (MvCollisionTransform){x, y, angle, scale}, graphic->color);
         }
     }
     lua_pop(L, 3);

@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "malvado/graphic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +60,14 @@ int mv_fade_queue_active(const MvFadeQueue *queue);
  * Return 0 without drawing outside a frame or inside a clip/scroll scope.
  * Return 1 on success, including a transparent no-op. Does not advance fades. */
 int mv_window_draw_fade(MvColor color);
+/* Draw canonical geometry from mv_graphic_rect/circle in an active frame.
+ * Rectangles support centered or top-left offsets; circles must be centered.
+ * Transform values must be finite with magnitude <= FLT_MAX/16; scale must
+ * be positive. Scaled dimensions must be in FLT_MIN..FLT_MAX/16. Return 1 on
+ * success, 0 without drawing on invalid input or outside a graphics frame.
+ * Clip/scroll scopes apply normally. No pointers or resources are retained. */
+int mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, MvColor color);
+
 
 
 typedef enum {
