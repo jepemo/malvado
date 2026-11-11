@@ -29,8 +29,8 @@ Keep an `Rc<Audio>` in the host. Loaded sounds and music keep the service alive.
 and paused uses retain native instances even if a process releases its resource.
 `update()` releases completed sound uses. `stop()` releases that instance's
 playback retention immediately. Paused uses stay retained until stop, resume
-and completion, or service shutdown. Repeated play restarts one instance and
-does not add another retention.
+and completion, or service shutdown. Repeated play does not add another
+retention. Sound playback restarts when played again.
 
 Dropping the final service owner stops and destroys outstanding instances before
 closing the device. Shutdown does not wait for a sound to finish. Retained native
@@ -57,7 +57,9 @@ failures do not distinguish allocation errors from file errors.
 `Music::load(audio, path, looping)` opens a WAV or OGG stream. The Boolean loop
 setting is fixed at load time. Each load owns its decoder and playback state;
 streams cannot be cloned. Controls and volume follow the sound contract.
-`play()` starts or restarts that stream. `playing()` is false while paused.
+`play()` starts native stream playback. To restart from the beginning, call
+`stop()` before `play()`; play alone does not rewind the decoder. Use `resume()`
+to keep a paused position. `playing()` is false while paused.
 
 Call `Audio::update()` regularly on the owner thread. It refills active streams
 through the native C service and releases completed uses. Paused uses stay

@@ -203,7 +203,8 @@ impl Music {
             audio,
         })
     }
-    /// Start or restart this instance and retain it until stop/completion.
+    /// Start native playback and retain it until stop/completion. To rewind
+    /// the decoder, call stop before play; use resume to keep a paused position.
     pub fn play(&self) -> Result<(), Error> {
         // Reserve retention before changing native playback.
         let mut active = self.audio.streams.borrow_mut();

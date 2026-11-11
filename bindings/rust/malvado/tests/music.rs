@@ -33,7 +33,7 @@ fn main() {
         music.set_volume(0.0).unwrap();
         music.set_volume(1.0).unwrap();
         music.play().unwrap();
-        music.play().unwrap(); // Restart keeps only one native retention.
+        music.play().unwrap(); // Repeated play keeps only one native retention.
         other.play().unwrap();
         other.stop().unwrap();
         assert!(!other.playing());
