@@ -109,3 +109,22 @@ The texture retains its window. Metadata and image access remain available
 through `metadata()` and `image()`. Files must exist during loading; the library
 metadata itself uses its owned snapshot. Failed construction releases its input
 owners. No process graph assignment or animation update is implicit.
+
+Select an owned `SpriteImage` with `sprite(id)` or `sprite_named(name)`.
+Missing entries return `None`. Names are case-sensitive; embedded NUL returns
+`InvalidArgument`. Each sprite shares the texture and copies its region and
+native cropped pivot. The atlas can then be dropped.
+
+```rust,ignore
+let sprite = textured.sprite_named("ship")?.ok_or(malvado::Error::NotFound)?;
+drop(textured);
+let frame = window.frame(background)?;
+frame.sprite(&sprite, (80.0, 60.0), 1.0, 0.0)?;
+```
+
+`Frame::sprite` uses the native pivot, positive scale and clockwise rotation.
+It uses the existing image-region validation, clip/scroll scopes and frame
+retention. Invalid geometry fails before drawing. `region()` and `pivot()`
+return copied geometry. `shape()` creates local collision geometry through the
+native sprite constructor. Registering that shape and updating its transform
+remain explicit host operations. These sprites do not assign process graphs.

@@ -120,6 +120,33 @@ fn main() {
             textured.metadata().sprite(7).unwrap(),
             atlas.sprite(7).unwrap()
         );
+        assert!(textured.sprite(-1).is_none());
+        assert!(textured.sprite_named("RED").unwrap().is_none());
+        assert!(matches!(
+            textured.sprite_named("bad\0name"),
+            Err(Error::InvalidArgument)
+        ));
+        let selected = textured.sprite_named("red").unwrap().unwrap();
+        let clone = selected.clone();
+        assert_eq!(selected.region(), atlas.sprite(7).unwrap().region);
+        assert_eq!(selected.pivot(), atlas.sprite(7).unwrap().pivot);
+        selected.shape().unwrap();
+        drop(textured);
+        drop(selected);
+        assert!(frame.sprite(&clone, (120.0, 30.0), 0.0, 0.0).is_err());
+        assert!(frame.sprite(&clone, (f32::NAN, 30.0), 1.0, 0.0).is_err());
+        frame.sprite(&clone, (120.0, 30.0), 1.0, 0.0).unwrap();
+        drop(clone);
+        pixel(
+            120,
+            30,
+            Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
         let region = atlas.sprite(7).unwrap().region.into();
         frame
             .image_region(

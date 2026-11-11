@@ -358,3 +358,70 @@ impl TextureAtlas {
 /// ```
 #[cfg(feature = "graphics")]
 mod texture_ownership_contract {}
+
+/// An immutable selected sprite. Cloning shares the image; atlas metadata may
+/// be dropped immediately. The pivot is the native cropped-image pivot.
+#[cfg(feature = "graphics")]
+#[derive(Clone)]
+pub struct SpriteImage {
+    image: crate::image::Image,
+    region: Region,
+    pivot: (i32, i32),
+}
+#[cfg(feature = "graphics")]
+impl TextureAtlas {
+    pub fn sprite(&self, id: i32) -> Option<SpriteImage> {
+        self.atlas.sprite(id).map(|sprite| self.select(sprite))
+    }
+    /// Exact case-sensitive name; embedded NUL returns InvalidArgument.
+    pub fn sprite_named(&self, name: &str) -> Result<Option<SpriteImage>, Error> {
+        Ok(self
+            .atlas
+            .sprite_named(name)?
+            .map(|sprite| self.select(sprite)))
+    }
+    fn select(&self, sprite: Sprite<'_>) -> SpriteImage {
+        SpriteImage {
+            image: self.image.clone(),
+            region: sprite.region,
+            pivot: sprite.pivot,
+        }
+    }
+}
+#[cfg(feature = "graphics")]
+impl SpriteImage {
+    pub fn region(&self) -> Region {
+        self.region
+    }
+    pub fn pivot(&self) -> (i32, i32) {
+        self.pivot
+    }
+    /// Local collider only; does not register a process or copy pixel data.
+    pub fn shape(&self) -> Result<crate::collision::Shape, Error> {
+        crate::collision::Shape::sprite((self.region.width, self.region.height), self.pivot)
+    }
+}
+#[cfg(feature = "graphics")]
+impl crate::window::Frame<'_> {
+    /// Draw a selected sprite with its native pivot. Scale must be positive;
+    /// position, scale and clockwise rotation must be finite and renderable.
+    /// Frame retention keeps the texture alive after the sprite is dropped.
+    pub fn sprite(
+        &self,
+        sprite: &SpriteImage,
+        position: (f32, f32),
+        scale: f32,
+        rotation: f32,
+    ) -> Result<(), Error> {
+        self.image_region(
+            &sprite.image,
+            sprite.region.into(),
+            crate::image::Transform {
+                position,
+                pivot: (sprite.pivot.0 as f32, sprite.pivot.1 as f32),
+                scale,
+                rotation,
+            },
+        )
+    }
+}
