@@ -102,9 +102,12 @@ completion/stop release and device teardown without a reference cycle.
 Silent fixtures verify API and ownership behavior. These tests do not certify
 physical output, latency, device hotplug, or subjective sound quality.
 
-Audio acceptance: Debug/Release, installed consumer and native ASan/UBSan
-pass on macOS. Linux null-device execution is included in the graphics CI job;
-its result must be recorded before final A7.6 closure.
+Audio acceptance: full host CI passes on implementation commit `8b76938`.
+The [Linux graphics job](https://github.com/jepemo/malvado/actions/runs/42984841966/job/130403450713)
+passes Debug/Release, null-device playback, the relocated consumer and native
+ASan/UBSan with leak detection enabled. This includes the WAV cleanup regression
+below. The existing graphics-provider filters are unchanged. Local macOS checks
+also pass; its existing leak-detection limitation remains explicit.
 
 Linux sanitizer regression: the raylib 5.5 WAV decoder allocation survived
 `UnloadMusicStream`. The native adapter now frees that context through raylib's
