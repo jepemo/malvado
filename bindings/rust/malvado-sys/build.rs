@@ -193,6 +193,9 @@ fn main() {
             );
             println!("cargo:rustc-link-lib=static={link}");
         }
+        // The graphics adapter uses the core graphic constructors. Rescan the
+        // core archive after the adapter on linkers that resolve left to right.
+        println!("cargo:rustc-link-lib=static=malvado_core");
         if target.contains("apple-darwin") {
             for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation"] {
                 println!("cargo:rustc-link-lib=framework={framework}");

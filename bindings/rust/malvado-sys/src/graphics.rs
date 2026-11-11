@@ -402,3 +402,11 @@ unsafe extern "C" {
     pub fn mv_fade_queue_active(queue: *const MvFadeQueue) -> c_int;
     pub fn mv_window_draw_fade(color: MvColor) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_window_draw_graphic(
+        shape: crate::MvCollisionShape,
+        transform: crate::MvCollisionTransform,
+        color: MvColor,
+    ) -> c_int;
+}

@@ -46,3 +46,20 @@ impl Geometry {
         self.shape
     }
 }
+
+#[cfg(feature = "graphics")]
+impl crate::window::Frame<'_> {
+    /// Draw a copied geometry with native transform validation. Clip/scroll
+    /// scopes apply. No geometry or color is retained after the call.
+    pub fn graphic(
+        &self,
+        geometry: Geometry,
+        transform: crate::collision::Transform,
+        color: crate::window::Color,
+    ) -> Result<(), Error> {
+        // SAFETY: live owner-thread frame and copied geometry/transform values.
+        crate::drawing::valid(unsafe {
+            sys::graphics::mv_window_draw_graphic(geometry.shape.native, transform.native(), color)
+        })
+    }
+}

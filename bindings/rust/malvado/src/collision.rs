@@ -54,7 +54,7 @@ impl Default for Transform {
     }
 }
 impl Transform {
-    fn native(self) -> sys::MvCollisionTransform {
+    pub(crate) fn native(self) -> sys::MvCollisionTransform {
         sys::MvCollisionTransform {
             x: self.x,
             y: self.y,
@@ -66,7 +66,7 @@ impl Transform {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Shape {
-    native: sys::MvCollisionShape,
+    pub(crate) native: sys::MvCollisionShape,
 }
 impl Shape {
     pub fn circle(radius: f64) -> Result<Self, Error> {
