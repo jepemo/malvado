@@ -42,6 +42,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_atlas_parse`
 - `mv_atlas_parse_aseprite`
 - `mv_atlas_pivot_color`
+- `mv_atlas_validate_image`
 - `mv_resource_adopt_atlas`
 
 ## [camera.h](../../src/include/malvado/camera.h)

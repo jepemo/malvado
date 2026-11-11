@@ -33,6 +33,7 @@ int main(int argc, char **argv)
     MvAssetMetadata out = {0};
     const char *error = NULL;
     assert(!mv_asset_metadata_parse(NULL, MV_ASSET_UNKNOWN, &out, &error) && error);
+    assert(!mv_atlas_validate_image(NULL, 8, 8));
     mv_asset_metadata_destroy(NULL);
     mv_asset_metadata_destroy(&out);
     const char *paths[] = {"tests/fixtures/atlas.json", "examples/aseprite/sheet.json", "tests/fixtures/fpg/bennugd-8.fpg"};
@@ -45,9 +46,28 @@ int main(int argc, char **argv)
         assert(out.format == MV_ASSET_UNKNOWN && !out.atlas && !out.fpg && !out.manifest);
         assert(mv_asset_metadata_parse(source, MV_ASSET_UNKNOWN, &out, &error) && !error);
         assert(out.format == formats[i]);
+        if (out.atlas) {
+            size_t size;
+            const char *bytes = mv_asset_source_data(source, &size);
+            for (int w = 1; w <= 12; ++w) {
+                for (int h = 1; h <= 12; ++h) {
+                    MvAtlas *parsed = i ? mv_atlas_parse_aseprite(bytes, size, w, h, NULL) :
+                                         mv_atlas_parse(bytes, size, w, h, NULL);
+                    assert(mv_atlas_validate_image(out.atlas, w, h) == (parsed != NULL));
+                    mv_atlas_destroy(parsed);
+                }
+            }
+        }
         mv_asset_source_destroy(source);
         if (out.atlas) {
             assert(!out.fpg && !out.manifest && mv_atlas_count(out.atlas) == (i ? 3 : 2));
+            assert(mv_atlas_validate_image(out.atlas, 8, 8));
+            assert(!mv_atlas_validate_image(out.atlas, 7, 8));
+            assert(!mv_atlas_validate_image(out.atlas, 8, 7));
+            assert(!mv_atlas_validate_image(out.atlas, 0, 8));
+            assert(!mv_atlas_validate_image(out.atlas, 8, -1));
+            assert(mv_atlas_validate_image(out.atlas, 16, 16) == (i == 0));
+            assert(mv_atlas_validate_image(out.atlas, 8, 8));
             MvAtlasSprite sprite;
             assert(mv_atlas_find(out.atlas, i ? 1 : 42, &sprite));
             /* Move metadata into a new caller owner before record cleanup. */

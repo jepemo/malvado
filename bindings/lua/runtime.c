@@ -3314,28 +3314,19 @@ push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 }
 
 static int
-load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, const char *bytes, size_t length,
-                 int aseprite, MvAssetMetadata *metadata)
+load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, MvAssetMetadata *metadata)
 {
     LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     int index = lua_gettop(L);
-    const char *error = NULL;
     atlas->atlas = metadata->atlas;
     metadata->atlas = NULL;
     if (engine.window) {
         push_asset_image(L, source, mv_atlas_image(atlas->atlas));
         LuaImage *image = lua_touserdata(L, -1);
-        MvAtlas *validated = aseprite ?
-            mv_atlas_parse_aseprite(bytes, length, mv_image_width(image->image),
-                                   mv_image_height(image->image), &error) :
-            mv_atlas_parse(bytes, length, mv_image_width(image->image),
-                           mv_image_height(image->image), &error);
-        if (!validated)
-            return luaL_error(L, "%s: %s", path, error);
-        mv_atlas_destroy(atlas->atlas);
-        atlas->atlas = validated;
+        if (!mv_atlas_validate_image(atlas->atlas, mv_image_width(image->image), mv_image_height(image->image)))
+            return luaL_error(L, "%s: invalid atlas: image dimensions do not match metadata", path);
         lua_setiuservalue(L, index, 1);
     }
     MvAtlas *native = atlas->atlas;
@@ -3449,6 +3440,7 @@ load_asset(lua_State *L)
     }
     size_t length;
     const char *bytes = read_asset_file(L, path, &length);
+    (void)bytes;
 #ifdef MALVADO_BUILD_ASSETS
     MvAssetSource *source = ((LuaAssetSource *)lua_touserdata(L, -1))->source;
     int png = mv_asset_source_format(source) == MV_ASSET_PNG;
@@ -3481,7 +3473,7 @@ load_asset(lua_State *L)
         return luaL_error(L, "transparent_zero is only valid for FPG assets");
     MvAssetMetadata *metadata = parse_asset_metadata(L, source, format, path);
     if (metadata->atlas)
-        return load_asset_atlas(L, source, path, bytes, length, metadata->format == MV_ASSET_ASEPRITE, metadata);
+        return load_asset_atlas(L, source, path, metadata);
     return load_asset_library(L, source, path, metadata, transparent);
 #else
     (void)transparent;

@@ -34,6 +34,7 @@ typedef struct {
 } Animation;
 
 struct MvAtlas {
+    int declared_width, declared_height;
     char *image;
     MvAtlasSprite *sprites;
     size_t count;
@@ -341,6 +342,8 @@ mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
     if (tag_count > 255) goto fail_aseprite;
     atlas = calloc(1, sizeof(*atlas));
     if (!atlas) goto fail_aseprite;
+    atlas->declared_width = width;
+    atlas->declared_height = height;
     atlas->image = copy_utf8_text(cJSON_GetObjectItemCaseSensitive(meta, "image"), 511);
     atlas->sprites = calloc((size_t)count, sizeof(*atlas->sprites));
     atlas->animations = calloc((size_t)tag_count + 1, sizeof(*atlas->animations));
@@ -644,4 +647,18 @@ mv_atlas_animation_frame_at(const MvAtlas *atlas, const char *name, size_t index
         }
     }
     return 0;
+}
+
+int
+mv_atlas_validate_image(const MvAtlas *atlas, int width, int height)
+{
+    if (!atlas || width <= 0 || height <= 0) return 0;
+    if (atlas->declared_width &&
+        (width != atlas->declared_width || height != atlas->declared_height)) return 0;
+    for (size_t i = 0; i < atlas->count; ++i) {
+        MvImageRegion region = atlas->sprites[i].region;
+        if (region.x >= width || region.y >= height ||
+            region.width > width - region.x || region.height > height - region.y) return 0;
+    }
+    return 1;
 }

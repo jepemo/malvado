@@ -331,3 +331,7 @@ unsafe extern "C" {
     ) -> c_int;
     pub fn mv_asset_metadata_destroy(metadata: *mut MvAssetMetadata);
 }
+
+unsafe extern "C" {
+    pub fn mv_atlas_validate_image(atlas: *const MvAtlas, width: c_int, height: c_int) -> c_int;
+}

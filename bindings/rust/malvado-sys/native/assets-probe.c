@@ -128,3 +128,5 @@ _Static_assert(_Generic(&mv_asset_source_image_path, int (*)(const MvAssetSource
 
 _Static_assert(_Generic(&mv_asset_metadata_parse, int (*)(const MvAssetSource *, MvAssetFormat, MvAssetMetadata *, const char **): 1, default: 0), "mv_asset_metadata_parse signature");
 _Static_assert(_Generic(&mv_asset_metadata_destroy, void (*)(MvAssetMetadata *): 1, default: 0), "mv_asset_metadata_destroy signature");
+
+_Static_assert(_Generic(&mv_atlas_validate_image, int (*)(const MvAtlas *, int, int): 1, default: 0), "mv_atlas_validate_image signature");

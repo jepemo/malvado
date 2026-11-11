@@ -50,6 +50,11 @@ MvAtlas *mv_atlas_parse(const char *json, size_t length, int width, int height, 
  * rejected; error receives a static message. */
 MvAtlas *mv_atlas_parse_aseprite(const char *json, size_t length, int width, int height,
                                  const char **error);
+/* Validate already parsed metadata against actual positive image dimensions.
+ * Native atlases require every region to fit; Aseprite also requires its exact
+ * declared sheet size. Return 1 for a match, 0 for NULL/invalid dimensions or
+ * mismatch. No allocation, mutation, parsing or image access. Owner-thread. */
+int mv_atlas_validate_image(const MvAtlas *atlas, int width, int height);
 /* Destroy an atlas. A NULL pointer is allowed. */
 void mv_atlas_destroy(MvAtlas *atlas);
 /* Return a borrowed path valid until atlas destruction, or NULL for NULL atlas. */

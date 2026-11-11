@@ -116,3 +116,19 @@ manifest palette data. The runnable and owner-thread doctests pass in both
 profiles. The relocated offline assets consumer uses each Library method.
 Installed record/signature checks, Clippy/format and native graphical ASan/UBSan
 cover the shared boundary. Rust itself is not sanitizer-instrumented.
+
+## Validate metadata against an image
+
+`mv_atlas_validate_image(atlas, width, height)` checks already parsed metadata
+without allocating or parsing JSON again. Supply positive actual image dimensions.
+Native atlas regions must all fit. Aseprite must also match its original declared
+sheet size exactly, including when a larger image could contain every region.
+NULL atlases, invalid dimensions and mismatches return 0; a match returns 1.
+The operation changes no metadata and retains no image. It needs no window.
+
+Lua unified loading now uses this operation after loading an atlas image. It
+keeps the original metadata allocation and preserves the existing rejection
+rules. The native tests compare this result with fresh full imports across a
+matrix of actual image sizes for both formats, including source-independent
+metadata, repeated checks and invalid arguments. Existing loader pixel tests
+verify invalid image bounds and valid rendering.
