@@ -74,6 +74,9 @@ _Static_assert(_Generic(&mv_music_pause, int (*)(MvMusic *): 1, default: 0), "mv
 _Static_assert(_Generic(&mv_music_resume, int (*)(MvMusic *): 1, default: 0), "mv_music_resume signature");
 _Static_assert(_Generic(&mv_music_playing, int (*)(const MvMusic *): 1, default: 0), "mv_music_playing signature");
 _Static_assert(_Generic(&mv_music_set_volume, int (*)(MvMusic *, float): 1, default: 0), "mv_music_set_volume signature");
+_Static_assert(_Generic(&mv_fade_queue_push, int (*)(MvFadeQueue *, MvColor, unsigned): 1, default: 0), "mv_fade_queue_push signature");
+_Static_assert(_Generic(&mv_fade_queue_step, int (*)(MvFadeQueue *): 1, default: 0), "mv_fade_queue_step signature");
+_Static_assert(_Generic(&mv_fade_queue_active, int (*)(const MvFadeQueue *): 1, default: 0), "mv_fade_queue_active signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
@@ -163,5 +166,19 @@ int main(void)
     printf("%u ", (unsigned)MV_PAD_RIGHT_Y);
     printf("%u ", (unsigned)MV_PAD_LEFT_TRIGGER);
     printf("%u ", (unsigned)MV_PAD_RIGHT_TRIGGER);
+    printf("%zu %zu ", sizeof(MvFade), _Alignof(MvFade));
+    printf("%zu ", offsetof(MvFade, current));
+    printf("%zu ", offsetof(MvFade, start));
+    printf("%zu ", offsetof(MvFade, target));
+    printf("%zu ", offsetof(MvFade, duration));
+    printf("%zu ", offsetof(MvFade, elapsed));
+    printf("%zu %zu ", sizeof(MvFadeTransition), _Alignof(MvFadeTransition));
+    printf("%zu ", offsetof(MvFadeTransition, target));
+    printf("%zu ", offsetof(MvFadeTransition, ticks));
+    printf("%zu %zu ", sizeof(MvFadeQueue), _Alignof(MvFadeQueue));
+    printf("%zu ", offsetof(MvFadeQueue, fade));
+    printf("%zu ", offsetof(MvFadeQueue, pending));
+    printf("%zu ", offsetof(MvFadeQueue, head));
+    printf("%zu ", offsetof(MvFadeQueue, count));
     return 0;
 }

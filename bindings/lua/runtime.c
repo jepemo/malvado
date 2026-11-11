@@ -53,8 +53,6 @@ typedef enum {
 
 typedef struct { MvCamera value; int closed, target_ref; } LuaCamera;
 
-typedef struct { MvColor target; unsigned ticks; } FadeRequest;
-
 typedef struct {
     lua_Integer id;
     lua_Integer type_id;
@@ -91,9 +89,7 @@ typedef struct {
     LuaCamera main_camera;
     MvColor background;
     MvColor draw_color;
-    MvFade fade;
-    FadeRequest fade_queue[16];
-    unsigned fade_head, fade_count;
+    MvFadeQueue fade;
 } Engine;
 static Engine engine;
 static MalvadoDebugHook debug_hook;
@@ -1461,28 +1457,15 @@ frame(lua_State *L)
 static int
 queue_fade(lua_State *L, MvColor color, unsigned ticks)
 {
-    if (!mv_fade_active(&engine.fade) && engine.fade_count == 0) {
-        (void)mv_fade_start(&engine.fade, color, ticks);
-        return 0;
-    }
-    if (engine.fade_count == 16)
+    if (mv_fade_queue_push(&engine.fade, color, ticks) != 1)
         return luaL_error(L, "fade queue is full");
-    unsigned index = (engine.fade_head + engine.fade_count) % 16;
-    engine.fade_queue[index] = (FadeRequest){color, ticks};
-    ++engine.fade_count;
     return 0;
 }
 
 static void
 advance_fade(void)
 {
-    (void)mv_fade_step(&engine.fade);
-    while (!mv_fade_active(&engine.fade) && engine.fade_count > 0) {
-        FadeRequest request = engine.fade_queue[engine.fade_head];
-        engine.fade_head = (engine.fade_head + 1) % 16;
-        --engine.fade_count;
-        (void)mv_fade_start(&engine.fade, request.target, request.ticks);
-    }
+    (void)mv_fade_queue_step(&engine.fade);
 }
 
 static int
@@ -1512,14 +1495,14 @@ fade_switch(lua_State *L)
 static int
 fade_active(lua_State *L)
 {
-    lua_pushboolean(L, mv_fade_active(&engine.fade) || engine.fade_count != 0);
+    lua_pushboolean(L, mv_fade_queue_active(&engine.fade));
     return 1;
 }
 
 static int
 fade_color(lua_State *L)
 {
-    MvColor color = engine.fade.current;
+    MvColor color = engine.fade.fade.current;
     lua_pushinteger(L, color.r);
     lua_pushinteger(L, color.g);
     lua_pushinteger(L, color.b);
@@ -4065,10 +4048,10 @@ render(void)
         if (region == 2) (void)mv_window_clip_end();
     }
     render_texts(L);
-    if (engine.fade.current.a != 0) {
+    if (engine.fade.fade.current.a != 0) {
         int width, height;
         if (mv_window_size(&width, &height))
-            (void)mv_window_draw_box(0, 0, width, height, 1, engine.fade.current);
+            (void)mv_window_draw_box(0, 0, width, height, 1, engine.fade.fade.current);
     }
     free(order);
     if (debug_frame_hook) {

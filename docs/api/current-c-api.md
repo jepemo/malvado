@@ -133,6 +133,9 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_audio_close`
 - `mv_audio_open`
 - `mv_fade_active`
+- `mv_fade_queue_active`
+- `mv_fade_queue_push`
+- `mv_fade_queue_step`
 - `mv_fade_start`
 - `mv_fade_step`
 - `mv_font_destroy`

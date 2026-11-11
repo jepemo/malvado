@@ -35,6 +35,8 @@ pub mod collision;
 pub mod drawing;
 mod engine;
 #[cfg(feature = "graphics")]
+pub mod fade;
+#[cfg(feature = "graphics")]
 pub mod font;
 #[cfg(feature = "assets")]
 pub mod fpg;

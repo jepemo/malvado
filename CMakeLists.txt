@@ -312,6 +312,18 @@ else()
   target_link_libraries(input-test PRIVATE malvado_platform_headless)
 endif()
 add_test(NAME input COMMAND input-test)
+add_executable(fade-queue-test tests/fade_queue.c)
+add_executable(alpha7-fade-test tests/alpha7_fade.c)
+if(MALVADO_BUILD_RAYLIB)
+  target_link_libraries(fade-queue-test PRIVATE malvado_platform_raylib)
+  target_link_libraries(alpha7-fade-test PRIVATE malvado_platform_raylib)
+else()
+  target_link_libraries(fade-queue-test PRIVATE malvado_platform_headless)
+  target_link_libraries(alpha7-fade-test PRIVATE malvado_platform_headless)
+endif()
+add_test(NAME fade_queue COMMAND fade-queue-test)
+set_tests_properties(fade_queue PROPERTIES TIMEOUT 15)
+
 add_executable(platform-wait-test tests/platform_wait.c)
 if(MALVADO_BUILD_RAYLIB)
   target_link_libraries(platform-wait-test PRIVATE malvado_platform_raylib)
@@ -506,6 +518,14 @@ add_test(NAME alpha7_world_parity COMMAND ${CMAKE_COMMAND}
   -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/world.txt
   -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
 set_tests_properties(alpha7_world_parity PROPERTIES TIMEOUT 25)
+add_test(NAME alpha7_fade_parity COMMAND ${CMAKE_COMMAND}
+  -DC_PROGRAM=$<TARGET_FILE:alpha7-fade-test>
+  -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
+  -DLUA_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/alpha7_fade.lua
+  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/fade.txt
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
+set_tests_properties(alpha7_fade_parity PROPERTIES TIMEOUT 25)
+
 add_test(NAME alpha7_lifecycle_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:alpha7-lifecycle-test>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>

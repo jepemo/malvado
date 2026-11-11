@@ -114,3 +114,6 @@ mouse/gamepad queries and consuming native Unicode text.
 The [audio guide](../../docs/api/rust-audio.md) covers the independent audio
 device, owned WAV instances, independent clones, WAV/OGG streams and explicit playback maintenance.
 Audio currently uses the optional `graphics` platform feature.
+
+The [fade guide](../../docs/api/fades.md) covers the shared native FIFO and
+copied Rust values with explicit tick advancement.

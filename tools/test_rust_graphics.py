@@ -29,6 +29,8 @@ def consumer(prefix, profile):
         'use malvado::{Error, drawing::Rectangle, image::Image, font::Font, window::{Window, Color}};\n'
         'use std::rc::Rc;\n'
         'fn main() -> Result<(), Error> {\n'
+        ' let mut fade = malvado::fade::Fade::new()?;\n'
+        ' fade.enqueue(Color {r:0,g:0,b:0,a:255}, 2)?; assert!(fade.step()); assert_eq!(fade.color().a, 127);\n'
         ' let audio = Rc::new(malvado::audio::Audio::open()?);\n'
         ' let sound = malvado::audio::Sound::load(audio.clone(), "silence.wav")?;\n'
         ' let copy = sound.try_clone()?; sound.play()?; copy.play()?; sound.stop()?;\n'

@@ -34,6 +34,28 @@ typedef struct {
 int mv_fade_start(MvFade *fade, MvColor target, unsigned ticks);
 int mv_fade_step(MvFade *fade);
 int mv_fade_active(const MvFade *fade);
+
+/* A copied, backend-independent FIFO. Initialize to {0}; do not modify its
+ * fields except through these operations. One active transition and at most
+ * 16 pending transitions. Read fade.current for the current overlay color. */
+typedef struct { MvColor target; unsigned ticks; } MvFadeTransition;
+typedef struct {
+    MvFade fade;
+    MvFadeTransition pending[16];
+    unsigned head, count;
+} MvFadeQueue;
+/* Return 1 on success, 0 for NULL or duration > 1000000, -1 for a full queue.
+ * Failure changes nothing. An idle queue starts immediately, including a
+ * zero-tick change. A busy queue appends, including zero-tick changes. */
+int mv_fade_queue_push(MvFadeQueue *queue, MvColor target, unsigned ticks);
+/* Advance the active transition once, then start pending transitions in FIFO
+ * order. Drain zero-tick transitions on that same step. A newly started timed
+ * transition first advances on the next step. Return 1 if state changed, or 0
+ * for NULL or idle. Call once per simulation tick, independent of rendering. */
+int mv_fade_queue_step(MvFadeQueue *queue);
+/* Return 1 while a timed transition or pending request remains, otherwise 0. */
+int mv_fade_queue_active(const MvFadeQueue *queue);
+
 typedef enum {
     MV_KEY_0 = '0', MV_KEY_1, MV_KEY_2, MV_KEY_3, MV_KEY_4,
     MV_KEY_5, MV_KEY_6, MV_KEY_7, MV_KEY_8, MV_KEY_9,

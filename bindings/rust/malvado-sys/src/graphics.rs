@@ -116,6 +116,23 @@ const _: () = {
         MV_PAD_RIGHT_Y as usize,
         MV_PAD_LEFT_TRIGGER as usize,
         MV_PAD_RIGHT_TRIGGER as usize,
+        size_of::<MvFade>(),
+        align_of::<MvFade>(),
+        offset_of!(MvFade, current),
+        offset_of!(MvFade, start),
+        offset_of!(MvFade, target),
+        offset_of!(MvFade, duration),
+        offset_of!(MvFade, elapsed),
+        size_of::<MvFadeTransition>(),
+        align_of::<MvFadeTransition>(),
+        offset_of!(MvFadeTransition, target),
+        offset_of!(MvFadeTransition, ticks),
+        size_of::<MvFadeQueue>(),
+        align_of::<MvFadeQueue>(),
+        offset_of!(MvFadeQueue, fade),
+        offset_of!(MvFadeQueue, pending),
+        offset_of!(MvFadeQueue, head),
+        offset_of!(MvFadeQueue, count),
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -354,4 +371,33 @@ unsafe extern "C" {
     pub fn mv_music_resume(music: *mut MvMusic) -> c_int;
     pub fn mv_music_playing(music: *const MvMusic) -> c_int;
     pub fn mv_music_set_volume(music: *mut MvMusic, volume: f32) -> c_int;
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvFade {
+    pub current: MvColor,
+    pub start: MvColor,
+    pub target: MvColor,
+    pub duration: u32,
+    pub elapsed: u32,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvFadeTransition {
+    pub target: MvColor,
+    pub ticks: u32,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvFadeQueue {
+    pub fade: MvFade,
+    pub pending: [MvFadeTransition; 16],
+    pub head: u32,
+    pub count: u32,
+}
+unsafe extern "C" {
+    pub fn mv_fade_queue_push(queue: *mut MvFadeQueue, target: MvColor, ticks: u32) -> c_int;
+    pub fn mv_fade_queue_step(queue: *mut MvFadeQueue) -> c_int;
+    pub fn mv_fade_queue_active(queue: *const MvFadeQueue) -> c_int;
 }

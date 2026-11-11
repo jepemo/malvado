@@ -56,3 +56,40 @@ mv_fade_step(MvFade *fade)
     };
     return 1;
 }
+
+int
+mv_fade_queue_push(MvFadeQueue *queue, MvColor target, unsigned ticks)
+{
+    if (!queue || ticks > 1000000)
+        return 0;
+    if (!mv_fade_active(&queue->fade) && queue->count == 0)
+        return mv_fade_start(&queue->fade, target, ticks);
+    if (queue->count == 16)
+        return -1;
+    unsigned index = (queue->head + queue->count) % 16;
+    queue->pending[index] = (MvFadeTransition){target, ticks};
+    ++queue->count;
+    return 1;
+}
+
+int
+mv_fade_queue_step(MvFadeQueue *queue)
+{
+    if (!queue)
+        return 0;
+    int changed = mv_fade_step(&queue->fade);
+    while (!mv_fade_active(&queue->fade) && queue->count > 0) {
+        MvFadeTransition next = queue->pending[queue->head];
+        queue->head = (queue->head + 1) % 16;
+        --queue->count;
+        (void)mv_fade_start(&queue->fade, next.target, next.ticks);
+        changed = 1;
+    }
+    return changed;
+}
+
+int
+mv_fade_queue_active(const MvFadeQueue *queue)
+{
+    return queue && (mv_fade_active(&queue->fade) || queue->count != 0);
+}
