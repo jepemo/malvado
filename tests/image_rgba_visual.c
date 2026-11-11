@@ -30,6 +30,11 @@ static MvStepResult idle(MvContext *ctx, MvProcessId id, void *user)
     return MV_STEP_YIELD;
 }
 
+static void owner_released(void *data)
+{
+    ++*(int *)data;
+}
+
 int
 main(void)
 {
@@ -78,7 +83,12 @@ main(void)
     int present = 42;
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_OK && !present);
     assert(mv_process_image_set(other, ref, graph) == MV_INVALID_ARGUMENT);
-    assert(mv_process_image_set(ctx, ref, graph) == MV_OK);
+    int released = 0;
+    assert(mv_process_image_set_owned(other, ref, graph, &released, owner_released) == MV_INVALID_ARGUMENT);
+    assert(mv_process_image_set_owned(ctx, ref, graph, &released, NULL) == MV_INVALID_ARGUMENT);
+    assert(mv_process_image_set_owned(ctx, ref, graph, NULL, owner_released) == MV_INVALID_ARGUMENT);
+    assert(released == 0);
+    assert(mv_process_image_set_owned(ctx, ref, graph, &released, owner_released) == MV_OK);
     mv_image_destroy(decoded); /* Only the process now retains this texture. */
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_OK && present);
     assert(out.image == graph.image && out.pivot_x == 1 && out.region.width == 2);
@@ -120,6 +130,7 @@ main(void)
     mv_window_begin((MvColor){30, 40, 50, 255});
     assert(mv_window_draw_process_graphics(ctx));
     assert(mv_process_graphic_clear(ctx, ref) == MV_OK);
+    assert(released == 1);
     assert(mv_image_draw_region(image, (MvImageRegion){0, 0, 2, 2},
                                 (MvImageTransform){10, 10, 0, 0, 10, 0}));
     mv_window_flush();
@@ -143,13 +154,22 @@ main(void)
     assert(mv_process_graphic_clear(ctx, ref) == MV_OK);
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_OK && !present);
     graph.image = image;
-    assert(mv_process_image_set(ctx, ref, graph) == MV_OK);
+    assert(mv_process_image_set_owned(ctx, ref, graph, &released, owner_released) == MV_OK);
     mv_image_destroy(image);
     int killed;
     assert(mv_process_kill(ctx, ref, &killed) == MV_OK && killed);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_NOT_FOUND);
+    assert(released == 2);
+    image = mv_image_from_rgba(2, 2, pixels, sizeof(pixels));
+    assert(image);
+    graph.image = image;
+    assert(mv_process_image_set_owned(ctx, target, graph, &released, owner_released) == MV_OK);
+    assert(mv_process_graphic_set(ctx, target, target_graph) == MV_OK && released == 3);
+    assert(mv_process_image_set_owned(ctx, target, graph, &released, owner_released) == MV_OK);
+    mv_image_destroy(image);
     mv_context_destroy(ctx);
+    assert(released == 4);
     mv_context_destroy(other);
     mv_window_close();
     return 0;

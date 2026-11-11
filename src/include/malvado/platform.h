@@ -291,13 +291,22 @@ void mv_image_draw(const MvImage *image, int x, int y);
  * Keep the window open through process/context cleanup. Owner-thread only.
  * Default bound colliders use this sprite geometry; fixed/local/disabled
  * collider selection remains unchanged. Headless set fails for absent images.
- * Rust safe process assignment and Lua graph migration remain unavailable. */
+ * Safe binding owners can retain the window with image_set_owned. */
 typedef struct {
     MvImage *image;
     MvImageRegion region;
     int pivot_x, pivot_y;
 } MvImageGraphic;
 MvResult mv_process_image_set(MvContext *ctx, MvProcessRef process, MvImageGraphic graphic);
+/* As image_set, with an optional lifetime owner. owner/release must both be
+ * NULL or both non-NULL. Success transfers owner; failure leaves it with the
+ * caller and never calls release. Replacement/clear/process cleanup/shutdown
+ * calls release exactly once, after releasing the stored native image.
+ * release must not unwind, call process/context operations or replace graphs.
+ * It may release the window after all other platform uses have ended.
+ * This permits bindings to retain their window through native graph lifetime. */
+MvResult mv_process_image_set_owned(MvContext *ctx, MvProcessRef process,
+    MvImageGraphic graphic, void *owner, MvResourceDestroy release);
 MvResult mv_process_image_get(MvContext *ctx, MvProcessRef process, MvImageGraphic *out, int *present);
 
 /* Region and pivot use source pixels. Position uses window pixels; rotation

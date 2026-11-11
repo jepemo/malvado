@@ -470,6 +470,13 @@ unsafe extern "C" {
         process: crate::MvProcessRef,
         graphic: MvImageGraphic,
     ) -> c_int;
+    pub fn mv_process_image_set_owned(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        graphic: MvImageGraphic,
+        owner: *mut std::ffi::c_void,
+        release: Option<unsafe extern "C" fn(*mut std::ffi::c_void)>,
+    ) -> c_int;
     pub fn mv_process_image_get(
         ctx: *mut crate::MvContext,
         process: crate::MvProcessRef,

@@ -238,6 +238,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_platform_wait`
 - `mv_process_image_get`
 - `mv_process_image_set`
+- `mv_process_image_set_owned`
 - `mv_resource_adopt_font`
 - `mv_resource_adopt_image`
 - `mv_resource_adopt_music`

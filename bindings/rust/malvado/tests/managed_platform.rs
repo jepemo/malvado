@@ -6,6 +6,12 @@ use std::{ffi::CString, ptr, rc::Rc};
 unsafe extern "C" fn idle(_: *mut sys::MvContext, _: u64, _: *mut std::ffi::c_void) -> i32 {
     0
 }
+unsafe extern "C" fn owner_released(data: *mut std::ffi::c_void) {
+    // SAFETY: test stack counter remains live through native context cleanup.
+    unsafe {
+        *data.cast::<usize>() += 1;
+    }
+}
 fn main() {
     let window = Rc::new(Window::open(64, 64, "Managed native resources").unwrap());
     let audio = Audio::open().unwrap();
@@ -41,7 +47,17 @@ fn main() {
             pivot_x: 4,
             pivot_y: 4,
         };
-        assert_eq!(ffi::mv_process_image_set(ctx, owner, graphic), 0);
+        let mut released = 0usize;
+        assert_eq!(
+            ffi::mv_process_image_set_owned(
+                ctx,
+                owner,
+                graphic,
+                (&mut released as *mut usize).cast(),
+                Some(owner_released)
+            ),
+            0
+        );
         let mut copied = graphic;
         let mut present = 0;
         assert_eq!(
@@ -94,6 +110,7 @@ fn main() {
         assert_eq!(sys::mv_process_kill(ctx, owner, &mut killed), 0);
         assert_eq!(killed, 1);
         assert_eq!(sys::mv_process_tick(ctx), 0);
+        assert_eq!(released, 1);
         assert_eq!(ffi::mv_image_width(image), 8);
         assert!(ffi::mv_font_text_width(font, c"Test".as_ptr(), 24) > 0);
         assert_eq!(ffi::mv_sound_set_volume(clone, 0.0), 1);

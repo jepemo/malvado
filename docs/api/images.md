@@ -400,3 +400,16 @@ references do not retain a C window. Only the window owner thread may assign,
 query, clear or draw image graphs. The unsafe Rust sys declarations are available;
 safe Rust assignment and Lua image-graph migration are still incomplete. Existing
 Lua image graph behavior is unchanged. Automatic animation remains separate.
+
+### Binding lifetime owners
+
+`mv_process_image_set_owned` adds an optional owner to image assignment. Supply
+both an owner pointer and a release callback, or supply NULL for both. Success
+transfers that owner. Failure preserves caller ownership and does not call the
+callback. Graph replacement, clear and process/context cleanup call it exactly
+once, after releasing the graph's native image reference.
+
+A binding can keep its image and window in this owner. The callback must not
+unwind or call process/context operations. It may release the window after all
+other platform uses have ended. This contract does not infer ownership for
+ordinary C image references; `mv_process_image_set` keeps its existing behavior.

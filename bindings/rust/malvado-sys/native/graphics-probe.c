@@ -212,3 +212,5 @@ _Static_assert(_Generic(&mv_image_retain, int (*)(MvImage *): 1, default: 0), "m
 
 _Static_assert(_Generic(&mv_process_image_set, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic): 1, default: 0), "mv_process_image_set signature");
 _Static_assert(_Generic(&mv_process_image_get, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic *, int *): 1, default: 0), "mv_process_image_get signature");
+
+_Static_assert(_Generic(&mv_process_image_set_owned, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic, void *, MvResourceDestroy): 1, default: 0), "mv_process_image_set_owned signature");
