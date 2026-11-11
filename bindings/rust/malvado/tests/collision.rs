@@ -298,37 +298,29 @@ fn world_trace_matches_c_and_lua_process_movement() {
         })
         .unwrap();
     actor.set_position(0.0, 5.0).unwrap();
+    actor.bind_collider(Some(shape)).unwrap();
     let mut position = start();
     let sweep = world.sweep(shape, position, 100.0, 0.0).unwrap();
     assert_eq!(sweep.hit, Some(1));
     assert_eq!((sweep.normal_x, sweep.normal_y), (-1.0, 0.0));
     let mut trace = format!("sweep hit=1 fraction={:.6} normal=-1,0\n", sweep.fraction);
     assert_eq!(
-        world
-            .move_process(&actor, Some(shape), 100.0, 0.0)
-            .unwrap()
-            .hit,
+        world.move_selected(&actor, 100.0, 0.0).unwrap().hit,
         Some(1)
     );
     (position.x, position.y) = actor.position().unwrap();
-    assert_eq!(world.query_process(&actor, Some(shape)).unwrap(), None);
+    assert_eq!(world.query_selected(&actor).unwrap(), None);
     trace.push_str(&format!(
         "move x={:.6} y={:.6} clear=1\n",
         position.x, position.y
     ));
-    assert_eq!(
-        world
-            .move_process(&actor, Some(shape), 0.0, 1.0)
-            .unwrap()
-            .hit,
-        None
-    );
+    assert_eq!(world.move_selected(&actor, 0.0, 1.0).unwrap().hit, None);
     (position.x, position.y) = actor.position().unwrap();
     trace.push_str(&format!("slide x={:.6} y={:.6}\n", position.x, position.y));
     actor.set_position(11.0, 6.0).unwrap();
     let original = actor.position().unwrap();
     assert_eq!(
-        world.move_process(&actor, Some(shape), 1.0, 0.0),
+        world.move_selected(&actor, 1.0, 0.0),
         Err(Error::InvalidArgument)
     );
     assert_eq!(actor.position().unwrap(), original);

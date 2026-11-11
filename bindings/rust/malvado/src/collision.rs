@@ -183,6 +183,55 @@ impl World {
         })?;
         Ok(if hit { Some(id) } else { None })
     }
+    /// Query the collider currently selected by the process, including fixed
+    /// registrations. Missing/disabled selection returns None.
+    pub fn query_selected(&self, process: &Handle) -> Result<Option<usize>, Error> {
+        let mut id = 0;
+        // SAFETY: borrowed world, live owner-thread runtime, fixed process
+        // identity and valid output. Selection and geometry stay native.
+        result(unsafe {
+            sys::mv_process_world_query_selected(
+                process.inner.runtime.live()?,
+                process.inner.reference,
+                self.native.as_ptr(),
+                &mut id,
+            )
+        })?;
+        Ok(if id == 0 { None } else { Some(id) })
+    }
+    /// Move using selected geometry.
+    /// ```
+    /// use malvado::{Engine, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
+    /// let engine = Engine::new()?;
+    /// let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
+    /// actor.set_position(0.0, 5.0)?;
+    /// let mut world = World::new()?;
+    /// world.add_rect(Rect {x:10.0,y:0.0,width:10.0,height:10.0})?;
+    /// assert_eq!(world.move_selected(&actor, 100.0, 0.0)?.hit, Some(1));
+    /// assert_eq!(actor.position()?, (9.0, 5.0));
+    /// assert_eq!(world.query_selected(&actor)?, None);
+    /// # Ok::<(), malvado::Error>(())
+    /// ```
+    /// A fixed registration and process position
+    /// translate together by the permitted displacement. Failure preserves both.
+    /// No collider means free movement. Does not activate a process or retain data.
+    pub fn move_selected(&self, process: &Handle, dx: f64, dy: f64) -> Result<Sweep, Error> {
+        let mut out = sys::MvCollisionSweep::default();
+        // SAFETY: borrowed world, checked context-bound identity and initialized
+        // output; native commits process/collider destinations atomically.
+        result(unsafe {
+            sys::mv_process_world_move_selected(
+                process.inner.runtime.live()?,
+                process.inner.reference,
+                self.native.as_ptr(),
+                dx,
+                dy,
+                &mut out,
+            )
+        })?;
+        Ok(out.into())
+    }
     /// Query with the process's native position, angle and scale.
     /// None disables geometry. Registered process colliders remain separate.
     pub fn query_process(

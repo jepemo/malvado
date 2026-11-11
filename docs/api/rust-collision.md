@@ -110,6 +110,50 @@ local offsets/rotation, fixed-transform independence and failed binds, plus
 handle lifetime errors. The installed SDK consumer calls bind with and without
 a local shape; the signature probe rejects an incompatible SDK.
 
+## Use the selected collider against a world
+
+`world.query_selected(&actor)?` uses the collider selected by native process
+state. `world.move_selected(&actor, dx, dy)?` moves with that same geometry.
+Primitive graphs and local overrides follow current native properties. Disabled
+selection or no graph means free movement and no query hit. Nothing is retained
+and no tick or future activation is added.
+
+```rust
+use malvado::{Engine, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
+actor.set_position(0.0, 5.0)?;
+let mut world = World::new()?;
+world.add_rect(Rect {x:10.0,y:0.0,width:10.0,height:10.0})?;
+assert_eq!(world.move_selected(&actor, 100.0, 0.0)?.hit, Some(1));
+assert_eq!(actor.position()?, (9.0, 5.0));
+assert_eq!(world.query_selected(&actor)?, None);
+# Ok::<(), malvado::Error>(())
+```
+
+Fixed registrations query their registered transform. Selected movement
+translates both that transform and native process position by the permitted
+displacement, preserving their offset in native double arithmetic. Ordinary
+visual-property writes still leave a fixed registration independent. Native
+validates both destinations before committing either, including process
+position overflow when the collider destination itself is valid.
+
+Invalid selected geometry, unsupported sweep, initial overlap or numeric input
+returns `InvalidArgument`; dead/closed handles return `NotFound`/`Closed`.
+Failure preserves process/collider positions and selection. The borrowed World
+can outlive the engine, as before. Sleep/freeze do not block an explicit move.
+Image/animation graph selection still requires the pending native asset graph
+service. Existing `query_process`/`move_process` calls keep their explicit
+optional-shape contract, including free movement with `None`; they do not move
+fixed registrations.
+
+`selected_world.rs` checks every selection mode, rotated/scaled geometry,
+sliding, fixed-offset translation/independence, invalid-input/geometry and
+overflow atomicity, missing graphs and world/handle lifetimes. The existing
+C/Lua/Rust world golden trace now uses selected operations. The bounded SDK
+world sample and relocated installed consumer use these native APIs.
+
 ## Move a process through a world
 
 `world.query_process(&actor, Some(shape))?` uses the actor's native x/y,
@@ -154,3 +198,10 @@ bound traces pass in both profiles, and the runnable bind doctest passes in
 both profiles. `test-rust-graphics-sanitize` passes with the bound collider
 fixtures; native C uses ASan/UBSan and Rust itself is not instrumented. Linux CI
 and asset graph/world geometry selection remain open.
+
+A7.6ak macOS evidence: `test-rust` passes Debug/Release with the selected
+C/Lua/Rust trace, installed consumer/signature checks, Clippy and formatting.
+The updated bounded world sample and selected-movement doctest also pass in
+both profiles. `test-rust-graphics-sanitize` passes selected-mode and fixed
+translation/overflow fixtures with native ASan/UBSan; Rust itself is not
+instrumented. Linux CI and native image/animation graph ownership remain open.

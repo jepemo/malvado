@@ -17,8 +17,9 @@ fn main() -> Result<(), Error> {
         Ok(())
     })?;
     actor.set_position(0.0, 5.0)?;
+    actor.bind_collider(Some(shape))?;
     // The native operation updates the process without activating its future.
-    let contact = world.move_process(&actor, Some(shape), 100.0, 0.0)?;
+    let contact = world.move_selected(&actor, 100.0, 0.0)?;
     let (x, y) = actor.position()?;
     println!("x={x} y={y} hit={:?}", contact.hit);
     assert_eq!(x, 9.0);
