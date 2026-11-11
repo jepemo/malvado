@@ -14,6 +14,7 @@
  */
 #include "process.h"
 #include "malvado/collision.h"
+#include "malvado/graphic.h"
 #include "collision_internal.h"
 #include "entropy.h"
 #include "schedule.h"
@@ -49,6 +50,8 @@ typedef struct {
     MvProcessDestroy destroy;
     void *user;
     int killed, attached;
+    int has_graphic;
+    MvGraphic graphic;
     int has_collider;
     MvCollisionShape collider;
     MvCollisionTransform collider_transform;
@@ -180,6 +183,59 @@ resolve_live_process(MvContext *ctx, MvProcessRef reference, Process **out)
     if (!item)
         return MV_NOT_FOUND;
     *out = item;
+    return MV_OK;
+}
+
+MvResult
+mv_process_graphic_set(MvContext *ctx, MvProcessRef reference, MvGraphic graphic)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    MvCollisionShape checked;
+    MvCollisionShape shape = graphic.shape;
+    if (shape.kind == MV_COLLISION_CIRCLE) {
+        if (shape.offset_x != 0 || shape.offset_y != 0 ||
+            !mv_graphic_circle(shape.radius, &checked))
+            return MV_INVALID_ARGUMENT;
+    } else if (shape.kind == MV_COLLISION_RECT) {
+        int top_left = shape.offset_x != 0 || shape.offset_y != 0;
+        if (!mv_graphic_rect(shape.width, shape.height, top_left, &checked) ||
+            checked.offset_x != shape.offset_x || checked.offset_y != shape.offset_y)
+            return MV_INVALID_ARGUMENT;
+    } else {
+        return MV_INVALID_ARGUMENT;
+    }
+    graphic.shape = checked;
+    item->graphic = graphic;
+    item->has_graphic = 1;
+    return MV_OK;
+}
+
+MvResult
+mv_process_graphic_get(MvContext *ctx, MvProcessRef reference, MvGraphic *graphic, int *present)
+{
+    if (!graphic || !present)
+        return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    if (item->has_graphic)
+        *graphic = item->graphic;
+    *present = item->has_graphic;
+    return MV_OK;
+}
+
+MvResult
+mv_process_graphic_clear(MvContext *ctx, MvProcessRef reference)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    item->has_graphic = 0;
     return MV_OK;
 }
 

@@ -24,7 +24,6 @@
 extern "C" {
 #endif
 
-typedef struct { unsigned char r, g, b, a; } MvColor;
 /* Copied runner drawing defaults. Initialize with mv_draw_state_init; fields
  * are read-only to callers. This value owns no window, process or resources. */
 typedef struct { MvColor color, background; } MvDrawState;
@@ -78,6 +77,14 @@ int mv_window_draw_fade(MvColor color);
  * success, 0 without drawing on invalid input or outside a graphics frame.
  * Clip/scroll scopes apply normally. No pointers or resources are retained. */
 int mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, MvColor color);
+/* Draw stored primitive process graphs in native z/creation order. Requires an
+ * active frame and live owner-thread context. Sleep hides; freeze stays visible.
+ * Nonpositive/unsupported render transforms are skipped as in Lua. Clip/scroll
+ * scopes apply. No tick, process activation, cameras, commands or assets are
+ * implicit. Return 1 on success, 0 on invalid context/frame or allocation error.
+ * The ordered snapshot allocation is released before return. */
+int mv_window_draw_process_graphics(MvContext *ctx);
+
 
 
 

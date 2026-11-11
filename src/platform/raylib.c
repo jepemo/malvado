@@ -660,6 +660,41 @@ mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, M
 }
 
 int
+mv_window_draw_process_graphics(MvContext *ctx)
+{
+    if (!drawing_active || !ctx)
+        return 0;
+    size_t count;
+    if (mv_process_draw_order(ctx, NULL, 0, &count) != MV_OK ||
+        count > SIZE_MAX / sizeof(MvProcessDrawInfo))
+        return 0;
+    MvProcessDrawInfo *items = count ? malloc(count * sizeof(*items)) : NULL;
+    if (count && !items)
+        return 0;
+    size_t total;
+    if (mv_process_draw_order(ctx, items, count, &total) != MV_OK) {
+        free(items);
+        return 0;
+    }
+    for (size_t i = 0; i < total; ++i) {
+        MvProcessRef ref;
+        MvGraphic graphic;
+        int present;
+        if (mv_process_ref_create(ctx, items[i].id, &ref) != MV_OK ||
+            mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK || !present)
+            continue;
+        MvCollisionTransform transform;
+        if (mv_process_position(ctx, ref, &transform.x, &transform.y) != MV_OK ||
+            mv_process_angle(ctx, ref, &transform.angle) != MV_OK ||
+            mv_process_scale(ctx, ref, &transform.scale) != MV_OK)
+            continue;
+        (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+    }
+    free(items);
+    return 1;
+}
+
+int
 mv_window_draw_fade(MvColor color)
 {
     if (!drawing_active || clip_active || scroll_active)

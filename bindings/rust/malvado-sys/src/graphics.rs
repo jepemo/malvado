@@ -1,14 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 //! Unsafe owner-thread graphics operations from the installed SDK.
+pub use crate::MvColor;
 use std::ffi::{c_char, c_int};
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct MvColor {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
-}
 unsafe extern "C" {
     pub fn mv_window_open(width: c_int, height: c_int, title: *const c_char) -> c_int;
     pub fn mv_window_set_title(title: *const c_char) -> c_int;
@@ -408,6 +401,7 @@ unsafe extern "C" {
 }
 
 unsafe extern "C" {
+    pub fn mv_window_draw_process_graphics(ctx: *mut crate::MvContext) -> c_int;
     pub fn mv_window_draw_graphic(
         shape: crate::MvCollisionShape,
         transform: crate::MvCollisionTransform,

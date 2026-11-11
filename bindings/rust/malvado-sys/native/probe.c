@@ -82,6 +82,9 @@ _Static_assert(_Generic(&mv_animation_destroy, void (*)(MvAnimation *): 1, defau
 _Static_assert(_Generic(&mv_animation_sample, int (*)(const MvAnimation *, uint64_t, MvAnimationSample *): 1, default: 0), "mv_animation_sample signature");
 _Static_assert(_Generic(&mv_animation_advance, int (*)(const MvAnimation *, MvAnimationState *, unsigned): 1, default: 0), "mv_animation_advance signature");
 _Static_assert(_Generic(&mv_graphic_rect, int (*)(double, double, int, MvCollisionShape *): 1, default: 0), "mv_graphic_rect signature");
+_Static_assert(_Generic(&mv_process_graphic_set, MvResult (*)(MvContext *, MvProcessRef, MvGraphic): 1, default: 0), "mv_process_graphic_set signature");
+_Static_assert(_Generic(&mv_process_graphic_get, MvResult (*)(MvContext *, MvProcessRef, MvGraphic *, int *): 1, default: 0), "mv_process_graphic_get signature");
+_Static_assert(_Generic(&mv_process_graphic_clear, MvResult (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_process_graphic_clear signature");
 _Static_assert(_Generic(&mv_graphic_circle, int (*)(double, MvCollisionShape *): 1, default: 0), "mv_graphic_circle signature");
 _Static_assert(_Generic(&mv_process_position, MvResult (*)(MvContext *, MvProcessRef, double *, double *): 1, default: 0), "mv_process_position signature");
 _Static_assert(_Generic(&mv_process_set_position, MvResult (*)(MvContext *, MvProcessRef, double, double): 1, default: 0), "mv_process_set_position signature");
@@ -195,5 +198,9 @@ int main(void) {
     printf("%zu %zu ", sizeof(MvProcessDrawInfo), _Alignof(MvProcessDrawInfo));
     printf("%zu ", offsetof(MvProcessDrawInfo, id));
     printf("%zu ", offsetof(MvProcessDrawInfo, z));
+    printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
+    printf("%zu %zu %zu %zu ", offsetof(MvColor, r), offsetof(MvColor, g), offsetof(MvColor, b), offsetof(MvColor, a));
+    printf("%zu %zu ", sizeof(MvGraphic), _Alignof(MvGraphic));
+    printf("%zu %zu ", offsetof(MvGraphic, shape), offsetof(MvGraphic, color));
     return 0;
 }

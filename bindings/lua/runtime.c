@@ -681,12 +681,69 @@ push_owner(lua_State *L, lua_Integer id)
     lua_pushnil(L);
 }
 
+/* Only primitive graph descriptors are native here. Other graph kinds keep
+ * their existing Lua resource ownership until the native asset graph service. */
+static void
+set_process_graphic(lua_State *L, LuaSelf *self, int value)
+{
+    LuaGraphic *graphic = luaL_testudata(L, value, "malvado.graphic");
+    MvResult result = graphic && !graphic->sprite ?
+        mv_process_graphic_set(engine.context, self->reference,
+                               (MvGraphic){graphic->shape, graphic->color}) :
+        mv_process_graphic_clear(engine.context, self->reference);
+    if (result != MV_OK)
+        luaL_error(L, "cannot set process graphic");
+}
+
+static void
+refresh_process_graphic(lua_State *L, LuaSelf *self, int fields)
+{
+    fields = lua_absindex(L, fields);
+    MvGraphic native;
+    int present;
+    if (mv_process_graphic_get(engine.context, self->reference, &native, &present) != MV_OK)
+        return;
+    raw_option(L, fields, "graph");
+    LuaGraphic *old = luaL_testudata(L, -1, "malvado.graphic");
+    int primitive = old && !old->sprite;
+    if (!present) {
+        lua_pop(L, 1);
+        if (primitive) {
+            lua_pushliteral(L, "graph");
+            lua_pushnil(L);
+            lua_rawset(L, fields);
+        }
+        return;
+    }
+    int same = primitive && old->shape.kind == native.shape.kind &&
+        old->shape.width == native.shape.width &&
+        old->shape.height == native.shape.height &&
+        old->shape.radius == native.shape.radius &&
+        old->shape.offset_x == native.shape.offset_x &&
+        old->shape.offset_y == native.shape.offset_y &&
+        old->color.r == native.color.r &&
+        old->color.g == native.color.g &&
+        old->color.b == native.color.b &&
+        old->color.a == native.color.a;
+    lua_pop(L, 1);
+    if (same) return;
+    LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 0);
+    *graphic = (LuaGraphic){.shape = native.shape, .color = native.color,
+        .top_left = native.shape.offset_x != 0 || native.shape.offset_y != 0};
+    luaL_setmetatable(L, "malvado.graphic");
+    lua_pushliteral(L, "graph");
+    lua_pushvalue(L, -2);
+    lua_rawset(L, fields);
+    lua_pop(L, 1);
+}
+
 /* Numeric visual properties live in C. Lua keeps number presentation and invalid
  * visual overrides. Invalid values retain the existing hide/error behavior. */
 static void
 refresh_process_transform(lua_State *L, LuaSelf *self, int fields)
 {
     fields = lua_absindex(L, fields);
+    refresh_process_graphic(L, self, fields);
     double x, y;
     if (mv_process_position(engine.context, self->reference, &x, &y) != MV_OK)
         return;
@@ -782,6 +839,12 @@ self_index(lua_State *L)
     }
     if (key && strcmp(key, "parent") == 0) {
         push_owner(L, self->id);
+        return 1;
+    }
+    if (key && !strcmp(key, "graph")) {
+        lua_getiuservalue(L, 1, 1);
+        refresh_process_graphic(L, self, -1);
+        raw_option(L, -1, "graph");
         return 1;
     }
     if (key && (!strcmp(key, "x") || !strcmp(key, "y") ||
@@ -983,6 +1046,7 @@ self_newindex(lua_State *L)
         raw_option(L, -1, "graph");
         graph_changed = !lua_rawequal(L, -1, 3);
         lua_pop(L, 1);
+        set_process_graphic(L, self, 3);
     }
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
@@ -1264,6 +1328,9 @@ create_process(lua_State *L)
     lua_pop(L, 1);
     raw_option(L, fields, "size");
     set_process_property(L, draft.self, "size", -1);
+    lua_pop(L, 1);
+    raw_option(L, fields, "graph");
+    set_process_graphic(L, draft.self, -1);
     lua_pop(L, 1);
     sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);

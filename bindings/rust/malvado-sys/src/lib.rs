@@ -345,6 +345,35 @@ pub fn check_abi() -> Result<(), &'static str> {
     Ok(())
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct MvColor {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvGraphic {
+    pub shape: MvCollisionShape,
+    pub color: MvColor,
+}
+unsafe extern "C" {
+    pub fn mv_process_graphic_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        graphic: MvGraphic,
+    ) -> c_int;
+    pub fn mv_process_graphic_get(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        graphic: *mut MvGraphic,
+        present: *mut c_int,
+    ) -> c_int;
+    pub fn mv_process_graphic_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
+}
+
 // Match installed C layouts and constants for every consumer, not only tests.
 use std::mem::{align_of, offset_of, size_of};
 const _: () = {
@@ -463,6 +492,16 @@ const _: () = {
         align_of::<MvProcessDrawInfo>(),
         offset_of!(MvProcessDrawInfo, id),
         offset_of!(MvProcessDrawInfo, z),
+        size_of::<MvColor>(),
+        align_of::<MvColor>(),
+        offset_of!(MvColor, r),
+        offset_of!(MvColor, g),
+        offset_of!(MvColor, b),
+        offset_of!(MvColor, a),
+        size_of::<MvGraphic>(),
+        align_of::<MvGraphic>(),
+        offset_of!(MvGraphic, shape),
+        offset_of!(MvGraphic, color),
     ];
     assert!(
         native.len() == rust.len(),

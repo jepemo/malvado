@@ -78,6 +78,7 @@ _Static_assert(_Generic(&mv_fade_queue_push, int (*)(MvFadeQueue *, MvColor, uns
 _Static_assert(_Generic(&mv_fade_queue_step, int (*)(MvFadeQueue *): 1, default: 0), "mv_fade_queue_step signature");
 _Static_assert(_Generic(&mv_fade_queue_active, int (*)(const MvFadeQueue *): 1, default: 0), "mv_fade_queue_active signature");
 _Static_assert(_Generic(&mv_window_draw_fade, int (*)(MvColor): 1, default: 0), "mv_window_draw_fade signature");
+_Static_assert(_Generic(&mv_window_draw_process_graphics, int (*)(MvContext *): 1, default: 0), "mv_window_draw_process_graphics signature");
 _Static_assert(_Generic(&mv_window_draw_graphic, int (*)(MvCollisionShape, MvCollisionTransform, MvColor): 1, default: 0), "mv_window_draw_graphic signature");
 _Static_assert(_Generic(&mv_draw_state_init, int (*)(MvDrawState *): 1, default: 0), "mv_draw_state_init signature");
 _Static_assert(_Generic(&mv_draw_state_color, int (*)(MvDrawState *, int64_t, int64_t, int64_t, int64_t): 1, default: 0), "mv_draw_state_color signature");

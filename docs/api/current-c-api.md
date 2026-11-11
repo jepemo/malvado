@@ -88,6 +88,9 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_graphic_circle`
 - `mv_graphic_rect`
+- `mv_process_graphic_clear`
+- `mv_process_graphic_get`
+- `mv_process_graphic_set`
 
 ## [malvado.h](../../src/include/malvado/malvado.h)
 
@@ -217,6 +220,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_draw_fade`
 - `mv_window_draw_filled_circle`
 - `mv_window_draw_graphic`
+- `mv_window_draw_process_graphics`
 - `mv_window_draw_text`
 - `mv_window_draw_transformed_rect`
 - `mv_window_end`

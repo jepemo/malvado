@@ -153,9 +153,9 @@ def main():
     drift = WORK / "drift sdk"
     if drift.exists(): shutil.rmtree(drift)
     shutil.copytree(prefix, drift)
-    header = drift / "include/malvado/platform.h"
+    header = drift / "include/malvado/graphic.h"
     header.write_text(header.read_text().replace("unsigned char r, g, b, a;", "unsigned int r, g, b, a;"))
-    rejected(drift, "graphics ABI layout/value mismatch")
+    rejected(drift, "native ABI layout/value mismatch")
     run("cargo", "fmt", "--manifest-path", MANIFEST, "--all", "--", "--check")
 
 

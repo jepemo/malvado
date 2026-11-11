@@ -29,6 +29,7 @@ main(void)
 {
     assert(!mv_window_draw_graphic((MvCollisionShape){.kind = MV_COLLISION_RECT, .width = 10, .height = 10},
                                    (MvCollisionTransform){0, 0, 0, 1}, (MvColor){0}));
+    assert(!mv_window_draw_process_graphics(NULL));
     double before, after;
     const uint8_t pixel[4] = {0, 0, 0, 255};
     assert(!mv_image_from_rgba(1, 1, pixel, sizeof(pixel)));

@@ -19,6 +19,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+/* Copied colors and primitive graphics need no platform or resource owner. */
+typedef struct { unsigned char r, g, b, a; } MvColor;
+typedef struct { MvCollisionShape shape; MvColor color; } MvGraphic;
+/* Assign a canonical rectangle/circle with copied color. No resource retention.
+ * A new process has no primitive graphic. Get always writes present on success;
+ * when absent, graphic is unchanged. Outputs must be non-NULL. Clear is
+ * idempotent. Foreign/invalid inputs return MV_INVALID_ARGUMENT; dead processes
+ * return MV_NOT_FOUND. Failure preserves state and outputs. Owner-thread only.
+ * Explicit colliders remain independent. Image/animation graphs are not stored
+ * by this primitive service. */
+MvResult mv_process_graphic_set(MvContext *ctx, MvProcessRef process, MvGraphic graphic);
+MvResult mv_process_graphic_get(MvContext *ctx, MvProcessRef process, MvGraphic *graphic, int *present);
+MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
+
 /* Backend-independent graphic geometry. Dimensions must be finite and in
  * FLT_MIN..FLT_MAX/16. Rectangles accept center (top_left=0) or top-left (1)
  * pivots. Circles are centered. Return 1 on success, 0 for invalid input.
