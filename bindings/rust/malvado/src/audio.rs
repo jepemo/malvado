@@ -21,6 +21,7 @@ static AUDIO_OWNED: AtomicBool = AtomicBool::new(false);
 pub struct Audio {
     device: Rc<Device>,
     sounds: RefCell<Vec<Rc<SoundData>>>,
+    streams: RefCell<Vec<Rc<MusicData>>>,
 }
 struct Device;
 impl Audio {
@@ -42,14 +43,25 @@ impl Audio {
         Ok(Self {
             device: Rc::new(Device),
             sounds: RefCell::new(Vec::new()),
+            streams: RefCell::new(Vec::new()),
         })
     }
-    /// Release completed sound uses. Paused uses stay retained. This does not
-    /// advance the engine or poll input. Dropping Audio stops remaining uses.
-    pub fn update(&self) {
+    /// Refill playing music streams, then release completed playback uses.
+    /// Paused uses stay retained. Call regularly, including after owner death.
+    /// This does not advance the engine or poll input. Shutdown stops all uses.
+    pub fn update(&self) -> Result<(), Error> {
         self.sounds
             .borrow_mut()
             .retain(|sound| sound.paused.get() || sound.playing());
+        let mut streams = self.streams.borrow_mut();
+        for stream in streams.iter() {
+            if !stream.paused.get() {
+                // SAFETY: each retained stream keeps its native device live.
+                accepted(unsafe { ffi::mv_music_update(stream.native.as_ptr()) })?;
+            }
+        }
+        streams.retain(|stream| stream.paused.get() || stream.playing());
+        Ok(())
     }
 }
 impl Drop for Device {
@@ -159,6 +171,100 @@ impl Drop for SoundData {
         }
     }
 }
+/// An owned WAV/OGG stream. Each load has independent playback and decoding.
+/// Audio::update refills streams; there is no implicit window or process hook.
+pub struct Music {
+    data: Rc<MusicData>,
+    audio: Rc<Audio>,
+}
+struct MusicData {
+    native: NonNull<ffi::MvMusic>,
+    paused: Cell<bool>,
+    _device: Rc<Device>,
+}
+impl Music {
+    /// The looping flag is fixed for this stream. Load again to change it.
+    pub fn load(audio: Rc<Audio>, path: impl AsRef<Path>, looping: bool) -> Result<Self, Error> {
+        let path = path_string(path)?;
+        // SAFETY: live device, borrowed terminated path and a C boolean.
+        Self::owned(
+            unsafe { ffi::mv_music_load(path.as_ptr(), i32::from(looping)) },
+            audio,
+        )
+    }
+    fn owned(native: *mut ffi::MvMusic, audio: Rc<Audio>) -> Result<Self, Error> {
+        let native = NonNull::new(native).ok_or(Error::Platform("music load failed"))?;
+        Ok(Self {
+            data: Rc::new(MusicData {
+                native,
+                paused: Cell::new(false),
+                _device: audio.device.clone(),
+            }),
+            audio,
+        })
+    }
+    /// Start or restart this instance and retain it until stop/completion.
+    pub fn play(&self) -> Result<(), Error> {
+        // Reserve retention before changing native playback.
+        let mut active = self.audio.streams.borrow_mut();
+        let retained = active.iter().any(|s| Rc::ptr_eq(s, &self.data));
+        if !retained {
+            active.try_reserve(1).map_err(|_| Error::OutOfMemory)?;
+        }
+        // SAFETY: live owner-thread music and device.
+        accepted(unsafe { ffi::mv_music_play(self.data.native.as_ptr()) })?;
+        self.data.paused.set(false);
+        if !retained {
+            active.push(self.data.clone());
+        }
+        Ok(())
+    }
+    pub fn stop(&self) -> Result<(), Error> {
+        // SAFETY: live owner-thread music and device.
+        accepted(unsafe { ffi::mv_music_stop(self.data.native.as_ptr()) })?;
+        self.data.paused.set(false);
+        self.audio
+            .streams
+            .borrow_mut()
+            .retain(|s| !Rc::ptr_eq(s, &self.data));
+        Ok(())
+    }
+    pub fn pause(&self) -> Result<(), Error> {
+        // SAFETY: live owner-thread music and device.
+        accepted(unsafe { ffi::mv_music_pause(self.data.native.as_ptr()) })?;
+        self.data.paused.set(true);
+        Ok(())
+    }
+    pub fn resume(&self) -> Result<(), Error> {
+        // SAFETY: live owner-thread music and device.
+        accepted(unsafe { ffi::mv_music_resume(self.data.native.as_ptr()) })?;
+        self.data.paused.set(false);
+        Ok(())
+    }
+    pub fn playing(&self) -> bool {
+        self.data.playing()
+    }
+    /// Set this instance's volume in 0..=1. Invalid values change nothing.
+    pub fn set_volume(&self, volume: f32) -> Result<(), Error> {
+        volume_valid(volume)?;
+        // SAFETY: live owner-thread instance and validated finite volume.
+        accepted(unsafe { ffi::mv_music_set_volume(self.data.native.as_ptr(), volume) })
+    }
+}
+impl MusicData {
+    fn playing(&self) -> bool {
+        // SAFETY: native instance retains its owner-thread device.
+        unsafe { ffi::mv_music_playing(self.native.as_ptr()) != 0 }
+    }
+}
+impl Drop for MusicData {
+    fn drop(&mut self) {
+        // SAFETY: last playback/data owner; destroy before releasing the device.
+        unsafe {
+            ffi::mv_music_destroy(self.native.as_ptr());
+        }
+    }
+}
 fn path_string(path: impl AsRef<Path>) -> Result<CString, Error> {
     CString::new(path.as_ref().as_os_str().as_bytes()).map_err(|_| Error::InvalidArgument)
 }
@@ -178,6 +284,11 @@ fn accepted(result: i32) -> Result<(), Error> {
 }
 /// Audio and its resources stay on the creating thread.
 /// ```compile_fail
+/// fn invalid(music: malvado::audio::Music) {
+///     std::thread::spawn(move || drop(music));
+/// }
+/// ```
+/// ```compile_fail
 /// let audio = malvado::audio::Audio::open().unwrap();
 /// std::thread::spawn(move || drop(audio));
 /// ```
@@ -187,3 +298,102 @@ fn accepted(result: i32) -> Result<(), Error> {
 /// }
 /// ```
 mod ownership_contract {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn playback_retention_releases_once_without_device_cycles() {
+        // C audio permits an owner thread without a window. Use that contract
+        // to inspect private ownership in the unit-test worker. The standalone
+        // fixture separately checks the safe API's application-main-thread gate.
+        sys::check_abi().unwrap();
+        assert!(!AUDIO_OWNED.swap(true, Ordering::AcqRel));
+        // SAFETY: this worker owns the device lease; all use and drop stay here.
+        assert_ne!(unsafe { ffi::mv_audio_open() }, 0);
+        let audio = Rc::new(Audio {
+            device: Rc::new(Device),
+            sounds: RefCell::new(Vec::new()),
+            streams: RefCell::new(Vec::new()),
+        });
+        let device = Rc::downgrade(&audio.device);
+        let path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/fixtures/silence.wav");
+        let sound = Sound::load(audio.clone(), &path).unwrap();
+        let weak = Rc::downgrade(&sound.data);
+        sound.play().unwrap();
+        sound.play().unwrap();
+        assert_eq!(audio.sounds.borrow().len(), 1);
+        assert_eq!(Rc::strong_count(&sound.data), 2);
+        sound.pause().unwrap();
+        drop(sound);
+        audio.update().unwrap();
+        assert!(weak.upgrade().is_some());
+        let sound = Sound {
+            data: weak.upgrade().unwrap(),
+            audio: audio.clone(),
+        };
+        sound.stop().unwrap();
+        assert!(audio.sounds.borrow().is_empty());
+        assert_eq!(Rc::strong_count(&sound.data), 1);
+        sound.play().unwrap();
+        sound.resume().unwrap();
+        drop(sound);
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while weak.upgrade().is_some() && Instant::now() < deadline {
+            audio.update().unwrap();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(
+            weak.upgrade().is_none(),
+            "completed sound remained retained"
+        );
+        assert!(audio.sounds.borrow().is_empty());
+
+        let music = Music::load(audio.clone(), &path, false).unwrap();
+        let weak = Rc::downgrade(&music.data);
+        music.play().unwrap();
+        music.play().unwrap();
+        assert_eq!(audio.streams.borrow().len(), 1);
+        music.pause().unwrap();
+        drop(music);
+        audio.update().unwrap();
+        assert!(weak.upgrade().is_some());
+        let music = Music {
+            data: weak.upgrade().unwrap(),
+            audio: audio.clone(),
+        };
+        music.stop().unwrap();
+        assert!(audio.streams.borrow().is_empty());
+        assert_eq!(Rc::strong_count(&music.data), 1);
+        music.play().unwrap();
+        drop(music);
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while weak.upgrade().is_some() && Instant::now() < deadline {
+            audio.update().unwrap();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(
+            weak.upgrade().is_none(),
+            "completed music remained retained"
+        );
+        assert!(audio.streams.borrow().is_empty());
+
+        let looping = Music::load(audio.clone(), &path, true).unwrap();
+        let loop_data = Rc::downgrade(&looping.data);
+        looping.play().unwrap();
+        drop(looping);
+        let paused = Sound::load(audio.clone(), &path).unwrap();
+        let paused_data = Rc::downgrade(&paused.data);
+        paused.play().unwrap();
+        paused.pause().unwrap();
+        drop(paused);
+        drop(audio);
+        assert!(loop_data.upgrade().is_none());
+        assert!(paused_data.upgrade().is_none());
+        assert!(device.upgrade().is_none());
+        assert!(!AUDIO_OWNED.load(Ordering::Acquire));
+    }
+}

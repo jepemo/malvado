@@ -339,3 +339,19 @@ unsafe extern "C" {
     pub fn mv_sound_playing(sound: *const MvSound) -> c_int;
     pub fn mv_sound_set_volume(sound: *mut MvSound, volume: f32) -> c_int;
 }
+
+#[repr(C)]
+pub struct MvMusic {
+    _private: [u8; 0],
+}
+unsafe extern "C" {
+    pub fn mv_music_load(path: *const c_char, looping: c_int) -> *mut MvMusic;
+    pub fn mv_music_destroy(music: *mut MvMusic);
+    pub fn mv_music_play(music: *mut MvMusic) -> c_int;
+    pub fn mv_music_update(music: *mut MvMusic) -> c_int;
+    pub fn mv_music_stop(music: *mut MvMusic) -> c_int;
+    pub fn mv_music_pause(music: *mut MvMusic) -> c_int;
+    pub fn mv_music_resume(music: *mut MvMusic) -> c_int;
+    pub fn mv_music_playing(music: *const MvMusic) -> c_int;
+    pub fn mv_music_set_volume(music: *mut MvMusic, volume: f32) -> c_int;
+}

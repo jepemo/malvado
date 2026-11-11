@@ -65,6 +65,15 @@ _Static_assert(_Generic(&mv_sound_pause, int (*)(MvSound *): 1, default: 0), "mv
 _Static_assert(_Generic(&mv_sound_resume, int (*)(MvSound *): 1, default: 0), "mv_sound_resume signature");
 _Static_assert(_Generic(&mv_sound_playing, int (*)(const MvSound *): 1, default: 0), "mv_sound_playing signature");
 _Static_assert(_Generic(&mv_sound_set_volume, int (*)(MvSound *, float): 1, default: 0), "mv_sound_set_volume signature");
+_Static_assert(_Generic(&mv_music_load, MvMusic * (*)(const char *, int): 1, default: 0), "mv_music_load signature");
+_Static_assert(_Generic(&mv_music_destroy, void (*)(MvMusic *): 1, default: 0), "mv_music_destroy signature");
+_Static_assert(_Generic(&mv_music_play, int (*)(MvMusic *): 1, default: 0), "mv_music_play signature");
+_Static_assert(_Generic(&mv_music_update, int (*)(MvMusic *): 1, default: 0), "mv_music_update signature");
+_Static_assert(_Generic(&mv_music_stop, int (*)(MvMusic *): 1, default: 0), "mv_music_stop signature");
+_Static_assert(_Generic(&mv_music_pause, int (*)(MvMusic *): 1, default: 0), "mv_music_pause signature");
+_Static_assert(_Generic(&mv_music_resume, int (*)(MvMusic *): 1, default: 0), "mv_music_resume signature");
+_Static_assert(_Generic(&mv_music_playing, int (*)(const MvMusic *): 1, default: 0), "mv_music_playing signature");
+_Static_assert(_Generic(&mv_music_set_volume, int (*)(MvMusic *, float): 1, default: 0), "mv_music_set_volume signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));

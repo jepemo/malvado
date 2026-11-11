@@ -33,7 +33,7 @@ fn main() {
     sound.play().unwrap();
     sound.pause().unwrap();
     assert!(!sound.playing());
-    audio.update(); // Paused uses must survive maintenance.
+    audio.update().unwrap(); // Paused uses must survive maintenance.
     sound.resume().unwrap();
     sound.stop().unwrap();
     assert!(!sound.playing());
@@ -70,7 +70,7 @@ fn main() {
     drop(slot.borrow_mut().take());
     assert!(process.kill().unwrap());
     drop(engine);
-    audio.update();
+    audio.update().unwrap();
     // Shutdown releases paused and orphaned instances before closing the device.
     let weak = Rc::downgrade(&audio);
     drop(audio);
@@ -80,11 +80,11 @@ fn main() {
     sound.play().unwrap();
     let deadline = Instant::now() + Duration::from_secs(3);
     while sound.playing() && Instant::now() < deadline {
-        audio.update();
+        audio.update().unwrap();
         std::thread::sleep(Duration::from_millis(5));
     }
     assert!(!sound.playing(), "WAV playback did not complete");
-    audio.update();
+    audio.update().unwrap();
     let weak = Rc::downgrade(&audio);
     drop(audio);
     assert!(weak.upgrade().is_some()); // Loaded resources keep the device live.
