@@ -1,6 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 //! Native camera values. Projection and clipping need no window or scheduler.
-use crate::Error;
+use crate::engine::result;
+use crate::{Error, Handle};
 use malvado_sys as sys;
 
 /// Screen-space viewport or clipping region. Dimensions must be positive.
@@ -111,5 +112,80 @@ fn success(value: i32) -> Result<(), Error> {
         Ok(())
     } else {
         Err(Error::InvalidArgument)
+    }
+}
+
+/// Context-bound follow state. Call update after the engine tick.
+///
+/// ```
+/// use malvado::{Engine, camera::{Camera, Follow}};
+/// let mut engine = Engine::new()?;
+/// let actor = engine.spawn(Default::default(), |p| async move {
+///     loop { p.frame().await; }
+/// })?;
+/// actor.set_position(100.0, 80.0)?;
+/// let mut camera = Camera::new(0.0, 0.0, None)?;
+/// let mut follow = Follow::new(&actor)?;
+/// engine.tick()?;
+/// assert!(follow.update(&mut camera, (100, 80))?);
+/// assert_eq!(camera.position(), (50.0, 40.0));
+/// actor.kill()?;
+/// engine.tick()?;
+/// assert!(!follow.update(&mut camera, (100, 80))?);
+/// # Ok::<(), malvado::Error>(())
+/// ```
+///
+/// This owns a handle, not the process or its resources. No scheduler is added.
+/// ```compile_fail
+/// # use malvado::{Engine, camera::Follow};
+/// let engine = Engine::new().unwrap();
+/// let actor = engine.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) }).unwrap();
+/// let follow = Follow::new(&actor).unwrap();
+/// std::thread::spawn(move || drop(follow));
+/// ```
+pub struct Follow {
+    target: Option<Handle>,
+}
+impl Follow {
+    /// Validate a live handle without moving a camera. Failure retains no handle.
+    pub fn new(target: &Handle) -> Result<Self, Error> {
+        target.position()?;
+        Ok(Self {
+            target: Some(target.clone()),
+        })
+    }
+    pub fn is_following(&self) -> bool {
+        self.target.is_some()
+    }
+    /// Stop following without changing any camera position.
+    pub fn clear(&mut self) {
+        self.target = None;
+    }
+    /// Center from native position, including sleeping/frozen targets. Return
+    /// false after target death; preserve final camera position and clear state.
+    /// Errors preserve both camera and follow state. Does not poll a future.
+    pub fn update(&mut self, camera: &mut Camera, window: (i32, i32)) -> Result<bool, Error> {
+        if window.0 <= 0 || window.1 <= 0 {
+            return Err(Error::InvalidArgument);
+        }
+        let Some(target) = &self.target else {
+            return Ok(false);
+        };
+        let mut reference = target.inner.reference;
+        // SAFETY: owner-thread live runtime, immutable context-bound identity,
+        // exclusive camera and distinct copied follow reference. No retention.
+        result(unsafe {
+            sys::mv_camera_follow_step(
+                &mut camera.native,
+                target.inner.runtime.live()?,
+                &mut reference,
+                window.0,
+                window.1,
+            )
+        })?;
+        if reference.id == 0 {
+            self.target = None;
+        }
+        Ok(self.is_following())
     }
 }

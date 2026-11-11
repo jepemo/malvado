@@ -602,6 +602,13 @@ unsafe extern "C" {
         screen_x: *mut f64,
         screen_y: *mut f64,
     ) -> c_int;
+    pub fn mv_camera_follow_step(
+        camera: *mut MvCamera,
+        ctx: *mut MvContext,
+        target: *mut MvProcessRef,
+        window_width: c_int,
+        window_height: c_int,
+    ) -> c_int;
     pub fn mv_camera_center(
         camera: *mut MvCamera,
         target_x: f64,

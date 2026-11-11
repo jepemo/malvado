@@ -74,6 +74,7 @@ _Static_assert(_Generic(&mv_camera_init, int (*)(MvCamera *, double, double, con
 _Static_assert(_Generic(&mv_camera_set, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_set signature");
 _Static_assert(_Generic(&mv_camera_move, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_move signature");
 _Static_assert(_Generic(&mv_camera_project, int (*)(const MvCamera *, double, double, double, double, double *, double *): 1, default: 0), "mv_camera_project signature");
+_Static_assert(_Generic(&mv_camera_follow_step, MvResult (*)(MvCamera *, MvContext *, MvProcessRef *, int, int): 1, default: 0), "mv_camera_follow_step signature");
 _Static_assert(_Generic(&mv_camera_center, int (*)(MvCamera *, double, double, int, int): 1, default: 0), "mv_camera_center signature");
 _Static_assert(_Generic(&mv_camera_clip, int (*)(const MvCamera *, const MvCameraViewport *, int, int, MvCameraViewport *): 1, default: 0), "mv_camera_clip signature");
 _Static_assert(_Generic(&mv_animation_create, MvAnimation * (*)(const MvAnimationFrame *, size_t, int): 1, default: 0), "mv_animation_create signature");

@@ -24,6 +24,53 @@ Invalid inputs return `Error::InvalidArgument` and preserve camera state.
 No allocation or cleanup is required. The game controls when to center or move
 its camera; these values do not add an update loop.
 
+## Follow a process
+
+`Follow::new(&actor)?` selects a live context-bound handle without moving a
+camera. Call `follow.update(&mut camera, (width, height))?` after the existing
+engine tick. It reads native x/y, uses viewport centering and returns `true`
+while the target exists. Sleep and freeze do not stop explicit follow updates.
+When the target ends, update clears the target, returns `false` and preserves
+the last camera position. It does not tick or poll any future.
+
+```rust
+use malvado::{Engine, camera::{Camera, Follow}};
+let mut engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {
+    loop { p.frame().await; }
+})?;
+actor.set_position(100.0, 80.0)?;
+let mut camera = Camera::new(0.0, 0.0, None)?;
+let mut follow = Follow::new(&actor)?;
+engine.tick()?;
+assert!(follow.update(&mut camera, (100, 80))?);
+assert_eq!(camera.position(), (50.0, 40.0));
+# Ok::<(), malvado::Error>(())
+```
+
+`Follow` owns a handle, not the target process or its resources. Creating it
+from a dead/closed handle returns `NotFound`/`Closed`. Invalid dimensions or
+out-of-range geometry return `InvalidArgument`; errors preserve camera and
+follow state. After engine shutdown, an active update returns `Closed`. Call
+`clear()` to stop and release the handle. A cleared follower returns `false`
+on update with positive dimensions, even after engine shutdown.
+`is_following()` reports whether a target remains selected, before the next
+update checks its liveness.
+
+Camera values remain independently copied. Follow state is separate: moving or
+centering a Rust camera does not clear it. Call `clear()` when switching to
+manual control, or replace the follower with `Follow::new(&other)?` to retarget.
+Followers stay on the owner thread. Independent followers can select the same
+target without retaining process state. Main/explicit camera identity and
+automatic process camera selection remain A7.6 work.
+
+`camera.rs` tests follow the C/Lua golden trace and check viewport behavior,
+sleep/freeze, invalid geometry/dimensions, independent follow state, explicit
+clear, closed engines and natural process cleanup. A compile-fail doctest
+checks thread ownership; a runnable doctest checks the tick/update sequence.
+The installed probe checks `mv_camera_follow_step`; the relocated external
+consumer exercises real follow centering without source-tree SDK paths.
+
 ## Animations
 
 ```rust
@@ -64,3 +111,10 @@ Local verification: `mise run test-rust` passes in Debug and Release, including
 SDK rejection fixtures, and an offline external consumer that uses both modules
 from a relocated installed SDK. `mise run test-rust-sanitize` passes with the
 new native operations; Rust itself is not sanitizer-instrumented.
+
+A7.6ad/ae host evidence on macOS: C-only (59 tests), standard/headless
+(175 each), visual (57), Rust Debug/Release, relocated external consumer,
+installed signature checks, Clippy/format and native ASan/UBSan integration
+pass. The runnable Follow example and owner-thread compile failure also pass
+as doctests in both profiles. Linux CI and native main/explicit camera ownership
+remain open; these checks do not certify automatic Rust process camera selection.
