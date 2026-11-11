@@ -414,3 +414,17 @@ A binding can keep its image and window in this owner. The callback must not
 unwind or call process/context operations. It may release the window after all
 other platform uses have ended. This contract does not infer ownership for
 ordinary C image references; `mv_process_image_set` keeps its existing behavior.
+
+### Lua visual sprite storage
+
+Lua process assignments of visual atlas and FPG sprites now select the same
+native image graph as C. Assignment copies the sprite region and pivot and
+retains the image. Unchanged reads preserve Lua userdata identity. A C graph
+replacement is visible through `self.graph` and subsequent rendering, including
+frozen processes. Native clear removes that Lua selection. Reconstructed Lua
+sprite values retain their image through the existing resource manager.
+
+Metadata-only sprites without a loaded image keep their headless behavior.
+Whole-image Lua values, fractional PNG pivots, legacy sheets and automatic
+animation retain their existing paths. These paths are not migrated by this
+storage change. Native graph-bound collider integration is tracked separately.

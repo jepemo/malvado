@@ -103,7 +103,7 @@ static void update_cameras(lua_State *L);
 typedef struct { lua_Integer id; } LuaProcessHandle;
 typedef struct {
     lua_Integer id, parent;
-    int reason, collision_invalid;
+    int reason, collision_invalid, native_sprite;
     MvProcessRef reference;
     MvAnimationState animation_state;
     lua_Integer animation_tick;
@@ -781,24 +781,86 @@ push_selected_camera(lua_State *L, LuaSelf *self)
     lua_rawset(L, -5);
 }
 
-/* Only primitive graph descriptors are native here. Other graph kinds keep
- * their existing Lua resource ownership until the native asset graph service. */
+/* Native storage owns visual sprites. Metadata-only/headless descriptors and
+ * animations retain their existing Lua paths. */
+static void manage_image(lua_State *L, LuaImage *image);
+
 static void
 set_process_graphic(lua_State *L, LuaSelf *self, int value)
 {
+    value = lua_absindex(L, value);
     LuaGraphic *graphic = luaL_testudata(L, value, "malvado.graphic");
-    MvResult result = graphic && !graphic->sprite ?
-        mv_process_graphic_set(engine.context, self->reference,
-                               (MvGraphic){graphic->shape, graphic->color}) :
-        mv_process_graphic_clear(engine.context, self->reference);
-    if (result != MV_OK)
-        luaL_error(L, "cannot set process graphic");
+    MvResult result;
+    int native_sprite = 0;
+    if (graphic && graphic->sprite) {
+        lua_getiuservalue(L, value, 2);
+        LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+        if (image && image->image) {
+            result = mv_process_image_set(engine.context, self->reference,
+                (MvImageGraphic){image->image, graphic->region, graphic->pivot_x, graphic->pivot_y});
+            native_sprite = 1;
+        } else {
+            result = mv_process_graphic_clear(engine.context, self->reference);
+        }
+        lua_pop(L, 1);
+    } else if (graphic) {
+        result = mv_process_graphic_set(engine.context, self->reference,
+                                       (MvGraphic){graphic->shape, graphic->color});
+    } else {
+        result = mv_process_graphic_clear(engine.context, self->reference);
+    }
+    if (result != MV_OK) luaL_error(L, "cannot set process graphic");
+    self->native_sprite = native_sprite;
+}
+
+static int
+refresh_process_sprite(lua_State *L, LuaSelf *self, int fields)
+{
+    MvImageGraphic native;
+    int present;
+    if (mv_process_image_get(engine.context, self->reference, &native, &present) != MV_OK || !present)
+        return 0;
+    raw_option(L, fields, "graph");
+    LuaGraphic *old = luaL_testudata(L, -1, "malvado.graphic");
+    int same = old && old->sprite && old->region.x == native.region.x &&
+        old->region.y == native.region.y && old->region.width == native.region.width &&
+        old->region.height == native.region.height && old->pivot_x == native.pivot_x &&
+        old->pivot_y == native.pivot_y;
+    if (same) {
+        lua_getiuservalue(L, -1, 2);
+        LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+        same = image && image->image == native.image;
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+    self->native_sprite = 1;
+    if (same) return 1;
+    LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 2);
+    *graphic = (LuaGraphic){.sprite = 1, .region = native.region,
+        .pivot_x = native.pivot_x, .pivot_y = native.pivot_y};
+    (void)mv_graphic_sprite(native.region.width, native.region.height,
+                           native.pivot_x, native.pivot_y, &graphic->shape);
+    luaL_setmetatable(L, "malvado.graphic");
+    int graph = lua_gettop(L);
+    LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
+    *image = (LuaImage){0};
+    luaL_setmetatable(L, "malvado.image");
+    if (!mv_image_retain(native.image)) luaL_error(L, "cannot retain process image");
+    image->image = native.image;
+    manage_image(L, image);
+    lua_setiuservalue(L, graph, 2);
+    lua_pushliteral(L, "graph");
+    lua_pushvalue(L, graph);
+    lua_rawset(L, fields);
+    lua_pop(L, 1);
+    return 1;
 }
 
 static void
 refresh_process_graphic(lua_State *L, LuaSelf *self, int fields)
 {
     fields = lua_absindex(L, fields);
+    if (refresh_process_sprite(L, self, fields)) return;
     MvGraphic native;
     int present;
     if (mv_process_graphic_get(engine.context, self->reference, &native, &present) != MV_OK)
@@ -808,13 +870,15 @@ refresh_process_graphic(lua_State *L, LuaSelf *self, int fields)
     int primitive = old && !old->sprite;
     if (!present) {
         lua_pop(L, 1);
-        if (primitive) {
+        if (primitive || self->native_sprite) {
             lua_pushliteral(L, "graph");
             lua_pushnil(L);
             lua_rawset(L, fields);
         }
+        self->native_sprite = 0;
         return;
     }
+    self->native_sprite = 0;
     int same = primitive && old->shape.kind == native.shape.kind &&
         old->shape.width == native.shape.width &&
         old->shape.height == native.shape.height &&
