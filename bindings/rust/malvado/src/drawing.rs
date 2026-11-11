@@ -143,3 +143,48 @@ impl Drop for Restore {
         }
     }
 }
+
+/// Copied native drawing defaults. Use its colors as explicit frame/draw
+/// arguments. It does not change any window, frame, or process implicitly.
+#[derive(Clone, Copy, Debug)]
+pub struct DrawState {
+    native: ffi::MvDrawState,
+}
+impl DrawState {
+    pub fn new() -> Result<Self, Error> {
+        malvado_sys::check_abi().map_err(Error::Abi)?;
+        let mut native = ffi::MvDrawState::default();
+        // SAFETY: exclusively borrowed stack output; native retains nothing.
+        valid(unsafe { ffi::mv_draw_state_init(&mut native) })?;
+        Ok(Self { native })
+    }
+    pub fn color(&self) -> Color {
+        self.native.color
+    }
+    pub fn background(&self) -> Color {
+        self.native.background
+    }
+    pub fn set_color(&mut self, color: Color) {
+        // SAFETY: exclusive state and channels bounded by their u8 type.
+        unsafe {
+            ffi::mv_draw_state_color(
+                &mut self.native,
+                color.r.into(),
+                color.g.into(),
+                color.b.into(),
+                color.a.into(),
+            );
+        }
+    }
+    pub fn set_background(&mut self, rgb: (u8, u8, u8)) {
+        // SAFETY: exclusive state and typed channels; background stays opaque.
+        unsafe {
+            ffi::mv_draw_state_background(
+                &mut self.native,
+                rgb.0.into(),
+                rgb.1.into(),
+                rgb.2.into(),
+            );
+        }
+    }
+}

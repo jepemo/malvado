@@ -133,6 +133,10 @@ const _: () = {
         offset_of!(MvFadeQueue, pending),
         offset_of!(MvFadeQueue, head),
         offset_of!(MvFadeQueue, count),
+        size_of::<MvDrawState>(),
+        align_of::<MvDrawState>(),
+        offset_of!(MvDrawState, color),
+        offset_of!(MvDrawState, background),
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -409,4 +413,16 @@ unsafe extern "C" {
         transform: crate::MvCollisionTransform,
         color: MvColor,
     ) -> c_int;
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvDrawState {
+    pub color: MvColor,
+    pub background: MvColor,
+}
+unsafe extern "C" {
+    pub fn mv_draw_state_init(state: *mut MvDrawState) -> c_int;
+    pub fn mv_draw_state_color(state: *mut MvDrawState, r: i64, g: i64, b: i64, a: i64) -> c_int;
+    pub fn mv_draw_state_background(state: *mut MvDrawState, r: i64, g: i64, b: i64) -> c_int;
 }

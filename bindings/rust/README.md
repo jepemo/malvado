@@ -120,3 +120,6 @@ copied Rust values with explicit tick advancement.
 
 [Simple graphic geometry](../../docs/api/graphic-geometry.md) supplies native
 rectangle/circle bounds and pivots without the graphics feature.
+
+[Drawing defaults](../../docs/api/draw-state.md) are copied native values used
+as explicit background and color arguments. They install no global Rust state.

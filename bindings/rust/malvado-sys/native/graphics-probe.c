@@ -79,6 +79,9 @@ _Static_assert(_Generic(&mv_fade_queue_step, int (*)(MvFadeQueue *): 1, default:
 _Static_assert(_Generic(&mv_fade_queue_active, int (*)(const MvFadeQueue *): 1, default: 0), "mv_fade_queue_active signature");
 _Static_assert(_Generic(&mv_window_draw_fade, int (*)(MvColor): 1, default: 0), "mv_window_draw_fade signature");
 _Static_assert(_Generic(&mv_window_draw_graphic, int (*)(MvCollisionShape, MvCollisionTransform, MvColor): 1, default: 0), "mv_window_draw_graphic signature");
+_Static_assert(_Generic(&mv_draw_state_init, int (*)(MvDrawState *): 1, default: 0), "mv_draw_state_init signature");
+_Static_assert(_Generic(&mv_draw_state_color, int (*)(MvDrawState *, int64_t, int64_t, int64_t, int64_t): 1, default: 0), "mv_draw_state_color signature");
+_Static_assert(_Generic(&mv_draw_state_background, int (*)(MvDrawState *, int64_t, int64_t, int64_t): 1, default: 0), "mv_draw_state_background signature");
 int main(void)
 {
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
@@ -182,5 +185,8 @@ int main(void)
     printf("%zu ", offsetof(MvFadeQueue, pending));
     printf("%zu ", offsetof(MvFadeQueue, head));
     printf("%zu ", offsetof(MvFadeQueue, count));
+    printf("%zu %zu ", sizeof(MvDrawState), _Alignof(MvDrawState));
+    printf("%zu ", offsetof(MvDrawState, color));
+    printf("%zu ", offsetof(MvDrawState, background));
     return 0;
 }

@@ -17,6 +17,62 @@ fn pixel(x: i32, y: i32, color: Color) {
 }
 fn main() {
     let window = Window::open(160, 120, "Rust drawing").unwrap();
+    {
+        let mut state = malvado::drawing::DrawState::new().unwrap();
+        state.set_background((10, 20, 30));
+        state.set_color(Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 128,
+        });
+        let copy = state;
+        let frame = window.frame(state.background()).unwrap();
+        frame
+            .rectangle(
+                Rectangle {
+                    x: 10,
+                    y: 10,
+                    width: 20,
+                    height: 20,
+                },
+                true,
+                state.color(),
+            )
+            .unwrap();
+        pixel(
+            15,
+            15,
+            Color {
+                r: 132,
+                g: 10,
+                b: 15,
+                a: 255,
+            },
+        );
+        state.set_color(Color {
+            r: 0,
+            g: 0,
+            b: 255,
+            a: 255,
+        });
+        state.set_background((40, 50, 60));
+        pixel(
+            15,
+            15,
+            Color {
+                r: 132,
+                g: 10,
+                b: 15,
+                a: 255,
+            },
+        );
+        pixel(5, 5, copy.background());
+        assert_eq!(copy.color().a, 128);
+        drop(frame);
+        let _frame = window.frame(state.background()).unwrap();
+        pixel(5, 5, state.background());
+    }
     let black = Color {
         r: 0,
         g: 0,
