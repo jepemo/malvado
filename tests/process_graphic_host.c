@@ -33,10 +33,18 @@ static void between_ticks(void *user)
         assert(mv_graphic_circle(5, &graphic.shape));
         graphic.color = (MvColor){255, 0, 0, 255};
         assert(mv_process_graphic_set(ctx, ref, graphic) == MV_OK);
+        MvProcessRef sensor;
+        int overlap;
+        assert(mv_process_ref_create(ctx, 2, &sensor) == MV_OK);
+        assert(mv_process_collider_test(ctx, ref, sensor, &overlap) == MV_OK && overlap);
         ++*stage;
     } else if (*stage == 1 && present && graphic.shape.width == 4) {
         assert(graphic.shape.offset_x == 2 && graphic.color.g == 255);
         assert(mv_process_graphic_clear(ctx, ref) == MV_OK);
+        MvProcessRef sensor;
+        int overlap;
+        assert(mv_process_ref_create(ctx, 2, &sensor) == MV_OK);
+        assert(mv_process_collider_test(ctx, ref, sensor, &overlap) == MV_OK && !overlap);
         ++*stage;
     }
 }

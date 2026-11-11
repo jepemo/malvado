@@ -27,7 +27,8 @@ typedef struct { MvCollisionShape shape; MvColor color; } MvGraphic;
  * when absent, graphic is unchanged. Outputs must be non-NULL. Clear is
  * idempotent. Foreign/invalid inputs return MV_INVALID_ARGUMENT; dead processes
  * return MV_NOT_FOUND. Failure preserves state and outputs. Owner-thread only.
- * Explicit colliders remain independent. Image/animation graphs are not stored
+ * Fixed colliders remain independent; new processes derive colliders from this
+ * primitive by default. Image/animation graphs are not stored
  * by this primitive service. */
 MvResult mv_process_graphic_set(MvContext *ctx, MvProcessRef process, MvGraphic graphic);
 MvResult mv_process_graphic_get(MvContext *ctx, MvProcessRef process, MvGraphic *graphic, int *present);

@@ -57,6 +57,7 @@ _Static_assert(_Generic(&mv_process_signal_creation_tree, MvResult (*)(MvContext
 _Static_assert(_Generic(&mv_rect_overlaps, int (*)(MvRect, MvRect): 1, default: 0), "mv_rect_overlaps signature");
 _Static_assert(_Generic(&mv_rect_contains, int (*)(MvRect, double, double): 1, default: 0), "mv_rect_contains signature");
 _Static_assert(_Generic(&mv_collision_overlap, int (*)(MvCollisionShape, MvCollisionTransform, MvCollisionShape, MvCollisionTransform): 1, default: 0), "mv_collision_overlap signature");
+_Static_assert(_Generic(&mv_process_collider_bind, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionShape *): 1, default: 0), "mv_process_collider_bind signature");
 _Static_assert(_Generic(&mv_process_collider_set, MvResult (*)(MvContext *, MvProcessRef, MvCollisionShape, MvCollisionTransform): 1, default: 0), "mv_process_collider_set signature");
 _Static_assert(_Generic(&mv_process_collider_clear, MvResult (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_process_collider_clear signature");
 _Static_assert(_Generic(&mv_process_collider_test, MvResult (*)(MvContext *, MvProcessRef, MvProcessRef, int *): 1, default: 0), "mv_process_collider_test signature");

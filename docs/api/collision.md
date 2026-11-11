@@ -354,3 +354,55 @@ A7.6ab local macOS verification: `mise run test-c` (58 tests),
 `mise run test` and `mise run test-headless` (173 tests each), and
 `mise run test-visual` (57 tests) pass. This is host evidence, not Linux CI
 acceptance or automatic graph selection in C/Rust.
+
+## Bound process colliders
+
+New native processes select their primitive graph for collision geometry.
+Assigning or replacing a primitive graph, changing x/y, angle or scale, clearing
+a graph, or moving through a world becomes visible on the next process collision
+query. No tick, render or explicit collider resynchronization is required.
+No graph means no collider. Sleeping and frozen processes remain queryable.
+
+`mv_process_collider_bind(ctx, reference, override)` selects a copied local
+shape when `override` is non-NULL. That shape follows the native process x/y,
+angle and scale and survives graph replacement/clearing. Pass NULL to restore
+primitive graph selection. Binding validates the currently selected shape and
+transform before changing selection. Invalid shape/transform or foreign/NULL
+context returns `MV_INVALID_ARGUMENT`; a dead process returns `MV_NOT_FOUND`.
+Errors preserve the previous selection. Inputs are borrowed only for the call.
+No allocation, retained pointer, resource ownership or scheduler is introduced.
+
+`mv_process_collider_set` preserves its previous fixed shape/transform behavior:
+later visual-property changes do not move that collider. `clear` disables all
+collider selection until `set` or `bind`. It remains idempotent. This revises
+the earlier alpha.7 primitive default, which did not derive C/Rust colliders.
+Use clear to disable automatic collision, or fixed set for an independent
+transform. These choices keep old explicit registrations stable.
+
+Queries recompute bounds for bound colliders from current native state.
+Nonpositive scale or unsupported numeric geometry makes a bound collider
+invalid, without keeping stale geometry. Pair queries with an invalid source or
+explicit target return `MV_INVALID_ARGUMENT` without changing output. Type
+queries reject invalid sources and skip invalid candidates, as in Lua. Repairing
+the native properties restores a bound collider on the next query.
+
+Lua uses bound selection for primitive graphs and local overrides with native
+numeric properties. Local invalid visual values, numeric-string conversions and
+image/sprite/animation geometry keep their existing binding handling. Lua still
+owns its `self.collider` selection and invalid-visual metadata. Direct native
+changes to a bound Lua process's graph/properties are observable by C collision
+queries before another Lua activation or query.
+
+`bound_collider` and the C/Lua/Rust golden trace cover graph-derived defaults,
+position/rotation/scale, copied local override, disable/restore, graph clear and
+replacement, world movement, sleep/freeze and invalid targets. Native tests also
+check invalid-source output preservation, foreign/dead/NULL errors, failed bind
+atomicity and the fixed-transform contract. The mixed graph host fixture checks
+immediate C queries after native replacement and clear, with no Lua update.
+World operations that accept an explicit optional shape retain their existing
+contract: NULL still means free movement, not selected collider geometry.
+
+A7.6ah local macOS evidence: C-only (61 tests), standard/headless (179 each)
+and visual (59) pass. The updated mixed C/Lua host and final golden trace also
+pass in targeted checks. Installed-header probes verify the new bind signature.
+Linux CI and asset graph collider derivation are not certified by these checks.

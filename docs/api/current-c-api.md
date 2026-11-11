@@ -49,6 +49,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_collision_world_move`
 - `mv_collision_world_query`
 - `mv_collision_world_sweep`
+- `mv_process_collider_bind`
 - `mv_process_collider_clear`
 - `mv_process_collider_find`
 - `mv_process_collider_first`

@@ -140,6 +140,11 @@ unsafe extern "C" {
         b: MvCollisionShape,
         bt: MvCollisionTransform,
     ) -> c_int;
+    pub fn mv_process_collider_bind(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        shape: *const MvCollisionShape,
+    ) -> c_int;
     pub fn mv_process_collider_set(
         ctx: *mut MvContext,
         process: MvProcessRef,

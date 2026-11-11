@@ -217,6 +217,10 @@ else()
   target_compile_options(malvado_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 enable_testing()
+add_executable(bound-collider-test tests/bound_collider.c)
+target_link_libraries(bound-collider-test PRIVATE malvado_core)
+add_test(NAME bound_collider COMMAND bound-collider-test)
+set_tests_properties(bound_collider PROPERTIES TIMEOUT 15)
 add_executable(process-graphic-test tests/process_graphic.c)
 target_link_libraries(process-graphic-test PRIVATE malvado_core)
 add_test(NAME process_graphic COMMAND process-graphic-test)
@@ -543,6 +547,13 @@ if(MALVADO_CAN_EXPORT)
     set_tests_properties(dev_sdk_install PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   endif()
 endif()
+add_test(NAME alpha7_bound_collider_parity COMMAND ${CMAKE_COMMAND}
+  -DC_PROGRAM=$<TARGET_FILE:bound-collider-test>
+  -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>
+  -DLUA_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tests/bound_collider.lua
+  -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/bindings/rust/malvado/tests/fixtures/bound_collider.txt
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/compare_parity.cmake)
+set_tests_properties(alpha7_bound_collider_parity PROPERTIES TIMEOUT 25)
 add_test(NAME alpha7_camera_follow_parity COMMAND ${CMAKE_COMMAND}
   -DC_PROGRAM=$<TARGET_FILE:camera-follow-test>
   -DLUA_PROGRAM=$<TARGET_FILE:malvado-run>

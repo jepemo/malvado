@@ -172,3 +172,8 @@ headless (172 tests each), visual (57 tests), Rust Debug/Release with Clippy,
 format checks and the relocated SDK consumer, and native ASan/UBSan Rust
 integration all pass. This is local host evidence; Linux CI acceptance and
 automatic Rust process graph drawing remain open.
+
+Bound primitive colliders now derive native position/angle/scale when queried.
+Property setters still do not rewrite fixed `mv_process_collider_set`
+registrations. See [bound colliders](collision.md#bound-process-colliders) for
+selection, disable/restore and invalid-geometry behavior.

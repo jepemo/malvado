@@ -37,6 +37,13 @@ typedef struct Genealogy {
     int alive, terminating;
 } Genealogy;
 
+typedef enum {
+    COLLIDER_GRAPH,
+    COLLIDER_FIXED,
+    COLLIDER_DISABLED,
+    COLLIDER_LOCAL
+} ColliderMode;
+
 typedef struct {
     MvProcessId id, parent, creator_id;
     Genealogy *lineage;
@@ -52,6 +59,7 @@ typedef struct {
     int killed, attached;
     int has_graphic;
     MvGraphic graphic;
+    ColliderMode collider_mode;
     int has_collider;
     MvCollisionShape collider;
     MvCollisionTransform collider_transform;
@@ -239,6 +247,58 @@ mv_process_graphic_clear(MvContext *ctx, MvProcessRef reference)
     return MV_OK;
 }
 
+/* Fixed colliders keep their explicit transform. Bound shapes derive current
+ * geometry/bounds at query time, independent of ticks or rendering. */
+static MvResult
+refresh_collider(Process *item)
+{
+    if (item->collider_mode == COLLIDER_FIXED || item->collider_mode == COLLIDER_DISABLED)
+        return MV_OK;
+    if (item->collider_mode == COLLIDER_GRAPH && !item->has_graphic) {
+        item->has_collider = 0;
+        return MV_OK;
+    }
+    MvCollisionShape shape = item->collider_mode == COLLIDER_GRAPH ?
+        item->graphic.shape : item->collider;
+    MvCollisionTransform transform = {item->x, item->y, item->angle, item->scale};
+    MvCollisionBounds bounds;
+    if (!mv_collision_bounds(shape, transform, &bounds)) {
+        item->has_collider = 0;
+        return MV_INVALID_ARGUMENT;
+    }
+    item->collider = shape;
+    item->collider_transform = transform;
+    item->collider_bounds = bounds;
+    item->has_collider = 1;
+    return MV_OK;
+}
+
+MvResult
+mv_process_collider_bind(MvContext *ctx, MvProcessRef reference, const MvCollisionShape *override)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK)
+        return result;
+    int present = override || item->has_graphic;
+    MvCollisionShape shape = {0};
+    MvCollisionTransform transform = {item->x, item->y, item->angle, item->scale};
+    MvCollisionBounds bounds;
+    if (present) {
+        shape = override ? *override : item->graphic.shape;
+        if (!mv_collision_bounds(shape, transform, &bounds))
+            return MV_INVALID_ARGUMENT;
+    }
+    item->collider_mode = override ? COLLIDER_LOCAL : COLLIDER_GRAPH;
+    item->has_collider = present;
+    if (present) {
+        item->collider = shape;
+        item->collider_transform = transform;
+        item->collider_bounds = bounds;
+    }
+    return MV_OK;
+}
+
 MvResult
 mv_process_collider_set(MvContext *ctx, MvProcessRef reference,
                         MvCollisionShape shape, MvCollisionTransform transform)
@@ -254,6 +314,7 @@ mv_process_collider_set(MvContext *ctx, MvProcessRef reference,
     item->collider = shape;
     item->collider_transform = transform;
     item->has_collider = 1;
+    item->collider_mode = COLLIDER_FIXED;
     return MV_OK;
 }
 
@@ -265,6 +326,7 @@ mv_process_collider_clear(MvContext *ctx, MvProcessRef reference)
     if (result != MV_OK)
         return result;
     item->has_collider = 0;
+    item->collider_mode = COLLIDER_DISABLED;
     return MV_OK;
 }
 
@@ -289,6 +351,12 @@ mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *ov
     result = resolve_live_process(ctx, b, &second);
     if (result != MV_OK)
         return result;
+    result = refresh_collider(first);
+    if (result != MV_OK)
+        return result;
+    result = refresh_collider(second);
+    if (result != MV_OK)
+        return result;
     *overlap = first != second && first->has_collider && second->has_collider &&
         collider_candidates(first, second) &&
         mv_collision_overlap(first->collider, first->collider_transform,
@@ -307,12 +375,17 @@ mv_process_collider_first(MvContext *ctx, MvProcessRef source, uint64_t type,
     MvResult result = resolve_live_process(ctx, source, &origin);
     if (result != MV_OK)
         return result;
+    result = refresh_collider(origin);
+    if (result != MV_OK)
+        return result;
     MvProcessRef found = {0};
     if (origin->has_collider) {
         for (size_t i = 0; i < p->count; ++i) {
             Process *item = &p->items[i];
-            if (!item->id || item->killed || item == origin || !item->has_collider ||
+            if (!item->id || item->killed || item == origin ||
                 (type && item->type != type))
+                continue;
+            if (refresh_collider(item) != MV_OK || !item->has_collider)
                 continue;
             if (!collider_candidates(origin, item))
                 continue;
@@ -338,12 +411,17 @@ mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
     MvResult result = resolve_live_process(ctx, source, &origin);
     if (result != MV_OK)
         return result;
+    result = refresh_collider(origin);
+    if (result != MV_OK)
+        return result;
     size_t count = 0;
     if (origin->has_collider) {
         for (size_t i = 0; i < p->count; ++i) {
             Process *item = &p->items[i];
-            if (!item->id || item->killed || item == origin || !item->has_collider ||
+            if (!item->id || item->killed || item == origin ||
                 (type && item->type != type))
+                continue;
+            if (refresh_collider(item) != MV_OK || !item->has_collider)
                 continue;
             if (!collider_candidates(origin, item))
                 continue;

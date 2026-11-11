@@ -934,6 +934,20 @@ collider_number(lua_State *L, int fields, const char *name, double fallback, dou
     return valid && isfinite(*out);
 }
 
+static int
+native_process_transform(lua_State *L, int fields)
+{
+    const char *names[] = {"x", "y", "angle", "size"};
+    for (unsigned i = 0; i < 4; ++i) {
+        raw_option(L, fields, names[i]);
+        int valid = lua_isnil(L, -1) ||
+                    (lua_type(L, -1) == LUA_TNUMBER && isfinite(lua_tonumber(L, -1)));
+        lua_pop(L, 1);
+        if (!valid) return 0;
+    }
+    return 1;
+}
+
 /* Native visual properties supply valid numbers. Invalid Lua fields remove the native
  * collider until corrected; collision queries report the invalid state. */
 static void
@@ -943,11 +957,12 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
     fields = lua_absindex(L, fields);
     refresh_process_transform(L, self, fields);
     MvCollisionShape shape = {0};
-    int present = 0, invalid = 0;
+    int present = 0, invalid = 0, bound = 0, override = 0, automatic = 0;
     Process *slot = find_process_slot((lua_Integer)reference.id);
     int legacy = slot && slot->legacy_frame;
     raw_option(L, fields, "collider");
     if (lua_isnil(L, -1)) {
+        automatic = 1;
         lua_pop(L, 1);
         if (legacy) {
             raw_option(L, fields, "fpg");
@@ -965,6 +980,7 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
             } else if (graphic) {
                 shape = graphic->shape;
                 present = 1;
+                bound = !graphic->sprite;
             } else if (image && image->image) {
                 int width = mv_image_width(image->image), height = mv_image_height(image->image);
                 if (width > 0 && height > 0) {
@@ -980,6 +996,7 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
         if (explicit_shape) {
             shape = *explicit_shape;
             present = 1;
+            bound = override = 1;
         } else invalid = 1;
     }
     lua_pop(L, 1);
@@ -989,10 +1006,16 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
                     !collider_number(L, fields, "angle", 0, &transform.angle) ||
                     !collider_number(L, fields, "size", 1, &transform.scale)))
         invalid = 1;
-    if (present && !invalid &&
-        mv_process_collider_set(engine.context, reference, shape, transform) != MV_OK)
-        invalid = 1;
-    if (!present || invalid)
+    if (present && !invalid) {
+        MvResult result = bound && native_process_transform(L, fields) ?
+            mv_process_collider_bind(engine.context, reference, override ? &shape : NULL) :
+            mv_process_collider_set(engine.context, reference, shape, transform);
+        if (result != MV_OK)
+            invalid = 1;
+    }
+    if (!present && !invalid && automatic)
+        (void)mv_process_collider_bind(engine.context, reference, NULL);
+    else if (!present || invalid)
         (void)mv_process_collider_clear(engine.context, reference);
     self->collision_invalid = invalid;
 }
@@ -4838,19 +4861,6 @@ process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
     return 1;
 }
 
-static int
-native_process_transform(lua_State *L, int fields)
-{
-    const char *names[] = {"x", "y", "angle", "size"};
-    for (unsigned i = 0; i < 4; ++i) {
-        raw_option(L, fields, names[i]);
-        int valid = lua_isnil(L, -1) ||
-                    (lua_type(L, -1) == LUA_TNUMBER && isfinite(lua_tonumber(L, -1)));
-        lua_pop(L, 1);
-        if (!valid) return 0;
-    }
-    return 1;
-}
 
 static int
 world_process_collision(lua_State *L)

@@ -1,0 +1,12 @@
+initial hits=2
+position hits=3
+rotation hits=-
+scale hits=3
+override hits=-
+disabled hits=-
+restored hits=3
+cleared hits=-
+reassigned hits=3
+world hits=3
+inactive hits=3
+invalid-target hits=-

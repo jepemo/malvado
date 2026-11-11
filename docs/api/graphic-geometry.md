@@ -79,7 +79,8 @@ for frozen processes. Native clear removes a cached primitive. Lua assigning an
 image, sprite, animation or invalid graph value clears the primitive slot and
 keeps the existing binding behavior. Native primitive clear does not remove a
 Lua image/animation graph: their native storage/retention is still pending.
-Direct C/Rust registered colliders remain explicit and independent.
+Fixed C/Rust registrations remain independent. Bound primitive colliders now
+follow native graph/visual changes; see the [selection contract](collision.md#bound-process-colliders).
 
 `process_graphic` checks copied state, defaults, clear, canonical validation,
 NULL/foreign/dead references, atomic errors and frozen persistence. The mixed

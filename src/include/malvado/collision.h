@@ -42,14 +42,22 @@ typedef struct { double x, y, angle, scale; } MvCollisionTransform;
 int mv_collision_overlap(MvCollisionShape a, MvCollisionTransform transform_a,
                          MvCollisionShape b, MvCollisionTransform transform_b);
 
-/* Process colliders are copied into the context and removed with the process.
- * Set again after changing a process transform. Clear is idempotent. Dead or
- * foreign references return an error. These functions do not allocate. */
+/* New processes derive colliders from their native primitive graph and current
+ * x/y, angle and scale. No graph means no collider. Bind a copied local override
+ * to use another shape with those properties; NULL restores graph selection.
+ * Binding validates current selected geometry/transform before committing.
+ * Fixed set below instead copies an independent shape/transform. Re-set a fixed
+ * collider to move it. Clear disables all selection until bind or set.
+ * Failed changes preserve the previous selection. Dead/foreign references are
+ * errors. Owner-thread only, no allocation or retained pointers. */
+MvResult mv_process_collider_bind(MvContext *ctx, MvProcessRef process,
+                                  const MvCollisionShape *override);
 MvResult mv_process_collider_set(MvContext *ctx, MvProcessRef process,
                                  MvCollisionShape shape, MvCollisionTransform transform);
 MvResult mv_process_collider_clear(MvContext *ctx, MvProcessRef process);
 /* Compare two live processes; self-comparison and missing colliders return 0.
- * On error, the output is unchanged. */
+ * Invalid bound source/target transforms return MV_INVALID_ARGUMENT without
+ * changing output. Bound transforms refresh on queries, never on drawing. */
 MvResult mv_process_collider_test(MvContext *ctx, MvProcessRef a, MvProcessRef b, int *overlap);
 /* Find the first collision in creation order, or write an all-zero reference
  * if none exists. Type 0 selects all types. No allocation is performed. */
@@ -57,7 +65,8 @@ MvResult mv_process_collider_first(MvContext *ctx, MvProcessRef source, uint64_t
                                   MvProcessRef *out);
 /* Copy up to capacity colliding process references in creation order. Type 0
  * selects all types. total receives the full count. A missing source collider
- * returns no results. Sleeping and frozen processes are included. */
+ * returns no results. Sleeping and frozen processes are included. Invalid bound
+ * sources fail without changing outputs; invalid bound candidates are skipped. */
 MvResult mv_process_collider_find(MvContext *ctx, MvProcessRef source, uint64_t type,
                                  MvProcessRef *out, size_t capacity, size_t *total);
 

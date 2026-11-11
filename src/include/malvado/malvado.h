@@ -153,14 +153,14 @@ MvResult mv_process_ref_resolve(MvContext *ctx, MvProcessRef ref, MvProcessId *o
  * invalid values return MV_INVALID_ARGUMENT; dead processes return MV_NOT_FOUND.
  * Failure preserves state and outputs. Owner-thread only, no allocation.
  * Lua valid numeric fields and graph rendering share this storage. Collider
- * transforms set through the C collider API remain explicit. */
+ * transforms set with mv_process_collider_set remain independent. */
 MvResult mv_process_position(MvContext *ctx, MvProcessRef process, double *x, double *y);
 MvResult mv_process_set_position(MvContext *ctx, MvProcessRef process, double x, double y);
 
 /* Visual angle is in degrees, initially 0; scale is initially 1. All finite
  * values are stored without normalization. Nonpositive scale hides Lua graphs
  * and invalidates derived colliders. Identity/error/ownership rules match
- * position. Setters do not modify explicitly registered C collider transforms. */
+ * position. Setters do not modify fixed mv_process_collider_set transforms. */
 MvResult mv_process_angle(MvContext *ctx, MvProcessRef process, double *out);
 MvResult mv_process_set_angle(MvContext *ctx, MvProcessRef process, double angle);
 MvResult mv_process_scale(MvContext *ctx, MvProcessRef process, double *out);
