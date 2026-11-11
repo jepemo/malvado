@@ -96,3 +96,5 @@ int main(void)
     printf("%zu ", offsetof(MvFpgManifestSprite, point_count));
     return 0;
 }
+
+_Static_assert(_Generic(&mv_resource_adopt_atlas, MvResult (*)(MvContext *, const MvProcessRef *, MvAtlas *, MvResource **): 1, default: 0), "mv_resource_adopt_atlas signature");

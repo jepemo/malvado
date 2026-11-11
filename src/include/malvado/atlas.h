@@ -23,6 +23,14 @@ extern "C" {
 #endif
 
 typedef struct MvAtlas MvAtlas;
+/* Transfer caller-owned metadata to the native context/process resource manager.
+ * Success returns a borrowed owner reference. Retain each independent use.
+ * Failure preserves data ownership and out. Reject NULL data. Metadata retains
+ * no image or device. Ownership/thread/error rules match mv_resource_create.
+ * Transfer each owned atlas exactly once; destroy through its resource after
+ * success, or directly after failure. */
+MvResult mv_resource_adopt_atlas(MvContext *ctx, const MvProcessRef *owner, MvAtlas *data, MvResource **out);
+
 typedef struct {
     int id;
     const char *name; /* Borrowed; valid until the atlas is destroyed. */

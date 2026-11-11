@@ -33,7 +33,7 @@ option(MALVADO_BUILD_ASSETS "Build JSON atlas metadata support" ${MALVADO_ASSETS
 if(MALVADO_BUILD_ASSETS)
   FetchContent_Declare(cjson URL https://github.com/DaveGamble/cJSON/archive/refs/tags/v1.7.19.tar.gz URL_HASH SHA256=7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562 DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR no-cmake)
   FetchContent_MakeAvailable(cjson)
-  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/fpg.c src/assets/fpg_manifest.c ${cjson_SOURCE_DIR}/cJSON.c)
+  add_library(malvado_assets STATIC src/assets/atlas.c src/assets/managed.c src/assets/fpg.c src/assets/fpg_manifest.c ${cjson_SOURCE_DIR}/cJSON.c)
   target_include_directories(malvado_assets PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -47,6 +47,9 @@ if(MALVADO_BUILD_ASSETS)
 endif()
 
 add_library(malvado_core STATIC src/core/version.c src/core/graphic.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
+if(MALVADO_BUILD_ASSETS)
+  target_link_libraries(malvado_assets PUBLIC malvado_core)
+endif()
 target_include_directories(malvado_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -445,6 +448,10 @@ if(MALVADO_BUILD_ASSETS)
   add_test(NAME c_atlas_example COMMAND example-c-atlas)
   set_tests_properties(c_atlas_example PROPERTIES TIMEOUT 15
     PASS_REGULAR_EXPRESSION "ship.png: ship, sprite 7, frame 7")
+  add_executable(atlas-resource-test tests/atlas_resource.c)
+  target_link_libraries(atlas-resource-test PRIVATE malvado_assets)
+  add_test(NAME atlas_resource COMMAND atlas-resource-test)
+  set_tests_properties(atlas_resource PROPERTIES TIMEOUT 15)
   add_executable(atlas-test tests/atlas.c)
   target_link_libraries(atlas-test PRIVATE malvado_assets)
   add_test(NAME atlas COMMAND atlas-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/atlas.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/animated-atlas.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/array.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/trimmed.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/pingpong.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/pivot.json ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/coric/coric.json)

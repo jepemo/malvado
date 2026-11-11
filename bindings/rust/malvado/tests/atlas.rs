@@ -149,3 +149,35 @@ fn aseprite_trim_pivot_and_rejected_metadata() {
     }
     assert!(Atlas::parse_aseprite("{}", 8, 8).is_err());
 }
+
+#[test]
+fn native_metadata_adoption_and_retained_lookup() {
+    use malvado_sys::{self as sys, assets as ffi};
+    use std::ptr;
+    // SAFETY: copied JSON, unique caller-owned atlas and live owner-thread
+    // context. The independent resource reference keeps metadata after shutdown.
+    unsafe {
+        let atlas = ffi::mv_atlas_parse(ATLAS.as_ptr().cast(), ATLAS.len(), 8, 8, ptr::null_mut());
+        assert!(!atlas.is_null());
+        let ctx = sys::mv_context_create(60.0, 4);
+        assert!(!ctx.is_null());
+        let mut resource = ptr::null_mut();
+        assert_eq!(
+            ffi::mv_resource_adopt_atlas(ptr::null_mut(), ptr::null(), atlas, &mut resource),
+            sys::MV_INVALID_ARGUMENT
+        );
+        assert!(resource.is_null());
+        assert_eq!(
+            ffi::mv_resource_adopt_atlas(ctx, ptr::null(), atlas, &mut resource),
+            sys::MV_OK
+        );
+        assert_eq!(sys::mv_resource_retain(resource), sys::MV_OK);
+        sys::mv_context_destroy(ctx);
+        assert_eq!(sys::mv_resource_data(resource), atlas.cast());
+        assert_eq!(ffi::mv_atlas_count(atlas), 2);
+        let mut sprite = std::mem::MaybeUninit::uninit();
+        assert_eq!(ffi::mv_atlas_find(atlas, 42, sprite.as_mut_ptr()), 1);
+        assert_eq!(sprite.assume_init().pivot_x, 2);
+        assert_eq!(sys::mv_resource_release(resource), sys::MV_OK);
+    }
+}

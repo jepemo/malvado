@@ -253,3 +253,12 @@ unsafe extern "C" {
         length: usize,
     ) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_resource_adopt_atlas(
+        ctx: *mut crate::MvContext,
+        owner: *const crate::MvProcessRef,
+        data: *mut MvAtlas,
+        out: *mut *mut crate::MvResource,
+    ) -> c_int;
+}

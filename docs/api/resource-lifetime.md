@@ -49,3 +49,6 @@ destructor callbacks. Lua uses the same constructors for loads and clones.
 See [managed platform resources](managed-platform-resources.md) for ownership
 transfer, failure cleanup and platform lifetime rules. Safe Rust uses owned
 values in the existing Resource wrapper; raw native adoption is unsafe.
+
+Atlas metadata has a separate [native adoption constructor](managed-atlases.md)
+with the same ownership rules. It needs no window and retains no image.

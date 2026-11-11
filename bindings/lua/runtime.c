@@ -2093,8 +2093,7 @@ manage_native_resource(lua_State *L, void *data, MvResourceDestroy destroy, Adop
         }
         owner_ref = &owner;
     }
-    if ((adopt ? adopt(engine.context, owner_ref, data, &resource) :
-         mv_resource_create(engine.context, owner_ref, data, destroy, &resource)) != MV_OK) {
+    if (adopt(engine.context, owner_ref, data, &resource) != MV_OK) {
         destroy(data);
         luaL_error(L, "could not manage native resource");
     }
@@ -3021,6 +3020,12 @@ fpg_image(lua_State *L)
     return 1;
 }
 
+static MvResult
+adopt_atlas(MvContext *ctx, const MvProcessRef *owner, void *data, MvResource **out)
+{
+    return mv_resource_adopt_atlas(ctx, owner, data, out);
+}
+
 static void destroy_managed_atlas(void *data) { mv_atlas_destroy(data); }
 
 static int
@@ -3054,7 +3059,7 @@ load_atlas_format(lua_State *L, int aseprite)
         return luaL_error(L, "%s", error);
     MvAtlas *native = atlas->atlas;
     atlas->atlas = NULL;
-    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, NULL);
+    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, adopt_atlas);
     atlas->atlas = native;
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
@@ -3337,7 +3342,7 @@ load_asset_atlas(lua_State *L, const char *path, const char *bytes, size_t lengt
     }
     MvAtlas *native = atlas->atlas;
     atlas->atlas = NULL;
-    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, NULL);
+    atlas->resource = manage_native_resource(L, native, destroy_managed_atlas, adopt_atlas);
     atlas->atlas = native;
     return 1;
 }
