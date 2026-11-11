@@ -521,6 +521,10 @@ const _: () = {
         align_of::<MvGraphic>(),
         offset_of!(MvGraphic, shape),
         offset_of!(MvGraphic, color),
+        size_of::<MvCameraRef>(),
+        align_of::<MvCameraRef>(),
+        offset_of!(MvCameraRef, runtime),
+        offset_of!(MvCameraRef, id),
     ];
     assert!(
         native.len() == rust.len(),
@@ -642,6 +646,35 @@ pub struct MvCamera {
     pub y: f64,
     pub viewport: MvCameraViewport,
 }
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MvCameraRef {
+    pub runtime: MvRuntimeId,
+    pub id: u64,
+}
+unsafe extern "C" {
+    pub fn mv_camera_main(ctx: *mut MvContext, out: *mut MvCameraRef) -> c_int;
+    pub fn mv_camera_create(ctx: *mut MvContext, value: MvCamera, out: *mut MvCameraRef) -> c_int;
+    pub fn mv_camera_get(ctx: *mut MvContext, camera: MvCameraRef, out: *mut MvCamera) -> c_int;
+    pub fn mv_camera_put(ctx: *mut MvContext, camera: MvCameraRef, value: MvCamera) -> c_int;
+    pub fn mv_camera_close(ctx: *mut MvContext, camera: MvCameraRef) -> c_int;
+    pub fn mv_process_camera_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        camera: *const MvCameraRef,
+    ) -> c_int;
+    pub fn mv_process_camera_get(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        out: *mut MvCameraRef,
+    ) -> c_int;
+    pub fn mv_process_camera_resolve(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        out: *mut MvCamera,
+    ) -> c_int;
+}
+
 unsafe extern "C" {
     pub fn mv_camera_init(
         camera: *mut MvCamera,

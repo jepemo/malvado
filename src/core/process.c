@@ -15,6 +15,7 @@
 #include "process.h"
 #include "malvado/collision.h"
 #include "malvado/graphic.h"
+#include "malvado/camera.h"
 #include "collision_internal.h"
 #include "entropy.h"
 #include "schedule.h"
@@ -44,6 +45,12 @@ typedef enum {
     COLLIDER_LOCAL
 } ColliderMode;
 
+typedef struct CameraNode {
+    struct CameraNode *next;
+    uint64_t id;
+    MvCamera value;
+} CameraNode;
+
 typedef struct {
     MvProcessId id, parent, creator_id;
     Genealogy *lineage;
@@ -52,6 +59,7 @@ typedef struct {
     double z;
     double x, y;
     double angle, scale;
+    uint64_t camera_id;
     MvProcessStatus status;
     MvProcessStep step;
     MvProcessDestroy destroy;
@@ -98,6 +106,9 @@ struct MvProcesses {
     size_t ended_count;
     Genealogy *lineage, *cleanup_lineage;
     MvResource *resources;
+    MvCamera main_camera;
+    CameraNode *cameras;
+    uint64_t last_camera_id;
     MvProcessHandle *handles;
     size_t count, capacity;
     MvProcessId next_id;
@@ -120,6 +131,7 @@ MvProcesses *mv_processes_create(MvContext *ctx)
     MvProcesses *p = calloc(1, sizeof(*p));
     if (p) {
         p->ctx = ctx;
+        p->last_camera_id = 1;
         p->runtime_id = (MvRuntimeId){random[0], random[1], id};
     }
     return p;
@@ -192,6 +204,141 @@ resolve_live_process(MvContext *ctx, MvProcessRef reference, Process **out)
         return MV_NOT_FOUND;
     *out = item;
     return MV_OK;
+}
+
+static MvResult
+camera_value(MvProcesses *p, MvCameraRef reference, MvCamera **out)
+{
+    if (!p || !reference.id || reference.runtime.high != p->runtime_id.high ||
+        reference.runtime.low != p->runtime_id.low || reference.runtime.sequence != p->runtime_id.sequence)
+        return MV_INVALID_ARGUMENT;
+    if (reference.id == 1) {
+        *out = &p->main_camera;
+        return MV_OK;
+    }
+    for (CameraNode *node = p->cameras; node; node = node->next) {
+        if (node->id == reference.id) {
+            *out = &node->value;
+            return MV_OK;
+        }
+    }
+    return MV_NOT_FOUND;
+}
+
+MvResult
+mv_camera_main(MvContext *ctx, MvCameraRef *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out) return MV_INVALID_ARGUMENT;
+    *out = (MvCameraRef){p->runtime_id, 1};
+    return MV_OK;
+}
+
+static int
+camera_copy_valid(MvCamera value)
+{
+    MvCamera checked;
+    const MvCameraViewport *view = value.viewport.width || value.viewport.height ||
+        value.viewport.x || value.viewport.y ? &value.viewport : NULL;
+    return mv_camera_init(&checked, value.x, value.y, view);
+}
+
+MvResult
+mv_camera_create(MvContext *ctx, MvCamera value, MvCameraRef *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out || !camera_copy_valid(value)) return MV_INVALID_ARGUMENT;
+    if (p->closing) return MV_BUSY;
+    if (p->last_camera_id == UINT64_MAX - 1) return MV_OVERFLOW;
+    CameraNode *node = malloc(sizeof(*node));
+    if (!node) return MV_OUT_OF_MEMORY;
+    *node = (CameraNode){p->cameras, ++p->last_camera_id, value};
+    p->cameras = node;
+    *out = (MvCameraRef){p->runtime_id, node->id};
+    return MV_OK;
+}
+
+MvResult
+mv_camera_get(MvContext *ctx, MvCameraRef reference, MvCamera *out)
+{
+    if (!out) return MV_INVALID_ARGUMENT;
+    MvCamera *value;
+    MvResult result = camera_value(mv_context_processes(ctx), reference, &value);
+    if (result == MV_OK) *out = *value;
+    return result;
+}
+
+MvResult
+mv_camera_put(MvContext *ctx, MvCameraRef reference, MvCamera value)
+{
+    if (!camera_copy_valid(value)) return MV_INVALID_ARGUMENT;
+    MvCamera *destination;
+    MvResult result = camera_value(mv_context_processes(ctx), reference, &destination);
+    if (result == MV_OK) *destination = value;
+    return result;
+}
+
+MvResult
+mv_camera_close(MvContext *ctx, MvCameraRef reference)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    MvCamera *value;
+    MvResult result = camera_value(p, reference, &value);
+    if (result == MV_INVALID_ARGUMENT) return result;
+    if (reference.id == 1) return MV_INVALID_ARGUMENT;
+    if (reference.id > p->last_camera_id) return MV_NOT_FOUND;
+    CameraNode **link = &p->cameras;
+    while (*link && (*link)->id != reference.id) link = &(*link)->next;
+    if (*link) {
+        CameraNode *node = *link;
+        *link = node->next;
+        free(node);
+    }
+    return MV_OK;
+}
+
+MvResult
+mv_process_camera_set(MvContext *ctx, MvProcessRef reference, const MvCameraRef *camera)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    uint64_t id = 0;
+    if (camera) {
+        if (!camera->id && !camera->runtime.high && !camera->runtime.low && !camera->runtime.sequence) {
+            id = UINT64_MAX;
+        } else {
+            MvCamera *value;
+            result = camera_value(mv_context_processes(ctx), *camera, &value);
+            if (result != MV_OK) return result;
+            id = camera->id;
+        }
+    }
+    item->camera_id = id;
+    return MV_OK;
+}
+
+MvResult
+mv_process_camera_get(MvContext *ctx, MvProcessRef reference, MvCameraRef *out)
+{
+    if (!out) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    if (item->camera_id == UINT64_MAX) *out = (MvCameraRef){0};
+    else *out = (MvCameraRef){mv_context_processes(ctx)->runtime_id, item->camera_id ? item->camera_id : 1};
+    return MV_OK;
+}
+
+MvResult
+mv_process_camera_resolve(MvContext *ctx, MvProcessRef reference, MvCamera *out)
+{
+    if (!out) return MV_INVALID_ARGUMENT;
+    MvCameraRef camera;
+    MvResult result = mv_process_camera_get(ctx, reference, &camera);
+    if (result != MV_OK) return result;
+    if (!camera.id) { *out = (MvCamera){0}; return MV_OK; }
+    return mv_camera_get(ctx, camera, out);
 }
 
 MvResult
@@ -682,6 +829,11 @@ void mv_processes_destroy(MvProcesses *p)
         resource->owner_reference = 0;
         if (!resource->references) free_resource(resource);
         else unlink_resource(resource);
+    }
+    while (p->cameras) {
+        CameraNode *next = p->cameras->next;
+        free(p->cameras);
+        p->cameras = next;
     }
     free(p->items);
     free(p->ended);

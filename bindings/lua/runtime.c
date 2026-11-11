@@ -52,7 +52,7 @@ typedef enum {
     PROCESS_KILLED
 } ProcessState;
 
-typedef struct { MvCamera value; MvProcessRef target; int closed, target_ref; } LuaCamera;
+typedef struct { MvCamera value; MvCameraRef reference; MvProcessRef target; int closed, owned, target_ref; } LuaCamera;
 
 typedef struct {
     lua_Integer id;
@@ -681,6 +681,52 @@ push_owner(lua_State *L, lua_Integer id)
     lua_pushnil(L);
 }
 
+static void
+set_process_camera(lua_State *L, LuaSelf *self, int value)
+{
+    MvCameraRef screen = {0};
+    LuaCamera *camera = luaL_testudata(L, value, "malvado.camera");
+    const MvCameraRef *selection = lua_isnil(L, value) ? NULL : camera ? &camera->reference : &screen;
+    if (mv_process_camera_set(engine.context, self->reference, selection) != MV_OK)
+        luaL_error(L, "camera must be a live camera, nil, or false");
+}
+
+static void
+push_selected_camera(lua_State *L, LuaSelf *self)
+{
+    MvCameraRef selection;
+    if (mv_process_camera_get(engine.context, self->reference, &selection) != MV_OK)
+        luaL_error(L, "process is no longer alive");
+    if (!selection.id) { lua_pushboolean(L, 0); return; }
+    if (selection.id == 1) { lua_pushnil(L); return; }
+    lua_getiuservalue(L, 1, 1);
+    raw_option(L, -1, "camera");
+    LuaCamera *stored = luaL_testudata(L, -1, "malvado.camera");
+    if (stored && stored->reference.id == selection.id) return;
+    lua_pop(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        LuaCamera *camera = luaL_testudata(L, -1, "malvado.camera");
+        if (camera && camera->reference.id == selection.id) {
+            lua_pushliteral(L, "camera");
+            lua_pushvalue(L, -2);
+            lua_rawset(L, -6);
+            return;
+        }
+        lua_pop(L, 1);
+    }
+    LuaCamera *camera = lua_newuserdatauv(L, sizeof(*camera), 0);
+    *camera = (LuaCamera){.reference = selection, .target_ref = LUA_NOREF};
+    camera->closed = mv_camera_get(engine.context, selection, &camera->value) != MV_OK;
+    luaL_setmetatable(L, "malvado.camera");
+    lua_pushvalue(L, -1);
+    lua_rawseti(L, -3, (lua_Integer)lua_rawlen(L, -3) + 1);
+    lua_pushliteral(L, "camera");
+    lua_pushvalue(L, -2);
+    lua_rawset(L, -5);
+}
+
 /* Only primitive graph descriptors are native here. Other graph kinds keep
  * their existing Lua resource ownership until the native asset graph service. */
 static void
@@ -839,6 +885,10 @@ self_index(lua_State *L)
     }
     if (key && strcmp(key, "parent") == 0) {
         push_owner(L, self->id);
+        return 1;
+    }
+    if (key && !strcmp(key, "camera")) {
+        push_selected_camera(L, self);
         return 1;
     }
     if (key && !strcmp(key, "graph")) {
@@ -1063,6 +1113,8 @@ self_newindex(lua_State *L)
     if (key && (!strcmp(key, "x") || !strcmp(key, "y") ||
                 !strcmp(key, "angle") || !strcmp(key, "size")))
         set_process_property(L, self, key, 3);
+    if (key && !strcmp(key, "camera"))
+        set_process_camera(L, self, 3);
     lua_getiuservalue(L, 1, 1);
     int graph_changed = 0;
     if (key && !strcmp(key, "graph")) {
@@ -1310,6 +1362,19 @@ create_process(lua_State *L)
         discard_spawn(L, &draft);
         return luaL_error(L, "out of memory creating process");
     }
+    /* Preparation can run finalizers. Recheck a selected native camera before
+     * transferring the draft to C, so a stale selection cannot orphan a spawn. */
+    raw_option(L, fields, "camera");
+    LuaCamera *selected_camera = luaL_testudata(L, -1, "malvado.camera");
+    MvCamera selected_value;
+    int camera_valid = !selected_camera ||
+        mv_camera_get(engine.context, selected_camera->reference, &selected_value) == MV_OK;
+    lua_pop(L, 1);
+    if (!camera_valid) {
+        free(handle);
+        discard_spawn(L, &draft);
+        return luaL_error(L, "camera must be a live camera, nil, or false");
+    }
     MvProcessId core_id;
     MvResult spawn_result = mv_process_spawn_related(engine.context, (MvProcessId)creator, parent,
                                                      0, lua_process_step, lua_process_destroy,
@@ -1354,6 +1419,9 @@ create_process(lua_State *L)
     lua_pop(L, 1);
     raw_option(L, fields, "graph");
     set_process_graphic(L, draft.self, -1);
+    lua_pop(L, 1);
+    raw_option(L, fields, "camera");
+    set_process_camera(L, draft.self, -1);
     lua_pop(L, 1);
     sync_process_collider(L, draft.self, fields);
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft.self_ref);
@@ -3926,12 +3994,22 @@ render_graph(lua_State *L, const Process *process)
     lua_pop(L, 3);
 }
 
+static void
+load_camera(lua_State *L, LuaCamera *camera)
+{
+    if (!camera->reference.id)
+        (void)mv_camera_main(engine.context, &camera->reference);
+    if (camera->closed || mv_camera_get(engine.context, camera->reference, &camera->value) != MV_OK) {
+        camera->closed = 1;
+        luaL_error(L, "camera is destroyed");
+    }
+}
+
 static LuaCamera *
 check_camera(lua_State *L, int index)
 {
     LuaCamera *camera = luaL_checkudata(L, index, "malvado.camera");
-    if (camera->closed)
-        luaL_error(L, "camera is destroyed");
+    load_camera(L, camera);
     return camera;
 }
 
@@ -3949,7 +4027,18 @@ camera_destroy(lua_State *L)
 {
     LuaCamera *camera = luaL_checkudata(L, 1, "malvado.camera");
     camera_stop_following(L, camera);
+    if (engine.context && camera->reference.id)
+        (void)mv_camera_close(engine.context, camera->reference);
     camera->closed = 1;
+    return 0;
+}
+
+static int
+camera_gc(lua_State *L)
+{
+    LuaCamera *camera = luaL_checkudata(L, 1, "malvado.camera");
+    if (camera->owned) return camera_destroy(L);
+    camera_stop_following(L, camera);
     return 0;
 }
 
@@ -3974,6 +4063,9 @@ camera_create(lua_State *L)
     LuaCamera *camera = lua_newuserdatauv(L, sizeof(*camera), 0);
     *camera = (LuaCamera){.value = value, .target_ref = LUA_NOREF};
     luaL_setmetatable(L, "malvado.camera");
+    if (mv_camera_create(engine.context, value, &camera->reference) != MV_OK)
+        return luaL_error(L, "could not create camera");
+    camera->owned = 1;
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
     lua_pushvalue(L, -2);
     lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
@@ -3988,10 +4080,13 @@ camera_set(lua_State *L)
     if (!explicit && lua_gettop(L) != 2)
         return luaL_error(L, "expected camera_set(x, y) or camera_set(camera, x, y)");
     LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
+    load_camera(L, camera);
     double x = luaL_checknumber(L, explicit ? 2 : 1);
     double y = luaL_checknumber(L, explicit ? 3 : 2);
     if (!mv_camera_set(&camera->value, x, y))
         return luaL_error(L, "invalid camera position");
+    if (mv_camera_put(engine.context, camera->reference, camera->value) != MV_OK)
+        return luaL_error(L, "camera is destroyed");
     camera_stop_following(L, camera);
     return 0;
 }
@@ -4003,10 +4098,13 @@ camera_move(lua_State *L)
     if (!explicit && lua_gettop(L) != 2)
         return luaL_error(L, "expected camera_move(dx, dy) or camera_move(camera, dx, dy)");
     LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
+    load_camera(L, camera);
     double x = luaL_checknumber(L, explicit ? 2 : 1);
     double y = luaL_checknumber(L, explicit ? 3 : 2);
     if (!mv_camera_move(&camera->value, x, y))
         return luaL_error(L, "invalid camera movement");
+    if (mv_camera_put(engine.context, camera->reference, camera->value) != MV_OK)
+        return luaL_error(L, "camera is destroyed");
     camera_stop_following(L, camera);
     return 0;
 }
@@ -4015,6 +4113,7 @@ static int
 camera_position(lua_State *L)
 {
     LuaCamera *camera = lua_isnoneornil(L, 1) ? &engine.main_camera : check_camera(L, 1);
+    load_camera(L, camera);
     lua_pushnumber(L, camera->value.x);
     lua_pushnumber(L, camera->value.y);
     return 2;
@@ -4048,6 +4147,11 @@ static void
 update_camera(lua_State *L, LuaCamera *camera)
 {
     if (camera->closed || camera->target_ref < 0) return;
+    if (mv_camera_get(engine.context, camera->reference, &camera->value) != MV_OK) {
+        camera_stop_following(L, camera);
+        camera->closed = 1;
+        return;
+    }
     MvCamera next = camera->value;
     if (mv_camera_follow_step(&next, engine.context, &camera->target,
                               engine.width, engine.height) != MV_OK)
@@ -4072,8 +4176,10 @@ update_camera(lua_State *L, LuaCamera *camera)
                     (lua_isnil(L, -1) || lua_type(L, -1) == LUA_TNUMBER);
         double x = lua_isnil(L, -2) ? 0 : lua_tonumber(L, -2);
         double y = lua_isnil(L, -1) ? 0 : lua_tonumber(L, -1);
-        if (valid && isfinite(x) && isfinite(y))
+        if (valid && isfinite(x) && isfinite(y)) {
+            (void)mv_camera_put(engine.context, camera->reference, next);
             camera->value = next;
+        }
         lua_pop(L, 2);
     }
     lua_pop(L, 2);
@@ -4099,20 +4205,12 @@ update_cameras(lua_State *L)
 
 /* Return NULL only for a closed/invalid explicit camera. Screen-space content
  * uses an identity camera so region and local scroll retain their contracts. */
-static const MvCamera *
-process_camera(lua_State *L, const Process *process)
+static int
+process_camera(lua_State *L, const Process *process, MvCamera *out)
 {
-    static const MvCamera screen_space = {0};
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-    lua_getiuservalue(L, -1, 1);
-    raw_option(L, -1, "camera");
-    LuaCamera *stored = luaL_testudata(L, -1, "malvado.camera");
-    const MvCamera *camera;
-    if (lua_isnil(L, -1)) camera = &engine.main_camera.value;
-    else if (lua_isboolean(L, -1) && !lua_toboolean(L, -1)) camera = &screen_space;
-    else camera = stored && !stored->closed ? &stored->value : NULL;
-    lua_pop(L, 3);
-    return camera;
+    (void)L;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    return mv_process_camera_resolve(engine.context, reference, out) == MV_OK;
 }
 
 /* Return 1 for no region, 2 for an active clip, or 0 when fully off-screen. */
@@ -4195,8 +4293,9 @@ render(void)
         if (!process) continue;
         if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
             continue;
-        const MvCamera *camera = process_camera(L, process);
-        if (!camera) continue;
+        MvCamera selected_camera;
+        if (!process_camera(L, process, &selected_camera)) continue;
+        const MvCamera *camera = &selected_camera;
         int region = begin_process_region(L, process, camera);
         if (!region) continue;
         int scroll = begin_process_scroll(L, process, camera);
@@ -5680,7 +5779,7 @@ open_module(lua_State *L)
     }
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.collider_keys");
     luaL_newmetatable(L, "malvado.camera");
-    lua_pushcfunction(L, camera_destroy);
+    lua_pushcfunction(L, camera_gc);
     lua_setfield(L, -2, "__gc");
     lua_newtable(L);
     static const luaL_Reg camera_methods[] = {
@@ -6111,6 +6210,7 @@ malvado_run(int argc, char **argv)
         engine.context = NULL;
         return 1;
     }
+    (void)mv_camera_main(engine.context, &engine.main_camera.reference);
     engine.L = luaL_newstate();
     if (!engine.L) {
         fprintf(stderr, "Could not create Lua state\n");

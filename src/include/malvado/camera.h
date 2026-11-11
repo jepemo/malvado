@@ -27,6 +27,26 @@ extern "C" {
 typedef struct { int x, y, width, height; } MvCameraViewport;
 typedef struct { double x, y; MvCameraViewport viewport; } MvCamera;
 
+/* Context-owned camera identities. Main is ID 1 and cannot be closed. Explicit
+ * IDs are never reused. Values own no platform resource. Context shutdown frees
+ * all cameras. Closing an explicit camera is idempotent; selected processes hide
+ * until reassigned. References do not retain a camera or process. */
+typedef struct { MvRuntimeId runtime; uint64_t id; } MvCameraRef;
+MvResult mv_camera_main(MvContext *ctx, MvCameraRef *out);
+MvResult mv_camera_create(MvContext *ctx, MvCamera value, MvCameraRef *out);
+MvResult mv_camera_get(MvContext *ctx, MvCameraRef camera, MvCamera *out);
+MvResult mv_camera_put(MvContext *ctx, MvCameraRef camera, MvCamera value);
+MvResult mv_camera_close(MvContext *ctx, MvCameraRef camera);
+/* New processes use main. NULL selects main; an all-zero reference selects
+ * screen space; otherwise require a live same-context camera. Get copies the
+ * selection, even after explicit close. Resolve copies effective camera values
+ * or returns MV_NOT_FOUND for a closed selected camera. Error outputs/state
+ * are unchanged. Foreign/NULL/invalid values return MV_INVALID_ARGUMENT; ended
+ * processes return MV_NOT_FOUND. Owner-thread only. Only create allocates. */
+MvResult mv_process_camera_set(MvContext *ctx, MvProcessRef process, const MvCameraRef *camera);
+MvResult mv_process_camera_get(MvContext *ctx, MvProcessRef process, MvCameraRef *out);
+MvResult mv_process_camera_resolve(MvContext *ctx, MvProcessRef process, MvCamera *out);
+
 /* Initialize a camera. NULL viewport selects the full window. Coordinates must
  * be finite with magnitude <= FLT_MAX / 64; explicit viewport dimensions must
  * be positive. Return 1 on success, 0 without changing outputs on failure.

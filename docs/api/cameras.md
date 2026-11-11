@@ -196,3 +196,62 @@ A7.6ad local macOS checks pass: C-only (59 tests), standard/headless
 (175 tests each), and visual (57 tests). The expanded native destruction cases
 and C/Lua parity also pass after the safe-point test correction. Linux CI and
 native main/explicit camera ownership remain outside this local evidence.
+
+## Context-owned camera identities and selection
+
+`MvCameraRef` identifies a camera within one live context. Use
+`mv_camera_main(ctx, &ref)` for the canonical main camera, initially at `(0, 0)`
+with a full-window viewport. Main is ID 1 and cannot be closed.
+`mv_camera_create(ctx, value, &ref)` copies a validated camera value into the
+context. IDs are never reused. Get copies values; put replaces a complete value
+atomically. Only create allocates. It returns `MV_OUT_OF_MEMORY` on allocation
+failure, `MV_OVERFLOW` at ID exhaustion, and `MV_BUSY` during context shutdown.
+Invalid values or NULL inputs return `MV_INVALID_ARGUMENT`. Failed operations
+preserve outputs and stored state.
+
+`mv_camera_close` frees an explicit camera. Repeated close of an issued identity
+is successful; reading/writing a closed or unknown identity returns
+`MV_NOT_FOUND`. Foreign references are invalid. Context shutdown releases every
+remaining camera. Camera values own no graphics resources. All operations use
+the owner thread. References are copied identities, not pointers or lifetime
+retainers. Callers must keep the context live for native calls.
+
+`mv_process_camera_set(ctx, process, camera)` selects a live same-context camera.
+NULL selects main; an all-zero reference selects screen space. New processes
+use main. Get returns the selected identity, including a closed explicit one.
+Resolve returns a copied effective camera or `MV_NOT_FOUND` for a closed view.
+A closed selected camera hides the process until reassignment. Camera changes
+do not modify process coordinates, colliders, status or lifetime.
+
+Lua retains `nil`/`false`/camera selection and its existing methods. All camera
+positions and selections are now authoritative in C. `self.camera` reads native
+selection and keeps existing userdata identity when available. Lua-created
+camera userdata still closes its native camera on collection. A userdata view
+of a camera created by C borrows it: collection drops only Lua metadata and
+follow state. Explicit destroy still closes it. The context owns the underlying
+camera until close or context shutdown. Process creation rechecks the selected
+camera after preparation and before native spawn, so a stale native identity
+cannot leave a process registered after a constructor error.
+
+The native primitive process pass now applies the selected camera and viewport.
+It intersects viewport and host clip, composes host scroll, and restores both
+host scopes before return. Lua graph-before-command ordering and process-local
+region/scroll behavior remain in the existing runner. Camera follow timing
+remains explicit; registration does not introduce a scheduler or automatic
+updates outside the existing host tick flow.
+
+`camera_registry` checks copied values, canonical main, close/repeated close,
+foreign/dead/NULL errors, atomic invalid writes, screen/reset selection,
+non-reused IDs and context cleanup with open cameras. The mixed C/Lua fixture
+checks native read/write and selection, borrowed-view GC, native close and stale
+spawn rejection without an orphan process. `visual_native_camera_registry`
+checks native main/explicit/screen mutations, viewport clipping and closed-view
+hiding on a frozen Lua process. Existing scope and camera visuals remain required.
+
+A7.6al macOS evidence: C-only (63 tests), standard/headless (182 each) and
+visual (60) pass. The final native primitive pixel test also checks that
+camera/scroll cancellation cannot bypass the existing world-coordinate limit.
+Installed probes verify all new signatures and CameraRef layout. One graphics
+attempt failed in the existing keyboard visual fixture; the isolated fixture
+and complete isolated graphics rerun passed without keyboard changes. Linux CI
+and remaining asset/command services are not certified by this local evidence.

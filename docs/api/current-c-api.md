@@ -34,11 +34,19 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_camera_center`
 - `mv_camera_clip`
+- `mv_camera_close`
+- `mv_camera_create`
 - `mv_camera_follow_step`
+- `mv_camera_get`
 - `mv_camera_init`
+- `mv_camera_main`
 - `mv_camera_move`
 - `mv_camera_project`
+- `mv_camera_put`
 - `mv_camera_set`
+- `mv_process_camera_get`
+- `mv_process_camera_resolve`
+- `mv_process_camera_set`
 
 ## [collision.h](../../src/include/malvado/collision.h)
 

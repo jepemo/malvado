@@ -18,6 +18,7 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+#include "malvado/camera.h"
 #include "malvado/platform.h"
 #include "input_internal.h"
 #include "raylib.h"
@@ -58,6 +59,8 @@ enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
 static int drawing_active, clip_active, scroll_active;
+static MvCameraViewport current_clip;
+static float current_scroll_x, current_scroll_y;
 
 int
 mv_pad_connected(int slot)
@@ -495,6 +498,7 @@ mv_window_clip_begin(int x, int y, int width, int height)
         return 0;
     BeginScissorMode(x, y, width, height);
     clip_active = 1;
+    current_clip = (MvCameraViewport){x, y, width, height};
     return 1;
 }
 
@@ -517,6 +521,8 @@ mv_window_scroll_begin(float x, float y)
     Camera2D camera = {.offset = {0, 0}, .target = {x, y}, .rotation = 0, .zoom = 1};
     BeginMode2D(camera);
     scroll_active = 1;
+    current_scroll_x = x;
+    current_scroll_y = y;
     return 1;
 }
 
@@ -676,6 +682,14 @@ mv_window_draw_process_graphics(MvContext *ctx)
         free(items);
         return 0;
     }
+    int width, height;
+    if (!mv_window_size(&width, &height)) { free(items); return 0; }
+    int saved_clip = clip_active, saved_scroll = scroll_active;
+    MvCameraViewport clip = current_clip;
+    float scroll_x = saved_scroll ? current_scroll_x : 0;
+    float scroll_y = saved_scroll ? current_scroll_y : 0;
+    if (saved_scroll) (void)mv_window_scroll_end();
+    if (saved_clip) (void)mv_window_clip_end();
     for (size_t i = 0; i < total; ++i) {
         MvProcessRef ref;
         MvGraphic graphic;
@@ -688,8 +702,30 @@ mv_window_draw_process_graphics(MvContext *ctx)
             mv_process_angle(ctx, ref, &transform.angle) != MV_OK ||
             mv_process_scale(ctx, ref, &transform.scale) != MV_OK)
             continue;
-        (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+        /* Preserve the primitive world-coordinate limit before projection;
+         * camera/scroll cancellation must not make invalid input drawable. */
+        if (fabs(transform.x) > FLT_MAX / 16 || fabs(transform.y) > FLT_MAX / 16)
+            continue;
+        MvCamera camera;
+        MvCameraViewport visible;
+        if (mv_process_camera_resolve(ctx, ref, &camera) != MV_OK ||
+            mv_camera_clip(&camera, saved_clip ? &clip : NULL, width, height, &visible) <= 0)
+            continue;
+        transform.x += camera.viewport.x - camera.x - scroll_x;
+        transform.y += camera.viewport.y - camera.y - scroll_y;
+        /* Keep the default full-window pass batched. Explicit viewport/host
+         * clipping still needs a per-process scissor intersection. */
+        if (!saved_clip && !camera.viewport.width) {
+            (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+            continue;
+        }
+        if (mv_window_clip_begin(visible.x, visible.y, visible.width, visible.height)) {
+            (void)mv_window_draw_graphic(graphic.shape, transform, graphic.color);
+            (void)mv_window_clip_end();
+        }
     }
+    if (saved_clip) (void)mv_window_clip_begin(clip.x, clip.y, clip.width, clip.height);
+    if (saved_scroll) (void)mv_window_scroll_begin(scroll_x, scroll_y);
     free(items);
     return 1;
 }

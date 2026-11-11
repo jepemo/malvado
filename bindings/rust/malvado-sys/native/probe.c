@@ -73,6 +73,14 @@ _Static_assert(_Generic(&mv_process_world_move_selected, MvResult (*)(MvContext 
 _Static_assert(_Generic(&mv_process_world_query, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, size_t *): 1, default: 0), "mv_process_world_query signature");
 _Static_assert(_Generic(&mv_process_world_move, MvResult (*)(MvContext *, MvProcessRef, const MvCollisionWorld *, const MvCollisionShape *, double, double, MvCollisionSweep *): 1, default: 0), "mv_process_world_move signature");
 _Static_assert(_Generic(&mv_collision_world_move, int (*)(const MvCollisionWorld *, MvCollisionShape, MvCollisionTransform *, double, double, MvCollisionSweep *): 1, default: 0), "mv_collision_world_move signature");
+_Static_assert(_Generic(&mv_camera_main, MvResult (*)(MvContext *, MvCameraRef *): 1, default: 0), "mv_camera_main signature");
+_Static_assert(_Generic(&mv_camera_create, MvResult (*)(MvContext *, MvCamera, MvCameraRef *): 1, default: 0), "mv_camera_create signature");
+_Static_assert(_Generic(&mv_camera_get, MvResult (*)(MvContext *, MvCameraRef, MvCamera *): 1, default: 0), "mv_camera_get signature");
+_Static_assert(_Generic(&mv_camera_put, MvResult (*)(MvContext *, MvCameraRef, MvCamera): 1, default: 0), "mv_camera_put signature");
+_Static_assert(_Generic(&mv_camera_close, MvResult (*)(MvContext *, MvCameraRef): 1, default: 0), "mv_camera_close signature");
+_Static_assert(_Generic(&mv_process_camera_set, MvResult (*)(MvContext *, MvProcessRef, const MvCameraRef *): 1, default: 0), "mv_process_camera_set signature");
+_Static_assert(_Generic(&mv_process_camera_get, MvResult (*)(MvContext *, MvProcessRef, MvCameraRef *): 1, default: 0), "mv_process_camera_get signature");
+_Static_assert(_Generic(&mv_process_camera_resolve, MvResult (*)(MvContext *, MvProcessRef, MvCamera *): 1, default: 0), "mv_process_camera_resolve signature");
 _Static_assert(_Generic(&mv_camera_init, int (*)(MvCamera *, double, double, const MvCameraViewport *): 1, default: 0), "mv_camera_init signature");
 _Static_assert(_Generic(&mv_camera_set, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_set signature");
 _Static_assert(_Generic(&mv_camera_move, int (*)(MvCamera *, double, double): 1, default: 0), "mv_camera_move signature");
@@ -205,5 +213,6 @@ int main(void) {
     printf("%zu %zu %zu %zu ", offsetof(MvColor, r), offsetof(MvColor, g), offsetof(MvColor, b), offsetof(MvColor, a));
     printf("%zu %zu ", sizeof(MvGraphic), _Alignof(MvGraphic));
     printf("%zu %zu ", offsetof(MvGraphic, shape), offsetof(MvGraphic, color));
+    printf("%zu %zu %zu %zu ", sizeof(MvCameraRef), _Alignof(MvCameraRef), offsetof(MvCameraRef, runtime), offsetof(MvCameraRef, id));
     return 0;
 }

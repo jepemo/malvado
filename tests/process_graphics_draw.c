@@ -17,6 +17,8 @@
 #undef NDEBUG
 #endif
 #include "malvado/platform.h"
+#include "malvado/camera.h"
+#include <float.h>
 #include "raylib.h"
 #include <assert.h>
 
@@ -85,6 +87,21 @@ int main(void)
     assert(mv_window_scroll_end());
     pixel(40, 40, 255, 0);
     mv_window_end();
+    MvCameraRef main;
+    MvCamera camera;
+    assert(mv_camera_main(ctx, &main) == MV_OK);
+    assert(mv_camera_init(&camera, FLT_MAX / 64, 0, NULL));
+    assert(mv_camera_put(ctx, main, camera) == MV_OK);
+    assert(mv_process_set_position(ctx, refs[0], (double)(FLT_MAX / 16) + FLT_MAX / 64, 20) == MV_OK);
+    mv_window_begin(black);
+    assert(mv_window_scroll_begin(FLT_MAX / 16, 0));
+    assert(mv_window_draw_process_graphics(ctx));
+    assert(mv_window_scroll_end());
+    pixel(0, 20, 0, 0);
+    mv_window_end();
+    assert(mv_camera_init(&camera, 0, 0, NULL));
+    assert(mv_camera_put(ctx, main, camera) == MV_OK);
+    assert(mv_process_set_position(ctx, refs[0], 20, 20) == MV_OK);
     assert(mv_process_graphic_clear(ctx, refs[0]) == MV_OK);
     mv_window_begin(black);
     assert(mv_window_draw_process_graphics(ctx));

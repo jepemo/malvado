@@ -94,8 +94,10 @@ replacement/color/extent and clearing on a frozen Lua process.
 ascending z/creation order during an active frame. Sleeping processes hide;
 frozen and not-yet-activated processes are included. Transform and scale limits
 match `mv_window_draw_graphic`; unsupported or nonpositive-scale transforms are
-skipped. Current clip/scroll scopes apply. There is no implicit camera selection,
-process activation, tick, immediate-command collection, text, fade or asset draw.
+skipped. Registered process camera/viewport selection applies. Current host
+clip/scroll scopes compose with that selection and are restored before return.
+There is no implicit process activation, tick, immediate-command collection,
+text, fade or asset draw.
 Call this explicit pass at the chosen point in the host's render flow.
 
 The operation allocates one ordered process snapshot and frees it before

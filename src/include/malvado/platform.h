@@ -80,8 +80,8 @@ int mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transfor
 /* Draw stored primitive process graphs in native z/creation order. Requires an
  * active frame and live owner-thread context. Sleep hides; freeze stays visible.
  * Nonpositive/unsupported render transforms are skipped as in Lua. Clip/scroll
- * scopes apply. No tick, process activation, cameras, commands or assets are
- * implicit. Return 1 on success, 0 on invalid context/frame or allocation error.
+ * scopes compose with process camera/viewport selection and are restored.
+ * No tick, process activation, commands or assets are implicit. Return 1 on success, 0 on invalid context/frame or allocation error.
  * The ordered snapshot allocation is released before return. */
 int mv_window_draw_process_graphics(MvContext *ctx);
 
