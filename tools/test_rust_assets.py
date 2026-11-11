@@ -33,11 +33,13 @@ def consumer(prefix, profile):
         '[dependencies]\nmalvado={path=' + json.dumps(os.path.relpath(sdk, game))
         + ',features=["assets"]}\n')
     fixture = (ROOT / "tests/fixtures/atlas.json").read_text()
+    (game / "asset source.json").write_text(fixture)
     aseprite = (ROOT / "tests/fixtures/aseprite/pingpong.json").read_text()
     fpg = (ROOT / "tests/fixtures/fpg/bennugd-8.fpg").read_bytes()
     (game / "src/main.rs").write_text(
         'use malvado::{atlas::Atlas, Error};\n'
         'fn main() -> Result<(), Error> {\n'
+        ' let source = malvado::asset::Source::open("asset source.json")?; assert_eq!(source.format(), malvado::asset::Format::Atlas); assert_eq!(source.path(), std::path::Path::new("asset source.json")); assert_eq!(source.image_path("red.png")?, std::path::PathBuf::from("red.png")); assert_eq!(source.dimensions(), None); assert!(!source.bytes().is_empty());\n'
         ' let atlas = Atlas::parse(' + json.dumps(fixture) + ', 8, 8)?;\n'
         ' assert_eq!(atlas.sprite_named("green")?.unwrap().id, 42);\n'
         ' assert_eq!(atlas.image(), "red.png");\n'

@@ -78,3 +78,45 @@ failures and checks that all allocations are released. Existing Lua headless
 and visual asset-loader fixtures verify importer, explicit-format, image-path
 and retained-result behavior. Installed probes check every signature and the
 format enum representation/values. The inventory checks cover the new header.
+
+## Safe Rust sources
+
+Enable the `assets` feature and use `malvado::asset::{Source, Format}`. The safe
+wrapper calls the same native service; it does not reimplement file reading,
+content detection or path joining.
+
+```rust
+use malvado::asset::{Source, Format};
+let path = std::env::temp_dir().join(format!("malvado-source-doc-{}.json", std::process::id()));
+std::fs::write(&path, r#"{"kind":"graphics-library"}"#)?;
+let source = Source::open(&path)?;
+std::fs::remove_file(&path)?;
+assert_eq!(source.format(), Format::Atlas);
+assert_eq!(source.bytes(), br#"{"kind":"graphics-library"}"#);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+Source owns the native snapshot. `bytes()` and `path()` borrow it; Drop releases
+its native memory once. `format()` returns a typed hint, `dimensions()` returns
+optional advisory dimensions, and `image_path(reference)` returns an owned
+PathBuf from native path joining. Empty or NUL-containing image references
+return `InvalidArgument`. Output allocation failure returns `OutOfMemory`.
+Source-open errors return a static `Asset` diagnostic; a NUL-containing input
+path returns `InvalidArgument`. Opening takes the existing Rust JSON parser
+lock, so concurrent safe imports do not race cJSON's global error record.
+
+Sources stay on their creating thread and need no Engine, scheduler or window.
+Paths retain their Unix bytes without forced UTF-8 conversion; actual filenames
+must also meet host filesystem rules. `Format::Unknown` is a usable snapshot,
+including for unsupported or ambiguous content. Feed the copied bytes to the
+appropriate delivered native-backed importer for complete validation. This API
+does not create image resources, register process graphs or advance animation.
+
+Rust tests check all source formats with real fixtures, copied bytes, path
+lifetimes and references, invalid arguments, ambiguous and binary content, and
+existing native atlas parsing. Byte-only image names are checked on macOS/Linux;
+non-UTF-8 on-disk filenames are additionally checked on Linux. Runnable and
+owner-thread compile-fail doctests pass. The relocated offline assets consumer
+uses every Source method without source-tree dependencies. Native ASan/UBSan
+integration covers native allocation and destruction; Rust itself is not
+sanitizer-instrumented.

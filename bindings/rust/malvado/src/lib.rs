@@ -24,7 +24,7 @@
 //! ```
 pub mod animation;
 #[cfg(feature = "assets")]
-mod asset;
+pub mod asset;
 #[cfg(feature = "assets")]
 pub mod atlas;
 #[cfg(feature = "graphics")]
