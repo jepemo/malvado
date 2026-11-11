@@ -34,6 +34,16 @@ pub struct Atlas {
     local: PhantomData<Rc<()>>,
 }
 impl Atlas {
+    /// Take one uniquely owned, fully validated native allocation.
+    /// SAFETY: the pointer must come from the matching native importer and
+    /// must have no other owning wrapper or pending destruction.
+    pub(crate) unsafe fn from_native(native: NonNull<ffi::MvAtlas>) -> Self {
+        Self {
+            native,
+            local: PhantomData,
+        }
+    }
+
     /// Parse Malvado schema 1 or 2 against the actual image dimensions.
     pub fn parse(json: &str, width: i32, height: i32) -> Result<Self, Error> {
         Self::parse_with(json, width, height, ffi::mv_atlas_parse)

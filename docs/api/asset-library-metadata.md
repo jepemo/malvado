@@ -70,3 +70,49 @@ allocation remains. Existing headless and graphical Lua loader/resource tests
 cover the moved paths. Installed Rust probes check both signatures and every
 field's size, alignment and offset. Unified texture construction, process asset
 graphs and automatic animation remain separate alpha.7 work.
+
+## Safe Rust library loading
+
+With the `assets` feature, use `malvado::asset::{Library, Metadata, Format}`.
+Library opens an owned Source and calls the same native metadata dispatcher.
+
+```rust
+use malvado::asset::{Library, Metadata};
+let path = std::env::temp_dir().join(format!("malvado-library-doc-{}.json", std::process::id()));
+std::fs::write(&path, r#"{"schema":1,"kind":"graphics-library","image":"sheet.png","sprites":[{"id":7,"name":"ship","x":0,"y":0,"width":4,"height":8}]}"#)?;
+let library = Library::open(&path, None)?;
+std::fs::remove_file(path)?;
+let Metadata::Atlas(atlas) = library.into_metadata() else { unreachable!() };
+assert_eq!(atlas.sprite(7).unwrap().name, "ship");
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+`Library::open(path, None)` uses the source hint. `Some(format)` selects an
+explicit importer; `Some(Format::Unknown)` also uses detection. PNG and unknown
+formats return `Error::Asset`. Embedded NUL in an input path returns
+`InvalidArgument`. Native parser failures, including allocation failure, keep
+their static Asset diagnostic. No metadata or source allocation survives a
+failed constructor.
+
+`Library::from_source(source, format)` consumes an existing Source instead of
+reading the file again. Failure releases that source. Parsing shares the safe
+JSON import lock. `format()` records the selected format, including Aseprite.
+`source()` borrows copied bytes and provenance for referenced-image paths.
+`metadata()` borrows a typed Atlas, Fpg or Manifest variant, using the existing
+safe inspection, conversion and animation metadata methods. All values stay on
+their owner thread.
+
+`into_metadata()` releases the source and returns independently owned metadata.
+The ordinary wrappers release their native allocations once. A Library or its
+Metadata can also use the existing native-backed Resource manager for process
+or context ownership. Retained metadata remains usable after context shutdown.
+Image creation and actual image-bound validation remain explicit; this service
+does not retain textures or assign process graphics.
+
+Rust tests load all four native library formats, use explicit/automatic formats,
+reject invalid input and PNG, and inspect data after source/file/context removal.
+They verify copied pivots, animation samples, FPG pixels/points and converted
+manifest palette data. The runnable and owner-thread doctests pass in both
+profiles. The relocated offline assets consumer uses each Library method.
+Installed record/signature checks, Clippy/format and native graphical ASan/UBSan
+cover the shared boundary. Rust itself is not sanitizer-instrumented.

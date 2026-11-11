@@ -83,3 +83,8 @@ Safe Rust JSON asset constructors serialize access to the native parser
 error state. Independent thread owners can import assets concurrently; each
 result remains local to its creating thread. Do not overlap imports with raw
 C/Lua JSON parser calls on other threads.
+
+To open atlas, Aseprite, FPG or manifest files through one metadata entry point,
+use [Library](asset-library-metadata.md#safe-rust-library-loading). It preserves
+the Source for referenced-image paths and returns these same owned metadata
+wrappers. Actual texture dimensions still require validation before drawing.

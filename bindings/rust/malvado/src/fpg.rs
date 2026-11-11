@@ -38,6 +38,16 @@ pub struct Fpg {
     local: PhantomData<Rc<()>>,
 }
 impl Fpg {
+    /// Take one uniquely owned, fully validated native allocation.
+    /// SAFETY: the pointer must come from the matching native importer and
+    /// must have no other owning wrapper or pending destruction.
+    pub(crate) unsafe fn from_native(native: NonNull<ffi::MvFpg>) -> Self {
+        Self {
+            native,
+            local: PhantomData,
+        }
+    }
+
     pub fn parse(data: &[u8]) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         let mut error = std::ptr::null();
@@ -239,6 +249,16 @@ pub struct Manifest {
     local: PhantomData<Rc<()>>,
 }
 impl Manifest {
+    /// Take one uniquely owned, fully validated native allocation.
+    /// SAFETY: the pointer must come from the matching native importer and
+    /// must have no other owning wrapper or pending destruction.
+    pub(crate) unsafe fn from_native(native: NonNull<ffi::MvFpgManifest>) -> Self {
+        Self {
+            native,
+            local: PhantomData,
+        }
+    }
+
     pub fn parse(json: &str) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         let mut error = std::ptr::null();

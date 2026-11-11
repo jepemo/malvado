@@ -154,3 +154,141 @@ impl Drop for Source {
         }
     }
 }
+
+/// Complete native library metadata. Each variant owns its native allocation.
+/// Atlas also represents imported Aseprite metadata. No variant owns textures.
+pub enum Metadata {
+    Atlas(crate::atlas::Atlas),
+    Fpg(crate::fpg::Fpg),
+    Manifest(crate::fpg::Manifest),
+}
+
+/// An owned source and its validated library metadata. Files may be removed
+/// after opening. PNG files use Source and an image loader instead.
+/// ```
+/// use malvado::asset::{Library, Metadata};
+/// let path = std::env::temp_dir().join(format!("malvado-library-doc-{}.json", std::process::id()));
+/// std::fs::write(&path, r#"{"schema":1,"kind":"graphics-library","image":"sheet.png","sprites":[{"id":7,"name":"ship","x":0,"y":0,"width":4,"height":8}]}"#)?;
+/// let library = Library::open(&path, None)?;
+/// std::fs::remove_file(path)?;
+/// let Metadata::Atlas(atlas) = library.into_metadata() else { unreachable!() };
+/// assert_eq!(atlas.sprite(7).unwrap().name, "ship");
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+/// ```compile_fail
+/// let library = malvado::asset::Library::open("sheet.json", None).unwrap();
+/// std::thread::spawn(move || drop(library));
+/// ```
+pub struct Library {
+    source: Source,
+    metadata: Metadata,
+    format: Format,
+}
+struct ParsedMetadata(ffi::MvAssetMetadata);
+impl Drop for ParsedMetadata {
+    fn drop(&mut self) {
+        // SAFETY: this guard owns all pointers that were not moved out.
+        unsafe {
+            ffi::mv_asset_metadata_destroy(&mut self.0);
+        }
+    }
+}
+impl Format {
+    fn native(self) -> i32 {
+        match self {
+            Self::Unknown => ffi::MV_ASSET_UNKNOWN,
+            Self::Png => ffi::MV_ASSET_PNG,
+            Self::Fpg => ffi::MV_ASSET_FPG,
+            Self::Atlas => ffi::MV_ASSET_ATLAS,
+            Self::Aseprite => ffi::MV_ASSET_ASEPRITE,
+            Self::FpgManifest => ffi::MV_ASSET_FPG_MANIFEST,
+        }
+    }
+}
+impl Library {
+    /// Open and fully parse metadata with the native dispatcher. None or
+    /// Unknown uses the source hint; other formats override it. Actual texture
+    /// bounds are not validated without an image. Source bytes stay owned.
+    pub fn open(path: impl AsRef<Path>, format: Option<Format>) -> Result<Self, Error> {
+        Self::from_source(Source::open(path)?, format)
+    }
+    /// Consume an existing snapshot. Failure drops the source and any partial
+    /// metadata. JSON parsing uses the same lock as other safe import calls.
+    pub fn from_source(source: Source, format: Option<Format>) -> Result<Self, Error> {
+        let mut parsed = ParsedMetadata(ffi::MvAssetMetadata::default());
+        let mut error = std::ptr::null();
+        let _json = json_guard();
+        // SAFETY: borrowed source, distinct empty output and error pointer.
+        // Native failure leaves the guard empty and returns a static message.
+        if unsafe {
+            ffi::mv_asset_metadata_parse(
+                source.native.as_ptr(),
+                format.unwrap_or(Format::Unknown).native(),
+                &mut parsed.0,
+                &mut error,
+            )
+        } != 1
+        {
+            let message = if error.is_null() {
+                "could not parse asset metadata"
+            } else {
+                // SAFETY: the native contract provides immutable static errors.
+                let message: &'static CStr = unsafe { CStr::from_ptr(error) };
+                message.to_str().unwrap_or("could not parse asset metadata")
+            };
+            return Err(Error::Asset(message));
+        }
+        let format = match parsed.0.format {
+            ffi::MV_ASSET_ATLAS => Format::Atlas,
+            ffi::MV_ASSET_ASEPRITE => Format::Aseprite,
+            ffi::MV_ASSET_FPG => Format::Fpg,
+            ffi::MV_ASSET_FPG_MANIFEST => Format::FpgManifest,
+            other => return Err(Error::UnexpectedNative(other)),
+        };
+        // SAFETY: successful native dispatch returns exactly one validated
+        // owned pointer of the selected type. Clear it before guard cleanup.
+        let metadata = unsafe {
+            match format {
+                Format::Atlas | Format::Aseprite => {
+                    let native =
+                        NonNull::new(std::mem::replace(&mut parsed.0.atlas, std::ptr::null_mut()))
+                            .expect("native atlas metadata");
+                    Metadata::Atlas(crate::atlas::Atlas::from_native(native))
+                }
+                Format::Fpg => {
+                    let native =
+                        NonNull::new(std::mem::replace(&mut parsed.0.fpg, std::ptr::null_mut()))
+                            .expect("native FPG metadata");
+                    Metadata::Fpg(crate::fpg::Fpg::from_native(native))
+                }
+                Format::FpgManifest => {
+                    let native = NonNull::new(std::mem::replace(
+                        &mut parsed.0.manifest,
+                        std::ptr::null_mut(),
+                    ))
+                    .expect("native manifest metadata");
+                    Metadata::Manifest(crate::fpg::Manifest::from_native(native))
+                }
+                _ => unreachable!(),
+            }
+        };
+        Ok(Self {
+            source,
+            metadata,
+            format,
+        })
+    }
+    pub fn source(&self) -> &Source {
+        &self.source
+    }
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
+    }
+    pub fn format(&self) -> Format {
+        self.format
+    }
+    /// Release the file snapshot and return independently owned metadata.
+    pub fn into_metadata(self) -> Metadata {
+        self.metadata
+    }
+}
