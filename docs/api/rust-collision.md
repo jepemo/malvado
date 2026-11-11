@@ -60,21 +60,22 @@ processes are included. Dead or closed handles return the corresponding error.
 Failed collider updates leave the previous native collider unchanged.
 
 Fixed registration does not follow visual-property changes. New processes now
-derive colliders from primitive graphs by default; see the bound selection
-contract below. Asset graph collider derivation remains A7.6 work. This explicit native geometry layer does not close
+derive colliders from selected primitive or sprite graphs by default; see the bound selection
+contract below. Safe sprite assignment uses the [process sprite API](rust-atlas.md#process-sprite-assignment). This explicit native geometry layer does not close
 the full A7.6 graphics/input/audio/resource gate. See the
 [collision contract](collision.md) for the shared math and native limits.
 
 ## Automatic primitive and local colliders
 
-New process handles use their assigned primitive graph for collision geometry.
+New process handles use their assigned primitive or sprite graph for collision geometry.
 Current native x/y, angle and scale apply on every collision query. Changing a
 property or graph, clearing a graph, or calling contextual world movement takes
-effect without rendering or another engine tick. These operations need no window.
+effect without rendering or another engine tick. Queries need no render frame.
+Sprite assignment retains its window; primitive-only contexts need no graphics.
 
 Use `actor.bind_collider(Some(shape))?` to select a copied local override that
-follows those same properties. `actor.bind_collider(None)?` restores primitive
-graph selection. A local override survives graph clearing and replacement.
+follows those same properties. `actor.bind_collider(None)?` restores selected
+graph geometry. A local override survives graph clearing and replacement.
 `clear_collider()` disables all selection until the next bind or fixed set.
 `set_collider(shape, transform)` retains its independent fixed-transform
 contract. A failed bind preserves the previous selection.

@@ -50,7 +50,7 @@ assert_eq!(actor.resolve_camera()?.position(), (0.0, 0.0));
 Use `Selection::Main`, `Screen` or `Explicit(handle)` with `set_camera`.
 `camera_selection` copies identity, including a closed explicit selection.
 `resolve_camera` copies the effective value; a closed selected view returns
-`NotFound` and hides that process in the native primitive drawing pass.
+`NotFound` and hides that process in the native process drawing pass.
 Foreign context selection returns `ForeignContext` without changing the current
 selection. Main cannot be closed (`InvalidArgument`). Explicit close is
 idempotent. After engine shutdown camera operations return `Closed`.

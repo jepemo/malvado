@@ -438,3 +438,87 @@ impl crate::window::Frame<'_> {
         )
     }
 }
+
+/// Copied selected sprite geometry. This value owns no image or window.
+#[cfg(feature = "graphics")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SpriteGeometry {
+    pub region: Region,
+    pub pivot: (i32, i32),
+}
+#[cfg(feature = "graphics")]
+impl crate::Handle {
+    /// Select a sprite through native graph storage. The transferred image owner
+    /// retains its window until replacement, clear or process/context cleanup.
+    pub fn set_sprite(&self, sprite: &SpriteImage) -> Result<(), Error> {
+        let ctx = self.inner.runtime.live()?;
+        let owner = Box::into_raw(Box::new(sprite.image.clone()));
+        let graphic = malvado_sys::graphics::MvImageGraphic {
+            image: sprite.image.native(),
+            region: malvado_sys::graphics::MvImageRegion {
+                x: sprite.region.x,
+                y: sprite.region.y,
+                width: sprite.region.width,
+                height: sprite.region.height,
+            },
+            pivot_x: sprite.pivot.0,
+            pivot_y: sprite.pivot.1,
+        };
+        // SAFETY: live context, validated immutable sprite, owned boxed image.
+        // Native success takes owner; failure retains neither owner nor image.
+        let status = unsafe {
+            malvado_sys::graphics::mv_process_image_set_owned(
+                ctx,
+                self.inner.reference,
+                graphic,
+                owner.cast(),
+                Some(release_sprite_owner),
+            )
+        };
+        if let Err(error) = crate::engine::result(status) {
+            // SAFETY: failed native calls leave the boxed owner with us.
+            unsafe {
+                drop(Box::from_raw(owner));
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+    /// Read copied native geometry. The borrowed native image is not exposed.
+    /// Primitive or absent graphs return None; clear_graphic clears either kind.
+    pub fn sprite_geometry(&self) -> Result<Option<SpriteGeometry>, Error> {
+        let mut out = std::mem::MaybeUninit::uninit();
+        let mut present = 0;
+        // SAFETY: separate outputs; native only initializes out when present.
+        crate::engine::result(unsafe {
+            malvado_sys::graphics::mv_process_image_get(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                out.as_mut_ptr(),
+                &mut present,
+            )
+        })?;
+        if present == 0 {
+            return Ok(None);
+        }
+        // SAFETY: successful present result initialized the complete descriptor.
+        let out = unsafe { out.assume_init() };
+        Ok(Some(SpriteGeometry {
+            region: Region {
+                x: out.region.x,
+                y: out.region.y,
+                width: out.region.width,
+                height: out.region.height,
+            },
+            pivot: (out.pivot_x, out.pivot_y),
+        }))
+    }
+}
+#[cfg(feature = "graphics")]
+unsafe extern "C" fn release_sprite_owner(data: *mut std::ffi::c_void) {
+    // SAFETY: native success transferred this Box<Image>, released exactly once
+    // after native image uses. Containment prevents unwinding across C.
+    let _ = crate::task::contain(|| unsafe {
+        drop(Box::from_raw(data.cast::<crate::image::Image>()));
+    });
+}

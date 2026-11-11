@@ -398,8 +398,9 @@ Explicit local, disabled and fixed colliders keep their existing behavior.
 The C host must keep the window open through process/context cleanup. Image
 references do not retain a C window. Only the window owner thread may assign,
 query, clear or draw image graphs. The unsafe Rust sys declarations are available;
-safe Rust assignment and Lua image-graph migration are still incomplete. Existing
-Lua image graph behavior is unchanged. Automatic animation remains separate.
+safe Rust assignment retains a binding owner as described in the
+[process sprite guide](rust-atlas.md#process-sprite-assignment). Lua image-graph
+migration is still incomplete; existing Lua image graph behavior is unchanged. Automatic animation remains separate.
 
 ### Binding lifetime owners
 

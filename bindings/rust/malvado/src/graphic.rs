@@ -130,9 +130,9 @@ impl Handle {
 }
 #[cfg(feature = "graphics")]
 impl crate::window::Frame<'_> {
-    /// Draw stored primitive process graphs in native visual order. This explicit
+    /// Draw stored primitive and image process graphs in native visual order. This explicit
     /// pass uses registered camera selection and restores host clip/scroll scopes.
-    /// It does not tick, collect commands or draw asset graphs.
+    /// It does not tick, collect commands or advance animations.
     pub fn process_graphics(&self, engine: &crate::Engine) -> Result<(), Error> {
         // SAFETY: frame-bound call and borrowed live engine on its owner thread.
         crate::drawing::valid(unsafe {

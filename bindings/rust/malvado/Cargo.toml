@@ -79,3 +79,9 @@ name = "managed_platform"
 path = "tests/managed_platform.rs"
 harness = false
 required-features = ["graphics"]
+
+[[test]]
+name = "process_images"
+path = "tests/process_images.rs"
+harness = false
+required-features = ["graphics", "assets"]

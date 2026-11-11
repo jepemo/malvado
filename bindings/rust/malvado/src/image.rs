@@ -94,6 +94,15 @@ impl Image {
             }),
         })
     }
+    #[cfg(feature = "assets")]
+    pub(crate) fn native(&self) -> *mut ffi::MvImage {
+        self.inner.native.as_ptr()
+    }
+    /// Select the complete image with a signed pixel pivot. Shares its owner.
+    #[cfg(feature = "assets")]
+    pub fn sprite(&self, pivot: (i32, i32)) -> crate::atlas::SpriteImage {
+        crate::atlas::SpriteImage::whole(self.clone(), pivot)
+    }
     pub fn size(&self) -> (i32, i32) {
         // SAFETY: the shared owner retains both native image and its window.
         unsafe {

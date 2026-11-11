@@ -152,3 +152,53 @@ All image creation and cleanup stays on the window owner thread. Selected
 sprites and frame draws retain their image data after the Visual is dropped.
 A failed load releases its source, metadata and any partial texture collection.
 Use `Library` instead when a headless host needs metadata only.
+
+## Process sprite assignment
+
+With `assets` and `graphics`, call `handle.set_sprite(&sprite)` to select a
+sprite from an atlas or FPG collection. For a complete PNG or RGBA image, use
+`image.sprite((pivot_x, pivot_y))`. These operations share image references;
+they do not copy pixels. Pivots use signed cropped-image coordinates.
+
+```rust
+use malvado::{Engine, Error, image::Image, window::{Color, Window}};
+use std::rc::Rc;
+let window = Rc::new(Window::open(320, 240, "Process sprite")?);
+let image = Image::load(window.clone(), "ship.png")?;
+let engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {
+    loop { p.frame().await; }
+})?;
+let sprite = image.sprite((0, 0));
+actor.set_sprite(&sprite)?;
+drop(sprite);
+drop(image);
+let frame = window.frame(Color { r: 0, g: 0, b: 0, a: 255 })?;
+frame.process_graphics(&engine)?;
+actor.clear_graphic()?;
+drop(frame);
+# Ok::<(), Error>(())
+```
+
+The native process owns the selection and collider geometry. Rust transfers an
+image owner that keeps the window alive through replacement, clear, natural
+return, kill and context shutdown. The source sprite and image may be dropped
+immediately. The caller can also drop its window reference; the graph retains
+the window until cleanup. A failed assignment releases temporary references and keeps the
+previous selection. Dead handles return `NotFound`; closed contexts return
+`Closed`.
+
+`handle.sprite_geometry()` returns copied `SpriteGeometry { region, pivot }`,
+or `None` for primitive or absent graphs. It does not expose the native borrowed
+image. Cloned handles observe the same selection. `set_graphic` replaces a
+sprite with a primitive; `clear_graphic` clears either kind. `graphic()` returns
+`None` while a sprite is selected.
+
+`frame.process_graphics(&engine)` draws selected sprites in native z/creation
+order with process position, angle, scale, camera, region and scroll. Sleeping
+processes are hidden; frozen processes remain visible. The pass completes its
+texture uses before returning, so same-frame graph cleanup is safe. Default
+bound colliders use the selected sprite geometry. Explicit collider overrides
+keep their existing rules. This pass does not tick or advance animation.
+
+Lua image graph migration and automatic animation remain incomplete.
