@@ -9,6 +9,11 @@ local producer = mv.process(function()
   local clone = mv.clone_sound(sound)
   weak[1], weak[2] = sound, music
   weak[4] = clone
+  -- No explicit update_music call: the native device pass must finish this
+  -- stream and release its playback root after its creator has returned.
+  local finite = mv.load_music("tests/fixtures/silence.wav", false)
+  weak[5] = finite
+  mv.play_music(finite)
   mv.play_sound(sound)
   mv.pause_sound(sound)
   mv.play_sound(clone)
@@ -41,7 +46,7 @@ local controller = mv.process(function()
   for _ = 1, 45 do mv.frame() end
   collectgarbage("collect")
   collectgarbage("collect")
-  assert(weak[3] == nil)
+  assert(weak[3] == nil and weak[5] == nil)
   -- The runner must release active playback when the last process ends.
   local sound = mv.load_sound("tests/fixtures/silence.wav")
   local music = mv.load_music("tests/fixtures/silence.ogg", true)

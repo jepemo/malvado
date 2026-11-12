@@ -53,3 +53,25 @@ Native controls, paused/idle/repeated-pause boundaries, stop without restart,
 loop continuation, index removal and headless failure are automated. Silent
 fixtures and backend state do not establish audible output or physical-device
 quality; those checks remain in beta.
+
+## Lua runner
+
+The runner calls native maintenance after scheduler cleanup and on each host-loop
+iteration. Streams therefore continue to refill on frames with no simulation tick
+and while the debugger pauses process execution. This does not advance the
+scheduler. `mv.update_music(music)` remains available for explicit use, including
+scripts that operate audio without starting the runner.
+
+Playing/paused userdata stay rooted in Lua's playback registry. The sweep reads
+native pause/playing queries instead of maintaining duplicate flags. Stop removes
+the root immediately; completion removes it during maintenance. Process owner
+termination does not end playback while that root remains. Native controls and
+refill are shared, while registry references remain a Lua binding responsibility.
+Lua's existing controls and playing queries remain its public interface; pause
+state queries are internal to retention.
+
+The resource fixture starts a finite stream, lets its creator return, and proves
+that maintenance releases the playback root without explicit Lua stream updates.
+The native fixture also creates a stream during a paused Lua frame and checks
+completion while the scheduler tick counter stays unchanged. Both run with native
+ASan/UBSan and silent audio fixtures.

@@ -36,6 +36,36 @@ check_loop(MvMusic *music)
     assert(mv_music_playing(music));
 }
 
+static void debug_tick(void *user) { (void)user; }
+
+typedef struct { MvMusic *music; int stage, frames; int64_t tick; } PumpCheck;
+static void
+check_paused_pump(void *user)
+{
+    PumpCheck *check = user;
+    if (check->stage == 2) return;
+    MalvadoProcessInfo info;
+    size_t count;
+    int64_t tick;
+    assert(malvado_debug_snapshot(&info,0,&count,&tick));
+    if (!check->stage) {
+        check->music = mv_music_load("tests/fixtures/silence.wav",0);
+        assert(check->music && mv_music_play(check->music));
+        check->tick = tick;
+        assert(malvado_debug_pause(1));
+        check->stage = 1;
+        return;
+    }
+    assert(tick == check->tick); /* The stream must finish without scheduler ticks. */
+    assert(++check->frames < 90);
+    if (!mv_music_playing(check->music)) {
+        mv_music_destroy(check->music);
+        check->music = NULL;
+        check->stage = 2;
+        assert(malvado_debug_pause(0));
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -100,6 +130,13 @@ main(int argc, char **argv)
     mv_audio_close();
 
     char *args[] = {"malvado-run", argv[1]};
+    PumpCheck check = {0};
+    malvado_debug_set_hook(debug_tick,NULL);
+    malvado_debug_set_frame_hook(check_paused_pump,&check);
     assert(malvado_run(2, args) == 0);
+    malvado_debug_set_frame_hook(NULL,NULL);
+    malvado_debug_set_hook(NULL,NULL);
+    /* The basic API script has no runner; the resource script exercises frames. */
+    assert((check.stage == 0 || check.stage == 2) && !check.music);
     return 0;
 }

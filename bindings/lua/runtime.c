@@ -118,8 +118,8 @@ typedef struct {
     double pivot_x, pivot_y;
 } LuaGraphic;
 typedef struct { MvAnimation *sequence; MvCollisionShape shape; } LuaAnimation;
-typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;
-typedef struct { MvMusic *music; MvResource *resource; int playing, paused; } LuaMusic;
+typedef struct { MvSound *sound; MvResource *resource; } LuaSound;
+typedef struct { MvMusic *music; MvResource *resource; } LuaMusic;
 typedef struct { MvFont *font; MvResource *resource; } LuaFont;
 typedef struct { int rows, columns, count, directory; } LuaLegacySheet;
 #ifndef _WIN32
@@ -2251,11 +2251,9 @@ sweep_audio(lua_State *L)
     while (lua_next(L, -2)) {
         LuaSound *sound = luaL_testudata(L, -2, "malvado.sound");
         LuaMusic *music = luaL_testudata(L, -2, "malvado.music");
-        int ended = sound ? sound->playing && !sound->paused && !mv_sound_playing(sound->sound) :
-                    music ? music->playing && !music->paused && !mv_music_playing(music->music) : 1;
+        int ended = sound ? !mv_sound_paused(sound->sound) && !mv_sound_playing(sound->sound) :
+                    music ? !mv_music_paused(music->music) && !mv_music_playing(music->music) : 1;
         if (ended) {
-            if (sound) sound->playing = 0;
-            if (music) music->playing = 0;
             lua_pushvalue(L, -2);
             lua_pushnil(L);
             lua_rawset(L, -5);
@@ -2263,6 +2261,16 @@ sweep_audio(lua_State *L)
         lua_pop(L, 1);
     }
     lua_pop(L, 1);
+}
+
+/* Service wall-clock audio even when no simulation tick is due or the debug
+ * host pauses process execution. Playback roots are language-owned references. */
+static void
+maintain_audio(lua_State *L)
+{
+    if (!engine.audio) return;
+    (void)mv_audio_update();
+    sweep_audio(L);
 }
 
 static int
@@ -2326,8 +2334,6 @@ play_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_play(sound->sound))
         return luaL_error(L, "sound is not available");
-    sound->playing = 1;
-    sound->paused = 0;
     pin_audio(L, 1);
     return 0;
 }
@@ -2338,7 +2344,6 @@ stop_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_stop(sound->sound))
         return luaL_error(L, "sound is not available");
-    sound->playing = sound->paused = 0;
     pin_audio(L, 0);
     return 0;
 }
@@ -2349,7 +2354,6 @@ pause_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_pause(sound->sound))
         return luaL_error(L, "sound is not available");
-    if (sound->playing) sound->paused = 1;
     return 0;
 }
 
@@ -2359,7 +2363,6 @@ resume_sound(lua_State *L)
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     if (!mv_sound_resume(sound->sound))
         return luaL_error(L, "sound is not available");
-    if (sound->playing) sound->paused = 0;
     return 0;
 }
 
@@ -2440,14 +2443,10 @@ music_action(lua_State *L)
     if (!ok)
         return luaL_error(L, "music is not available");
     if (action == 0) {
-        music->playing = 1;
-        music->paused = 0;
         pin_audio(L, 1);
     } else if (action == 2) {
-        music->playing = music->paused = 0;
         pin_audio(L, 0);
-    } else if (action == 3 && music->playing) music->paused = 1;
-    else if (action == 4 && music->playing) music->paused = 0;
+    }
     return 0;
 }
 
@@ -4085,7 +4084,7 @@ tick(void)
     engine.tick_number++;
     MvResult result = mv_process_tick(engine.context);
     invalidate_dead_handles(engine.L);
-    if (engine.audio) sweep_audio(engine.L);
+    maintain_audio(engine.L);
     advance_fade();
     sync_processes();
     update_cameras(engine.L);
@@ -4469,6 +4468,7 @@ start(lua_State *L)
     if (debug_hook)
         debug_hook(debug_user);
     while (!engine.failed && alive && (engine.headless || !mv_window_should_close())) {
+        maintain_audio(L);
         if (engine.paused) {
             if (!engine.headless)
                 render();

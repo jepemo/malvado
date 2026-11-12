@@ -49,21 +49,23 @@ if (mv_audio_open()) {
 
 ## Stream music
 
-Load a WAV or OGG stream and update it regularly while it plays. This example loops the track:
+Load a WAV or OGG stream. The runner updates active streams automatically, including while process execution is paused. This example loops the track:
 
 ```lua
 local music = mv.load_music("music.ogg", true)
 mv.play_music(music)
 -- In a process, call this before each mv.frame():
-mv.update_music(music)
+mv.update_music(music) -- Optional explicit refill; also available outside mv.start.
 ```
 
 The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`, `mv.stop_music`, `mv.music_playing`, and `mv.music_volume` to control the stream. Volume is from zero to one. Keep a reference to the music while it plays. The runner releases it when it is no longer used or when it closes. Audio is unavailable in headless mode.
 
 Playing and paused music retains its stream after the creating process ends. The runner releases playback references when playback stops, completes, or the runner closes.
 
-In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_music_update` regularly, including when the rest of the game is idle. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
+In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the audio device first. Call `mv_audio_update()` regularly to refill all active native streams, including when the rest of the game is idle. Explicit `mv_music_update` remains available. Use `mv_music_play`, `mv_music_pause`, `mv_music_resume`, `mv_music_stop`, `mv_music_playing`, and `mv_music_set_volume` to control it. The operations return 0 for invalid arguments or a closed device; `mv_music_playing` also returns 0 when paused or stopped. Destroy the stream with `mv_music_destroy` before closing the device.
 
 Audio uses one process-wide device. Destroy every sound and stream before closing it.
 
 For a local device check, build the visual tests and run `MALVADO_REAL_AUDIO=1 ./build-visual/audio-visual-test tests/audio_visual.lua` from the repository root. The test uses silent WAV and OGG fixtures. It checks that both loops are still playing after 0.75 seconds; it does not check audible output.
+
+See [shared audio maintenance](audio-maintenance.md) for native pause state, runner timing and playback roots.
