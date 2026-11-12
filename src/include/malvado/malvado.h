@@ -283,14 +283,16 @@ MvContext *mv_context_create(double ticks_per_second, unsigned max_steps);
  * made from those callbacks are ignored; destroy again after the tick. */
 void mv_context_destroy(MvContext *ctx);
 
-/** Advance the logical clock without reading the system clock.
+/** Advance the logical clock without reading the system clock or executing
+ * processes. The host calls mv_process_tick once per returned step.
  * @param ctx Context created by mv_context_create; must not be NULL.
  * @param elapsed_seconds Finite, nonnegative duration in seconds.
  * @param steps Receives the number of ticks; must not be NULL.
  * @return MV_OK, MV_INVALID_ARGUMENT or MV_OVERFLOW. On failure the context
  * and steps are unchanged. Time above max_steps is recorded as dropped. */
 MvResult mv_context_advance(MvContext *ctx, double elapsed_seconds, unsigned *steps);
-/* Return the total logical clock steps, or 0 for a NULL context. */
+/* Return steps planned by successful clock advances, or 0 for NULL.
+ * Direct mv_process_tick calls do not change this counter. */
 uint64_t mv_context_ticks(const MvContext *ctx);
 /* Return dropped logical time in seconds, or 0 for a NULL context. */
 double mv_context_dropped_seconds(const MvContext *ctx);

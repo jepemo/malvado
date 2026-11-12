@@ -12,16 +12,39 @@
  * SPDX-License-Identifier: Apache-2.0
  * See LICENSE for details.
  */
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <stddef.h>
+#include <stdio.h>
 #include "malvado/malvado.h"
 
 int
-main(void)
+main(int argc, char **argv)
 {
+    assert(argc == 2);
+    FILE *fixture = fopen(argv[1], "r");
+    assert(fixture);
+    MvContext *runner = mv_context_create(60,5);
+    double elapsed, expected_dropped;
+    unsigned expected_steps;
+    unsigned long long expected_total;
+    int rows = 0;
+    while (fscanf(fixture, "%lf %u %llu %lf", &elapsed, &expected_steps,
+                  &expected_total, &expected_dropped) == 4) {
+        unsigned steps;
+        assert(mv_context_advance(runner,elapsed,&steps) == MV_OK && steps == expected_steps);
+        assert(mv_context_ticks(runner) == expected_total);
+        assert(fabs(mv_context_dropped_seconds(runner)-expected_dropped) < 1e-9);
+        ++rows;
+    }
+    assert(feof(fixture) && rows == 5);
+    fclose(fixture);
+    mv_context_destroy(runner);
     assert(!mv_context_create(0, 5));
     assert(!mv_context_create(-1, 5));
     assert(!mv_context_create(NAN, 5));

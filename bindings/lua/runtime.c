@@ -39,7 +39,6 @@
 #include "malvado/asset.h"
 #endif
 #include "globals.h"
-#include "core/clock.h"
 #include "core/process.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
@@ -4589,8 +4588,6 @@ start(lua_State *L)
         engine.failed = 1;
         return lua_error(L);
     }
-    MalvadoClock clock;
-    malvado_clock_init(&clock, 60.0, 5);
     double last_time = engine.headless ? 0 : mv_platform_time();
     int alive = tick();
     if (debug_hook)
@@ -4621,7 +4618,14 @@ start(lua_State *L)
         } else {
             render();
             double now = mv_platform_time();
-            unsigned steps = malvado_clock_advance(&clock, now - last_time);
+            double elapsed = now - last_time;
+            /* Preserve the old clock's neutral handling of bad/backward samples. */
+            if (!isfinite(elapsed) || elapsed < 0) elapsed = 0;
+            unsigned steps;
+            if (mv_context_advance(engine.context, elapsed, &steps) != MV_OK) {
+                engine.failed = 1;
+                break;
+            }
             last_time = now;
             for (unsigned i = 0; i < steps && alive && !engine.failed && !engine.paused; i++) {
                 alive = tick();
