@@ -194,6 +194,14 @@ size_t mv_utf8_decode(const char *input, size_t length, uint32_t *codepoint);
 /* Audio and sound functions use the owner thread. Open the device before
  * loading sounds. Destroy all sounds before closing the device. */
 int mv_audio_open(void);
+/* Refill every started, unpaused native music stream, including streams loaded
+ * by another language host. Completed and stopped streams are not restarted.
+ * Return 1 for an open device, 0 for no device/headless. No allocation by this
+ * adapter, reference transfer, scheduler, input or sound control. Backend refill
+ * may allocate its own decode buffer. Loaded streams form a borrowed index;
+ * destroy still stops/releases the caller's instance immediately. Call regularly
+ * on the device owner thread; destroy all resources before device close. */
+int mv_audio_update(void);
 void mv_audio_close(void);
 /* Load a WAV file. Return an owned sound, or NULL on failure. */
 MvSound *mv_sound_load(const char *path);
@@ -207,6 +215,11 @@ int mv_sound_stop(MvSound *sound);
 int mv_sound_pause(MvSound *sound);
 int mv_sound_resume(MvSound *sound);
 int mv_sound_playing(const MvSound *sound);
+/* Native pause state, independent of backend playing (which is false while
+ * paused). Play/stop/resume clear it; repeated pause preserves it. Pausing an
+ * idle/completed instance does not mark it paused. NULL/no device/headless: 0.
+ * Read and control on the device owner thread. Clones start unpaused. */
+int mv_sound_paused(const MvSound *sound);
 /* Volume must be finite and in the range 0 to 1. */
 int mv_sound_set_volume(MvSound *sound, float volume);
 /* Streams require regular updates on the audio owner thread. Destroy each
@@ -219,6 +232,9 @@ int mv_music_stop(MvMusic *music);
 int mv_music_pause(MvMusic *music);
 int mv_music_resume(MvMusic *music);
 int mv_music_playing(const MvMusic *music);
+/* Same pause-state contract as sound_paused; paused streams are not refilled
+ * by audio_update. Explicit music_update remains available and unchanged. */
+int mv_music_paused(const MvMusic *music);
 int mv_music_set_volume(MvMusic *music, float volume);
 void mv_window_begin(MvColor background);
 /* Clip subsequent drawing to a rectangle inside the logical window. Call

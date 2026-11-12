@@ -13,6 +13,9 @@
  * See LICENSE for details.
  */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
@@ -27,7 +30,7 @@ check_loop(MvMusic *music)
     double start, now;
     assert(mv_monotonic_time(&start));
     do {
-        assert(mv_music_update(music));
+        assert(mv_audio_update());
         assert(mv_monotonic_time(&now));
     } while (now - start < 0.75);
     assert(mv_music_playing(music));
@@ -37,13 +40,16 @@ int
 main(int argc, char **argv)
 {
     assert(argc == 2);
+    assert(!mv_audio_update());
+    assert(!mv_sound_paused(NULL) && !mv_music_paused(NULL));
     assert(!mv_sound_load("tests/fixtures/silence.wav"));
     assert(mv_audio_open());
     assert(mv_audio_open());
     assert(!mv_sound_load("tests/fixtures/missing.wav"));
     assert(!mv_sound_load("tests/fixtures/silence.mp3"));
     MvSound *sound = mv_sound_load("tests/fixtures/silence.wav");
-    assert(sound);
+    assert(sound && !mv_sound_paused(sound));
+    assert(mv_sound_pause(sound) && !mv_sound_paused(sound));
     assert(mv_sound_set_volume(sound, 0));
     assert(mv_sound_set_volume(sound, 1));
     assert(!mv_sound_set_volume(sound, -1));
@@ -51,8 +57,9 @@ main(int argc, char **argv)
     assert(!mv_sound_set_volume(sound, NAN));
     assert(mv_sound_play(sound));
     assert(mv_sound_pause(sound));
-    assert(!mv_sound_playing(sound));
-    assert(mv_sound_resume(sound));
+    assert(mv_sound_paused(sound) && !mv_sound_playing(sound));
+    assert(mv_sound_pause(sound) && mv_sound_paused(sound));
+    assert(mv_sound_resume(sound) && !mv_sound_paused(sound));
     assert(mv_sound_stop(sound));
     assert(!mv_sound_playing(sound));
     MvSound *copy = mv_sound_clone(sound);
@@ -74,11 +81,16 @@ main(int argc, char **argv)
     assert(mv_music_update(music));
     check_loop(music);
     assert(mv_music_pause(music));
-    assert(!mv_music_playing(music));
-    assert(mv_music_resume(music));
+    assert(mv_music_paused(music) && !mv_music_playing(music));
+    assert(mv_music_pause(music) && mv_music_paused(music));
+    assert(mv_audio_update() && mv_music_paused(music));
+    assert(mv_music_resume(music) && !mv_music_paused(music));
     assert(mv_music_stop(music));
-    assert(!mv_music_playing(music));
+    assert(!mv_music_playing(music) && !mv_music_paused(music));
+    assert(mv_music_pause(music) && !mv_music_paused(music));
+    assert(mv_audio_update() && !mv_music_playing(music));
     mv_music_destroy(music);
+    assert(mv_audio_update());
     music = mv_music_load("tests/fixtures/silence.ogg", 1);
     assert(music && mv_music_play(music) && mv_music_update(music));
     check_loop(music);

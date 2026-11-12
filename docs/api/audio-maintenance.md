@@ -1,0 +1,55 @@
+# Shared audio maintenance
+
+The native platform owns playback control state and stream refill. Language
+bindings keep their language-specific lifetime roots. The service uses the
+existing audio device; it does not run processes or create another scheduler.
+
+## Native pause state
+
+`mv_sound_paused(sound)` and `mv_music_paused(music)` report explicit native pause
+state. Backend `playing` queries remain false while paused. Play, stop and resume
+clear pause state. Repeated pause preserves it. Pausing an idle/completed
+instance does not mark it paused. Sound clones start unpaused and have independent
+controls. NULL, a closed device or headless input returns 0. Read and control
+instances on the device owner thread.
+
+## Native stream update
+
+Call `mv_audio_update()` regularly on the device owner thread. It refills every
+started, unpaused native music stream, including streams created by another
+binding on the same device. It skips loaded-but-idle, stopped and paused streams.
+Completion ends automatic refill; it does not restart a completed stream. Explicit
+`mv_music_update(music)` remains available.
+
+The adapter's stream index is borrowed. It adds no ownership or extra allocation
+on load. Destroying a music instance removes it before freeing its decoder. The
+update pass allocates nothing in the adapter; the backend can allocate its decode
+buffer. The pass returns 1 for an open device, including an empty index, or 0 for
+no device/headless.
+
+```c
+if (mv_audio_open()) {
+    MvMusic *music = mv_music_load("music.ogg", 1);
+    if (music) {
+        mv_music_play(music);
+        /* Call regularly from the existing host loop. */
+        mv_audio_update();
+        mv_music_stop(music);
+        mv_music_destroy(music);
+    }
+    mv_audio_close();
+}
+```
+
+The index does not retain resources or the device. C callers own each loaded
+instance and destroy it before device close. Destroy still stops/releases an
+instance immediately. Lua registry roots and Rust Rc roots keep active playback
+alive when their process owner ends. These roots belong to the bindings; native
+state and refill do not depend on their representation. Device ownership remains
+exclusive to one host. Borrowing native operations on that same owner thread does
+not create another device owner.
+
+Native controls, paused/idle/repeated-pause boundaries, stop without restart,
+loop continuation, index removal and headless failure are automated. Silent
+fixtures and backend state do not establish audible output or physical-device
+quality; those checks remain in beta.

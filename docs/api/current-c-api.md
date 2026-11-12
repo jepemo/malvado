@@ -198,6 +198,7 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_audio_close`
 - `mv_audio_open`
+- `mv_audio_update`
 - `mv_draw_state_background`
 - `mv_draw_state_color`
 - `mv_draw_state_init`
@@ -235,6 +236,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_music_destroy`
 - `mv_music_load`
 - `mv_music_pause`
+- `mv_music_paused`
 - `mv_music_play`
 - `mv_music_playing`
 - `mv_music_resume`
@@ -264,6 +266,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_sound_destroy`
 - `mv_sound_load`
 - `mv_sound_pause`
+- `mv_sound_paused`
 - `mv_sound_play`
 - `mv_sound_playing`
 - `mv_sound_resume`

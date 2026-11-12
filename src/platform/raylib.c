@@ -47,12 +47,15 @@ typedef struct {
 struct MvSound {
     Sound sound;
     SharedSound *shared;
-    int alias;
+    int alias, paused;
 };
 struct MvMusic {
     Music stream;
-    int wav;
+    int wav, paused, active;
+    struct MvMusic *next;
 };
+/* Borrowed index; loaded streams retain no extra reference to their device. */
+static MvMusic *music_streams;
 struct MvFont {
     size_t references;
     Font font;
@@ -140,6 +143,7 @@ mv_sound_load(const char *path)
     sound->sound = loaded;
     sound->shared = shared;
     sound->alias = 0;
+    sound->paused = 0;
     *shared = (SharedSound){loaded, 1};
     return sound;
 }
@@ -158,7 +162,7 @@ mv_sound_clone(const MvSound *sound)
         return NULL;
     }
     sound->shared->references++;
-    *copy = (MvSound){alias, sound->shared, 1};
+    *copy = (MvSound){alias, sound->shared, 1, 0};
     return copy;
 }
 
@@ -185,6 +189,7 @@ mv_sound_play(MvSound *sound)
     if (!sound || !IsAudioDeviceReady())
         return 0;
     PlaySound(sound->sound);
+    sound->paused = 0;
     return 1;
 }
 
@@ -194,6 +199,7 @@ mv_sound_stop(MvSound *sound)
     if (!sound || !IsAudioDeviceReady())
         return 0;
     StopSound(sound->sound);
+    sound->paused = 0;
     return 1;
 }
 
@@ -202,6 +208,7 @@ mv_sound_pause(MvSound *sound)
 {
     if (!sound || !IsAudioDeviceReady())
         return 0;
+    if (IsSoundPlaying(sound->sound)) sound->paused = 1;
     PauseSound(sound->sound);
     return 1;
 }
@@ -212,6 +219,7 @@ mv_sound_resume(MvSound *sound)
     if (!sound || !IsAudioDeviceReady())
         return 0;
     ResumeSound(sound->sound);
+    sound->paused = 0;
     return 1;
 }
 
@@ -219,6 +227,12 @@ int
 mv_sound_playing(const MvSound *sound)
 {
     return sound && IsAudioDeviceReady() && IsSoundPlaying(sound->sound);
+}
+
+int
+mv_sound_paused(const MvSound *sound)
+{
+    return sound && IsAudioDeviceReady() && sound->paused;
 }
 
 int
@@ -263,6 +277,9 @@ mv_music_load(const char *path, int loop)
     stream.looping = loop != 0;
     music->stream = stream;
     music->wav = wav;
+    music->paused = music->active = 0;
+    music->next = music_streams;
+    music_streams = music;
     return music;
 }
 
@@ -271,6 +288,9 @@ mv_music_destroy(MvMusic *music)
 {
     if (!music)
         return;
+    MvMusic **link = &music_streams;
+    while (*link && *link != music) link = &(*link)->next;
+    if (*link) *link = music->next;
     destroy_music_stream(music->stream, music->wav);
     free(music);
 }
@@ -281,6 +301,8 @@ mv_music_play(MvMusic *music)
     if (!music || !IsAudioDeviceReady())
         return 0;
     PlayMusicStream(music->stream);
+    music->active = 1;
+    music->paused = 0;
     return 1;
 }
 
@@ -290,6 +312,8 @@ mv_music_update(MvMusic *music)
     if (!music || !IsAudioDeviceReady())
         return 0;
     UpdateMusicStream(music->stream);
+    if (music->active && !music->paused && !IsMusicStreamPlaying(music->stream))
+        music->active = 0;
     return 1;
 }
 
@@ -299,6 +323,7 @@ mv_music_stop(MvMusic *music)
     if (!music || !IsAudioDeviceReady())
         return 0;
     StopMusicStream(music->stream);
+    music->active = music->paused = 0;
     return 1;
 }
 
@@ -307,6 +332,7 @@ mv_music_pause(MvMusic *music)
 {
     if (!music || !IsAudioDeviceReady())
         return 0;
+    if (IsMusicStreamPlaying(music->stream)) music->paused = 1;
     PauseMusicStream(music->stream);
     return 1;
 }
@@ -317,6 +343,7 @@ mv_music_resume(MvMusic *music)
     if (!music || !IsAudioDeviceReady())
         return 0;
     ResumeMusicStream(music->stream);
+    music->paused = 0;
     return 1;
 }
 
@@ -324,6 +351,22 @@ int
 mv_music_playing(const MvMusic *music)
 {
     return music && IsAudioDeviceReady() && IsMusicStreamPlaying(music->stream);
+}
+
+int
+mv_music_paused(const MvMusic *music)
+{
+    return music && IsAudioDeviceReady() && music->paused;
+}
+
+int
+mv_audio_update(void)
+{
+    if (!IsAudioDeviceReady()) return 0;
+    for (MvMusic *music = music_streams; music; music = music->next)
+        if (music->active && !music->paused)
+            (void)mv_music_update(music);
+    return 1;
 }
 
 int

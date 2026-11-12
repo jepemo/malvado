@@ -235,3 +235,7 @@ _Static_assert(_Generic(&mv_text_entry_font_clear, MvResult (*)(MvContext *, uin
 _Static_assert(_Generic(&mv_window_draw_texts, int (*)(MvContext *): 1, default: 0), "mv_window_draw_texts signature");
 
 _Static_assert(_Generic(&mv_text_entry_font_owned, MvResult (*)(MvContext *, uint64_t, MvFont *, int, MvColor, void *, MvResourceDestroy): 1, default: 0), "mv_text_entry_font_owned signature");
+
+_Static_assert(_Generic(&mv_audio_update, int (*)(void): 1, default: 0), "mv_audio_update signature");
+_Static_assert(_Generic(&mv_sound_paused, int (*)(const MvSound *): 1, default: 0), "mv_sound_paused signature");
+_Static_assert(_Generic(&mv_music_paused, int (*)(const MvMusic *): 1, default: 0), "mv_music_paused signature");

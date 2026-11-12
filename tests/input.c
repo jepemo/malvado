@@ -42,6 +42,8 @@ main(void)
                                    (MvCollisionTransform){0, 0, 0, 1}, (MvColor){0}));
     assert(!mv_window_draw_process_graphics(NULL));
     assert(!mv_font_retain(NULL));
+    assert(!mv_audio_update());
+    assert(!mv_sound_paused(NULL) && !mv_music_paused(NULL));
     MvContext *ctx = mv_context_create(60,4);
     uint64_t text_id;
     assert(mv_text_entry_create(ctx,NULL,"headless",0,0,0,&text_id) == MV_OK);

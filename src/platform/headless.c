@@ -187,3 +187,7 @@ malvado_window_draw_process_graphics(MvContext *ctx, MvRenderPrepare prepare, vo
     (void)user;
     return 0;
 }
+
+int mv_audio_update(void) { return 0; }
+int mv_sound_paused(const MvSound *sound) { (void)sound; return 0; }
+int mv_music_paused(const MvMusic *music) { (void)music; return 0; }

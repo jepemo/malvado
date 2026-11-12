@@ -372,6 +372,9 @@ pub struct MvSound {
     _private: [u8; 0],
 }
 unsafe extern "C" {
+    pub fn mv_audio_update() -> c_int;
+    pub fn mv_sound_paused(sound: *const MvSound) -> c_int;
+    pub fn mv_music_paused(music: *const MvMusic) -> c_int;
     pub fn mv_audio_open() -> c_int;
     pub fn mv_audio_close();
     pub fn mv_sound_load(path: *const c_char) -> *mut MvSound;
