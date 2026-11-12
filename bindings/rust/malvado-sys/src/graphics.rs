@@ -136,6 +136,10 @@ const _: () = {
         offset_of!(MvImageGraphic, region),
         offset_of!(MvImageGraphic, pivot_x),
         offset_of!(MvImageGraphic, pivot_y),
+        size_of::<MvImageAnimationFrame>(),
+        align_of::<MvImageAnimationFrame>(),
+        offset_of!(MvImageAnimationFrame, graphic),
+        offset_of!(MvImageAnimationFrame, duration_us),
     ];
     assert!(native.len() == rust.len(), "graphics ABI count mismatch");
     let mut i = 0;
@@ -482,5 +486,32 @@ unsafe extern "C" {
         process: crate::MvProcessRef,
         out: *mut MvImageGraphic,
         present: *mut c_int,
+    ) -> c_int;
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct MvImageAnimationFrame {
+    pub graphic: MvImageGraphic,
+    pub duration_us: u64,
+}
+unsafe extern "C" {
+    pub fn mv_process_image_animation_set(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        frames: *const MvImageAnimationFrame,
+        count: usize,
+        looping: c_int,
+        tick_rate: u32,
+    ) -> c_int;
+    pub fn mv_process_image_animation_set_owned(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        frames: *const MvImageAnimationFrame,
+        count: usize,
+        looping: c_int,
+        tick_rate: u32,
+        owner: *mut std::ffi::c_void,
+        release: Option<unsafe extern "C" fn(*mut std::ffi::c_void)>,
     ) -> c_int;
 }

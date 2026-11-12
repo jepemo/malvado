@@ -455,3 +455,36 @@ their previous behavior; this migration does not advance animation in C.
 The shared C/Lua visual check uses a generated solid red 3-by-5 PNG, a centered
 pivot `(1.5, 2.5)`, frozen native replacement, immediate collision queries and
 native clear. It runs with the atlas and FPG sprite fixtures and sanitizers.
+
+## Native animated image graphs
+
+`mv_process_image_animation_set` copies 1–8192 `MvImageAnimationFrame` values.
+Each frame has an image-region/pivot descriptor and a duration in microseconds
+from 1 to 3,600,000,000. Every image is retained before assignment commits.
+The caller may release its source images and frame array after success.
+The `_owned` variant also transfers an optional binding owner, with the same
+success/failure rules as static image assignment.
+
+Assignment selects frame zero and resets the bound native process clock.
+The existing end-of-tick clock phase selects each subsequent image. The default
+graph-derived collider is the fixed local union of all frames, matching the Lua
+animation contract. No host frame pump or renderer
+callback is needed. Rendering uses the existing native process pass, including
+z order, transforms, camera, region and scroll. Sleep/freeze pause playback;
+process cadence does not change speed. A non-looping sequence holds its end.
+
+The bound clock uses positional graph IDs `index + 1`. Clock reads remain
+available. Standalone clock assignment or clear returns `MV_BUSY` while the
+animated image graph is selected. Replace it with a static graphic or call
+`mv_process_graphic_clear` to stop playback and release frames. Graph replacement,
+process return/kill and context shutdown also release the binding owner once.
+Explicit local/fixed/disabled colliders keep their existing selection rules.
+
+Invalid descriptors, rates, counts, durations, owner pairs, degenerate union
+geometry or allocation failure
+leave the previous graph and clock unchanged. Owner callbacks run only after a
+successful transfer and after native image references are released. C hosts must
+keep the window open through cleanup; bindings can retain it through the owner.
+The process drawing pass flushes queued texture uses before returning, so
+same-frame replacement remains safe. Lua's animated-descriptor storage still
+uses its existing frame views; migration to this visual binding remains open.

@@ -195,6 +195,10 @@ int main(void)
     printf("%zu ", offsetof(MvImageGraphic, region));
     printf("%zu ", offsetof(MvImageGraphic, pivot_x));
     printf("%zu ", offsetof(MvImageGraphic, pivot_y));
+    printf("%zu ", sizeof(MvImageAnimationFrame));
+    printf("%zu ", _Alignof(MvImageAnimationFrame));
+    printf("%zu ", offsetof(MvImageAnimationFrame, graphic));
+    printf("%zu ", offsetof(MvImageAnimationFrame, duration_us));
     return 0;
 }
 
@@ -214,3 +218,6 @@ _Static_assert(_Generic(&mv_process_image_set, MvResult (*)(MvContext *, MvProce
 _Static_assert(_Generic(&mv_process_image_get, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic *, int *): 1, default: 0), "mv_process_image_get signature");
 
 _Static_assert(_Generic(&mv_process_image_set_owned, MvResult (*)(MvContext *, MvProcessRef, MvImageGraphic, void *, MvResourceDestroy): 1, default: 0), "mv_process_image_set_owned signature");
+
+_Static_assert(_Generic(&mv_process_image_animation_set, MvResult (*)(MvContext *, MvProcessRef, const MvImageAnimationFrame *, size_t, int, unsigned): 1, default: 0), "mv_process_image_animation_set signature");
+_Static_assert(_Generic(&mv_process_image_animation_set_owned, MvResult (*)(MvContext *, MvProcessRef, const MvImageAnimationFrame *, size_t, int, unsigned, void *, MvResourceDestroy): 1, default: 0), "mv_process_image_animation_set_owned signature");

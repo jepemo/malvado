@@ -309,6 +309,27 @@ MvResult mv_process_image_set_owned(MvContext *ctx, MvProcessRef process,
     MvImageGraphic graphic, void *owner, MvResourceDestroy release);
 MvResult mv_process_image_get(MvContext *ctx, MvProcessRef process, MvImageGraphic *out, int *present);
 
+/* Copied visual frames. Duration is 1..3600000000 microseconds. */
+typedef struct { MvImageGraphic graphic; uint64_t duration_us; } MvImageAnimationFrame;
+/* Assign 1..8192 copied frames with retained images and an optional owner.
+ * Owner/release transfer follows image_set_owned. Loop is 0 or 1; integer rate
+ * must match host ticks (1..1000000). Validation/allocation failure preserves
+ * the prior graph, clock and owner. Initial selection is frame zero; the same
+ * native clock phase selects subsequent images. Default collision geometry is
+ * the fixed local union of all frames, matching Lua animation bounds.
+ * Degenerate/non-finite union geometry fails without changing the process.
+ * Sleep/freeze pause; cadence does not alter speed. Non-looping holds the end.
+ * Graph replacement/clear and process/context cleanup stop and release it.
+ * Clock get remains available (graph_id = index+1); separate clock set/clear
+ * returns MV_BUSY while bound. Explicit colliders keep their existing rules.
+ * No backend work is performed by the core scheduler. Keep the C window live
+ * through cleanup or transfer a binding owner that retains it. */
+MvResult mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef process,
+    const MvImageAnimationFrame *frames, size_t count, int loop, unsigned tick_rate,
+    void *owner, MvResourceDestroy release);
+MvResult mv_process_image_animation_set(MvContext *ctx, MvProcessRef process,
+    const MvImageAnimationFrame *frames, size_t count, int loop, unsigned tick_rate);
+
 /* Region and pivot use source pixels. Position uses window pixels; rotation
  * is clockwise in degrees. Scale must be positive. Returns 1 if valid. */
 int mv_image_region_valid(const MvImage *image, MvImageRegion region, MvImageTransform transform);

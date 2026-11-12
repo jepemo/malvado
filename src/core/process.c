@@ -77,6 +77,7 @@ typedef struct {
     uint64_t animation_tick;
     void *graphic_data;
     MvResourceDestroy graphic_destroy;
+    MvVisualSample visual_sample;
     ColliderMode collider_mode;
     int has_collider;
     MvCollisionShape collider;
@@ -445,6 +446,7 @@ mv_process_animation_clock_set(MvContext *ctx, MvProcessRef reference,
     Process *item;
     MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK) return result;
+    if (item->visual_sample) return MV_BUSY;
     if (!animation || !tick_rate || tick_rate > 1000000) return MV_INVALID_ARGUMENT;
     if (!mv_animation_retain(animation)) return MV_OVERFLOW;
     mv_animation_destroy(item->animation);
@@ -480,6 +482,7 @@ mv_process_animation_clock_clear(MvContext *ctx, MvProcessRef reference)
     Process *item;
     MvResult result = resolve_live_process(ctx, reference, &item);
     if (result != MV_OK) return result;
+    if (item->visual_sample) return MV_BUSY;
     mv_animation_destroy(item->animation);
     item->animation = NULL;
     item->animation_state = (MvAnimationState){0};
@@ -489,6 +492,12 @@ mv_process_animation_clock_clear(MvContext *ctx, MvProcessRef reference)
 static void
 release_graphic_data(Process *item)
 {
+    if (item->visual_sample) {
+        mv_animation_destroy(item->animation);
+        item->animation = NULL;
+        item->animation_state = (MvAnimationState){0};
+        item->visual_sample = NULL;
+    }
     void *data = item->graphic_data;
     MvResourceDestroy destroy = item->graphic_destroy;
     item->graphic_data = NULL;
@@ -511,6 +520,35 @@ malvado_process_visual_set(MvContext *ctx, MvProcessRef ref,
     item->has_graphic = 1;
     item->graphic_data = data;
     item->graphic_destroy = destroy;
+    return MV_OK;
+}
+
+MvResult
+malvado_process_visual_animation_set(MvContext *ctx, MvProcessRef ref,
+    MvAnimation *animation, unsigned rate, void *data, MvResourceDestroy destroy,
+    MvVisualSample sample)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result != MV_OK) return result;
+    MvCollisionShape shape;
+    MvCollisionBounds bounds;
+    if (!animation || !rate || rate > 1000000 || !data || !destroy || !sample ||
+        !sample(data, 0, &shape) ||
+        !mv_collision_bounds(shape, (MvCollisionTransform){0,0,0,1}, &bounds))
+        return MV_INVALID_ARGUMENT;
+    if (!mv_animation_retain(animation)) return MV_OVERFLOW;
+    release_graphic_data(item);
+    mv_animation_destroy(item->animation);
+    item->animation = animation;
+    item->animation_state = (MvAnimationState){0};
+    item->animation_rate = rate;
+    item->animation_tick = mv_context_processes(ctx)->ticks;
+    item->graphic = (MvGraphic){.shape = shape};
+    item->has_graphic = 1;
+    item->graphic_data = data;
+    item->graphic_destroy = destroy;
+    item->visual_sample = sample;
     return MV_OK;
 }
 
@@ -1843,6 +1881,14 @@ MvResult mv_process_tick(MvContext *ctx)
             item->animation_tick < p->ticks) {
             if (!mv_animation_advance(item->animation, &item->animation_state, item->animation_rate))
                 result = MV_INVALID_ARGUMENT;
+            if (item->visual_sample) {
+                MvAnimationSample sample;
+                MvCollisionShape shape;
+                if (!mv_animation_sample(item->animation, item->animation_state.elapsed_us, &sample) ||
+                    !item->visual_sample(item->graphic_data, sample.index, &shape))
+                    result = MV_INVALID_ARGUMENT;
+                else item->graphic.shape = shape;
+            }
         }
     }
     p->busy = 0;

@@ -56,7 +56,9 @@ int mv_animation_advance(const MvAnimation *animation, MvAnimationState *state, 
  * Graph assignment/clear does not stop this independent clock. Fractional host
  * tick rates are unsupported; choose an integer simulation frequency.
  * Graph IDs are metadata: no graph assignment, assets or rendering is implicit.
- * Clear/replacement, natural return, kill and context shutdown release the clock. */
+ * Clear/replacement, natural return, kill and context shutdown release the clock.
+ * Bound platform image animations own their clock: standalone set/clear returns
+ * MV_BUSY while one is selected. Replace/clear the image graph to stop it. */
 MvResult mv_process_animation_clock_set(MvContext *ctx, MvProcessRef process,
                                   MvAnimation *animation, unsigned tick_rate);
 MvResult mv_process_animation_clock_get(MvContext *ctx, MvProcessRef process,
