@@ -262,6 +262,13 @@ int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, M
  * Clear is idempotent for live entries; missing IDs return MV_NOT_FOUND.
  * All operations stay on the context/window owner thread. */
 MvResult mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor color);
+/* Optional binding lifetime owner. Both owner and destroy must be present or
+ * both NULL. Success transfers owner; failure preserves caller ownership.
+ * Cleanup releases the native font before invoking destroy exactly once. The
+ * callback may only release binding/platform data; no context/process calls.
+ * Use this to retain a host window through the style's native lifetime. */
+MvResult mv_text_entry_font_owned(MvContext *ctx, uint64_t id, MvFont *font, int size,
+    MvColor color, void *owner, MvResourceDestroy destroy);
 MvResult mv_text_entry_font_clear(MvContext *ctx, uint64_t id);
 /* Draw styled entries in creation order at screen coordinates. Call after
  * process graphics and before overlay as needed. No allocation, scheduler tick,

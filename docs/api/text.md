@@ -53,9 +53,8 @@ Rust prevents update or destruction while that borrowed content is in use.
 The owner stays on its creating thread and releases native memory on Drop.
 See the runnable example on `Text::new`.
 
-This is content storage, without implicit process registration or drawing.
-A shared native text list with retained fonts and automatic rendering remains
-unfinished in A7.6.
+This is standalone content storage. Use context text handles for retained fonts
+and the shared native drawing pass.
 
 ## Context text registry
 
@@ -108,7 +107,8 @@ alignment. Owned snapshots remain valid across updates, ticks and shutdown.
 Handles remain local to one thread. Missing entries return `Error::NotFound`;
 a closed engine returns `Error::Closed`. Embedded NUL is rejected before updates.
 The existing standalone `Text` retains its explicit Drop-owned lifetime.
-Neither service registers a font or draws automatically.
+Context handles support explicit font assignment and frame drawing with the
+optional graphics feature; neither service advances a scheduler.
 
 ## Native font references
 
@@ -161,8 +161,8 @@ if (mv_text_entry_create(ctx, NULL, "Score: 1", 10, 10, 0, &id) == MV_OK) {
 ```
 
 Lua prepares styles from its live font tables and uses this native pass.
-Safe Rust text handles do not yet bind fonts or retain a window for this pass.
-The unsafe sys SDK exposes these functions with installed signature checks.
+Rust context text handles retain their font/window owner and expose explicit
+frame drawing. The sys SDK checks the installed native signatures.
 
 ## Lua shared text drawing
 
@@ -179,3 +179,40 @@ measures, aligns or dispatches persistent text drawing independently. Descriptor
 roots remain in Lua so tables stay live; native references protect custom fonts
 through replacement, deletion, process cleanup and shutdown. Headless behavior
 and text content APIs are unchanged.
+
+## Rust retained text drawing
+
+With the graphics feature, `TextHandle::set_font(&font, size, color)` retains a
+custom `Font` and its window. `set_builtin_font(window.clone(), size, color)`
+retains the window for the built-in font. Both copy size/color into the native
+style; size must be 1..1024. A failed assignment preserves the previous style.
+`clear_font()` releases the style without deleting content. Cloned text handles
+share the assignment. Dropping a handle does not clear a context-owned entry.
+
+The native style owns the Rust lifetime token until replacement, clear, removal,
+process cleanup or engine shutdown. Cleanup releases the native font reference
+before dropping the token. Failed calls keep the token with Rust and release it
+there. Callbacks contain destructor panics so none unwind through C.
+`mv_text_entry_font_owned` exposes this optional lifetime token to C bindings;
+pass both owner and destroy, or neither. It transfers the token only on success.
+
+Call `frame.texts(&engine)` after `frame.process_graphics(&engine)` and before
+an optional fade overlay. This is explicit drawing, with no extra scheduler or
+implicit process polling. Active clip/scroll scopes return an error without
+drawing. Missing entries return `Error::NotFound`; closed engines return
+`Error::Closed`. Styled entries retain their window even after the caller drops
+its original font/window variables, and release it when the final style ends.
+
+```rust,no_run
+use std::rc::Rc;
+use malvado::{Engine, graphic::TextAlignment, window::{Window, Color}};
+let window = Rc::new(Window::open(320, 200, "Text")?);
+let engine = Engine::new()?;
+let text = engine.create_text("Score: 1", (10, 10), TextAlignment::Left)?;
+text.set_builtin_font(window.clone(), 20, Color {r:255,g:255,b:255,a:255})?;
+let frame = window.frame(Color {r:0,g:0,b:0,a:255})?;
+frame.texts(&engine)?;
+drop(frame);
+text.remove()?;
+# Ok::<(), malvado::Error>(())
+```

@@ -260,3 +260,79 @@ impl TextHandle {
         result(unsafe { sys::mv_text_entry_remove(self.runtime.live()?, self.id) })
     }
 }
+
+#[cfg(feature = "graphics")]
+impl TextHandle {
+    /// Retain a custom font and its window until style replacement, clear,
+    /// entry removal, owner cleanup or shutdown. Does not draw implicitly.
+    pub fn set_font(
+        &self,
+        font: &crate::font::Font,
+        size: i32,
+        color: crate::window::Color,
+    ) -> Result<(), Error> {
+        self.bind_font(font.native(), size, color, font.clone())
+    }
+    /// Retain the window while this entry uses the built-in font.
+    pub fn set_builtin_font(
+        &self,
+        window: Rc<crate::window::Window>,
+        size: i32,
+        color: crate::window::Color,
+    ) -> Result<(), Error> {
+        self.bind_font(std::ptr::null_mut(), size, color, window)
+    }
+    fn bind_font<T>(
+        &self,
+        font: *mut sys::graphics::MvFont,
+        size: i32,
+        color: crate::window::Color,
+        owner: T,
+    ) -> Result<(), Error> {
+        let ctx = self.runtime.live()?;
+        let owner = Box::into_raw(Box::new(owner));
+        // SAFETY: native acquires the font and takes the boxed lifetime owner
+        // only on success. Font or window keeps the main-thread device alive.
+        let status = unsafe {
+            sys::graphics::mv_text_entry_font_owned(
+                ctx,
+                self.id,
+                font,
+                size,
+                color,
+                owner.cast(),
+                Some(release_text_owner::<T>),
+            )
+        };
+        if let Err(error) = result(status) {
+            // SAFETY: failure leaves the box with this caller.
+            unsafe {
+                drop(Box::from_raw(owner));
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+    pub fn clear_font(&self) -> Result<(), Error> {
+        // SAFETY: live local context and private ID; native releases owners.
+        result(unsafe { sys::graphics::mv_text_entry_font_clear(self.runtime.live()?, self.id) })
+    }
+}
+#[cfg(feature = "graphics")]
+unsafe extern "C" fn release_text_owner<T>(owner: *mut std::ffi::c_void) {
+    // SAFETY: each successful bind transfers exactly one Box; no unwind into C.
+    let _ = crate::task::contain(|| unsafe {
+        drop(Box::from_raw(owner.cast::<T>()));
+    });
+}
+#[cfg(feature = "graphics")]
+impl crate::window::Frame<'_> {
+    /// Draw native retained text after process graphics and before an overlay.
+    /// Active clip/scroll scopes return an error without drawing.
+    pub fn texts(&self, engine: &crate::Engine) -> Result<(), Error> {
+        // SAFETY: frame-bound drawing and a live owner-thread engine.
+        crate::drawing::valid(unsafe {
+            sys::graphics::mv_window_draw_texts(engine.native_context()?)
+        })
+    }
+}

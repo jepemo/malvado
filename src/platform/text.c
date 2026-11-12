@@ -21,6 +21,8 @@ typedef struct {
     MvFont *font;
     int size;
     MvColor color;
+    void *owner;
+    MvResourceDestroy destroy;
 } TextFont;
 
 static void
@@ -28,6 +30,7 @@ release_font(void *data)
 {
     TextFont *style = data;
     mv_font_destroy(style->font);
+    if (style->destroy) style->destroy(style->owner);
     free(style);
 }
 
@@ -48,9 +51,11 @@ draw_text(const void *data, const MvText *text)
 }
 
 MvResult
-mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor color)
+mv_text_entry_font_owned(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor color,
+    void *owner, MvResourceDestroy destroy)
 {
-    if (size < 1 || size > 1024) return MV_INVALID_ARGUMENT;
+    if ((owner && !destroy) || (!owner && destroy) || size < 1 || size > 1024)
+        return MV_INVALID_ARGUMENT;
     const char *value;
     int x, y, alignment;
     MvResult result = mv_text_entry_read(ctx, id, &value, &x, &y, &alignment);
@@ -59,8 +64,9 @@ mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor 
     result = malvado_text_entry_binding(ctx, id, draw_text, &previous);
     if (result != MV_OK) return result;
     TextFont *old = previous;
-    if (old && old->font == font && old->size == size && old->color.r == color.r &&
-        old->color.g == color.g && old->color.b == color.b && old->color.a == color.a)
+    if (!owner && old && !old->owner && old->font == font && old->size == size &&
+        old->color.r == color.r && old->color.g == color.g &&
+        old->color.b == color.b && old->color.a == color.a)
         return MV_OK;
     TextFont *style = malloc(sizeof(*style));
     if (!style) return MV_OUT_OF_MEMORY;
@@ -68,10 +74,20 @@ mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor 
         free(style);
         return MV_INVALID_ARGUMENT;
     }
-    *style = (TextFont){font, size, color};
+    *style = (TextFont){font, size, color, owner, destroy};
     result = malvado_text_entry_bind(ctx, id, style, release_font, draw_text);
-    if (result != MV_OK) release_font(style);
+    if (result != MV_OK) {
+        style->owner = NULL;
+        style->destroy = NULL;
+        release_font(style);
+    }
     return result;
+}
+
+MvResult
+mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor color)
+{
+    return mv_text_entry_font_owned(ctx, id, font, size, color, NULL, NULL);
 }
 
 MvResult

@@ -271,6 +271,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_sound_stop`
 - `mv_text_entry_font`
 - `mv_text_entry_font_clear`
+- `mv_text_entry_font_owned`
 - `mv_text_input_next`
 - `mv_utf8_decode`
 - `mv_utf8_encode`

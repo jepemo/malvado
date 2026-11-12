@@ -104,5 +104,62 @@ fn main() {
     assert!(retained.text_width("Café", 24).unwrap() > 0);
     drop(retained);
     assert!(weak.upgrade().is_none());
+    let window = Rc::new(Window::open(200, 100, "Persistent text").unwrap());
+    let weak = Rc::downgrade(&window);
+    let mut engine = Engine::new().unwrap();
+    let font = Font::load(window.clone(), &path, 24).unwrap();
+    let text = engine
+        .create_text("Café", (20, 20), malvado::graphic::TextAlignment::Left)
+        .unwrap();
+    text.set_font(&font, 24, white).unwrap();
+    let frame = window.frame(black).unwrap();
+    frame.font_text(&font, "Café", (20, 20), 24, white).unwrap();
+    let reference = capture();
+    drop(frame);
+    drop(font);
+    assert_eq!(
+        text.set_builtin_font(window.clone(), 0, white),
+        Err(Error::InvalidArgument)
+    );
+    let frame = window.frame(black).unwrap();
+    frame.texts(&engine).unwrap();
+    assert_eq!(capture(), reference);
+    text.clear_font().unwrap(); // Safe even with glyphs queued in this frame.
+    drop(frame);
+    text.set_builtin_font(window.clone(), 24, white).unwrap();
+    let frame = window.frame(black).unwrap();
+    frame.texts(&engine).unwrap();
+    capture();
+    drop(frame);
+    text.remove().unwrap();
+    assert_eq!(
+        text.set_builtin_font(window.clone(), 24, white),
+        Err(Error::NotFound)
+    );
+    assert_eq!(Rc::strong_count(&window), 1);
+    let actor = engine
+        .spawn(Default::default(), |p| async move {
+            loop {
+                p.frame().await;
+            }
+        })
+        .unwrap();
+    let owned = actor
+        .create_text("process", (0, 0), malvado::graphic::TextAlignment::Left)
+        .unwrap();
+    owned.set_builtin_font(window.clone(), 20, white).unwrap();
+    actor.kill().unwrap();
+    engine.tick().unwrap();
+    assert_eq!(owned.clear_font(), Err(Error::NotFound));
+    assert_eq!(Rc::strong_count(&window), 1);
+    let host = engine
+        .create_text("shutdown", (0, 0), malvado::graphic::TextAlignment::Left)
+        .unwrap();
+    host.set_builtin_font(window.clone(), 20, white).unwrap();
+    drop(window);
+    assert!(weak.upgrade().is_some());
+    drop(engine);
+    assert!(weak.upgrade().is_none());
+    assert_eq!(host.clear_font(), Err(Error::Closed));
     drop(Window::open(32, 32, "After font cleanup").unwrap());
 }

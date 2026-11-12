@@ -19,6 +19,10 @@ struct Inner {
     window: Rc<Window>,
 }
 impl Font {
+    pub(crate) fn native(&self) -> *mut ffi::MvFont {
+        self.inner.native.as_ptr()
+    }
+
     /// Load a TTF/OTF with the native ASCII and Latin-1 glyph set.
     pub fn load(window: Rc<Window>, path: impl AsRef<Path>, base_size: i32) -> Result<Self, Error> {
         if !(1..=256).contains(&base_size) {

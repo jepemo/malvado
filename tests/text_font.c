@@ -45,6 +45,13 @@ int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, M
     mv_window_draw_text(text,x,y,size,color);
     return 1;
 }
+typedef struct { struct MvFont *font; int released; } Owner;
+static void release_owner(void *data)
+{
+    Owner *owner = data;
+    assert(owner->font->references == 1); /* Native reference is released first. */
+    ++owner->released;
+}
 static MvStepResult idle(MvContext *ctx, MvProcessId id, void *user)
 {
     (void)ctx; (void)id; (void)user; return MV_STEP_YIELD;
@@ -88,7 +95,19 @@ int main(void)
     assert(mv_process_kill(ctx,owner,&killed) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK && font.references == 1);
     assert(mv_text_entry_font(ctx,id,&font,20,color) == MV_OK && font.references == 2);
+    Owner lifetime = {&font,0};
+    assert(mv_text_entry_font_owned(ctx,999,&font,20,color,&lifetime,release_owner) == MV_NOT_FOUND);
+    assert(!lifetime.released && font.references == 2);
+    assert(mv_text_entry_font_owned(ctx,id,&font,20,color,&lifetime,NULL) == MV_INVALID_ARGUMENT);
+    fail_allocation = 1;
+    assert(mv_text_entry_font_owned(ctx,id,&font,20,color,&lifetime,release_owner) == MV_OUT_OF_MEMORY);
+    fail_allocation = 0;
+    assert(!lifetime.released && font.references == 2);
+    assert(mv_text_entry_font_owned(ctx,id,&font,20,color,&lifetime,release_owner) == MV_OK);
+    assert(mv_text_entry_font_clear(ctx,id) == MV_OK && lifetime.released == 1);
+    assert(mv_text_entry_font_owned(ctx,id,&font,20,color,&lifetime,release_owner) == MV_OK);
     mv_context_destroy(ctx);
+    assert(lifetime.released == 2);
     assert(font.references == 1);
     mv_font_destroy(&font);
     return 0;
