@@ -72,6 +72,8 @@ Current native x/y, angle and scale apply on every collision query. Changing a
 property or graph, clearing a graph, or calling contextual world movement takes
 effect without rendering or another engine tick. Queries need no render frame.
 Sprite assignment retains its window; primitive-only contexts need no graphics.
+Animated sprite graphs use a fixed local union of all frame bounds. The visible
+frame can change without changing that default collider.
 
 Use `actor.bind_collider(Some(shape))?` to select a copied local override that
 follows those same properties. `actor.bind_collider(None)?` restores selected

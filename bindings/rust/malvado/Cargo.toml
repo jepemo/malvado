@@ -85,3 +85,9 @@ name = "process_images"
 path = "tests/process_images.rs"
 harness = false
 required-features = ["graphics", "assets"]
+
+[[test]]
+name = "sprite_animation"
+path = "tests/sprite_animation.rs"
+harness = false
+required-features = ["graphics", "assets"]

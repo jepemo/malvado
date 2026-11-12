@@ -403,6 +403,19 @@ impl SpriteImage {
             pivot,
         }
     }
+    fn native_graphic(&self) -> malvado_sys::graphics::MvImageGraphic {
+        malvado_sys::graphics::MvImageGraphic {
+            image: self.image.native(),
+            region: malvado_sys::graphics::MvImageRegion {
+                x: self.region.x,
+                y: self.region.y,
+                width: self.region.width,
+                height: self.region.height,
+            },
+            pivot_x: self.pivot.0,
+            pivot_y: self.pivot.1,
+        }
+    }
     pub fn region(&self) -> Region {
         self.region
     }
@@ -453,17 +466,7 @@ impl crate::Handle {
     pub fn set_sprite(&self, sprite: &SpriteImage) -> Result<(), Error> {
         let ctx = self.inner.runtime.live()?;
         let owner = Box::into_raw(Box::new(sprite.image.clone()));
-        let graphic = malvado_sys::graphics::MvImageGraphic {
-            image: sprite.image.native(),
-            region: malvado_sys::graphics::MvImageRegion {
-                x: sprite.region.x,
-                y: sprite.region.y,
-                width: sprite.region.width,
-                height: sprite.region.height,
-            },
-            pivot_x: sprite.pivot.0,
-            pivot_y: sprite.pivot.1,
-        };
+        let graphic = sprite.native_graphic();
         // SAFETY: live context, validated immutable sprite, owned boxed image.
         // Native success takes owner; failure retains neither owner nor image.
         let status = unsafe {
@@ -520,5 +523,76 @@ unsafe extern "C" fn release_sprite_owner(data: *mut std::ffi::c_void) {
     // after native image uses. Containment prevents unwinding across C.
     let _ = crate::task::contain(|| unsafe {
         drop(Box::from_raw(data.cast::<crate::image::Image>()));
+    });
+}
+
+/// One owned sprite and its duration in microseconds, without a separate clock.
+#[cfg(feature = "graphics")]
+#[derive(Clone)]
+pub struct SpriteFrame {
+    pub sprite: SpriteImage,
+    pub duration_us: u64,
+}
+#[cfg(feature = "graphics")]
+impl crate::Handle {
+    /// Copy and retain 1..8192 visual frames in the native process. Durations
+    /// are 1..3600000000 us; playback uses Engine's 60 Hz ticks. The transferred
+    /// image owners keep the window alive after the source frames are dropped.
+    pub fn set_sprite_animation(&self, frames: &[SpriteFrame], looping: bool) -> Result<(), Error> {
+        let ctx = self.inner.runtime.live()?;
+        if frames.is_empty()
+            || frames.len() > 8192
+            || frames
+                .iter()
+                .any(|frame| frame.duration_us == 0 || frame.duration_us > 3_600_000_000)
+        {
+            return Err(Error::InvalidArgument);
+        }
+        let mut native = Vec::new();
+        let mut images = Vec::new();
+        native
+            .try_reserve_exact(frames.len())
+            .map_err(|_| Error::OutOfMemory)?;
+        images
+            .try_reserve_exact(frames.len())
+            .map_err(|_| Error::OutOfMemory)?;
+        for frame in frames {
+            native.push(malvado_sys::graphics::MvImageAnimationFrame {
+                graphic: frame.sprite.native_graphic(),
+                duration_us: frame.duration_us,
+            });
+            images.push(frame.sprite.image.clone());
+        }
+        let owner = Box::into_raw(Box::new(images));
+        // SAFETY: live context and immutable borrowed frames. Success copies
+        // descriptors, retains images and takes the boxed owner; failure takes
+        // nothing. The callback runs only after all native image uses end.
+        let status = unsafe {
+            malvado_sys::graphics::mv_process_image_animation_set_owned(
+                ctx,
+                self.inner.reference,
+                native.as_ptr(),
+                native.len(),
+                looping.into(),
+                60,
+                owner.cast(),
+                Some(release_animation_owner),
+            )
+        };
+        if let Err(error) = crate::engine::result(status) {
+            // SAFETY: native failure leaves this unique owner with the caller.
+            unsafe {
+                drop(Box::from_raw(owner));
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+}
+#[cfg(feature = "graphics")]
+unsafe extern "C" fn release_animation_owner(data: *mut std::ffi::c_void) {
+    // SAFETY: native success owns this Box<Vec<Image>> and releases it once.
+    let _ = crate::task::contain(|| unsafe {
+        drop(Box::from_raw(data.cast::<Vec<crate::image::Image>>()));
     });
 }

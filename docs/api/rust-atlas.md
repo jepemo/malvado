@@ -204,3 +204,61 @@ bound colliders use the selected sprite geometry. Explicit collider overrides
 keep their existing rules. This pass does not tick or advance animation.
 
 Lua image graph migration and automatic animation remain incomplete.
+
+## Automatic sprite animations
+
+Enable `assets` and `graphics`. `actor.set_sprite_animation(&frames, looping)?`
+copies 1–8192 visual frames into
+the native process. Each `atlas::SpriteFrame` owns a `SpriteImage` and a
+`duration_us` in `1..=3_600_000_000`. Frames may come from whole images, atlases
+or FPG collections. The source frames, images and libraries may be dropped
+after assignment. Transferred Rust image owners retain the window until cleanup.
+
+```rust
+use malvado::{Engine, Error, atlas::SpriteFrame, image::Image, window::{Window, Color}};
+use std::rc::Rc;
+let window = Rc::new(Window::open(320, 240, "Animated process")?);
+let red = Image::from_rgba(window.clone(), 1, 1, &[255, 0, 0, 255])?;
+let green = Image::from_rgba(window.clone(), 1, 1, &[0, 255, 0, 255])?;
+let frames = [
+    SpriteFrame { sprite: red.sprite((0.0, 0.0))?, duration_us: 50_000 },
+    SpriteFrame { sprite: green.sprite((0.0, 0.0))?, duration_us: 50_000 },
+];
+let mut engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {
+    loop { p.frame().await; }
+})?;
+actor.set_position(40.0, 40.0)?;
+actor.set_scale(8.0)?;
+actor.set_sprite_animation(&frames, true)?;
+drop(frames);
+drop(red);
+drop(green);
+for _ in 0..3 { engine.tick()?; }
+assert_eq!(actor.animation_clock()?.unwrap().sample.index, 1);
+let frame = window.frame(Color { r: 0, g: 0, b: 0, a: 255 })?;
+frame.process_graphics(&engine)?;
+actor.clear_graphic()?;
+drop(frame);
+# Ok::<(), Error>(())
+```
+
+The existing 60 Hz scheduler clock selects images automatically. Process FPS
+only changes async activation cadence. Sleep/freeze pause without catch-up;
+a non-looping animation holds its final frame. Native process rendering applies
+z order, transforms, camera, region and scroll. Default collision geometry is
+the fixed local union of all frames, matching Lua animation behavior. Explicit
+local/fixed/disabled colliders keep their existing rules.
+
+`animation_clock()` reads the bound state: `sample.index` is zero-based and its
+`graph_id` is `index + 1`, rather than an imported asset ID. `sprite_geometry()`
+returns the visible frame descriptor. Separate clock assignment/clear returns
+`Busy` while the animation is bound. Replace the graph or call `clear_graphic`
+to stop playback. Replacement, natural return, kill and context shutdown release
+all frame owners. Same-frame cleanup after the native draw pass is safe.
+
+Invalid frames/durations, degenerate union geometry, dead/closed handles or
+allocation failure preserve the old graph and clock. Failure does not transfer
+Rust owners. Shared frames can be assigned to multiple contexts independently.
+Lua's animated-descriptor storage still uses its existing frame views; migration
+to the native visual binding remains open.

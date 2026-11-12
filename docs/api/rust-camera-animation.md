@@ -270,4 +270,7 @@ actor.clear_animation_clock()?;
 
 Graph IDs remain metadata. This API does not load textures, select a process
 image or draw. Use the sampled ID with an explicit host mapping. Automatic image
-selection remains alpha.7 work; this service adds no scheduler or timer.
+selection uses [sprite animations](rust-atlas.md#automatic-sprite-animations).
+A bound visual animation owns its clock; standalone clock assignment/clear
+returns Busy until that graph is replaced or cleared. This service adds no
+scheduler or timer.

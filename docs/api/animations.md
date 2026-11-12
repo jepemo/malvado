@@ -163,5 +163,7 @@ keep their existing behavior.
 C, Lua and Rust checks share `tests/fixtures/process-animation.txt`. The mixed
 C/Lua host also verifies native clear and Lua reattachment. The native cleanup
 fixture checks that a destructor can freeze another clock before advancement.
-Actual native image-frame assignment and persistent process commands remain
-separate alpha.7 work.
+Native image-frame assignment is available through
+[animated image graphs](images.md#native-animated-image-graphs). Migrating Lua
+animated descriptors to that visual binding and persistent process commands
+remain alpha.7 work.
