@@ -31,3 +31,14 @@ validation. The terminating NUL is not part of the visible content.
 This service does not retain a font, register a process resource, collect text
 objects or draw them. These remain explicit host responsibilities. It does not
 change the scheduler or introduce automatic process ownership.
+
+## Lua persistent text
+
+`mv.write`, `mv.change_text` and `mv.delete_text` keep their existing signatures.
+Content, position and alignment use the native owned object. Lua retains the
+font descriptor and the existing creation order. A font replacement changes
+only the selected descriptor; a failed argument check leaves all fields intact.
+Deletion and process cleanup release native content immediately. Later garbage
+collection is harmless. Host text has no process owner and lasts until deletion
+or runtime shutdown. Process text is removed when its owner returns or is killed.
+Sleep and freeze do not remove it. The font table remains live, as before.
