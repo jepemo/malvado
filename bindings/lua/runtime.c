@@ -3737,15 +3737,6 @@ font(lua_State *L)
 }
 
 static int
-text_value_gc(lua_State *L)
-{
-    MvText **text = luaL_checkudata(L, 1, "malvado.text_value");
-    mv_text_destroy(*text);
-    *text = NULL;
-    return 0;
-}
-
-static int
 write_text(lua_State *L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
@@ -3769,32 +3760,34 @@ write_text(lua_State *L)
         return luaL_error(L, "alignment must be left, center, or right");
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     lua_createtable(L, 0, 3);
-    MvText **native = lua_newuserdatauv(L, sizeof(*native), 0);
-    *native = NULL;
-    luaL_setmetatable(L, "malvado.text_value");
+    MvProcessRef owner;
+    if (engine.active && mv_process_ref_create(engine.context,
+            (MvProcessId)engine.active_id, &owner) != MV_OK)
+        return luaL_error(L, "invalid text owner");
+    uint64_t native_id;
     int alignment = strcmp(align, "center") == 0 ? 1 : strcmp(align, "right") == 0 ? 2 : 0;
-    if (mv_text_create(text, (int)x, (int)y, alignment, native) != MV_OK)
-        return luaL_error(L, "cannot allocate text");
-    lua_setfield(L, -2, "native");
+    if (mv_text_entry_create(engine.context, engine.active ? &owner : NULL,
+            text, (int)x, (int)y, alignment, &native_id) != MV_OK)
+        return luaL_error(L, "cannot create text");
+    lua_pushinteger(L, (lua_Integer)native_id);
+    lua_setfield(L, -2, "id");
     lua_pushvalue(L, 1);
     lua_setfield(L, -2, "font");
     lua_pushinteger(L, engine.active ? engine.active_id : 0);
     lua_setfield(L, -2, "owner");
-    lua_Integer id = ++engine.next_text_id;
+    lua_Integer id = (lua_Integer)native_id;
+    engine.next_text_id = id;
     lua_seti(L, -2, id);
     lua_pop(L, 1);
     lua_pushinteger(L, id);
     return 1;
 }
 
-/* Release native storage now; later userdata collection is idempotent. */
 static void
 release_text_value(lua_State *L)
 {
-    lua_getfield(L, -1, "native");
-    MvText **text = luaL_checkudata(L, -1, "malvado.text_value");
-    mv_text_destroy(*text);
-    *text = NULL;
+    lua_getfield(L, -1, "id");
+    (void)mv_text_entry_remove(engine.context, (uint64_t)lua_tointeger(L, -1));
     lua_pop(L, 1);
 }
 
@@ -3806,7 +3799,8 @@ delete_text(lua_State *L)
     lua_geti(L, -1, id);
     if (lua_isnil(L, -1))
         return luaL_error(L, "unknown text id");
-    release_text_value(L);
+    if (mv_text_entry_remove(engine.context, (uint64_t)id) != MV_OK)
+        return luaL_error(L, "unknown text id");
     lua_pop(L, 1);
     lua_pushnil(L);
     lua_seti(L, -2, id);
@@ -3840,15 +3834,14 @@ change_text(lua_State *L)
     lua_geti(L, -1, id);
     if (lua_isnil(L, -1))
         return luaL_error(L, "unknown text id");
-    lua_getfield(L, -1, "native");
-    MvText **native = luaL_checkudata(L, -1, "malvado.text_value");
     const char *previous;
     int old_x, old_y, alignment;
-    (void)mv_text_read(*native, &previous, &old_x, &old_y, &alignment);
-    if (mv_text_update(*native, text, has_x ? (int)x : old_x,
-            has_y ? (int)y : old_y, alignment) != MV_OK)
-        return luaL_error(L, "cannot allocate text");
-    lua_pop(L, 1);
+    if (mv_text_entry_read(engine.context, (uint64_t)id, &previous,
+            &old_x, &old_y, &alignment) != MV_OK)
+        return luaL_error(L, "unknown text id");
+    if (mv_text_entry_update(engine.context, (uint64_t)id, text,
+            has_x ? (int)x : old_x, has_y ? (int)y : old_y, alignment) != MV_OK)
+        return luaL_error(L, "cannot update text");
     if (has_font) {
         lua_pushvalue(L, 5);
         lua_setfield(L, -2, "font");
@@ -3866,12 +3859,13 @@ render_texts(lua_State *L)
             lua_pop(L, 1);
             continue;
         }
-        lua_getfield(L, -1, "native");
-        MvText **native = luaL_checkudata(L, -1, "malvado.text_value");
         const char *text;
         int x, y, alignment;
-        (void)mv_text_read(*native, &text, &x, &y, &alignment);
-        lua_pop(L, 1);
+        if (mv_text_entry_read(engine.context, (uint64_t)id,
+                &text, &x, &y, &alignment) != MV_OK) {
+            lua_pop(L, 1);
+            continue;
+        }
         lua_getfield(L, -1, "font");
         lua_getfield(L, -1, "resource");
         LuaFont *custom = luaL_testudata(L, -1, "malvado.font");
@@ -6021,11 +6015,6 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado image");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
-    luaL_newmetatable(L, "malvado.text_value");
-    lua_pushcfunction(L, text_value_gc);
-    lua_setfield(L, -2, "__gc");
-    lua_pop(L, 1);
-
     luaL_newmetatable(L, "malvado.font");
     lua_pushcfunction(L, font_gc);
     lua_setfield(L, -2, "__gc");

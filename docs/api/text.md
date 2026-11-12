@@ -81,3 +81,16 @@ scheduler cleanup point, after process destructors and generic resource cleanup.
 A destructor can still read or explicitly remove its text. Host entries remain
 until removal or context shutdown. Shutdown frees every remaining entry.
 The registry does not retain fonts or draw entries.
+
+## Lua registry integration
+
+Lua `write` now creates an entry in the native context registry. `change_text`
+and rendering read that entry, so native content or position changes are visible
+to Lua. A native removal makes subsequent Lua changes/deletes fail as unknown
+text IDs. Process cleanup removes native entries and releases Lua font roots;
+GC no longer owns a separate text object. Existing signatures, font table
+identity and rendering order are preserved.
+
+The renderer still uses Lua's font descriptors. Entries created only by C are
+not automatically rendered by Lua. Native font retention and common drawing
+collection remain unfinished. The registry itself works without Lua or graphics.
