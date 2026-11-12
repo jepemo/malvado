@@ -302,6 +302,7 @@ unsafe extern "C" {
         codepoints: *const u32,
         count: usize,
     ) -> *mut MvFont;
+    pub fn mv_font_retain(font: *mut MvFont) -> c_int;
     pub fn mv_font_destroy(font: *mut MvFont) -> ();
     pub fn mv_font_text_width(font: *const MvFont, text: *const c_char, size: c_int) -> c_int;
     pub fn mv_font_draw(

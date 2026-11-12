@@ -211,6 +211,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_font_draw`
 - `mv_font_load`
 - `mv_font_load_codepoints`
+- `mv_font_retain`
 - `mv_font_text_width`
 - `mv_image_destroy`
 - `mv_image_draw`

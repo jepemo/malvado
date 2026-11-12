@@ -227,3 +227,5 @@ _Static_assert(_Generic(&mv_process_image_animation_bind_owned, MvResult (*)(MvC
 _Static_assert(_Generic(&mv_window_draw_process_commands, int (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_window_draw_process_commands signature");
 _Static_assert(_Generic(&mv_process_draw_image_region_owned, MvResult (*)(MvContext *, MvProcessRef, MvImage *, MvImageRegion, MvImageTransform, void *, MvResourceDestroy): 1, default: 0), "mv_process_draw_image_region_owned signature");
 _Static_assert(_Generic(&mv_process_draw_image_region, MvResult (*)(MvContext *, MvProcessRef, MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_process_draw_image_region signature");
+
+_Static_assert(_Generic(&mv_font_retain, int (*)(MvFont *): 1, default: 0), "mv_font_retain signature");

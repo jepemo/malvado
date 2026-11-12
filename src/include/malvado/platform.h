@@ -246,6 +246,11 @@ MvFont *mv_font_load(const char *path, int base_size);
  * and surrogate values are invalid. The input array is borrowed. */
 MvFont *mv_font_load_codepoints(const char *path, int base_size,
                                 const uint32_t *codepoints, size_t count);
+/* Acquire one shared immutable native font reference. NULL/reference overflow
+ * returns 0 unchanged. Destroy releases one reference; the last unloads the GPU
+ * resource. Keep every reference on the window owner thread, release all before
+ * window close. Retain does not retain or reopen the window. Headless returns 0. */
+int mv_font_retain(MvFont *font);
 void mv_font_destroy(MvFont *font);
 int mv_font_text_width(const MvFont *font, const char *text, int size);
 int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);

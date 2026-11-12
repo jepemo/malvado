@@ -53,6 +53,7 @@ struct MvMusic {
     int wav;
 };
 struct MvFont {
+    size_t references;
     Font font;
 };
 
@@ -602,7 +603,17 @@ mv_font_load_codepoints(const char *path, int base_size, const uint32_t *codepoi
         return NULL;
     }
     font->font = loaded;
+    font->references = 1;
     return font;
+}
+
+int
+mv_font_retain(MvFont *font)
+{
+    if (!font || font->references == SIZE_MAX)
+        return 0;
+    ++font->references;
+    return 1;
 }
 
 void
@@ -610,6 +621,10 @@ mv_font_destroy(MvFont *font)
 {
     if (!font)
         return;
+    if (--font->references)
+        return;
+    if (drawing_active)
+        rlDrawRenderBatchActive();
     UnloadFont(font->font);
     free(font);
 }

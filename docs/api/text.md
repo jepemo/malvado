@@ -109,3 +109,17 @@ Handles remain local to one thread. Missing entries return `Error::NotFound`;
 a closed engine returns `Error::Closed`. Embedded NUL is rejected before updates.
 The existing standalone `Text` retains its explicit Drop-owned lifetime.
 Neither service registers a font or draws automatically.
+
+## Native font references
+
+`mv_font_load` and `mv_font_load_codepoints` return one owned reference.
+`mv_font_retain` acquires another reference to the same immutable native font.
+It returns 0 for NULL or reference-count overflow without changing ownership.
+Release each acquired reference with `mv_font_destroy`. The final release unloads
+the glyph texture. When a frame is active, that release flushes queued drawing
+before unloading the texture. NULL destruction is harmless.
+
+All references stay on the window owner thread. They do not retain the window;
+release them before window close. Headless retain returns 0. Rust's safe `Font`
+continues to share its native owner and window through its existing Rc wrapper.
+The unsafe sys SDK also declares native retain.

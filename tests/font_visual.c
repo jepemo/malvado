@@ -69,6 +69,10 @@ main(int argc, char **argv)
     assert(!mv_font_load_codepoints(path, 24, NULL, 1));
     MvFont *font = mv_font_load_codepoints(path, 24, glyphs, count);
     assert(font);
+    assert(!mv_font_retain(NULL));
+    assert(mv_font_retain(font));
+    mv_font_destroy(font); /* The acquired reference keeps glyph data alive. */
+    assert(mv_font_text_width(font, "retained", 24) > 0);
     mv_window_begin((MvColor){0, 0, 0, 255});
     assert(mv_font_draw(basic, "Ω", 20, 20, 24, (MvColor){255, 255, 255, 255}));
     mv_window_flush();

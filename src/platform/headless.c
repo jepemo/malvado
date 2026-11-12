@@ -94,6 +94,7 @@ MvFont *mv_font_load_codepoints(const char *path, int base_size, const uint32_t 
     (void)path; (void)base_size; (void)codepoints; (void)count;
     return NULL;
 }
+int mv_font_retain(MvFont *font) { (void)font; return 0; }
 void mv_font_destroy(MvFont *font) { (void)font; }
 int mv_font_text_width(const MvFont *font, const char *text, int size)
 {
