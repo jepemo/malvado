@@ -58,7 +58,7 @@ The full overload lists and conditions remain in the linked inventory.
 | Network/debug/services | NET_*/socket operations, DEBUG, ads/IAP; FLIC/CD-ROM historical services | Low-priority research; portability, service ownership, obsolete formats and credentials need justification. |
 | Raw memory/cryptography | ALLOC/CALLOC/REALLOC/FREE, MEM_*, CRYPT_* | Usually language/established-library responsibilities; no unsafe pointer API selected for Lua/Rust. |
 
-Additional modern candidates are fundamental alpha/tint/blend properties,
+Additional modern candidates include [live property editing, asset reload, flat scenes and reconciliation](live-editing.md), plus fundamental alpha/tint/blend properties,
 process/camera effects, named point queries, explicit spatial links, bounded 3D
 resources and editor consumers. Their provisional APIs are in the linked feature
 proposals, not in the historical export inventory.

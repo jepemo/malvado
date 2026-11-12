@@ -117,3 +117,11 @@ C will use explicit handles, typed parameters and results. Rust will use safe
 owned resources and idiomatic configuration. Neither binding must emulate Lua
 property tables. All milestones need bounded game examples, behavior/resource
 checks and graphics checks on their claimed platforms before promotion.
+
+
+## Shared live workflow
+
+Coordinate shader/resource reload and editor parameter views with the
+[Bris live workflow](live-editing.md). Asset and shader reload do not replace
+process code or suspended execution state. Runtime parameter editing precedes
+code reload and does not require declarative scenes.

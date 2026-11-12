@@ -1,10 +1,10 @@
-# malvado-gui: project, asset, and process workshop
+# Bris: Malvado project, asset, and process workshop
 
 Status: an unassigned future proposal. The tool is not implemented. GUI work is outside the 2.0 release gates. Reference research date: 2026-10-29.
 
 ## Product proposal
 
-Create a desktop app that helps users **create a project, prepare graphics, run a game, understand its processes, and export it**. This flow gives Malvado a distinct identity. A project remains a folder with Lua, configuration, and assets. It can be edited in any editor and used entirely through the CLI.
+Create a desktop app that helps users **create a project, prepare graphics, run a game, understand its processes, and export it**. This flow gives Malvado a distinct identity. A project remains a folder with C, Lua or Rust source, configuration, and assets. It can be edited in any editor and used entirely through the CLI.
 
 DIV combined programming with graphics, palettes, maps, FPG packages, fonts, and sound utilities. The [original menus](https://github.com/DIVGAMES/DIV-Games-Studio/blob/77556912335d0a1b0efea855d4eb2490cf382128/system/lenguaje.div) document that organization. Restore direct access to assets and execution, with process inspection as a specific contribution. This scope is a Malvado proposal, not a certified historical DIV replica.
 
@@ -79,7 +79,7 @@ Export jobs run without blocking the UI, with progress events and cooperative ca
 
 ## G2 process instrumentation
 
-In core P2, prepare snapshots and commands executed **between ticks**, without an ImGui dependency. Implement the channel when runner/CLI are available. Use a versioned, local, opt-in protocol over a session-specific pipe/local socket, with no default network listener. Check version and capabilities on connection; close the channel on exit. Exported release mode does not enable diagnostics by default.
+In core P2, prepare snapshots and commands executed **between ticks**, without an ImGui dependency. Implement the channel when runner/CLI are available. Investigate a versioned, local, opt-in channel, such as a session-specific pipe or local socket, with no default network listener; transport and command schema remain proposals. Check version and capabilities on connection; close the channel on exit. Exported release mode does not enable diagnostics by default.
 
 Immutable snapshot: tick, PID/generation, type, parent, state, transform, next activation, and aggregate metrics. Measure a Lua resume and a tick separately; do not present them as a Lua instruction profiler. Count messages without copying payloads. Do not serialize the whole VM or run game getters/metamethods to display fields.
 
@@ -118,3 +118,22 @@ plans point/frame authoring, target selection, offset previews and world-transfo
 inspection, later including model nodes/bones. Runtime contracts precede these
 editor capabilities. No editor framework is a prerequisite for their first runtime
 milestones. Apply the [reevaluation rule](../roadmap/README.md#promotion-into-a-release).
+
+
+## Bris live workflow extension
+
+Bris is the proposed editor name; historical malvado-gui identifiers and G0
+prototype targets are not renamed by this documentation. The [live editing
+proposal](../roadmap/live-editing.md) is the source for E1–E7: built-in property
+editing, asset reload, flat JSON scenes, reconciliation, selective Lua restart,
+custom property descriptors and optional advanced Rust reload. These future
+units extend the G2 instrumentation direction without assigning GUI or engine
+versions. G1/G2's original exclusion of a general scene editor remains valid.
+
+A first useful live scene editor can stop at properties/assets/flat scenes and
+reconciliation. Runtime-authored values, scene-authored values and editor state
+have separate authorities. No ECS, replacement ownership hierarchy, embedded
+preview, prefabs or dynamic-library reload is required for that editor. Reuse
+existing safe-point and session-identity contracts; language-specific code reload
+is independent of common property editing. See the proposal for lifecycle,
+validation, collision regeneration and rollback boundaries.
