@@ -126,3 +126,15 @@ as explicit background and color arguments. They install no global Rust state.
 
 [Process visual order](../../docs/api/process-visual-order.md) covers native
 process depth and ordered visible handles without a graphics dependency.
+
+## Verification boundary
+
+Keep `malvado` library unit tests independent of C FFI. The optional
+`mise run test-rust-miri` task executes that library target to verify Rust future,
+waker, pinned state and query-buffer ownership. Miri cannot execute native C.
+
+Tests that create an engine, owned native value or platform resource belong in
+integration tests. `tests/text_values.rs` covers native text copies, atomic
+updates and alignment boundaries through the public safe API. The normal SDK
+and sanitizer tasks execute these tests against the real native library and
+retain native ABI checks.

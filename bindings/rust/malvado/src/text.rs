@@ -118,37 +118,6 @@ impl Drop for Text {
         unsafe { sys::mv_text_destroy(self.native.as_ptr()) }
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn copied_content_and_atomic_updates() {
-        let input = String::from("Hola 🦀");
-        let mut text = Text::new(&input, (i32::MIN, i32::MAX), TextAlignment::Center).unwrap();
-        drop(input);
-        assert_eq!(text.snapshot().value, "Hola 🦀");
-        assert!(matches!(
-            text.update("bad\0value", (0, 0), TextAlignment::Left),
-            Err(Error::InvalidArgument)
-        ));
-        assert_eq!(text.snapshot().position, (i32::MIN, i32::MAX));
-        assert_eq!(text.snapshot().alignment, TextAlignment::Center);
-        text.update("", (1, 2), TextAlignment::Right).unwrap();
-        assert_eq!(
-            text.snapshot(),
-            Snapshot {
-                value: "",
-                position: (1, 2),
-                alignment: TextAlignment::Right
-            }
-        );
-        assert!(matches!(
-            Text::new("\0", (0, 0), TextAlignment::Left),
-            Err(Error::InvalidArgument)
-        ));
-    }
-}
-
 /// Context-owned persistent text. Clones share identity, and dropping a handle
 /// does not remove the entry. Explicit removal, owner cleanup or engine shutdown
 /// ends its native lifetime. Snapshots own strings so ticks cannot invalidate them.

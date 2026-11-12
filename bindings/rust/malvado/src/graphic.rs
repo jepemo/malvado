@@ -166,26 +166,3 @@ impl TextAlignment {
         Ok(out)
     }
 }
-
-#[cfg(test)]
-mod text_tests {
-    use super::*;
-    #[test]
-    fn native_alignment_boundaries() {
-        assert_eq!(
-            TextAlignment::Left.aligned_x(i32::MAX, i32::MAX),
-            Ok(i32::MAX)
-        );
-        assert_eq!(TextAlignment::Center.aligned_x(10, 5), Ok(8));
-        assert_eq!(TextAlignment::Right.aligned_x(10, 5), Ok(5));
-        assert_eq!(
-            TextAlignment::Right.aligned_x(i32::MIN, i32::MAX),
-            Ok(i32::MIN)
-        );
-        assert_eq!(TextAlignment::Center.aligned_x(i32::MIN, 0), Ok(i32::MIN));
-        assert_eq!(
-            TextAlignment::Right.aligned_x(1, -1),
-            Err(Error::InvalidArgument)
-        );
-    }
-}
