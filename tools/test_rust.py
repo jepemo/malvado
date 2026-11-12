@@ -99,6 +99,7 @@ def external_consumer(prefix):
         '    let handle = engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
         '    handle.set_position(-1.5, 2.25)?; assert_eq!(handle.position()?, (-1.5, 2.25));\n'
         '    handle.set_angle(90.0)?; handle.set_scale(2.0)?; assert_eq!(handle.angle()?, 90.0); assert_eq!(handle.scale()?, 2.0);\n'
+        '    handle.set_animation_clock(&animation)?; assert_eq!(handle.animation_clock()?.unwrap().sample.graph_id,1); handle.clear_animation_clock()?; assert!(handle.animation_clock()?.is_none());\n'
         '    let process_world = World::new()?; process_world.move_process(&handle, None, 1.0, 0.0)?; assert_eq!(handle.position()?, (-0.5, 2.25)); assert_eq!(process_world.query_process(&handle, None)?, None);\n'
         '    let mut follow = malvado::camera::Follow::new(&handle)?; assert!(follow.update(&mut camera, (100, 80))?); assert_eq!(camera.position(), (-50.5, -37.75));\n'
         '    let graph = malvado::graphic::Graphic { geometry, color: malvado::graphic::Color { r: 1, g: 2, b: 3, a: 4 } }; handle.set_graphic(graph)?; handle.bind_collider(None)?; handle.bind_collider(Some(Shape::circle(1.0)?))?; handle.bind_collider(None)?; assert_eq!(handle.graphic()?.unwrap().color.a, 4); let selected = World::new()?; selected.move_selected(&handle, 1.0, 0.0)?; assert_eq!(handle.position()?, (0.5, 2.25)); assert_eq!(selected.query_selected(&handle)?, None); handle.clear_graphic()?;\n'

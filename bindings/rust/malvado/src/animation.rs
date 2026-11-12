@@ -67,7 +67,7 @@ impl Animation {
 }
 impl Drop for Animation {
     fn drop(&mut self) {
-        // SAFETY: unique owning pointer; playback borrows prevent early drop.
+        // SAFETY: release this owned reference; process clocks retain their own.
         unsafe {
             sys::mv_animation_destroy(self.native.as_ptr());
         }
@@ -118,3 +118,62 @@ impl Playback<'_> {
 /// std::thread::spawn(move || drop(animation));
 /// ```
 mod ownership_contract {}
+
+/// A copied process clock snapshot. Graph IDs remain metadata, not assets.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ProcessClock {
+    pub elapsed_us: u64,
+    pub sample: Sample,
+}
+impl crate::Handle {
+    /// Retain this definition in the native process and reset its clock.
+    /// Uses Engine's fixed 60 Hz logical ticks, independently of process FPS.
+    /// No image selection or drawing is implicit.
+    pub fn set_animation_clock(&self, animation: &Animation) -> Result<(), Error> {
+        // SAFETY: live owner-thread context and borrowed immutable definition;
+        // native success retains its own reference before this borrow ends.
+        crate::engine::result(unsafe {
+            sys::mv_process_animation_clock_set(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                animation.native.as_ptr(),
+                60,
+            )
+        })
+    }
+    pub fn animation_clock(&self) -> Result<Option<ProcessClock>, Error> {
+        let mut state = std::mem::MaybeUninit::uninit();
+        let mut sample = std::mem::MaybeUninit::uninit();
+        let mut present = 0;
+        // SAFETY: distinct output storage. Native initializes both records only
+        // on success with presence set; no borrowed native pointer escapes.
+        crate::engine::result(unsafe {
+            sys::mv_process_animation_clock_get(
+                self.inner.runtime.live()?,
+                self.inner.reference,
+                state.as_mut_ptr(),
+                sample.as_mut_ptr(),
+                &mut present,
+            )
+        })?;
+        if present == 0 {
+            return Ok(None);
+        }
+        // SAFETY: successful presence initialized complete copied records.
+        let (state, sample) = unsafe { (state.assume_init(), sample.assume_init()) };
+        Ok(Some(ProcessClock {
+            elapsed_us: state.elapsed_us,
+            sample: Sample {
+                index: sample.index,
+                graph_id: sample.graph_id,
+            },
+        }))
+    }
+    /// Stop this process clock. Does not change the process graphic.
+    pub fn clear_animation_clock(&self) -> Result<(), Error> {
+        // SAFETY: native identity and live owner-thread context.
+        crate::engine::result(unsafe {
+            sys::mv_process_animation_clock_clear(self.inner.runtime.live()?, self.inner.reference)
+        })
+    }
+}

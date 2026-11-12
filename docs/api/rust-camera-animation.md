@@ -234,3 +234,40 @@ Release, including the new view methods, runnable doctest and installed offline
 consumers. Clippy/format and native graphical ASan/UBSan integration pass. Rust
 itself is not sanitizer-instrumented, and macOS leak detection is disabled.
 Linux CI and remaining A7.6 services are outside this local evidence.
+
+## Process animation clocks
+
+`actor.set_animation_clock(&animation)?` retains the definition in the native
+process and resets its playback clock. The original `Animation` can be dropped
+immediately. `actor.animation_clock()?` returns a copied `ProcessClock` with
+`elapsed_us` and `sample`, or None when no clock is attached. Cloned handles
+observe the same state. `clear_animation_clock()` stops it without changing the
+graphic. Set always resets, including reassignment of the same definition.
+
+The clock uses Engine's 60 Hz native ticks. Process FPS controls async activation,
+not animation speed. Sleep and freeze pause without catch-up. Assignment during
+a tick skips that tick. Return, kill and context shutdown release the retained
+definition. Dead handles return NotFound; closed contexts return Closed. Failed
+operations preserve the clock. No borrowed native state escapes.
+
+```rust
+use malvado::{Engine, Error, animation::{Animation, Frame}};
+let mut engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |p| async move {
+    loop { p.frame().await; }
+})?;
+let animation = Animation::new(&[
+    Frame { graph_id: 7, duration_us: 50_000 },
+    Frame { graph_id: 42, duration_us: 50_000 },
+], true)?;
+actor.set_animation_clock(&animation)?;
+drop(animation);
+engine.tick()?;
+assert_eq!(actor.animation_clock()?.unwrap().elapsed_us, 16_666);
+actor.clear_animation_clock()?;
+# Ok::<(), Error>(())
+```
+
+Graph IDs remain metadata. This API does not load textures, select a process
+image or draw. Use the sampled ID with an explicit host mapping. Automatic image
+selection remains alpha.7 work; this service adds no scheduler or timer.
