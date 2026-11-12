@@ -371,7 +371,9 @@ owner and needs no change.
 
 `mv_process_image_set(ctx, process, graphic)` selects an owned reference to an
 image region. `MvImageGraphic` contains the image, region and signed pixel
-pivot. The region must fit the live image. A pivot may lie outside the region.
+pivot. The region must fit the live image. Pivots are finite doubles with
+magnitude at most `FLT_MAX / 16`; fractions and points outside the region are
+allowed. Non-finite or out-of-range pivots fail without changing the old graph.
 The descriptor is copied. The caller keeps its original image reference.
 
 A process has one selected graph. Assigning an image replaces a primitive or

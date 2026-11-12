@@ -113,7 +113,7 @@ _Static_assert(_Generic(&mv_process_z, MvResult (*)(MvContext *, MvProcessRef, d
 _Static_assert(_Generic(&mv_process_set_z, MvResult (*)(MvContext *, MvProcessRef, double): 1, default: 0), "mv_process_set_z signature");
 _Static_assert(_Generic(&mv_process_draw_order, MvResult (*)(MvContext *, MvProcessDrawInfo *, size_t, size_t *): 1, default: 0), "mv_process_draw_order signature");
 int main(void) {
-    if (mv_abi_version() != 1) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
+    if (mv_abi_version() != 2) { fputs("incompatible Malvado native ABI revision\n", stderr); return 1; }
     if (strcmp(mv_version_string(), EXPECTED_VERSION)) { fputs("incompatible Malvado native release\n", stderr); return 1; }
     printf("%zu %zu ", sizeof(MvCadence), _Alignof(MvCadence));
     printf("%zu ", offsetof(MvCadence, phase));
@@ -223,4 +223,4 @@ int main(void) {
     return 0;
 }
 
-_Static_assert(_Generic(&mv_graphic_sprite, int (*)(int, int, int, int, MvCollisionShape *): 1, default: 0), "mv_graphic_sprite signature");
+_Static_assert(_Generic(&mv_graphic_sprite, int (*)(int, int, double, double, MvCollisionShape *): 1, default: 0), "mv_graphic_sprite signature");

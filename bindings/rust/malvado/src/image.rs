@@ -98,10 +98,12 @@ impl Image {
     pub(crate) fn native(&self) -> *mut ffi::MvImage {
         self.inner.native.as_ptr()
     }
-    /// Select the complete image with a signed pixel pivot. Shares its owner.
+    /// Select the complete image with a finite fractional pixel pivot.
+    /// Invalid pivots return InvalidArgument; success shares the image owner.
     #[cfg(feature = "assets")]
-    pub fn sprite(&self, pivot: (i32, i32)) -> crate::atlas::SpriteImage {
-        crate::atlas::SpriteImage::whole(self.clone(), pivot)
+    pub fn sprite(&self, pivot: (f64, f64)) -> Result<crate::atlas::SpriteImage, Error> {
+        crate::collision::Shape::sprite(self.size(), pivot)?;
+        Ok(crate::atlas::SpriteImage::whole(self.clone(), pivot))
     }
     pub fn size(&self) -> (i32, i32) {
         // SAFETY: the shared owner retains both native image and its window.

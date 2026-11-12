@@ -43,7 +43,12 @@ fn native_geometry_and_pivot_overlap() {
 
 #[test]
 fn sprite_pivot_rotation_scale_and_boundaries() {
-    let geometry = Shape::sprite((4, 4), (-2, 7)).unwrap();
+    assert!(Shape::sprite((3, 5), (1.5, 2.5)).is_ok());
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, f64::MAX] {
+        assert!(Shape::sprite((3, 5), (value, 0.0)).is_err());
+        assert!(Shape::sprite((3, 5), (0.0, value)).is_err());
+    }
+    let geometry = Shape::sprite((4, 4), (-2.0, 7.0)).unwrap();
     let point = Shape::circle(0.5).unwrap();
     let transform = Transform {
         x: 20.0,
@@ -77,9 +82,9 @@ fn sprite_pivot_rotation_scale_and_boundaries() {
             )
             .unwrap()
     );
-    assert!(Shape::sprite((i32::MAX, i32::MAX), (i32::MIN, i32::MAX)).is_ok());
+    assert!(Shape::sprite((i32::MAX, i32::MAX), (i32::MIN as f64, i32::MAX as f64)).is_ok());
     for size in [(0, 1), (1, 0), (-1, 1), (1, -1)] {
-        assert!(Shape::sprite(size, (0, 0)).is_err());
+        assert!(Shape::sprite(size, (0.0, 0.0)).is_err());
     }
     let copy = geometry;
     assert!(

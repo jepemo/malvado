@@ -44,8 +44,8 @@ fn main() {
                 width: 8,
                 height: 8,
             },
-            pivot_x: 4,
-            pivot_y: 4,
+            pivot_x: 4.0,
+            pivot_y: 4.0,
         };
         let mut released = 0usize;
         assert_eq!(

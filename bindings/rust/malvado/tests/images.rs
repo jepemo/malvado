@@ -215,7 +215,13 @@ fn main() {
         let selected = textured.sprite_named("red").unwrap().unwrap();
         let clone = selected.clone();
         assert_eq!(selected.region(), atlas.sprite(7).unwrap().region);
-        assert_eq!(selected.pivot(), atlas.sprite(7).unwrap().pivot);
+        assert_eq!(
+            selected.pivot(),
+            (
+                f64::from(atlas.sprite(7).unwrap().pivot.0),
+                f64::from(atlas.sprite(7).unwrap().pivot.1)
+            )
+        );
         selected.shape().unwrap();
         drop(textured);
         drop(selected);
@@ -301,7 +307,7 @@ fn main() {
             },
         );
         let selected = textures.sprite(7).unwrap();
-        assert_eq!(selected.pivot(), (1, 0));
+        assert_eq!(selected.pivot(), (1.0, 0.0));
         selected.shape().unwrap();
         drop(textures);
         frame.sprite(&selected, (131.0, 50.0), 1.0, 0.0).unwrap();

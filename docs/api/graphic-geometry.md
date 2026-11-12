@@ -154,12 +154,12 @@ remain open.
 
 `mv_graphic_sprite(width, height, pivot_x, pivot_y, &shape)` creates a copied
 local rectangle from cropped sprite dimensions. Dimensions are positive signed
-integers. Pivots can use the full signed integer range, including points outside
-the rectangle. The local center is `(width / 2 - pivot_x, height / 2 - pivot_y)`.
+integers. Pivots are finite double values, including fractions and points outside
+the rectangle. Their magnitude must not exceed `FLT_MAX / 16`. The local center is `(width / 2 - pivot_x, height / 2 - pivot_y)`.
 The importer must first adjust an original-canvas pivot for trim offsets.
 
 The function returns 1 on success, or 0 without changing the output for invalid
-dimensions or NULL output. It needs no image, metadata owner, process, window or
+dimensions, non-finite/out-of-range pivots or NULL output. It needs no image, metadata owner, process, window or
 backend. Rotation and scale use the existing native collision transform. It
 does not assign an image graph or retain a texture. Lua sprite descriptors now
 use this same native geometry instead of computing their own local rectangle.
@@ -171,8 +171,16 @@ migration. Installed probes check the new core signature.
 
 Rust exposes the same operation as `collision::Shape::sprite((width, height),
 (pivot_x, pivot_y))`. It returns a copied collider or InvalidArgument for
-nonpositive dimensions. Use the shape with existing overlap queries or local
+nonpositive dimensions or invalid pivots. Use the shape with existing overlap queries or local
 process collider binding. Arbitrary sprite pivots are not added to primitive
 process drawing; image assignment and texture retention remain separate work.
 The Rust tests check transformed overlap, copied values and integer boundaries.
 The installed core-only consumer calls this constructor without graphics.
+
+
+Alpha.7 fractional pivots use native ABI revision 2. The core sprite constructor
+now takes double pivots, and `MvImageGraphic` stores doubles. Rebuild C and Rust
+consumers against the matching SDK. Rust probes and runtime checks reject ABI
+revision 1 before calling the revised operations. Rust whole-image
+`Image::sprite` now returns a Result; `SpriteImage::pivot` and
+`SpriteGeometry::pivot` return copied double coordinates.

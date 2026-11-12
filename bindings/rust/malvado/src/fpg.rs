@@ -401,7 +401,10 @@ impl Textures {
             let id = fpg.at(index).expect("native file order").info.id;
             let image = fpg.image(window.clone(), id, transparent_zero)?;
             let pivot = fpg.pivot(id).expect("native sprite pivot");
-            sprites.push((id, crate::atlas::SpriteImage::whole(image, pivot)));
+            sprites.push((
+                id,
+                crate::atlas::SpriteImage::whole(image, (f64::from(pivot.0), f64::from(pivot.1))),
+            ));
         }
         Ok(Self {
             metadata: crate::asset::Metadata::Fpg(fpg),
@@ -436,7 +439,13 @@ impl Textures {
                         return Err(Error::InvalidArgument);
                     }
                     let pivot = manifest.pivot(info.id).expect("native manifest pivot");
-                    sprites.push((info.id, crate::atlas::SpriteImage::whole(image, pivot)));
+                    sprites.push((
+                        info.id,
+                        crate::atlas::SpriteImage::whole(
+                            image,
+                            (f64::from(pivot.0), f64::from(pivot.1)),
+                        ),
+                    ));
                 }
                 Ok(Self {
                     metadata: library.into_metadata(),

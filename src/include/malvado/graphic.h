@@ -42,11 +42,11 @@ MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
 int mv_graphic_rect(double width, double height, int top_left, MvCollisionShape *out);
 int mv_graphic_circle(double radius, MvCollisionShape *out);
 /* Copied local sprite rectangle from positive pixel dimensions and a pivot in
- * cropped-image coordinates. Pivots can use the full signed int range, including
+ * cropped-image coordinates. Pivots must be finite with magnitude at most FLT_MAX/16, including
  * outside the rectangle. Original-canvas trim adjustment belongs to the importer.
- * Return 1, or 0 without changing out for NULL/nonpositive dimensions.
+ * Return 1, or 0 without changing out for invalid pivots, NULL or nonpositive dimensions.
  * No image, backend, process or resource is required or retained. */
-int mv_graphic_sprite(int width, int height, int pivot_x, int pivot_y, MvCollisionShape *out);
+int mv_graphic_sprite(int width, int height, double pivot_x, double pivot_y, MvCollisionShape *out);
 #ifdef __cplusplus
 }
 #endif

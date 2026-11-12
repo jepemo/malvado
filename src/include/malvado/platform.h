@@ -281,7 +281,7 @@ int mv_image_height(const MvImage *image);
 void mv_image_draw(const MvImage *image, int x, int y);
 /* One selected image graph, mutually exclusive with a primitive graph.
  * Set copies the descriptor and retains its image. The region must fit the
- * image; signed pivots can lie outside it. Replacement, graphic_clear, process
+ * image; finite fractional pivots can lie outside it. Replacement, graphic_clear, process
  * cleanup and context shutdown release the reference exactly once.
  * The native process drawing pass flushes texture uses before returning, so
  * later graph replacement or process cleanup in that frame is safe.
@@ -295,7 +295,7 @@ void mv_image_draw(const MvImage *image, int x, int y);
 typedef struct {
     MvImage *image;
     MvImageRegion region;
-    int pivot_x, pivot_y;
+    double pivot_x, pivot_y;
 } MvImageGraphic;
 MvResult mv_process_image_set(MvContext *ctx, MvProcessRef process, MvImageGraphic graphic);
 /* As image_set, with an optional lifetime owner. owner/release must both be

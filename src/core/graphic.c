@@ -44,9 +44,10 @@ mv_graphic_circle(double radius, MvCollisionShape *out)
 }
 
 int
-mv_graphic_sprite(int width, int height, int pivot_x, int pivot_y, MvCollisionShape *out)
+mv_graphic_sprite(int width, int height, double pivot_x, double pivot_y, MvCollisionShape *out)
 {
-    if (!out || width <= 0 || height <= 0) return 0;
+    if (!out || width <= 0 || height <= 0 || !isfinite(pivot_x) || !isfinite(pivot_y) ||
+        fabs(pivot_x) > FLT_MAX / 16 || fabs(pivot_y) > FLT_MAX / 16) return 0;
     *out = (MvCollisionShape){.kind = MV_COLLISION_RECT, .width = width, .height = height,
         .offset_x = width / 2.0 - pivot_x, .offset_y = height / 2.0 - pivot_y};
     return 1;

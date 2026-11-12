@@ -14,7 +14,12 @@ fn main() {
         let window = Rc::new(Window::open(64, 64, "Rust process image owner").unwrap());
         let weak = Rc::downgrade(&window);
         let image = Image::from_rgba(window.clone(), 2, 2, &[255, 0, 0, 255].repeat(4)).unwrap();
-        let sprite = image.sprite((1, 1));
+        assert!(image.sprite((f64::NAN, 0.0)).is_err());
+        let fractional = image.sprite((0.5, 1.5)).unwrap();
+        assert_eq!(fractional.pivot(), (0.5, 1.5));
+        fractional.shape().unwrap();
+        drop(fractional);
+        let sprite = image.sprite((0.5, 1.5)).unwrap();
         let mut engine = Engine::new().unwrap();
         let natural = mode == "return";
         let actor = engine
@@ -35,14 +40,14 @@ fn main() {
                 include_bytes!("../../../../tests/fixtures/red.png"),
             )
             .unwrap();
-            actor.set_sprite(&png.sprite((4, 4))).unwrap();
+            actor.set_sprite(&png.sprite((4.0, 4.0)).unwrap()).unwrap();
             drop(png);
             assert_eq!(actor.sprite_geometry().unwrap().unwrap().region.width, 8);
             let atlas = malvado::atlas::Atlas::parse(r#"{"schema":1,"kind":"graphics-library","image":"unused.png","sprites":[{"id":7,"name":"tile","x":1,"y":0,"width":1,"height":1,"pivot_x":-1,"pivot_y":2}]}"#,2,2).unwrap();
             let texture = malvado::atlas::TextureAtlas::new(atlas, image.clone()).unwrap();
             actor.set_sprite(&texture.sprite(7).unwrap()).unwrap();
             drop(texture);
-            assert_eq!(actor.sprite_geometry().unwrap().unwrap().pivot, (-1, 2));
+            assert_eq!(actor.sprite_geometry().unwrap().unwrap().pivot, (-1.0, 2.0));
             let fpg = malvado::fpg::Fpg::parse(include_bytes!(
                 "../../../../tests/fixtures/fpg/bennugd-8.fpg"
             ))
@@ -50,12 +55,12 @@ fn main() {
             let textures = malvado::fpg::Textures::new(window.clone(), fpg, true).unwrap();
             actor.set_sprite(&textures.sprite(7).unwrap()).unwrap();
             drop(textures);
-            assert_eq!(actor.sprite_geometry().unwrap().unwrap().pivot, (1, 0));
+            assert_eq!(actor.sprite_geometry().unwrap().unwrap().pivot, (1.0, 0.0));
         }
         actor.set_sprite(&sprite).unwrap();
         actor.set_sprite(&sprite).unwrap(); // Replacing an owner keeps the new one live.
         let geometry = alias.sprite_geometry().unwrap().unwrap();
-        assert_eq!(geometry.pivot, (1, 1));
+        assert_eq!(geometry.pivot, (0.5, 1.5));
         assert_eq!(geometry.region.width, 2);
         assert!(actor.graphic().unwrap().is_none());
         actor.set_position(20.0, 20.0).unwrap();
@@ -145,7 +150,8 @@ fn main() {
     let weak = Rc::downgrade(&window);
     let sprite = Image::from_rgba(window.clone(), 1, 1, &[255; 4])
         .unwrap()
-        .sprite((0, 0));
+        .sprite((0.0, 0.0))
+        .unwrap();
     let mut engine = Engine::new().unwrap();
     let actor = engine
         .spawn(Default::default(), |_| async { Ok(()) })
@@ -163,7 +169,8 @@ fn main() {
     let weak = Rc::downgrade(&window);
     let sprite = Image::from_rgba(window.clone(), 1, 1, &[255; 4])
         .unwrap()
-        .sprite((0, 0));
+        .sprite((0.0, 0.0))
+        .unwrap();
     let first = Engine::new().unwrap();
     let second = Engine::new().unwrap();
     let a = first

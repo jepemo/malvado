@@ -366,7 +366,7 @@ mod texture_ownership_contract {}
 pub struct SpriteImage {
     image: crate::image::Image,
     region: Region,
-    pivot: (i32, i32),
+    pivot: (f64, f64),
 }
 #[cfg(feature = "graphics")]
 impl TextureAtlas {
@@ -384,13 +384,13 @@ impl TextureAtlas {
         SpriteImage {
             image: self.image.clone(),
             region: sprite.region,
-            pivot: sprite.pivot,
+            pivot: (f64::from(sprite.pivot.0), f64::from(sprite.pivot.1)),
         }
     }
 }
 #[cfg(feature = "graphics")]
 impl SpriteImage {
-    pub(crate) fn whole(image: crate::image::Image, pivot: (i32, i32)) -> Self {
+    pub(crate) fn whole(image: crate::image::Image, pivot: (f64, f64)) -> Self {
         let (width, height) = image.size();
         Self {
             image,
@@ -406,7 +406,7 @@ impl SpriteImage {
     pub fn region(&self) -> Region {
         self.region
     }
-    pub fn pivot(&self) -> (i32, i32) {
+    pub fn pivot(&self) -> (f64, f64) {
         self.pivot
     }
     /// Local collider only; does not register a process or copy pixel data.
@@ -441,10 +441,10 @@ impl crate::window::Frame<'_> {
 
 /// Copied selected sprite geometry. This value owns no image or window.
 #[cfg(feature = "graphics")]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SpriteGeometry {
     pub region: Region,
-    pub pivot: (i32, i32),
+    pub pivot: (f64, f64),
 }
 #[cfg(feature = "graphics")]
 impl crate::Handle {

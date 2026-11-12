@@ -157,8 +157,10 @@ Use `Library` instead when a headless host needs metadata only.
 
 With `assets` and `graphics`, call `handle.set_sprite(&sprite)` to select a
 sprite from an atlas or FPG collection. For a complete PNG or RGBA image, use
-`image.sprite((pivot_x, pivot_y))`. These operations share image references;
-they do not copy pixels. Pivots use signed cropped-image coordinates.
+`image.sprite((pivot_x, pivot_y))?`. These operations share image references;
+they do not copy pixels. Pivots use finite `f64` cropped-image coordinates,
+including fractions. Non-finite pivots or magnitudes above `f32::MAX / 16`
+return `InvalidArgument` without changing any process.
 
 ```rust
 use malvado::{Engine, Error, image::Image, window::{Color, Window}};
@@ -169,7 +171,7 @@ let engine = Engine::new()?;
 let actor = engine.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
-let sprite = image.sprite((0, 0));
+let sprite = image.sprite((0.0, 0.0))?;
 actor.set_sprite(&sprite)?;
 drop(sprite);
 drop(image);

@@ -461,8 +461,8 @@ unsafe extern "C" {
 pub struct MvImageGraphic {
     pub image: *mut MvImage,
     pub region: MvImageRegion,
-    pub pivot_x: c_int,
-    pub pivot_y: c_int,
+    pub pivot_x: f64,
+    pub pivot_y: f64,
 }
 unsafe extern "C" {
     pub fn mv_process_image_set(

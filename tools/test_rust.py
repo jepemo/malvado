@@ -43,8 +43,9 @@ def diagnostics(prefix):
     archive = fake / "lib/libmalvado_core.a"
     compiler = shlex.split(os.environ.get("CC", "cc"))
     for label, abi, release, expected in (
+            ("previous ABI", 1, None, "incompatible Malvado native ABI revision"),
             ("ABI mismatch", 999, None, "incompatible Malvado native ABI revision"),
-            ("release mismatch", 1, "wrong-release", "incompatible Malvado native release")):
+            ("release mismatch", 2, "wrong-release", "incompatible Malvado native release")):
         # If ABI checking calls the release query too early, this fixture aborts.
         body = 'abort();' if release is None else f'return "{release}";'
         source.write_text('#include <stdint.h>\n#include <stdlib.h>\n'
@@ -87,7 +88,7 @@ def external_consumer(prefix):
         'fn main() -> Result<(), Error> {\n'
         ' let geometry = malvado::graphic::Geometry::rectangle(20.0, 10.0, malvado::graphic::Pivot::TopLeft)?;\n'
         ' let _shape = geometry.collider(); let _circle = malvado::graphic::Geometry::circle(5.0)?;\n'
-        '    let sprite = malvado::collision::Shape::sprite((4,8),(2,4))?; let _collider = sprite; assert!(malvado::collision::Shape::sprite((0,8),(0,0)).is_err());\n'
+        '    let sprite = malvado::collision::Shape::sprite((4,8),(2.0, 4.0))?; let _collider = sprite; assert!(malvado::collision::Shape::sprite((0,8),(0.0, 0.0)).is_err());\n'
         '    let mut camera = malvado::camera::Camera::new(0.0, 0.0, None)?;\n'
         '    camera.center((200.0, 150.0), (800, 600))?;\n'
         '    assert_eq!(camera.project((210.0, 160.0), (0.0, 0.0))?, (410.0, 310.0));\n'

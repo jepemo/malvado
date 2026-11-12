@@ -19,10 +19,16 @@
 #include "malvado/graphic.h"
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
+#include <float.h>
 #include <string.h>
 int main(void)
 {
     MvCollisionShape shape;
+    assert(mv_graphic_sprite(3, 5, 1.5, 2.5, &shape));
+    assert(shape.offset_x == 0 && shape.offset_y == 0);
+    assert(mv_graphic_sprite(3, 5, -0.25, 1.75, &shape));
+    assert(shape.offset_x == 1.75 && shape.offset_y == 0.75);
     assert(mv_graphic_sprite(4, 8, 2, 4, &shape));
     assert(shape.offset_x == 0 && shape.offset_y == 0 && shape.width == 4 && shape.height == 8);
     assert(mv_graphic_sprite(5, 7, 0, 0, &shape));
@@ -38,6 +44,12 @@ int main(void)
     assert(shape.offset_x == INT_MAX / 2.0 - (double)INT_MIN);
     MvCollisionShape before;
     memcpy(&before, &shape, sizeof(shape));
+    double invalid[] = {NAN, INFINITY, -INFINITY, DBL_MAX, -(double)FLT_MAX};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); ++i) {
+        assert(!mv_graphic_sprite(3, 5, invalid[i], 0, &shape));
+        assert(!mv_graphic_sprite(3, 5, 0, invalid[i], &shape));
+        assert(!memcmp(&shape, &before, sizeof(shape)));
+    }
     assert(!mv_graphic_sprite(0, 1, 0, 0, &shape));
     assert(!mv_graphic_sprite(1, -1, 0, 0, &shape));
     assert(!mv_graphic_sprite(1, 1, 0, 0, NULL));

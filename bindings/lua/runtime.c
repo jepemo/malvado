@@ -116,7 +116,7 @@ typedef struct {
     MvColor color;
     int top_left, sprite;
     MvImageRegion region;
-    int pivot_x, pivot_y;
+    double pivot_x, pivot_y;
 } LuaGraphic;
 typedef struct { MvAnimation *sequence; MvCollisionShape shape; } LuaAnimation;
 typedef struct { MvSound *sound; MvResource *resource; int playing, paused; } LuaSound;

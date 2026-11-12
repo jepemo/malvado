@@ -5,7 +5,7 @@
 #![allow(non_snake_case)]
 use std::ffi::{CStr, c_char, c_int, c_void};
 
-pub const MV_ABI_VERSION: u32 = 1;
+pub const MV_ABI_VERSION: u32 = 2;
 pub type MvProcessId = u64;
 #[repr(C)]
 pub struct MvContext {
@@ -848,8 +848,8 @@ unsafe extern "C" {
     pub fn mv_graphic_sprite(
         width: c_int,
         height: c_int,
-        pivot_x: c_int,
-        pivot_y: c_int,
+        pivot_x: f64,
+        pivot_y: f64,
         out: *mut MvCollisionShape,
     ) -> c_int;
 }

@@ -27,7 +27,7 @@ extern "C" {
  * public layout, signature, calling convention, or ownership contract changes
  * incompatibly. Bindings must require an exact match before other engine calls.
  * This does not check target architecture, optional backends, or SDK provenance. */
-#define MV_ABI_VERSION UINT32_C(1)
+#define MV_ABI_VERSION UINT32_C(2)
 /** These queries need no context or platform initialization. They allocate
  * nothing and are safe before any other engine call. The release string is
  * immutable library-owned storage; do not free or modify it. A matching ABI

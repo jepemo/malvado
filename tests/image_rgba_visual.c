@@ -18,6 +18,7 @@
 #endif
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 #include "malvado/platform.h"
 #include "malvado/camera.h"
 #include "raylib.h"
@@ -79,7 +80,7 @@ main(void)
     assert(ctx && other);
     assert(mv_process_spawn(ctx, 0, 0, idle, NULL, NULL, &id) == MV_OK);
     assert(mv_process_ref_create(ctx, id, &ref) == MV_OK);
-    MvImageGraphic graph = {decoded, {0, 0, 2, 2}, 1, 0}, out = {0};
+    MvImageGraphic graph = {decoded, {0, 0, 2, 2}, 0.5, 0}, out = {0};
     int present = 42;
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_OK && !present);
     assert(mv_process_image_set(other, ref, graph) == MV_INVALID_ARGUMENT);
@@ -91,8 +92,11 @@ main(void)
     assert(mv_process_image_set_owned(ctx, ref, graph, &released, owner_released) == MV_OK);
     mv_image_destroy(decoded); /* Only the process now retains this texture. */
     assert(mv_process_image_get(ctx, ref, &out, &present) == MV_OK && present);
-    assert(out.image == graph.image && out.pivot_x == 1 && out.region.width == 2);
+    assert(out.image == graph.image && out.pivot_x == 0.5 && out.region.width == 2);
     MvImageGraphic invalid = graph;
+    invalid.pivot_x = NAN;
+    assert(mv_process_image_set(ctx, ref, invalid) == MV_INVALID_ARGUMENT);
+    invalid = graph;
     invalid.region.width = 3;
     assert(mv_process_image_set(ctx, ref, invalid) == MV_INVALID_ARGUMENT);
     assert(mv_process_image_get(ctx, ref, NULL, &present) == MV_INVALID_ARGUMENT);
