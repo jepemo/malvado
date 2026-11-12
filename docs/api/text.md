@@ -42,3 +42,17 @@ Deletion and process cleanup release native content immediately. Later garbage
 collection is harmless. Host text has no process owner and lasts until deletion
 or runtime shutdown. Process text is removed when its owner returns or is killed.
 Sleep and freeze do not remove it. The font table remains live, as before.
+
+## Rust owned text
+
+`malvado::text::Text` owns the same native object. `Text::new` and `update`
+copy UTF-8 content and accept a position tuple and `graphic::TextAlignment`.
+An embedded NUL returns `Error::InvalidArgument`; allocation failures are
+explicit. `snapshot()` borrows the content and copies position/alignment.
+Rust prevents update or destruction while that borrowed content is in use.
+The owner stays on its creating thread and releases native memory on Drop.
+See the runnable example on `Text::new`.
+
+This is content storage, without implicit process registration or drawing.
+A shared native text list with retained fonts and automatic rendering remains
+unfinished in A7.6.

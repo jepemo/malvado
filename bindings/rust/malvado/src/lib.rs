@@ -145,3 +145,5 @@ pub enum EndReason {
 /// }).unwrap();
 /// ```
 mod ownership_contract {}
+
+pub mod text;

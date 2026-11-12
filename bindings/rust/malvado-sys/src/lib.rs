@@ -788,6 +788,10 @@ unsafe extern "C" {
 }
 
 #[repr(C)]
+pub struct MvText {
+    _private: [u8; 0],
+}
+#[repr(C)]
 pub struct MvAnimation {
     _private: [u8; 0],
 }
@@ -836,6 +840,28 @@ pub mod assets;
 pub mod graphics;
 
 unsafe extern "C" {
+    pub fn mv_text_create(
+        value: *const c_char,
+        x: c_int,
+        y: c_int,
+        alignment: c_int,
+        out: *mut *mut MvText,
+    ) -> c_int;
+    pub fn mv_text_update(
+        text: *mut MvText,
+        value: *const c_char,
+        x: c_int,
+        y: c_int,
+        alignment: c_int,
+    ) -> c_int;
+    pub fn mv_text_read(
+        text: *const MvText,
+        value: *mut *const c_char,
+        x: *mut c_int,
+        y: *mut c_int,
+        alignment: *mut c_int,
+    ) -> c_int;
+    pub fn mv_text_destroy(text: *mut MvText);
     pub fn mv_text_aligned_x(x: c_int, width: c_int, alignment: c_int, out: *mut c_int) -> c_int;
     pub fn mv_graphic_rect(
         width: f64,

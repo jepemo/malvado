@@ -17,6 +17,7 @@
 #include "malvado/camera.h"
 #include "malvado/animation.h"
 #include "malvado/graphic.h"
+#include "malvado/text.h"
 #include <stdio.h>
 #include <string.h>
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
@@ -238,3 +239,8 @@ _Static_assert(_Generic(&mv_process_animation_clock_clear, MvResult (*)(MvContex
 _Static_assert(_Generic(&mv_animation_count, size_t (*)(const MvAnimation *): 1, default: 0), "mv_animation_count signature");
 
 _Static_assert(_Generic(&mv_text_aligned_x, int (*)(int, int, int, int *): 1, default: 0), "mv_text_aligned_x signature");
+
+_Static_assert(_Generic(&mv_text_create, MvResult (*)(const char *, int, int, int, MvText **): 1, default: 0), "mv_text_create signature");
+_Static_assert(_Generic(&mv_text_update, MvResult (*)(MvText *, const char *, int, int, int): 1, default: 0), "mv_text_update signature");
+_Static_assert(_Generic(&mv_text_read, MvResult (*)(const MvText *, const char **, int *, int *, int *): 1, default: 0), "mv_text_read signature");
+_Static_assert(_Generic(&mv_text_destroy, void (*)(MvText *): 1, default: 0), "mv_text_destroy signature");

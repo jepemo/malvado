@@ -86,6 +86,7 @@ def external_consumer(prefix):
         'use malvado::{Engine, Error, SpawnOptions};\n'
         'use malvado::collision::{Rect, Shape, Transform, World};\n'
         'fn main() -> Result<(), Error> {\n'
+        ' let mut text = malvado::text::Text::new("stored",(1,2),malvado::graphic::TextAlignment::Left)?; text.update("updated",(3,4),malvado::graphic::TextAlignment::Center)?; assert_eq!(text.snapshot().value,"updated");\n'
         ' let geometry = malvado::graphic::Geometry::rectangle(20.0, 10.0, malvado::graphic::Pivot::TopLeft)?;\n'
         ' assert_eq!(malvado::graphic::TextAlignment::Center.aligned_x(10,5)?,8);\n'
         ' let _shape = geometry.collider(); let _circle = malvado::graphic::Geometry::circle(5.0)?;\n'
