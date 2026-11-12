@@ -1332,3 +1332,11 @@ add_executable(text-value-test tests/text_value.c $<TARGET_OBJECTS:text-allocati
 target_link_libraries(text-value-test PRIVATE malvado_core)
 add_test(NAME text_value COMMAND text-value-test)
 set_tests_properties(text_value PROPERTIES TIMEOUT 15)
+
+add_library(text-registry-allocation OBJECT src/core/process.c)
+target_include_directories(text-registry-allocation PRIVATE src/include src/core)
+target_compile_definitions(text-registry-allocation PRIVATE calloc=test_text_registry_calloc)
+add_executable(text-registry-test tests/text_registry.c $<TARGET_OBJECTS:text-registry-allocation>)
+target_link_libraries(text-registry-test PRIVATE malvado_core)
+add_test(NAME text_registry COMMAND text-registry-test)
+set_tests_properties(text_registry PROPERTIES TIMEOUT 15)

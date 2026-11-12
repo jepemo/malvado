@@ -56,3 +56,28 @@ See the runnable example on `Text::new`.
 This is content storage, without implicit process registration or drawing.
 A shared native text list with retained fonts and automatic rendering remains
 unfinished in A7.6.
+
+## Context text registry
+
+`mv_text_entry_create` copies content into a context-owned entry. Pass a live
+`MvProcessRef` as owner, or NULL for host text. The returned positive ID belongs
+to that context. IDs increase through `INT64_MAX` and are never reused. Do not
+use an ID with a different context. Failed creation leaves the output and the
+next ID unchanged.
+
+Use `mv_text_entry_read`, `mv_text_entry_update` and `mv_text_entry_remove` with
+that context and ID. Read borrows content until update, removal, owner cleanup
+or shutdown. Update is atomic and can use the entry's borrowed content. Missing
+IDs return `MV_NOT_FOUND`. Invalid arguments return `MV_INVALID_ARGUMENT`.
+Creation can also return `MV_OUT_OF_MEMORY`, `MV_OVERFLOW` or `MV_BUSY` during
+shutdown. All calls stay on the context's owner thread.
+
+`mv_text_entries` copies IDs in creation order. Query the required count with
+NULL and capacity 0 first. A short buffer returns `MV_OVERFLOW`, writes the
+required count and leaves the ID buffer unchanged. Enumeration allocates nothing.
+
+Sleep and freeze retain process text. Kill and natural return remove it at the
+scheduler cleanup point, after process destructors and generic resource cleanup.
+A destructor can still read or explicitly remove its text. Host entries remain
+until removal or context shutdown. Shutdown frees every remaining entry.
+The registry does not retain fonts or draw entries.

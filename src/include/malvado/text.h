@@ -32,6 +32,26 @@ MvResult mv_text_create(const char *value, int x, int y, int alignment, MvText *
 MvResult mv_text_update(MvText *text, const char *value, int x, int y, int alignment);
 MvResult mv_text_read(const MvText *text, const char **value, int *x, int *y, int *alignment);
 void mv_text_destroy(MvText *text);
+/* Context-local positive IDs, never reused in that context (maximum INT64_MAX).
+ * Owner NULL means host text; otherwise it must be a live context-bound process.
+ * The context owns copied content until remove, owner cleanup or shutdown.
+ * Sleep/freeze retain entries; kill/return release at the scheduler safe point,
+ * after process destructors. Host entries survive until remove or shutdown.
+ * Missing/zero IDs return MV_NOT_FOUND. Invalid arguments return
+ * MV_INVALID_ARGUMENT; create during shutdown returns MV_BUSY. Creation and
+ * update are transactional. No font or platform resource is retained.
+ * Read borrows content until update/remove/cleanup/shutdown. All outputs required.
+ * IDs snapshot is in creation order. required is always written on valid calls;
+ * NULL ids with capacity 0 queries count. A short buffer returns MV_OVERFLOW
+ * without writing any IDs. All calls require owner-thread context access. */
+MvResult mv_text_entry_create(MvContext *ctx, const MvProcessRef *owner,
+    const char *value, int x, int y, int alignment, uint64_t *out);
+MvResult mv_text_entry_update(MvContext *ctx, uint64_t id,
+    const char *value, int x, int y, int alignment);
+MvResult mv_text_entry_read(MvContext *ctx, uint64_t id,
+    const char **value, int *x, int *y, int *alignment);
+MvResult mv_text_entry_remove(MvContext *ctx, uint64_t id);
+MvResult mv_text_entries(MvContext *ctx, uint64_t *ids, size_t capacity, size_t *required);
 #ifdef __cplusplus
 }
 #endif

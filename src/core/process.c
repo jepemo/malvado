@@ -17,6 +17,7 @@
 #include "malvado/graphic.h"
 #include "malvado/animation.h"
 #include "malvado/camera.h"
+#include "malvado/text.h"
 #include "collision_internal.h"
 #include "entropy.h"
 #include "schedule.h"
@@ -118,6 +119,13 @@ struct MvResource {
     MvResourceDestroy destroy;
 };
 
+typedef struct TextEntry {
+    struct TextEntry *next;
+    uint64_t id;
+    MvProcessId owner;
+    MvText *text;
+} TextEntry;
+
 struct MvProcesses {
     MvContext *ctx;
     Process *items;
@@ -125,6 +133,8 @@ struct MvProcesses {
     size_t ended_count;
     Genealogy *lineage, *cleanup_lineage;
     MvResource *resources;
+    TextEntry *texts;
+    uint64_t last_text_id;
     MvCamera main_camera;
     CameraNode *cameras;
     uint64_t last_camera_id;
@@ -1026,6 +1036,113 @@ mv_process_end_reason(MvContext *ctx, MvProcessId id, MvEndReason *reason)
 }
 
 static void
+release_text_entries(MvProcesses *p, MvProcessId owner, int all)
+{
+    TextEntry **link = &p->texts;
+    while (*link) {
+        TextEntry *entry = *link;
+        if (all || entry->owner == owner) {
+            *link = entry->next;
+            mv_text_destroy(entry->text);
+            free(entry);
+        } else {
+            link = &entry->next;
+        }
+    }
+}
+
+static TextEntry *
+find_text_entry(MvProcesses *p, uint64_t id)
+{
+    for (TextEntry *entry = p->texts; entry; entry = entry->next)
+        if (entry->id == id) return entry;
+    return NULL;
+}
+
+MvResult
+mv_text_entry_create(MvContext *ctx, const MvProcessRef *owner,
+    const char *value, int x, int y, int alignment, uint64_t *out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !out || !value || alignment < 0 || alignment > 2)
+        return MV_INVALID_ARGUMENT;
+    if (p->closing) return MV_BUSY;
+    MvProcessId owner_id = 0;
+    if (owner) {
+        MvResult result = mv_process_ref_resolve(ctx, *owner, &owner_id);
+        if (result != MV_OK) return result;
+        if (!find(p, owner_id, 0)) return MV_NOT_FOUND;
+    }
+    if (p->last_text_id == INT64_MAX) return MV_OVERFLOW;
+    TextEntry *entry = calloc(1, sizeof(*entry));
+    if (!entry) return MV_OUT_OF_MEMORY;
+    MvResult result = mv_text_create(value, x, y, alignment, &entry->text);
+    if (result != MV_OK) {
+        free(entry);
+        return result;
+    }
+    entry->owner = owner_id;
+    entry->id = ++p->last_text_id;
+    TextEntry **tail = &p->texts;
+    while (*tail) tail = &(*tail)->next;
+    *tail = entry;
+    *out = entry->id;
+    return MV_OK;
+}
+
+MvResult
+mv_text_entry_update(MvContext *ctx, uint64_t id,
+    const char *value, int x, int y, int alignment)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !value || alignment < 0 || alignment > 2) return MV_INVALID_ARGUMENT;
+    TextEntry *entry = find_text_entry(p, id);
+    if (!entry) return MV_NOT_FOUND;
+    return mv_text_update(entry->text, value, x, y, alignment);
+}
+
+MvResult
+mv_text_entry_read(MvContext *ctx, uint64_t id,
+    const char **value, int *x, int *y, int *alignment)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !value || !x || !y || !alignment) return MV_INVALID_ARGUMENT;
+    TextEntry *entry = find_text_entry(p, id);
+    if (!entry) return MV_NOT_FOUND;
+    return mv_text_read(entry->text, value, x, y, alignment);
+}
+
+MvResult
+mv_text_entry_remove(MvContext *ctx, uint64_t id)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p) return MV_INVALID_ARGUMENT;
+    TextEntry **link = &p->texts;
+    while (*link && (*link)->id != id) link = &(*link)->next;
+    if (!*link) return MV_NOT_FOUND;
+    TextEntry *entry = *link;
+    *link = entry->next;
+    mv_text_destroy(entry->text);
+    free(entry);
+    return MV_OK;
+}
+
+MvResult
+mv_text_entries(MvContext *ctx, uint64_t *ids, size_t capacity, size_t *required)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !required || (!ids && capacity)) return MV_INVALID_ARGUMENT;
+    size_t count = 0;
+    for (TextEntry *entry = p->texts; entry; entry = entry->next) ++count;
+    *required = count;
+    if (!ids && !capacity) return MV_OK;
+    if (capacity < count) return MV_OVERFLOW;
+    size_t i = 0;
+    for (TextEntry *entry = p->texts; entry; entry = entry->next) ids[i++] = entry->id;
+    return MV_OK;
+}
+
+static void
 unlink_resource(MvResource *resource)
 {
     MvProcesses *p = resource->manager;
@@ -1178,6 +1295,7 @@ void mv_processes_destroy(MvProcesses *p)
         if (!resource->references) free_resource(resource);
         else unlink_resource(resource);
     }
+    release_text_entries(p, 0, 1);
     while (p->cameras) {
         CameraNode *next = p->cameras->next;
         free(p->cameras);
@@ -1986,6 +2104,7 @@ MvResult mv_process_tick(MvContext *ctx)
         p->cleanup_lineage = lineage;
         if (destroy) destroy(user);
         release_owned_resources(p, lineage->id);
+        release_text_entries(p, lineage->id, 0);
         p->cleanup_lineage = NULL;
         prune_lineage(p, lineage);
     }

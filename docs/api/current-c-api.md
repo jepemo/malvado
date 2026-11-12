@@ -300,6 +300,11 @@ See the linked headers and the [process](process-inventory.md),
 
 - `mv_text_create`
 - `mv_text_destroy`
+- `mv_text_entries`
+- `mv_text_entry_create`
+- `mv_text_entry_read`
+- `mv_text_entry_remove`
+- `mv_text_entry_update`
 - `mv_text_read`
 - `mv_text_update`
 
