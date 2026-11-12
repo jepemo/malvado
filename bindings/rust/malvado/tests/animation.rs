@@ -18,6 +18,8 @@ fn boundaries_looping_and_held_end() {
     for looping in [false, true] {
         let mut frames = FRAMES;
         let animation = Animation::new(&frames, looping).unwrap();
+        assert!(!animation.is_empty());
+        assert_eq!(animation.len(), FRAMES.len());
         frames[0].graph_id = 100;
         assert_eq!(animation.sample(0).graph_id, 3);
         assert_ne!(animation.sample(0).graph_id, frames[0].graph_id);

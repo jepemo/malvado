@@ -10,6 +10,7 @@ See the linked headers and the [process](process-inventory.md),
 ## [animation.h](../../src/include/malvado/animation.h)
 
 - `mv_animation_advance`
+- `mv_animation_count`
 - `mv_animation_create`
 - `mv_animation_destroy`
 - `mv_animation_retain`
@@ -240,6 +241,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_pad_connected`
 - `mv_platform_time`
 - `mv_platform_wait`
+- `mv_process_image_animation_bind_owned`
 - `mv_process_image_animation_set`
 - `mv_process_image_animation_set_owned`
 - `mv_process_image_get`

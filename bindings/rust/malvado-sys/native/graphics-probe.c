@@ -221,3 +221,5 @@ _Static_assert(_Generic(&mv_process_image_set_owned, MvResult (*)(MvContext *, M
 
 _Static_assert(_Generic(&mv_process_image_animation_set, MvResult (*)(MvContext *, MvProcessRef, const MvImageAnimationFrame *, size_t, int, unsigned): 1, default: 0), "mv_process_image_animation_set signature");
 _Static_assert(_Generic(&mv_process_image_animation_set_owned, MvResult (*)(MvContext *, MvProcessRef, const MvImageAnimationFrame *, size_t, int, unsigned, void *, MvResourceDestroy): 1, default: 0), "mv_process_image_animation_set_owned signature");
+
+_Static_assert(_Generic(&mv_process_image_animation_bind_owned, MvResult (*)(MvContext *, MvProcessRef, MvAnimation *, const MvImageGraphic *, size_t, unsigned, void *, MvResourceDestroy): 1, default: 0), "mv_process_image_animation_bind_owned signature");

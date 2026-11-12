@@ -21,6 +21,14 @@ pub struct Animation {
     local: PhantomData<Rc<()>>,
 }
 impl Animation {
+    /// Number of immutable frames. Valid definitions are never empty.
+    pub fn len(&self) -> usize {
+        // SAFETY: this owner retains the live immutable native definition.
+        unsafe { sys::mv_animation_count(self.native.as_ptr()) }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     /// Accept 1..8192 frames, positive graph IDs, and durations 1..3600000000 us.
     pub fn new(frames: &[Frame], looping: bool) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;

@@ -35,6 +35,8 @@ MvAnimation *mv_animation_create(const MvAnimationFrame *frames, size_t count, i
  * Reference acquisition/release must stay on the owner thread. */
 int mv_animation_retain(MvAnimation *animation);
 void mv_animation_destroy(MvAnimation *animation);
+/* Immutable frame count, or 0 for NULL. No allocation or ownership change. */
+size_t mv_animation_count(const MvAnimation *animation);
 /* Sample a zero-based sequence index. Non-looping sequences hold the last
  * frame. Return 1, or 0 without changing output on invalid pointers. */
 int mv_animation_sample(const MvAnimation *animation, uint64_t elapsed_us, MvAnimationSample *out);

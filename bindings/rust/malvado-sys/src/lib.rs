@@ -871,3 +871,7 @@ unsafe extern "C" {
     ) -> c_int;
     pub fn mv_process_animation_clock_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_animation_count(animation: *const MvAnimation) -> usize;
+}

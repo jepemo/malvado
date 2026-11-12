@@ -173,6 +173,27 @@ int main(int argc, char **argv)
     mv_context_destroy(ctx);
     mv_context_destroy(other);
     assert(drops == 5);
+    ctx=mv_context_create(60,4);
+    assert(ctx);
+    actor=spawn(ctx);
+    red=mv_image_from_rgba(2,2,red_pixels,sizeof(red_pixels));
+    assert(red);
+    MvImageGraphic visual={red,{0,0,2,2},0.5,0.5};
+    MvAnimationFrame duration={777,25000};
+    MvAnimation *definition=mv_animation_create(&duration,1,0);
+    assert(definition && mv_animation_count(definition) == 1);
+    assert(mv_process_image_animation_bind_owned(ctx,actor,definition,&visual,2,60,&drops,released) == MV_INVALID_ARGUMENT);
+    assert(drops == 5);
+    assert(mv_process_image_animation_bind_owned(ctx,actor,definition,&visual,1,60,&drops,released) == MV_OK);
+    mv_animation_destroy(definition);
+    mv_image_destroy(red);
+    assert(mv_process_tick(ctx) == MV_OK);
+    assert(mv_process_tick(ctx) == MV_OK);
+    assert(mv_process_animation_clock_get(ctx,actor,&state,&sample,&present) == MV_OK && present);
+    assert(state.elapsed_us == 25000 && sample.graph_id == 777);
+    mv_context_destroy(ctx);
+    assert(drops == 6);
+
     mv_window_close();
     return 0;
 }

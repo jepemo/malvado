@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "malvado/graphic.h"
+#include "malvado/animation.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -329,6 +330,15 @@ MvResult mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef proce
     void *owner, MvResourceDestroy release);
 MvResult mv_process_image_animation_set(MvContext *ctx, MvProcessRef process,
     const MvImageAnimationFrame *frames, size_t count, int loop, unsigned tick_rate);
+
+/* Bind existing immutable timing to one copied graphic per definition frame.
+ * Count must match animation_count. Definition IDs/durations/looping remain
+ * unchanged; the process retains the definition and all images on success.
+ * Owner transfer, validation, bound-clock protection and cleanup follow the
+ * image-animation setters. Failure preserves the prior graph/clock/owner. */
+MvResult mv_process_image_animation_bind_owned(MvContext *ctx, MvProcessRef process,
+    MvAnimation *definition, const MvImageGraphic *frames, size_t count,
+    unsigned tick_rate, void *owner, MvResourceDestroy release);
 
 /* Region and pivot use source pixels. Position uses window pixels; rotation
  * is clockwise in degrees. Scale must be positive. Returns 1 if valid. */

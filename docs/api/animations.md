@@ -167,3 +167,18 @@ Native image-frame assignment is available through
 [animated image graphs](images.md#native-animated-image-graphs). Migrating Lua
 animated descriptors to that visual binding and persistent process commands
 remain alpha.7 work.
+
+
+## Reuse a definition for visual binding
+
+`mv_animation_count(definition)` returns its immutable frame count, or zero for
+NULL. Rust exposes this as `Animation::len()` and `is_empty()`.
+
+`mv_process_image_animation_bind_owned` pairs an existing definition with one
+copied image descriptor per frame, in sequence order. The count must match.
+The definition's graph IDs, durations and loop behavior stay unchanged. Success
+retains the definition and all images; the original owners may then be released.
+Optional binding-owner transfer, validation, stable union colliders and cleanup
+follow the native image-animation setters. Failure keeps the old graph, clock
+and caller ownership. This lets bindings reuse validated timing without copying
+or reconstructing durations and preserve definition identity across reads.

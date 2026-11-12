@@ -26,6 +26,8 @@ int main(void)
     MvAnimation *loop = mv_animation_create(frames, 3, 1);
     MvAnimation *once = mv_animation_create(frames, 3, 0);
     assert(loop && once);
+    assert(mv_animation_count(loop) == 3 && mv_animation_count(once) == 3);
+    assert(mv_animation_count(NULL) == 0);
     frames[0].graph_id = 99;
     MvAnimationSample sample = {99, 99};
     assert(mv_animation_sample(loop, 0, &sample) && sample.index == 0 && sample.graph_id == 7);

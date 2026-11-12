@@ -115,23 +115,22 @@ select_image_frame(void *data, size_t index, MvCollisionShape *shape)
 }
 
 MvResult
-mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef process,
-    const MvImageAnimationFrame *frames, size_t count, int loop, unsigned tick_rate,
-    void *owner, MvResourceDestroy release)
+mv_process_image_animation_bind_owned(MvContext *ctx, MvProcessRef process,
+    MvAnimation *definition, const MvImageGraphic *frames, size_t count,
+    unsigned tick_rate, void *owner, MvResourceDestroy release)
 {
-    if ((owner != NULL) != (release != NULL) || !frames || !count || count > 8192 ||
-        (loop != 0 && loop != 1) || !tick_rate || tick_rate > 1000000)
+    if ((owner != NULL) != (release != NULL) || !definition || !frames || !count ||
+        count != mv_animation_count(definition) || !tick_rate || tick_rate > 1000000)
         return MV_INVALID_ARGUMENT;
     void *previous;
     MvResult result = malvado_process_visual_get(ctx, process, &previous);
     if (result != MV_OK) return result;
     double left = 0, top = 0, right = 0, bottom = 0;
     for (size_t i = 0; i < count; ++i) {
-        MvImageGraphic frame = frames[i].graphic;
+        MvImageGraphic frame = frames[i];
         MvCollisionShape shape;
         MvImageTransform transform = {0,0,(float)frame.pivot_x,(float)frame.pivot_y,1,0};
-        if (!frames[i].duration_us || frames[i].duration_us > 3600000000ULL ||
-            !mv_image_region_valid(frame.image, frame.region, transform) ||
+        if (!mv_image_region_valid(frame.image, frame.region, transform) ||
             !mv_graphic_sprite(frame.region.width, frame.region.height, frame.pivot_x, frame.pivot_y, &shape))
             return MV_INVALID_ARGUMENT;
         double x = -frame.pivot_x, y = -frame.pivot_y;
@@ -142,26 +141,15 @@ mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef process,
         if (!i || end_x > right) right = end_x;
         if (!i || end_y > bottom) bottom = end_y;
     }
-    MvAnimationFrame *timing = malloc(count * sizeof(*timing));
-    if (!timing) return MV_OUT_OF_MEMORY;
-    for (size_t i = 0; i < count; ++i)
-        timing[i] = (MvAnimationFrame){(int)i + 1, frames[i].duration_us};
-    MvAnimation *animation = mv_animation_create(timing, count, loop);
-    free(timing);
-    if (!animation) return MV_OUT_OF_MEMORY;
     OwnedImageGraph *owned = calloc(1, sizeof(*owned) + count * sizeof(*owned->frames));
-    if (!owned) {
-        mv_animation_destroy(animation);
-        return MV_OUT_OF_MEMORY;
-    }
+    if (!owned) return MV_OUT_OF_MEMORY;
     for (size_t i = 0; i < count; ++i) {
-        if (!mv_image_retain(frames[i].graphic.image)) {
+        if (!mv_image_retain(frames[i].image)) {
             for (size_t j = 0; j < i; ++j) mv_image_destroy(owned->frames[j].image);
             free(owned);
-            mv_animation_destroy(animation);
             return MV_OVERFLOW;
         }
-        owned->frames[i] = frames[i].graphic;
+        owned->frames[i] = frames[i];
     }
     owned->shape = (MvCollisionShape){.kind = MV_COLLISION_RECT,
         .width = right - left, .height = bottom - top,
@@ -169,13 +157,50 @@ mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef process,
     owned->count = count;
     owned->owner = owner;
     owned->release = release;
-    result = malvado_process_visual_animation_set(ctx, process, animation, tick_rate,
+    result = malvado_process_visual_animation_set(ctx, process, definition, tick_rate,
         owned, release_image_graph, select_image_frame);
-    mv_animation_destroy(animation);
     if (result != MV_OK) {
-        owned->release = NULL; /* Failure leaves the caller's owner intact. */
+        owned->release = NULL;
         release_image_graph(owned);
     }
+    return result;
+}
+
+MvResult
+mv_process_image_animation_set_owned(MvContext *ctx, MvProcessRef process,
+    const MvImageAnimationFrame *frames, size_t count, int loop, unsigned tick_rate,
+    void *owner, MvResourceDestroy release)
+{
+    if ((owner != NULL) != (release != NULL) || !frames || !count || count > 8192 ||
+        (loop != 0 && loop != 1) || !tick_rate || tick_rate > 1000000)
+        return MV_INVALID_ARGUMENT;
+    void *previous;
+    MvResult result = malvado_process_visual_get(ctx, process, &previous);
+    if (result != MV_OK) return result;
+    for (size_t i = 0; i < count; ++i)
+        if (!frames[i].duration_us || frames[i].duration_us > 3600000000ULL)
+            return MV_INVALID_ARGUMENT;
+    MvAnimationFrame *timing = malloc(count * sizeof(*timing));
+    MvImageGraphic *graphics = malloc(count * sizeof(*graphics));
+    if (!timing || !graphics) {
+        free(timing);
+        free(graphics);
+        return MV_OUT_OF_MEMORY;
+    }
+    for (size_t i = 0; i < count; ++i) {
+        timing[i] = (MvAnimationFrame){(int)i + 1, frames[i].duration_us};
+        graphics[i] = frames[i].graphic;
+    }
+    MvAnimation *animation = mv_animation_create(timing, count, loop);
+    free(timing);
+    if (!animation) {
+        free(graphics);
+        return MV_OUT_OF_MEMORY;
+    }
+    result = mv_process_image_animation_bind_owned(ctx, process, animation, graphics,
+        count, tick_rate, owner, release);
+    free(graphics);
+    mv_animation_destroy(animation);
     return result;
 }
 

@@ -58,6 +58,12 @@ mv_animation_destroy(MvAnimation *animation)
     if (animation && --animation->references == 0) free(animation);
 }
 
+size_t
+mv_animation_count(const MvAnimation *animation)
+{
+    return animation ? animation->count : 0;
+}
+
 int
 mv_animation_sample(const MvAnimation *animation, uint64_t elapsed_us, MvAnimationSample *out)
 {

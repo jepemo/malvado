@@ -552,6 +552,15 @@ malvado_process_visual_animation_set(MvContext *ctx, MvProcessRef ref,
     return MV_OK;
 }
 
+int
+malvado_process_visual_animation_uses(MvContext *ctx, MvProcessRef ref,
+                                     const MvAnimation *definition)
+{
+    Process *item;
+    return definition && resolve_live_process(ctx, ref, &item) == MV_OK &&
+        item->visual_sample && item->animation == definition;
+}
+
 MvResult
 malvado_process_visual_get(MvContext *ctx, MvProcessRef ref, void **data)
 {

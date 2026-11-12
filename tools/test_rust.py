@@ -93,6 +93,7 @@ def external_consumer(prefix):
         '    camera.center((200.0, 150.0), (800, 600))?;\n'
         '    assert_eq!(camera.project((210.0, 160.0), (0.0, 0.0))?, (410.0, 310.0));\n'
         '    let animation = malvado::animation::Animation::new(&[malvado::animation::Frame { graph_id: 1, duration_us: 100_000 }], true)?;\n'
+        '    assert_eq!(animation.len(),1); assert!(!animation.is_empty());\n'
         '    let mut playback = animation.playback(); playback.advance(60)?;\n'
         '    assert_eq!(playback.sample().graph_id, 1);\n'
         '    let mut engine = Engine::new()?; assert!(engine.draw_order()?.is_empty());\n'

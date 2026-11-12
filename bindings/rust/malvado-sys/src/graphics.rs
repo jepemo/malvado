@@ -515,3 +515,16 @@ unsafe extern "C" {
         release: Option<unsafe extern "C" fn(*mut std::ffi::c_void)>,
     ) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_process_image_animation_bind_owned(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        definition: *mut crate::MvAnimation,
+        frames: *const MvImageGraphic,
+        count: usize,
+        tick_rate: u32,
+        owner: *mut std::ffi::c_void,
+        release: Option<unsafe extern "C" fn(*mut std::ffi::c_void)>,
+    ) -> c_int;
+}

@@ -36,4 +36,7 @@ typedef int (*MvVisualSample)(void *data, size_t index, MvCollisionShape *shape)
 MvResult malvado_process_visual_animation_set(MvContext *ctx, MvProcessRef ref,
     MvAnimation *animation, unsigned rate, void *data, MvResourceDestroy destroy,
     MvVisualSample sample);
+/* Binding-only identity check. The caller retains the compared definition. */
+int malvado_process_visual_animation_uses(MvContext *ctx, MvProcessRef ref,
+                                        const MvAnimation *definition);
 #endif
