@@ -17,6 +17,7 @@
 #undef NDEBUG
 #endif
 #include "malvado/text.h"
+#include "../src/core/process.h"
 #include <assert.h>
 #include <string.h>
 #include <limits.h>
@@ -45,6 +46,17 @@ static void check(MvContext *ctx, uint64_t id, const char *expected)
     assert(mv_text_entry_read(ctx, id, &text, &x, &y, &align) == MV_OK);
     assert(!strcmp(text, expected));
     assert(x == INT_MIN && y == INT_MAX && align == 1);
+}
+typedef struct { int drawn, released; } Style;
+static void release_style(void *data) { ++((Style *)data)->released; }
+static int draw_style(const void *data, const MvText *text)
+{
+    Style *style = (Style *)data;
+    const char *value;
+    int x, y, alignment;
+    assert(mv_text_read(text, &value, &x, &y, &alignment) == MV_OK);
+    ++style->drawn;
+    return 1;
 }
 typedef struct { MvContext *ctx; uint64_t id; int called; } Cleanup;
 static void cleanup(void *user)
@@ -75,6 +87,16 @@ int main(void)
     source[0] = 'X';
     check(ctx, host, "host");
     assert(mv_text_entry_create(ctx, &owner, "owned", INT_MIN, INT_MAX, 1, &owned) == MV_OK);
+    Style host_style = {0}, owner_style = {0};
+    assert(malvado_text_entry_bind(ctx, host, &host_style, release_style, NULL) == MV_INVALID_ARGUMENT);
+    assert(malvado_text_entry_bind(ctx, 999, &host_style, release_style, draw_style) == MV_NOT_FOUND);
+    assert(!host_style.released);
+    assert(malvado_text_entry_bind(ctx, host, &host_style, release_style, draw_style) == MV_OK);
+    assert(malvado_text_entry_bind(ctx, owned, &owner_style, release_style, draw_style) == MV_OK);
+    assert(malvado_text_entries_draw(ctx) && host_style.drawn == 1 && owner_style.drawn == 1);
+    assert(malvado_text_entry_bind(ctx, host, NULL, NULL, NULL) == MV_OK && host_style.released == 1);
+    assert(malvado_text_entry_bind(ctx, host, NULL, NULL, NULL) == MV_OK && host_style.released == 1);
+    assert(malvado_text_entry_bind(ctx, host, &host_style, release_style, draw_style) == MV_OK);
     data.id = owned;
     assert(host == 1 && owned == 2);
     size_t count = 99;
@@ -97,7 +119,7 @@ int main(void)
     assert(mv_process_kill(ctx, owner, &killed) == MV_OK);
     check(ctx, owned, "updated");
     assert(mv_process_tick(ctx) == MV_OK);
-    assert(data.called == 1);
+    assert(data.called == 1 && owner_style.released == 1);
     assert(mv_text_entry_remove(ctx, owned) == MV_NOT_FOUND);
     assert(mv_text_entry_create(ctx, &owner, "dead", 0, 0, 0, &sentinel) == MV_NOT_FOUND && sentinel == 99);
     check(ctx, host, "host");
@@ -106,12 +128,14 @@ int main(void)
     assert(mv_text_entry_create(ctx, &owner, "return", 0, 0, 0, &owned) == MV_OK && owned == 3);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_text_entry_remove(ctx, owned) == MV_NOT_FOUND);
-    assert(mv_text_entry_remove(ctx, host) == MV_OK);
+    assert(mv_text_entry_remove(ctx, host) == MV_OK && host_style.released == 2);
     assert(mv_text_entry_remove(ctx, host) == MV_NOT_FOUND);
     assert(mv_text_entry_remove(ctx, 0) == MV_NOT_FOUND);
     assert(mv_text_entries(ctx, ids, 2, &count) == MV_OK && count == 0);
     assert(mv_text_entry_create(ctx, NULL, "shutdown", 0, 0, 0, &owned) == MV_OK && owned == 4);
+    assert(malvado_text_entry_bind(ctx, owned, &host_style, release_style, draw_style) == MV_OK);
     mv_context_destroy(foreign);
     mv_context_destroy(ctx);
+    assert(host_style.released == 3);
     return 0;
 }

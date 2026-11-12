@@ -254,6 +254,20 @@ int mv_font_retain(MvFont *font);
 void mv_font_destroy(MvFont *font);
 int mv_font_text_width(const MvFont *font, const char *text, int size);
 int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);
+/* Bind copied size (1..1024) and color to a context text entry. NULL font uses
+ * the built-in font; otherwise acquire one native font reference. Replacement,
+ * clear, removal, owner cleanup and context shutdown release that reference.
+ * Failure preserves old style and caller ownership. Entries start unstyled.
+ * Font references do not retain the window; release entries before closing it.
+ * Clear is idempotent for live entries; missing IDs return MV_NOT_FOUND.
+ * All operations stay on the context/window owner thread. */
+MvResult mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor color);
+MvResult mv_text_entry_font_clear(MvContext *ctx, uint64_t id);
+/* Draw styled entries in creation order at screen coordinates. Call after
+ * process graphics and before overlay as needed. No allocation, scheduler tick,
+ * or content change. Unstyled entries are skipped. Require a live window/frame
+ * with no clip/scroll scope; otherwise return 0 without drawing. Headless 0. */
+int mv_window_draw_texts(MvContext *ctx);
 /* Draw a rectangle or circle between begin and end. Filled must be 0 or 1.
  * Return 0 for invalid geometry, an invalid flag, or no window. */
 int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color);

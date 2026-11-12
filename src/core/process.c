@@ -124,6 +124,9 @@ typedef struct TextEntry {
     uint64_t id;
     MvProcessId owner;
     MvText *text;
+    void *data;
+    MvResourceDestroy destroy;
+    MvTextDraw draw;
 } TextEntry;
 
 struct MvProcesses {
@@ -1043,6 +1046,7 @@ release_text_entries(MvProcesses *p, MvProcessId owner, int all)
         TextEntry *entry = *link;
         if (all || entry->owner == owner) {
             *link = entry->next;
+            if (entry->destroy) entry->destroy(entry->data);
             mv_text_destroy(entry->text);
             free(entry);
         } else {
@@ -1122,9 +1126,36 @@ mv_text_entry_remove(MvContext *ctx, uint64_t id)
     if (!*link) return MV_NOT_FOUND;
     TextEntry *entry = *link;
     *link = entry->next;
+    if (entry->destroy) entry->destroy(entry->data);
     mv_text_destroy(entry->text);
     free(entry);
     return MV_OK;
+}
+
+MvResult
+malvado_text_entry_bind(MvContext *ctx, uint64_t id, void *data,
+    MvResourceDestroy destroy, MvTextDraw draw)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || ((data || destroy || draw) && (!data || !destroy || !draw)))
+        return MV_INVALID_ARGUMENT;
+    TextEntry *entry = find_text_entry(p, id);
+    if (!entry) return MV_NOT_FOUND;
+    if (entry->destroy) entry->destroy(entry->data);
+    entry->data = data;
+    entry->destroy = destroy;
+    entry->draw = draw;
+    return MV_OK;
+}
+
+int
+malvado_text_entries_draw(MvContext *ctx)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p) return 0;
+    for (TextEntry *entry = p->texts; entry; entry = entry->next)
+        if (entry->draw && !entry->draw(entry->data, entry->text)) return 0;
+    return 1;
 }
 
 MvResult

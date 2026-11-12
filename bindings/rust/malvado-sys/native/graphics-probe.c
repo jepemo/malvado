@@ -229,3 +229,7 @@ _Static_assert(_Generic(&mv_process_draw_image_region_owned, MvResult (*)(MvCont
 _Static_assert(_Generic(&mv_process_draw_image_region, MvResult (*)(MvContext *, MvProcessRef, MvImage *, MvImageRegion, MvImageTransform): 1, default: 0), "mv_process_draw_image_region signature");
 
 _Static_assert(_Generic(&mv_font_retain, int (*)(MvFont *): 1, default: 0), "mv_font_retain signature");
+
+_Static_assert(_Generic(&mv_text_entry_font, MvResult (*)(MvContext *, uint64_t, MvFont *, int, MvColor): 1, default: 0), "mv_text_entry_font signature");
+_Static_assert(_Generic(&mv_text_entry_font_clear, MvResult (*)(MvContext *, uint64_t): 1, default: 0), "mv_text_entry_font_clear signature");
+_Static_assert(_Generic(&mv_window_draw_texts, int (*)(MvContext *): 1, default: 0), "mv_window_draw_texts signature");

@@ -738,6 +738,14 @@ draw_projected_commands(MvContext *ctx, MvProcessRef process, double x, double y
 }
 
 int
+mv_window_draw_texts(MvContext *ctx)
+{
+    if (!IsWindowReady() || !drawing_active || clip_active || scroll_active || !ctx)
+        return 0;
+    return malvado_text_entries_draw(ctx);
+}
+
+int
 mv_window_draw_process_graphics(MvContext *ctx)
 {
     if (!drawing_active || !ctx)

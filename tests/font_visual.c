@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "malvado/platform.h"
+#include "malvado/text.h"
 #include "raylib.h"
 #include "runner/runtime.h"
 
@@ -114,7 +115,56 @@ main(int argc, char **argv)
     }
     assert(light > 10);
     mv_window_end();
-    mv_font_destroy(font);
+    MvContext *ctx = mv_context_create(60, 4);
+    uint64_t id;
+    assert(ctx && mv_text_entry_create(ctx, NULL, "Café Ω", 100, 20, 1, &id) == MV_OK);
+    assert(!mv_window_draw_texts(ctx));
+    assert(mv_text_entry_font(ctx, id, font, 24, (MvColor){255,255,255,255}) == MV_OK);
+    assert(mv_text_entry_font(ctx, id, font, 0, (MvColor){255,0,0,255}) == MV_INVALID_ARGUMENT);
+    assert(mv_text_entry_font(ctx, 999, font, 24, (MvColor){255,0,0,255}) == MV_NOT_FOUND);
+    mv_font_destroy(font); /* Only the entry retains the font from here. */
+    mv_window_begin((MvColor){0,0,0,255});
+    assert(mv_window_clip_begin(0,0,200,80));
+    assert(!mv_window_draw_texts(ctx));
+    assert(mv_window_clip_end());
+    assert(mv_window_scroll_begin(1,1));
+    assert(!mv_window_draw_texts(ctx));
+    assert(mv_window_scroll_end());
+    assert(mv_window_draw_texts(ctx));
+    /* Last font release must flush queued glyphs before unloading the texture. */
+    assert(mv_text_entry_font_clear(ctx, id) == MV_OK);
+    mv_window_flush();
+    check_frame(&comparison);
+    assert(comparison.matched);
+    comparison.matched = 0;
+    mv_window_end();
+    assert(mv_text_entry_font_clear(ctx, id) == MV_OK);
+    assert(mv_text_entry_font_clear(ctx, id) == MV_OK);
+    assert(mv_text_entry_font(ctx, id, NULL, 24, (MvColor){255,255,255,255}) == MV_OK);
+    mv_window_begin((MvColor){0,0,0,255});
+    assert(mv_window_draw_texts(ctx));
+    mv_window_end();
+    assert(mv_text_entry_update(ctx, id, "M", 20, 20, 0) == MV_OK);
+    assert(mv_text_entry_font(ctx, id, NULL, 24, (MvColor){255,0,0,255}) == MV_OK);
+    uint64_t later, unstyled;
+    assert(mv_text_entry_create(ctx, NULL, "M", 20, 20, 0, &later) == MV_OK);
+    assert(mv_text_entry_font(ctx, later, NULL, 24, (MvColor){0,0,255,255}) == MV_OK);
+    assert(mv_text_entry_create(ctx, NULL, "skip", 0, 0, 0, &unstyled) == MV_OK);
+    mv_window_begin((MvColor){0,0,0,255});
+    mv_window_draw_text("M", 20, 20, 24, (MvColor){255,0,0,255});
+    mv_window_draw_text("M", 20, 20, 24, (MvColor){0,0,255,255});
+    mv_window_flush();
+    Comparison ordered = {LoadImageFromScreen(), 0};
+    assert(ordered.reference.data);
+    mv_window_end();
+    mv_window_begin((MvColor){0,0,0,255});
+    assert(mv_window_draw_texts(ctx));
+    mv_window_flush();
+    check_frame(&ordered);
+    assert(ordered.matched);
+    mv_window_end();
+    UnloadImage(ordered.reference);
+    mv_context_destroy(ctx);
     mv_font_destroy(NULL);
     mv_window_close();
     char *args[] = {"malvado-run", argv[1]};

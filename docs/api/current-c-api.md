@@ -269,6 +269,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_sound_resume`
 - `mv_sound_set_volume`
 - `mv_sound_stop`
+- `mv_text_entry_font`
+- `mv_text_entry_font_clear`
 - `mv_text_input_next`
 - `mv_utf8_decode`
 - `mv_utf8_encode`
@@ -284,6 +286,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_draw_process_commands`
 - `mv_window_draw_process_graphics`
 - `mv_window_draw_text`
+- `mv_window_draw_texts`
 - `mv_window_draw_transformed_rect`
 - `mv_window_end`
 - `mv_window_escape_down`

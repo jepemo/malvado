@@ -123,3 +123,44 @@ All references stay on the window owner thread. They do not retain the window;
 release them before window close. Headless retain returns 0. Rust's safe `Font`
 continues to share its native owner and window through its existing Rc wrapper.
 The unsafe sys SDK also declares native retain.
+
+## Native retained text drawing
+
+`mv_text_entry_font(ctx, id, font, size, color)` gives a registry entry a drawing
+style. Size is 1..1024. Color and size are copied. Pass NULL for the built-in font,
+or a live custom font to acquire one native reference. The caller keeps its own
+reference and can release it after a successful bind. Replacing a style acquires
+the new reference before releasing the old one. Failed validation or allocation
+preserves the complete previous style and caller ownership.
+
+`mv_text_entry_font_clear` removes the style without changing content, position
+or alignment. It is idempotent for an existing entry. Removal, owner cleanup and
+context shutdown release its retained font. Invalid size/context returns
+`MV_INVALID_ARGUMENT`, a missing entry returns `MV_NOT_FOUND`, and allocation
+failure returns `MV_OUT_OF_MEMORY`. All access stays on the window/context owner
+thread. Retained fonts do not retain the window; remove or clear their entries
+before closing it.
+
+Call `mv_window_draw_texts(ctx)` between window begin/end, with no active clip or
+scroll scope. It draws styled entries in creation order, uses screen coordinates
+and the shared measured-width alignment, and skips unstyled entries. It allocates
+nothing and does not tick processes or change content. No frame/window, an active
+scope, or a NULL context returns 0 without drawing. The headless backend returns
+0. The host chooses the order, for example process graphics, persistent text,
+then the fade overlay. Entries are unstyled until explicitly bound.
+
+```c
+uint64_t id;
+if (mv_text_entry_create(ctx, NULL, "Score: 1", 10, 10, 0, &id) == MV_OK) {
+    MvResult result = mv_text_entry_font(ctx, id, NULL, 20,
+                                       (MvColor){255, 255, 255, 255});
+    (void)result;
+}
+/* Inside an active frame, without clip/scroll scopes: */
+(void)mv_window_draw_texts(ctx);
+```
+
+Lua still uses live font tables and its current text rendering pass. Safe Rust
+text handles do not yet bind fonts or retain a window for this pass. The unsafe
+sys SDK exposes these native functions with installed signature checks. Their
+binding integration remains unfinished in A7.6.

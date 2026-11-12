@@ -57,4 +57,13 @@ typedef void (*MvDrawVisitor)(const MvStoredDraw *command, void *user);
 MvResult malvado_process_draw_owned(MvContext *ctx, MvProcessRef process, MvStoredDraw command);
 MvResult malvado_process_draw_visit(MvContext *ctx, MvProcessRef process,
     MvDrawVisitor visit, void *user);
+/* Binding/platform-only retained text renderer. Callbacks must only release or
+ * draw borrowed platform data; they must not call context/process/text APIs.
+ * Successful bind takes data; replacement/removal/cleanup releases once.
+ * All NULL callbacks/data clear the binding. Other partial tuples are invalid. */
+#include "malvado/text.h"
+typedef int (*MvTextDraw)(const void *data, const MvText *text);
+MvResult malvado_text_entry_bind(MvContext *ctx, uint64_t id, void *data,
+    MvResourceDestroy destroy, MvTextDraw draw);
+int malvado_text_entries_draw(MvContext *ctx);
 #endif

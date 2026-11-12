@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "malvado/platform.h"
+#include "malvado/text.h"
 
 int
 main(void)
@@ -31,6 +32,13 @@ main(void)
                                    (MvCollisionTransform){0, 0, 0, 1}, (MvColor){0}));
     assert(!mv_window_draw_process_graphics(NULL));
     assert(!mv_font_retain(NULL));
+    MvContext *ctx = mv_context_create(60,4);
+    uint64_t text_id;
+    assert(mv_text_entry_create(ctx,NULL,"headless",0,0,0,&text_id) == MV_OK);
+    assert(mv_text_entry_font(ctx,text_id,NULL,20,(MvColor){255,255,255,255}) == MV_OK);
+    assert(!mv_window_draw_texts(ctx));
+    assert(mv_text_entry_font_clear(ctx,text_id) == MV_OK);
+    mv_context_destroy(ctx);
     double before, after;
     const uint8_t pixel[4] = {0, 0, 0, 255};
     assert(!mv_image_from_rgba(1, 1, pixel, sizeof(pixel)));
