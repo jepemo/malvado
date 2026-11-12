@@ -24,6 +24,16 @@
 #include <string.h>
 #include "malvado/platform.h"
 #include "malvado/text.h"
+#include "../src/platform/render_internal.h"
+
+static int
+unexpected_prepare(MvProcessRef process, void *user)
+{
+    (void)process;
+    (void)user;
+    assert(0 && "preparation outside a graphics frame");
+    return 1;
+}
 
 int
 main(void)
@@ -37,6 +47,7 @@ main(void)
     assert(mv_text_entry_create(ctx,NULL,"headless",0,0,0,&text_id) == MV_OK);
     assert(mv_text_entry_font(ctx,text_id,NULL,20,(MvColor){255,255,255,255}) == MV_OK);
     assert(!mv_window_draw_texts(ctx));
+    assert(!malvado_window_draw_process_graphics(ctx,unexpected_prepare,NULL));
     assert(mv_text_entry_font_clear(ctx,text_id) == MV_OK);
     mv_context_destroy(ctx);
     double before, after;

@@ -18,6 +18,7 @@
 #endif
 #include "malvado/platform.h"
 #include "malvado/camera.h"
+#include "../src/platform/render_internal.h"
 #include <float.h>
 #include "raylib.h"
 #include <assert.h>
@@ -102,6 +103,46 @@ static void command_checks(MvContext *ctx, MvProcessRef ref)
     assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 0);
 }
 
+typedef struct {
+    MvContext *ctx;
+    MvProcessRef *refs;
+    MvImage *queued;
+    unsigned calls;
+} Preparation;
+static int prepare_graph(MvProcessRef ref, void *user)
+{
+    Preparation *state = user;
+    assert(ref.id == state->refs[state->calls].id);
+    ++state->calls;
+    if (state->queued) {
+        mv_image_destroy(state->queued);
+        state->queued = NULL;
+    }
+    if (ref.id == state->refs[0].id) return 0;
+    assert(mv_process_set_position(state->ctx,ref,40,40) == MV_OK);
+    return 1;
+}
+static void preparation_checks(MvContext *ctx, MvProcessRef *refs)
+{
+    uint8_t rgba[] = {255,0,0,255};
+    MvImage *queued = mv_image_from_rgba(1,1,rgba,sizeof(rgba));
+    assert(queued);
+    Preparation state = {ctx,refs,queued,0};
+    assert(mv_process_draw_box(ctx,refs[0],4,4,2,2,1,(MvColor){255,0,0,255}) == MV_OK);
+    assert(!malvado_window_draw_process_graphics(ctx,prepare_graph,&state) && !state.calls);
+    mv_window_begin((MvColor){0,0,0,255});
+    mv_image_draw(queued,50,50);
+    assert(malvado_window_draw_process_graphics(ctx,prepare_graph,&state));
+    assert(state.calls == 2 && !state.queued);
+    pixel(4,4,255,0); /* Graph suppression must not hide stored commands. */
+    pixel(20,20,0,0);
+    pixel(40,40,0,255); /* Native transform is read after preparation. */
+    pixel(50,50,255,0); /* Queued texture was flushed before callback release. */
+    mv_window_end();
+    assert(mv_process_draw_clear(ctx,refs[0]) == MV_OK);
+    assert(mv_process_set_position(ctx,refs[1],20,20) == MV_OK);
+}
+
 int main(void)
 {
     MvContext *ctx = mv_context_create(60, 4);
@@ -119,6 +160,7 @@ int main(void)
     }
     assert(!mv_window_draw_process_graphics(ctx));
     assert(mv_window_open(64, 64, "Native process graphics"));
+    preparation_checks(ctx,refs);
     MvColor black = {0, 0, 0, 255};
     mv_window_begin(black);
     assert(!mv_window_draw_process_graphics(NULL));

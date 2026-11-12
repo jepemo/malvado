@@ -16,6 +16,7 @@
 #define _POSIX_C_SOURCE 199309L
 #include "malvado/platform.h"
 #include "input_internal.h"
+#include "render_internal.h"
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
@@ -177,3 +178,12 @@ int mv_window_draw_process_commands(MvContext *ctx, MvProcessRef process)
 { (void)ctx; (void)process; return 0; }
 
 int mv_window_draw_texts(MvContext *ctx) { (void)ctx; return 0; }
+
+int
+malvado_window_draw_process_graphics(MvContext *ctx, MvRenderPrepare prepare, void *user)
+{
+    (void)ctx;
+    (void)prepare;
+    (void)user;
+    return 0;
+}

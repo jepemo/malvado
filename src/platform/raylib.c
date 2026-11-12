@@ -21,6 +21,7 @@
 #include "malvado/camera.h"
 #include "malvado/platform.h"
 #include "input_internal.h"
+#include "render_internal.h"
 #include "../core/process.h"
 #include "raylib.h"
 #include "rlgl.h"
@@ -746,7 +747,7 @@ mv_window_draw_texts(MvContext *ctx)
 }
 
 int
-mv_window_draw_process_graphics(MvContext *ctx)
+malvado_window_draw_process_graphics(MvContext *ctx, MvRenderPrepare prepare, void *user)
 {
     if (!drawing_active || !ctx)
         return 0;
@@ -775,8 +776,14 @@ mv_window_draw_process_graphics(MvContext *ctx)
         MvGraphic graphic = {0};
         MvImageGraphic image;
         int present, has_image;
-        if (mv_process_ref_create(ctx, items[i].id, &ref) != MV_OK ||
-            mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK ||
+        if (mv_process_ref_create(ctx, items[i].id, &ref) != MV_OK)
+            continue;
+        int graph_enabled = 1;
+        if (prepare) {
+            mv_window_flush();
+            graph_enabled = prepare(ref, user);
+        }
+        if (mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK ||
             mv_process_image_get(ctx, ref, &image, &has_image) != MV_OK)
             continue;
         MvCollisionTransform transform;
@@ -786,7 +793,7 @@ mv_window_draw_process_graphics(MvContext *ctx)
             continue;
         /* Preserve the primitive world-coordinate limit before projection;
          * camera/scroll cancellation must not make invalid input drawable. */
-        int draw_graph = (present || has_image) && fabs(transform.x) <= FLT_MAX / 16 &&
+        int draw_graph = graph_enabled && (present || has_image) && fabs(transform.x) <= FLT_MAX / 16 &&
                          fabs(transform.y) <= FLT_MAX / 16;
         MvCamera camera;
         MvCameraViewport visible, region;
@@ -819,6 +826,12 @@ mv_window_draw_process_graphics(MvContext *ctx)
     if (saved_scroll) (void)mv_window_scroll_begin(scroll_x, scroll_y);
     free(items);
     return 1;
+}
+
+int
+mv_window_draw_process_graphics(MvContext *ctx)
+{
+    return malvado_window_draw_process_graphics(ctx, NULL, NULL);
 }
 
 int
