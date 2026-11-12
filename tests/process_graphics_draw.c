@@ -59,7 +59,7 @@ static void command_checks(MvContext *ctx, MvProcessRef ref)
     mv_image_destroy(image);
     assert(mv_process_draw_circle(ctx,ref,24,24,2,1,green) == MV_OK);
     char text[] = "Native";
-    assert(mv_process_draw_text(ctx,ref,text,2,40,10,green) == MV_OK);
+    assert(mv_process_draw_text(ctx,ref,text,2,40,-1,green) == MV_OK);
     text[0] = 'X';
     size_t count;
     assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 4);
@@ -69,6 +69,18 @@ static void command_checks(MvContext *ctx, MvProcessRef ref)
     pixel(11,11,255,0);
     pixel(13,13,0,255);
     pixel(24,24,0,255);
+    mv_window_draw_text("Native",2,50,10,green);
+    mv_window_flush();
+    Image screen = LoadImageFromScreen();
+    int lit = 0;
+    for (int y = 0; y < 10; ++y) for (int x = 2; x < 38; ++x) {
+        Color a = GetImageColor(screen,x*screen.width/GetScreenWidth(),(40+y)*screen.height/GetScreenHeight());
+        Color b = GetImageColor(screen,x*screen.width/GetScreenWidth(),(50+y)*screen.height/GetScreenHeight());
+        assert(a.r == b.r && a.g == b.g && a.b == b.b);
+        if (a.g) lit = 1;
+    }
+    assert(lit);
+    UnloadImage(screen);
     mv_window_end();
     assert(mv_process_tick(ctx) == MV_OK);
     mv_window_begin(black);

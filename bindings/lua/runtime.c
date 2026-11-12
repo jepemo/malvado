@@ -60,7 +60,7 @@ typedef struct {
     lua_State *thread;
     int thread_ref;
     int self_ref;
-    int draw_ref;
+    int images_ref;
     lua_Integer parent_id;
     lua_Integer priority;
     ProcessState state;
@@ -1390,7 +1390,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
 typedef struct {
     LuaSelf *self;
     lua_State *thread;
-    int self_ref, thread_ref, draw_ref;
+    int self_ref, thread_ref, images_ref;
 } SpawnDraft;
 
 /* All Lua allocations for a process happen before the native spawn. */
@@ -1415,14 +1415,14 @@ prepare_spawn(lua_State *L)
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft->self_ref);
     lua_xmove(L, draft->thread, 1);
     lua_newtable(L);
-    draft->draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    draft->images_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     return 0;
 }
 
 static void
 discard_spawn(lua_State *L, SpawnDraft *draft)
 {
-    luaL_unref(L, LUA_REGISTRYINDEX, draft->draw_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, draft->images_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, draft->thread_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, draft->self_ref);
 }
@@ -1523,7 +1523,7 @@ create_process(lua_State *L)
     MvProcessId parent = attached ? (MvProcessId)creator : 0;
     if (!lua_checkstack(L, 12))
         return luaL_error(L, "cannot prepare process");
-    SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .draw_ref = LUA_NOREF};
+    SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .images_ref = LUA_NOREF};
     lua_pushcfunction(L, prepare_spawn);
     lua_pushlightuserdata(L, &draft);
     lua_pushvalue(L, fields);
@@ -1591,7 +1591,7 @@ create_process(lua_State *L)
         .thread = draft.thread,
         .thread_ref = draft.thread_ref,
         .self_ref = draft.self_ref,
-        .draw_ref = draft.draw_ref,
+        .images_ref = draft.images_ref,
         .parent_id = (lua_Integer)parent,
         .state = PROCESS_RUNNING,
         .first = 1,
@@ -1850,11 +1850,9 @@ snapshot(lua_State *L)
     if (header.tick > LUA_MAXINTEGER)
         return luaL_error(L, "inspection tick is too large");
     for (size_t i = 0; i < total; ++i) {
-        Process *process = find_process_slot((lua_Integer)items[i].id);
-        int draw_ref = process ? process->draw_ref : LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, draw_ref);
-        draw_counts[i] = lua_rawlen(L, -1);
-        lua_pop(L, 1);
+        MvProcessRef reference = {header.runtime, items[i].id};
+        if (mv_process_draw_count(engine.context, reference, &draw_counts[i]) != MV_OK)
+            return luaL_error(L, "process list changed during draw inspection");
     }
     MvRuntimeId runtime_id = header.runtime;
     char runtime_text[49];
@@ -2018,23 +2016,13 @@ draw_primitive(lua_State *L)
     Process *process = find_process(engine.active_id);
     if (!process)
         return luaL_error(L, "drawing must be called inside a live process");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
-    lua_createtable(L, 9, 0);
-    lua_pushinteger(L, type);
-    lua_seti(L, -2, 1);
-    for (int i = 0; i < 4; ++i) {
-        lua_pushinteger(L, (lua_Integer)values[i]);
-        lua_seti(L, -2, i + 2);
-    }
-    const unsigned char channels[] = {
-        engine.draw.color.r, engine.draw.color.g, engine.draw.color.b, engine.draw.color.a
-    };
-    for (int i = 0; i < 4; ++i) {
-        lua_pushinteger(L, channels[i]);
-        lua_seti(L, -2, i + 6);
-    }
-    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
-    lua_pop(L, 1);
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    MvResult result = type <= 2 ?
+        mv_process_draw_box(engine.context, reference, (int)values[0], (int)values[1],
+            (int)values[2], (int)values[3], type == 1, engine.draw.color) :
+        mv_process_draw_circle(engine.context, reference, (int)values[0], (int)values[1],
+            (int)values[2], type == 3, engine.draw.color);
+    if (result != MV_OK) return luaL_error(L, "cannot append primitive command");
     return 0;
 }
 
@@ -2536,10 +2524,32 @@ image_size(lua_State *L)
     return 2;
 }
 
+/* Preserve Lua image identity while native commands retain texture data.
+ * Keep the root table on the stack until transactional native append returns. */
+static void
+root_command_image(lua_State *L, int images_ref)
+{
+    lua_rawgeti(L, LUA_REGISTRYINDEX, images_ref);
+    lua_pushvalue(L, 1);
+    lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
+}
+
+static int
+finish_image_command(lua_State *L, MvResult result)
+{
+    if (result != MV_OK) {
+        lua_pushnil(L);
+        lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2));
+        return luaL_error(L, "cannot append image command");
+    }
+    lua_pop(L, 1);
+    return 0;
+}
+
 static int
 draw_image(lua_State *L)
 {
-    luaL_checkudata(L, 1, "malvado.image");
+    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
@@ -2549,15 +2559,12 @@ draw_image(lua_State *L)
     Process *process = find_process(engine.active_id);
     if (!process)
         return luaL_error(L, "draw_image must be called inside a live process");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
-    lua_createtable(L, 3, 0);
-    for (int i = 1; i <= 3; ++i) {
-        lua_pushvalue(L, i);
-        lua_seti(L, -2, i);
-    }
-    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
-    lua_pop(L, 1);
-    return 0;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
+    MvImageTransform transform = {(float)x, (float)y, 0, 0, 1, 0};
+    root_command_image(L, process->images_ref);
+    return finish_image_command(L, mv_process_draw_image_region(engine.context,
+        reference, image->image, region, transform));
 }
 
 static int
@@ -2598,21 +2605,10 @@ draw_image_region(lua_State *L)
     Process *process = find_process(engine.active_id);
     if (!process)
         return luaL_error(L, "draw_image_region must be called inside a live process");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
-    lua_createtable(L, 11, 0);
-    lua_pushvalue(L, 1);
-    lua_seti(L, -2, 1);
-    const lua_Number values[] = {
-        transform.x, transform.y, region.x, region.y, region.width, region.height,
-        transform.pivot_x, transform.pivot_y, transform.scale, transform.rotation
-    };
-    for (int i = 0; i < 10; ++i) {
-        lua_pushnumber(L, values[i]);
-        lua_seti(L, -2, i + 2);
-    }
-    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
-    lua_pop(L, 1);
-    return 0;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    root_command_image(L, process->images_ref);
+    return finish_image_command(L, mv_process_draw_image_region(engine.context,
+        reference, image->image, region, transform));
 }
 
 #ifndef _WIN32
@@ -3634,22 +3630,13 @@ text(lua_State *L)
     if (!engine.active)
         return luaL_error(L, "draw_text must be called inside a process");
 
-    /* Draw commands live until the next simulation tick. */
     Process *process = find_process(engine.active_id);
     if (!process || L != engine.active_thread)
         return luaL_error(L, "draw_text must be called inside a live process");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
-    lua_createtable(L, 4, 0);
-    lua_pushstring(L, s);
-    lua_seti(L, -2, 1);
-    lua_pushinteger(L, x);
-    lua_seti(L, -2, 2);
-    lua_pushinteger(L, y);
-    lua_seti(L, -2, 3);
-    lua_pushinteger(L, size);
-    lua_seti(L, -2, 4);
-    lua_seti(L, -2, lua_rawlen(L, -2) + 1);
-    lua_pop(L, 1);
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    if (mv_process_draw_text(engine.context, reference, s, (int)x, (int)y,
+            (int)size, (MvColor){255,255,255,255}) != MV_OK)
+        return luaL_error(L, "cannot append text command");
     return 0;
 }
 /* The Lua state owns text objects and fonts until they are deleted or closed. */
@@ -3926,7 +3913,7 @@ cleanup(Process *p)
     lua_State *thread = p->thread;
     int thread_ref = p->thread_ref;
     int self_ref = p->self_ref;
-    int draw_ref = p->draw_ref;
+    int images_ref = p->images_ref;
     lua_Integer id = p->id;
     p->alive = 0;
     lua_Integer previous_closing_id = engine.closing_id;
@@ -3946,7 +3933,7 @@ cleanup(Process *p)
     lua_pop(engine.L, 1);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, thread_ref);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, self_ref);
-    luaL_unref(engine.L, LUA_REGISTRYINDEX, draw_ref);
+    luaL_unref(engine.L, LUA_REGISTRYINDEX, images_ref);
 }
 
 static int
@@ -3977,13 +3964,16 @@ lua_process_step_protected(lua_State *L)
         return 1;
     }
     lua_State *co = process->thread;
-    int draw_ref = process->draw_ref;
+    int images_ref = process->images_ref;
     int first = process->first;
     process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
     process->last_activation_tick = engine.tick_number;
     process->first = 0;
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)id};
+    if (mv_process_draw_clear(engine.context, reference) != MV_OK)
+        return luaL_error(L, "cannot clear process commands");
     lua_newtable(L);
-    lua_rawseti(L, LUA_REGISTRYINDEX, draw_ref);
+    lua_rawseti(L, LUA_REGISTRYINDEX, images_ref);
     engine.active = 1;
     engine.active_thread = co;
     engine.active_id = (lua_Integer)id;
@@ -4112,38 +4102,6 @@ tick(void)
     engine.count = write;
     engine.in_tick = 0;
     return mv_process_count(engine.context) != 0;
-}
-
-static void
-render_primitive(lua_State *L, int command)
-{
-    int values[9];
-    for (int i = 0; i < 9; ++i) {
-        lua_geti(L, command, i + 1);
-        values[i] = (int)lua_tointeger(L, -1);
-        lua_pop(L, 1);
-    }
-    MvColor color = {values[5], values[6], values[7], values[8]};
-    if (values[0] <= 2)
-        (void)mv_window_draw_box(values[1], values[2], values[3], values[4], values[0] == 1, color);
-    else
-        (void)mv_window_draw_circle(values[1], values[2], values[3], values[0] == 3, color);
-}
-
-static void
-render_image_region(lua_State *L, int command, LuaImage *image)
-{
-    lua_Number values[10];
-    for (int i = 0; i < 10; ++i) {
-        lua_geti(L, command, i + 2);
-        values[i] = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-    }
-    MvImageRegion region = {(int)values[2], (int)values[3], (int)values[4], (int)values[5]};
-    MvImageTransform transform = {(float)values[0], (float)values[1],
-                                  (float)values[6], (float)values[7],
-                                  (float)values[8], (float)values[9]};
-    (void)mv_image_draw_region(image->image, region, transform);
 }
 
 static int
@@ -4535,31 +4493,8 @@ render(void)
             continue;
         }
         render_graph(L, process);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_ref);
-        for (lua_Integer i = 1; i <= (lua_Integer)lua_rawlen(L, -1); i++) {
-            lua_geti(L, -1, i);
-            lua_geti(L, -1, 1);
-            lua_geti(L, -2, 2);
-            lua_geti(L, -3, 3);
-            LuaImage *image = luaL_testudata(L, -3, "malvado.image");
-            int command = lua_absindex(L, -4);
-            if (lua_isinteger(L, -3)) {
-                render_primitive(L, command);
-            } else if (image && lua_rawlen(L, command) == 11) {
-                render_image_region(L, command, image);
-            } else if (image) {
-                mv_image_draw(image->image, (int)lua_tointeger(L, -2), (int)lua_tointeger(L, -1));
-            } else {
-                const char *value = lua_tostring(L, -3);
-                lua_geti(L, -4, 4);
-                int size = lua_tointeger(L, -1);
-                mv_window_draw_text(value, (int)lua_tointeger(L, -3), (int)lua_tointeger(L, -2),
-                                    size, (MvColor){255, 255, 255, 255});
-                lua_pop(L, 1);
-            }
-            lua_pop(L, 4);
-        }
-        lua_pop(L, 1);
+        MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+        (void)mv_window_draw_process_commands(engine.context, reference);
         if (scroll == 2) (void)mv_window_scroll_end();
         if (region == 2) (void)mv_window_clip_end();
     }

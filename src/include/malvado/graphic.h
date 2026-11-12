@@ -38,7 +38,8 @@ MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
 /* Per-process drawing commands. Append copies values and text in call order.
  * Box dimensions and circle radius must be positive; filled is 0 or 1. Box
  * far corners and circle bounds must fit int. Text is a NUL-terminated string;
- * size is any int (nonpositive sizes remain a drawing no-op).
+ * size is passed unchanged to the built-in renderer (raylib uses a minimum of
+ * 10 pixels, including for nonpositive values).
  * Commands use world coordinates, not the graph's position/rotation/scale.
  * They do not change graph selection or collision geometry. They survive ticks,
  * sleep and freeze until explicit clear or process cleanup. Language hosts clear

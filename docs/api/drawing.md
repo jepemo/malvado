@@ -196,7 +196,8 @@ caller ownership. Release commands before closing the window.
 
 Commands keep append order and use world coordinates. They do not use the
 selected graph's position, angle, scale, or collider. Box corners and circle
-bounds must fit C `int`. Text with a nonpositive size remains a drawing no-op.
+bounds must fit C `int`. Text keeps the immediate built-in renderer behavior:
+raylib uses a minimum size of 10 pixels, including for nonpositive values.
 `mv_process_draw_count` reports the list length. `mv_process_draw_clear` releases
 the list. Clear is idempotent. Kill, return, and context cleanup also release it.
 Ticks and signals do not clear commands. A language host must clear immediately
@@ -209,4 +210,16 @@ An invalid graph transform does not hide independent commands. The pass restores
 host scopes and flushes borrowed texture uses before return.
 `mv_window_draw_process_commands` draws only one list in the current scopes;
 the caller supplies visibility and projection. Both require an active frame.
-Collection does not add a scheduler. Lua and safe Rust migration is separate.
+Collection does not add a scheduler.
+
+
+## Shared Lua command storage
+
+Lua primitive, immediate text, whole-image and region/sprite commands use the
+native list in call order. Lua clears the previous list only before resuming the
+coroutine, after its cadence check. Sleeping/frozen and low-cadence processes
+keep the existing visibility and persistence rules. The graph draws first.
+Image commands also keep Lua image userdata reachable until the next activation
+or cleanup. These Lua roots contain no duplicated command fields. Text is copied
+by C. Lua inspection reads native command counts, including commands added by C.
+Native clear is visible immediately on frozen Lua processes.
