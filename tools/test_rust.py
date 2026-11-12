@@ -98,6 +98,7 @@ def external_consumer(prefix):
         '    assert_eq!(animation.len(),1); assert!(!animation.is_empty());\n'
         '    let mut playback = animation.playback(); playback.advance(60)?;\n'
         '    assert_eq!(playback.sample().graph_id, 1);\n'
+        '    let mut clock = Engine::new()?; assert_eq!(clock.advance_time(1.0/60.0)?,1); assert_eq!(clock.planned_ticks()?,1); assert_eq!(clock.dropped_seconds()?,0.0); clock.tick()?;\n'
         '    let mut engine = Engine::new()?; assert!(engine.draw_order()?.is_empty());\n'
         ' let registered = engine.create_text("host",(1,2),malvado::graphic::TextAlignment::Left)?; registered.update("changed",(3,4),malvado::graphic::TextAlignment::Right)?; assert_eq!(registered.snapshot()?.value,"changed"); registered.remove()?;\n'
         '    let handle = engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'

@@ -50,3 +50,36 @@ scheduler activation. Native context tests use the same fixture.
 
 This is clock integration. Window events, rendering preparation, audio
 maintenance and the remaining shared runner services are separate work.
+
+## Rust host integration
+
+`Engine::advance_time(elapsed_seconds)` uses the same context planner. The default
+engine runs at 60 Hz and returns at most five steps per call. `planned_ticks()`
+and `dropped_seconds()` read native clock accounting. All input and overflow
+errors preserve the existing clock state. Each engine has an independent clock.
+
+```rust
+use malvado::Engine;
+let mut engine = Engine::new()?;
+let steps = engine.advance_time(1.0 / 60.0)?;
+for _ in 0..steps {
+    engine.tick()?;
+}
+assert_eq!(engine.planned_ticks()?, 1);
+# Ok::<(), malvado::Error>(())
+```
+
+In a graphics host, call `window.input_tick()` immediately before each
+`engine.tick()`. Update audio regularly and draw once per host frame. Advance
+fade values once per logical tick. These services remain explicit.
+
+Time planning does not activate a future, wake a process, or execute a tick.
+Call `tick()` to consume the returned steps; do not call `advance_time` again to
+consume the same plan. Direct manual ticks remain supported and do not change
+the planning counter. For Lua-style immediate startup, call `tick()` once before
+the elapsed-time loop.
+
+Rust tests read the same fixture as C and the injected-time Lua runner. They
+check future activation counts, independent clocks, invalid inputs, overflow
+atomicity and manual-tick independence. The installed offline SDK consumer uses
+all three Rust timing methods in Debug and Release.

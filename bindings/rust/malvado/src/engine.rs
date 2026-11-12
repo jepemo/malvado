@@ -41,6 +41,38 @@ pub struct Engine {
     runtime: Rc<Runtime>,
 }
 impl Engine {
+    /// Accumulate finite nonnegative wall time and return due logical ticks.
+    /// The default clock is 60 Hz with at most five ticks per call. Excess time
+    /// is recorded as dropped. Failure preserves all clock state.
+    /// This does not poll processes, capture input, draw, or update audio.
+    /// Call `tick()` once per returned tick, committing window input before each
+    /// tick when graphics are used. Do not advance again to consume this plan.
+    /// ```
+    /// use malvado::Engine;
+    /// let mut engine = Engine::new()?;
+    /// for _ in 0..engine.advance_time(1.0 / 60.0)? { engine.tick()?; }
+    /// assert_eq!(engine.planned_ticks()?, 1);
+    /// # Ok::<(), malvado::Error>(())
+    /// ```
+    pub fn advance_time(&mut self, elapsed_seconds: f64) -> Result<u32, Error> {
+        let mut steps = 0;
+        // SAFETY: live local context and exclusive initialized output.
+        result(unsafe {
+            sys::mv_context_advance(self.runtime.live()?, elapsed_seconds, &mut steps)
+        })?;
+        Ok(steps)
+    }
+    /// Total ticks returned by successful time advances. Explicit tick calls
+    /// do not change this clock counter, and may execute fewer planned ticks.
+    pub fn planned_ticks(&self) -> Result<u64, Error> {
+        // SAFETY: checked owner-thread context; native read retains nothing.
+        Ok(unsafe { sys::mv_context_ticks(self.runtime.live()?) })
+    }
+    pub fn dropped_seconds(&self) -> Result<f64, Error> {
+        // SAFETY: checked owner-thread context; native read retains nothing.
+        Ok(unsafe { sys::mv_context_dropped_seconds(self.runtime.live()?) })
+    }
+
     /// Register host text until explicit removal or engine shutdown.
     pub fn create_text(
         &self,
