@@ -91,9 +91,9 @@ text IDs. Process cleanup removes native entries and releases Lua font roots;
 GC no longer owns a separate text object. Existing signatures, font table
 identity and rendering order are preserved.
 
-The renderer still uses Lua's font descriptors. Entries created only by C are
-not automatically rendered by Lua. Native font retention and common drawing
-collection remain unfinished. The registry itself works without Lua or graphics.
+The runner synchronizes live Lua font descriptors, then draws the shared native
+registry. Styled entries created only by C are included in creation order.
+Unstyled entries remain invisible. The registry works without Lua or graphics.
 
 ## Rust context text handles
 
@@ -160,7 +160,22 @@ if (mv_text_entry_create(ctx, NULL, "Score: 1", 10, 10, 0, &id) == MV_OK) {
 (void)mv_window_draw_texts(ctx);
 ```
 
-Lua still uses live font tables and its current text rendering pass. Safe Rust
-text handles do not yet bind fonts or retain a window for this pass. The unsafe
-sys SDK exposes these native functions with installed signature checks. Their
-binding integration remains unfinished in A7.6.
+Lua prepares styles from its live font tables and uses this native pass.
+Safe Rust text handles do not yet bind fonts or retain a window for this pass.
+The unsafe sys SDK exposes these functions with installed signature checks.
+
+## Lua shared text drawing
+
+Lua `write`, `change_text` and `delete_text` keep their signatures. Before drawing,
+the runner synchronizes each live font table's resource, size and color into the
+native entry. Valid table changes remain visible, including changes after a
+process has slept or frozen. A failed allocation leaves the previous style intact.
+Unchanged styles reuse their allocation and font reference. Invalid font sizes
+outside the descriptor's 1..1024 contract suppress that entry's drawing.
+
+One native pass draws all styled entries in creation order after process graphics
+and before the fade overlay. This includes C-created host entries. Lua no longer
+measures, aligns or dispatches persistent text drawing independently. Descriptor
+roots remain in Lua so tables stay live; native references protect custom fonts
+through replacement, deletion, process cleanup and shutdown. Headless behavior
+and text content APIs are unchanged.

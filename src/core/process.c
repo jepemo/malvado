@@ -1148,6 +1148,17 @@ malvado_text_entry_bind(MvContext *ctx, uint64_t id, void *data,
     return MV_OK;
 }
 
+MvResult
+malvado_text_entry_binding(MvContext *ctx, uint64_t id, MvTextDraw draw, void **out)
+{
+    MvProcesses *p = mv_context_processes(ctx);
+    if (!p || !draw || !out) return MV_INVALID_ARGUMENT;
+    TextEntry *entry = find_text_entry(p, id);
+    if (!entry) return MV_NOT_FOUND;
+    *out = entry->draw == draw ? entry->data : NULL;
+    return MV_OK;
+}
+
 int
 malvado_text_entries_draw(MvContext *ctx)
 {

@@ -3881,16 +3881,14 @@ render_texts(lua_State *L)
             *channels[i] = (unsigned char)lua_tointeger(L, -1);
             lua_pop(L, 1);
         }
-        int width = resource ? mv_font_text_width(resource, text, size) : mv_window_text_width(text, size);
-        int aligned_x = x;
-        (void)mv_text_aligned_x(x, width, alignment, &aligned_x);
-        if (resource)
-            (void)mv_font_draw(resource, text, (int)aligned_x, y, size, c);
-        else
-            mv_window_draw_text(text, (int)aligned_x, y, size, c);
+        /* The native service reuses unchanged styles without allocation. */
+        MvResult result = mv_text_entry_font(engine.context, (uint64_t)id, resource, size, c);
+        if (result == MV_INVALID_ARGUMENT)
+            (void)mv_text_entry_font_clear(engine.context, (uint64_t)id);
         lua_pop(L, 2);
     }
     lua_pop(L, 1);
+    (void)mv_window_draw_texts(engine.context);
 }
 
 static void

@@ -61,6 +61,8 @@ int main(void)
     assert(mv_text_entry_font(ctx,999,&font,20,color) == MV_NOT_FOUND && font.references == 1);
     assert(mv_text_entry_font(ctx,id,&font,20,color) == MV_OK && font.references == 2);
     fail_allocation = 1;
+    /* Repeated descriptor synchronization must not allocate or churn owners. */
+    assert(mv_text_entry_font(ctx,id,&font,20,color) == MV_OK && font.references == 2);
     assert(mv_text_entry_font(ctx,id,NULL,20,color) == MV_OUT_OF_MEMORY && font.references == 2);
     fail_allocation = 0;
     assert(malvado_text_entries_draw(ctx) && drawn == 1 && last_x == 15);

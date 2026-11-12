@@ -20,9 +20,10 @@
 #include <limits.h>
 #include "raylib.h"
 #include "malvado/platform.h"
+#include "malvado/text.h"
 #include "runner/runtime.h"
 
-typedef struct { int red, green, blue_left, blue_right, yellow; } Seen;
+typedef struct { int red, green, blue_left, blue_right, yellow, cyan, native, created; } Seen;
 
 static void
 check_frame(void *user)
@@ -48,6 +49,8 @@ check_frame(void *user)
                 seen->red = 1;
             if (logical_x >= 100 && pixel.g > 180 && pixel.r < 40 && pixel.b < 40)
                 seen->green = 1;
+            if (pixel.g > 180 && pixel.b > 180 && pixel.r < 40) seen->cyan = 1;
+            if (pixel.r > 180 && pixel.b > 180 && pixel.g < 40) seen->native = 1;
             if (pixel.b > 180 && pixel.r < 40 && pixel.g < 40) {
                 if (logical_x < 120) seen->blue_left = 1;
                 if (logical_x > 120) seen->blue_right = 1;
@@ -59,6 +62,13 @@ check_frame(void *user)
         }
     }
     UnloadImage(image);
+    if (!seen->created) {
+        uint64_t id;
+        MvContext *ctx = malvado_debug_context();
+        assert(mv_text_entry_create(ctx,NULL,"Native",0,85,0,&id) == MV_OK);
+        assert(mv_text_entry_font(ctx,id,NULL,10,(MvColor){255,0,255,255}) == MV_OK);
+        seen->created = 1;
+    }
 }
 
 int
@@ -70,6 +80,6 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(check_frame, &seen);
     int result = malvado_run(2, args);
     malvado_debug_set_frame_hook(NULL, NULL);
-    assert(result == 0 && seen.red && seen.green && seen.blue_left && seen.blue_right && seen.yellow);
+    assert(result == 0 && seen.red && seen.green && seen.blue_left && seen.blue_right && seen.yellow && seen.cyan && seen.native);
     return 0;
 }

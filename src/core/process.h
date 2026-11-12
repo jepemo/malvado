@@ -65,5 +65,8 @@ MvResult malvado_process_draw_visit(MvContext *ctx, MvProcessRef process,
 typedef int (*MvTextDraw)(const void *data, const MvText *text);
 MvResult malvado_text_entry_bind(MvContext *ctx, uint64_t id, void *data,
     MvResourceDestroy destroy, MvTextDraw draw);
+/* Borrow data only when the callback identity matches; otherwise write NULL.
+ * Borrow ends at replacement/removal/cleanup. Output required. */
+MvResult malvado_text_entry_binding(MvContext *ctx, uint64_t id, MvTextDraw draw, void **out);
 int malvado_text_entries_draw(MvContext *ctx);
 #endif

@@ -55,6 +55,13 @@ mv_text_entry_font(MvContext *ctx, uint64_t id, MvFont *font, int size, MvColor 
     int x, y, alignment;
     MvResult result = mv_text_entry_read(ctx, id, &value, &x, &y, &alignment);
     if (result != MV_OK) return result;
+    void *previous = NULL;
+    result = malvado_text_entry_binding(ctx, id, draw_text, &previous);
+    if (result != MV_OK) return result;
+    TextFont *old = previous;
+    if (old && old->font == font && old->size == size && old->color.r == color.r &&
+        old->color.g == color.g && old->color.b == color.b && old->color.a == color.a)
+        return MV_OK;
     TextFont *style = malloc(sizeof(*style));
     if (!style) return MV_OUT_OF_MEMORY;
     if (font && !mv_font_retain(font)) {
