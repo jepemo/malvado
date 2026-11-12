@@ -781,7 +781,7 @@ push_selected_camera(lua_State *L, LuaSelf *self)
     lua_rawset(L, -5);
 }
 
-/* Native storage owns visual sprites. Metadata-only/headless descriptors and
+/* Native storage owns visual sprites and whole images. Metadata-only descriptors and
  * animations retain their existing Lua paths. */
 static void manage_image(lua_State *L, LuaImage *image);
 
@@ -803,6 +803,13 @@ set_process_graphic(lua_State *L, LuaSelf *self, int value)
             result = mv_process_graphic_clear(engine.context, self->reference);
         }
         lua_pop(L, 1);
+    } else if (luaL_testudata(L, value, "malvado.image")) {
+        LuaImage *image = lua_touserdata(L, value);
+        result = mv_process_image_set(engine.context, self->reference,
+            (MvImageGraphic){image->image,
+                {0, 0, mv_image_width(image->image), mv_image_height(image->image)},
+                image->pivot_x, image->pivot_y});
+        native_sprite = 1;
     } else if (graphic) {
         result = mv_process_graphic_set(engine.context, self->reference,
                                        (MvGraphic){graphic->shape, graphic->color});
@@ -822,6 +829,11 @@ refresh_process_sprite(lua_State *L, LuaSelf *self, int fields)
         return 0;
     raw_option(L, fields, "graph");
     LuaGraphic *old = luaL_testudata(L, -1, "malvado.graphic");
+    LuaImage *whole = luaL_testudata(L, -1, "malvado.image");
+    int same_image = whole && whole->image == native.image && native.region.x == 0 &&
+        native.region.y == 0 && native.region.width == mv_image_width(native.image) &&
+        native.region.height == mv_image_height(native.image) &&
+        whole->pivot_x == native.pivot_x && whole->pivot_y == native.pivot_y;
     int same = old && old->sprite && old->region.x == native.region.x &&
         old->region.y == native.region.y && old->region.width == native.region.width &&
         old->region.height == native.region.height && old->pivot_x == native.pivot_x &&
@@ -834,7 +846,7 @@ refresh_process_sprite(lua_State *L, LuaSelf *self, int fields)
     }
     lua_pop(L, 1);
     self->native_sprite = 1;
-    if (same) return 1;
+    if (same || same_image) return 1;
     LuaGraphic *graphic = lua_newuserdatauv(L, sizeof(*graphic), 2);
     *graphic = (LuaGraphic){.sprite = 1, .region = native.region,
         .pivot_x = native.pivot_x, .pivot_y = native.pivot_y};
@@ -1160,6 +1172,7 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
                         .offset_x = legacy ? 0 : width / 2.0 - image->pivot_x,
                         .offset_y = legacy ? 0 : height / 2.0 - image->pivot_y};
                     present = 1;
+                    bound = self->native_sprite && !legacy;
                 } else invalid = 1;
             } else invalid = 1;
         }
@@ -4109,13 +4122,13 @@ static void
 render_graph(lua_State *L, const Process *process)
 {
     lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+    LuaSelf *self = lua_touserdata(L, -1);
     lua_getiuservalue(L, -1, 1);
     int fields = lua_gettop(L);
-    refresh_process_transform(L, lua_touserdata(L, -2), fields);
+    refresh_process_transform(L, self, fields);
     raw_option(L, fields, "graph");
     LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
     if (animation) {
-        LuaSelf *self = lua_touserdata(L, -3);
         MvAnimationSample sample;
         if (mv_animation_sample(animation->sequence, self->animation_state.elapsed_us, &sample)) {
             lua_getiuservalue(L, -1, 1);
@@ -4133,10 +4146,16 @@ render_graph(lua_State *L, const Process *process)
         render_number(L, fields, "angle", 0, &angle) &&
         render_number(L, fields, "size", 1, &scale) && scale > 0) {
         if (image) {
-            MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
-            MvImageTransform transform = {(float)x, (float)y, (float)image->pivot_x,
-                                          (float)image->pivot_y, (float)scale, (float)angle};
-            (void)mv_image_draw_region(image->image, region, transform);
+            MvImageGraphic selected = {image->image,
+                {0, 0, mv_image_width(image->image), mv_image_height(image->image)},
+                image->pivot_x, image->pivot_y};
+            int present;
+            if (!animation)
+                (void)mv_process_image_get(engine.context,
+                    self->reference, &selected, &present);
+            MvImageTransform transform = {(float)x, (float)y, (float)selected.pivot_x,
+                                          (float)selected.pivot_y, (float)scale, (float)angle};
+            (void)mv_image_draw_region(selected.image, selected.region, transform);
         } else if (graphic->sprite) {
             int graph_index = lua_gettop(L);
             lua_getiuservalue(L, graph_index, 2);

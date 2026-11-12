@@ -427,9 +427,8 @@ frozen processes. Native clear removes that Lua selection. Reconstructed Lua
 sprite values retain their image through the existing resource manager.
 
 Metadata-only sprites without a loaded image keep their headless behavior.
-Whole-image Lua values, fractional PNG pivots, legacy sheets and automatic
-animation retain their existing paths. These paths are not migrated by this
-storage change.
+Whole-image Lua values use the same native storage, including fractional PNG
+pivots. Legacy sheets and automatic animation retain their existing paths.
 
 Visual sprite colliders use the selected native graph by default. Native image
 replacement, position, angle and scale changes affect collision queries without
@@ -437,3 +436,22 @@ a Lua refresh, tick or render. Clearing the native graph removes that automatic
 geometry. Lua local overrides, disabled colliders and invalid-property behavior
 keep their existing precedence. Metadata-only and animation colliders keep
 their existing paths.
+
+### Lua whole-image graphs
+
+Assigning a loaded PNG or FPG image directly to `self.graph` retains its native
+image and copied full region/pivot. Centered odd-size PNGs keep half-pixel
+pivots exactly. Unchanged reads return the original image userdata, so
+`image_size(self.graph)` keeps working. A C replacement with a different region,
+image or pivot returns a sprite view; native clear removes the selection.
+
+Normal whole-image colliders derive from the selected native geometry. C image
+and property changes are visible before a Lua tick or render. Explicit local
+colliders, disabled colliders and invalid Lua property overrides retain their
+existing precedence. Legacy whole-image collision centering and first-frame
+render eligibility keep their existing rules. Sampled animation frames keep
+their previous behavior; this migration does not advance animation in C.
+
+The shared C/Lua visual check uses a generated solid red 3-by-5 PNG, a centered
+pivot `(1.5, 2.5)`, frozen native replacement, immediate collision queries and
+native clear. It runs with the atlas and FPG sprite fixtures and sanitizers.

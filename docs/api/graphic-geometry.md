@@ -173,8 +173,10 @@ Rust exposes the same operation as `collision::Shape::sprite((width, height),
 (pivot_x, pivot_y))`. It returns a copied collider or InvalidArgument for
 nonpositive dimensions or invalid pivots. Use the shape with existing overlap queries or local
 process collider binding. Arbitrary sprite pivots are not added to primitive
-process drawing; image assignment and texture retention remain separate work.
-The Rust tests check transformed overlap, copied values and integer boundaries.
+process drawing. Image assignment and texture retention use the
+[native process image service](images.md#native-process-image-graphs).
+The Rust tests check transformed overlap, copied values, fractional pivots,
+invalid numbers and integer boundaries.
 The installed core-only consumer calls this constructor without graphics.
 
 

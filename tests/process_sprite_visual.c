@@ -46,8 +46,11 @@ static void frame(void *user)
     assert(mv_process_image_get(ctx, ref, &graph, &present) == MV_OK);
     if (*stage == 0) {
         assert(present && ((graph.region.width == 4 && graph.region.height == 8) ||
-                            (graph.region.width == 2 && graph.region.height == 2)));
+                            (graph.region.width == 2 && graph.region.height == 2) ||
+                            (graph.region.width == 3 && graph.region.height == 5)));
         assert(pixel.r > 240 && pixel.g < 10);
+        if (graph.region.width == 3)
+            assert(graph.pivot_x == 1.5 && graph.pivot_y == 2.5);
         MvProcessId id;
         assert(mv_process_spawn(ctx, 0, 0, idle, NULL, NULL, &id) == MV_OK);
         assert(mv_process_ref_create(ctx, id, &target) == MV_OK);
