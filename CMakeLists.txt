@@ -46,7 +46,7 @@ if(MALVADO_BUILD_ASSETS)
   install(FILES ${cjson_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME cJSON-LICENSE)
 endif()
 
-add_library(malvado_core STATIC src/core/version.c src/core/graphic.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
+add_library(malvado_core STATIC src/core/version.c src/core/text.c src/core/graphic.c src/core/animation.c src/core/camera.c src/core/collision.c src/core/clock.c src/core/schedule.c src/core/context.c src/core/process.c src/core/entropy.c)
 if(MALVADO_BUILD_ASSETS)
   target_link_libraries(malvado_assets PUBLIC malvado_core)
 endif()
@@ -1324,3 +1324,11 @@ add_test(NAME lua_start_injection COMMAND start-injection-test
 set_tests_properties(lua_start_injection PROPERTIES TIMEOUT 15)
 
 endif() # MALVADO_BUILD_LUA
+
+add_library(text-allocation OBJECT src/core/text.c)
+target_include_directories(text-allocation PRIVATE src/include)
+target_compile_definitions(text-allocation PRIVATE malloc=test_text_malloc calloc=test_text_calloc)
+add_executable(text-value-test tests/text_value.c $<TARGET_OBJECTS:text-allocation>)
+target_link_libraries(text-value-test PRIVATE malvado_core)
+add_test(NAME text_value COMMAND text-value-test)
+set_tests_properties(text_value PROPERTIES TIMEOUT 15)

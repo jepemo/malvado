@@ -296,3 +296,10 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_space_down`
 - `mv_window_text_width`
 
+## [text.h](../../src/include/malvado/text.h)
+
+- `mv_text_create`
+- `mv_text_destroy`
+- `mv_text_read`
+- `mv_text_update`
+
