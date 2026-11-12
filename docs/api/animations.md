@@ -143,3 +143,25 @@ process return/kill and context destruction release the retained definition.
 This clock samples graph IDs as metadata. It does not load assets, select an
 image, change colliders or render a frame. Graph assignment/clear does not stop
 the clock. Use `mv_process_animation_clock_clear` to stop it explicitly.
+
+## Shared Lua process clocks
+
+Lua animated process graphs now use the native process clock. Lua no longer
+stores or advances a second elapsed-time record. Rendering and
+`graphics.animation_elapsed(process)` read the same native state. The clock
+advances after scheduler cleanup, so destructor-issued sleep/freeze signals
+apply before playback advances.
+
+A new descriptor resets playback. Reassigning the same cached descriptor keeps
+its time, unless the native clock was cleared; that assignment attaches a new
+clock at zero. Assigning a non-animation graph clears Lua's clock. Native clock
+clear leaves the Lua descriptor selected but without a sampled frame or elapsed
+value. Native clients can inspect, pause through process signals and clear the
+same clock. Lua frame assets, animation bounds and selected-image rendering
+keep their existing behavior.
+
+C, Lua and Rust checks share `tests/fixtures/process-animation.txt`. The mixed
+C/Lua host also verifies native clear and Lua reattachment. The native cleanup
+fixture checks that a destructor can freeze another clock before advancement.
+Actual native image-frame assignment and persistent process commands remain
+separate alpha.7 work.

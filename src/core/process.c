@@ -1798,14 +1798,6 @@ MvResult mv_process_tick(MvContext *ctx)
         }
     }
     free(order);
-    for (size_t i = 0; i < p->count; ++i) {
-        Process *item = &p->items[i];
-        if (item->animation && !item->killed && item->status == MV_PROCESS_RUNNING &&
-            item->animation_tick < p->ticks) {
-            if (!mv_animation_advance(item->animation, &item->animation_state, item->animation_rate))
-                result = MV_INVALID_ARGUMENT;
-        }
-    }
     /* Destructors can spawn; remove each killed process before calling one. */
     for (;;) {
         size_t i = 0;
@@ -1843,6 +1835,16 @@ MvResult mv_process_tick(MvContext *ctx)
     for (size_t i = 0; i < p->count; ++i)
         if (p->items[i].id) p->items[write++] = p->items[i];
     p->count = write;
+    /* Cleanup callbacks may change another process's status or clock. Apply
+     * the final end-of-tick state, including newly assigned-clock skips. */
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (item->animation && !item->killed && item->status == MV_PROCESS_RUNNING &&
+            item->animation_tick < p->ticks) {
+            if (!mv_animation_advance(item->animation, &item->animation_state, item->animation_rate))
+                result = MV_INVALID_ARGUMENT;
+        }
+    }
     p->busy = 0;
     return result;
 }

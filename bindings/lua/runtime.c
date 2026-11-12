@@ -105,8 +105,6 @@ typedef struct {
     lua_Integer id, parent;
     int reason, collision_invalid, native_sprite;
     MvProcessRef reference;
-    MvAnimationState animation_state;
-    lua_Integer animation_tick;
 } LuaSelf;
 typedef struct { int x, y, width, height; } LuaRegion;
 typedef struct { float x, y; } LuaScroll;
@@ -786,7 +784,7 @@ push_selected_camera(lua_State *L, LuaSelf *self)
 static void manage_image(lua_State *L, LuaImage *image);
 
 static void
-set_process_graphic(lua_State *L, LuaSelf *self, int value)
+set_process_graphic(lua_State *L, LuaSelf *self, int value, int reset_clock)
 {
     value = lua_absindex(L, value);
     LuaGraphic *graphic = luaL_testudata(L, value, "malvado.graphic");
@@ -817,6 +815,20 @@ set_process_graphic(lua_State *L, LuaSelf *self, int value)
         result = mv_process_graphic_clear(engine.context, self->reference);
     }
     if (result != MV_OK) luaL_error(L, "cannot set process graphic");
+    LuaAnimation *animation = luaL_testudata(L, value, "malvado.animation");
+    if (animation) {
+        MvAnimationState state;
+        MvAnimationSample sample;
+        int present;
+        result = mv_process_animation_clock_get(engine.context, self->reference,
+                                                &state, &sample, &present);
+        if (result == MV_OK && (reset_clock || !present))
+            result = mv_process_animation_clock_set(engine.context, self->reference,
+                                                    animation->sequence, 60);
+    } else {
+        result = mv_process_animation_clock_clear(engine.context, self->reference);
+    }
+    if (result != MV_OK) luaL_error(L, "cannot set process animation clock");
     self->native_sprite = native_sprite;
 }
 
@@ -1258,15 +1270,11 @@ self_newindex(lua_State *L)
         raw_option(L, -1, "graph");
         graph_changed = !lua_rawequal(L, -1, 3);
         lua_pop(L, 1);
-        set_process_graphic(L, self, 3);
+        set_process_graphic(L, self, 3, graph_changed);
     }
     lua_pushvalue(L, 2);
     lua_pushvalue(L, 3);
     lua_rawset(L, -3);
-    if (graph_changed) {
-        self->animation_state = (MvAnimationState){0};
-        self->animation_tick = engine.tick_number;
-    }
     if (key && (!strcmp(key, "x") || !strcmp(key, "y") || !strcmp(key, "angle") ||
                 !strcmp(key, "size") || !strcmp(key, "graph") || !strcmp(key, "collider") ||
                 !strcmp(key, "fpg")))
@@ -1524,7 +1532,7 @@ create_process(lua_State *L)
     handle->id = (lua_Integer)core_id;
     (void)mv_process_set_type(engine.context, core_id, (uint64_t)lua_tointeger(L, lua_upvalueindex(2)));
     engine.next_process_id = handle->id;
-    *draft.self = (LuaSelf){.id = handle->id, .parent = creator, .animation_tick = engine.tick_number,
+    *draft.self = (LuaSelf){.id = handle->id, .parent = creator,
                             .reference = {engine.runtime_id, core_id}};
     engine.items[engine.count++] = (Process) {
         .id = handle->id,
@@ -1555,7 +1563,7 @@ create_process(lua_State *L)
     set_process_property(L, draft.self, "size", -1);
     lua_pop(L, 1);
     raw_option(L, fields, "graph");
-    set_process_graphic(L, draft.self, -1);
+    set_process_graphic(L, draft.self, -1, 1);
     lua_pop(L, 1);
     raw_option(L, fields, "camera");
     set_process_camera(L, draft.self, -1);
@@ -4019,26 +4027,6 @@ invalidate_dead_handles(lua_State *L)
     lua_pop(L, 1);
 }
 
-static void
-advance_animations(lua_State *L)
-{
-    if (!lua_checkstack(L, 8)) { engine.failed = 1; return; }
-    for (size_t i = 0; i < engine.count; ++i) {
-        Process *process = &engine.items[i];
-        if (!process->alive || process->state != PROCESS_RUNNING) continue;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-        LuaSelf *self = lua_touserdata(L, -1);
-        lua_getiuservalue(L, -1, 1);
-        raw_option(L, -1, "graph");
-        LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
-        if (animation && self->animation_tick < engine.tick_number) {
-            if (!mv_animation_advance(animation->sequence, &self->animation_state, 60))
-                engine.failed = 1;
-        }
-        self->animation_tick = engine.tick_number;
-        lua_pop(L, 3);
-    }
-}
 
 static int
 tick(void)
@@ -4052,7 +4040,6 @@ tick(void)
     if (engine.audio) sweep_audio(engine.L);
     advance_fade();
     sync_processes();
-    advance_animations(engine.L);
     update_cameras(engine.L);
     if (result != MV_OK) {
         if (!engine.failed)
@@ -4129,8 +4116,11 @@ render_graph(lua_State *L, const Process *process)
     raw_option(L, fields, "graph");
     LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
     if (animation) {
+        MvAnimationState state;
         MvAnimationSample sample;
-        if (mv_animation_sample(animation->sequence, self->animation_state.elapsed_us, &sample)) {
+        int present;
+        if (mv_process_animation_clock_get(engine.context, self->reference,
+                &state, &sample, &present) == MV_OK && present) {
             lua_getiuservalue(L, -1, 1);
             lua_rawgeti(L, -1, (lua_Integer)sample.index + 1);
             lua_remove(L, -2);
@@ -5674,8 +5664,13 @@ animation_elapsed(lua_State *L)
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
     lua_getiuservalue(L, 1, 1);
     raw_option(L, -1, "graph");
-    if (luaL_testudata(L, -1, "malvado.animation"))
-        lua_pushnumber(L, self->animation_state.elapsed_us / 1000.0);
+    MvAnimationState state;
+    MvAnimationSample sample;
+    int present;
+    if (luaL_testudata(L, -1, "malvado.animation") &&
+        mv_process_animation_clock_get(engine.context, self->reference,
+            &state, &sample, &present) == MV_OK && present)
+        lua_pushnumber(L, state.elapsed_us / 1000.0);
     else lua_pushnil(L);
     return 1;
 }

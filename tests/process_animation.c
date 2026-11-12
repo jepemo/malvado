@@ -34,6 +34,19 @@ static MvStepResult attach(MvContext *ctx, MvProcessId id, void *user)
     assert(mv_process_animation_clock_set(ctx, ref, user, 60) == MV_OK);
     return MV_STEP_YIELD;
 }
+typedef struct { MvContext *ctx; MvProcessRef target; } Pause;
+static MvStepResult done(MvContext *ctx, MvProcessId id, void *user)
+{
+    (void)ctx;
+    (void)id;
+    (void)user;
+    return MV_STEP_DONE;
+}
+static void pause_target(void *data)
+{
+    Pause *pause = data;
+    assert(mv_process_signal(pause->ctx, pause->target.id, MV_SIGNAL_FREEZE, 0) == MV_OK);
+}
 static MvProcessRef spawn(MvContext *ctx, MvProcessStep step, void *user)
 {
     MvProcessId id;
@@ -75,6 +88,12 @@ int main(int argc, char **argv)
         if (i < 6) assert(mv_process_tick(ctx) == MV_OK);
     }
     fclose(file);
+    Pause pause = {ctx, actor};
+    MvProcessId ending;
+    assert(mv_process_spawn(ctx,0,0,done,pause_target,&pause,&ending) == MV_OK);
+    assert(mv_process_tick(ctx) == MV_OK);
+    assert(mv_process_animation_clock_get(ctx,actor,&state,&sample,&present) == MV_OK && state.elapsed_us == 0);
+
     assert(mv_process_signal(ctx,actor.id,MV_SIGNAL_SLEEP,0) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     assert(mv_process_animation_clock_get(ctx,actor,&state,&sample,&present) == MV_OK && state.elapsed_us == 0);
