@@ -145,7 +145,11 @@ else()
   target_include_directories(malvado_platform_headless PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 endif()
 if(MALVADO_BUILD_LUA)
-  FetchContent_Declare(lua URL https://www.lua.org/ftp/lua-5.4.8.tar.gz URL_HASH SHA256=4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  # Retry transient origin failures without changing the pinned release/hash.
+  FetchContent_Declare(lua URL
+    https://www.lua.org/ftp/lua-5.4.8.tar.gz
+    https://lua.org/ftp/lua-5.4.8.tar.gz
+    URL_HASH SHA256=4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_MakeAvailable(lua)
   file(GLOB LUA_SOURCES CONFIGURE_DEPENDS "${lua_SOURCE_DIR}/src/*.c")
   list(FILTER LUA_SOURCES EXCLUDE REGEX "/(lua|luac)\\.c$")
@@ -1371,4 +1375,10 @@ if(MALVADO_BUILD_LUA AND MALVADO_BUILD_RAYLIB AND MALVADO_VISUAL_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/runner_clock_visual.lua
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/runner-clock.txt)
   set_tests_properties(visual_runner_clock PROPERTIES TIMEOUT 15 RUN_SERIAL TRUE)
+endif()
+
+if(Python3_Interpreter_FOUND)
+  add_test(NAME lua_download_retry COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/lua_download_retry.py)
+  set_tests_properties(lua_download_retry PROPERTIES TIMEOUT 60)
 endif()
