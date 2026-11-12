@@ -235,3 +235,15 @@ The operation requires no window, allocation, or process.
 
 Lua persistent text uses this operation after built-in or custom font
 measurement. Its `left`, `center`, and `right` behavior is unchanged.
+
+Rust exposes the same core operation through
+`malvado::graphic::TextAlignment::{Left, Center, Right}`:
+
+```rust
+use malvado::graphic::TextAlignment;
+assert_eq!(TextAlignment::Center.aligned_x(100, 25)?, 88);
+# Ok::<(), malvado::Error>(())
+```
+
+Negative widths return `Error::InvalidArgument`. Width measurement remains
+explicit. This value helper does not create or retain persistent text objects.

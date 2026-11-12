@@ -140,3 +140,52 @@ impl crate::window::Frame<'_> {
         })
     }
 }
+
+/// Horizontal text alignment using a measured pixel width.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextAlignment {
+    Left,
+    Center,
+    Right,
+}
+impl TextAlignment {
+    /// Return the native aligned coordinate, saturating at i32::MIN.
+    /// Negative measured widths return InvalidArgument. No window is required.
+    pub fn aligned_x(self, x: i32, width: i32) -> Result<i32, Error> {
+        sys::check_abi().map_err(Error::Abi)?;
+        let alignment = match self {
+            Self::Left => 0,
+            Self::Center => 1,
+            Self::Right => 2,
+        };
+        let mut out = 0;
+        // SAFETY: initialized stack output, no retained pointers.
+        if unsafe { sys::mv_text_aligned_x(x, width, alignment, &mut out) } == 0 {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod text_tests {
+    use super::*;
+    #[test]
+    fn native_alignment_boundaries() {
+        assert_eq!(
+            TextAlignment::Left.aligned_x(i32::MAX, i32::MAX),
+            Ok(i32::MAX)
+        );
+        assert_eq!(TextAlignment::Center.aligned_x(10, 5), Ok(8));
+        assert_eq!(TextAlignment::Right.aligned_x(10, 5), Ok(5));
+        assert_eq!(
+            TextAlignment::Right.aligned_x(i32::MIN, i32::MAX),
+            Ok(i32::MIN)
+        );
+        assert_eq!(TextAlignment::Center.aligned_x(i32::MIN, 0), Ok(i32::MIN));
+        assert_eq!(
+            TextAlignment::Right.aligned_x(1, -1),
+            Err(Error::InvalidArgument)
+        );
+    }
+}

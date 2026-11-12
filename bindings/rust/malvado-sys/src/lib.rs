@@ -836,6 +836,7 @@ pub mod assets;
 pub mod graphics;
 
 unsafe extern "C" {
+    pub fn mv_text_aligned_x(x: c_int, width: c_int, alignment: c_int, out: *mut c_int) -> c_int;
     pub fn mv_graphic_rect(
         width: f64,
         height: f64,
