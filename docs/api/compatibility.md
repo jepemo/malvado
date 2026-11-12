@@ -2,7 +2,17 @@
 
 Status: proposal. No compatibility with a new runtime is certified.
 
-The 2.0 scope is the complete agreed Malvado API, excluding graphics modes 7, 8, and 9. The API inventory must be agreed explicitly. The historical profiles below are references, not required 1.0 compatibility work. Their names do not define or limit the complete Malvado 2.0 API. Select any external format support separately. See the [roadmap](../planning/roadmap.md).
+The first 2.0 release covers delivered capabilities with completed C/Lua/Rust
+alignment, CLI and platform verification. Historical profiles are comparison
+inputs, not a promise to implement their union. Further APIs are reviewed in the
+[future candidate catalog](../roadmap/api-candidates.md).
+
+Breaking changes within 2.x remain possible until the owner explicitly requests
+a compatibility freeze. A candidate API review records that release's contracts;
+it does not freeze all future releases. Approved changes need clear reasons,
+updated contracts/tests/docs, migration notes and native ABI/SDK mismatch checks.
+No 1.0 source/API compatibility is required. External format fidelity is a separate
+per-format decision. See the [release direction](../planning/roadmap.md).
 
 ## Independent profiles
 

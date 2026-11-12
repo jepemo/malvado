@@ -36,7 +36,7 @@ Alpha.6 accepts the JSON-array subset in [images](../api/images.md). It covers f
 
 The acceptance evidence is split across two fixtures. The unmodified [Coric export](../../tests/fixtures/aseprite/coric/README.md) tests multiple frames, durations, and tags in C, the installed C SDK, and Lua. Lua also loads its PNG. The original [Aseprite-format example](../../examples/aseprite/README.md) tests crop offsets, a pivot, animation and rendered pixels. That example was prepared for Malvado; it is not represented as an export from Aseprite. The `atlas`, `atlas_allocation`, `visual_image`, `visual_image_graph`, `visual_aseprite_example_pixels`, and `visual_aseprite_example` tests cover validation, cleanup, lookup, animation, drawing, and rejected input. The original proposal asked for one exported example combining these features. This decision uses two fixtures instead; a single real Aseprite export combining crop and pivot has not been tested.
 
-Multiple slices, JSON-hash exports, layers, nine-slice centers, and additional tag data are outside this subset. They are rejected because the atlas cannot preserve their meaning. Review these formats for 2.5, after the 2.0 API and GUI, with separate contracts and fidelity and rejection tests before accepting them. Alpha.6 does not require their implementation.
+Multiple slices, JSON-hash exports, layers, nine-slice centers, and additional tag data are outside this subset. They are rejected because the atlas cannot preserve their meaning. Review these formats after 2.0 as unassigned roadmap candidates, with separate contracts and fidelity and rejection tests before accepting them. Alpha.6 does not require their implementation.
 
 ## Common C model for importers
 
@@ -85,7 +85,7 @@ ZIP does not encrypt a game, and PNG is already compressed. Measure size/load ti
 | Core alpha.6 | First pinned-variant FPG importer; basic Aseprite adapter | Selected 8-bit fixture preserves IDs/points/palette; equivalent animated spritesheet |
 | GUI G1 | Browse and preview supported assets | Does not offer FPG import before a reader exists |
 | GUI G3 | Edit metadata and convert supported FPG to PNG+JSON | Save/reopen and compare points, IDs, and pixels |
-| 2.1+ | More FPG variants, FPG export, mountable ZIP, packing, map formats | Variant and limit matrix with dedicated tests |
+| Future, unassigned | More FPG variants, FPG export, mountable ZIP, packing, map formats | Variant and limit matrix with dedicated tests |
 
 Choose the first FPG variant using samples of known origin. Do not claim support for all FPG files. FPG export is optional per variant. Reject or request explicit conversion of unrepresentable data. Do not silently quantize palettes or lose alpha. The stable profile documents available loads/conversions and deferred work.
 
@@ -96,3 +96,13 @@ Create `fpg-import`: a small library with non-consecutive IDs, name, defined and
 For `atlas-import`, use a real Aseprite export for frames and durations, and the Malvado Aseprite-format example for crop and pivot. Validate the subset and give clear errors for rotation or other unsupported options. The importer must not accept data that it will render incorrectly. The evidence and its limit are stated in the acceptance decision above.
 
 Check dimension limits, overflow, truncated sizes, duplicate IDs, and unknown versions. For ZIP, check `../` paths, absolute paths, case-variant duplicates, decompressed size, and entry count. These checks belong in the shared C reader/converter, not only the GUI dialog. FPG fixtures must be licensed for redistribution. Do not copy commercial game packages for tests.
+
+
+## Future asset review
+
+See the [future roadmap](../roadmap/README.md). Additional slices, JSON-hash
+exports, layers, nine-slice centers, tag metadata, more FPG variants, writing,
+packing and runtime ZIP mounting are candidates without release numbers. Review
+each with fixtures, fidelity/loss rules, resource ownership, errors, C/Lua/Rust
+behavior and installed/exported checks. No editor or complete historical format
+suite is a prerequisite for the first extension.

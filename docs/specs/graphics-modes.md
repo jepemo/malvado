@@ -1,18 +1,18 @@
 # Graphics modes 7, 8, and 9
 
-Status: design proposal. These modes are not implemented. The modes are planned for 2.1, 2.2, and 2.3 after 2.0. See the [roadmap](../planning/roadmap.md). This proposal does not promise compatibility with DIV, Bennu, or the Mode9 DLL.
+Status: design proposal. These modes are not implemented. The modes are unassigned future proposals after 2.0. See the [roadmap](../planning/roadmap.md). This proposal does not promise compatibility with DIV, Bennu, or the Mode9 DLL.
 
 ## Purpose
 
 Add optional perspective graphics while keeping the current 2D engine and the shared process scheduler. Mode 7 draws a flat perspective floor. Mode 9 draws 3D geometry and sprites in the same scene. Mode 8 uses sectors to describe connected rooms and can reuse the Mode 9 renderer. Retro and HD-2D are visual styles, not separate engines.
 
-Keep the first version of each mode small. Add C and Lua access together. Do not add Lua or raylib dependencies to the core. Do not create another scheduler or an ECS.
+Keep the first version of each mode small. Add C, Lua and Rust access together. Do not add Lua or raylib dependencies to the core. Do not create another scheduler or an ECS.
 
 ## Current starting point
 
 - `MvContext` owns scheduling and time. It does not currently own a graphics scene.
 - `platform.h` exposes backend-neutral image handles, image regions, transforms, windows, and immediate 2D drawing. The raylib backend uses one window on the main thread. Image resources must be destroyed before the window closes.
-- The Lua binding currently builds and sorts the 2D process draw queue. It draws persistent text and fades after process drawings. C callers control their own drawing order. There is no shared C scene or 3D draw queue yet.
+- The native core stores process graphs, animation selection and ordered draw commands. A native platform pass draws graphs and commands; Lua uses the same storage with its language lifetime roots. Persistent text and shared runner integration remain open in alpha.7. There is no shared 3D scene or queue yet.
 - The headless backend does not open a window or load GPU images. It is not a simulated 3D renderer.
 - Atlas animation metadata and frame selection, input, the clock, and process lifecycle can be reused. They do not by themselves provide 3D animation, collision, or camera behavior.
 
@@ -55,11 +55,11 @@ The C and Lua paths must expose equivalent capabilities. Design small mode-speci
 
 ## Milestones
 
-Each version needs C and Lua examples, documentation, cleanup tests, non-visual tests without raylib, and visual checks on its claimed platforms. Preserve existing 2D tests. The order follows the release plan. Mode 8 may use shared rendering primitives; do not require the complete Mode 9 implementation.
+Each promoted milestone needs C/Lua/Rust examples, documentation, cleanup tests, non-visual tests without raylib, and visual checks on its claimed platforms. Preserve existing 2D tests. The order below is provisional and has no release numbers. Mode 8 may use shared rendering primitives; do not require the complete Mode 9 implementation.
 
-1. **2.1 — Mode 7.** Implement a perspective floor, camera, viewport, sky, and world sprites. Test projection headlessly and rendering visually.
-2. **2.2 — Mode 8.** Implement sector topology, textured rooms, portals, sprites, camera, and basic collision. Test topology and collision headlessly.
-3. **2.3 — Mode 9.** Implement 3D scenes, models, camera, animated billboards, depth handling, and cleanup. Select model formats using tested fixtures.
+1. **Mode 7.** Implement a perspective floor, camera, viewport, sky, and world sprites. Test projection headlessly and rendering visually.
+2. **Mode 8.** Implement sector topology, textured rooms, portals, sprites, camera, and basic collision. Test topology and collision headlessly.
+3. **Mode 9.** Implement 3D scenes, models, camera, animated billboards, depth handling, and cleanup. Select model formats using tested fixtures.
 
 Each version defines its complete acceptance criteria before implementation. More advanced visual styles and historical compatibility can be scheduled separately.
 
@@ -78,3 +78,14 @@ Modern Mode 7 does not certify historical Mode 7 semantics. Record signatures, u
 - Sector topology, triangulation, portals, vertical movement, and collision are separate problems. Decide supported geometry and invalid inputs before authoring tools.
 - Model format choice needs tested asset fixtures, material limits, animation scope, and licensing. Do not imply complete glTF support from loading one sample.
 - Headless tests validate scene state, math, and collision, not rendered pixels. Run graphics checks on the backend and platform actually claimed.
+
+
+## Related future systems
+
+Apply the [roadmap reevaluation rule](../roadmap/README.md#promotion-into-a-release)
+before implementing these sketches. [Effects/material boundaries](../roadmap/visual-effects.md)
+and [spatial attachment targets](../roadmap/spatial-attachments.md) extend Mode 9
+only after its foundations exist. Do not add skeletons or a material framework
+solely to satisfy a first 2D feature. Graph/mesh representation and the explicit
+scene-object sketch above are alternative directions that require reconciliation
+before a public contract is selected.

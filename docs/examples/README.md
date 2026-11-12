@@ -1,9 +1,10 @@
 # Aligned examples for C, Lua, and Rust
 
-Status: the example policy is adopted. The shared directory layout below is a
-migration target, not the current tree. Alpha.7 A7.8 owns the first aligned
-collection and its migration. Alpha.10 owns final public catalog selection and
-presentation. This policy does not claim current three-language parity.
+Status: adopted alignment policy. The full collection and migration are an
+[unassigned future proposal](../roadmap/examples.md), moved from alpha.7 A7.8.
+Beta requires only a small verified getting-started set for the first 2.0
+release. The directory layout below is a migration target, not the current tree.
+No current example gains three-language parity merely through this scope change.
 
 ## What belongs in the collection
 
@@ -111,29 +112,21 @@ directory. Verify exported assets and licenses on an installed, relocated SDK.
 
 ## Milestone responsibilities
 
-- **Alpha.7 A7.8:** map existing programs to the required hello, circle/square,
-  process-family/bullets, sequential boss, and world-movement lessons already in
-  that gate. Select the compact game required there. Give the selected topics
-  and game matched C/Lua/Rust versions, simple commented source, shared README,
-  assets, and automated evidence. Migrate their root paths with builds, tests,
-  docs, CLI commands and packaging. Keep A7.8 open until the full required set
-  and all three variants are verified. This policy does not remove its existing
-  Rust example or polished game deliverables.
-- **Alpha.8:** provide aligned examples for each newly delivered API family.
-  Extend existing topics when that preserves one clear lesson; do not duplicate
-  the catalog for each release or language.
-- **Alpha.10:** finalize the public catalog and learning order against the
-  complete API. Record which existing demos are selected, combined, retained as
-  verification, or retired, with replacement links and license/asset handling.
-  Publish a coverage table and link each topic's three language versions from
-  the site. This is editorial selection and consolidation, not a new API gate.
+- **Alpha.7:** keep existing runnable verification fixtures and SDK consumer tests;
+  complete delivered API parity and CLI workflows. The full teaching catalog and
+  minigame are no longer acceptance requirements.
+- **Beta / first 2.0:** provide minimal C/Lua/Rust startup, process and representative
+  visual/resource lessons with tested installed/exported commands. Document the
+  delivered engine without requiring a full catalog or website redesign.
+- **Future catalog proposal:** select, rewrite, combine or retire examples based
+  on teaching value. Deliver each selected topic with three aligned versions and
+  migrate its build/test/asset/export paths together. Review the former required
+  hello, circle/square, bullets, sequential boss and world-movement lessons here.
+- **Future API features:** include one small aligned example with each promoted
+  capability. Minigames follow the selected APIs and demonstrate composition.
 
-No additional alpha is needed just to decide the catalog. Alpha.10 already owns
-public examples and documentation. Choosing the initial A7.8 set cannot wait
-for alpha.10, because its runnable examples and game are existing alpha.7
-acceptance requirements. Existing programs outside that selected set keep their
-current verified paths until their disposition is recorded; they do not count
-as aligned entries in the new catalog.
+Retire old sources only with verified replacements and updated links/licenses.
+Benchmarks and engine fixtures need an explicit disposition before removal.
 
 ## Acceptance for an aligned example
 

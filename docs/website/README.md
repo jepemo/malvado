@@ -19,4 +19,4 @@ The pre-build and pre-development scripts generate the initial guides from exist
 
 ## Production migration
 
-The existing `.github/workflows/pages.yml` continues to publish MkDocs and the legacy documentation. Do not deploy this incomplete site. Alpha.10 will integrate website checks into CI, audit and redirect existing public URLs, retain `/legacy/`, and replace the existing deployment only after the new site is verified. The Astro base path is `/malvado/` and the documentation lives under `/malvado/docs/`.
+The existing `.github/workflows/pages.yml` continues to publish MkDocs and the legacy documentation. Do not deploy this incomplete site. Future website work will integrate website checks into CI, audit and redirect existing public URLs, retain `/legacy/`, and replace the existing deployment only after the new site is verified. The Astro base path is `/malvado/` and the documentation lives under `/malvado/docs/`.

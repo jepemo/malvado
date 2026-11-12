@@ -19,4 +19,4 @@ The current guides live in the repository while this site is being built:
 - [Collisions](https://github.com/jepemo/malvado/blob/master/docs/api/collision.md)
 - [SDK and projects](https://github.com/jepemo/malvado/blob/master/docs/site/sdk.md)
 
-These guides follow the development branch. The complete handbook is planned for alpha.10.
+These guides follow the development branch. Release-facing documentation follows the delivered engine; the complete site redesign is an unassigned future proposal.

@@ -72,14 +72,14 @@ The player receives the package and does not need CLI, Lua, LuaRocks, or LÖVE. 
 | `new NAME --template NAME` | Generate game, configuration, README, and minimal assets | alpha.4 |
 | `run [PATH]` | Validate and run in a compatible local runtime | alpha.4 |
 | `check [PATH]` | Check Lua syntax, manifest, assets, identifiers, and dependencies | alpha.4 |
-| `doctor [--target TARGET]` | Detect SDK, versions, tools, and missing runtimes | alpha.4; Android alpha.9 |
-| `export --target TARGET` | Package for target with manifest and checksums | alpha.4/alpha.9 |
+| `doctor [--target TARGET]` | Detect SDK, versions, tools, and missing runtimes | alpha.4; Android alpha.8 |
+| `export --target TARGET` | Package for target with manifest and checksums | alpha.4/alpha.8 |
 | `templates list` | Describe available templates offline | alpha.4 |
 | `sdk list` | List installed runtimes/toolchains and compatibility | alpha.4 |
 | `sdk install VERSION --target TARGET` | Explicit, verified download of published runtimes | Later, after verified releases |
 | `build --target TARGET` | Build native runtime from pinned sources | After SDK packaging |
 | `assets import` | Convert validated FPG/Aseprite subset to PNG+JSON library | alpha.6 |
-| `assets export --format fpg` | Export a selected FPG variant and document losses | 2.1+, optional |
+| `assets export --format fpg` | Export a selected FPG variant and document losses | Future proposal, unassigned |
 
 `check` does not prove that a game works and must not execute arbitrary code to analyze it. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
 
@@ -145,7 +145,7 @@ Document the exact variant and limits during implementation. `assets import` doe
 
 ## C implementation
 
-`src/cli` uses C libraries for configuration, validation, packaging, and launch. Include a C template as well as Lua, and declare the project language. C requires the target SDK, headers, library, and toolchain. Lua uses the runner with bundled VM. CI must check each `run` and `export` path. Implementation belongs to alpha.4; Android to alpha.9. See [C architecture](../architecture/c-first.md). Include templates in the binary or SDK with limited variables. Do not use a template engine that executes project code. Select and pin a small C TOML parser with a compatible license. Do not accidentally implement a complete parser.
+`src/cli` uses C libraries for configuration, validation, packaging, and launch. Include a C template as well as Lua, and declare the project language. C requires the target SDK, headers, library, and toolchain. Lua uses the runner with bundled VM. CI must check each `run` and `export` path. Implementation belongs to alpha.4; Android to alpha.8. See [C architecture](../architecture/c-first.md). Include templates in the binary or SDK with limited variables. Do not use a template engine that executes project code. Select and pin a small C TOML parser with a compatible license. Do not accidentally implement a complete parser.
 
 Launch tools with argument arrays, not shell command strings built from names/paths. Support spaces and Unicode. `new` fails if the destination already contains files. `export` uses staging and atomic result publication without deleting the project. Repeated exports replace only artifacts identified as their own. Build directories, credentials, and `.git` are excluded from packages. Include a file manifest, hashes, licenses, and versions with the artifact.
 
@@ -160,11 +160,11 @@ Launch tools with argument arrays, not shell command strings built from names/pa
 
 Not every target supports every architecture in 2.0. Reject unsupported combinations with a useful diagnostic. AAB is a distribution format and needs specific validation; it is not installed directly like an APK.
 
-Windows verification and effective support are reserved for alpha.9. Alpha.4 accepts macOS and Linux. Desktop support does not imply cross-compilation from every OS. Start with native CI builds per target and versioned SDKs; the exporter selects the runtime. Android needs its toolchain on macOS/Linux/Windows hosts. Publish the host matrix after testing.
+Windows verification and effective support are reserved for alpha.8. Alpha.4 accepts macOS and Linux. Desktop support does not imply cross-compilation from every OS. Start with native CI builds per target and versioned SDKs; the exporter selects the runtime. Android needs its toolchain on macOS/Linux/Windows hosts. Publish the host matrix after testing.
 
 ## Android: engine work beyond ZIP
 
-Use the [raylib Android build documentation](https://github.com/raysan5/raylib/wiki/Working-for-Android) as the prototype reference. Pin template and toolchain in alpha.9. Do not copy commands from an untested version into the product.
+Use the [raylib Android build documentation](https://github.com/raysan5/raylib/wiki/Working-for-Android) as the prototype reference. Pin template and toolchain in alpha.8. Do not copy commands from an untested version into the product.
 
 - Integrate a native host with the selected Activity template. Package Lua and C modules as game libraries; no installed interpreter.
 - Support touch in logical screen coordinates, DPI, orientation, Back, and on-screen keyboard when applicable. Keyboard-only asteroids does not test Android.

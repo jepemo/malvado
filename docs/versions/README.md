@@ -19,18 +19,26 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.5](2.0.0-alpha.5.md) — **complete**: process model, C and Lua API, lifecycle, resources, and genealogy. The source revision selected for the tag must pass CI; no tag or release package exists yet.
 - [x] [Alpha.6](2.0.0-alpha.6.md) — **complete**: simple Lua 2D APIs, unified assets, automatic animation, contextual world calls, and cameras. Candidate `d48729f` passed all required CI jobs; no source tag or published release.
 - [ ] [Alpha.7](2.0.0-alpha.7.md) — **started**: multi-language architecture and first-class Rust; native inventory, installed SDK, async adapter and safe process API complete; lifecycle and generic resource ownership complete; platform/graphics parity remains open.
-- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: complete the agreed 2.0 API in C, Lua, and Rust.
-- [ ] [Alpha.9](2.0.0-alpha.9.md) — **planned**: Android and Windows.
-- [ ] [Alpha.10](2.0.0-alpha.10.md) — **planned**: complete the public site and verify distribution.
-- [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: freeze the complete 2.0 API and verify release candidates.
-- [ ] [2.0.0](2.0.0.md) — **planned**: full agreed API, client, documentation, and verified macOS, Linux, Windows, and Android packages.
-- [ ] **2.1** — [Mode 7](../specs/graphics-modes.md).
-- [ ] **2.2** — [Mode 8](../specs/graphics-modes.md).
-- [ ] **2.3** — [Mode 9](../specs/graphics-modes.md).
-- [ ] **2.4** — [GUI](../specs/gui.md).
-- [ ] **2.5** — review additional Aseprite metadata and export formats after the 2.0 API and GUI; see the [asset decision](../specs/assets.md#alpha6-aseprite-acceptance-decision).
-- [ ] **2.x, later** — evaluate LuaJIT using Malvado workloads and compatibility tests; Lua 5.4 remains the 2.0 runtime.
+- [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: Windows/Android support and platform/CLI/package automation for the existing engine.
+- [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: candidate contracts, documentation, minimal aligned examples, manual device/user-flow checks and release preparation.
+- [ ] [2.0.0](2.0.0.md) — **planned**: distribute the existing engine with completed C/Lua/Rust integration and verified platform paths.
 
-The GUI and graphics modes are outside the 2.0 release gates. iOS is deferred to a later version. The full 2.0 API inventory needs an explicit decision; historical compatibility is tracked separately. See the [roadmap](../planning/roadmap.md) and [CLI plan](../specs/cli.md).
+## Scope decision
 
-The planned alpha.7–alpha.9 milestones were renumbered when Rust was inserted as alpha.7. Alpha.8 and alpha.9 were subsequently exchanged. Old links to those version filenames may now identify a different milestone; the alpha.10 website migration must audit public links and explain this change.
+The first 2.0 release validates the existing capabilities. New API families,
+graphics modes, GUI, complete catalog/minigames and site redesign move to the
+[future roadmap](../roadmap/README.md), without assigned versions. Historical
+reference calls are candidates, not release requirements.
+
+The former alpha.9 and alpha.10 pages remain relocation records, not unfinished
+releases that block beta. Windows/Android work moves to alpha.8; release-facing
+documentation moves to beta. Reassigned work is not marked complete.
+
+Breaking changes within 2.x remain possible until the owner explicitly requests
+a compatibility freeze. Beta reviews one candidate's contracts; it does not
+establish permanent compatibility. Each approved API change still needs a reason,
+updated tests/docs, migration guidance and correct native ABI/SDK rejection.
+
+The existing [family review](../api/family-review.md) bounds current functionality.
+iOS and exploratory APIs remain roadmap research. The older alpha renumberings
+remain in Git history; preserve or redirect published URLs during future site work.

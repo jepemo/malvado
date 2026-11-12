@@ -44,7 +44,7 @@ Malvado 2.0 is not backward compatible with Malvado 1.0.
 - Do not preserve old APIs, compatibility shims, or behavior only for 1.0 compatibility.
 - Reuse historical Lua names or behavior when they improve the 2.0 API.
 - Treat the C API as a new API.
-- Treat earlier 2.0 alpha APIs as experimental. They can change before the beta API freeze.
+- Breaking API changes within 2.x remain allowed until the owner explicitly requests a compatibility freeze. Explain and test each approved change, update documentation and migration notes, and keep native ABI/SDK mismatch detection correct.
 - Evaluate interoperability with external formats separately from API compatibility.
 
 ## 3. Code conventions

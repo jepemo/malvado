@@ -6,7 +6,7 @@ Malvado is an open-source game engine for making 2D games with **Lua or C**. Ins
 
 The idea is simple: give each character, object, or effect its own behavior, then let those little pieces create something bigger together.
 
-**[Documentation](https://jepemo.github.io/malvado/)** · **[Examples](examples/)** · **[Roadmap](docs/versions/README.md)**
+**[Documentation](https://jepemo.github.io/malvado/)** · **[Examples](examples/)** · **[Release plan](docs/versions/README.md)** · **[Future roadmap](docs/roadmap/README.md)**
 
 > **Work in progress:** Malvado 2 is in active alpha development. The API and tools may change as the engine evolves.
 
@@ -82,7 +82,7 @@ Try the [Space Asteroids example](examples/space_asteroids/), browse the [other 
 
 ## What's next?
 
-The current focus is making 2D game development more natural: simpler Lua APIs, assets, animation, and cameras. Rust support, more platforms, and additional graphics modes are on the roadmap, but are **not part of the current alpha**.
+The current focus is completing C/Lua/Rust integration and CLI workflows, then validating the existing engine on supported platforms for 2.0. Future API families, graphics modes and editor work are proposals in the [future roadmap](docs/roadmap/README.md).
 
 Follow the [version plan](docs/versions/README.md) to see what's implemented and what's still planned.
 

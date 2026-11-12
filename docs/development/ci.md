@@ -79,8 +79,22 @@ For PR CI, use `contents: read` or less and no secrets. Do not run untrusted PR 
 | Alpha.2 | Agreed formatting/analysis; sanitizers and expanded scheduler tests | CI fails on real errors and provides useful logs |
 | Alpha.3 | Bounded graphics smoke tests and asset examples; site build | CI examples exit automatically; no broken internal documentation links |
 | Alpha.4 | macOS/Linux packages, draft candidate, end-to-end CLI tests | Automated fresh-runner tests and correct checksums |
-| Alpha.6 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, CLI, packages | Automated Windows CI, graphics, and emulator checks where available; release signing separate |
+| Alpha.8 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, CLI, packages | Automated Windows CI, graphics, and emulator checks where available; release signing separate |
 | Beta/2.0 | Manual user-flow and device review, versioned Pages, tag automation, publication criteria | Reviewed complete candidate; manual clean-host results; docs and artifacts match the same commit |
 | GUI | Desktop build and smoke jobs at G0/G1 | CI covers selected toolkit and separates GUI from runtime |
 
 CI helps decide whether a version is ready. Manual user-flow, physical-device, and graphics experience tests on clean machines belong to beta; they are not alpha exit gates.
+
+
+## Current release direction
+
+The [version index](../versions/README.md) supersedes earlier phase assignments.
+Alpha.7 completes macOS/Linux integration and CLI checks; alpha.8 adds native
+Windows and Android emulator validation for C/Lua/Rust. Prefer existing hosted
+Windows runners and a pinned Linux emulator setup over a new Vagrant requirement.
+Use the same bounded scripts locally and in CI, upload failure evidence, run fast
+checks on PRs and broader matrices periodically/on candidates. Compiler, headless,
+software-rendering and emulator results certify different capabilities; record
+limits. Physical-device and audible tests remain beta work. Future features must
+add relevant supported-platform checks when implemented. Publishing/stores and
+production signing stay separate from ordinary CI and require authorization.
