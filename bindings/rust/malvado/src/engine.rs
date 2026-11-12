@@ -444,7 +444,7 @@ struct NativeTask {
     fps: u32,
     first: bool,
 }
-unsafe extern "C" fn step(_: *mut sys::MvContext, _: u64, user: *mut c_void) -> i32 {
+unsafe extern "C" fn step(ctx: *mut sys::MvContext, id: u64, user: *mut c_void) -> i32 {
     let outcome = contain(|| {
         // SAFETY: successful spawn gives C this Box until safe-point cleanup.
         let process = unsafe { &mut *user.cast::<NativeTask>() };
@@ -455,7 +455,15 @@ unsafe extern "C" fn step(_: *mut sys::MvContext, _: u64, user: *mut c_void) -> 
         else if unsafe { sys::mv_cadence_step(&mut process.cadence, process.fps) } == 0 {
             return Step::Yield;
         }
-        process.task.poll()
+        process.task.poll_with(|| {
+            let mut reference = sys::MvProcessRef::default();
+            // SAFETY: native callback supplies its live context/id. Clear only
+            // after cadence and readiness permit an actual future poll.
+            unsafe {
+                sys::mv_process_ref_create(ctx, id, &mut reference) == sys::MV_OK
+                    && sys::mv_process_draw_clear(ctx, reference) == sys::MV_OK
+            }
+        })
     });
     match outcome {
         Ok(Step::Yield) => sys::MV_STEP_YIELD,

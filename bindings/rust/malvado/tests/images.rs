@@ -549,6 +549,82 @@ fn main() {
     drop(frame);
     drop(engine);
     assert_eq!(Rc::strong_count(&window), 1);
+    // Stored commands retain the image and window independently of caller values.
+    let retained_engine = Engine::new().unwrap();
+    let actor = retained_engine
+        .spawn(Default::default(), |p| async move {
+            loop {
+                p.frame().await;
+            }
+        })
+        .unwrap();
+    let image = Image::from_rgba(window.clone(), 1, 1, &[0, 255, 0, 255]).unwrap();
+    let area = Rectangle {
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+    };
+    assert_eq!(
+        actor.draw_image_region(&image, Rectangle { width: 2, ..area }, Transform::default()),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(actor.draw_count().unwrap(), 0);
+    actor
+        .draw_box(
+            (10, 10),
+            (10, 10),
+            true,
+            Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        )
+        .unwrap();
+    actor
+        .draw_image_region(
+            &image,
+            area,
+            Transform {
+                position: (12.0, 12.0),
+                scale: 4.0,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    drop(image);
+    let frame = window.frame(background).unwrap();
+    frame.process_graphics(&retained_engine).unwrap();
+    pixel(
+        11,
+        11,
+        Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    );
+    pixel(
+        13,
+        13,
+        Color {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        },
+    );
+    drop(frame);
+    drop(window);
+    assert!(weak.upgrade().is_some());
+    actor.clear_draw_commands().unwrap();
+    assert!(weak.upgrade().is_none());
+    drop(retained_engine);
+    let window = Rc::new(Window::open(160, 120, "after command owner drop").unwrap());
+    let weak = Rc::downgrade(&window);
     let image = Image::from_rgba(window.clone(), 1, 1, &[255, 0, 0, 255]).unwrap();
     let cloned = image.clone();
     drop(image);

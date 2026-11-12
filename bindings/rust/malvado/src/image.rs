@@ -183,3 +183,50 @@ impl From<crate::atlas::Region> for Rectangle {
 /// fn invalid(image: Image) { std::thread::spawn(move || drop(image)); }
 /// ```
 mod ownership_contract {}
+
+impl crate::Handle {
+    /// Append an image region. Native storage retains its texture; the boxed
+    /// Rust image also keeps the window alive until clear or process cleanup.
+    pub fn draw_image_region(
+        &self,
+        image: &Image,
+        region: Rectangle,
+        transform: Transform,
+    ) -> Result<(), Error> {
+        let ctx = self.inner.runtime.live()?;
+        let owner = Box::into_raw(Box::new(image.clone()));
+        // SAFETY: live owner-thread objects; C validates region/transform and
+        // takes the boxed owner only on success.
+        let status = unsafe {
+            ffi::mv_process_draw_image_region_owned(
+                ctx,
+                self.inner.reference,
+                image.native(),
+                ffi::MvImageRegion {
+                    x: region.x,
+                    y: region.y,
+                    width: region.width,
+                    height: region.height,
+                },
+                transform.native(),
+                owner.cast(),
+                Some(release_command_image),
+            )
+        };
+        if let Err(error) = crate::engine::result(status) {
+            // SAFETY: native failure leaves the boxed image with this caller.
+            unsafe {
+                drop(Box::from_raw(owner));
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+}
+unsafe extern "C" fn release_command_image(owner: *mut std::ffi::c_void) {
+    // SAFETY: native cleanup releases the Box exactly once. Containment keeps
+    // any destructor panic from unwinding through the C command cleanup.
+    let _ = crate::task::contain(|| unsafe {
+        drop(Box::from_raw(owner.cast::<Image>()));
+    });
+}

@@ -31,6 +31,7 @@ pub mod atlas;
 pub mod audio;
 pub mod camera;
 pub mod collision;
+pub mod commands;
 #[cfg(feature = "graphics")]
 pub mod drawing;
 mod engine;

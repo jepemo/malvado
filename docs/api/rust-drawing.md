@@ -39,8 +39,7 @@ text or a native unrepresentable result. Text does not create a persistent objec
 clipping, scrolling and scope restoration, as well as malformed geometry,
 invalid text, nesting, errors and unwind. Debug/Release and a relocated SDK
 consumer exercise the delivered API. `test-rust-graphics-sanitize` runs the same
-native-backed drawing checks with ASan/UBSan. This is immediate drawing only;
-process draw collection, graph assignment and persistent text remain in A7.6.
+native-backed drawing checks with ASan/UBSan. Process command collection is described below. Persistent text remains in A7.6.
 
 ## Owned images
 
@@ -97,3 +96,48 @@ traces, Clippy, format and relocated offline consumers. The image-owner test
 also kills a process after queueing its owned texture and checks pixels before
 frame completion. Native graphical ASan/UBSan and the core-only SDK regressions
 pass. Linux host CI includes the GLX-scoped leak-filter negative fixture.
+
+
+## Process drawing commands
+
+Use handle methods to keep drawing between process activations:
+
+```rust
+use malvado::{Engine, Error, graphic::Color};
+let mut engine = Engine::new()?;
+let actor = engine.spawn(Default::default(), |process| async move {
+    loop {
+        process.current().draw_box((10, 20), (30, 40), true,
+            Color { r: 255, g: 80, b: 40, a: 255 })?;
+        process.frame().await;
+    }
+})?;
+engine.tick()?;
+assert_eq!(actor.draw_count()?, 1);
+# Ok::<(), Error>(())
+```
+
+`draw_box`, `draw_circle`, and `draw_text` use native ordered storage. They work
+without graphics enabled. Geometry and text are copied; embedded NUL text is
+rejected. Native integer bounds and failure behavior apply. `draw_count` reports
+all native commands, including those appended through C. `clear_draw_commands`
+releases the list immediately and is idempotent.
+
+The async adapter clears the old list after cadence and readiness checks, just
+before a real future poll. Pending futures without a wake keep their commands.
+Sleep and freeze also keep the list. Manual commands queued before the first
+poll are cleared at that activation. Process return, kill, and engine shutdown
+release the list through native cleanup.
+
+With graphics enabled, `draw_image_region(&image, region, transform)` copies a
+region and transform. Native storage retains the image. A transferred Rust
+image owner also keeps its window alive. Dropping caller values is safe; clear
+and cleanup release the native image before its window owner. Invalid calls
+retain neither owner nor command.
+
+Call `frame.process_graphics(&engine)` to draw graphs and commands in native
+z/creation order with camera, region and scroll projection. Commands follow the
+graph and keep append order. They use their own world coordinates and do not
+inherit the graph's position, angle, scale, or collider. This pass does not tick
+the engine. Immediate frame drawing remains available for host-owned content.
+Persistent text objects and custom-font persistent text are separate A7.6 work.

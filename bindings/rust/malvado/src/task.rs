@@ -71,9 +71,17 @@ impl Task {
     pub(crate) fn install(&mut self, future: impl Future<Output = Result<(), Error>> + 'static) {
         self.future = Some(Box::pin(future));
     }
+    #[cfg(test)]
     pub(crate) fn poll(&mut self) -> Step {
+        self.poll_with(|| true)
+    }
+    pub(crate) fn poll_with(&mut self, before: impl FnOnce() -> bool) -> Step {
         if !self.readiness.ready.swap(false, Ordering::AcqRel) {
             return Step::Yield;
+        }
+        if !before() {
+            self.readiness.alive.store(false, Ordering::Release);
+            return Step::Error;
         }
         let waker = Waker::from(self.readiness.clone());
         let mut context = Context::from_waker(&waker);
