@@ -38,6 +38,58 @@ static void pixel(int x, int y, int r, int g)
     UnloadImage(image);
     assert(color.r == r && color.g == g);
 }
+static void released(void *data) { ++*(int *)data; }
+
+static void command_checks(MvContext *ctx, MvProcessRef ref)
+{
+    MvColor red = {255,0,0,255}, green = {0,255,0,255}, black = {0,0,0,255};
+    assert(mv_process_set_scale(ctx,ref,0) == MV_OK);
+    assert(mv_process_set_position(ctx,ref,1e30,1e30) == MV_OK);
+    assert(mv_process_draw_box(ctx,ref,10,10,20,20,1,red) == MV_OK);
+    const uint8_t rgba[] = {0,255,0,255};
+    MvImage *image = mv_image_from_rgba(1,1,rgba,sizeof(rgba));
+    assert(image);
+    MvImageRegion region = {0,0,1,1};
+    MvImageTransform transform = {12,12,0,0,4,0};
+    int releases = 0;
+    assert(mv_process_draw_image_region_owned(ctx,ref,image,region,transform,&releases,NULL) == MV_INVALID_ARGUMENT);
+    MvImageRegion bad = {0,0,2,1};
+    assert(mv_process_draw_image_region_owned(ctx,ref,image,bad,transform,&releases,released) == MV_INVALID_ARGUMENT);
+    assert(mv_process_draw_image_region_owned(ctx,ref,image,region,transform,&releases,released) == MV_OK);
+    mv_image_destroy(image);
+    assert(mv_process_draw_circle(ctx,ref,24,24,2,1,green) == MV_OK);
+    char text[] = "Native";
+    assert(mv_process_draw_text(ctx,ref,text,2,40,10,green) == MV_OK);
+    text[0] = 'X';
+    size_t count;
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 4);
+    assert(!mv_window_draw_process_commands(ctx,ref));
+    mv_window_begin(black);
+    assert(mv_window_draw_process_graphics(ctx));
+    pixel(11,11,255,0);
+    pixel(13,13,0,255);
+    pixel(24,24,0,255);
+    mv_window_end();
+    assert(mv_process_tick(ctx) == MV_OK);
+    mv_window_begin(black);
+    assert(mv_window_clip_begin(0,0,28,28));
+    assert(mv_window_scroll_begin(-10,0));
+    assert(mv_window_draw_process_graphics(ctx));
+    assert(mv_window_scroll_end());
+    assert(mv_window_clip_end());
+    pixel(23,13,0,255);
+    pixel(29,13,0,0);
+    mv_window_end();
+    assert(mv_process_signal(ctx,ref.id,MV_SIGNAL_SLEEP,0) == MV_OK);
+    mv_window_begin(black);
+    assert(mv_window_draw_process_graphics(ctx));
+    pixel(13,13,0,0);
+    mv_window_end();
+    assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
+    assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 0);
+}
+
 int main(void)
 {
     MvContext *ctx = mv_context_create(60, 4);
@@ -108,6 +160,7 @@ int main(void)
     pixel(20, 20, 0, 0);
     mv_window_end();
     assert(!mv_window_draw_process_graphics(ctx));
+    command_checks(ctx, refs[0]);
     mv_context_destroy(ctx);
     mv_window_close();
     return 0;

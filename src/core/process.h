@@ -39,4 +39,22 @@ MvResult malvado_process_visual_animation_set(MvContext *ctx, MvProcessRef ref,
 /* Binding-only identity check. The caller retains the compared definition. */
 int malvado_process_visual_animation_uses(MvContext *ctx, MvProcessRef ref,
                                         const MvAnimation *definition);
+/* Private immutable command records. Visitors may only draw borrowed values;
+ * they must not allocate Lua objects or call process/context operations. Owned
+ * records transfer data only on success; destroy only releases platform data. */
+#include "malvado/graphic.h"
+typedef enum { MV_STORED_BOX, MV_STORED_CIRCLE, MV_STORED_TEXT, MV_STORED_CUSTOM } MvStoredDrawKind;
+typedef struct {
+    MvStoredDrawKind kind;
+    int x, y, width, height, radius, size, filled;
+    MvColor color;
+    const char *text;
+    void *data;
+    MvResourceDestroy destroy;
+    int (*draw)(const void *data);
+} MvStoredDraw;
+typedef void (*MvDrawVisitor)(const MvStoredDraw *command, void *user);
+MvResult malvado_process_draw_owned(MvContext *ctx, MvProcessRef process, MvStoredDraw command);
+MvResult malvado_process_draw_visit(MvContext *ctx, MvProcessRef process,
+    MvDrawVisitor visit, void *user);
 #endif

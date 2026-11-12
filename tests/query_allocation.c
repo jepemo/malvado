@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include "malvado/malvado.h"
 #include "malvado/collision.h"
+#include "malvado/graphic.h"
 
 static int fail_allocation;
 static int allocations_before_failure = -1;
@@ -111,6 +112,13 @@ main(void)
     assert(mv_process_snapshot(ctx, items, 3, &total) == MV_OK && total == 3);
     for (size_t i = 0; i < total; i++)
         assert(items[i].status == MV_PROCESS_FROZEN);
+    for (int failure = 0; failure < 2; ++failure) {
+        allocations_before_failure = failure;
+        assert(mv_process_draw_text(ctx,root_ref,"copy",0,0,20,(MvColor){0}) == MV_OUT_OF_MEMORY);
+        allocations_before_failure = -1;
+        size_t commands = 99;
+        assert(mv_process_draw_count(ctx,root_ref,&commands) == MV_OK && commands == 0);
+    }
     mv_context_destroy(ctx);
     return 0;
 }

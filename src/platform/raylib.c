@@ -21,6 +21,7 @@
 #include "malvado/camera.h"
 #include "malvado/platform.h"
 #include "input_internal.h"
+#include "../core/process.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include <math.h>
@@ -679,6 +680,48 @@ draw_selected_graph(MvGraphic graphic, const MvImageGraphic *image,
     (void)mv_image_draw_region(image->image, image->region, visual);
 }
 
+static void
+draw_stored_command(const MvStoredDraw *command, void *user)
+{
+    (void)user;
+    switch (command->kind) {
+    case MV_STORED_BOX:
+        (void)mv_window_draw_box(command->x, command->y, command->width,
+            command->height, command->filled, command->color);
+        break;
+    case MV_STORED_CIRCLE:
+        (void)mv_window_draw_circle(command->x, command->y, command->radius,
+            command->filled, command->color);
+        break;
+    case MV_STORED_TEXT:
+        mv_window_draw_text(command->text, command->x, command->y, command->size, command->color);
+        break;
+    case MV_STORED_CUSTOM:
+        (void)command->draw(command->data);
+        break;
+    }
+}
+
+int
+mv_window_draw_process_commands(MvContext *ctx, MvProcessRef process)
+{
+    if (!drawing_active) return 0;
+    MvResult result = malvado_process_draw_visit(ctx, process, draw_stored_command, NULL);
+    mv_window_flush();
+    return result == MV_OK;
+}
+
+static void
+draw_projected_commands(MvContext *ctx, MvProcessRef process, double x, double y)
+{
+    if (x == 0 && y == 0) {
+        (void)mv_window_draw_process_commands(ctx, process);
+    } else if (mv_window_scroll_begin((float)-x, (float)-y)) {
+        (void)mv_window_draw_process_commands(ctx, process);
+        (void)mv_window_scroll_end();
+    }
+}
+
 int
 mv_window_draw_process_graphics(MvContext *ctx)
 {
@@ -711,7 +754,7 @@ mv_window_draw_process_graphics(MvContext *ctx)
         int present, has_image;
         if (mv_process_ref_create(ctx, items[i].id, &ref) != MV_OK ||
             mv_process_graphic_get(ctx, ref, &graphic, &present) != MV_OK ||
-            mv_process_image_get(ctx, ref, &image, &has_image) != MV_OK || (!present && !has_image))
+            mv_process_image_get(ctx, ref, &image, &has_image) != MV_OK)
             continue;
         MvCollisionTransform transform;
         if (mv_process_position(ctx, ref, &transform.x, &transform.y) != MV_OK ||
@@ -720,8 +763,8 @@ mv_window_draw_process_graphics(MvContext *ctx)
             continue;
         /* Preserve the primitive world-coordinate limit before projection;
          * camera/scroll cancellation must not make invalid input drawable. */
-        if (fabs(transform.x) > FLT_MAX / 16 || fabs(transform.y) > FLT_MAX / 16)
-            continue;
+        int draw_graph = (present || has_image) && fabs(transform.x) <= FLT_MAX / 16 &&
+                         fabs(transform.y) <= FLT_MAX / 16;
         MvCamera camera;
         MvCameraViewport visible, region;
         int has_region;
@@ -736,11 +779,13 @@ mv_window_draw_process_graphics(MvContext *ctx)
         /* Keep the default full-window pass batched. Explicit viewport/host
          * clipping still needs a per-process scissor intersection. */
         if (!saved_clip && !camera.viewport.width && !has_region) {
-            draw_selected_graph(graphic, has_image ? &image : NULL, transform);
+            if (draw_graph) draw_selected_graph(graphic, has_image ? &image : NULL, transform);
+            draw_projected_commands(ctx, ref, offset_x - scroll_x, offset_y - scroll_y);
             continue;
         }
         if (mv_window_clip_begin(visible.x, visible.y, visible.width, visible.height)) {
-            draw_selected_graph(graphic, has_image ? &image : NULL, transform);
+            if (draw_graph) draw_selected_graph(graphic, has_image ? &image : NULL, transform);
+            draw_projected_commands(ctx, ref, offset_x - scroll_x, offset_y - scroll_y);
             (void)mv_window_clip_end();
         }
     }

@@ -390,6 +390,40 @@ unsafe extern "C" {
         graphic: *mut MvGraphic,
         present: *mut c_int,
     ) -> c_int;
+    pub fn mv_process_draw_box(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: c_int,
+        y: c_int,
+        width: c_int,
+        height: c_int,
+        filled: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_process_draw_circle(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        x: c_int,
+        y: c_int,
+        radius: c_int,
+        filled: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_process_draw_text(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_process_draw_count(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        out: *mut usize,
+    ) -> c_int;
+    pub fn mv_process_draw_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
     pub fn mv_process_graphic_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
 }
 

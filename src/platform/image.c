@@ -210,3 +210,59 @@ mv_process_image_animation_set(MvContext *ctx, MvProcessRef process,
 {
     return mv_process_image_animation_set_owned(ctx, process, frames, count, loop, tick_rate, NULL, NULL);
 }
+
+
+typedef struct {
+    MvImage *image;
+    MvImageRegion region;
+    MvImageTransform transform;
+    void *owner;
+    MvResourceDestroy release;
+} ImageCommand;
+
+static int
+draw_image_command(const void *data)
+{
+    const ImageCommand *command = data;
+    return mv_image_draw_region(command->image, command->region, command->transform);
+}
+
+static void
+release_image_command(void *data)
+{
+    ImageCommand *command = data;
+    mv_image_destroy(command->image);
+    if (command->release) command->release(command->owner);
+    free(command);
+}
+
+MvResult
+mv_process_draw_image_region_owned(MvContext *ctx, MvProcessRef process,
+    MvImage *image, MvImageRegion region, MvImageTransform transform,
+    void *owner, MvResourceDestroy release)
+{
+    if ((owner != NULL) != (release != NULL) || !mv_image_region_valid(image, region, transform))
+        return MV_INVALID_ARGUMENT;
+    size_t count;
+    MvResult result = mv_process_draw_count(ctx, process, &count);
+    if (result != MV_OK) return result;
+    ImageCommand *command = malloc(sizeof(*command));
+    if (!command) return MV_OUT_OF_MEMORY;
+    if (!mv_image_retain(image)) { free(command); return MV_OVERFLOW; }
+    *command = (ImageCommand){image, region, transform, owner, release};
+    result = malvado_process_draw_owned(ctx, process, (MvStoredDraw){
+        .kind = MV_STORED_CUSTOM, .data = command,
+        .destroy = release_image_command, .draw = draw_image_command});
+    if (result != MV_OK) {
+        command->release = NULL;
+        release_image_command(command);
+    }
+    return result;
+}
+
+MvResult
+mv_process_draw_image_region(MvContext *ctx, MvProcessRef process,
+    MvImage *image, MvImageRegion region, MvImageTransform transform)
+{
+    return mv_process_draw_image_region_owned(ctx, process, image, region, transform, NULL, NULL);
+}

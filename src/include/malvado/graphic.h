@@ -35,6 +35,27 @@ MvResult mv_process_graphic_set(MvContext *ctx, MvProcessRef process, MvGraphic 
 MvResult mv_process_graphic_get(MvContext *ctx, MvProcessRef process, MvGraphic *graphic, int *present);
 MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
 
+/* Per-process drawing commands. Append copies values and text in call order.
+ * Box dimensions and circle radius must be positive; filled is 0 or 1. Box
+ * far corners and circle bounds must fit int. Text is a NUL-terminated string;
+ * size is any int (nonpositive sizes remain a drawing no-op).
+ * Commands use world coordinates, not the graph's position/rotation/scale.
+ * They do not change graph selection or collision geometry. They survive ticks,
+ * sleep and freeze until explicit clear or process cleanup. Language hosts clear
+ * immediately before actual activation, including low-cadence activations.
+ * Count writes only on success. Clear is idempotent. Owner-thread only.
+ * Invalid/foreign arguments return MV_INVALID_ARGUMENT; dead processes return
+ * MV_NOT_FOUND. Allocation failure returns MV_OUT_OF_MEMORY. Failure preserves
+ * the previous list and caller ownership. No backend is needed for collection. */
+MvResult mv_process_draw_box(MvContext *ctx, MvProcessRef process,
+    int x, int y, int width, int height, int filled, MvColor color);
+MvResult mv_process_draw_circle(MvContext *ctx, MvProcessRef process,
+    int x, int y, int radius, int filled, MvColor color);
+MvResult mv_process_draw_text(MvContext *ctx, MvProcessRef process,
+    const char *text, int x, int y, int size, MvColor color);
+MvResult mv_process_draw_count(MvContext *ctx, MvProcessRef process, size_t *out);
+MvResult mv_process_draw_clear(MvContext *ctx, MvProcessRef process);
+
 /* Backend-independent graphic geometry. Dimensions must be finite and in
  * FLT_MIN..FLT_MAX/16. Rectangles accept center (top_left=0) or top-left (1)
  * pivots. Circles are centered. Return 1 on success, 0 for invalid input.

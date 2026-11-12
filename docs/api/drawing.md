@@ -183,3 +183,30 @@ two corners, and filled/outlined circles keep their existing functions.
 `set_color` affects immediate primitives; it does not change a new descriptor's
 default color. A proposal to change those signatures needs a separate decision.
 An outlined drawing does not change collision geometry into a hollow shape.
+
+
+## Native process command collection
+
+C hosts can append `mv_process_draw_box`, `mv_process_draw_circle`, and
+`mv_process_draw_text` without a window. Text and colors are copied. Use
+`mv_process_draw_image_region` for retained image regions and transforms.
+The `_owned` variant also takes a binding lifetime owner on success. Native
+images are released before the owner. Failure preserves the previous list and
+caller ownership. Release commands before closing the window.
+
+Commands keep append order and use world coordinates. They do not use the
+selected graph's position, angle, scale, or collider. Box corners and circle
+bounds must fit C `int`. Text with a nonpositive size remains a drawing no-op.
+`mv_process_draw_count` reports the list length. `mv_process_draw_clear` releases
+the list. Clear is idempotent. Kill, return, and context cleanup also release it.
+Ticks and signals do not clear commands. A language host must clear immediately
+before each actual process activation, after its cadence check.
+
+`mv_window_draw_process_graphics` draws each selected graph, then that process's
+commands, in native z/creation order. Sleeping processes are hidden; frozen
+processes remain visible. Camera, region, local scroll, and host scopes apply.
+An invalid graph transform does not hide independent commands. The pass restores
+host scopes and flushes borrowed texture uses before return.
+`mv_window_draw_process_commands` draws only one list in the current scopes;
+the caller supplies visibility and projection. Both require an active frame.
+Collection does not add a scheduler. Lua and safe Rust migration is separate.

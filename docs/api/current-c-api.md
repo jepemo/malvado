@@ -128,6 +128,11 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_graphic_circle`
 - `mv_graphic_rect`
 - `mv_graphic_sprite`
+- `mv_process_draw_box`
+- `mv_process_draw_circle`
+- `mv_process_draw_clear`
+- `mv_process_draw_count`
+- `mv_process_draw_text`
 - `mv_process_graphic_clear`
 - `mv_process_graphic_get`
 - `mv_process_graphic_set`
@@ -241,6 +246,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_pad_connected`
 - `mv_platform_time`
 - `mv_platform_wait`
+- `mv_process_draw_image_region`
+- `mv_process_draw_image_region_owned`
 - `mv_process_image_animation_bind_owned`
 - `mv_process_image_animation_set`
 - `mv_process_image_animation_set_owned`
@@ -272,6 +279,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_draw_fade`
 - `mv_window_draw_filled_circle`
 - `mv_window_draw_graphic`
+- `mv_window_draw_process_commands`
 - `mv_window_draw_process_graphics`
 - `mv_window_draw_text`
 - `mv_window_draw_transformed_rect`

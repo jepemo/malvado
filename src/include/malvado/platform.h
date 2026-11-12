@@ -78,13 +78,17 @@ int mv_window_draw_fade(MvColor color);
  * success, 0 without drawing on invalid input or outside a graphics frame.
  * Clip/scroll scopes apply normally. No pointers or resources are retained. */
 int mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, MvColor color);
-/* Draw stored primitive process graphs in native z/creation order. Requires an
- * active frame and live owner-thread context. Sleep hides; freeze stays visible.
- * Nonpositive/unsupported render transforms are skipped as in Lua. Clip/scroll
- * scopes compose with process camera/viewport selection and are restored.
- * No tick, process activation, commands or assets are implicit. Return 1 on success, 0 on invalid context/frame or allocation error.
- * The ordered snapshot allocation is released before return. */
+/* Draw primitive/image graphs, then each process's stored commands, in native
+ * z/creation order. Requires an active frame and live owner-thread context.
+ * Sleep hides; freeze stays visible. Invalid graph transforms skip only graphs.
+ * Clip/scroll scopes compose with process camera/region and are restored.
+ * Does not tick or activate processes. Return 0 for invalid context/frame or
+ * snapshot allocation failure, otherwise 1. Queued image uses are flushed. */
 int mv_window_draw_process_graphics(MvContext *ctx);
+/* Draw only this process's stored commands in current clip/scroll scopes.
+ * Caller chooses visibility and projection. Flushes borrowed texture uses.
+ * Return 0 outside a frame or for invalid/dead references, otherwise 1. */
+int mv_window_draw_process_commands(MvContext *ctx, MvProcessRef process);
 
 
 
@@ -298,6 +302,15 @@ typedef struct {
     MvImageRegion region;
     double pivot_x, pivot_y;
 } MvImageGraphic;
+/* Append a retained image-region command in world coordinates. Region/transform
+ * validation matches mv_image_region_valid. Optional owner/release must be paired;
+ * success transfers owner, failure preserves it. Images are released before the
+ * owner on command clear or process cleanup. C hosts keep the window open. */
+MvResult mv_process_draw_image_region_owned(MvContext *ctx, MvProcessRef process,
+    MvImage *image, MvImageRegion region, MvImageTransform transform,
+    void *owner, MvResourceDestroy release);
+MvResult mv_process_draw_image_region(MvContext *ctx, MvProcessRef process,
+    MvImage *image, MvImageRegion region, MvImageTransform transform);
 MvResult mv_process_image_set(MvContext *ctx, MvProcessRef process, MvImageGraphic graphic);
 /* As image_set, with an optional lifetime owner. owner/release must both be
  * NULL or both non-NULL. Success transfers owner; failure leaves it with the

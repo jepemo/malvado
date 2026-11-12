@@ -21,11 +21,17 @@
 #include "entropy.h"
 #include "schedule.h"
 #include <stdint.h>
+#include <limits.h>
 #include <float.h>
 #include <math.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+
+typedef struct DrawNode {
+    struct DrawNode *next;
+    MvStoredDraw value;
+} DrawNode;
 
 typedef struct MessageNode {
     MvMessage message;
@@ -69,6 +75,8 @@ typedef struct {
     MvProcessDestroy destroy;
     void *user;
     int killed, attached;
+    DrawNode *draw_head, *draw_tail;
+    size_t draw_count;
     int has_graphic;
     MvGraphic graphic;
     MvAnimation *animation;
@@ -487,6 +495,109 @@ mv_process_animation_clock_clear(MvContext *ctx, MvProcessRef reference)
     item->animation = NULL;
     item->animation_state = (MvAnimationState){0};
     return MV_OK;
+}
+
+static void
+release_draw_commands(Process *item)
+{
+    DrawNode *node = item->draw_head;
+    item->draw_head = item->draw_tail = NULL;
+    item->draw_count = 0;
+    while (node) {
+        DrawNode *next = node->next;
+        free((void *)node->value.text);
+        if (node->value.destroy) node->value.destroy(node->value.data);
+        free(node);
+        node = next;
+    }
+}
+
+MvResult
+mv_process_draw_count(MvContext *ctx, MvProcessRef ref, size_t *out)
+{
+    if (!out) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result == MV_OK) *out = item->draw_count;
+    return result;
+}
+
+MvResult
+mv_process_draw_clear(MvContext *ctx, MvProcessRef ref)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result == MV_OK) release_draw_commands(item);
+    return result;
+}
+
+MvResult
+malvado_process_draw_owned(MvContext *ctx, MvProcessRef ref, MvStoredDraw command)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result != MV_OK) return result;
+    if (item->draw_count == SIZE_MAX) return MV_OVERFLOW;
+    DrawNode *node = malloc(sizeof(*node));
+    if (!node) return MV_OUT_OF_MEMORY;
+    *node = (DrawNode){.value = command};
+    if (command.text) {
+        size_t length = strlen(command.text);
+        if (length == SIZE_MAX) { free(node); return MV_OVERFLOW; }
+        char *copy = malloc(length + 1);
+        if (!copy) { free(node); return MV_OUT_OF_MEMORY; }
+        memcpy(copy, command.text, length + 1);
+        node->value.text = copy;
+    }
+    if (item->draw_tail) item->draw_tail->next = node;
+    else item->draw_head = node;
+    item->draw_tail = node;
+    ++item->draw_count;
+    return MV_OK;
+}
+
+MvResult
+malvado_process_draw_visit(MvContext *ctx, MvProcessRef ref, MvDrawVisitor visit, void *user)
+{
+    if (!visit) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, ref, &item);
+    if (result != MV_OK) return result;
+    for (DrawNode *node = item->draw_head; node; node = node->next)
+        visit(&node->value, user);
+    return MV_OK;
+}
+
+MvResult
+mv_process_draw_box(MvContext *ctx, MvProcessRef ref, int x, int y,
+                    int width, int height, int filled, MvColor color)
+{
+    if (width <= 0 || height <= 0 || (filled != 0 && filled != 1) ||
+        (int64_t)x + width > INT_MAX || (int64_t)y + height > INT_MAX)
+        return MV_INVALID_ARGUMENT;
+    return malvado_process_draw_owned(ctx, ref, (MvStoredDraw){.kind = MV_STORED_BOX,
+        .x = x, .y = y, .width = width, .height = height, .filled = filled, .color = color});
+}
+
+MvResult
+mv_process_draw_circle(MvContext *ctx, MvProcessRef ref, int x, int y,
+                       int radius, int filled, MvColor color)
+{
+    if (radius <= 0 || (filled != 0 && filled != 1) ||
+        (int64_t)x + radius > INT_MAX || (int64_t)x - radius < INT_MIN ||
+        (int64_t)y + radius > INT_MAX || (int64_t)y - radius < INT_MIN)
+        return MV_INVALID_ARGUMENT;
+    return malvado_process_draw_owned(ctx, ref, (MvStoredDraw){.kind = MV_STORED_CIRCLE,
+        .x = x, .y = y, .radius = radius, .filled = filled, .color = color});
+}
+
+MvResult
+mv_process_draw_text(MvContext *ctx, MvProcessRef ref, const char *text,
+                     int x, int y, int size, MvColor color)
+{
+    if (!text) return MV_INVALID_ARGUMENT;
+    return malvado_process_draw_owned(ctx, ref, (MvStoredDraw){.kind = MV_STORED_TEXT,
+        .x = x, .y = y, .size = size, .color = color, .text = text});
 }
 
 static void
@@ -1058,6 +1169,7 @@ void mv_processes_destroy(MvProcesses *p)
         mv_animation_destroy(p->items[i].animation);
         p->items[i].animation = NULL;
         release_graphic_data(&p->items[i]);
+        release_draw_commands(&p->items[i]);
         if (p->items[i].destroy) p->items[i].destroy(p->items[i].user);
     }
     while (p->resources) {
@@ -1870,6 +1982,7 @@ MvResult mv_process_tick(MvContext *ctx)
         mv_animation_destroy(p->items[i].animation);
         p->items[i].animation = NULL;
         release_graphic_data(&p->items[i]);
+        release_draw_commands(&p->items[i]);
         p->cleanup_lineage = lineage;
         if (destroy) destroy(user);
         release_owned_resources(p, lineage->id);

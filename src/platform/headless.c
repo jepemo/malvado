@@ -171,3 +171,6 @@ mv_window_draw_graphic(MvCollisionShape shape, MvCollisionTransform transform, M
     (void)color;
     return 0;
 }
+
+int mv_window_draw_process_commands(MvContext *ctx, MvProcessRef process)
+{ (void)ctx; (void)process; return 0; }

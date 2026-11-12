@@ -413,6 +413,10 @@ unsafe extern "C" {
 }
 
 unsafe extern "C" {
+    pub fn mv_window_draw_process_commands(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+    ) -> c_int;
     pub fn mv_window_draw_process_graphics(ctx: *mut crate::MvContext) -> c_int;
     pub fn mv_window_draw_graphic(
         shape: crate::MvCollisionShape,
@@ -473,6 +477,22 @@ unsafe extern "C" {
         ctx: *mut crate::MvContext,
         process: crate::MvProcessRef,
         graphic: MvImageGraphic,
+    ) -> c_int;
+    pub fn mv_process_draw_image_region_owned(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        image: *mut MvImage,
+        region: MvImageRegion,
+        transform: MvImageTransform,
+        owner: *mut std::ffi::c_void,
+        release: crate::MvResourceDestroy,
+    ) -> c_int;
+    pub fn mv_process_draw_image_region(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        image: *mut MvImage,
+        region: MvImageRegion,
+        transform: MvImageTransform,
     ) -> c_int;
     pub fn mv_process_image_set_owned(
         ctx: *mut crate::MvContext,
