@@ -224,3 +224,8 @@ int main(void) {
 }
 
 _Static_assert(_Generic(&mv_graphic_sprite, int (*)(int, int, double, double, MvCollisionShape *): 1, default: 0), "mv_graphic_sprite signature");
+
+_Static_assert(_Generic(&mv_animation_retain, int (*)(MvAnimation *): 1, default: 0), "mv_animation_retain signature");
+_Static_assert(_Generic(&mv_process_animation_clock_set, MvResult (*)(MvContext *, MvProcessRef, MvAnimation *, unsigned): 1, default: 0), "mv_process_animation_clock_set signature");
+_Static_assert(_Generic(&mv_process_animation_clock_get, MvResult (*)(MvContext *, MvProcessRef, MvAnimationState *, MvAnimationSample *, int *): 1, default: 0), "mv_process_animation_clock_get signature");
+_Static_assert(_Generic(&mv_process_animation_clock_clear, MvResult (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_process_animation_clock_clear signature");

@@ -118,3 +118,28 @@ The [native C animation example](../../examples/c/animation/) advances player
 state from the shared scheduler without Lua or graphics. Its definition is
 caller-owned and released after the context stops its users. C-only and
 installed SDK checks run the example.
+
+## Native process animation clocks
+
+`mv_process_animation_clock_set(ctx, process, animation, tick_rate)` retains an
+immutable definition and resets its process-owned clock. Each successful
+`mv_animation_retain` also needs one `mv_animation_destroy`. The original
+caller can release its definition immediately after clock assignment.
+
+The clock advances at the end of the existing native process tick while the
+process is running. Cadence does not change this rate. Sleep and freeze pause
+it without catch-up. Assignment during a tick skips that tick; assignment
+outside a tick advances on the next tick. Non-looping definitions hold their
+last frame. Each process owns independent elapsed time and fractional remainder.
+
+Use an integer simulation rate from 1 to 1,000,000 Hz that matches the host.
+Fractional host rates are unsupported by this service. No timer or scheduler
+is created. `mv_process_animation_clock_get` copies state and the sampled frame;
+when absent it leaves both outputs unchanged and writes presence zero. Output
+pointers are required and must not overlap. Invalid inputs and dead/foreign
+handles preserve state and outputs. Clear is idempotent. Replacement, clear,
+process return/kill and context destruction release the retained definition.
+
+This clock samples graph IDs as metadata. It does not load assets, select an
+image, change colliders or render a frame. Graph assignment/clear does not stop
+the clock. Use `mv_process_animation_clock_clear` to stop it explicitly.

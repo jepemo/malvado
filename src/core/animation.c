@@ -18,7 +18,7 @@
 #include <string.h>
 
 struct MvAnimation {
-    size_t count;
+    size_t count, references;
     uint64_t duration_us;
     int loop;
     MvAnimationFrame frames[];
@@ -37,13 +37,26 @@ mv_animation_create(const MvAnimationFrame *frames, size_t count, int loop)
     MvAnimation *animation = malloc(sizeof(*animation) + count * sizeof(*frames));
     if (!animation) return NULL;
     animation->count = count;
+    animation->references = 1;
     animation->duration_us = total;
     animation->loop = loop;
     memcpy(animation->frames, frames, count * sizeof(*frames));
     return animation;
 }
 
-void mv_animation_destroy(MvAnimation *animation) { free(animation); }
+int
+mv_animation_retain(MvAnimation *animation)
+{
+    if (!animation || animation->references == SIZE_MAX) return 0;
+    ++animation->references;
+    return 1;
+}
+
+void
+mv_animation_destroy(MvAnimation *animation)
+{
+    if (animation && --animation->references == 0) free(animation);
+}
 
 int
 mv_animation_sample(const MvAnimation *animation, uint64_t elapsed_us, MvAnimationSample *out)

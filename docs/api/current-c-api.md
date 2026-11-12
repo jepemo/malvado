@@ -12,7 +12,11 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_animation_advance`
 - `mv_animation_create`
 - `mv_animation_destroy`
+- `mv_animation_retain`
 - `mv_animation_sample`
+- `mv_process_animation_clock_clear`
+- `mv_process_animation_clock_get`
+- `mv_process_animation_clock_set`
 
 ## [asset.h](../../src/include/malvado/asset.h)
 

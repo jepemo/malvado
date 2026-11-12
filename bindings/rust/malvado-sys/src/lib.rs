@@ -853,3 +853,21 @@ unsafe extern "C" {
         out: *mut MvCollisionShape,
     ) -> c_int;
 }
+
+unsafe extern "C" {
+    pub fn mv_animation_retain(animation: *mut MvAnimation) -> c_int;
+    pub fn mv_process_animation_clock_set(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        animation: *mut MvAnimation,
+        tick_rate: u32,
+    ) -> c_int;
+    pub fn mv_process_animation_clock_get(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        state: *mut MvAnimationState,
+        sample: *mut MvAnimationSample,
+        present: *mut c_int,
+    ) -> c_int;
+    pub fn mv_process_animation_clock_clear(ctx: *mut MvContext, process: MvProcessRef) -> c_int;
+}

@@ -15,6 +15,7 @@
 #include "process.h"
 #include "malvado/collision.h"
 #include "malvado/graphic.h"
+#include "malvado/animation.h"
 #include "malvado/camera.h"
 #include "collision_internal.h"
 #include "entropy.h"
@@ -70,6 +71,10 @@ typedef struct {
     int killed, attached;
     int has_graphic;
     MvGraphic graphic;
+    MvAnimation *animation;
+    MvAnimationState animation_state;
+    unsigned animation_rate;
+    uint64_t animation_tick;
     void *graphic_data;
     MvResourceDestroy graphic_destroy;
     ColliderMode collider_mode;
@@ -431,6 +436,54 @@ mv_process_view_offset(MvContext *ctx, MvProcessRef reference, double *x, double
     result = mv_process_camera_resolve(ctx, reference, &camera);
     if (result != MV_OK) return result;
     return mv_camera_project(&camera, 0, 0, item->scroll_x, item->scroll_y, x, y) ? MV_OK : MV_INVALID_ARGUMENT;
+}
+
+MvResult
+mv_process_animation_clock_set(MvContext *ctx, MvProcessRef reference,
+                         MvAnimation *animation, unsigned tick_rate)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    if (!animation || !tick_rate || tick_rate > 1000000) return MV_INVALID_ARGUMENT;
+    if (!mv_animation_retain(animation)) return MV_OVERFLOW;
+    mv_animation_destroy(item->animation);
+    item->animation = animation;
+    item->animation_state = (MvAnimationState){0};
+    item->animation_rate = tick_rate;
+    item->animation_tick = mv_context_processes(ctx)->ticks;
+    return MV_OK;
+}
+
+MvResult
+mv_process_animation_clock_get(MvContext *ctx, MvProcessRef reference,
+                         MvAnimationState *state, MvAnimationSample *sample, int *present)
+{
+    if (!state || !sample || !present) return MV_INVALID_ARGUMENT;
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    if (item->animation) {
+        MvAnimationSample value;
+        if (!mv_animation_sample(item->animation, item->animation_state.elapsed_us, &value))
+            return MV_INVALID_ARGUMENT;
+        *state = item->animation_state;
+        *sample = value;
+    }
+    *present = item->animation != NULL;
+    return MV_OK;
+}
+
+MvResult
+mv_process_animation_clock_clear(MvContext *ctx, MvProcessRef reference)
+{
+    Process *item;
+    MvResult result = resolve_live_process(ctx, reference, &item);
+    if (result != MV_OK) return result;
+    mv_animation_destroy(item->animation);
+    item->animation = NULL;
+    item->animation_state = (MvAnimationState){0};
+    return MV_OK;
 }
 
 static void
@@ -955,6 +1008,8 @@ void mv_processes_destroy(MvProcesses *p)
             free(node);
             node = next;
         }
+        mv_animation_destroy(p->items[i].animation);
+        p->items[i].animation = NULL;
         release_graphic_data(&p->items[i]);
         if (p->items[i].destroy) p->items[i].destroy(p->items[i].user);
     }
@@ -1743,6 +1798,14 @@ MvResult mv_process_tick(MvContext *ctx)
         }
     }
     free(order);
+    for (size_t i = 0; i < p->count; ++i) {
+        Process *item = &p->items[i];
+        if (item->animation && !item->killed && item->status == MV_PROCESS_RUNNING &&
+            item->animation_tick < p->ticks) {
+            if (!mv_animation_advance(item->animation, &item->animation_state, item->animation_rate))
+                result = MV_INVALID_ARGUMENT;
+        }
+    }
     /* Destructors can spawn; remove each killed process before calling one. */
     for (;;) {
         size_t i = 0;
@@ -1765,6 +1828,8 @@ MvResult mv_process_tick(MvContext *ctx)
             free(node);
             node = next;
         }
+        mv_animation_destroy(p->items[i].animation);
+        p->items[i].animation = NULL;
         release_graphic_data(&p->items[i]);
         p->cleanup_lineage = lineage;
         if (destroy) destroy(user);
