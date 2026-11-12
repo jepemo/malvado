@@ -244,3 +244,9 @@ _Static_assert(_Generic(&mv_text_create, MvResult (*)(const char *, int, int, in
 _Static_assert(_Generic(&mv_text_update, MvResult (*)(MvText *, const char *, int, int, int): 1, default: 0), "mv_text_update signature");
 _Static_assert(_Generic(&mv_text_read, MvResult (*)(const MvText *, const char **, int *, int *, int *): 1, default: 0), "mv_text_read signature");
 _Static_assert(_Generic(&mv_text_destroy, void (*)(MvText *): 1, default: 0), "mv_text_destroy signature");
+
+_Static_assert(_Generic(&mv_text_entry_create, MvResult (*)(MvContext *, const MvProcessRef *, const char *, int, int, int, uint64_t *): 1, default: 0), "mv_text_entry_create signature");
+_Static_assert(_Generic(&mv_text_entry_update, MvResult (*)(MvContext *, uint64_t, const char *, int, int, int): 1, default: 0), "mv_text_entry_update signature");
+_Static_assert(_Generic(&mv_text_entry_read, MvResult (*)(MvContext *, uint64_t, const char **, int *, int *, int *): 1, default: 0), "mv_text_entry_read signature");
+_Static_assert(_Generic(&mv_text_entry_remove, MvResult (*)(MvContext *, uint64_t): 1, default: 0), "mv_text_entry_remove signature");
+_Static_assert(_Generic(&mv_text_entries, MvResult (*)(MvContext *, uint64_t *, size_t, size_t *): 1, default: 0), "mv_text_entries signature");

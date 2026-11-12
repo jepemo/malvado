@@ -99,6 +99,7 @@ def external_consumer(prefix):
         '    let mut playback = animation.playback(); playback.advance(60)?;\n'
         '    assert_eq!(playback.sample().graph_id, 1);\n'
         '    let mut engine = Engine::new()?; assert!(engine.draw_order()?.is_empty());\n'
+        ' let registered = engine.create_text("host",(1,2),malvado::graphic::TextAlignment::Left)?; registered.update("changed",(3,4),malvado::graphic::TextAlignment::Right)?; assert_eq!(registered.snapshot()?.value,"changed"); registered.remove()?;\n'
         '    let handle = engine.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
         '    handle.set_position(-1.5, 2.25)?; assert_eq!(handle.position()?, (-1.5, 2.25));\n'
         '    handle.set_angle(90.0)?; handle.set_scale(2.0)?; assert_eq!(handle.angle()?, 90.0); assert_eq!(handle.scale()?, 2.0);\n'

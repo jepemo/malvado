@@ -94,3 +94,18 @@ identity and rendering order are preserved.
 The renderer still uses Lua's font descriptors. Entries created only by C are
 not automatically rendered by Lua. Native font retention and common drawing
 collection remain unfinished. The registry itself works without Lua or graphics.
+
+## Rust context text handles
+
+Use `Engine::create_text` for host-owned entries and `Handle::create_text` for
+process-owned entries. Both return `TextHandle`. Its clones refer to the same
+context entry; dropping a handle does not remove it. Call `remove` to remove it
+explicitly. Process cleanup and engine shutdown remove entries automatically.
+This follows the native registry lifetime, independently of Rust handle lifetime.
+
+`update` copies content and `snapshot` returns an owned string, position and
+alignment. Owned snapshots remain valid across updates, ticks and shutdown.
+Handles remain local to one thread. Missing entries return `Error::NotFound`;
+a closed engine returns `Error::Closed`. Embedded NUL is rejected before updates.
+The existing standalone `Text` retains its explicit Drop-owned lifetime.
+Neither service registers a font or draws automatically.

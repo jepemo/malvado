@@ -840,6 +840,38 @@ pub mod assets;
 pub mod graphics;
 
 unsafe extern "C" {
+    pub fn mv_text_entry_create(
+        ctx: *mut MvContext,
+        owner: *const MvProcessRef,
+        value: *const c_char,
+        x: c_int,
+        y: c_int,
+        alignment: c_int,
+        out: *mut u64,
+    ) -> c_int;
+    pub fn mv_text_entry_update(
+        ctx: *mut MvContext,
+        id: u64,
+        value: *const c_char,
+        x: c_int,
+        y: c_int,
+        alignment: c_int,
+    ) -> c_int;
+    pub fn mv_text_entry_read(
+        ctx: *mut MvContext,
+        id: u64,
+        value: *mut *const c_char,
+        x: *mut c_int,
+        y: *mut c_int,
+        alignment: *mut c_int,
+    ) -> c_int;
+    pub fn mv_text_entry_remove(ctx: *mut MvContext, id: u64) -> c_int;
+    pub fn mv_text_entries(
+        ctx: *mut MvContext,
+        ids: *mut u64,
+        capacity: usize,
+        required: *mut usize,
+    ) -> c_int;
     pub fn mv_text_create(
         value: *const c_char,
         x: c_int,

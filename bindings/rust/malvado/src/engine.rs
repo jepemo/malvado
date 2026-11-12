@@ -41,6 +41,16 @@ pub struct Engine {
     runtime: Rc<Runtime>,
 }
 impl Engine {
+    /// Register host text until explicit removal or engine shutdown.
+    pub fn create_text(
+        &self,
+        value: &str,
+        position: (i32, i32),
+        align: crate::graphic::TextAlignment,
+    ) -> Result<crate::text::TextHandle, Error> {
+        crate::text::register(self.runtime.clone(), None, value, position, align)
+    }
+
     pub fn main_camera(&self) -> Result<crate::camera::CameraHandle, Error> {
         let mut reference = sys::MvCameraRef::default();
         // SAFETY: live owner-thread context and initialized output.

@@ -148,3 +148,115 @@ mod tests {
         ));
     }
 }
+
+/// Context-owned persistent text. Clones share identity, and dropping a handle
+/// does not remove the entry. Explicit removal, owner cleanup or engine shutdown
+/// ends its native lifetime. Snapshots own strings so ticks cannot invalidate them.
+/// No implicit font or render registration is included.
+#[derive(Clone)]
+pub struct TextHandle {
+    runtime: Rc<crate::engine::Runtime>,
+    id: u64,
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct OwnedSnapshot {
+    pub value: String,
+    pub position: (i32, i32),
+    pub alignment: TextAlignment,
+}
+pub(crate) fn register(
+    runtime: Rc<crate::engine::Runtime>,
+    owner: Option<sys::MvProcessRef>,
+    value: &str,
+    position: (i32, i32),
+    align: TextAlignment,
+) -> Result<TextHandle, Error> {
+    let value = CString::new(value).map_err(|_| Error::InvalidArgument)?;
+    let mut id = 0;
+    // SAFETY: live local context and optional identity; C copies content.
+    result(unsafe {
+        sys::mv_text_entry_create(
+            runtime.live()?,
+            owner.as_ref().map_or(std::ptr::null(), |r| r),
+            value.as_ptr(),
+            position.0,
+            position.1,
+            alignment(align),
+            &mut id,
+        )
+    })?;
+    Ok(TextHandle { runtime, id })
+}
+impl crate::Handle {
+    /// Register text owned by this live process. Sleep/freeze retain it.
+    pub fn create_text(
+        &self,
+        value: &str,
+        position: (i32, i32),
+        align: TextAlignment,
+    ) -> Result<TextHandle, Error> {
+        register(
+            self.inner.runtime.clone(),
+            Some(self.inner.reference),
+            value,
+            position,
+            align,
+        )
+    }
+}
+impl TextHandle {
+    pub fn update(
+        &self,
+        value: &str,
+        position: (i32, i32),
+        align: TextAlignment,
+    ) -> Result<(), Error> {
+        let value = CString::new(value).map_err(|_| Error::InvalidArgument)?;
+        // SAFETY: checked local context; the native ID is tied to this runtime.
+        result(unsafe {
+            sys::mv_text_entry_update(
+                self.runtime.live()?,
+                self.id,
+                value.as_ptr(),
+                position.0,
+                position.1,
+                alignment(align),
+            )
+        })
+    }
+    pub fn snapshot(&self) -> Result<OwnedSnapshot, Error> {
+        let mut value = std::ptr::null();
+        let (mut x, mut y, mut align) = (0, 0, 0);
+        // SAFETY: distinct outputs, live owner-thread context and private ID.
+        result(unsafe {
+            sys::mv_text_entry_read(
+                self.runtime.live()?,
+                self.id,
+                &mut value,
+                &mut x,
+                &mut y,
+                &mut align,
+            )
+        })?;
+        // SAFETY: native borrowed string remains live during this synchronous
+        // copy. No scheduler calls or user callbacks run between read and copy.
+        let value = unsafe { CStr::from_ptr(value) }
+            .to_string_lossy()
+            .into_owned();
+        Ok(OwnedSnapshot {
+            value,
+            position: (x, y),
+            alignment: match align {
+                0 => TextAlignment::Left,
+                1 => TextAlignment::Center,
+                2 => TextAlignment::Right,
+                _ => unreachable!("native alignment"),
+            },
+        })
+    }
+    /// Remove once. All clones then return NotFound until engine shutdown.
+    pub fn remove(&self) -> Result<(), Error> {
+        // SAFETY: private context-local identity, validated by the core.
+        result(unsafe { sys::mv_text_entry_remove(self.runtime.live()?, self.id) })
+    }
+}
