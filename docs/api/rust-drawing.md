@@ -140,4 +140,5 @@ z/creation order with camera, region and scroll projection. Commands follow the
 graph and keep append order. They use their own world coordinates and do not
 inherit the graph's position, angle, scale, or collider. This pass does not tick
 the engine. Immediate frame drawing remains available for host-owned content.
-Persistent text objects and custom-font persistent text are separate A7.6 work.
+Persistent text uses [retained text handles and the shared text pass](text.md#rust-retained-text-drawing).
+Lua uses the same native [graph/command pass](runner-rendering.md#lua-shared-graph-pass).

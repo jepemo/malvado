@@ -48,7 +48,10 @@ static void check_frame(void *user)
     Color overlap = pixel(13,16), outside = pixel(28,28);
     if (probe->stage == 0) {
         assert(count == 5 && overlap.r == 255 && overlap.g == 0 && outside.g == 255);
-        if (tick < 3) return;
+        /* A slow display runner can skip several ticks between frames. Append
+         * early in the 12-tick cadence period so the duration check below tests
+         * persistence, independently of when the first frame was presented. */
+        if (tick < 3 || (tick - 1) % 12 > 3) return;
         assert(mv_process_draw_box(ctx,ref,24,24,2,2,1,(MvColor){255,255,0,255}) == MV_OK);
         probe->appended_tick = tick;
         probe->stage = 1;

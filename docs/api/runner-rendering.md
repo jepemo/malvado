@@ -33,3 +33,31 @@ Automated native pixels check graph suppression with visible commands, transform
 changed during preparation, and final queued-image release. Invalid-frame and
 headless calls must not invoke preparation. Existing native visual tests cover
 projection, clipping, scroll restoration, sleep/freeze and invalid geometry.
+
+## Lua shared graph pass
+
+The Lua runner prepares valid graph descriptors and visual property values, then
+uses the native graph/command pass. It no longer orders, projects, clips or draws
+process graphs independently. All native processes participate, including those
+created from C without a Lua coroutine or process slot.
+
+Lua keeps its descriptor identity, invalid visual-value suppression and the
+existing first-activation/classic-frame image rules. Suppressing a graph leaves
+its world-coordinate commands visible. Selected atlas/FPG/animated images come
+from native retained graph storage. Primitive graphics use the same native
+geometry as C and Rust.
+
+Descriptor preparation can allocate and trigger GC. It copies slot identity and
+flags before allocation, so a finalizer that appends a process cannot invalidate
+a borrowed Lua slot pointer. Native drawing reads the current retained values
+after preparation and flushes queued images before the next preparation call.
+
+The runner draws process graphs/commands, then persistent text, then the fade
+overlay. Its background and text preparation remain language adapters over the
+native services. Tests cover native-only process pixels and commands inside Lua,
+classic images, invalid values, depth, cameras/regions/scroll, animation, GC and
+frozen command reset. The command persistence test waits for an early cadence
+phase so slow display runners do not shorten its observation window.
+
+This closes the shared graph/command rendering path. Shared audio maintenance
+and the remaining platform-loop orchestration remain open in A7.6.

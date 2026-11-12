@@ -14,6 +14,7 @@
  */
 
 #include "malvado/text.h"
+#include "platform/render_internal.h"
 #include <stdint.h>
 #include <inttypes.h>
 #include <float.h>
@@ -4121,88 +4122,6 @@ render_number(lua_State *L, int fields, const char *name, double fallback, doubl
 }
 
 static void
-render_graph(lua_State *L, const Process *process)
-{
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-    LuaSelf *self = lua_touserdata(L, -1);
-    lua_getiuservalue(L, -1, 1);
-    int fields = lua_gettop(L);
-    refresh_process_transform(L, self, fields);
-    raw_option(L, fields, "graph");
-    LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
-    if (animation && malvado_process_visual_animation_uses(engine.context,
-            self->reference, animation->sequence)) {
-        double x, y, angle, scale;
-        if (render_number(L, fields, "x", 0, &x) &&
-            render_number(L, fields, "y", 0, &y) &&
-            render_number(L, fields, "angle", 0, &angle) &&
-            render_number(L, fields, "size", 1, &scale) && scale > 0) {
-            MvImageGraphic selected;
-            int present;
-            /* Query after Lua property reads: no Lua allocation can invalidate
-             * this borrowed image before the native draw/flush completes. */
-            if (mv_process_image_get(engine.context, self->reference,
-                    &selected, &present) == MV_OK && present) {
-                MvImageTransform transform = {(float)x, (float)y,
-                    (float)selected.pivot_x, (float)selected.pivot_y,
-                    (float)scale, (float)angle};
-                (void)mv_image_draw_region(selected.image, selected.region, transform);
-                mv_window_flush();
-            }
-        }
-        lua_pop(L, 3);
-        return;
-    }
-    if (animation) {
-        MvAnimationState state;
-        MvAnimationSample sample;
-        int present;
-        if (mv_process_animation_clock_get(engine.context, self->reference,
-                &state, &sample, &present) == MV_OK && present) {
-            lua_getiuservalue(L, -1, 1);
-            lua_rawgeti(L, -1, (lua_Integer)sample.index + 1);
-            lua_remove(L, -2);
-            lua_replace(L, -2);
-        }
-    }
-    LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
-    LuaImage *image = luaL_testudata(L, -1, "malvado.image");
-    double x, y, angle, scale;
-    if ((graphic || (image && !process->legacy_frame && !process->first)) &&
-        render_number(L, fields, "x", 0, &x) &&
-        render_number(L, fields, "y", 0, &y) &&
-        render_number(L, fields, "angle", 0, &angle) &&
-        render_number(L, fields, "size", 1, &scale) && scale > 0) {
-        if (image) {
-            MvImageGraphic selected = {image->image,
-                {0, 0, mv_image_width(image->image), mv_image_height(image->image)},
-                image->pivot_x, image->pivot_y};
-            int present;
-            if (!animation)
-                (void)mv_process_image_get(engine.context,
-                    self->reference, &selected, &present);
-            MvImageTransform transform = {(float)x, (float)y, (float)selected.pivot_x,
-                                          (float)selected.pivot_y, (float)scale, (float)angle};
-            (void)mv_image_draw_region(selected.image, selected.region, transform);
-        } else if (graphic->sprite) {
-            int graph_index = lua_gettop(L);
-            lua_getiuservalue(L, graph_index, 2);
-            LuaImage *sprite_image = luaL_testudata(L, -1, "malvado.image");
-            if (sprite_image) {
-                MvImageTransform transform = {(float)x, (float)y, (float)graphic->pivot_x,
-                                               (float)graphic->pivot_y, (float)scale, (float)angle};
-                (void)mv_image_draw_region(sprite_image->image, graphic->region, transform);
-            }
-            lua_pop(L, 1);
-        } else {
-            (void)mv_window_draw_graphic(graphic->shape,
-                (MvCollisionTransform){x, y, angle, scale}, graphic->color);
-        }
-    }
-    lua_pop(L, 3);
-}
-
-static void
 load_camera(lua_State *L, LuaCamera *camera)
 {
     if (!camera->reference.id)
@@ -4411,45 +4330,6 @@ update_cameras(lua_State *L)
     lua_pop(L, 1);
 }
 
-/* Return NULL only for a closed/invalid explicit camera. Screen-space content
- * uses an identity camera so region and local scroll retain their contracts. */
-static int
-process_camera(lua_State *L, const Process *process, MvCamera *out)
-{
-    (void)L;
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    return mv_process_camera_resolve(engine.context, reference, out) == MV_OK;
-}
-
-/* Return 1 for no region, 2 for an active clip, or 0 when fully off-screen. */
-static int
-begin_process_region(lua_State *L, const Process *process, const MvCamera *camera)
-{
-    (void)L;
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    MvCameraViewport region, clipped;
-    int present, width, height;
-    if (mv_process_region_get(engine.context, reference, &region, &present) != MV_OK ||
-        !mv_window_size(&width, &height)) return 0;
-    if (!present && !camera->viewport.width) return 1;
-    if (mv_process_view_clip(engine.context, reference, NULL, width, height, &clipped) != MV_OK || !clipped.width)
-        return 0;
-    return mv_window_clip_begin(clipped.x, clipped.y, clipped.width, clipped.height) ? 2 : 0;
-}
-
-/* Return 1 without a scroll, 2 when active, or 0 for invalid state. */
-static int
-begin_process_scroll(lua_State *L, const Process *process, const MvCamera *camera)
-{
-    (void)L;
-    (void)camera;
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    double x, y;
-    if (mv_process_view_offset(engine.context, reference, &x, &y) != MV_OK) return 0;
-    if (x == 0 && y == 0) return 1;
-    return mv_window_scroll_begin((float)-x, (float)-y) ? 2 : 0;
-}
-
 /* Spawn appends increasing native IDs; tick cleanup preserves survivor order.
  * Keep ordered rendering O(n log n) without a second slot map or allocation. */
 static int
@@ -4460,6 +4340,36 @@ compare_render_id(const void *key, const void *entry)
     return (id > candidate) - (id < candidate);
 }
 
+/* Lua prepares descriptors only. The native pass owns depth, projection,
+ * clipping, graph selection and graph-before-command drawing for every process. */
+static int
+prepare_process_graph(MvProcessRef reference, void *user)
+{
+    lua_State *L = user;
+    Process *process = engine.count ? bsearch(&reference.id, engine.items,
+        engine.count, sizeof(*engine.items), compare_render_id) : NULL;
+    if (!process) return 1;
+    /* Descriptor refresh may allocate and run GC. Do not keep a slot pointer
+     * across it: finalizers can append processes and move engine.items. */
+    int hide_image = process->legacy_frame || process->first;
+    int self_ref = process->self_ref;
+    lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+    LuaSelf *self = lua_touserdata(L, -1);
+    lua_getiuservalue(L, -1, 1);
+    int fields = lua_gettop(L);
+    refresh_process_transform(L, self, fields);
+    raw_option(L, fields, "graph");
+    int image = luaL_testudata(L, -1, "malvado.image") != NULL;
+    double x, y, angle, scale;
+    int visible = !(image && hide_image) &&
+        render_number(L, fields, "x", 0, &x) &&
+        render_number(L, fields, "y", 0, &y) &&
+        render_number(L, fields, "angle", 0, &angle) &&
+        render_number(L, fields, "size", 1, &scale) && scale > 0;
+    lua_pop(L, 3);
+    return visible;
+}
+
 static void
 render(void)
 {
@@ -4468,45 +4378,11 @@ render(void)
         engine.failed = 1;
         return;
     }
-    size_t count;
-    if (mv_process_draw_order(engine.context, NULL, 0, &count) != MV_OK ||
-        count > SIZE_MAX / sizeof(MvProcessDrawInfo)) {
-        engine.failed = 1;
-        return;
-    }
-    MvProcessDrawInfo *order = count ? malloc(count * sizeof(*order)) : NULL;
-    if ((count && !order) ||
-        mv_process_draw_order(engine.context, order, count, &count) != MV_OK) {
-        free(order);
-        engine.failed = 1;
-        return;
-    }
     mv_window_begin(engine.draw.background);
-    for (size_t p = 0; p < count; p++) {
-        Process *process = engine.count ? bsearch(&order[p].id, engine.items,
-            engine.count, sizeof(*engine.items), compare_render_id) : NULL;
-        if (!process) continue;
-        if (!process->alive || process->state == PROCESS_SLEEPING || process->state == PROCESS_KILLED)
-            continue;
-        MvCamera selected_camera;
-        if (!process_camera(L, process, &selected_camera)) continue;
-        const MvCamera *camera = &selected_camera;
-        int region = begin_process_region(L, process, camera);
-        if (!region) continue;
-        int scroll = begin_process_scroll(L, process, camera);
-        if (!scroll) {
-            if (region == 2) (void)mv_window_clip_end();
-            continue;
-        }
-        render_graph(L, process);
-        MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-        (void)mv_window_draw_process_commands(engine.context, reference);
-        if (scroll == 2) (void)mv_window_scroll_end();
-        if (region == 2) (void)mv_window_clip_end();
-    }
+    if (!malvado_window_draw_process_graphics(engine.context, prepare_process_graph, L))
+        engine.failed = 1;
     render_texts(L);
     (void)mv_window_draw_fade(engine.fade.fade.current);
-    free(order);
     if (debug_frame_hook) {
         mv_window_flush();
         debug_frame_hook(debug_frame_user);
