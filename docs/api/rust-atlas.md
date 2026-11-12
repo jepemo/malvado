@@ -260,5 +260,5 @@ all frame owners. Same-frame cleanup after the native draw pass is safe.
 Invalid frames/durations, degenerate union geometry, dead/closed handles or
 allocation failure preserve the old graph and clock. Failure does not transfer
 Rust owners. Shared frames can be assigned to multiple contexts independently.
-Lua's animated-descriptor storage still uses its existing frame views; migration
-to the native visual binding remains open.
+Loaded Lua animated descriptors share this native visual binding. Metadata-only
+headless descriptors keep their clock-only behavior.

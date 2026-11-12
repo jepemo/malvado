@@ -154,18 +154,19 @@ apply before playback advances.
 
 A new descriptor resets playback. Reassigning the same cached descriptor keeps
 its time, unless the native clock was cleared; that assignment attaches a new
-clock at zero. Assigning a non-animation graph clears Lua's clock. Native clock
-clear leaves the Lua descriptor selected but without a sampled frame or elapsed
-value. Native clients can inspect, pause through process signals and clear the
-same clock. Lua frame assets, animation bounds and selected-image rendering
-keep their existing behavior.
+clock at zero. Assigning a non-animation graph clears Lua's clock. For metadata-only/headless
+descriptors, native clock clear leaves the Lua descriptor selected but without a sampled frame or elapsed value. Loaded visual
+animations own a bound clock: standalone clock clear returns MV_BUSY. Clear or
+replace the graph to stop them. Native clients can inspect the same clock and
+pause it through process signals. Lua animation bounds keep their existing
+behavior.
 
 C, Lua and Rust checks share `tests/fixtures/process-animation.txt`. The mixed
 C/Lua host also verifies native clear and Lua reattachment. The native cleanup
 fixture checks that a destructor can freeze another clock before advancement.
 Native image-frame assignment is available through
-[animated image graphs](images.md#native-animated-image-graphs). Migrating Lua
-animated descriptors to that visual binding and persistent process commands
+[animated image graphs](images.md#native-animated-image-graphs). Loaded Lua
+animated descriptors now use that visual binding. Persistent process commands
 remain alpha.7 work.
 
 
@@ -182,3 +183,27 @@ Optional binding-owner transfer, validation, stable union colliders and cleanup
 follow the native image-animation setters. Failure keeps the old graph, clock
 and caller ownership. This lets bindings reuse validated timing without copying
 or reconstructing durations and preserve definition identity across reads.
+
+
+## Native selection for Lua visual animations
+
+Loaded Lua animations bind their original native definition to copied visual
+frames. C selects the visible image at the end of the scheduler tick; Lua draws
+that native selection in its existing graph-before-command order. The default
+collider uses the same stable union as before. Durations, original graph IDs,
+loop behavior, process cadence, sleep/freeze and end holding stay unchanged.
+
+Unchanged reads and repeated assignment of the same cached descriptor preserve
+userdata identity and playback time. A changed descriptor resets playback.
+Native replacement or clear is reflected on frozen processes. Definition
+identity is checked through the private core bridge; no public identity token
+or second timing record is added. Lua queries do not copy frame arrays every
+tick. The native draw is completed before later Lua allocations can release its
+borrowed image.
+
+Frame-array scratch storage is Lua-owned until native binding copies and retains
+it. Lua errors and native validation failure preserve the prior native binding.
+Metadata-only/headless descriptors retain their existing non-visual path. Lua
+`sample(time)` remains available for explicit sampling. The mixed visual fixture
+checks native frame selection and IDs, cached assignment, forced GC, 5 FPS process
+activation with 60 Hz timing, and frozen C replacement/clear.

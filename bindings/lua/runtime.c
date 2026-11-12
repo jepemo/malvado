@@ -779,14 +779,58 @@ push_selected_camera(lua_State *L, LuaSelf *self)
     lua_rawset(L, -5);
 }
 
-/* Native storage owns visual sprites and whole images. Metadata-only descriptors and
- * animations retain their existing Lua paths. */
+/* Native storage owns loaded visual graphs. Metadata-only descriptors retain
+ * their existing Lua paths. */
 static void manage_image(lua_State *L, LuaImage *image);
+
+/* Frame views remain rooted in the descriptor until native binding copies and
+ * retains them. Scratch userdata is GC-safe on every Lua error path. */
+static int
+bind_process_animation(lua_State *L, LuaSelf *self, int value,
+                       LuaAnimation *animation, int reset_clock)
+{
+    if (!engine.window) return 0;
+    if (!reset_clock && malvado_process_visual_animation_uses(engine.context,
+            self->reference, animation->sequence)) return 1;
+    size_t count = mv_animation_count(animation->sequence);
+    if (!count) return 0;
+    int base = lua_gettop(L);
+    lua_getiuservalue(L, value, 1);
+    int graphics = lua_gettop(L);
+    MvImageGraphic *frames = lua_newuserdatauv(L, count * sizeof(*frames), 0);
+    for (size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, graphics, (lua_Integer)i + 1);
+        LuaGraphic *graphic = luaL_testudata(L, -1, "malvado.graphic");
+        if (!graphic || !graphic->sprite) {
+            lua_settop(L, base);
+            return 0;
+        }
+        lua_getiuservalue(L, -1, 2);
+        LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+        if (!image || !image->image) {
+            lua_settop(L, base);
+            return 0;
+        }
+        frames[i] = (MvImageGraphic){image->image, graphic->region,
+                                    graphic->pivot_x, graphic->pivot_y};
+        lua_pop(L, 2);
+    }
+    MvResult result = mv_process_image_animation_bind_owned(engine.context,
+        self->reference, animation->sequence, frames, count, 60, NULL, NULL);
+    lua_settop(L, base);
+    if (result != MV_OK) luaL_error(L, "cannot bind process animation images");
+    return 1;
+}
 
 static void
 set_process_graphic(lua_State *L, LuaSelf *self, int value, int reset_clock)
 {
     value = lua_absindex(L, value);
+    LuaAnimation *animation = luaL_testudata(L, value, "malvado.animation");
+    if (animation && bind_process_animation(L, self, value, animation, reset_clock)) {
+        self->native_sprite = 1;
+        return;
+    }
     LuaGraphic *graphic = luaL_testudata(L, value, "malvado.graphic");
     MvResult result;
     int native_sprite = 0;
@@ -815,7 +859,6 @@ set_process_graphic(lua_State *L, LuaSelf *self, int value, int reset_clock)
         result = mv_process_graphic_clear(engine.context, self->reference);
     }
     if (result != MV_OK) luaL_error(L, "cannot set process graphic");
-    LuaAnimation *animation = luaL_testudata(L, value, "malvado.animation");
     if (animation) {
         MvAnimationState state;
         MvAnimationSample sample;
@@ -840,6 +883,13 @@ refresh_process_sprite(lua_State *L, LuaSelf *self, int fields)
     if (mv_process_image_get(engine.context, self->reference, &native, &present) != MV_OK || !present)
         return 0;
     raw_option(L, fields, "graph");
+    LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+    if (animation && malvado_process_visual_animation_uses(engine.context,
+            self->reference, animation->sequence)) {
+        self->native_sprite = 1;
+        lua_pop(L, 1);
+        return 1;
+    }
     LuaGraphic *old = luaL_testudata(L, -1, "malvado.graphic");
     LuaImage *whole = luaL_testudata(L, -1, "malvado.image");
     int same_image = whole && whole->image == native.image && native.region.x == 0 &&
@@ -1173,6 +1223,7 @@ sync_process_collider(lua_State *L, LuaSelf *self, int fields)
             if (animation) {
                 shape = animation->shape;
                 present = 1;
+                bound = self->native_sprite;
             } else if (graphic) {
                 shape = graphic->shape;
                 present = 1;
@@ -4115,6 +4166,29 @@ render_graph(lua_State *L, const Process *process)
     refresh_process_transform(L, self, fields);
     raw_option(L, fields, "graph");
     LuaAnimation *animation = luaL_testudata(L, -1, "malvado.animation");
+    if (animation && malvado_process_visual_animation_uses(engine.context,
+            self->reference, animation->sequence)) {
+        double x, y, angle, scale;
+        if (render_number(L, fields, "x", 0, &x) &&
+            render_number(L, fields, "y", 0, &y) &&
+            render_number(L, fields, "angle", 0, &angle) &&
+            render_number(L, fields, "size", 1, &scale) && scale > 0) {
+            MvImageGraphic selected;
+            int present;
+            /* Query after Lua property reads: no Lua allocation can invalidate
+             * this borrowed image before the native draw/flush completes. */
+            if (mv_process_image_get(engine.context, self->reference,
+                    &selected, &present) == MV_OK && present) {
+                MvImageTransform transform = {(float)x, (float)y,
+                    (float)selected.pivot_x, (float)selected.pivot_y,
+                    (float)scale, (float)angle};
+                (void)mv_image_draw_region(selected.image, selected.region, transform);
+                mv_window_flush();
+            }
+        }
+        lua_pop(L, 3);
+        return;
+    }
     if (animation) {
         MvAnimationState state;
         MvAnimationSample sample;

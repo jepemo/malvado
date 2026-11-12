@@ -19,6 +19,7 @@
 #include <assert.h>
 #include "raylib.h"
 #include "runner/runtime.h"
+#include "malvado/platform.h"
 
 static Color pixel(Image image, int x, int y)
 {
@@ -37,6 +38,15 @@ static void check_frame(void *user)
     unsigned stage = tick < 22 ? 1 : 2;
     if (*checked & stage) return;
     assert(count == 3);
+    for (size_t i=1; i<count; ++i) {
+        MvProcessRef ref;
+        MvImageGraphic selected;
+        int present;
+        assert(mv_process_ref_create(malvado_debug_context(),processes[i].id,&ref) == MV_OK);
+        assert(mv_process_image_get(malvado_debug_context(),ref,&selected,&present) == MV_OK && present);
+        assert(mv_process_animation_clock_clear(malvado_debug_context(),ref) == MV_BUSY);
+    }
+
     Image screen = LoadImageFromScreen();
     Image sheet = LoadImage("examples/aseprite/sheet.png");
     assert(screen.data && sheet.data);

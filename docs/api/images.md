@@ -486,5 +486,6 @@ leave the previous graph and clock unchanged. Owner callbacks run only after a
 successful transfer and after native image references are released. C hosts must
 keep the window open through cleanup; bindings can retain it through the owner.
 The process drawing pass flushes queued texture uses before returning, so
-same-frame replacement remains safe. Lua's animated-descriptor storage still
-uses its existing frame views; migration to this visual binding remains open.
+same-frame replacement remains safe. Loaded Lua animated descriptors reuse their
+immutable definitions and copied frame views through this binding. Headless metadata descriptors keep their
+existing clock-only path.
