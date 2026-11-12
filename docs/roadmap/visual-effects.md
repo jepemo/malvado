@@ -122,6 +122,6 @@ checks and graphics checks on their claimed platforms before promotion.
 ## Shared live workflow
 
 Coordinate shader/resource reload and editor parameter views with the
-[Bris live workflow](live-editing.md). Asset and shader reload do not replace
+[malvado-gui live workflow](live-editing.md). Asset and shader reload do not replace
 process code or suspended execution state. Runtime parameter editing precedes
 code reload and does not require declarative scenes.

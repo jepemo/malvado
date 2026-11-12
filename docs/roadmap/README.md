@@ -16,7 +16,7 @@ teaching catalog, or minigames. Those candidates are organized here.
 | [API candidate catalog](api-candidates.md) | Review historical calls and select useful modern capabilities | Existing pinned Bennu catalogs; DIV/Fénix coverage gaps are explicit. No blanket implementation selection. |
 | [Visual properties, effects and shaders](visual-effects.md) | Small process effects, reusable shaders, then camera effects | Proposal; requires completed shared process drawing and resource ownership. |
 | [Spatial attachments](spatial-attachments.md) | Explicit relative transforms and named visual points | Proposal; separate from delivered creator/owner genealogy. |
-| [Bris live editing, scenes and reload](live-editing.md) | Inspect/edit processes, reload assets, author/reconcile flat scenes and evaluate code reload | Dependency milestones E1–E7; native state remains authoritative. No version assigned. |
+| [malvado-gui live editing, scenes and reload](live-editing.md) | Inspect/edit processes, reload assets, author/reconcile flat scenes and evaluate code reload | Dependency milestones E1–E7; native state remains authoritative. No version assigned. |
 | [Examples and minigames](examples.md) | Build a useful aligned C/Lua/Rust teaching catalog | Proposal; depends on delivered APIs and installed CLI workflows. |
 | [Modes 7, 8 and 9](../specs/graphics-modes.md) | Perspective floors, sectors and a bounded 3D renderer | Existing design proposal; no fixed release numbers or complete 3D-engine promise. |
 | [Graphical workshop](../specs/gui.md) | Projects, assets, process inspection and export | Existing proposal and experimental G0 tooling; production editor is not delivered. |
@@ -59,7 +59,7 @@ an unrestricted rendering pipeline.
 5. Evaluate custom shader parameters and camera render targets as separate capabilities.
 6. When Mode 9 foundations exist, adapt compatible effects and simple model attachment targets.
 7. Evaluate skeletal sockets and shader reload only after their runtime dependencies exist.
-8. Progress Bris independently through live properties, asset reload and flat scenes, then reconciliation; evaluate selective Lua restart and Rust rebuild/restart separately.
+8. Progress malvado-gui independently through live properties, asset reload and flat scenes, then reconciliation; evaluate selective Lua restart and Rust rebuild/restart separately.
 
 Modes 7/8/9, teaching work and these systems can progress independently where
 there is no dependency. This order is a dependency guide, not a delivery queue.

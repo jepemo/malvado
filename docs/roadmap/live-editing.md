@@ -1,4 +1,4 @@
-# Bris live editing, scenes and reload
+# malvado-gui live editing, scenes and reload
 
 Status: future planning only. No runtime, editor, transport, scene format or reload
 API is implemented by this proposal. Milestones below are dependency units, not
@@ -18,7 +18,7 @@ Native image references, selected graphs, animation clocks and command lists
 already have ownership contracts. They do not provide file watching or hot
 replacement. Registered language process definitions are not yet a shared scene
 factory registry. A JSON scene, authored identity and reconciler do not exist.
-Bris is the proposed editor consumer; the engine remains usable without it.
+malvado-gui is the editor consumer in this proposal; the engine remains usable without it.
 
 Keep process state authoritative in C. A property command must have the same
 observable result for C, Lua and Rust processes. Bindings may translate their
@@ -32,7 +32,7 @@ Godot-style node hierarchy or another scheduler for editing.
 | --- | --- | --- |
 | Runtime process state | C runtime | Current position, render selection, status and other delivered engine properties. Changes go through validated operations at safe points. |
 | Scene-authored state | Scene document | Initial properties and deliberate authored overrides; runtime movement does not rewrite it. |
-| Bris editor state | Editor | Selection, viewport, unsaved edits, undo history and play session; not game process ownership. |
+| malvado-gui editor state | Editor | Selection, viewport, unsaved edits, undo history and play session; not game process ownership. |
 | Scene instance ID | Scene document and its scope | Stable authored string such as player_01; uniqueness and scene namespace must be validated. |
 | Runtime process identity | Runtime session plus native process reference | Refers to one actual process. Restart creates a new identity; old handles remain invalid. |
 | Process definition key | Registered game definition | Names a factory/type, not a suspended execution state or a runtime PID. |
@@ -55,7 +55,7 @@ file event. Scene membership does not create a special process parent.
   runner safe points. Investigate reusing the local opt-in diagnostics channel;
   transport, schema and public names remain undecided. Conceptual operations are
   list_processes, get_process, get_property and set_property.
-- **Behavior:** Bris sends a bounded request to the runtime owner thread. Pausing
+- **Behavior:** malvado-gui sends a bounded request to the runtime owner thread. Pausing
   stops simulation ticks while control requests remain serviceable. Validate
   current session/liveness and return the accepted value or a useful error.
   Resource-valued graph edits resolve valid resources, not arbitrary pointers.
@@ -69,7 +69,7 @@ file event. Scene membership does not create a special process parent.
   batch validation, graph loading, camera/scroll projection and audio while paused.
 
 Prefer a simple initial conflict rule: apply edits at a documented safe point;
-subsequent game writes may overwrite them. Show that result in Bris rather than
+subsequent game writes may overwrite them. Show that result in malvado-gui rather than
 silently freezing or replacing game logic. Persistent editor overrides need a
 separate explicit rule. Never access Lua or process memory from a UI/watch thread.
 
@@ -110,7 +110,7 @@ collision/world queries and rendered geometry do not disagree for a tick.
   registration contract. C/Lua/Rust factories may require binding adapters, but
   the document and built-in property semantics must not depend on the language.
 - **Behavior:** validate definitions, IDs, properties and asset references before
-  activation. Instantiate through existing process APIs. Bris edits authored data
+  activation. Instantiate through existing process APIs. malvado-gui edits authored data
   and saves deliberately; dynamic instances stay outside the document.
 - **Acceptance:** load an equivalent level with definitions implemented in each
   language; report duplicate IDs, unknown definitions, bad types and missing
@@ -155,7 +155,7 @@ Illustrative schema only; graph strings require future resource resolution:
 
 Validate the complete change set and stage resources where practical. Existing
 spawn/kill operations do not establish a multi-process transaction. Define which
-operations can roll back, whether partial commit is possible, and how Bris reports
+operations can roll back, whether partial commit is possible, and how malvado-gui reports
 and recovers from it. Do not promise to undo I/O or destructor side effects.
 Runtime-created children retain ordinary ownership: attached children may die
 with their owner; detached children must not be removed merely because a scene
@@ -197,7 +197,7 @@ keep the accepted definition revision and scene/runtime association consistent.
   `process(run, {defaults={speed=2, health=100, damage=10}})`. This illustrates game
   fields, not an existing cross-language reflection guarantee. C and Rust need
   idiomatic safe registration/access mechanisms, not arbitrary memory reads.
-- **Acceptance:** Bris shows and edits equivalent speed/health properties in
+- **Acceptance:** malvado-gui shows and edits equivalent speed/health properties in
   C/Lua/Rust; invalid writes preserve values and readonly fields reject edits.
   Distinguish defaults, authored overrides and current runtime values.
 - **Non-goals:** serializing arbitrary language objects, executing getters to
@@ -209,7 +209,7 @@ keep the accepted definition revision and scene/runtime association consistent.
 ## E7: Rust rebuild/restart and advanced code reload
 
 - **Goal:** improve Rust iteration while preserving editor context safely.
-- **Scope:** first evaluate compile diagnostics plus game restart with Bris scene,
+- **Scope:** first evaluate compile diagnostics plus game restart with malvado-gui scene,
   selection and authored data retained. Dynamic-library reload is optional research.
 - **Dependencies:** existing Rust CLI build/run and E3/E4 mappings where used.
 - **Behavior:** recompilation may recreate the game session; old runtime handles
@@ -218,7 +218,7 @@ keep the accepted definition revision and scene/runtime association consistent.
   session where feasible; a successful restart restores authored scene inputs and
   editor context with a new runtime identity. Verify supported host toolchains.
 - **Non-goals:** arbitrary replacement of suspended Rust futures, layout-preserving
-  magic, or dynamic modules as a prerequisite for a useful Bris editor.
+  magic, or dynamic modules as a prerequisite for a useful malvado-gui editor.
 - **Open questions:** build cost, restart scope, optional explicit state snapshots;
   for later native modules, stable C ABI, allocator/destructor ownership, live code
   pointers, module unloading, type/layout changes, panic boundaries and platforms.
@@ -235,7 +235,7 @@ need cycle, identity, ownership, resource-path and override rules. Promotion of 
 dynamic process into authored data must be an explicit user operation. Neither
 capability selects a prefab schema or introduces a node hierarchy today.
 
-## Scheduling and first useful Bris editor
+## Scheduling and first useful malvado-gui editor
 
 E1 and E2 can deliver independent useful development tools. E3 adds authored
 levels; E4 adds incremental editing. Together these form a useful first live scene

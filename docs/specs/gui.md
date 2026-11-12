@@ -1,4 +1,4 @@
-# Bris: Malvado project, asset, and process workshop
+# malvado-gui: Malvado project, asset, and process workshop
 
 Status: an unassigned future proposal. The tool is not implemented. GUI work is outside the 2.0 release gates. Reference research date: 2026-10-29.
 
@@ -120,10 +120,10 @@ editor capabilities. No editor framework is a prerequisite for their first runti
 milestones. Apply the [reevaluation rule](../roadmap/README.md#promotion-into-a-release).
 
 
-## Bris live workflow extension
+## malvado-gui live workflow extension
 
-Bris is the proposed editor name; historical malvado-gui identifiers and G0
-prototype targets are not renamed by this documentation. The [live editing
+The editor is called malvado-gui for now. Existing identifiers and G0 prototype
+targets keep that name. The [live editing
 proposal](../roadmap/live-editing.md) is the source for E1–E7: built-in property
 editing, asset reload, flat JSON scenes, reconciliation, selective Lua restart,
 custom property descriptors and optional advanced Rust reload. These future
