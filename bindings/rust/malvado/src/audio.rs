@@ -3,7 +3,7 @@
 use crate::{Error, window::main_thread};
 use malvado_sys::{self as sys, graphics as ffi};
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     ffi::CString,
     os::unix::ffi::OsStrExt,
     path::Path,
@@ -50,17 +50,15 @@ impl Audio {
     /// Paused uses stay retained. Call regularly, including after owner death.
     /// This does not advance the engine or poll input. Shutdown stops all uses.
     pub fn update(&self) -> Result<(), Error> {
+        // SAFETY: this service owns the main-thread device. Native maintenance
+        // includes all loaded streams, even those created by another host.
+        accepted(unsafe { ffi::mv_audio_update() })?;
         self.sounds
             .borrow_mut()
-            .retain(|sound| sound.paused.get() || sound.playing());
-        let mut streams = self.streams.borrow_mut();
-        for stream in streams.iter() {
-            if !stream.paused.get() {
-                // SAFETY: each retained stream keeps its native device live.
-                accepted(unsafe { ffi::mv_music_update(stream.native.as_ptr()) })?;
-            }
-        }
-        streams.retain(|stream| stream.paused.get() || stream.playing());
+            .retain(|sound| sound.paused() || sound.playing());
+        self.streams
+            .borrow_mut()
+            .retain(|stream| stream.paused() || stream.playing());
         Ok(())
     }
 }
@@ -82,7 +80,6 @@ pub struct Sound {
 }
 struct SoundData {
     native: NonNull<ffi::MvSound>,
-    paused: Cell<bool>,
     _device: Rc<Device>,
 }
 impl Sound {
@@ -96,7 +93,6 @@ impl Sound {
         Ok(Self {
             data: Rc::new(SoundData {
                 native,
-                paused: Cell::new(false),
                 _device: audio.device.clone(),
             }),
             audio,
@@ -119,7 +115,6 @@ impl Sound {
         }
         // SAFETY: live owner-thread sound and device.
         accepted(unsafe { ffi::mv_sound_play(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         if !retained {
             active.push(self.data.clone());
         }
@@ -128,7 +123,6 @@ impl Sound {
     pub fn stop(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread sound and device.
         accepted(unsafe { ffi::mv_sound_stop(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         self.audio
             .sounds
             .borrow_mut()
@@ -138,17 +132,19 @@ impl Sound {
     pub fn pause(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread sound and device.
         accepted(unsafe { ffi::mv_sound_pause(self.data.native.as_ptr()) })?;
-        self.data.paused.set(true);
         Ok(())
     }
     pub fn resume(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread sound and device.
         accepted(unsafe { ffi::mv_sound_resume(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         Ok(())
     }
     pub fn playing(&self) -> bool {
         self.data.playing()
+    }
+    /// Read the shared native pause state. Idle instances are not paused.
+    pub fn paused(&self) -> bool {
+        self.data.paused()
     }
     /// Set this instance's volume in 0..=1. Invalid values change nothing.
     pub fn set_volume(&self, volume: f32) -> Result<(), Error> {
@@ -158,6 +154,10 @@ impl Sound {
     }
 }
 impl SoundData {
+    fn paused(&self) -> bool {
+        // SAFETY: instance retains the owner-thread device.
+        unsafe { ffi::mv_sound_paused(self.native.as_ptr()) != 0 }
+    }
     fn playing(&self) -> bool {
         // SAFETY: native instance retains its owner-thread device.
         unsafe { ffi::mv_sound_playing(self.native.as_ptr()) != 0 }
@@ -179,7 +179,6 @@ pub struct Music {
 }
 struct MusicData {
     native: NonNull<ffi::MvMusic>,
-    paused: Cell<bool>,
     _device: Rc<Device>,
 }
 impl Music {
@@ -197,7 +196,6 @@ impl Music {
         Ok(Self {
             data: Rc::new(MusicData {
                 native,
-                paused: Cell::new(false),
                 _device: audio.device.clone(),
             }),
             audio,
@@ -214,7 +212,6 @@ impl Music {
         }
         // SAFETY: live owner-thread music and device.
         accepted(unsafe { ffi::mv_music_play(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         if !retained {
             active.push(self.data.clone());
         }
@@ -223,7 +220,6 @@ impl Music {
     pub fn stop(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread music and device.
         accepted(unsafe { ffi::mv_music_stop(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         self.audio
             .streams
             .borrow_mut()
@@ -233,17 +229,19 @@ impl Music {
     pub fn pause(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread music and device.
         accepted(unsafe { ffi::mv_music_pause(self.data.native.as_ptr()) })?;
-        self.data.paused.set(true);
         Ok(())
     }
     pub fn resume(&self) -> Result<(), Error> {
         // SAFETY: live owner-thread music and device.
         accepted(unsafe { ffi::mv_music_resume(self.data.native.as_ptr()) })?;
-        self.data.paused.set(false);
         Ok(())
     }
     pub fn playing(&self) -> bool {
         self.data.playing()
+    }
+    /// Read the shared native pause state. Idle instances are not paused.
+    pub fn paused(&self) -> bool {
+        self.data.paused()
     }
     /// Set this instance's volume in 0..=1. Invalid values change nothing.
     pub fn set_volume(&self, volume: f32) -> Result<(), Error> {
@@ -253,6 +251,10 @@ impl Music {
     }
 }
 impl MusicData {
+    fn paused(&self) -> bool {
+        // SAFETY: instance retains the owner-thread device.
+        unsafe { ffi::mv_music_paused(self.native.as_ptr()) != 0 }
+    }
     fn playing(&self) -> bool {
         // SAFETY: native instance retains its owner-thread device.
         unsafe { ffi::mv_music_playing(self.native.as_ptr()) != 0 }
@@ -359,6 +361,12 @@ mod tests {
         music.play().unwrap();
         music.play().unwrap();
         assert_eq!(audio.streams.borrow().len(), 1);
+        // A raw C host changes pause state; Rust retention must observe it.
+        assert_eq!(
+            unsafe { ffi::mv_music_pause(music.data.native.as_ptr()) },
+            1
+        );
+        assert!(music.paused());
         music.pause().unwrap();
         drop(music);
         audio.update().unwrap();
@@ -367,6 +375,7 @@ mod tests {
             data: weak.upgrade().unwrap(),
             audio: audio.clone(),
         };
+        assert!(music.paused());
         music.stop().unwrap();
         assert!(audio.streams.borrow().is_empty());
         assert_eq!(Rc::strong_count(&music.data), 1);
@@ -387,10 +396,33 @@ mod tests {
         let loop_data = Rc::downgrade(&looping.data);
         looping.play().unwrap();
         drop(looping);
+        // Native maintenance also covers a stream absent from Rust's roots.
+        let raw_path = path_string(&path).unwrap();
+        let raw = unsafe { ffi::mv_music_load(raw_path.as_ptr(), 1) };
+        assert!(!raw.is_null());
+        assert_eq!(unsafe { ffi::mv_music_play(raw) }, 1);
+        let deadline = Instant::now() + Duration::from_millis(700);
+        while Instant::now() < deadline {
+            audio.update().unwrap();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(unsafe { ffi::mv_music_playing(raw) }, 1);
+        assert_eq!(unsafe { ffi::mv_music_pause(raw) }, 1);
+        audio.update().unwrap();
+        assert_eq!(unsafe { ffi::mv_music_paused(raw) }, 1);
+        unsafe {
+            ffi::mv_music_destroy(raw);
+        }
+        audio.update().unwrap(); // The borrowed native index must no longer use raw.
+
         let paused = Sound::load(audio.clone(), &path).unwrap();
         let paused_data = Rc::downgrade(&paused.data);
         paused.play().unwrap();
-        paused.pause().unwrap();
+        assert_eq!(
+            unsafe { ffi::mv_sound_pause(paused.data.native.as_ptr()) },
+            1
+        );
+        assert!(paused.paused());
         drop(paused);
         drop(audio);
         assert!(loop_data.upgrade().is_none());

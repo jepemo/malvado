@@ -12,7 +12,7 @@ let audio = Rc::new(Audio::open()?);
 let sound = Sound::load(audio.clone(), "jump.wav")?;
 sound.set_volume(0.5)?;
 sound.play()?;
-// In the host loop, after each simulation step:
+// Regularly in the host loop, including frames without a simulation tick:
 audio.update()?;
 # Ok::<(), Error>(())
 ```
@@ -22,8 +22,9 @@ audio.update()?;
 Open one `Audio` on the application main thread. A second safe owner returns
 `Busy`. Device failure returns `Platform`. The device is separate from `Window`
 and `Engine`. It does not tick processes, poll events, or install a scheduler.
-Do not open, close, or operate the same native device through another host while
-Rust owns it. Mixed-language device ownership is not supported.
+Do not open or close the same native device through another owner while Rust
+owns it. Same-thread native borrowing shares pause state and refill; it does not
+create another device owner. Mixed-language device ownership is not supported.
 
 Keep an `Rc<Audio>` in the host. Loaded sounds and music keep the service alive. Playing
 and paused uses retain native instances even if a process releases its resource.
@@ -59,10 +60,12 @@ setting is fixed at load time. Each load owns its decoder and playback state;
 streams cannot be cloned. Controls and volume follow the sound contract.
 `play()` starts native stream playback. To restart from the beginning, call
 `stop()` before `play()`; play alone does not rewind the decoder. Use `resume()`
-to keep a paused position. `playing()` is false while paused.
+to keep a paused position. `playing()` is false while paused. `paused()` reads
+the native pause state for sounds and music; idle instances return false.
 
 Call `Audio::update()` regularly on the owner thread. It refills active streams
-through the native C service and releases completed uses. Paused uses stay
+through the shared native device pass and releases completed Rust uses. It also
+refills native streams loaded outside the Rust root vector. Paused uses stay
 retained without refill. The host must continue updates even after the process
 that loaded a playing stream ends. Looping streams keep playing until stopped
 or service shutdown. Updates return `Platform` if a native update fails.
@@ -115,3 +118,6 @@ allocator after decoder shutdown, including wrapper allocation and invalid-strea
 failure paths. OGG cleanup stays in raylib. A version assertion requires review
 on a provider upgrade. Empty WAV rejection is covered by C and Rust fixtures.
 No third-party source or leak suppression was changed.
+
+The [shared maintenance contract](audio-maintenance.md#rust-service) defines native
+pause queries, refill, binding playback roots and device ownership.

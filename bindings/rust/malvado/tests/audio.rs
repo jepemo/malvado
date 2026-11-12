@@ -32,6 +32,7 @@ fn main() {
     sound.set_volume(1.0).unwrap();
     sound.play().unwrap();
     sound.pause().unwrap();
+    assert!(sound.paused());
     assert!(!sound.playing());
     audio.update().unwrap(); // Paused uses must survive maintenance.
     sound.resume().unwrap();

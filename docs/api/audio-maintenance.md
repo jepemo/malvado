@@ -75,3 +75,25 @@ that maintenance releases the playback root without explicit Lua stream updates.
 The native fixture also creates a stream during a paused Lua frame and checks
 completion while the scheduler tick counter stays unchanged. Both run with native
 ASan/UBSan and silent audio fixtures.
+
+## Rust service
+
+`Audio::update()` calls the native device pass, then releases completed Rust
+playback roots. It no longer refills only the streams in its Rust root vector.
+`Sound::paused()` and `Music::paused()` read native state. There is no separate
+Cell cache of pause state. A same-thread native pause is therefore visible to
+Rust retention, and paused instances stay alive after their original owner drops.
+
+Rust still owns its Rc playback roots and device token. Stop removes that
+instance's root; completion is collected by update; paused roots survive until
+stop, resumed completion or service shutdown. Dropping the final service owner
+releases outstanding instances before closing the device. Native C instances
+created on the borrowed device stay caller-owned and must be destroyed before
+that device closes.
+
+Tests change pause state through raw native operations and verify Rust retention.
+They also run a looping native stream absent from Rust's root vector, destroy it,
+and update the device again. Existing completion, owner-death, pause/resume/stop,
+exactly-once release and device reopen checks remain active in Debug, Release
+and native graphical sanitizer runs. Installed consumers exercise both pause
+queries and shared device maintenance.
