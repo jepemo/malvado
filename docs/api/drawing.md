@@ -223,3 +223,15 @@ Image commands also keep Lua image userdata reachable until the next activation
 or cleanup. These Lua roots contain no duplicated command fields. Text is copied
 by C. Lua inspection reads native command counts, including commands added by C.
 Native clear is visible immediately on frozen Lua processes.
+
+## Shared text alignment
+
+`mv_text_aligned_x(x, width, alignment, &out)` in `malvado/graphic.h`
+computes the horizontal origin from a measured pixel width. Use 0 for left,
+1 for center, or 2 for right. Center subtracts `width / 2` with integer
+rounding. The result saturates at `INT_MIN`. A negative width, unknown
+alignment, or NULL output returns 0 and leaves the output unchanged.
+The operation requires no window, allocation, or process.
+
+Lua persistent text uses this operation after built-in or custom font
+measurement. Its `left`, `center`, and `right` behavior is unchanged.

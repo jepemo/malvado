@@ -3870,11 +3870,10 @@ render_texts(lua_State *L)
         lua_getfield(L, -5, "align");
         const char *align = lua_tostring(L, -1);
         int width = resource ? mv_font_text_width(resource, text, size) : mv_window_text_width(text, size);
-        int64_t offset = strcmp(align, "center") == 0 ? width / 2 :
-                         strcmp(align, "right") == 0 ? width : 0;
-        int64_t aligned_x = (int64_t)x - offset;
-        if (aligned_x < INT_MIN) aligned_x = INT_MIN;
-        if (aligned_x > INT_MAX) aligned_x = INT_MAX;
+        int alignment = strcmp(align, "center") == 0 ? 1 :
+                        strcmp(align, "right") == 0 ? 2 : 0;
+        int aligned_x = x;
+        (void)mv_text_aligned_x(x, width, alignment, &aligned_x);
         lua_pop(L, 1);
         if (resource)
             (void)mv_font_draw(resource, text, (int)aligned_x, y, size, c);

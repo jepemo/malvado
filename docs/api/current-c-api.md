@@ -136,6 +136,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_graphic_clear`
 - `mv_process_graphic_get`
 - `mv_process_graphic_set`
+- `mv_text_aligned_x`
 
 ## [malvado.h](../../src/include/malvado/malvado.h)
 

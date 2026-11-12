@@ -20,6 +20,7 @@
 #include "../src/core/process.h"
 #include <assert.h>
 #include <math.h>
+#include <limits.h>
 #include <string.h>
 
 static MvStepResult step(MvContext *ctx, MvProcessId id, void *user)
@@ -61,8 +62,24 @@ static void owned_visual_cleanup(void)
     assert(count == 5);
 }
 
+static void text_alignment(void)
+{
+    int out = 42;
+    assert(!mv_text_aligned_x(0, -1, 0, &out) && out == 42);
+    assert(!mv_text_aligned_x(0, 1, -1, &out) && out == 42);
+    assert(!mv_text_aligned_x(0, 1, 3, &out) && out == 42);
+    assert(!mv_text_aligned_x(0, 1, 0, NULL));
+    assert(mv_text_aligned_x(INT_MAX, INT_MAX, 0, &out) && out == INT_MAX);
+    assert(mv_text_aligned_x(10, 5, 1, &out) && out == 8);
+    assert(mv_text_aligned_x(10, 5, 2, &out) && out == 5);
+    assert(mv_text_aligned_x(INT_MIN, INT_MAX, 2, &out) && out == INT_MIN);
+    assert(mv_text_aligned_x(INT_MIN, 0, 1, &out) && out == INT_MIN);
+    assert(mv_text_aligned_x(INT_MAX, INT_MAX, 2, &out) && out == 0);
+}
+
 int main(void)
 {
+    text_alignment();
     owned_visual_cleanup();
     MvContext *ctx = mv_context_create(60, 4), *other = mv_context_create(60, 4);
     assert(ctx && other);

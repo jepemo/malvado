@@ -35,6 +35,12 @@ MvResult mv_process_graphic_set(MvContext *ctx, MvProcessRef process, MvGraphic 
 MvResult mv_process_graphic_get(MvContext *ctx, MvProcessRef process, MvGraphic *graphic, int *present);
 MvResult mv_process_graphic_clear(MvContext *ctx, MvProcessRef process);
 
+/* Text alignment uses measured nonnegative pixel width. alignment is 0 (left),
+ * 1 (center), or 2 (right). Center uses integer width/2. Saturate the result
+ * to the int coordinate range. Return 1 on success; invalid width/alignment or
+ * NULL output returns 0 without modifying output. No backend or owner needed. */
+int mv_text_aligned_x(int x, int width, int alignment, int *out);
+
 /* Per-process drawing commands. Append copies values and text in call order.
  * Box dimensions and circle radius must be positive; filled is 0 or 1. Box
  * far corners and circle bounds must fit int. Text is a NUL-terminated string;

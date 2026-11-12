@@ -15,6 +15,7 @@
 
 #include "malvado/graphic.h"
 #include <float.h>
+#include <limits.h>
 #include <math.h>
 
 static int
@@ -50,5 +51,18 @@ mv_graphic_sprite(int width, int height, double pivot_x, double pivot_y, MvColli
         fabs(pivot_x) > FLT_MAX / 16 || fabs(pivot_y) > FLT_MAX / 16) return 0;
     *out = (MvCollisionShape){.kind = MV_COLLISION_RECT, .width = width, .height = height,
         .offset_x = width / 2.0 - pivot_x, .offset_y = height / 2.0 - pivot_y};
+    return 1;
+}
+
+int
+mv_text_aligned_x(int x, int width, int alignment, int *out)
+{
+    if (!out || width < 0 || alignment < 0 || alignment > 2)
+        return 0;
+    int64_t offset = alignment == 1 ? width / 2 : alignment == 2 ? width : 0;
+    int64_t result = (int64_t)x - offset;
+    if (result < INT_MIN)
+        result = INT_MIN;
+    *out = (int)result;
     return 1;
 }
