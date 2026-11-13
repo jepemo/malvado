@@ -34,7 +34,7 @@ def verify_rust_sdk(log, work, prefix, config):
     env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
                CARGO_TARGET_DIR=str(work / "cargo"))
     manifest = str(ROOT / "bindings/rust/Cargo.toml")
-    cargo = ["cargo", "test", "--manifest-path", manifest, "--workspace",
+    cargo = ["cargo", "test", "--manifest-path", manifest, "--workspace", "--no-fail-fast",
              "--features", "malvado/assets"]
     if config == "Release":
         cargo.append("--release")
