@@ -55,3 +55,16 @@ run `sdk_clean.cmake` with `CHECK_RUST=ON` and `VISUAL=ON`, complete Rust author
 and native folder/app player checks, remove the SDK, then complete the existing
 C/Lua player checks. The SDK is absent at completion and the Rust relocated
 player remains available. Fresh host CI and the full A7.9 gate remain open.
+
+
+## CLI static analysis configuration
+
+The same implementation run completed the sanitizer tests, then failed while
+compiling `src/build.c` for static analysis: the standalone command did not define
+`MALVADO_RUST_CRATE_REL`. Supply the standard installed crate path used by the
+workflow's CMake configuration. Keep static analysis enabled and preserve the
+existing source list and diagnostics.
+
+The repaired command passes with Clang on macOS arm64 and Ubuntu 24.04 arm64.
+This verifies the CLI translation unit and its production export branch; it does
+not claim the other analyzer diagnostics or the entire CI job are resolved.

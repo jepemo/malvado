@@ -163,7 +163,7 @@ jobs:
             clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -DMALVADO_BUILD_ASSETS -Isrc/include -Isrc -Ibuild/_deps/cjson-src -Ibuild/_deps/lua-src/src -Ibuild/_deps/raylib-src/src "$source"
           done
           clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -DMALVADO_EXPORT_GRAPHICS -DMALVADO_LAUNCHER_REL='"../libexec/malvado/malvado-game"' -DMALVADO_NATIVE_LAUNCHER_REL='"../libexec/malvado/malvado-native-game"' -DMALVADO_NOTICES_REL='"../share/licenses/malvado"' -DMALVADO_SDK_ROOT_REL='".."' -Isrc src/export.c
-          clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -DMALVADO_EXPORT_GRAPHICS -Isrc src/build.c
+          clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 -DMALVADO_EXPORT_GRAPHICS -DMALVADO_RUST_CRATE_REL='"share/malvado/rust/malvado"' -Isrc src/build.c
   visual:
     name: Sleep and freeze rendering (Linux)
     runs-on: ubuntu-24.04
