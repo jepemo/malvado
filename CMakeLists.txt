@@ -18,6 +18,7 @@ include(FetchContent)
 include(GNUInstallDirs)
 option(MALVADO_BUILD_LUA "Build the Lua runtime" ON)
 option(MALVADO_BUILD_RAYLIB "Build the raylib backend" ON)
+option(MALVADO_TEST_NULL_AUDIO "Use paced silent audio for automated tests, not distribution" OFF)
 option(MALVADO_BUILD_GUI_G0 "Build the experimental raygui comparison prototype" OFF)
 if(MALVADO_BUILD_GUI_G0 AND NOT MALVADO_BUILD_RAYLIB)
   message(FATAL_ERROR "The G0 prototype requires raylib")
@@ -96,6 +97,11 @@ if(MALVADO_BUILD_RAYLIB)
   set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
   FetchContent_Declare(raylib URL https://github.com/raysan5/raylib/archive/refs/tags/5.5.tar.gz URL_HASH SHA256=aea98ecf5bc5c5e0b789a76de0083a21a70457050ea4cc2aec7566935f5e258e DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_MakeAvailable(raylib)
+  if(MALVADO_TEST_NULL_AUDIO)
+    # ALSA's null PCM consumes without wall-clock pacing. Use miniaudio's
+    # paced null device so playback, pause and refill tests keep their timing.
+    target_compile_definitions(raylib PRIVATE MA_ENABLE_ONLY_SPECIFIC_BACKENDS MA_ENABLE_NULL)
+  endif()
   add_library(malvado_platform_raylib STATIC src/platform/raylib.c src/platform/image.c src/platform/input.c src/platform/time.c src/platform/fade.c src/platform/draw_state.c src/platform/text.c src/platform/managed.c)
   target_include_directories(malvado_platform_raylib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>

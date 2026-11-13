@@ -114,6 +114,7 @@ def main():
         args = ["cmake", "-S", str(ROOT), "-B", str(build),
                 f"-DCMAKE_BUILD_TYPE={profile}", "-DMALVADO_BUILD_LUA=ON",
                 "-DMALVADO_BUILD_RAYLIB=ON", "-DMALVADO_VISUAL_TESTS=ON",
+                "-DMALVADO_TEST_NULL_AUDIO=ON",
                 "-DCMAKE_INSTALL_LIBDIR=lib"]
         # Reuse verified FetchContent sources when a host suite ran first.
         for name in ("lua", "raylib", "cjson"):

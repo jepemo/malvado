@@ -40,6 +40,7 @@ def main():
     prefix = work / "installed sdk"
     run("cmake", "-S", str(ROOT), "-B", str(work), "-DCMAKE_BUILD_TYPE=Debug",
         "-DMALVADO_BUILD_LUA=OFF", f"-DMALVADO_BUILD_RAYLIB={'ON' if args.graphics else 'OFF'}", f"-DMALVADO_BUILD_ASSETS={'ON' if args.assets else 'OFF'}",
+        f"-DMALVADO_TEST_NULL_AUDIO={'ON' if args.graphics else 'OFF'}",
         "-DCMAKE_INSTALL_LIBDIR=lib", f"-DCMAKE_C_COMPILER={compiler}", f"-DCMAKE_C_FLAGS={flags}")
     run("cmake", "--build", str(work), "--target", "malvado_core", *(["malvado_assets"] if args.assets else []),
         *(["malvado_platform_raylib"] if args.graphics else []), "--parallel")

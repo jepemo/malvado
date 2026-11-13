@@ -83,7 +83,7 @@ run = "ctest --test-dir build-lua-headless -C Debug --output-on-failure"
 
 [tasks.configure-visual]
 description = "Configure graphics smoke tests"
-run = "cmake -S . -B build-visual -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON"
+run = "cmake -S . -B build-visual -DCMAKE_BUILD_TYPE=Debug -DMALVADO_VISUAL_TESTS=ON -DMALVADO_TEST_NULL_AUDIO=ON"
 
 [tasks.build-visual]
 description = "Build graphics smoke tests"

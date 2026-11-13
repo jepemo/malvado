@@ -89,8 +89,11 @@ music.stop()?;
 Release, checks all used installed C signatures, and runs a relocated offline
 consumer. It checks invalid paths and volume, restart, pause/resume/stop,
 independent clone ownership, completion, process resource cleanup, final device
-release and reopen. Linux uses the existing ALSA null configuration. macOS uses
-Core Audio. `mise run test-rust-graphics-sanitize` checks native ASan/UBSan paths;
+release and reopen. Automated graphics and sanitizer tasks select the paced
+miniaudio null device
+with `MALVADO_TEST_NULL_AUDIO=ON`. The normal SDK keeps the platform backend.
+Earlier Linux runs used ALSA null PCM, which does not pace playback. The normal
+macOS SDK uses Core Audio. `mise run test-rust-graphics-sanitize` checks native ASan/UBSan paths;
 its existing host leak-detection limits still apply.
 
 The music fixture checks both WAV and OGG, loop continuation beyond three

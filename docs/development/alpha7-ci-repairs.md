@@ -68,3 +68,26 @@ existing source list and diagnostics.
 The repaired command passes with Clang on macOS arm64 and Ubuntu 24.04 arm64.
 This verifies the CLI translation unit and its production export branch; it does
 not claim the other analyzer diagnostics or the entire CI job are resolved.
+
+
+## Paced silent audio tests
+
+The Linux visual job in the same run failed `visual_audio_resource`: a paused
+sound had already lost its playback root. Ubuntu 24.04 arm64 with Xvfb and the
+same ALSA null PCM reproduced the failure. That PCM consumes frames without
+wall-clock pacing; the short sound can finish before Lua pauses it. This is not
+a valid clock for pause, completion and stream-maintenance acceptance.
+
+`MALVADO_TEST_NULL_AUDIO=ON` selects only miniaudio's paced null device through
+its existing compile definitions. The visual, Rust graphics and graphics
+sanitizer tasks select it explicitly. The option defaults to OFF; normal SDKs
+and packages retain their platform audio backend. No third-party source, native
+playback semantics, Lua roots or fixture assertions change.
+
+The unchanged native/Lua audio fixtures pass five consecutive runs on Ubuntu
+24.04 arm64 and report `miniaudio | Null`. The full Linux Xvfb visual suite passes
+83 tests, including keyboard/mouse/text injection. macOS arm64 passes 68 visual
+tests and the Rust native graphical ASan/UBSan task with the paced backend.
+The normal graphical SDK package and author/player checks use the default
+platform configuration. These tests do not certify audible output or physical
+devices; those remain beta checks. Final remote CI remains A7.9 work.
