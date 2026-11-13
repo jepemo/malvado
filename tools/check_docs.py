@@ -32,7 +32,7 @@ def prose(text):
 
 @lru_cache(maxsize=None)
 def anchors(path):
-    text = prose(path.read_text())
+    text = prose(path.read_text(encoding="utf-8"))
     result = set(re.findall(r'<[^>]+\b(?:id|name)=[\'\"]([^\'\"]+)', text))
     seen = {}
     for heading in re.findall(r"^#{1,6}\s+(.+?)\s*#*$", text, re.MULTILINE):
@@ -51,7 +51,7 @@ def check_documents(paths, root):
     anchors.cache_clear()
     github = "https://github.com/jepemo/malvado/blob/master/"
     for path in paths:
-        text = prose(path.read_text())
+        text = prose(path.read_text(encoding="utf-8"))
         for match in LINK.finditer(text):
             link = (match[1] or match[2]).strip("<>")
             if link.startswith(github):

@@ -12,6 +12,15 @@ from check_docs import check_documents
 
 
 class Links(unittest.TestCase):
+    def test_utf8_headings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "guide.md"
+            target.write_bytes("# Cámara → Position\n".encode("utf-8"))
+            source = root / "README.md"
+            source.write_bytes("[Cámara](guide.md#cámara--position)\n".encode("utf-8"))
+            self.assertEqual(check_documents([source], root), (1, []))
+
     def test_paths_anchors_fences_and_references(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
