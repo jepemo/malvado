@@ -366,6 +366,7 @@ main(int argc, char **argv)
     assert(!mv_atlas_pivot_color(atlas, NULL));
     mv_atlas_destroy(atlas);
     const char *frames_end = strstr(buffer, "\n  ],\n  \"meta\"");
+    if (!frames_end) frames_end = strstr(buffer, "\r\n  ],\r\n  \"meta\"");
     assert(frames_end);
     char multiple[4096];
     const char *second_frame = ",\n    {\"filename\":\"full\",\"frame\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8},"
@@ -380,6 +381,7 @@ main(int argc, char **argv)
     assert(mv_atlas_animation_frame(atlas, "default", 120, 1, &frame) && frame == 2);
     mv_atlas_destroy(atlas);
     const char *key_end = strstr(multiple, "}}]}\n");
+    if (!key_end) key_end = strstr(multiple, "}}]}\r\n");
     assert(key_end);
     char animated[4096];
     const char *next_key = "}},{\"frame\":1,\"bounds\":{\"x\":0,\"y\":0,\"w\":8,\"h\":8},"
