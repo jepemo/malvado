@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import shutil
+import shlex
 import tomllib
 
 
@@ -107,8 +108,20 @@ fn main() -> Result<(), Error> {
     run(cli, "build", game, cwd=work, env=empty_path, code=1)
     tools = work / "rustc only"
     tools.mkdir()
-    (tools / "rustc").symlink_to(shutil.which("rustc"))
-    output = run(cli, "build", game, cwd=work, env=dict(os.environ, PATH=str(tools)), code=1)
+    # A rustc proxy can itself need PATH (mise/rustup or an env shebang).
+    # Keep its original environment inside this wrapper, while the CLI still
+    # sees a PATH with no Cargo. A plain symlink does not isolate those cases.
+    compiler = shutil.which("rustc")
+    assert compiler is not None
+    wrapper = tools / "rustc"
+    wrapper.write_text("#!/bin/sh\nexport PATH=" + shlex.quote(os.environ["PATH"]) +
+                       "\nexec " + shlex.quote(compiler) + ' "$@"\n')
+    wrapper.chmod(0o755)
+    restricted = dict(os.environ, PATH=str(tools))
+    assert shutil.which("cargo", path=restricted["PATH"]) is None
+    subprocess.run([str(wrapper), "-vV"], env=restricted, check=True,
+                   stdout=subprocess.DEVNULL, timeout=30)
+    output = run(cli, "build", game, cwd=work, env=restricted, code=1)
     assert "cargo" in output
     manifest = (game / "Cargo.toml").read_text()
     (game / "Cargo.toml").write_text("invalid manifest [")

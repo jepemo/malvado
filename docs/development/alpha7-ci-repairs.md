@@ -91,3 +91,22 @@ tests and the Rust native graphical ASan/UBSan task with the paced backend.
 The normal graphical SDK package and author/player checks use the default
 platform configuration. These tests do not certify audible output or physical
 devices; those remain beta checks. Final remote CI remains A7.9 work.
+
+
+## Cargo-absent compiler proxy isolation
+
+The [integration acceptance run](https://github.com/jepemo/malvado/actions/runs/43392182877)
+for `c7ec2010b03571cbdfa68d8701882c4ebf328b6a` passed every required job except
+the Linux fresh SDK consumer. The Cargo-absent fixture linked `rustc` into an
+otherwise empty PATH. A mise/env-based compiler proxy can need its own tools on
+PATH, so the compiler query failed before the intended Cargo rejection.
+
+Use a fixture wrapper that restores the original PATH only for the compiler
+child. The CLI still sees no Cargo. Verify the compiler query succeeds in that
+restricted environment before asserting the Cargo error. No product command,
+SDK discovery or missing-tool behavior changes.
+
+Local evidence uses an env-based rustc proxy that cannot run on the old limited
+PATH. The full relocated SDK CLI suite then passes, including the bounded
+starter/player, missing Cargo, compiler recovery, exports and independent player
+checks. Final fresh-runner acceptance remains required.
