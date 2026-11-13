@@ -8,3 +8,7 @@ docs/website/build
 
 # Cargo workspace outputs
 /bindings/rust/target/
+
+# Python bytecode caches
+__pycache__/
+*.pyc
