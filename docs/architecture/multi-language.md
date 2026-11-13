@@ -1,6 +1,6 @@
-# Multi-language architecture proposal
+# Multi-language architecture
 
-Status: native boundary and installed sys SDK implemented in alpha.7 after alpha.6 acceptance. See the [SDK evidence](../versions/2.0.0-alpha.7-rust-sdk.md). The owned-future adapter and safe process API are implemented; see the [scheduler proof](../versions/2.0.0-alpha.7-scheduler.md). Native lifecycle and generic resource ownership are complete; platform and graphics parity remain open. The owner has chosen a C-first engine, one scheduler, and first-class Lua, C, and Rust; struct-based async processes are the preferred experience, not finalized syntax.
+Status: native boundary and installed sys SDK implemented in alpha.7 after alpha.6 acceptance. See the [SDK evidence](../versions/2.0.0-alpha.7-rust-sdk.md). The owned-future adapter and safe process API are implemented; see the [scheduler proof](../versions/2.0.0-alpha.7-scheduler.md). Native lifecycle, generic resources and platform/graphics integration are complete; see the [family acceptance audit](../versions/2.0.0-alpha.7-integration.md). Final exact-revision CI and version closure remain open. The owner has chosen a C-first engine, one scheduler, and first-class Lua, C, and Rust; struct-based async processes are the preferred experience, not finalized syntax.
 
 ## Boundary and existing baseline
 
@@ -24,7 +24,7 @@ For bindings, handwritten declarations avoid libclang and generated noise but ne
 
 ## Repository and compatibility
 
-Keep `src/` and CMake install/include paths in alpha.7. Selected public examples move under the root topic-based catalog in A7.8 according to the [example migration plan](../examples/README.md); existing programs keep their verified paths until that migration. The owner approved one bounded layout change: move `src/binding/` to `bindings/lua/` beside the Rust workspace, tracked by A7.11. The relocation and A7.11 acceptance checks are complete. Grouping language adapters makes their responsibility clear; each keeps its own build tool and internal structure. Do not move the whole tree or split the CLI for symmetry. Group each selected feature/game with its C/Lua/Rust variants, shared README and licensed assets under `examples/`; do not keep public Rust programs inside the binding. A wider engine reorganization still needs a separate migration, exporter, install and history plan. External games remain independent Cargo projects.
+Keep `src/` and CMake install/include paths in alpha.7. The complete topic-based teaching catalog remains future work under the [example migration plan](../examples/README.md); existing programs keep their verified paths until that migration. The owner approved one bounded layout change: move `src/binding/` to `bindings/lua/` beside the Rust workspace, tracked by A7.11. The relocation and A7.11 acceptance checks are complete. Grouping language adapters makes their responsibility clear; each keeps its own build tool and internal structure. Do not move the whole tree or split the CLI for symmetry. Group each selected feature/game with its C/Lua/Rust variants, shared README and licensed assets under `examples/`; do not keep public Rust programs inside the binding. A wider engine reorganization still needs a separate migration, exporter, install and history plan. External games remain independent Cargo projects.
 
 The planned layout is:
 

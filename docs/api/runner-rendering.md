@@ -59,5 +59,7 @@ classic images, invalid values, depth, cameras/regions/scroll, animation, GC and
 frozen command reset. The command persistence test waits for an early cadence
 phase so slow display runners do not shorten its observation window.
 
-This closes the shared graph/command rendering path. Shared audio maintenance
-and the remaining platform-loop orchestration remain open in A7.6.
+Shared graph/command rendering and [audio maintenance](audio-maintenance.md)
+are delivered. C/Rust keep explicit host service calls; Lua owns its runner
+loop. See the [integration audit](../versions/2.0.0-alpha.7-integration.md) for
+family acceptance and the remaining exact-revision CI gate.

@@ -48,8 +48,9 @@ normal tick. The automated Lua display test injects those same samples into the
 real loop and checks native planned-tick and dropped-time counters at each
 scheduler activation. Native context tests use the same fixture.
 
-This is clock integration. Window events, rendering preparation, audio
-maintenance and the remaining shared runner services are separate work.
+Clock planning remains independent of window events and drawing. The
+[shared rendering](runner-rendering.md) and [audio maintenance](audio-maintenance.md)
+services are delivered separately; host service calls remain explicit.
 
 ## Rust host integration
 
