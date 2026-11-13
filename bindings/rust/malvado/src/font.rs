@@ -6,7 +6,7 @@ use crate::{
     window::{Color, Frame, Window},
 };
 use malvado_sys::graphics as ffi;
-use std::{ffi::CString, os::unix::ffi::OsStrExt, path::Path, ptr::NonNull, rc::Rc};
+use std::{ffi::CString, path::Path, ptr::NonNull, rc::Rc};
 
 /// Clone shares an immutable font and its retained window. Each native load is
 /// independent; there is no additional font cache in the Rust binding.
@@ -28,8 +28,7 @@ impl Font {
         if !(1..=256).contains(&base_size) {
             return Err(Error::InvalidArgument);
         }
-        let path = CString::new(path.as_ref().as_os_str().as_bytes())
-            .map_err(|_| Error::InvalidArgument)?;
+        let path = crate::native_path::native_path(path.as_ref())?;
         // SAFETY: retained live window and borrowed terminated native path.
         Self::owned(
             unsafe { ffi::mv_font_load(path.as_ptr(), base_size) },
@@ -53,8 +52,7 @@ impl Font {
         {
             return Err(Error::InvalidArgument);
         }
-        let path = CString::new(path.as_ref().as_os_str().as_bytes())
-            .map_err(|_| Error::InvalidArgument)?;
+        let path = crate::native_path::native_path(path.as_ref())?;
         let codepoints: Vec<u32> = glyphs.iter().map(|&glyph| u32::from(glyph)).collect();
         // SAFETY: native load borrows validated scalar data for this call only.
         Self::owned(

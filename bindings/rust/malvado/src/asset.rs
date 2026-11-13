@@ -13,10 +13,10 @@ pub(crate) fn json_guard() -> MutexGuard<'static, ()> {
         .unwrap_or_else(|poison| poison.into_inner())
 }
 
-use crate::Error;
+use crate::{Error, native_path::native_path};
 use malvado_sys::{self as sys, assets as ffi};
 use std::{
-    ffi::{CStr, CString},
+    ffi::CStr,
     marker::PhantomData,
     path::{Path, PathBuf},
     ptr::NonNull,
@@ -28,14 +28,6 @@ use std::{
     ffi::{OsStr, OsString},
     os::unix::ffi::{OsStrExt, OsStringExt},
 };
-
-fn native_path(path: &Path) -> Result<CString, Error> {
-    #[cfg(unix)]
-    let bytes = path.as_os_str().as_bytes();
-    #[cfg(windows)]
-    let bytes = path.to_str().ok_or(Error::InvalidArgument)?.as_bytes();
-    CString::new(bytes).map_err(|_| Error::InvalidArgument)
-}
 
 /// Content routing hint. Importers must still validate the complete format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

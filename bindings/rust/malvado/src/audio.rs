@@ -5,7 +5,6 @@ use malvado_sys::{self as sys, graphics as ffi};
 use std::{
     cell::RefCell,
     ffi::CString,
-    os::unix::ffi::OsStrExt,
     path::Path,
     ptr::NonNull,
     rc::Rc,
@@ -269,7 +268,7 @@ impl Drop for MusicData {
     }
 }
 fn path_string(path: impl AsRef<Path>) -> Result<CString, Error> {
-    CString::new(path.as_ref().as_os_str().as_bytes()).map_err(|_| Error::InvalidArgument)
+    crate::native_path::native_path(path.as_ref())
 }
 fn volume_valid(volume: f32) -> Result<(), Error> {
     if volume.is_finite() && (0.0..=1.0).contains(&volume) {

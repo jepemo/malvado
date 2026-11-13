@@ -147,3 +147,6 @@ pub enum EndReason {
 mod ownership_contract {}
 
 pub mod text;
+
+#[cfg(any(feature = "assets", feature = "graphics"))]
+mod native_path;

@@ -6,7 +6,7 @@ use crate::{
     window::{Frame, Window},
 };
 use malvado_sys::graphics as ffi;
-use std::{ffi::CString, os::unix::ffi::OsStrExt, path::Path, ptr::NonNull, rc::Rc};
+use std::{path::Path, ptr::NonNull, rc::Rc};
 
 /// Position and pivot use pixels; rotation is clockwise and scale is positive.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -50,8 +50,7 @@ struct Inner {
 }
 impl Image {
     pub fn load(window: Rc<Window>, path: impl AsRef<Path>) -> Result<Self, Error> {
-        let path = CString::new(path.as_ref().as_os_str().as_bytes())
-            .map_err(|_| Error::InvalidArgument)?;
+        let path = crate::native_path::native_path(path.as_ref())?;
         // SAFETY: retained owner-thread window; native load copies the path and
         // returns one owned reference, including for an existing cached image.
         let native = unsafe { ffi::mv_image_load(path.as_ptr()) };
