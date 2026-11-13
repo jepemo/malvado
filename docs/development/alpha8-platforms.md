@@ -7,7 +7,7 @@ Use the logs from the exact candidate revision to establish support.
 | --- | --- | --- |
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
-| Windows Server 2022 / x64 MSVC | Verified headless C/Lua/Rust SDKs in Debug and Release | Graphics/input/audio, CLI builds and exports |
+| Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | CLI builds and exports; hardware review in beta |
 | Desktop / Android | Not implemented | C/Lua/Rust runtime, APK/AAB and emulator behavior |
 
 ## Native Windows baseline
@@ -39,15 +39,14 @@ not an Android CLI authoring host. No store credentials are needed for these tes
 
 Use `mise run test-platform -- --rust` to run the safe Rust workspace tests with
 core and optional assets against each relocated SDK. The Windows job uses this
-command. Windows support is limited to native `x86_64-pc-windows-msvc`; MinGW,
-Windows ARM64, cross compilation and Rust graphics are rejected. The SDK probe
+command. Windows support is limited to native `x86_64-pc-windows-msvc`.
+Windows GNU targets, Windows ARM64 and cross compilation are rejected. The SDK probe
 still validates ABI values, layouts and signatures before linking. MSVC uses
 `.lib` archives, `.exe` probes and BCrypt instead of the Unix math library.
-Native Windows headless verification passed on `b53b768` in
-[run 43434043623](https://github.com/jepemo/malvado/actions/runs/43434043623).
-Both configurations passed 202 C/Lua checks, Rust core/assets tests, installed
-crate consumers and SDK diagnostics. This does not close the remaining Windows
-graphics and package work.
+Native Windows verification passed on `c49545c` in
+[run 43437979697](https://github.com/jepemo/malvado/actions/runs/43437979697).
+Both configurations passed headless and graphical Rust tests, installed crate
+consumers and SDK diagnostics. Windows CLI builds and exports remain open in A8.3.
 
 The Rust verifier also builds and runs an offline consumer from the installed
 crate sources in a project path with spaces. The consumer checks process
@@ -75,8 +74,9 @@ the temporary UTF-16 path allocation.
 uses the same Debug/Release verifier with graphics enabled. It builds the
 installed C/Lua/Rust SDK, runs five bounded C pixel/window/scheduler checks,
 then runs the Rust graphics workspace and an installed-crate window consumer.
-The headless matrix entry stays separate. Native results are required before
-this work can close A8.2.
+The headless matrix entry stays separate. Native verification passed on `c49545c` in
+[Windows run 43437979697](https://github.com/jepemo/malvado/actions/runs/43437979697),
+closing A8.2 for this supported baseline.
 
 Hosted Windows graphics verification uses Mesa 26.2.6 llvmpipe with the default
 OpenGL 3.3 engine and paced silent audio. The MinGW x64 Mesa archive is pinned by
@@ -100,7 +100,7 @@ and [GetThreadTimes](https://learn.microsoft.com/en-us/windows/win32/api/process
 Existing worker-thread rejection and repeated window/audio cleanup tests cover
 this mapping. There is no new scheduler or public thread API.
 
-A working WGL provider is required. Run 43436269922 documented that the hosted
+A working WGL provider is required. [Run 43436269922](https://github.com/jepemo/malvado/actions/runs/43436269922) documented that the hosted
 Windows system driver cannot create a window; raylib 5.5 aborts in that unsupported
 configuration. The Mesa entry validates the supported software-renderer path.
 The verifier checks the archive digest before extraction, requires both WGL DLLs
