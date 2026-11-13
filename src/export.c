@@ -346,6 +346,18 @@ write_bundle_info(const char *path, const char *name, size_t length, const char 
 int
 malvado_export(const char *output, int native, int app, const char *bundle_id)
 {
+#ifdef _WIN32
+    char normalized_output[PATH_MAX];
+    if (output) {
+        if (strlen(output) >= sizeof(normalized_output)) {
+            fprintf(stderr, "Export destination is too long\n");
+            return 1;
+        }
+        strcpy(normalized_output, output);
+        for (char *p = normalized_output; *p; ++p) if (*p == '\\') *p = '/';
+        output = normalized_output;
+    }
+#endif
 #ifndef __APPLE__
     if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
 #endif
@@ -369,12 +381,25 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     char *parent = strdup(output);
     if (!parent) return 1;
     char *slash = strrchr(parent, '/');
-    if (slash) { if (slash == parent) slash[1] = '\0'; else *slash = '\0'; }
+    if (slash) {
+        if (slash == parent
+#ifdef _WIN32
+            || (slash == parent + 2 && parent[1] == ':')
+#endif
+        ) slash[1] = '\0';
+        else *slash = '\0';
+    }
     else strcpy(parent, ".");
     char resolved_parent[PATH_MAX];
     if (!realpath(parent, resolved_parent)) { perror(parent); free(parent); return 1; }
     free(parent);
     size_t project_length = strlen(current);
+#ifdef _WIN32
+    if (project_length && current[project_length - 1] == '/') {
+        fprintf(stderr, "The project must not be a filesystem root\n");
+        return 1;
+    }
+#endif
     char *dist = join_path(current, "dist");
     if (!dist) return 1;
     int in_dist = !strcmp(dist, resolved_parent);
