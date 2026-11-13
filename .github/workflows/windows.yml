@@ -23,8 +23,8 @@ jobs:
           rustc -vV
           python --version
           & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -format json
-      - name: Verify native C and Lua
-        run: mise run test-platform
+      - name: Verify native C, Lua and Rust
+        run: mise run test-platform -- --rust
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

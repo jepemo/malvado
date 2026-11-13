@@ -20,6 +20,7 @@ def run(log, *args, env=None, timeout=600):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work", type=Path, default=ROOT / "build-platform")
+    parser.add_argument("--rust", action="store_true", help="Test Rust core and assets against relocated SDKs")
     args = parser.parse_args()
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
@@ -44,6 +45,16 @@ def main():
             run(log, "cmake", "--install", str(build), "--config", config,
                 "--prefix", str(staged))
             staged.rename(prefix)
+            if args.rust:
+                env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
+                           CARGO_TARGET_DIR=str(work / "cargo"))
+                cargo = ["cargo", "test", "--manifest-path",
+                         str(ROOT / "bindings/rust/Cargo.toml"), "--workspace",
+                         "--features", "malvado/assets"]
+                if config == "Release":
+                    cargo.append("--release")
+                run(log, *cargo, env=env)
+
         print(f"PASS: {config}; evidence: {work / (config + '.log')}", flush=True)
 
 

@@ -37,8 +37,15 @@ fn main() {
         "Rust SDK cross compilation is not yet supported"
     );
     assert!(
-        target.contains("apple-darwin") || target.contains("linux"),
-        "Rust SDK currently supports native macOS and Linux only"
+        target.contains("apple-darwin")
+            || target.contains("linux")
+            || target == "x86_64-pc-windows-msvc",
+        "Rust SDK requires native macOS, Linux or Windows x64 MSVC"
+    );
+    let windows = target == "x86_64-pc-windows-msvc";
+    assert!(
+        !windows || !graphics,
+        "Rust Windows graphics are not yet supported"
     );
     let prefix = PathBuf::from(
         env::var_os("MALVADO_SDK_PREFIX")
@@ -111,14 +118,23 @@ fn main() {
     );
     assert_eq!(
         library.file_name().unwrap(),
-        "libmalvado_core.a",
+        if windows {
+            "malvado_core.lib"
+        } else {
+            "libmalvado_core.a"
+        },
         "unsupported core archive name"
     );
     // Execute only the ABI/release queries before accepting the library.
-    let probe = if output.join("probe").exists() {
-        output.join("probe")
+    let probe = if output
+        .join(if windows { "probe.exe" } else { "probe" })
+        .exists()
+    {
+        output.join(if windows { "probe.exe" } else { "probe" })
     } else {
-        output.join(config).join("probe")
+        output
+            .join(config)
+            .join(if windows { "probe.exe" } else { "probe" })
     };
     let layout = run(&mut Command::new(probe));
     let values: Vec<usize> = String::from_utf8(layout.stdout)
@@ -143,16 +159,38 @@ fn main() {
             asset_library.starts_with(&prefix),
             "assets library outside MALVADO_SDK_PREFIX"
         );
-        assert_eq!(asset_library.file_name().unwrap(), "libmalvado_assets.a");
+        assert_eq!(
+            asset_library.file_name().unwrap(),
+            if windows {
+                "malvado_assets.lib"
+            } else {
+                "libmalvado_assets.a"
+            }
+        );
         println!(
             "cargo:rustc-link-search=native={}",
             asset_library.parent().unwrap().display()
         );
         println!("cargo:rustc-link-lib=static=malvado_assets");
-        let probe = if output.join("assets-probe").exists() {
-            output.join("assets-probe")
+        let probe = if output
+            .join(if windows {
+                "assets-probe.exe"
+            } else {
+                "assets-probe"
+            })
+            .exists()
+        {
+            output.join(if windows {
+                "assets-probe.exe"
+            } else {
+                "assets-probe"
+            })
         } else {
-            output.join(config).join("assets-probe")
+            output.join(config).join(if windows {
+                "assets-probe.exe"
+            } else {
+                "assets-probe"
+            })
         };
         let layout = run(&mut Command::new(probe));
         let values: Vec<usize> = String::from_utf8(layout.stdout)
@@ -228,5 +266,9 @@ fn main() {
         )
         .unwrap();
     }
-    println!("cargo:rustc-link-lib=m");
+    if windows {
+        println!("cargo:rustc-link-lib=bcrypt");
+    } else {
+        println!("cargo:rustc-link-lib=m");
+    }
 }
