@@ -2,8 +2,9 @@
 
 A7.7a and A7.7b implement the Rust author workflow and native player export.
 The [CLI contract](../specs/cli.md#rust-projects) defines detection, Cargo metadata,
-SDK selection, commands, errors and limits. The parent A7.7 gate still depends
-on final A7.6 integration acceptance. A7.9 requires fresh host CI evidence.
+SDK selection, commands, errors and limits. A7.6 [family integration](../versions/2.0.0-alpha.7-integration.md) and the
+A7.7 CLI implementation are accepted. A7.9 still requires fresh host CI on the
+final revision.
 
 ## Automated checks
 
@@ -43,6 +44,13 @@ tests (199), C-only tests (72), visual tests (68), and `mise run test-rust` incl
 Clippy, format, rejected SDKs and relocated consumers. The separate graphics-only
 workspace targets compile in Debug and Release; this combination is now part of
 `test-rust-graphics` to prevent optional assets from masking graphics errors.
+
+The complete packaged-SDK flow also passes on Ubuntu 24.04 arm64 with Xvfb.
+A Release SDK is packaged and extracted outside the source tree; Rust authoring
+runs before the deliberate SDK removal, and the C/Lua players then run without
+that SDK. Rust checks include the graphical starter/player and a Cargo-defined
+custom source path. The Linux test SDK uses the paced silent audio configuration;
+the macOS package check uses the normal platform backend.
 
 Fresh remote CI on the final revision remains required. This evidence does not
 claim Windows/Android, cross-compilation, arbitrary Cargo workspace selection or
