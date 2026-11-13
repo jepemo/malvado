@@ -7,7 +7,7 @@ Use the logs from the exact candidate revision to establish support.
 | --- | --- | --- |
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
-| Windows Server 2022 / x64 MSVC | New headless C/Lua SDK job; native results required | Native Rust results, graphics/input/audio, CLI builds and exports |
+| Windows Server 2022 / x64 MSVC | Verified headless C/Lua/Rust SDKs in Debug and Release | Graphics/input/audio, CLI builds and exports |
 | Desktop / Android | Not implemented | C/Lua/Rust runtime, APK/AAB and emulator behavior |
 
 ## Native Windows baseline
@@ -43,7 +43,11 @@ command. Windows support is limited to native `x86_64-pc-windows-msvc`; MinGW,
 Windows ARM64, cross compilation and Rust graphics are rejected. The SDK probe
 still validates ABI values, layouts and signatures before linking. MSVC uses
 `.lib` archives, `.exe` probes and BCrypt instead of the Unix math library.
-Native Windows results remain required before closing A8.2.
+Native Windows headless verification passed on `b53b768` in
+[run 43434043623](https://github.com/jepemo/malvado/actions/runs/43434043623).
+Both configurations passed 202 C/Lua checks, Rust core/assets tests, installed
+crate consumers and SDK diagnostics. This does not close the remaining Windows
+graphics and package work.
 
 The Rust verifier also builds and runs an offline consumer from the installed
 crate sources in a project path with spaces. The consumer checks process
