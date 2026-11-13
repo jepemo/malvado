@@ -1,6 +1,11 @@
 # Malvado 2; project created by Jeremías Pérez and contributors.
 # SPDX-License-Identifier: Apache-2.0
 
+set(exe_suffix "")
+if(CMAKE_HOST_WIN32)
+  set(exe_suffix ".exe")
+endif()
+
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}/game")
 if(ARCHIVE_TEST)
@@ -143,7 +148,7 @@ add_test(NAME smoke COMMAND smoke)
     if(NOT result EQUAL 0 OR NOT output MATCHES "Export: launchers or required licenses missing")
       message(FATAL_ERROR "Doctor did not detect a missing launcher: ${output}")
     endif()
-    set(native_launcher "${WORK}/moved sdk/${LIBEXECDIR}/malvado/malvado-native-game")
+    set(native_launcher "${WORK}/moved sdk/${LIBEXECDIR}/malvado/malvado-native-game${exe_suffix}")
     file(RENAME "${native_launcher}" "${native_launcher}.saved")
     execute_process(COMMAND "${installed_cli}" doctor RESULT_VARIABLE result OUTPUT_VARIABLE output)
     file(RENAME "${native_launcher}.saved" "${native_launcher}")
