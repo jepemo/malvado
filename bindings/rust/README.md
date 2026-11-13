@@ -59,7 +59,8 @@ Cargo's `links` key prevents duplicate sys packages for the same native engine.
 The host C compiler must match the Rust target. The executable probe detects
 wrong native architectures through link or execution errors. Cross compilation and Android are not supported. Native Windows x64 MSVC
 core and assets validation is available through `mise run test-platform -- --rust`;
-Windows graphics and CLI builds/exports remain unavailable. A CMake package
+Use `mise run test-platform -- --graphics --rust --work build-platform-graphics`
+to verify the graphical SDK separately. Windows CLI builds/exports remain unavailable. A CMake package
 which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 

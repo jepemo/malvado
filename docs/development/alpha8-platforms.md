@@ -68,3 +68,29 @@ and embedded NUL characters with `InvalidArgument`. Tests open and remove a
 source with accented and Japanese characters, verify image path joins and check
 invalid Windows surrogate input. Windows allocation-failure coverage includes
 the temporary UTF-16 path allocation.
+
+## Windows graphics verification
+
+`mise run test-platform -- --graphics --rust --work build-platform-graphics`
+uses the same Debug/Release verifier with graphics enabled. It builds the
+installed C/Lua/Rust SDK, runs five bounded C pixel/window/scheduler checks,
+then runs the Rust graphics workspace and an installed-crate window consumer.
+The headless matrix entry stays separate. Native results are required before
+this work can close A8.2.
+
+Hosted Windows graphics verification uses raylib's OpenGL 1.1 software path
+(`OPENGL_VERSION=1.1`) and paced silent audio. This checks the current 2D engine;
+it does not establish GPU-driver support or audible output. Physical input and
+audio review remain beta work. The default desktop renderer remains unchanged.
+Rust image/font/audio wrappers share the existing native path conversion.
+Windows media filename encoding beyond the asset snapshot service remains a
+verification limitation.
+
+Windows Rust graphics checks the oldest live process thread before opening a
+window or audio device. Rust exits the process when main returns. Incomplete
+thread inventories and equal oldest creation times return an error; no thread
+identity is cached. Every snapshot and thread handle is closed. The native
+implementation uses [Thread32Next](https://learn.microsoft.com/en-us/windows/win32/api/tlhelp32/nf-tlhelp32-thread32next)
+and [GetThreadTimes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadtimes).
+Existing worker-thread rejection and repeated window/audio cleanup tests cover
+this mapping. There is no new scheduler or public thread API.

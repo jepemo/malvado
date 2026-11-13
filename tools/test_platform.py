@@ -26,7 +26,7 @@ def run(log, *args, env=None, timeout=600):
         raise
 
 
-def verify_rust_sdk(log, work, prefix, config):
+def verify_rust_sdk(log, work, prefix, config, graphics=False):
     path_tests = work / ("sdk-path-tests.exe" if os.name == "nt" else "sdk-path-tests")
     run(log, "rustc", "--test", str(ROOT / "bindings/rust/malvado-sys/build.rs"),
         "-o", str(path_tests))
@@ -35,7 +35,7 @@ def verify_rust_sdk(log, work, prefix, config):
                CARGO_TARGET_DIR=str(work / "cargo"))
     manifest = str(ROOT / "bindings/rust/Cargo.toml")
     cargo = ["cargo", "test", "--manifest-path", manifest, "--workspace", "--no-fail-fast",
-             "--features", "malvado/assets"]
+             "--features", "malvado/assets,malvado/graphics" if graphics else "malvado/assets"]
     if config == "Release":
         cargo.append("--release")
     run(log, *cargo, env=env)
@@ -47,10 +47,15 @@ def verify_rust_sdk(log, work, prefix, config):
     (game / "Cargo.toml").write_text(
         '[package]\nname="platform-consumer"\nversion="0.0.0"\nedition="2024"\n'
         '[dependencies]\nmalvado={path=' + json.dumps(str(dependency))
-        + ',features=["assets"]}\n', encoding="utf-8")
+        + (',features=["assets","graphics"]}\n' if graphics else ',features=["assets"]}\n'), encoding="utf-8")
+    window_probe = (
+        ' let window = malvado::window::Window::open(160,120,"Installed SDK")?;\n'
+        ' let frame = window.frame(malvado::window::Color::default())?;\n'
+        ' drop(frame); drop(window);\n'
+    ) if graphics else ""
     (game / "src/main.rs").write_text(
         'use malvado::{Engine, SpawnOptions};\n'
-        'fn main() -> Result<(), malvado::Error> {\n'
+        'fn main() -> Result<(), malvado::Error> {\n' + window_probe +
         ' let mut engine = Engine::new()?;\n'
         ' let process = engine.spawn(SpawnOptions::default(), |p| async move {\n'
         '  p.frame().await; Ok(())\n'
@@ -87,6 +92,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work", type=Path, default=ROOT / "build-platform")
     parser.add_argument("--rust", action="store_true", help="Test Rust core and assets against relocated SDKs")
+    parser.add_argument("--graphics", action="store_true", help="Test graphics with a display and paced silent audio")
     args = parser.parse_args()
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
@@ -94,14 +100,23 @@ def main():
         build = work / config
         with (work / f"{config}.log").open("w", encoding="utf-8") as log:
             run(log, "cmake", "-S", str(ROOT), "-B", str(build),
-                f"-DCMAKE_BUILD_TYPE={config}", "-DMALVADO_BUILD_RAYLIB=OFF",
+                f"-DCMAKE_BUILD_TYPE={config}",
+                "-DMALVADO_BUILD_RAYLIB=" + ("ON" if args.graphics else "OFF"),
+                "-DMALVADO_VISUAL_TESTS=" + ("ON" if args.graphics else "OFF"),
+                "-DMALVADO_TEST_NULL_AUDIO=" + ("ON" if args.graphics else "OFF"),
+                # Hosted Windows runners provide the software OpenGL 1.1 path.
+                "-DOPENGL_VERSION=" + ("1.1" if args.graphics and os.name == "nt" else "OFF"),
                 "-DMALVADO_BUILD_LUA=ON", "-DMALVADO_BUILD_ASSETS=ON",
                 "-DCMAKE_INSTALL_LIBDIR=lib",
                 # Existing C fixtures use assert() to execute operations.
                 "-DCMAKE_C_FLAGS_RELEASE=" + ("/O2 /UNDEBUG" if os.name == "nt" else "-O3 -UNDEBUG"))
             run(log, "cmake", "--build", str(build), "--config", config, "--parallel")
             run(log, "ctest", "--test-dir", str(build), "-C", config,
-                "--output-on-failure", "--timeout", "60")
+                "--output-on-failure", "--timeout", "60", "-E", "^visual_")
+            if args.graphics:
+                run(log, "ctest", "--test-dir", str(build), "-C", config,
+                    "--output-on-failure", "--timeout", "60", "-R",
+                    "^visual_(c_window|image_rgba|window_clip|window_scroll|sleep_freeze)$")
             staged = build / "staged sdk"
             prefix = build / "relocated sdk"
             # Remove only installations owned by this verifier.
@@ -112,7 +127,7 @@ def main():
                 "--prefix", str(staged))
             staged.rename(prefix)
             if args.rust:
-                verify_rust_sdk(log, work, prefix, config)
+                verify_rust_sdk(log, work, prefix, config, args.graphics)
 
         print(f"PASS: {config}; evidence: {work / (config + '.log')}", flush=True)
 
