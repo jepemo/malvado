@@ -490,7 +490,7 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     (void)native;
     (void)app;
     (void)bundle_id;
-    fprintf(stderr, "Game export requires a graphical macOS or Linux SDK\n");
+    fprintf(stderr, "Game export requires a graphical SDK\n");
     return 1;
 }
 int

@@ -109,3 +109,31 @@ configuration. The Mesa entry validates the supported software-renderer path.
 The verifier checks the archive digest before extraction, requires both WGL DLLs
 and copies only those two libraries beside executable files. Its host-independent
 regression tests cover checksum rejection, incomplete drivers and deployment.
+
+## Windows CLI and exported players
+
+Native verification is pending for this implementation. The graphical matrix
+uses `mise run test-platform -- --graphics --rust --cli --work build-platform-graphics`.
+For each configuration, `tests/windows_cli.py` creates C/Lua/Rust games in paths
+with spaces, checks/builds/runs them, and exports bounded graphical players.
+It verifies binary assets, notices, reserved names, no overwrite, missing tools,
+SDK diagnostics and exclusion of native source/build outputs. C/Rust children
+receive explicit arguments and SDK environment without modifying the CLI host.
+
+A separate Windows job downloads only the exported players, not the producer's
+SDK or authoring projects. It runs them from another directory with a PATH that
+has no Cargo, rustc, CMake or compiler. Mesa is provisioned only by the test
+harness after package checks. The ordinary packages do not contain this driver.
+The runtime requires a suitable WGL provider and the Microsoft release CRT;
+Debug CRTs are not the default game dependency. Physical systems and audible
+output remain beta checks.
+
+Folder exports use `game.exe`; native C/Rust games also contain `game-bin.exe`.
+Existing portable reserved names remain reserved, with Windows executable names
+and case folding added. Reparse points, including junctions, are rejected in
+project entries and managed build directories. Publication never replaces an
+existing output, and failed exports remove only their owned staging directory.
+Windows `--app` exports are unavailable. The supported authoring generator is
+Visual Studio 2022 x64; the Unix Ninja multi-config fixture does not establish a
+Windows Ninja toolchain. The Unix managed developer installer (`tools/dev_sdk.py`)
+is not a Windows installer. Use an installed SDK prefix and its `bin/malvado.exe`.

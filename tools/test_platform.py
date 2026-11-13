@@ -101,8 +101,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work", type=Path, default=ROOT / "build-platform")
     parser.add_argument("--rust", action="store_true", help="Test Rust core and assets against relocated SDKs")
+    parser.add_argument("--cli", action="store_true", help="Verify Windows CLI and produce fresh-runner players")
     parser.add_argument("--graphics", action="store_true", help="Test graphics with a display and paced silent audio")
     args = parser.parse_args()
+    if args.cli and (not args.graphics or os.name != "nt"):
+        parser.error("--cli requires native Windows and --graphics")
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
     if args.graphics and os.name == "nt":
@@ -143,6 +146,10 @@ def main():
             staged.rename(prefix)
             if args.rust:
                 verify_rust_sdk(log, work, prefix, config, args.graphics)
+            if args.cli:
+                run(log, sys.executable, str(ROOT / "tests/windows_cli.py"),
+                    "--sdk", str(prefix), "--work", str(build / "CLI paths with spaces"),
+                    "--players", str(work / "players" / config), timeout=900)
 
         print(f"PASS: {config}; evidence: {work / (config + '.log')}", flush=True)
 

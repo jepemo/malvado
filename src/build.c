@@ -305,9 +305,9 @@ malvado_native_run(void)
 #include "build.h"
 int malvado_rust_dependency(char *path, size_t size) { (void)path; (void)size; return 0; }
 int malvado_rust_binary(char *path, size_t size) { (void)path; (void)size; return 0; }
-int malvado_rust_build(int check) { (void)check; fprintf(stderr, "Rust builds require a graphical macOS or Linux SDK\n"); return 1; }
+int malvado_rust_build(int check) { (void)check; fprintf(stderr, "Rust builds require a graphical SDK\n"); return 1; }
 int malvado_rust_run(void) { return malvado_rust_build(0); }
 int malvado_native_project(void) { return 0; }
-int malvado_native_build(void) { fprintf(stderr, "C builds require a graphical macOS or Linux SDK\n"); return 1; }
+int malvado_native_build(void) { fprintf(stderr, "C builds require a graphical SDK\n"); return 1; }
 int malvado_native_run(void) { return malvado_native_build(); }
 #endif
