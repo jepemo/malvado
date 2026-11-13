@@ -32,6 +32,9 @@ def reject_sdk(label, prefix, expected):
 def diagnostics(prefix):
     reject_sdk("missing prefix", None, "set MALVADO_SDK_PREFIX")
     reject_sdk("nonexistent prefix", WORK / "does not exist", "MALVADO_SDK_PREFIX does not exist")
+    quoted = WORK / 'quoted "sdk"'
+    quoted.mkdir(exist_ok=True)
+    reject_sdk("unsupported quoted prefix", quoted, "unsupported SDK prefix characters")
     empty = WORK / "empty sdk"
     empty.mkdir(exist_ok=True)
     reject_sdk("incomplete SDK", empty, "MalvadoConfig.cmake")

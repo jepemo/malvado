@@ -47,7 +47,7 @@ fn main() {
     .canonicalize()
     .expect("MALVADO_SDK_PREFIX does not exist");
     assert!(
-        !prefix.to_string_lossy().contains(['\n', '\r', ';']),
+        !prefix.to_string_lossy().contains(['\n', '\r', ';', '"']),
         "unsupported SDK prefix characters"
     );
     // Re-run when an installed SDK is replaced without changing its prefix.

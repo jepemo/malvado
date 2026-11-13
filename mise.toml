@@ -117,6 +117,11 @@ run = "ctest --test-dir build-g0 -C Debug -R '^visual_(gui|imgui|imgui_raylib)_g
 description = "Test Rust against a relocated installed C-only SDK"
 run = "python3 tools/test_rust.py"
 
+[tasks.test-rust-cli]
+description = "Test Rust project creation, Cargo commands and exports with a relocated installed SDK"
+depends = ["build"]
+run = "python3 tools/test_rust_cli.py"
+
 [tasks.test-rust-miri]
 description = "Verify Rust future, wake and cancellation ownership with optional Miri toolchain"
 run = 'MALVADO_SDK_PREFIX="$PWD/build-rust/Debug/relocated sdk" mise exec --cd tools/miri -- cargo miri test --manifest-path ../../bindings/rust/Cargo.toml -p malvado --lib'

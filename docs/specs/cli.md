@@ -13,6 +13,8 @@ malvado run main.lua
 malvado gui
 ```
 
+`new --lang lua` is equivalent to `new`; `new --lang c` is equivalent to `new --c`. Unknown languages and conflicting options return 2 without creating a project.
+
 `new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` uses it as the working directory, so modules and assets resolve relative to the project. When given a file, paths remain relative to the current working directory. `run --headless [PATH]` is available for scripts that terminate without a window. The existing `malvado-run` remains available. A separate `gui` command is a proposal for the optional editor. The editor can still run the game in a separate process. Do not use `run --gui` until its meaning is clear.
 
 The Lua template returns a game table. The runner also supports `mv.start()`. Exported Lua games load `main.lua` with the same entry rules. See the [Lua process guide](../api/lua-processes.md).
@@ -21,7 +23,7 @@ The Lua template returns a game table. The runner also supports `mv.start()`. Ex
 
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. Pass a directory to check its Lua files, or a file to check only that file. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. It does not check assets, dependencies, or runtime behavior yet.
 
-`doctor` reports the Lua version, whether CMake is available, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. The CMake check does not test a compiler. Doctor does not open a window or verify the graphics driver or target SDKs. It returns success after the report even when an optional capability is unavailable.
+`doctor` reports the Lua version, whether CMake, Cargo and rustc are available, whether installed Rust crate sources are present, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. The CMake check does not test a compiler. Doctor does not open a window or verify the graphics driver or target SDKs. It returns success after the report even when an optional capability is unavailable.
 
 `malvado fpg-export [--transparent-zero] INPUT OUTPUT` converts the supported
 8-bit FPG subset into an indexed PNG per sprite and a JSON manifest. It needs
@@ -81,7 +83,7 @@ The player receives the package and does not need CLI, Lua, LuaRocks, or LÖVE. 
 | `assets import` | Convert validated FPG/Aseprite subset to PNG+JSON library | alpha.6 |
 | `assets export --format fpg` | Export a selected FPG variant and document losses | Future proposal, unassigned |
 
-`check` does not prove that a game works and must not execute arbitrary code to analyze it. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
+`check` does not prove that a game works. Lua syntax checks do not execute scripts. Rust checks use Cargo, which can execute project and dependency build scripts and procedural macros. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
 
 ## Generated project
 
@@ -178,6 +180,51 @@ Use the [raylib Android build documentation](https://github.com/raysan5/raylib/w
 
 Create starter in a path with spaces. Run, package, move the artifact to a clean machine, and play. Repeat with asteroids. Compare manifests/checksums for equivalent builds, normalizing timestamps and order. Do not promise binary identity if signing or tools introduce variation. Android adds installation, touch, pause, audio, and AAB checks. Mark a platform supported only after this flow passes.
 
-## Rust integration planning
+## Rust projects
 
-Alpha.7 plans Cargo-based Rust projects and SDK discovery. These commands are not implemented. See the [Rust migration plan](../development/rust-migration.md) for proposed project detection, diagnostics, export and compatibility checks. Existing Lua and `--c` behavior remains authoritative until a revised contract is approved.
+On macOS and Linux, use an installed graphical SDK that includes the Rust crate
+sources:
+
+```sh
+malvado new --lang rust my-game
+cd my-game
+malvado check
+malvado build
+malvado run
+```
+
+The template contains `main.rs` and `Cargo.toml`. It uses the safe Rust API,
+the native process scheduler and an explicit window/time loop. Escape closes
+the window. Cargo owns package metadata; no `malvado.toml` is required. The CLI
+supports a binary target named `game`; Cargo defines its source path. Other
+binary names and workspaces with multiple packages are outside this initial
+contract. The generated dependency points to the installed SDK crate sources.
+If you move or replace that SDK, update the dependency path in `Cargo.toml`.
+SDK paths with quotation marks are rejected because the native CMake probe does
+not support them. Paths with spaces are supported.
+
+A regular `Cargo.toml` identifies a Rust project. A folder with both that file
+and a Lua entry or a complete C project is ambiguous and returns 2. The existing
+Lua-over-C precedence is unchanged when no Cargo manifest exists. An explicit
+Lua script path still runs or checks that script.
+
+`build` invokes `cargo build`; `check` invokes `cargo check`. Both select the
+native rustc host target and the `game` binary. They use Debug and a managed
+`.malvado/rust` target directory, independent of `CARGO_TARGET_DIR` and ambient
+Cargo target configuration. Existing unmanaged directories are rejected.
+`run` builds first, then executes the binary with the project as its working
+directory and returns the game's exit code. All three accept a project directory
+argument, including paths with spaces. `--headless` remains a Lua runner option;
+a Rust application defines its own host loop and can use the core without a window.
+
+The CLI supplies its installed SDK prefix to Cargo. CMake, a C compiler, Cargo
+and rustc must already be installed. Native ABI/version checks remain in
+`malvado-sys`. Missing tools, SDK files, invalid manifests, missing `game` targets
+and compiler failures return 1. Rustup automatic toolchain installation is disabled
+for CLI child tools; no toolchain installer is invoked. Cargo can download declared
+crate dependencies. Rust `check` can execute build scripts and procedural macros;
+it does not execute the game binary. `doctor` only reports availability and does
+not compile a project or install tools.
+
+Rust export is the remaining CLI integration step. See the
+[Rust migration plan](../development/rust-migration.md) for the broader scope.

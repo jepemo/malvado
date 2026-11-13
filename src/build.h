@@ -14,6 +14,12 @@
  */
 #ifndef MALVADO_BUILD_H
 #define MALVADO_BUILD_H
+#include <stddef.h>
+/* Project language comes from existing entry files; Cargo owns Rust metadata. */
+int malvado_rust_build(int check);
+int malvado_rust_run(void);
+int malvado_rust_binary(char *path, size_t size);
+int malvado_rust_dependency(char *path, size_t size);
 int malvado_native_project(void);
 int malvado_native_build(void);
 int malvado_native_run(void);

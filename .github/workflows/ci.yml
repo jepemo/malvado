@@ -82,6 +82,7 @@ jobs:
           set -- "$PWD"/sdk-artifact/*.tar.gz
           test "$#" -eq 1 && test -f "$1"
           cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=ON -P tests/sdk_clean.cmake
+          python3 tests/rust_cli.py --cli "$RUNNER_TEMP/malvado-sdk-test/sdk/bin/malvado" --work "$RUNNER_TEMP/malvado-rust-projects" --visual
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -91,6 +92,7 @@ jobs:
           set -- "$PWD"/sdk-artifact/*.tar.gz
           test "$#" -eq 1 && test -f "$1"
           cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=OFF -P tests/sdk_clean.cmake
+          python3 tests/rust_cli.py --cli "$RUNNER_TEMP/malvado-sdk-test/sdk/bin/malvado" --work "$RUNNER_TEMP/malvado-rust-projects"
   build:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

@@ -51,10 +51,10 @@ static void
 print_help(FILE *output)
 {
     fprintf(output, "Usage: malvado COMMAND [OPTIONS]\n\n"
-            "  new [--c] PATH       Create a Lua or C project\n"
-            "  build [PATH]         Build a C project\n"
+            "  new [--c | --lang lua|c|rust] PATH  Create a project\n"
+            "  build [PATH]         Build a C or Rust project\n"
             "  run [--headless] [PATH]  Run a game\n"
-            "  check [PATH]         Check Lua syntax\n"
+            "  check [PATH]         Check Lua syntax or a Rust project\n"
             "  export [PATH]        Export a game for this host\n"
             "  export --app [--id ID] [PATH]  Export a macOS app\n"
 #ifdef MALVADO_BUILD_ASSETS
@@ -65,10 +65,10 @@ print_help(FILE *output)
 }
 
 static int
-cmake_available(void)
+tool_available(const char *tool)
 {
 #ifdef _WIN32
-    return SearchPathA(NULL, "cmake.exe", NULL, 0, NULL, NULL) != 0;
+    return SearchPathA(NULL, tool, ".exe", 0, NULL, NULL) != 0;
 #else
     const char *path = getenv("PATH");
     if (!path) return 0;
@@ -76,12 +76,13 @@ cmake_available(void)
     for (;;) {
         const char *end = strchr(start, ':');
         size_t length = end ? (size_t)(end - start) : strlen(start);
-        char *candidate = malloc(length + sizeof("./cmake"));
+        char *candidate = malloc(length + strlen(tool) + 3);
         if (!candidate) return 0;
         if (length) {
             memcpy(candidate, start, length);
-            strcpy(candidate + length, "/cmake");
-        } else strcpy(candidate, "./cmake");
+            candidate[length] = '/';
+            strcpy(candidate + length + 1, tool);
+        } else snprintf(candidate, strlen(tool) + 3, "./%s", tool);
         struct stat info;
         int found = stat(candidate, &info) == 0 && S_ISREG(info.st_mode) && access(candidate, X_OK) == 0;
         free(candidate);
@@ -224,6 +225,22 @@ is_regular_file(const char *path)
 #endif
 }
 
+/* Preserve historical Lua-over-C precedence. Rust must be unambiguous. */
+static int
+project_language(void)
+{
+    int lua = is_regular_file("main.lua");
+    int native = malvado_native_project();
+    if (is_regular_file("Cargo.toml")) {
+        if (lua || native) {
+            fprintf(stderr, "Ambiguous project: Cargo.toml cannot coexist with a Lua or C entry\n");
+            return -1;
+        }
+        return 2;
+    }
+    return lua ? 0 : native ? 1 : 0;
+}
+
 static int
 check_project(const char *path, int for_export)
 {
@@ -237,7 +254,7 @@ check_project(const char *path, int for_export)
 }
 
 static int
-run_game(char *program, char *path, int headless)
+run_game(char *program, char *path, int headless, int detect_project)
 {
     if (is_directory(path)) {
         if (change_directory(path) != 0) {
@@ -245,8 +262,18 @@ run_game(char *program, char *path, int headless)
             return 1;
         }
         path = "main.lua";
+        detect_project = 1;
     }
-    if (!strcmp(path, "main.lua") && !is_regular_file(path) && malvado_native_project()) {
+    int language = detect_project ? project_language() : 0;
+    if (language < 0) return 2;
+    if (language == 2) {
+        if (headless) {
+            fprintf(stderr, "--headless is only available for Lua projects; Rust owns its host loop\n");
+            return 2;
+        }
+        return malvado_rust_run();
+    }
+    if (language == 1) {
         if (headless) {
             fprintf(stderr, "Headless mode is not available for C projects\n");
             return 2;
@@ -296,8 +323,35 @@ remove_project_file(const char *path, const char *name)
     free(file_path);
 }
 
+static char *
+rust_manifest(void)
+{
+    char dependency[4096];
+    if (!malvado_rust_dependency(dependency, sizeof(dependency))) {
+        fprintf(stderr, "Rust projects require an installed SDK with Rust crate sources\n");
+        return NULL;
+    }
+    char escaped[sizeof(dependency) * 2];
+    size_t used = 0;
+    for (const unsigned char *p = (const unsigned char *)dependency; *p; ++p) {
+        if (*p < 32 || *p == 127 || *p == '"') {
+            fprintf(stderr, "Unsupported control character or quotation mark in SDK path\n");
+            return NULL;
+        }
+        if (*p == '\\' || *p == '"') escaped[used++] = '\\';
+        escaped[used++] = (char)*p;
+    }
+    escaped[used] = '\0';
+    const char format[] = "[package]\nname = \"game\"\nversion = \"0.1.0\"\nedition = \"2024\"\n"
+        "\n[[bin]]\nname = \"game\"\npath = \"main.rs\"\n\n[dependencies]\nmalvado = { path = \"%s\", features = [\"graphics\"] }\n";
+    size_t size = sizeof(format) + used;
+    char *manifest = malloc(size);
+    if (manifest) snprintf(manifest, size, format, escaped);
+    return manifest;
+}
+
 static int
-new_project(const char *path, int native)
+new_project(const char *path, int language)
 {
     static const char game[] =
         "require(\"malvado\").import_globals()\n\n"
@@ -331,15 +385,57 @@ new_project(const char *path, int native)
         "find_package(Malvado CONFIG REQUIRED COMPONENTS graphics)\n"
         "add_executable(game main.c)\n"
         "target_link_libraries(game PRIVATE Malvado::graphics)\n";
+    static const char rust_game[] =
+        "use malvado::{Engine, Error, SpawnOptions};\n"
+        "use malvado::window::{Color, Key, Window};\n\n"
+        "fn main() -> Result<(), Error> {\n"
+        "    let window = Window::open(800, 600, \"Hello, Malvado!\")?;\n"
+        "    let mut engine = Engine::new()?;\n"
+        "    engine.spawn(SpawnOptions::default(), |p| async move {\n"
+        "        loop {\n"
+        "            p.current().draw_text(\"Hello, Malvado!\", (40, 40), 30, Color { r: 255, g: 255, b: 255, a: 255 })?;\n"
+        "            p.frame().await;\n"
+        "        }\n"
+        "    })?;\n"
+        "    let mut previous = std::time::Instant::now();\n"
+        "    while !window.should_close() && !window.key_down(Key::Escape) {\n"
+        "        let now = std::time::Instant::now();\n"
+        "        for _ in 0..engine.advance_time((now - previous).as_secs_f64())? {\n"
+        "            window.input_tick();\n"
+        "            engine.tick()?;\n"
+        "        }\n"
+        "        previous = now;\n"
+        "        let frame = window.frame(Color { r: 25, g: 30, b: 45, a: 255 })?;\n"
+        "        frame.process_graphics(&engine)?;\n"
+        "    }\n"
+        "    Ok(())\n"
+        "}\n";
     size_t length = strlen(path);
-    if (!length || length > 4096) {
+    if (!length || path[0] == '-' || length > 4096) {
         fprintf(stderr, "Invalid project path\n");
         return 2;
     }
+    char *manifest = language == 2 ? rust_manifest() : NULL;
+    if (language == 2 && !manifest) return 1;
     if (mkdir_project(path) != 0) {
         perror("Cannot create project directory");
+        free(manifest);
         return 1;
     }
+    if (language == 2) {
+        int ok = write_project_file(path, "main.rs", rust_game) &&
+                 write_project_file(path, "Cargo.toml", manifest);
+        free(manifest);
+        if (!ok) {
+            remove_project_file(path, "main.rs");
+            remove_project_file(path, "Cargo.toml");
+            remove_project(path);
+            return 1;
+        }
+        printf("Created %s. Enter the directory and run: malvado run\n", path);
+        return 0;
+    }
+    int native = language == 1;
     const char *main_file = native ? "main.c" : "main.lua";
     if (!write_project_file(path, main_file, native ? native_game : game)) {
         remove_project(path);
@@ -380,7 +476,12 @@ main(int argc, char **argv)
 #endif
     if (argc == 2 && strcmp(argv[1], "doctor") == 0) {
         printf("Lua: %s\n", LUA_RELEASE);
-        printf("CMake: %s\n", cmake_available() ? "found" : "not found");
+        printf("CMake: %s\n", tool_available("cmake") ? "found" : "not found");
+        printf("Cargo: %s\n", tool_available("cargo") ? "found" : "not found");
+        printf("Rust compiler: %s\n", tool_available("rustc") ? "found" : "not found");
+        char dependency[4096];
+        printf("Rust SDK: %s\n", malvado_rust_dependency(dependency, sizeof(dependency)) ?
+               dependency : "not found; install a graphical SDK with Rust crate sources");
 #ifdef MALVADO_GRAPHICS_ENABLED
         printf("Graphics: enabled\n");
 #else
@@ -399,12 +500,20 @@ main(int argc, char **argv)
         return new_project(argv[2], 0);
     if (argc == 4 && strcmp(argv[1], "new") == 0 && strcmp(argv[2], "--c") == 0)
         return new_project(argv[3], 1);
+    if (argc == 5 && !strcmp(argv[1], "new") && !strcmp(argv[2], "--lang")) {
+        int language = !strcmp(argv[3], "lua") ? 0 : !strcmp(argv[3], "c") ? 1 :
+                       !strcmp(argv[3], "rust") ? 2 : -1;
+        if (language < 0) { print_help(stderr); return 2; }
+        return new_project(argv[4], language);
+    }
     if (argc >= 2 && argc <= 3 && strcmp(argv[1], "build") == 0) {
         if (argc == 3 && change_directory(argv[2]) != 0) {
             perror(argv[2]);
             return 1;
         }
-        return malvado_native_build();
+        int language = project_language();
+        if (language < 0) return 2;
+        return language == 2 ? malvado_rust_build(0) : malvado_native_build();
     }
     if (argc >= 2 && strcmp(argv[1], "export") == 0) {
         int app = argc >= 3 && strcmp(argv[2], "--app") == 0;
@@ -425,21 +534,25 @@ main(int argc, char **argv)
         return destination ? malvado_export(destination, native, app, bundle_id) :
                              malvado_export_default(native, app, bundle_id);
     }
-    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0)
-        return argc == 2 ? check_project(".", 0) :
-               is_directory(argv[2]) ? check_project(argv[2], 0) : check_script(argv[2]);
+    if (argc >= 2 && argc <= 3 && strcmp(argv[1], "check") == 0) {
+        if (argc == 3 && !is_directory(argv[2])) return check_script(argv[2]);
+        if (argc == 3 && change_directory(argv[2]) != 0) { perror(argv[2]); return 1; }
+        int language = project_language();
+        if (language < 0) return 2;
+        return language == 2 ? malvado_rust_build(1) : check_project(".", 0);
+    }
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {
-            return run_game(argv[0], "main.lua", 0);
+            return run_game(argv[0], "main.lua", 0, 1);
         }
         if (argc == 3) {
             if (strcmp(argv[2], "--headless") == 0) {
-                return run_game(argv[0], "main.lua", 1);
+                return run_game(argv[0], "main.lua", 1, 1);
             }
-            return run_game(argv[0], argv[2], 0);
+            return run_game(argv[0], argv[2], 0, 0);
         }
         if (argc == 4 && strcmp(argv[2], "--headless") == 0) {
-            return run_game(argv[0], argv[3], 1);
+            return run_game(argv[0], argv[3], 1, 0);
         }
     }
     print_help(stderr);
