@@ -13,7 +13,7 @@
  * See LICENSE for details.
  */
 
-#if !defined(_WIN32) && defined(MALVADO_EXPORT_GRAPHICS)
+#if defined(MALVADO_EXPORT_GRAPHICS)
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <limits.h>
@@ -22,8 +22,22 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <direct.h>
+#include <windows.h>
+#include "windows_process.h"
+#define PATH_MAX 4096
+#define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
+#define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#define getcwd _getcwd
+#define mkdir(path, mode) _mkdir(path)
+#include "windows_files.h"
+#define lstat malvado_windows_lstat
+
+#else
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 #include "build.h"
 #include "export.h"
 
@@ -82,7 +96,7 @@ prepare_build(int rust)
     const char *text = rust ? "malvado-rust-build-v1\n" : marker_text;
     size_t text_length = strlen(text);
     if (created) {
-        FILE *file = fopen(marker, "wx");
+        FILE *file = fopen(marker, "wbx");
         if (!file) { perror(marker); return 0; }
         int ok = fwrite(text, 1, text_length, file) == text_length;
         if (fclose(file) != 0) ok = 0;
@@ -107,6 +121,9 @@ prepare_build(int rust)
 static int
 run_process_with_sdk(char *const args[], const char *sdk)
 {
+#ifdef _WIN32
+    return malvado_windows_process(args, sdk, NULL, 0);
+#else
     pid_t pid = fork();
     if (pid < 0) { perror("fork"); return 1; }
     if (pid == 0) {
@@ -124,6 +141,7 @@ run_process_with_sdk(char *const args[], const char *sdk)
         if (errno != EINTR) { perror("waitpid"); return 1; }
     }
     return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
+#endif
 }
 
 static int
@@ -137,6 +155,11 @@ run_process(char *const args[])
 static int
 rust_host(char *host, size_t size)
 {
+#ifdef _WIN32
+    char output[4096];
+    char *args[] = {"rustc", "-vV", NULL};
+    if (malvado_windows_process(args, NULL, output, sizeof(output)) != 0) return 0;
+#else
     int channel[2];
     if (pipe(channel) != 0) { perror("pipe"); return 0; }
     pid_t pid = fork();
@@ -169,6 +192,7 @@ rust_host(char *host, size_t size)
     }
     if (!ok || !WIFEXITED(status) || WEXITSTATUS(status) != 0) return 0;
     output[used] = '\0';
+#endif
     char *start = strstr(output, "\nhost: ");
     if (!start) return 0;
     start += strlen("\nhost: ");
@@ -189,7 +213,11 @@ malvado_rust_binary(char *path, size_t size)
 {
     char host[128];
     if (!rust_host(host, sizeof(host))) return 0;
-    int length = snprintf(path, size, ".malvado/rust/%s/debug/game", host);
+    int length = snprintf(path, size, ".malvado/rust/%s/debug/game"
+#ifdef _WIN32
+                          ".exe"
+#endif
+                          , host);
     return length >= 0 && (size_t)length < size && regular_file(path);
 }
 
@@ -244,12 +272,15 @@ malvado_native_build(void)
     snprintf(prefix, size, "-DCMAKE_PREFIX_PATH=%s", sdk);
     char current[PATH_MAX];
     if (!getcwd(current, sizeof(current))) { perror("getcwd"); free(prefix); return 1; }
+#ifdef _WIN32
+    for (char *p = current; *p; ++p) if (*p == '\\') *p = '/';
+#endif
     size_t output_size = strlen(current) + sizeof("-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=/.malvado/build");
     char *output = malloc(output_size);
     if (!output) { free(prefix); return 1; }
     snprintf(output, output_size, "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=%s/.malvado/build", current);
     char *configure[] = {"cmake", "-S", ".", "-B", ".malvado/build", prefix,
-                         "-DCMAKE_BUILD_TYPE=Debug", output, NULL};
+                         "-DCMAKE_BUILD_TYPE=Debug", "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL", output, NULL};
     int result = run_process(configure);
     free(prefix);
     free(output);
@@ -262,7 +293,11 @@ int
 malvado_native_run(void)
 {
     if (malvado_native_build() != 0) return 1;
-    char *run[] = {".malvado/build/game", NULL};
+    char *run[] = {".malvado/build/game"
+#ifdef _WIN32
+                   ".exe"
+#endif
+                   , NULL};
     return run_process(run);
 }
 #else
