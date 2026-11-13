@@ -61,8 +61,8 @@ not change sampling behavior. Names with embedded NUL return `InvalidArgument`.
 owned native `Animation`, converting milliseconds to microseconds exactly.
 The result survives atlas destruction. Its explicit fixed-tick playback uses
 the existing C accumulator. It does not apply repeat metadata, retain graphical
-assets, assign graphs, or advance processes automatically. These parts remain
-in A7.6. See the [camera and animation guide](rust-camera-animation.md).
+assets, assign graphs, or advance processes automatically. For retained visual playback use the process sprite/animation
+APIs below. See the [camera and animation guide](rust-camera-animation.md).
 
 Tests use the same schema 2, Aseprite pivot and ping-pong fixtures as the C suite.
 They check frame boundaries, end/loop behavior, directions, colors, repeat
@@ -212,7 +212,8 @@ texture uses before returning, so same-frame graph cleanup is safe. Default
 bound colliders use the selected sprite geometry. Explicit collider overrides
 keep their existing rules. This pass does not tick or advance animation.
 
-Lua image graph migration and automatic animation remain incomplete.
+Lua uses the same native image graphs and automatic animation. See the
+[shared rendering contract](runner-rendering.md).
 
 ## Automatic sprite animations
 

@@ -68,8 +68,8 @@ output preservation and converted manifests. `asset_metadata_allocation` injects
 failures across every allocation in all four import paths and checks that no
 allocation remains. Existing headless and graphical Lua loader/resource tests
 cover the moved paths. Installed Rust probes check both signatures and every
-field's size, alignment and offset. Unified texture construction, process asset
-graphs and automatic animation remain separate alpha.7 work.
+field's size, alignment and offset. Unified texture construction and process animation are described in the
+[Rust atlas guide](rust-atlas.md) and use the same native metadata.
 
 ## Safe Rust library loading
 

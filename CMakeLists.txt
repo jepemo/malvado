@@ -295,6 +295,11 @@ add_test(NAME c_version COMMAND version-test)
 set_tests_properties(c_version PROPERTIES TIMEOUT 15)
 find_package(Python3 QUIET COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
+  add_test(NAME documentation_links COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_docs.py)
+  add_test(NAME documentation_links_test COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
+  set_tests_properties(documentation_links documentation_links_test PROPERTIES TIMEOUT 15)
   add_test(NAME c_api_inventory COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/current_c_api.py --check)
   set_tests_properties(c_api_inventory PROPERTIES TIMEOUT 15)

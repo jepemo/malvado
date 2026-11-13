@@ -2,7 +2,7 @@
 
 **Small scripts. Living worlds.**
 
-Malvado is an open-source game engine for making 2D games with **Lua or C**. Inspired by **DIV Games Studio**, it brings process-based game development to a lightweight engine built with C and raylib.
+Malvado is an open-source game engine for making 2D games with **C, Lua or Rust**. Inspired by **DIV Games Studio**, it brings process-based game development to a lightweight engine built with C and raylib.
 
 The idea is simple: give each character, object, or effect its own behavior, then let those little pieces create something bigger together.
 

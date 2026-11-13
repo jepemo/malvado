@@ -39,7 +39,7 @@ text or a native unrepresentable result. Text does not create a persistent objec
 clipping, scrolling and scope restoration, as well as malformed geometry,
 invalid text, nesting, errors and unwind. Debug/Release and a relocated SDK
 consumer exercise the delivered API. `test-rust-graphics-sanitize` runs the same
-native-backed drawing checks with ASan/UBSan. Process command collection is described below. Persistent text remains in A7.6.
+native-backed drawing checks with ASan/UBSan. Process command collection is described below. Persistent text uses the [shared text registry](text.md).
 
 ## Owned images
 
@@ -88,7 +88,8 @@ Automated checks verify PNG and RGBA pixels, transparency, region transforms,
 input-buffer copying, invalid input, independent native load references,
 retention across resource/context destruction, clone/drop, and final window
 shutdown/reopen. Both native profiles and the relocated offline consumer pass.
-Image selection for process graphs and automatic animation remain in A7.6.
+Image selection and automatic process animation use the
+[process sprite API](rust-atlas.md#process-sprite-assignment).
 
 Local verification passes: 57 workspace tests, 17 doctests and four bounded
 main-thread graphics executables in Debug and Release, shared C/Lua/Rust input

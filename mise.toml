@@ -95,6 +95,10 @@ description = "Run graphics smoke tests (requires a display or virtual display)"
 depends = ["build-visual"]
 run = "ctest --test-dir build-visual -C Debug -R '^visual_' --output-on-failure"
 
+[tasks.test-docs]
+description = "Check current guide links, anchors and link-checker regression fixtures"
+run = ["python3 tests/docs_links.py", "python3 tools/check_docs.py"]
+
 [tasks.catalog]
 description = "Download pinned API sources and regenerate the catalog"
 run = ["python3 docs/tools/fetch_api_sources.py", "python3 docs/tools/catalog_api.py"]

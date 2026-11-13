@@ -120,3 +120,15 @@ mise exec -- python3 tools/test_rust_docs.py --sdk "/path/to/installed sdk" --re
 The initial acceptance runs all 37 Rust guide blocks in Debug and Release on
 macOS arm64. Linux Xvfb CI runs the same checks. The task uses a paced silent
 SDK for automated audio checks and makes no physical-device or audible claim.
+
+
+## Current guide link checks
+
+`mise run test-docs` validates repository file links and Markdown heading anchors
+in the current API, site, architecture and development guides, the Rust/CLI
+contracts and alpha.7 acceptance pages. It also checks current-branch GitHub blob
+links against local files. It does not request external websites or certify
+links in historical upstream/reference documents. CTest and the docs CI job run
+the same checker. Regression fixtures require broken paths/anchors to fail and
+cover hidden fenced examples, reference links, duplicate headings, explicit
+anchors and changed target headings.

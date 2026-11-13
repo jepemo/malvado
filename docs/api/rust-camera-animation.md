@@ -64,8 +64,7 @@ starts a scheduler, follows a target or changes process world coordinates.
 
 `frame.process_graphics(&engine)?` now applies native selection and viewport.
 It composes and restores host clip/scroll; the default full-window case remains
-batched. Process region/scroll use the native descriptors below. Process command
-collection remains A7.6 work. Immediate
+batched. Process region/scroll use the native descriptors below. The same pass draws retained process commands. Immediate
 frame drawing is still explicit; use a snapshot's project/clip operations for
 custom drawing. Lua-owned and borrowed camera userdata use the same core; see
 [the native ownership contract](cameras.md#context-owned-camera-identities-and-selection).
@@ -217,8 +216,9 @@ A7.6ad/ae host evidence on macOS: C-only (59 tests), standard/headless
 (175 each), visual (57), Rust Debug/Release, relocated external consumer,
 installed signature checks, Clippy/format and native ASan/UBSan integration
 pass. The runnable Follow example and owner-thread compile failure also pass
-as doctests in both profiles. Linux CI and native main/explicit camera ownership
-remain open; these checks do not certify automatic Rust process camera selection.
+as doctests in both profiles. Native main/explicit camera ownership was outside
+that early evidence. The [integration audit](../versions/2.0.0-alpha.7-integration.md)
+records current family acceptance.
 
 A7.6am macOS evidence: Rust core and graphics Debug/Release suites pass with
 registered-camera tests and relocated installed consumers. The registered-camera
@@ -227,13 +227,14 @@ graphical ASan/UBSan pass, including open-camera context cleanup and viewport
 pixels; Rust itself is not instrumented. Native scope/coordinate-boundary pixel
 checks pass after the default full-window batching adjustment. The isolated
 full graphics rerun passed after an earlier keyboard fixture failure. Linux CI
-and the remaining asset/command/region services remain open.
+and other platform services were outside that early evidence. Current family
+acceptance is recorded in the integration audit.
 
 A7.6ao local macOS evidence: Rust core and graphics suites pass in Debug and
 Release, including the new view methods, runnable doctest and installed offline
 consumers. Clippy/format and native graphical ASan/UBSan integration pass. Rust
 itself is not sanitizer-instrumented, and macOS leak detection is disabled.
-Linux CI and remaining A7.6 services are outside this local evidence.
+Other A7.6 services were outside that local implementation-stage evidence.
 
 ## Process animation clocks
 

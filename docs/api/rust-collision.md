@@ -62,8 +62,8 @@ Failed collider updates leave the previous native collider unchanged.
 
 Fixed registration does not follow visual-property changes. New processes now
 derive colliders from selected primitive or sprite graphs by default; see the bound selection
-contract below. Safe sprite assignment uses the [process sprite API](rust-atlas.md#process-sprite-assignment). This explicit native geometry layer does not close
-the full A7.6 graphics/input/audio/resource gate. See the
+contract below. Safe sprite assignment uses the [process sprite API](rust-atlas.md#process-sprite-assignment). This geometry layer is covered by the
+[accepted native family integration](../versions/2.0.0-alpha.7-integration.md). See the
 [collision contract](collision.md) for the shared math and native limits.
 
 ## Automatic primitive and local colliders
@@ -147,8 +147,8 @@ Invalid selected geometry, unsupported sweep, initial overlap or numeric input
 returns `InvalidArgument`; dead/closed handles return `NotFound`/`Closed`.
 Failure preserves process/collider positions and selection. The borrowed World
 can outlive the engine, as before. Sleep/freeze do not block an explicit move.
-Image/animation graph selection still requires the pending native asset graph
-service. Existing `query_process`/`move_process` calls keep their explicit
+Image/animation graph selection uses the delivered
+[process sprite API](rust-atlas.md#process-sprite-assignment). Existing `query_process`/`move_process` calls keep their explicit
 optional-shape contract, including free movement with `None`; they do not move
 fixed registrations.
 
@@ -166,7 +166,7 @@ angle and scale. It returns the first overlapping world rectangle ID or `None`.
 actor's x/y with the same native movement used by Lua. Pass `None` to disable
 geometry and apply free movement. A registered process collider is not selected
 or updated implicitly. Explicit shape selection keeps ownership and side effects
-clear while the native graph service is still pending.
+clear when the caller supplies its own geometry.
 
 ```rust
 use malvado::{Engine, Error};
@@ -194,18 +194,20 @@ The C, Lua and Rust contextual movement tests share the existing world golden
 trace. Rust also checks scaled/rotated shape movement, free movement, sleep and
 freeze, invalid displacement, initial overlap, nonpositive scale, overflow and
 dead/closed handles. Installed-header probes check both signatures. The bounded
-`world` SDK example uses this path; public example migration remains A7.8 work.
+`world` SDK example uses this path; the complete public teaching catalog remains future roadmap work.
 
 A7.6ai macOS host evidence: `test-rust` passes in Debug/Release with installed
 signature checks, the relocated SDK consumer, Clippy and formatting. Final
 bound traces pass in both profiles, and the runnable bind doctest passes in
 both profiles. `test-rust-graphics-sanitize` passes with the bound collider
 fixtures; native C uses ASan/UBSan and Rust itself is not instrumented. Linux CI
-and asset graph/world geometry selection remain open.
+and asset graph/world geometry were outside that implementation-stage evidence.
+The [integration audit](../versions/2.0.0-alpha.7-integration.md) records current acceptance.
 
 A7.6ak macOS evidence: `test-rust` passes Debug/Release with the selected
 C/Lua/Rust trace, installed consumer/signature checks, Clippy and formatting.
 The updated bounded world sample and selected-movement doctest also pass in
 both profiles. `test-rust-graphics-sanitize` passes selected-mode and fixed
 translation/overflow fixtures with native ASan/UBSan; Rust itself is not
-instrumented. Linux CI and native image/animation graph ownership remain open.
+instrumented. Native image/animation ownership was outside that early evidence;
+current family acceptance is recorded in the integration audit.

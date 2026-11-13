@@ -78,8 +78,9 @@ retention rules match `Fpg`.
 With both `assets` and `graphics`, `library.image(window, id, transparent_zero)`
 creates an owned `Image` through native RGBA conversion. That image retains its
 window, and can be queued with the existing frame API. It survives FPG destruction.
-Control points are not applied as automatic pivots. Loading manifests as graph
-libraries and automatic process graph assignment remain A7.6 work.
+This conversion does not apply control points as pivots. For native FPG/manifest
+pivots and process assignment, use the texture collections below and the
+[process sprite API](rust-atlas.md#process-sprite-assignment).
 
 Tests check exact RGBA bytes, indexed PNG structure/transparency, lossless
 manifest metadata round trips, malformed manifests, missing IDs, ownership and

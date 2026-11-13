@@ -36,7 +36,8 @@ The caller controls rendering and simulation timing. This service does not
 create another scheduler, advance `Engine`, or derive process graphics.
 Owned image and immediate drawing services are described in the
 [drawing guide](rust-drawing.md). Owned fonts use the same retained-frame model; see the [font guide](rust-font.md).
-Audio and process draw collection remain in A7.6.
+Audio is covered in the [audio guide](rust-audio.md); process collection uses
+the [shared native rendering pass](runner-rendering.md).
 
 `mise run test-rust-graphics` requires a display. It verifies actual open, title,
 size, frame pairing, nested rejection, forgotten guard cleanup, duplicate open,
@@ -77,7 +78,8 @@ An `Rc<Window>` lets owned process futures query this one native service without
 another input cache. The host remains responsible for commit timing. Dropping
 all window owners resets input; reopening starts neutral. The default headless
 Engine still has no live-window service. Mouse, controller and Unicode text queries are described in the
-[input guide](rust-input.md). Other platform families remain in A7.6.
+[input guide](rust-input.md). See the [language matrix](language-parity.md)
+for the other delivered platform services.
 
 The SDK consumer also checks that a core-only prefix rejects the graphics
 feature and that a changed native color layout fails before graphics calls.
