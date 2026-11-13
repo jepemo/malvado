@@ -511,8 +511,8 @@ if(MALVADO_BUILD_ASSETS)
   # Exercise Windows checkout line endings on every host.
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/aseprite/pivot.json" atlas_crlf)
   string(REPLACE "\r\n" "\n" atlas_crlf "${atlas_crlf}")
-  string(REPLACE "\n" "\r\n" atlas_crlf "${atlas_crlf}")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/atlas-pivot-crlf.json" "${atlas_crlf}")
+  file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/atlas-pivot-crlf.json"
+    CONTENT "${atlas_crlf}" NEWLINE_STYLE CRLF)
   list(REMOVE_AT atlas_fixtures 5)
   list(INSERT atlas_fixtures 5 "${CMAKE_CURRENT_BINARY_DIR}/atlas-pivot-crlf.json")
   add_test(NAME atlas_crlf COMMAND atlas-test ${atlas_fixtures})

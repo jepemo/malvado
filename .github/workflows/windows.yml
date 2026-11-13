@@ -31,6 +31,7 @@ jobs:
           name: windows-headless-${{ github.sha }}
           path: |
             build-platform/*.log
+            build-platform/**/atlas-pivot-crlf.json
             build-platform/**/Testing/Temporary/*.log
           if-no-files-found: warn
           retention-days: 14
