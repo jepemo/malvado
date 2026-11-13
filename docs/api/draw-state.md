@@ -25,7 +25,7 @@ an open window. `new()` initializes the native defaults and checks the SDK ABI.
 invalid channel values cannot be passed. `color()` and `background()` return
 copies. Use these as explicit arguments in the normal frame API:
 
-```rust,no_run
+```rust
 use malvado::{Error, drawing::{DrawState, Rectangle}, window::{Color, Window}};
 let mut state = DrawState::new()?;
 state.set_background((10, 20, 30));

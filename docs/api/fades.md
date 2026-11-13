@@ -56,12 +56,13 @@ Enable `graphics` to link the installed platform services. `Fade` itself needs
 no window, audio device, process, or scheduler. It is a copied value with
 independent state. Rust does not implement interpolation or queue policy.
 
-```rust,no_run
+```rust
 use malvado::{Error, fade::Fade, window::Color};
 let mut fade = Fade::new()?;
 fade.enqueue(Color { r: 0, g: 0, b: 0, a: 255 }, 30)?;
 fade.step(); // Once per simulation tick, including ticks without a render.
 let overlay = fade.color();
+# assert!(overlay.a > 0 && overlay.a < 255);
 # Ok::<(), Error>(())
 ```
 
@@ -83,7 +84,7 @@ call with `InvalidArgument` and preserve their previous drawing state. A fully
 transparent overlay succeeds without changing pixels. Each frame starts fresh;
 there is no persistent overlay attached to the window.
 
-```rust,no_run
+```rust
 # use malvado::{Error, fade::Fade, window::{Color, Window}};
 # let window = Window::open(160, 120, "Fade")?;
 # let fade = Fade::new()?;

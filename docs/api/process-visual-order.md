@@ -46,7 +46,7 @@ or resources. A process can be gone when later inspected. After engine shutdown,
 depth operations return `Closed`. During a process, use `process.current()` to
 get its handle. No graphics feature or window is required.
 
-```rust,no_run
+```rust
 use malvado::{Engine, Error};
 let engine = Engine::new()?;
 let actor = engine.spawn(Default::default(), |p| async move {
@@ -145,7 +145,7 @@ Rust uses `handle.angle()?`, `handle.set_angle(degrees)?`, `handle.scale()?` and
 closed/dead handle errors as position. Collider registration stays explicit in
 Rust; these properties do not introduce automatic Rust graph drawing.
 
-```rust,no_run
+```rust
 # use malvado::{Engine, Error};
 let engine = Engine::new()?;
 let actor = engine.spawn(Default::default(), |p| async move {

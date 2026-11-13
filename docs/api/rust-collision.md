@@ -20,6 +20,7 @@ let mut position = Transform { y: 5.0, ..Default::default() };
 let contact = world.move_by(shape, &mut position, 100.0, 0.0)?;
 assert_eq!(position.x, 9.0);
 assert_eq!(contact.hit, Some(1));
+# Ok::<(), malvado::Error>(())
 ```
 
 Shape constructors validate through native geometry. `with_offset` returns a
@@ -167,7 +168,7 @@ geometry and apply free movement. A registered process collider is not selected
 or updated implicitly. Explicit shape selection keeps ownership and side effects
 clear while the native graph service is still pending.
 
-```rust,no_run
+```rust
 use malvado::{Engine, Error};
 use malvado::collision::{World, Rect, Shape};
 let engine = Engine::new()?;

@@ -98,3 +98,25 @@ The Pages workflow deploys from `master` to the publication environment. PRs bui
 | Release 2.0 | Versioned site and pinned sources | Documentation, examples, and binaries point to the same version; Pages published after configuration |
 
 Add Doxygen or LDoc only after a small trial verifies signature coverage, examples, and maintenance cost. Their output does not automatically replace narrative documentation. If generation is selected, use one source for each datum and fail CI for stale output or signatures.
+
+
+## Executable Rust guide checks
+
+`tools/test_rust_docs.py` reads every Rust block in `docs/api/*.md`, builds each
+as a main-thread executable against installed `malvado` crate sources, then runs
+it with a bounded timeout. It uses the actual guide text, including Rustdoc
+hidden setup lines. No ignored or compile-only Rust blocks are accepted. The
+fixture supplies existing licensed PNG, font, FPG, WAV and OGG inputs in a
+temporary directory; no teaching example or game asset catalog is added.
+
+`mise run test-rust-graphics` includes these checks for both SDK profiles and
+hosts with a display. For an existing graphical SDK, run:
+
+```sh
+mise exec -- python3 tools/test_rust_docs.py --sdk "/path/to/installed sdk"
+mise exec -- python3 tools/test_rust_docs.py --sdk "/path/to/installed sdk" --release
+```
+
+The initial acceptance runs all 37 Rust guide blocks in Debug and Release on
+macOS arm64. Linux Xvfb CI runs the same checks. The task uses a paced silent
+SDK for automated audio checks and makes no physical-device or audible claim.

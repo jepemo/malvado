@@ -203,7 +203,7 @@ drawing. Missing entries return `Error::NotFound`; closed engines return
 `Error::Closed`. Styled entries retain their window even after the caller drops
 its original font/window variables, and release it when the final style ends.
 
-```rust,no_run
+```rust
 use std::rc::Rc;
 use malvado::{Engine, graphic::TextAlignment, window::{Window, Color}};
 let window = Rc::new(Window::open(320, 200, "Text")?);

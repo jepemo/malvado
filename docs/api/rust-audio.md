@@ -4,7 +4,7 @@ Enable `graphics` and install the native graphics SDK. This feature supplies
 raylib platform services, including audio. Audio does not require an open window.
 Default core-only builds do not link audio or raylib.
 
-```rust,no_run
+```rust
 use malvado::{Error, audio::{Audio, Sound}};
 use std::rc::Rc;
 
@@ -71,7 +71,7 @@ that loaded a playing stream ends. Looping streams keep playing until stopped
 or service shutdown. Updates return `Platform` if a native update fails.
 There is no automatic integration with window frames or process ticks.
 
-```rust,no_run
+```rust
 use malvado::{Error, audio::{Audio, Music}};
 use std::rc::Rc;
 let audio = Rc::new(Audio::open()?);

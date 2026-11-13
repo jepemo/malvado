@@ -115,11 +115,20 @@ Missing entries return `None`. Names are case-sensitive; embedded NUL returns
 `InvalidArgument`. Each sprite shares the texture and copies its region and
 native cropped pivot. The atlas can then be dropped.
 
-```rust,ignore
+```rust
+# use std::rc::Rc;
+# use malvado::{atlas::{Atlas, TextureAtlas}, image::Image, window::{Window, Color}};
+# let window = Rc::new(Window::open(160, 120, "Atlas sprite")?);
+# let image = Image::from_rgba(window.clone(), 1, 1, &[255, 0, 0, 255])?;
+# let atlas = Atlas::parse(r#"{"schema":1,"kind":"graphics-library","image":"unused.png","sprites":[{"id":7,"name":"ship","x":0,"y":0,"width":1,"height":1}]}"#, 1, 1)?;
+# let textured = TextureAtlas::new(atlas, image)?;
+# let background = Color {r:0,g:0,b:0,a:255};
 let sprite = textured.sprite_named("ship")?.ok_or(malvado::Error::NotFound)?;
 drop(textured);
 let frame = window.frame(background)?;
 frame.sprite(&sprite, (80.0, 60.0), 1.0, 0.0)?;
+# drop(frame);
+# Ok::<(), malvado::Error>(())
 ```
 
 `Frame::sprite` uses the native pivot, positive scale and clockwise rotation.

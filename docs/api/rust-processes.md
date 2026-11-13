@@ -31,6 +31,11 @@ impl Counter {
         Ok(())
     }
 }
+# let mut engine = malvado::Engine::new()?;
+# engine.spawn(Default::default(), |p| Counter { value: 0 }.run(p))?;
+# for _ in 0..4 { engine.tick()?; }
+# assert_eq!(engine.process_count(), 0);
+# Ok::<(), Error>(())
 ```
 
 Create an `Engine`, then call `engine.spawn(SpawnOptions::default(), |process|

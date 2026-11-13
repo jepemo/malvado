@@ -163,6 +163,8 @@ def main():
         run("cargo", "clippy", "--manifest-path", MANIFEST, "--workspace",
             "--all-targets", "--all-features", "--", "-D", "warnings", env=env)
         consumer(prefix, profile)
+        run(sys.executable, str(ROOT / "tools/test_rust_docs.py"), "--sdk", str(prefix),
+            *(["--release"] if profile == "Release" else []))
     # Verify feature discovery even when this task runs before the core suite.
     core = WORK / "core-only"
     run("cmake", "-S", str(ROOT), "-B", str(core), "-DMALVADO_BUILD_LUA=OFF",
