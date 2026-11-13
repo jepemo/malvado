@@ -334,11 +334,11 @@ rust_manifest(void)
     char escaped[sizeof(dependency) * 2];
     size_t used = 0;
     for (const unsigned char *p = (const unsigned char *)dependency; *p; ++p) {
-        if (*p < 32 || *p == 127 || *p == '"') {
-            fprintf(stderr, "Unsupported control character or quotation mark in SDK path\n");
+        if (*p < 32 || *p == 127 || *p == '"' || *p == ';') {
+            fprintf(stderr, "Unsupported character in SDK path (control character, quotation mark or semicolon)\n");
             return NULL;
         }
-        if (*p == '\\' || *p == '"') escaped[used++] = '\\';
+        if (*p == '\\') escaped[used++] = '\\';
         escaped[used++] = (char)*p;
     }
     escaped[used] = '\0';
@@ -423,12 +423,15 @@ new_project(const char *path, int language)
         return 1;
     }
     if (language == 2) {
-        int ok = write_project_file(path, "main.rs", rust_game) &&
-                 write_project_file(path, "Cargo.toml", manifest);
+        if (!write_project_file(path, "main.rs", rust_game)) {
+            free(manifest);
+            remove_project(path);
+            return 1;
+        }
+        int ok = write_project_file(path, "Cargo.toml", manifest);
         free(manifest);
         if (!ok) {
             remove_project_file(path, "main.rs");
-            remove_project_file(path, "Cargo.toml");
             remove_project(path);
             return 1;
         }
@@ -529,8 +532,11 @@ main(int argc, char **argv)
 #ifndef __APPLE__
         if (app) { fprintf(stderr, "App export requires macOS\n"); return 1; }
 #endif
-        int native = !is_regular_file("main.lua") && malvado_native_project();
-        if (native ? malvado_native_build() != 0 : check_project(".", 1) != 0) return 1;
+        int native = project_language();
+        if (native < 0) return 2;
+        int built = native == 2 ? malvado_rust_build(0) :
+                    native == 1 ? malvado_native_build() : check_project(".", 1);
+        if (built != 0) return 1;
         return destination ? malvado_export(destination, native, app, bundle_id) :
                              malvado_export_default(native, app, bundle_id);
     }

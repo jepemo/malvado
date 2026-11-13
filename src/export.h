@@ -15,6 +15,8 @@
 #ifndef MALVADO_EXPORT_H
 #define MALVADO_EXPORT_H
 #include <stddef.h>
+/* native: 0 for Lua, 1 for C, 2 for Rust. Both native languages use the
+ * same player launcher; the authoring client supplies a built executable. */
 int malvado_export(const char *output, int native, int app, const char *bundle_id);
 int malvado_export_default(int native, int app, const char *bundle_id);
 /* Return 2 if both launchers and required licenses are usable, 1 if they are

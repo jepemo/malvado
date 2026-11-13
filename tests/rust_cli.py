@@ -38,6 +38,8 @@ def creation(cli, work, visual):
             "    let mut frames = 0;\n    while { frames += 1; frames <= 3 } && !window.should_close()")
         (game / "main.rs").write_text(bounded)
         run(cli, "run", game, cwd=work)
+        run(cli, "export", work / "starter player", cwd=game)
+        run(work / "starter player/game", cwd=work, env=dict(os.environ, PATH=""))
         (game / "main.rs").write_bytes(before)
     print("PASS: Rust template compiles against installed SDK; existing project preserved", flush=True)
     return game
@@ -63,6 +65,7 @@ fn main() -> Result<(), Error> {
     engine.tick()?;
     engine.tick()?;
     assert_eq!(engine.process_count(), 0);
+    if std::env::var_os("MALVADO_TEST_EXIT").is_some() { std::process::exit(7); }
     Ok(())
 }
 ''')
@@ -81,6 +84,7 @@ fn main() -> Result<(), Error> {
     output = run(cli, "run", game, cwd=work)
     assert "rust: first\nrust: second" in output
     assert (game / "executed").read_text() == "yes"
+    run(cli, "run", game, cwd=work, env=dict(os.environ, MALVADO_TEST_EXIT="yes"), code=7)
     (game / "executed").unlink()
     run(cli, "run", "--headless", game, cwd=work, code=2)
     for entry in ("main.lua", "main.c"):
@@ -119,6 +123,8 @@ fn main() -> Result<(), Error> {
     output = run(cli, "check", game, cwd=work,
                  env=dict(os.environ, CC="malvado-no-such-compiler"), code=1)
     assert "malvado-no-such-compiler" in output
+    # A corrected environment must recover without deleting Cargo outputs.
+    run(cli, "check", game, cwd=work)
     protected = work / "unmanaged"
     protected.mkdir()
     shutil.copy(game / "Cargo.toml", protected)
@@ -140,6 +146,76 @@ fn main() -> Result<(), Error> {
     print("PASS: Rust CLI check/build/run, scheduler trace, incremental build and diagnostics", flush=True)
 
 
+
+def exports(cli, work, game):
+    # Cargo owns source layout. Export must not assume a root main.rs.
+    (game / "src").mkdir()
+    (game / "main.rs").rename(game / "src/custom.rs")
+    manifest = game / "Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('path = "main.rs"', 'path = "src/custom.rs"'))
+    (game / "target").mkdir()
+    (game / "target/not-an-asset").write_text("skip")
+    (game / "assets/ignored.rs").write_text("source")
+    (game / "assets/directory.rs").mkdir()
+    (game / "assets/directory.rs/pixel.dat").write_text("asset")
+    run(cli, "export", cwd=game)
+    output = game / "dist/game"
+    for name in ("game", "game-bin", "assets/value.txt", "assets/directory.rs/pixel.dat"):
+        assert (output / name).is_file(), name
+    for name in ("Cargo.toml", "Cargo.lock", "target", ".cargo", ".malvado", "assets/ignored.rs"):
+        assert not (output / name).exists(), name
+    assert not list(output.rglob("*.rs")) or all(p.is_dir() for p in output.rglob("*.rs"))
+    assert (output / "src").is_dir() and not list((output / "src").iterdir())
+    for notice in ("LICENSE", "Lua-readme.html", "raylib-LICENSE"):
+        assert (output / "licenses" / notice).is_file(), notice
+    inspect = ["otool", "-L"] if os.uname().sysname == "Darwin" else ["ldd"]
+    dependencies = subprocess.check_output([*inspect, str(output / "game-bin")], text=True)
+    # otool includes the inspected filename on its first line.
+    if os.uname().sysname == "Darwin":
+        dependencies = "\n".join(dependencies.splitlines()[1:])
+    assert str(cli.parent.parent) not in dependencies and "not found" not in dependencies
+    original = (output / "game-bin").read_bytes()
+    run(cli, "export", cwd=game, code=1)
+    assert (output / "game-bin").read_bytes() == original
+    moved = work / "moved player"
+    shutil.copytree(output, moved)
+    # The player needs neither the SDK nor authoring tools on PATH.
+    prefix = cli.parent.parent
+    hidden = prefix.with_name(prefix.name + " hidden")
+    prefix.rename(hidden)
+    try:
+        player = run(moved / "game", cwd=work, env=dict(os.environ, PATH=""))
+        assert "rust: first\nrust: second" in player
+        assert (moved / "executed").read_text() == "yes"
+    finally:
+        hidden.rename(prefix)
+    if os.uname().sysname == "Darwin":
+        run(cli, "export", "--app", cwd=game)
+        app = game / "dist/game.app/Contents/MacOS"
+        assert "rust: first\nrust: second" in run(app / "game", cwd=work, env=dict(os.environ, PATH=""))
+    else:
+        run(cli, "export", "--app", cwd=game, code=1)
+    symlink = game / "assets/link.rs"
+    symlink.symlink_to(game / "assets/value.txt")
+    try:
+        run(cli, "export", work / "rejected link", cwd=game, code=1)
+        assert not (work / "rejected link").exists()
+    finally:
+        symlink.unlink()
+    (game / "game-bin").write_text("keep")
+    run(cli, "export", work / "reserved", cwd=game, code=1)
+    assert (game / "game-bin").read_text() == "keep" and not (work / "reserved").exists()
+    (game / "game-bin").unlink()
+    source = game / "src/custom.rs"
+    original_source = source.read_text()
+    source.write_text('compile_error!("no stale exports");')
+    run(cli, "export", work / "failed build", cwd=game, code=1)
+    assert not (work / "failed build").exists()
+    source.write_text(original_source)
+    assert not list(work.glob(".malvado-export-*"))
+    print("PASS: Rust folder/app export, custom Cargo entry, assets, source exclusion and player without SDK/tools", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", type=Path, required=True)
@@ -151,6 +227,7 @@ def main():
     cli = args.cli.resolve()
     game = creation(cli, work, args.visual)
     commands(cli, work, game)
+    exports(cli, work, game)
 
 
 if __name__ == "__main__":

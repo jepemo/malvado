@@ -200,7 +200,7 @@ supports a binary target named `game`; Cargo defines its source path. Other
 binary names and workspaces with multiple packages are outside this initial
 contract. The generated dependency points to the installed SDK crate sources.
 If you move or replace that SDK, update the dependency path in `Cargo.toml`.
-SDK paths with quotation marks are rejected because the native CMake probe does
+SDK paths with quotation marks, semicolons or control characters are rejected because the native CMake probe does
 not support them. Paths with spaces are supported.
 
 A regular `Cargo.toml` identifies a Rust project. A folder with both that file
@@ -226,5 +226,17 @@ crate dependencies. Rust `check` can execute build scripts and procedural macros
 it does not execute the game binary. `doctor` only reports availability and does
 not compile a project or install tools.
 
-Rust export is the remaining CLI integration step. See the
+`malvado export` builds the Rust `game` binary and uses the same native player
+launcher as C exports. The folder contains the executable, assets and engine
+notices. Rust source files, Cargo manifests/lockfiles, `target`, hidden entries
+and the existing `build`/`dist` exclusions are omitted. Source-named directories
+can still contain assets. Symbolic links and special files are rejected before
+publication. Existing destinations are preserved. A failed build cannot export
+an old binary. Custom source paths in the Cargo binary definition are supported.
+
+On macOS, `export --app` uses the same bundle rules as C/Lua. Exported Rust games
+run without Cargo, rustc, a C compiler or the installed SDK. Dependencies added
+by the application can require extra runtime libraries and notices; the exporter
+does not discover or bundle arbitrary Cargo dependency runtimes. This is a native
+host export, with Windows/Android and cross-compilation still in alpha.8. See the
 [Rust migration plan](../development/rust-migration.md) for the broader scope.

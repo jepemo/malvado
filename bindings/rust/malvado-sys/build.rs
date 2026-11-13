@@ -53,6 +53,12 @@ fn main() {
     // Re-run when an installed SDK is replaced without changing its prefix.
     println!("cargo:rerun-if-changed={}", prefix.display());
     let output = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native");
+    // Cargo reruns this script when SDK/tool settings change. A CMake cache
+    // from a failed compiler or a different generator must not survive that
+    // change. This directory contains only this script's generated probe files.
+    if output.exists() {
+        std::fs::remove_dir_all(&output).expect("cannot reset the generated native SDK probe");
+    }
     let source = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("native");
     let config = if env::var("DEBUG").unwrap() == "true" {
         "Debug"

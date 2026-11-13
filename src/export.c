@@ -36,6 +36,7 @@
 #include <sys/stdio.h>
 #endif
 #include "export.h"
+#include "build.h"
 
 static char *
 join_path(const char *directory, const char *name)
@@ -109,11 +110,14 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
         if (!from || (destination && !to)) { free(from); free(to); ok = 0; break; }
         struct stat info;
         if (lstat(from, &info) != 0) { perror(from); ok = 0; }
-        else if (S_ISDIR(info.st_mode) && (!strcmp(name, "build") || !strcmp(name, "dist"))) {
+        else if (S_ISDIR(info.st_mode) && (!strcmp(name, "build") || !strcmp(name, "dist") ||
+                    (native == 2 && !strcmp(name, "target")))) {
             /* Build outputs are not game assets. */
         } else if (S_ISREG(info.st_mode)) {
             size_t name_length = strlen(name);
             int source_file = native && (!strcmp(name, "CMakeLists.txt") ||
+                (native == 2 && (!strcmp(name, "Cargo.toml") || !strcmp(name, "Cargo.lock") ||
+                    (name_length >= 3 && !strcmp(name + name_length - 3, ".rs")))) ||
                 (name_length >= 2 && (!strcmp(name + name_length - 2, ".c") ||
                                       !strcmp(name + name_length - 2, ".h"))));
             if (destination && !source_file) ok = copy_file(from, to, 0);
@@ -310,9 +314,18 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
         fprintf(stderr, "Export destination must be in dist or outside the project directory\n"); return 1;
     }
     struct stat info;
-    const char *entry = native ? "main.c" : "main.lua";
+    const char *entry = native == 2 ? "Cargo.toml" : native ? "main.c" : "main.lua";
     if (lstat(entry, &info) != 0 || !S_ISREG(info.st_mode)) {
         fprintf(stderr, "Project needs a regular %s file\n", entry); return 1;
+    }
+    char rust_binary[PATH_MAX];
+    const char *binary = ".malvado/build/game";
+    if (native == 2) {
+        if (!malvado_rust_binary(rust_binary, sizeof(rust_binary))) {
+            fprintf(stderr, "Rust game executable is missing; build the project first\n");
+            return 1;
+        }
+        binary = rust_binary;
     }
     char *launcher = join_path(executable, native ? MALVADO_NATIVE_LAUNCHER_REL : MALVADO_LAUNCHER_REL);
     char *notices = join_path(executable, MALVADO_NOTICES_REL);
@@ -343,7 +356,7 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     char *license_dir = payload ? join_path(payload, "licenses") : NULL;
     char *native_game = native && payload ? join_path(payload, "game-bin") : NULL;
     ok = ok && game && license_dir && (!native || native_game) && copy_file(launcher, game, 1) &&
-             (!native || copy_file(".malvado/build/game", native_game, 1)) &&
+             (!native || copy_file(binary, native_game, 1)) &&
              mkdir(license_dir, 0755) == 0 && copy_tree(notices, license_dir, 1, 0) &&
              copy_tree(".", payload, 0, native);
     free(native_game); free(game); free(license_dir); free(plist); free(payload); free(contents);
@@ -365,7 +378,7 @@ int
 malvado_export_default(int native, int app, const char *bundle_id)
 {
     struct stat info;
-    const char *entry = native ? "main.c" : "main.lua";
+    const char *entry = native == 2 ? "Cargo.toml" : native ? "main.c" : "main.lua";
     if (lstat(entry, &info) != 0 || !S_ISREG(info.st_mode)) {
         fprintf(stderr, "Project needs a regular %s file\n", entry);
         return 1;
