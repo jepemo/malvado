@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import traceback
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,67 +102,78 @@ def configure_driver(work):
     os.environ["GALLIUM_DRIVER"] = "llvmpipe"
 
 
+def author_game(cli, sdk, work, players, host, language, source, filename, label):
+    project = work / f"{label} game with spaces"
+    run(cli, "new", "--lang", language, project, cwd=work)
+    (project / filename).write_text(source, encoding="utf-8")
+    (project / "assets").mkdir(exist_ok=True)
+    (project / "assets/value.txt").write_bytes(VALUE)
+    (project / "assets/pixels.bin").write_bytes(bytes(range(256)))
+    if language != "lua":
+        run(cli, "build", project, cwd=work)
+        binary = project / (f".malvado/rust/{host}/debug/game.exe" if language == "rust"
+                            else ".malvado/build/game.exe")
+        assert binary.is_file()
+        deploy(binary.parent)
+    if language != "c":
+        run(cli, "check", project, cwd=work)
+    assert f"{label} export: 3" in run(cli, "run", project, cwd=work)
+    output = players / f"{label} exported game"
+    run(cli, "export", output, cwd=project)
+    assert output.is_dir()
+    for name in ("LICENSE", "Lua-readme.html", "raylib-LICENSE", "cJSON-LICENSE"):
+        assert (output / "licenses" / name).is_file(), name
+    for asset in ("value.txt", "pixels.bin"):
+        assert (output / "assets" / asset).read_bytes() == (project / "assets" / asset).read_bytes()
+    assert not (output / "opengl32.dll").exists(), "test driver must not enter exported packages"
+    if language != "lua":
+        assert (output / "game-bin.exe").is_file()
+        assert not any(path.is_file() and (path.suffix in (".c", ".h", ".rs") or
+                       path.name in ("Cargo.toml", "Cargo.lock", "CMakeLists.txt"))
+                       for path in output.rglob("*"))
+    before = (output / "game.exe").read_bytes()
+    run(cli, "export", output, cwd=project, success=False)
+    assert (output / "game.exe").read_bytes() == before
+    # Windows case folding must not allow a reserved executable to replace the player.
+    (project / "GAME.EXE").write_bytes(b"reserved")
+    rejected = players / f"{label} rejected"
+    run(cli, "export", rejected, cwd=project, success=False)
+    assert not rejected.exists()
+    (project / "GAME.EXE").unlink()
+    assert not list(players.glob(".malvado-export-*"))
+    # Hide authoring tools without changing the host or permitting Rustup downloads.
+    env = dict(os.environ, PATH=str(Path(os.environ["SystemRoot"]) / "System32"))
+    if language != "lua":
+        run(cli, "build", project, cwd=work, env=env, success=False)
+    if language == "rust":
+        launcher = sdk / "libexec/malvado/malvado-native-game.exe"
+        hidden = launcher.with_suffix(".saved")
+        launcher.rename(hidden)
+        try:
+            assert "required licenses missing" in run(cli, "doctor", cwd=work)
+        finally:
+            hidden.rename(launcher)
+    return {"folder": output.name, "trace": f"{label} export: 3"}
+
+
 def author(sdk, work, players):
     cli = sdk / "bin/malvado.exe"
     deploy(cli.parent)
     assert "Export: launchers and required licenses found" in run(cli, "doctor", cwd=work)
     host = subprocess.check_output(["rustc", "-vV"], text=True).split("host: ")[1].splitlines()[0]
     manifest = []
+    failures = []
     for language, source, filename, label in (
             ("lua", LUA_GAME, "main.lua", "Lua"),
             ("c", C_GAME, "main.c", "C"),
             ("rust", RUST_GAME, "main.rs", "Rust")):
-        project = work / f"{label} game with spaces"
-        run(cli, "new", "--lang", language, project, cwd=work)
-        (project / filename).write_text(source, encoding="utf-8")
-        (project / "assets").mkdir(exist_ok=True)
-        (project / "assets/value.txt").write_bytes(VALUE)
-        (project / "assets/pixels.bin").write_bytes(bytes(range(256)))
-        if language != "lua":
-            run(cli, "build", project, cwd=work)
-            binary = project / (f".malvado/rust/{host}/debug/game.exe" if language == "rust"
-                                else ".malvado/build/game.exe")
-            assert binary.is_file()
-            deploy(binary.parent)
-        if language != "c":
-            run(cli, "check", project, cwd=work)
-        assert f"{label} export: 3" in run(cli, "run", project, cwd=work)
-        output = players / f"{label} exported game"
-        run(cli, "export", output, cwd=project)
-        assert output.is_dir()
-        for name in ("LICENSE", "Lua-readme.html", "raylib-LICENSE", "cJSON-LICENSE"):
-            assert (output / "licenses" / name).is_file(), name
-        for asset in ("value.txt", "pixels.bin"):
-            assert (output / "assets" / asset).read_bytes() == (project / "assets" / asset).read_bytes()
-        assert not (output / "opengl32.dll").exists(), "test driver must not enter exported packages"
-        if language != "lua":
-            assert (output / "game-bin.exe").is_file()
-            assert not any(path.is_file() and (path.suffix in (".c", ".h", ".rs") or
-                           path.name in ("Cargo.toml", "Cargo.lock", "CMakeLists.txt"))
-                           for path in output.rglob("*"))
-        before = (output / "game.exe").read_bytes()
-        run(cli, "export", output, cwd=project, success=False)
-        assert (output / "game.exe").read_bytes() == before
-        # Windows case folding must not allow a reserved executable to replace the player.
-        (project / "GAME.EXE").write_bytes(b"reserved")
-        rejected = players / f"{label} rejected"
-        run(cli, "export", rejected, cwd=project, success=False)
-        assert not rejected.exists()
-        (project / "GAME.EXE").unlink()
-        assert not list(players.glob(".malvado-export-*"))
-        # Hide authoring tools without changing the host or permitting Rustup downloads.
-        env = dict(os.environ, PATH=str(Path(os.environ["SystemRoot"]) / "System32"))
-        if language != "lua":
-            run(cli, "build", project, cwd=work, env=env, success=False)
-        if language == "rust":
-            launcher = sdk / "libexec/malvado/malvado-native-game.exe"
-            hidden = launcher.with_suffix(".saved")
-            launcher.rename(hidden)
-            try:
-                assert "required licenses missing" in run(cli, "doctor", cwd=work)
-            finally:
-                hidden.rename(launcher)
-        manifest.append({"folder": output.name, "trace": f"{label} export: 3"})
+        try:
+            manifest.append(author_game(cli, sdk, work, players, host, language, source, filename, label))
+        except Exception as error:
+            failures.append(f"{label}: {error}")
+            traceback.print_exc()
+    if failures:
+        raise RuntimeError("Windows authoring failures: " + "; ".join(failures))
     (players / "manifest.json").write_text(json.dumps({
         "revision": os.environ.get("GITHUB_SHA", "local"), "games": manifest,
         "assets": {"value.txt": hashlib.sha256(VALUE).hexdigest(),
