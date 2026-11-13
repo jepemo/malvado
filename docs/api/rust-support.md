@@ -24,8 +24,9 @@ need Cargo or rustc. Runtime libraries, assets and notices must still accompany
 an exported game according to its target's distribution contract.
 
 CLI project creation, build/check/run and exports are delivered for matching
-native macOS/Linux SDKs. Windows x64 MSVC headless and graphical SDK integration
-is verified; Windows CLI builds/exports remain alpha.8 work. Windows GNU/ARM64,
+native macOS/Linux and Windows x64 MSVC SDKs. Windows headless/graphical SDKs,
+CLI authoring and fresh exported players are verified in the recorded baseline.
+Windows GNU/ARM64,
 Rust cross compilation and Android Rust game paths are not delivered. Software
 rendering and silent audio CI do not establish physical device behavior. See
 [platform verification](../development/alpha8-platforms.md) for evidence and

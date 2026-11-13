@@ -1,6 +1,6 @@
 # SDK and projects
 
-The development SDK includes the `malvado` command, the Lua runtime, the C libraries, and Rust crate sources. It works on the macOS or Linux host for which it was built. Malvado 2 is in development, and its tools can change.
+The development SDK includes the `malvado` command, the Lua runtime, the C libraries, and Rust crate sources. Use a matching native macOS, Linux or Windows x64 MSVC SDK. Malvado 2 is in development, and its tools can change.
 
 ## Install a local development build
 
@@ -15,6 +15,26 @@ malvado --version
 The task builds and installs a development SDK for your user. Run `mise run install` again after you change the source. It replaces the managed SDK. Run `mise run uninstall` to remove it. The tasks do not change your shell configuration. Add the `export PATH` line to your shell configuration to use the command in new terminals.
 
 Set `MALVADO_DEV_PREFIX` to choose another installation directory. Add its `bin` directory to `PATH` instead. Use that directory only for the development SDK. The tasks refuse to change an unmanaged directory or a directory with extra files. They do not remove your projects.
+
+## Windows SDK prefix
+
+Install the VS 2022 C++ desktop workload and Windows SDK, plus CMake and the
+Rust toolchain when developing Rust games. From PowerShell in a source checkout:
+
+```powershell
+cmake -S . -B build -A x64
+cmake --build build --config Release --parallel
+cmake --install build --config Release --prefix "C:/Malvado SDK"
+& "C:/Malvado SDK/bin/malvado.exe" doctor
+```
+
+Use that executable directly or add its `bin` directory to your PATH. The Unix
+`mise run install` manager is not a Windows installer. Windows folder exports
+start with `game.exe`; native C/Rust players include `game-bin.exe`. Players need
+a working OpenGL 3.3/WGL provider and the Microsoft release CRT, but no Cargo,
+rustc or compiler. Software-rendered CI and fresh-player checks are recorded in
+the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md).
+Windows app bundles, cross exports and Unicode project/SDK paths are not claimed.
 
 ## Build and install the SDK
 
@@ -76,8 +96,8 @@ point; window creation and the host loop remain explicit. See the
 [support policy](https://github.com/jepemo/malvado/blob/master/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/master/docs/development/rust-game-migration.md).
 Rust games are native executables; players do not need Cargo or rustc.
 
-Install Cargo, rustc, CMake and a C compiler, then use a matching macOS or Linux
-SDK:
+Install Cargo, rustc, CMake and a C compiler, then use a matching native SDK
+for macOS, Linux or Windows x64 MSVC:
 
 ```sh
 malvado doctor

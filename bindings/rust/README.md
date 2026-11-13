@@ -60,8 +60,8 @@ query first; a different revision stops validation before the release query.
 An exact release match is also required. New incompatible libraries must
 increment the ABI revision before changing any other query contract.
 
-The supported product is the existing `libmalvado_core.a` archive with its
-math-library dependency. Dynamic-only SDKs are explicitly rejected: Malvado
+The supported core is a static archive: `libmalvado_core.a` on Unix and
+`malvado_core.lib` on Windows. Native probes check the host dependencies. Dynamic-only SDKs are explicitly rejected: Malvado
 does not currently build a shared core product. There is no dynamic-loader
 path to configure for the static core. The optional graphics feature checks and links its static raylib/backend
 archives and supported host dependencies separately.
@@ -71,7 +71,8 @@ The host C compiler must match the Rust target. The executable probe detects
 wrong native architectures through link or execution errors. Cross compilation and Android are not supported. Native Windows x64 MSVC
 core and assets validation is available through `mise run test-platform -- --rust`;
 Use `mise run test-platform -- --graphics --rust --work build-platform-graphics`
-to verify the graphical SDK separately. Windows CLI builds/exports remain unavailable. A CMake package
+to verify the graphical SDK separately. Windows x64 MSVC CLI builds and folder
+exports are verified; see the [platform matrix](../../docs/development/alpha8-platforms.md). A CMake package
 which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 

@@ -19,7 +19,7 @@ malvado gui
 
 The Lua template returns a game table. The runner also supports `mv.start()`. Exported Lua games load `main.lua` with the same entry rules. See the [Lua process guide](../api/lua-processes.md).
 
-`malvado new --c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS and Linux, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
+`malvado new --c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS, Linux and Windows x64 MSVC, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
 
 `check` in a C project directory configures, compiles and links the `game`
 target through the existing managed C build. As with C builds, an installed
@@ -47,7 +47,7 @@ On macOS and Linux, an installed graphical SDK built with static libraries can m
 malvado export
 ```
 
-Run this command from the project directory. It creates `dist/game`. You can also pass a destination outside the project, for example `malvado export ../my-game-export`. The destination must not exist. The folder contains `game`, the project files, and engine dependency licenses. Run `game` to start the game. For Lua, the exporter checks the syntax of all included Lua files. For C, it builds the `game` target and excludes `.c` and `.h` files and `CMakeLists.txt` from the output. Both paths skip hidden entries and directories named `build` or `dist`, and reject symbolic links and special files. The project root cannot contain entries named `game`, `game-bin`, or `licenses`. The exporter prepares the game in a temporary directory and publishes it only after copying succeeds. It does not replace an existing destination. The export targets the current host and still needs clean-machine validation. It does not cross-compile or validate all dependencies.
+Run this command from the project directory. It creates `dist/game`. You can also pass a destination outside the project, for example `malvado export ../my-game-export`. The destination must not exist. The folder contains `game` (`game.exe` on Windows), the project files, and engine dependency licenses. Native C/Rust payloads use `game-bin` (`game-bin.exe` on Windows). Run the player executable to start the game. For Lua, the exporter checks the syntax of all included Lua files. For C, it builds the `game` target and excludes `.c` and `.h` files and `CMakeLists.txt` from the output. Both paths skip hidden entries and directories named `build` or `dist`, and reject symbolic links and special files. The project root cannot contain entries named `game`, `game-bin`, or `licenses`. Windows also reserves the executable names and compares reserved names without case. The exporter prepares the game in a temporary directory and publishes it only after copying succeeds. It does not replace an existing destination. The export targets the current host and still needs clean-machine validation. It does not cross-compile or validate all dependencies.
 
 On macOS, `malvado export --app [--id ID] [PATH]` creates an initial application bundle. The default is `dist/game.app`; a specified path must end in `.app`. The file name sets the bundle name and must be valid UTF-8 without control characters. The optional ID must have dot-separated components that contain ASCII letters, digits, or hyphens. Components cannot start or end with a hyphen. Without an ID, the bundle uses `org.malvado.game`, which is shared by all default exports. The bundle contains the launcher, game files, and notices. It is not signed or notarized by Malvado. Clean-machine verification remains pending.
 
@@ -163,13 +163,13 @@ Launch tools with argument arrays, not shell command strings built from names/pa
 | Target | First artifact | Tools and details | Verification |
 | --- | --- | --- | --- |
 | Linux x86_64 | Folder/archive with executable and assets | Explicit glibc baseline; required libraries/rpath; arm64 later | Clean machine without Lua; input, audio, shutdown |
-| Windows x86_64 | Portable ZIP with `.exe`, assets, and required DLLs | Native CI build or validated MinGW; include runtime dependencies | Clean Windows without development tools |
+| Windows x86_64 MSVC | Folder with `.exe`, assets and notices; SDK archive | Native VS 2022 x64, release CRT and WGL provider required; no bundled test Mesa | Fresh-runner players without authoring tools on PATH; hardware checks in beta |
 | macOS arm64 | `.app` in ZIP; x86_64 or universal later | Info.plist, icon, resource bundle; release signing/notarization on macOS | Finder launch and self-contained bundle |
 | Android arm64 | Debug APK; release APK/AAB | Pinned SDK/NDK/JDK/Gradle, ABI, Activity, assets, native library | Install/run on device or emulator; validate bundle |
 
 Not every target supports every architecture in 2.0. Reject unsupported combinations with a useful diagnostic. AAB is a distribution format and needs specific validation; it is not installed directly like an APK.
 
-Windows verification and effective support are reserved for alpha.8. Alpha.4 accepts macOS and Linux. Desktop support does not imply cross-compilation from every OS. Start with native CI builds per target and versioned SDKs; the exporter selects the runtime. Android needs its toolchain on macOS/Linux/Windows hosts. Publish the host matrix after testing.
+Windows SDK/CLI/folder exports and fresh players passed alpha.8 A8.2/A8.3. See the [platform matrix](../development/alpha8-platforms.md) for commands and limits. Alpha.4 accepted macOS and Linux. Desktop support does not imply cross-compilation from every OS. Start with native CI builds per target and versioned SDKs; the exporter selects the runtime. Android needs its toolchain on macOS/Linux/Windows hosts. Publish the host matrix after testing.
 
 ## Android: engine work beyond ZIP
 

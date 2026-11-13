@@ -10,7 +10,7 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | --- | --- | --- |
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
-| Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | CLI builds and exports; hardware review in beta |
+| Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
 | Desktop / Android | Not implemented | C/Lua/Rust runtime, APK/AAB and emulator behavior |
 
 ## Native Windows baseline
@@ -49,7 +49,7 @@ still validates ABI values, layouts and signatures before linking. MSVC uses
 Native Windows verification passed on `c49545c` in
 [run 43437979697](https://github.com/jepemo/malvado/actions/runs/43437979697).
 Both configurations passed headless and graphical Rust tests, installed crate
-consumers and SDK diagnostics. Windows CLI builds and exports remain open in A8.3.
+consumers and SDK diagnostics. Windows CLI and exports passed the A8.3 verification described below.
 
 The Rust verifier also builds and runs an offline consumer from the installed
 crate sources in a project path with spaces. The consumer checks process
@@ -112,7 +112,9 @@ regression tests cover checksum rejection, incomplete drivers and deployment.
 
 ## Windows CLI and exported players
 
-Native verification is pending for this implementation. The graphical matrix
+Native verification passed on `a60be46` in
+[run 43449424295](https://github.com/jepemo/malvado/actions/runs/43449424295),
+closing A8.3. The graphical matrix
 uses `mise run test-platform -- --graphics --rust --cli --work build-platform-graphics`.
 For each configuration, `tests/windows_cli.py` creates C/Lua/Rust games in paths
 with spaces, checks/builds/runs them, and exports bounded graphical players.
@@ -137,3 +139,13 @@ Windows `--app` exports are unavailable. The supported authoring generator is
 Visual Studio 2022 x64; the Unix Ninja multi-config fixture does not establish a
 Windows Ninja toolchain. The Unix managed developer installer (`tools/dev_sdk.py`)
 is not a Windows installer. Use an installed SDK prefix and its `bin/malvado.exe`.
+
+Both SDK profiles passed authoring checks. The CLI builds its existing Debug
+game target against each SDK profile; profile labels do not imply a new CLI
+release-build option. All six C/Lua/Rust exports then passed on a separate runner,
+including nonzero status when an asset was removed. Paths use ASCII names and
+spaces in this baseline; Unicode CLI project/SDK paths remain unverified.
+C `check` configures/builds/links without running the game, including rejection
+of invalid C. Rust SDK probes use short owned temporary directories on Windows
+to avoid MSBuild's nested compiler-identification path limit, with the required
+helper archive retained under Cargo output before cleanup.

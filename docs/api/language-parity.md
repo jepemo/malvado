@@ -6,7 +6,8 @@ Rust's gameplay API is experimental, functional and maintained; this label does
 not apply to the C core. See the [Rust support policy](rust-support.md).
 This feature matrix covers the shared native APIs. macOS/Linux SDK and CLI paths
 are verified. Windows x64 MSVC headless and graphical SDKs are verified; Windows
-CLI/export and Android acceptance remain alpha.8 work. See the
+CLI/export and fresh exported players are also verified. Android acceptance
+remains alpha.8 work. See the
 [platform matrix](../development/alpha8-platforms.md). This does not freeze the
 2.x API or ABI.
 
