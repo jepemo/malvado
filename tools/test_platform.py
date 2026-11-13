@@ -2,6 +2,7 @@
 """Build and test a native headless SDK in Debug and Release."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
+import json
 import os
 from pathlib import Path
 import shutil
@@ -15,6 +16,59 @@ def run(log, *args, env=None, timeout=600):
     log.flush()
     subprocess.run(args, cwd=ROOT, env=env, stdout=log,
                    stderr=subprocess.STDOUT, check=True, timeout=timeout)
+
+
+def verify_rust_sdk(log, work, prefix, config):
+    env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
+               CARGO_TARGET_DIR=str(work / "cargo"))
+    manifest = str(ROOT / "bindings/rust/Cargo.toml")
+    cargo = ["cargo", "test", "--manifest-path", manifest, "--workspace",
+             "--features", "malvado/assets"]
+    if config == "Release":
+        cargo.append("--release")
+    run(log, *cargo, env=env)
+
+    # Exercise the crates shipped in the SDK, not the source-tree dependency.
+    game = work / "external Rust game"
+    (game / "src").mkdir(parents=True, exist_ok=True)
+    dependency = prefix / "share/malvado/rust/malvado"
+    (game / "Cargo.toml").write_text(
+        '[package]\nname="platform-consumer"\nversion="0.0.0"\nedition="2024"\n'
+        '[dependencies]\nmalvado={path=' + json.dumps(str(dependency))
+        + ',features=["assets"]}\n', encoding="utf-8")
+    (game / "src/main.rs").write_text(
+        'use malvado::{Engine, SpawnOptions};\n'
+        'fn main() -> Result<(), malvado::Error> {\n'
+        ' let mut engine = Engine::new()?;\n'
+        ' let process = engine.spawn(SpawnOptions::default(), |p| async move {\n'
+        '  p.frame().await; Ok(())\n'
+        ' })?;\n'
+        ' process.set_position(3.0,4.0)?;\n'
+        ' assert_eq!(process.position()?, (3.0,4.0));\n'
+        ' engine.tick()?; engine.tick()?;\n'
+        ' assert_eq!(engine.process_count(),0); Ok(())\n'
+        '}\n', encoding="utf-8")
+    command = ["cargo", "run", "--offline", "--manifest-path", str(game / "Cargo.toml")]
+    if config == "Release":
+        command.append("--release")
+    run(log, *command, env=env)
+
+    # These checks need neither Unix archive tools nor a replacement compiler.
+    for prefix_value, expected in ((None, "set MALVADO_SDK_PREFIX"),
+                                   (str(work / "missing sdk"), "MALVADO_SDK_PREFIX does not exist")):
+        invalid = dict(env, CARGO_TARGET_DIR=str(work / "diagnostics"))
+        invalid.pop("MALVADO_SDK_PREFIX", None)
+        if prefix_value is not None:
+            invalid["MALVADO_SDK_PREFIX"] = prefix_value
+        result = subprocess.run(
+            ["cargo", "check", "--manifest-path", manifest, "-p", "malvado-sys"],
+            cwd=ROOT, env=invalid, text=True, capture_output=True, timeout=120)
+        log.write(f"\n>>> Expect SDK rejection: {expected}\n")
+        log.write(result.stdout + result.stderr)
+        log.flush()
+        if result.returncode == 0 or expected not in result.stdout + result.stderr:
+            raise RuntimeError(f"SDK diagnostic missing: {expected}")
+        log.write(f"PASS: {expected}\n")
 
 
 def main():
@@ -46,14 +100,7 @@ def main():
                 "--prefix", str(staged))
             staged.rename(prefix)
             if args.rust:
-                env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
-                           CARGO_TARGET_DIR=str(work / "cargo"))
-                cargo = ["cargo", "test", "--manifest-path",
-                         str(ROOT / "bindings/rust/Cargo.toml"), "--workspace",
-                         "--features", "malvado/assets"]
-                if config == "Release":
-                    cargo.append("--release")
-                run(log, *cargo, env=env)
+                verify_rust_sdk(log, work, prefix, config)
 
         print(f"PASS: {config}; evidence: {work / (config + '.log')}", flush=True)
 

@@ -44,3 +44,9 @@ Windows ARM64, cross compilation and Rust graphics are rejected. The SDK probe
 still validates ABI values, layouts and signatures before linking. MSVC uses
 `.lib` archives, `.exe` probes and BCrypt instead of the Unix math library.
 Native Windows results remain required before closing A8.2.
+
+The Rust verifier also builds and runs an offline consumer from the installed
+crate sources in a project path with spaces. The consumer checks process
+execution and cleanup. Both configurations must reject missing and nonexistent
+SDK prefixes with the documented errors. These diagnostics use Cargo and CMake;
+they do not depend on Unix archive tools.
