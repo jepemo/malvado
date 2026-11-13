@@ -32,9 +32,48 @@ fn cmake_sdk_path(path: &Path, windows: bool) -> String {
     value.replace('\\', "/")
 }
 
+// MSBuild's compiler-identification paths can exceed MAX_PATH inside Cargo's
+// nested target directory. Own a fresh short probe directory on Windows.
+struct TemporaryProbe(PathBuf);
+impl TemporaryProbe {
+    fn new() -> Self {
+        for sequence in 0..100 {
+            let path = env::temp_dir().join(format!("mv-sdk-{}-{sequence}", std::process::id()));
+            match std::fs::create_dir(&path) {
+                Ok(()) => return Self(path),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => panic!("cannot create native SDK probe directory: {}", error),
+            }
+        }
+        panic!("cannot allocate a unique native SDK probe directory");
+    }
+}
+impl Drop for TemporaryProbe {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn temporary_probes_do_not_reuse_or_remove_another_owner() {
+        let first = TemporaryProbe::new();
+        std::fs::write(first.0.join("marker"), b"owned").unwrap();
+        let second_path;
+        {
+            let second = TemporaryProbe::new();
+            assert_ne!(first.0, second.0);
+            second_path = second.0.clone();
+        }
+        assert!(!second_path.exists());
+        assert_eq!(std::fs::read(first.0.join("marker")).unwrap(), b"owned");
+        let first_path = first.0.clone();
+        drop(first);
+        assert!(!first_path.exists());
+    }
 
     #[test]
     fn cmake_paths() {
@@ -92,11 +131,16 @@ fn main() {
     );
     // Re-run when an installed SDK is replaced without changing its prefix.
     println!("cargo:rerun-if-changed={}", prefix.display());
-    let output = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native");
+    let cargo_output = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let temporary = windows.then(TemporaryProbe::new);
+    let output = temporary
+        .as_ref()
+        .map(|probe| probe.0.clone())
+        .unwrap_or_else(|| cargo_output.join("native"));
     // Cargo reruns this script when SDK/tool settings change. A CMake cache
     // from a failed compiler or a different generator must not survive that
     // change. This directory contains only this script's generated probe files.
-    if output.exists() {
+    if !windows && output.exists() {
         std::fs::remove_dir_all(&output).expect("cannot reset the generated native SDK probe");
     }
     let source = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("native");
@@ -250,6 +294,15 @@ fn main() {
             checks.starts_with(output.canonicalize().unwrap()),
             "verification archive outside probe build"
         );
+        // Cargo links after this script exits. Retain only the helper archive
+        // in its owned OUT_DIR before the short temporary probe is removed.
+        let checks = if windows {
+            let retained = cargo_output.join(checks.file_name().unwrap());
+            std::fs::copy(&checks, &retained).expect("cannot retain native graphics helpers");
+            retained.canonicalize().unwrap()
+        } else {
+            checks
+        };
         println!(
             "cargo:rustc-link-search=native={}",
             checks.parent().unwrap().display()
