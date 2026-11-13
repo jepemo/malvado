@@ -27,6 +27,10 @@ def run(log, *args, env=None, timeout=600):
 
 
 def verify_rust_sdk(log, work, prefix, config):
+    path_tests = work / ("sdk-path-tests.exe" if os.name == "nt" else "sdk-path-tests")
+    run(log, "rustc", "--test", str(ROOT / "bindings/rust/malvado-sys/build.rs"),
+        "-o", str(path_tests))
+    run(log, str(path_tests))
     env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix),
                CARGO_TARGET_DIR=str(work / "cargo"))
     manifest = str(ROOT / "bindings/rust/Cargo.toml")

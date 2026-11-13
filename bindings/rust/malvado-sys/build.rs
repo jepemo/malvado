@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 fn run(command: &mut Command) -> Output {
@@ -15,6 +15,43 @@ fn run(command: &mut Command) -> Output {
         );
     }
     output
+}
+
+// CMake's imported-target glob cannot use Win32 verbatim path prefixes.
+// Keep the canonical PathBuf for ownership checks and normalize only its CLI value.
+fn cmake_sdk_path(path: &Path, windows: bool) -> String {
+    let value = path.to_string_lossy();
+    if !windows {
+        return value.into_owned();
+    }
+    let value = value.strip_prefix(r"\\?\").unwrap_or(&value);
+    let value = match value.strip_prefix(r"UNC\") {
+        Some(unc) => format!("//{unc}"),
+        None => value.to_owned(),
+    };
+    value.replace('\\', "/")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cmake_paths() {
+        assert_eq!(
+            cmake_sdk_path(Path::new(r"\\?\C:\relocated sdk"), true),
+            "C:/relocated sdk"
+        );
+        assert_eq!(
+            cmake_sdk_path(Path::new(r"\\?\UNC\server\sdk"), true),
+            "//server/sdk"
+        );
+        assert_eq!(cmake_sdk_path(Path::new(r"C:\sdk"), true), "C:/sdk");
+        assert_eq!(
+            cmake_sdk_path(Path::new("/tmp/relocated sdk"), false),
+            "/tmp/relocated sdk"
+        );
+    }
 }
 
 fn main() {
@@ -95,7 +132,10 @@ fn main() {
             "-DCMAKE_EXE_LINKER_FLAGS={}",
             env::var("LDFLAGS").unwrap_or_default()
         ))
-        .arg(format!("-DMALVADO_SDK_PREFIX={}", prefix.display()))
+        .arg(format!(
+            "-DMALVADO_SDK_PREFIX={}",
+            cmake_sdk_path(&prefix, windows)
+        ))
         .arg(format!(
             "-DEXPECTED_VERSION={}",
             env::var("CARGO_PKG_VERSION").unwrap()
