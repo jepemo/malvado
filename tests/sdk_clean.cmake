@@ -127,6 +127,22 @@ int main(void) {
     message(FATAL_ERROR "Exported C game failed")
   endif()
 endif()
+# Authoring checks must finish before the SDK is removed for player checks.
+# Keep Cargo optional for C/Lua-only verification and require it when requested.
+if(CHECK_RUST)
+  find_program(python_program NAMES python3 REQUIRED)
+  find_program(cargo_program NAMES cargo REQUIRED)
+  set(rust_visual)
+  if(VISUAL)
+    set(rust_visual --visual)
+  endif()
+  execute_process(COMMAND "${python_program}" "${SOURCE}/tests/rust_cli.py"
+    --cli "${cli}" --work "${WORK}/Rust projects" ${rust_visual}
+    RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Installed Rust authoring and player checks failed")
+  endif()
+endif()
 file(REMOVE_RECURSE "${WORK}/sdk")
 if(VISUAL)
   set(game_args "")

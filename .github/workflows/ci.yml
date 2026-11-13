@@ -81,8 +81,7 @@ jobs:
           sleep 2
           set -- "$PWD"/sdk-artifact/*.tar.gz
           test "$#" -eq 1 && test -f "$1"
-          cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=ON -P tests/sdk_clean.cmake
-          python3 tests/rust_cli.py --cli "$RUNNER_TEMP/malvado-sdk-test/sdk/bin/malvado" --work "$RUNNER_TEMP/malvado-rust-projects" --visual
+          cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=ON -DCHECK_RUST=ON -P tests/sdk_clean.cmake
         env:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -91,8 +90,7 @@ jobs:
         run: |
           set -- "$PWD"/sdk-artifact/*.tar.gz
           test "$#" -eq 1 && test -f "$1"
-          cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=OFF -P tests/sdk_clean.cmake
-          python3 tests/rust_cli.py --cli "$RUNNER_TEMP/malvado-sdk-test/sdk/bin/malvado" --work "$RUNNER_TEMP/malvado-rust-projects"
+          cmake -DARCHIVE="$1" -DSOURCE="$PWD" -DWORK="$RUNNER_TEMP/malvado-sdk-test" -DVISUAL=OFF -DCHECK_RUST=ON -P tests/sdk_clean.cmake
   build:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -204,7 +202,7 @@ jobs:
   sdk-candidate:
     name: Collect tested SDK candidates
     if: github.event_name != 'pull_request'
-    needs: [sdk-package, sdk-consumer, build, c-core, c-assets, sanitizers, visual, docs]
+    needs: [rust-sdk, sdk-package, sdk-consumer, build, c-core, c-assets, sanitizers, visual, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

@@ -36,3 +36,22 @@ CMake can perform its own additional hash-retry cycles.
 The live alternate-host download probe was reset/timed out in this environment.
 Local fault injection verifies failover and integrity; fresh remote CI must still
 verify real download availability and the complete host matrix. A7.6, A7.9 and version acceptance remain open.
+
+
+## Installed SDK authoring order
+
+The [CLI implementation run](https://github.com/jepemo/malvado/actions/runs/43388888367)
+for `5171fdf74a915a8701da9259d5d4d0e921d1d88a` failed both fresh SDK consumer
+jobs. `sdk_clean.cmake` had already removed the SDK before the workflow started
+the Rust CLI checks. Move those checks into `sdk_clean.cmake`, before removal,
+behind explicit `CHECK_RUST=ON`. C/Lua-only callers keep their toolchain boundary;
+Rust acceptance requires Cargo and Python instead of silently skipping them.
+
+The candidate collection job also requires the Rust SDK job. It must not collect
+an accepted candidate when the Rust ownership, Miri or sanitizer checks fail.
+
+Local macOS arm64 evidence: package the SDK, extract it outside the checkout,
+run `sdk_clean.cmake` with `CHECK_RUST=ON` and `VISUAL=ON`, complete Rust authoring
+and native folder/app player checks, remove the SDK, then complete the existing
+C/Lua player checks. The SDK is absent at completion and the Rust relocated
+player remains available. Fresh host CI and the full A7.9 gate remain open.
