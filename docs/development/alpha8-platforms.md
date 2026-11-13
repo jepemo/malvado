@@ -78,8 +78,13 @@ then runs the Rust graphics workspace and an installed-crate window consumer.
 The headless matrix entry stays separate. Native results are required before
 this work can close A8.2.
 
-Hosted Windows graphics verification uses raylib's OpenGL 1.1 software path
-(`OPENGL_VERSION=1.1`) and paced silent audio. This checks the current 2D engine;
+Hosted Windows graphics verification uses Mesa 26.2.6 llvmpipe with the default
+OpenGL 3.3 engine and paced silent audio. The MinGW x64 Mesa archive is pinned by
+SHA-256 in `tools/windows_graphics.py`. The verifier downloads and verifies it,
+then deploys the driver DLLs beside C test and Cargo executables. Cargo uses a
+bounded runner wrapper. No system driver is replaced and Mesa is not added to
+SDK/game packages. The [Mesa distribution](https://github.com/pal1000/mesa-dist-win)
+remains a test-only dependency. This checks the current 2D engine;
 it does not establish GPU-driver support or audible output. Physical input and
 audio review remain beta work. The default desktop renderer remains unchanged.
 Rust image/font/audio wrappers share the existing native path conversion.
@@ -94,3 +99,10 @@ implementation uses [Thread32Next](https://learn.microsoft.com/en-us/windows/win
 and [GetThreadTimes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadtimes).
 Existing worker-thread rejection and repeated window/audio cleanup tests cover
 this mapping. There is no new scheduler or public thread API.
+
+A working WGL provider is required. Run 43436269922 documented that the hosted
+Windows system driver cannot create a window; raylib 5.5 aborts in that unsupported
+configuration. The Mesa entry validates the supported software-renderer path.
+The verifier checks the archive digest before extraction, requires both WGL DLLs
+and copies only those two libraries beside executable files. Its host-independent
+regression tests cover checksum rejection, incomplete drivers and deployment.

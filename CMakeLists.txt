@@ -307,7 +307,9 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_docs.py)
   add_test(NAME documentation_links_test COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
-  set_tests_properties(documentation_links documentation_links_test PROPERTIES TIMEOUT 15)
+  add_test(NAME windows_graphics_driver COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_graphics.py)
+  set_tests_properties(documentation_links documentation_links_test windows_graphics_driver PROPERTIES TIMEOUT 15)
   add_test(NAME c_api_inventory COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/current_c_api.py --check)
   set_tests_properties(c_api_inventory PROPERTIES TIMEOUT 15)

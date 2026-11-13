@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
+sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -26,6 +28,13 @@ def run(log, *args, env=None, timeout=600):
         raise
 
 
+def graphics_runner(graphics):
+    if not graphics or os.name != "nt":
+        return []
+    command = [sys.executable, str(ROOT / "tools/windows_graphics.py"), "run"]
+    return ["--config", "target.x86_64-pc-windows-msvc.runner=" + json.dumps(command)]
+
+
 def verify_rust_sdk(log, work, prefix, config, graphics=False):
     path_tests = work / ("sdk-path-tests.exe" if os.name == "nt" else "sdk-path-tests")
     run(log, "rustc", "--test", str(ROOT / "bindings/rust/malvado-sys/build.rs"),
@@ -38,7 +47,7 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
              "--features", "malvado/assets,malvado/graphics" if graphics else "malvado/assets"]
     if config == "Release":
         cargo.append("--release")
-    run(log, *cargo, env=env)
+    run(log, *cargo, *graphics_runner(graphics), env=env)
 
     # Exercise the crates shipped in the SDK, not the source-tree dependency.
     game = work / "external Rust game"
@@ -68,7 +77,7 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
     command = ["cargo", "run", "--offline", "--manifest-path", str(game / "Cargo.toml")]
     if config == "Release":
         command.append("--release")
-    run(log, *command, env=env)
+    run(log, *command, *graphics_runner(graphics), env=env)
 
     # These checks need neither Unix archive tools nor a replacement compiler.
     for prefix_value, expected in ((None, "set MALVADO_SDK_PREFIX"),
@@ -96,6 +105,10 @@ def main():
     args = parser.parse_args()
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    if args.graphics and os.name == "nt":
+        from windows_graphics import prepare
+        os.environ["MALVADO_MESA_DIR"] = str(prepare(work / "mesa"))
+        os.environ["GALLIUM_DRIVER"] = "llvmpipe"
     for config in ("Debug", "Release"):
         build = work / config
         with (work / f"{config}.log").open("w", encoding="utf-8") as log:
@@ -104,8 +117,7 @@ def main():
                 "-DMALVADO_BUILD_RAYLIB=" + ("ON" if args.graphics else "OFF"),
                 "-DMALVADO_VISUAL_TESTS=" + ("ON" if args.graphics else "OFF"),
                 "-DMALVADO_TEST_NULL_AUDIO=" + ("ON" if args.graphics else "OFF"),
-                # Hosted Windows runners provide the software OpenGL 1.1 path.
-                "-DOPENGL_VERSION=" + ("1.1" if args.graphics and os.name == "nt" else "OFF"),
+                "-DOPENGL_VERSION=OFF",
                 "-DMALVADO_BUILD_LUA=ON", "-DMALVADO_BUILD_ASSETS=ON",
                 "-DCMAKE_INSTALL_LIBDIR=lib",
                 # Existing C fixtures use assert() to execute operations.
@@ -114,6 +126,9 @@ def main():
             run(log, "ctest", "--test-dir", str(build), "-C", config,
                 "--output-on-failure", "--timeout", "60", "-E", "^visual_")
             if args.graphics:
+                if os.name == "nt":
+                    from windows_graphics import deploy
+                    deploy(build / config)
                 run(log, "ctest", "--test-dir", str(build), "-C", config,
                     "--output-on-failure", "--timeout", "60", "-R",
                     "^visual_(c_window|image_rgba|window_clip|window_scroll|sleep_freeze)$")
