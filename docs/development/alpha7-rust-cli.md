@@ -3,8 +3,8 @@
 A7.7a and A7.7b implement the Rust author workflow and native player export.
 The [CLI contract](../specs/cli.md#rust-projects) defines detection, Cargo metadata,
 SDK selection, commands, errors and limits. A7.6 [family integration](../versions/2.0.0-alpha.7-integration.md) and the
-A7.7 CLI implementation are accepted. A7.9 still requires fresh host CI on the
-final revision.
+A7.7 CLI implementation are accepted. A7.9 host CI and candidate packages are accepted in the
+[final evidence](../versions/2.0.0-alpha.7-acceptance.md).
 
 ## Automated checks
 
@@ -52,7 +52,8 @@ that SDK. Rust checks include the graphical starter/player and a Cargo-defined
 custom source path. The Linux test SDK uses the paced silent audio configuration;
 the macOS package check uses the normal platform backend.
 
-Fresh remote CI on the final revision remains required. This evidence does not
+The [accepted CI revision](../versions/2.0.0-alpha.7-acceptance.md) passes both
+fresh SDK consumer jobs. This evidence does not
 claim Windows/Android, cross-compilation, arbitrary Cargo workspace selection or
 automatic packaging of third-party game dependency runtimes. No tag or release
 is created by these checks.

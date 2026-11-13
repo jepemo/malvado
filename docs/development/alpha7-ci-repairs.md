@@ -1,5 +1,9 @@
 # Alpha.7 CI verification repairs
 
+The sections below record implementation-stage failures and their repairs.
+The [final acceptance](../versions/2.0.0-alpha.7-acceptance.md) supersedes their
+earlier pending-gate notes and records the fully passing host CI revision.
+
 The acceptance audit inspected CI for `2705748cd2adf6bbfa881d9bc124a5bb526c2adb`.
 The [CI run](https://github.com/jepemo/malvado/actions/runs/43238681414) has a
 Linux graphics dependency-download failure. The earlier

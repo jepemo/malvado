@@ -18,7 +18,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.4](2.0.0-alpha.4.md) — **complete**: minimal client, SDK, project creation, execution, and desktop packages. Source tag: `v2.0.0-alpha.4`; no release package yet.
 - [x] [Alpha.5](2.0.0-alpha.5.md) — **complete**: process model, C and Lua API, lifecycle, resources, and genealogy. The source revision selected for the tag must pass CI; no tag or release package exists yet.
 - [x] [Alpha.6](2.0.0-alpha.6.md) — **complete**: simple Lua 2D APIs, unified assets, automatic animation, contextual world calls, and cameras. Candidate `d48729f` passed all required CI jobs; no source tag or published release.
-- [ ] [Alpha.7](2.0.0-alpha.7.md) — **started**: C/Lua/Rust native family integration and Rust project/export CLI accepted; final exact-revision CI/packages and documentation closure remain open.
+- [x] [Alpha.7](2.0.0-alpha.7.md) — **complete**: native C/Lua/Rust integration, installed Rust CLI/player exports, executable guide checks and verified SDK candidates. Candidate `233526e` passes all 15 CI jobs; no source tag or published release.
 - [ ] [Alpha.8](2.0.0-alpha.8.md) — **planned**: Windows/Android support and platform/CLI/package automation for the existing engine.
 - [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: candidate contracts, documentation, minimal aligned examples, manual device/user-flow checks and release preparation.
 - [ ] [2.0.0](2.0.0.md) — **planned**: distribute the existing engine with completed C/Lua/Rust integration and verified platform paths.
