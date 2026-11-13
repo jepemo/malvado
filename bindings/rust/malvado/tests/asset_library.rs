@@ -1,7 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
 use malvado::{
-    Engine, Error,
+    Error, Game,
     asset::{Format, Library, Metadata, Source},
 };
 use std::path::Path;
@@ -40,9 +40,9 @@ fn dispatch_real_metadata_and_transfer_owned_values() {
                 }
                 _ => panic!("unexpected metadata family"),
             }
-            let engine = Engine::new().unwrap();
-            let retained = engine.resource(library.into_metadata()).unwrap();
-            drop(engine);
+            let game = Game::new().unwrap();
+            let retained = game.resource(library.into_metadata()).unwrap();
+            drop(game);
             match &*retained {
                 Metadata::Atlas(atlas) => assert!(!atlas.is_empty()),
                 Metadata::Fpg(fpg) => assert_eq!(fpg.len(), 2),

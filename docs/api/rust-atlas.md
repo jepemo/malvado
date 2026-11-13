@@ -172,12 +172,12 @@ including fractions. Non-finite pivots or magnitudes above `f32::MAX / 16`
 return `InvalidArgument` without changing any process.
 
 ```rust
-use malvado::{Engine, Error, image::Image, window::{Color, Window}};
+use malvado::{Game, Error, image::Image, window::{Color, Window}};
 use std::rc::Rc;
 let window = Rc::new(Window::open(320, 240, "Process sprite")?);
 let image = Image::load(window.clone(), "ship.png")?;
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 let sprite = image.sprite((0.0, 0.0))?;
@@ -185,7 +185,7 @@ actor.set_sprite(&sprite)?;
 drop(sprite);
 drop(image);
 let frame = window.frame(Color { r: 0, g: 0, b: 0, a: 255 })?;
-frame.process_graphics(&engine)?;
+frame.process_graphics(&game)?;
 actor.clear_graphic()?;
 drop(frame);
 # Ok::<(), Error>(())
@@ -225,7 +225,7 @@ or FPG collections. The source frames, images and libraries may be dropped
 after assignment. Transferred Rust image owners retain the window until cleanup.
 
 ```rust
-use malvado::{Engine, Error, atlas::SpriteFrame, image::Image, window::{Window, Color}};
+use malvado::{Game, Error, atlas::SpriteFrame, image::Image, window::{Window, Color}};
 use std::rc::Rc;
 let window = Rc::new(Window::open(320, 240, "Animated process")?);
 let red = Image::from_rgba(window.clone(), 1, 1, &[255, 0, 0, 255])?;
@@ -234,8 +234,8 @@ let frames = [
     SpriteFrame { sprite: red.sprite((0.0, 0.0))?, duration_us: 50_000 },
     SpriteFrame { sprite: green.sprite((0.0, 0.0))?, duration_us: 50_000 },
 ];
-let mut engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+let mut game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_position(40.0, 40.0)?;
@@ -244,10 +244,10 @@ actor.set_sprite_animation(&frames, true)?;
 drop(frames);
 drop(red);
 drop(green);
-for _ in 0..3 { engine.tick()?; }
+for _ in 0..3 { game.tick()?; }
 assert_eq!(actor.animation_clock()?.unwrap().sample.index, 1);
 let frame = window.frame(Color { r: 0, g: 0, b: 0, a: 255 })?;
-frame.process_graphics(&engine)?;
+frame.process_graphics(&game)?;
 actor.clear_graphic()?;
 drop(frame);
 # Ok::<(), Error>(())

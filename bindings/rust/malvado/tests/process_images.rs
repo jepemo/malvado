@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal,
+    Error, Game, Signal,
     graphic::{Geometry, Graphic},
     image::Image,
     window::{Color, Window},
@@ -20,9 +20,9 @@ fn main() {
         fractional.shape().unwrap();
         drop(fractional);
         let sprite = image.sprite((0.5, 1.5)).unwrap();
-        let mut engine = Engine::new().unwrap();
+        let mut game = Game::new().unwrap();
         let natural = mode == "return";
-        let actor = engine
+        let actor = game
             .spawn(Default::default(), move |p| async move {
                 if !natural {
                     loop {
@@ -65,7 +65,7 @@ fn main() {
         assert!(actor.graphic().unwrap().is_none());
         actor.set_position(20.0, 20.0).unwrap();
         actor.set_scale(4.0).unwrap();
-        let target = engine
+        let target = game
             .spawn(Default::default(), |p| async move {
                 loop {
                     p.frame().await;
@@ -89,7 +89,7 @@ fn main() {
         assert!(!actor.collides_with(&target).unwrap());
         actor.set_position(20.0, 20.0).unwrap();
 
-        engine.signal(&actor, Signal::Freeze).unwrap();
+        game.signal(&actor, Signal::Freeze).unwrap();
         let frame = window
             .frame(Color {
                 r: 0,
@@ -98,11 +98,11 @@ fn main() {
                 a: 255,
             })
             .unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         // SAFETY: live main-thread frame; helper only reads a rendered pixel.
         assert_eq!(unsafe { malvado_test_pixel(20, 20, 255, 0, 0) }, 1);
         drop(frame);
-        engine.signal(&actor, Signal::Wake).unwrap();
+        game.signal(&actor, Signal::Wake).unwrap();
         drop(sprite);
         drop(image);
         drop(window);
@@ -131,15 +131,15 @@ fn main() {
             }
             "kill" => {
                 actor.kill().unwrap();
-                engine.tick().unwrap();
+                game.tick().unwrap();
                 assert_eq!(actor.sprite_geometry(), Err(Error::NotFound));
             }
             "return" => {
-                engine.tick().unwrap();
+                game.tick().unwrap();
                 assert_eq!(actor.sprite_geometry(), Err(Error::NotFound));
             }
             "context" => {
-                drop(engine);
+                drop(game);
                 assert_eq!(actor.sprite_geometry(), Err(Error::Closed));
             }
             _ => unreachable!(),
@@ -152,15 +152,15 @@ fn main() {
         .unwrap()
         .sprite((0.0, 0.0))
         .unwrap();
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |_| async { Ok(()) })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     let before = Rc::strong_count(&window);
     assert_eq!(actor.set_sprite(&sprite), Err(Error::NotFound));
     assert_eq!(Rc::strong_count(&window), before);
-    drop(engine);
+    drop(game);
     assert_eq!(actor.set_sprite(&sprite), Err(Error::Closed));
     drop(sprite);
     drop(window);
@@ -171,8 +171,8 @@ fn main() {
         .unwrap()
         .sprite((0.0, 0.0))
         .unwrap();
-    let first = Engine::new().unwrap();
-    let second = Engine::new().unwrap();
+    let first = Game::new().unwrap();
+    let second = Game::new().unwrap();
     let a = first
         .spawn(Default::default(), |p| async move {
             loop {

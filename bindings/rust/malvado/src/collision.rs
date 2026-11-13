@@ -215,9 +215,9 @@ impl World {
     }
     /// Move using selected geometry.
     /// ```
-    /// use malvado::{Engine, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
-    /// let engine = Engine::new()?;
-    /// let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// use malvado::{Game, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
+    /// let game = Game::new()?;
+    /// let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
     /// actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
     /// actor.set_position(0.0, 5.0)?;
     /// let mut world = World::new()?;
@@ -363,10 +363,10 @@ impl Drop for World {
 impl Handle {
     /// Bind a copied local override to current native visual properties.
     /// ```
-    /// use malvado::{Engine, graphic::{Graphic, Geometry, Color}};
-    /// let engine = Engine::new()?;
-    /// let a = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-    /// let b = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// use malvado::{Game, graphic::{Graphic, Geometry, Color}};
+    /// let game = Game::new()?;
+    /// let a = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// let b = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
     /// let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
     /// a.set_graphic(graphic)?;
     /// b.set_graphic(graphic)?;

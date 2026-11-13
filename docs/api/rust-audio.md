@@ -21,7 +21,7 @@ audio.update()?;
 
 Open one `Audio` on the application main thread. A second safe owner returns
 `Busy`. Device failure returns `Platform`. The device is separate from `Window`
-and `Engine`. It does not tick processes, poll events, or install a scheduler.
+and `Game`. It does not tick processes, poll events, or install a scheduler.
 Do not open or close the same native device through another owner while Rust
 owns it. Same-thread native borrowing shares pause state and refill; it does not
 create another device owner. Mixed-language device ownership is not supported.

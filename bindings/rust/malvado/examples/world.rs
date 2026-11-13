@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::collision::{Rect, Shape, World};
-use malvado::{Engine, Error};
+use malvado::{Error, Game};
 
 fn main() -> Result<(), Error> {
     let mut world = World::new()?;
@@ -11,8 +11,8 @@ fn main() -> Result<(), Error> {
         height: 10.0,
     })?;
     let shape = Shape::circle(1.0)?;
-    let engine = Engine::new()?;
-    let actor = engine.spawn(Default::default(), |p| async move {
+    let game = Game::new()?;
+    let actor = game.spawn(Default::default(), |p| async move {
         p.frame().await;
         Ok(())
     })?;

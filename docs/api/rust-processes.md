@@ -1,5 +1,11 @@
 # Rust processes
 
+Rust support is experimental in Malvado 2.0. The gameplay SDK is functional,
+maintained and tested over the shared native C scheduler. Its public API can
+change in future 2.x releases before Rust support is declared stable. Significant
+changes include migration guidance; no long-term API stability is promised.
+See the [support policy](rust-support.md) for platform and toolchain limits.
+
 The `malvado` crate provides one owned async process API over the C scheduler.
 The default crate supports headless processes; optional `graphics` and `assets`
 features add the delivered native visual, input, audio and asset services. Use
@@ -31,17 +37,17 @@ impl Counter {
         Ok(())
     }
 }
-# let mut engine = malvado::Engine::new()?;
-# engine.spawn(Default::default(), |p| Counter { value: 0 }.run(p))?;
-# for _ in 0..4 { engine.tick()?; }
-# assert_eq!(engine.process_count(), 0);
+# let mut game = malvado::Game::new()?;
+# game.spawn(Default::default(), |p| Counter { value: 0 }.run(p))?;
+# for _ in 0..4 { game.tick()?; }
+# assert_eq!(game.process_count(), 0);
 # Ok::<(), Error>(())
 ```
 
-Create an `Engine`, then call `engine.spawn(SpawnOptions::default(), |process|
-Counter { value: 0 }.run(process))`. Each `engine.tick()` executes one native
+Create an `Game`, then call `game.spawn(SpawnOptions::default(), |process|
+Counter { value: 0 }.run(process))`. Each `game.tick()` executes one native
 scheduler tick. It does not read wall time, render, or run another executor.
-`Engine::new()` configures a 60 Hz native clock with a five-step advance limit;
+`Game::new()` configures a 60 Hz native clock with a five-step advance limit;
 `advance_time` plans elapsed-time ticks and `tick` executes them. See
 [host timing](runner-timing.md#rust-host-integration) for the explicit input,
 audio and drawing order. The native
@@ -58,8 +64,8 @@ Do not store native visual properties in parallel Rust fields. Use the handle's 
 
 `ProcessContext` is an owned, cloneable context token. It can create children,
 request a frame wait, signal same-context handles, and return the current
-`Handle`. It cannot tick or destroy the engine. Neither engines, tokens, nor
-handles are Send or Sync. Compile-fail doctests verify thread and borrow rules.
+`Handle`. It cannot tick or destroy the game. `Game`, tokens and handles are
+neither Send nor Sync. Compile-fail doctests verify thread and borrow rules.
 No macros or second process definition style are needed.
 
 Spawn returns a cloneable owned handle. `process.current()` has the same native
@@ -94,8 +100,8 @@ created during a tick first runs at the next tick. `signal(target, signal)` targ
 and descendants of an ended creator. The relation is explicit rather than a
 boolean flag. `handle.children(relation, type_id)` and
 `handle.descendants(relation, type_id)` return owned handles in native creation
-order; type zero selects every type. `engine.find(type_id)` also includes sleeping
-and frozen processes. `engine.lineage()` copies retained creation nodes. Dead
+order; type zero selects every type. `game.find(type_id)` also includes sleeping
+and frozen processes. `game.lineage()` copies retained creation nodes. Dead
 ancestors remain only while live descendants need them. Ownership queries on
 a dead owner fail; creation queries can still return its live descendants.
 
@@ -108,7 +114,7 @@ must obey Rust's wake contract and must not block. No asynchronous I/O runtime
 is installed or promised.
 
 Returning `Ok(())` requests native completion. Returning `Err` or panicking
-requests a native process error, which `engine.tick()` reports as
+requests a native process error, which `game.tick()` reports as
 `Error::Process`. That aggregate error does not preserve the
 individual async error payload. Killing a process cancels its future at the
 native safe point after poll. Dropping the engine invalidates tokens and cancels
@@ -123,7 +129,7 @@ limits. Dedicated graphics and audio wrappers define their platform lifetimes.
 
 ## Native resource ownership
 
-`engine.resource(value)` creates a context-owned resource.
+`game.resource(value)` creates a context-owned resource.
 `process.resource(value)` creates a resource owned by that live process.
 `Resource<T>` owns one independent retained reference and exposes shared access
 through `Deref`; it does not provide `DerefMut`. Values must own their data and

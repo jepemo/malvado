@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal,
+    Error, Game, Signal,
     collision::{Rect, Shape, Transform, World},
     graphic::{Color, Geometry, Graphic, Pivot},
 };
@@ -11,8 +11,8 @@ fn world(rect: Rect) -> World {
 }
 #[test]
 fn graph_local_disabled_and_world_lifetime() {
-    let engine = Engine::new().unwrap();
-    let actor = engine
+    let game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -56,7 +56,7 @@ fn graph_local_disabled_and_world_lifetime() {
     assert_eq!(actor.position().unwrap(), (9.0, 0.0));
     actor.clear_collider().unwrap();
     actor.set_scale(0.0).unwrap();
-    engine.signal(&actor, Signal::Freeze).unwrap();
+    game.signal(&actor, Signal::Freeze).unwrap();
     assert_eq!(world.move_selected(&actor, 100.0, 0.0).unwrap().hit, None);
     assert_eq!(actor.position().unwrap(), (109.0, 0.0));
     assert_eq!(world.query_selected(&actor).unwrap(), None);
@@ -65,14 +65,14 @@ fn graph_local_disabled_and_world_lifetime() {
     actor.kill().unwrap();
     assert_eq!(world.query_selected(&actor), Err(Error::NotFound));
     assert_eq!(world.move_selected(&actor, 1.0, 0.0), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert_eq!(world.query_selected(&actor), Err(Error::Closed));
     assert_eq!(world.move_selected(&actor, 1.0, 0.0), Err(Error::Closed));
 }
 #[test]
 fn fixed_offset_translation_and_failure_atomicity() {
-    let engine = Engine::new().unwrap();
-    let actor = engine
+    let game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;

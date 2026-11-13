@@ -1,12 +1,12 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal,
+    Error, Game, Signal,
     graphic::{Color, Geometry, Graphic, Pivot},
 };
 #[test]
 fn copied_graphic_assignment_and_handle_lifetimes() {
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -31,8 +31,8 @@ fn copied_graphic_assignment_and_handle_lifetimes() {
     assert_eq!(snapshot.color.g, 99);
     assert_eq!(actor.graphic().unwrap().unwrap().color.g, 2);
     for signal in [Signal::Sleep, Signal::Freeze, Signal::Wake] {
-        engine.signal(&actor, signal).unwrap();
-        engine.tick().unwrap();
+        game.signal(&actor, signal).unwrap();
+        game.tick().unwrap();
         assert!(actor.graphic().unwrap().is_some());
     }
     let alias = actor.clone();
@@ -50,7 +50,7 @@ fn copied_graphic_assignment_and_handle_lifetimes() {
     assert!(matches!(actor.graphic(), Err(Error::NotFound)));
     assert_eq!(actor.set_graphic(graphic), Err(Error::NotFound));
     assert_eq!(actor.clear_graphic(), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert!(matches!(alias.graphic(), Err(Error::Closed)));
     assert_eq!(alias.set_graphic(graphic), Err(Error::Closed));
     assert_eq!(alias.clear_graphic(), Err(Error::Closed));

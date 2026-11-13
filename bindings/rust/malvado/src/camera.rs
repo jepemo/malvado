@@ -118,28 +118,28 @@ fn success(value: i32) -> Result<(), Error> {
 /// Context-bound follow state. Call update after the engine tick.
 ///
 /// ```
-/// use malvado::{Engine, camera::{Camera, Follow}};
-/// let mut engine = Engine::new()?;
-/// let actor = engine.spawn(Default::default(), |p| async move {
+/// use malvado::{Game, camera::{Camera, Follow}};
+/// let mut game = Game::new()?;
+/// let actor = game.spawn(Default::default(), |p| async move {
 ///     loop { p.frame().await; }
 /// })?;
 /// actor.set_position(100.0, 80.0)?;
 /// let mut camera = Camera::new(0.0, 0.0, None)?;
 /// let mut follow = Follow::new(&actor)?;
-/// engine.tick()?;
+/// game.tick()?;
 /// assert!(follow.update(&mut camera, (100, 80))?);
 /// assert_eq!(camera.position(), (50.0, 40.0));
 /// actor.kill()?;
-/// engine.tick()?;
+/// game.tick()?;
 /// assert!(!follow.update(&mut camera, (100, 80))?);
 /// # Ok::<(), malvado::Error>(())
 /// ```
 ///
 /// This owns a handle, not the process or its resources. No scheduler is added.
 /// ```compile_fail
-/// # use malvado::{Engine, camera::Follow};
-/// let engine = Engine::new().unwrap();
-/// let actor = engine.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) }).unwrap();
+/// # use malvado::{Game, camera::Follow};
+/// let game = Game::new().unwrap();
+/// let actor = game.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) }).unwrap();
 /// let follow = Follow::new(&actor).unwrap();
 /// std::thread::spawn(move || drop(follow));
 /// ```
@@ -192,10 +192,10 @@ impl Follow {
 
 /// Context-owned camera identity.
 /// ```
-/// use malvado::{Engine, Error, camera::{Camera, Selection}};
-/// let engine = Engine::new()?;
-/// let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-/// let view = engine.create_camera(Camera::new(10.0, 20.0, None)?)?;
+/// use malvado::{Game, Error, camera::{Camera, Selection}};
+/// let game = Game::new()?;
+/// let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+/// let view = game.create_camera(Camera::new(10.0, 20.0, None)?)?;
 /// actor.set_camera(Selection::Explicit(view.clone()))?;
 /// view.move_by(1.0, 2.0)?;
 /// assert_eq!(actor.resolve_camera()?.position(), (11.0, 22.0));
@@ -208,8 +208,8 @@ impl Follow {
 /// Clones share the same camera. Dropping a
 /// handle does not close it; close explicitly or drop the engine. Owner-thread only.
 /// ```compile_fail
-/// let engine = malvado::Engine::new().unwrap();
-/// let camera = engine.main_camera().unwrap();
+/// let game = malvado::Game::new().unwrap();
+/// let camera = game.main_camera().unwrap();
 /// std::thread::spawn(move || drop(camera));
 /// ```
 #[derive(Clone)]
@@ -343,9 +343,9 @@ impl Handle {
     /// Project world origin through the selected camera and local scroll.
     /// Host scroll is separate. This operation needs no window or tick.
     /// ```
-    /// use malvado::{Engine, camera::Viewport};
-    /// let engine = Engine::new()?;
-    /// let actor = engine.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+    /// use malvado::{Game, camera::Viewport};
+    /// let game = Game::new()?;
+    /// let actor = game.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
     /// actor.set_scroll((3.0, 4.0))?;
     /// actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
     /// assert_eq!(actor.view_offset()?, (-3.0, -4.0));

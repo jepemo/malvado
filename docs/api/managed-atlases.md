@@ -25,7 +25,7 @@ Lua atlas and Aseprite loads, including unified `load_asset`, use this native
 constructor. The Lua wrapper still holds its image and converts Lua arguments.
 This change does not move unified file format dispatch or graph selection into
 C. Rust exposes unsafe adoption in `malvado_sys::assets`, with installed signature
-checks. Safe Rust can already place an owned `Atlas` in `Engine::resource` or
+checks. Safe Rust can already place an owned `Atlas` in `Game::resource` or
 `Process::resource`, and transfer it through the native resource manager.
 
 `atlas_resource` parses real metadata, rejects invalid/foreign/dead calls,

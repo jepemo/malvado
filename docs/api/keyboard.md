@@ -76,12 +76,12 @@ module/global/namespace aliases, and neutral state.
 Rust provides `Window::key_down`, `Window::key_pressed` and
 `Window::key_released` with the typed `Key` enum under the `graphics` feature.
 The host calls `Window::input_tick()` once before its shared logical tick,
-then runs `Engine::tick()`. Processes can share an `Rc<Window>` for queries;
+then runs `Game::tick()`. Processes can share an `Rc<Window>` for queries;
 reads use the same native snapshot and never consume an edge. The window and
 all its readers stay on the application main thread. Rendering through a frame
 guard captures backend events on drop, but does not commit a logical tick.
 
-The default headless Rust Engine has no window or live input service; enabling
+The default headless Rust Game has no window or live input service; enabling
 this feature does not create one implicitly. Invalid keys cannot be constructed
 through the safe enum. The C unavailable/invalid-key rules remain unchanged.
 See the [Rust window guide](rust-window.md) for ownership and host-loop usage.

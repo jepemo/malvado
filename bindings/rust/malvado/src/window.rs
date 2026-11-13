@@ -14,7 +14,7 @@ pub use ffi::MvColor as Color;
 static WINDOW_OWNED: AtomicBool = AtomicBool::new(false);
 
 /// The only safe Rust window owner. Open it on the application main thread.
-/// It is independent of Engine; dropping it closes the native window.
+/// It is independent of Game; dropping it closes the native window.
 /// Do not open/close the same native window through another host while owned.
 pub struct Window {
     drawing: Cell<bool>,

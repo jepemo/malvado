@@ -1,7 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 //! Main-thread keyboard checks. Private injection is only a verification fixture.
 use malvado::{
-    Engine, SpawnOptions,
+    Game, SpawnOptions,
     window::{Color, Key, Window},
 };
 use std::{cell::Cell, rc::Rc};
@@ -26,40 +26,39 @@ fn snapshots() {
         assert!(!window.key_pressed(Key::Space) && !window.key_released(Key::Space));
         let tick = Rc::new(Cell::new(0));
         let calls = Rc::new(Cell::new(0));
-        let mut engine = Engine::new().unwrap();
+        let mut game = Game::new().unwrap();
         for rate in [60, 60, 30] {
             let (window, tick, calls) = (window.clone(), tick.clone(), calls.clone());
-            engine
-                .spawn(
-                    SpawnOptions {
-                        fps: rate,
-                        ..Default::default()
-                    },
-                    move |process| async move {
-                        let expected: &[usize] = if rate == 30 {
-                            &[1, 3, 5]
-                        } else {
-                            &[1, 2, 3, 4, 5]
-                        };
-                        for &number in expected {
-                            assert_eq!(tick.get(), number);
-                            assert_eq!(window.key_pressed(Key::Space), number == 2 || number == 5);
-                            assert_eq!(window.key_pressed(Key::Space), number == 2 || number == 5);
-                            assert_eq!(window.key_released(Key::Space), number == 4 || number == 5);
-                            if number < 5 {
-                                process.frame().await;
-                            }
+            game.spawn(
+                SpawnOptions {
+                    fps: rate,
+                    ..Default::default()
+                },
+                move |process| async move {
+                    let expected: &[usize] = if rate == 30 {
+                        &[1, 3, 5]
+                    } else {
+                        &[1, 2, 3, 4, 5]
+                    };
+                    for &number in expected {
+                        assert_eq!(tick.get(), number);
+                        assert_eq!(window.key_pressed(Key::Space), number == 2 || number == 5);
+                        assert_eq!(window.key_pressed(Key::Space), number == 2 || number == 5);
+                        assert_eq!(window.key_released(Key::Space), number == 4 || number == 5);
+                        if number < 5 {
+                            process.frame().await;
                         }
-                        calls.set(calls.get() + 1);
-                        Ok(())
-                    },
-                )
-                .unwrap();
+                    }
+                    calls.set(calls.get() + 1);
+                    Ok(())
+                },
+            )
+            .unwrap();
         }
         for number in 1..=5 {
             tick.set(number);
             window.input_tick();
-            engine.tick().unwrap();
+            game.tick().unwrap();
             println!(
                 "rust-key: {} {} {}",
                 number,
@@ -70,7 +69,7 @@ fn snapshots() {
             inject(number);
         }
         assert_eq!(calls.get(), 3);
-        assert_eq!(engine.process_count(), 0);
+        assert_eq!(game.process_count(), 0);
         window.input_tick(); // Catch-up clears committed edges without replay.
         assert!(!window.key_pressed(Key::Space) && !window.key_released(Key::Space));
         inject(1);
@@ -81,7 +80,7 @@ fn snapshots() {
         assert!(window.key_pressed(Key::Space));
         assert!(!window.key_down(Key::Space)); // Synthetic press does not fake held state.
         inject(4); // Both pending and committed edges must reset at close.
-        drop(engine);
+        drop(game);
         assert_eq!(Rc::strong_count(&window), 1);
         drop(window);
         // SAFETY: no window is open, so raw native queries must be neutral.

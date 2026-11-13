@@ -30,6 +30,7 @@ def creation(cli, work, visual):
     assert dependency["features"] == ["graphics"]
     assert not (game / "malvado.toml").exists()
     before = (game / "main.rs").read_bytes()
+    assert b"Game::new()" in before and b"Engine" not in before
     run(cli, "new", "--lang", "rust", game, cwd=work, code=1)
     assert (game / "main.rs").read_bytes() == before
     run(cli, "check", game, cwd=work)
@@ -52,20 +53,20 @@ def commands(cli, work, game):
     assert "Cargo: found" in doctor and "Rust SDK: " in doctor
     (game / "assets").mkdir()
     (game / "assets/value.txt").write_text("asset")
-    (game / "main.rs").write_text('''use malvado::{Engine, Error, SpawnOptions};
+    (game / "main.rs").write_text('''use malvado::{Game, Error, SpawnOptions};
 fn main() -> Result<(), Error> {
     assert_eq!(std::fs::read_to_string("assets/value.txt").unwrap(), "asset");
     std::fs::write("executed", "yes").unwrap();
-    let mut engine = Engine::new()?;
-    engine.spawn(SpawnOptions::default(), |p| async move {
+    let mut game = Game::new()?;
+    game.spawn(SpawnOptions::default(), |p| async move {
         println!("rust: first");
         p.frame().await;
         println!("rust: second");
         Ok(())
     })?;
-    engine.tick()?;
-    engine.tick()?;
-    assert_eq!(engine.process_count(), 0);
+    game.tick()?;
+    game.tick()?;
+    assert_eq!(game.process_count(), 0);
     if std::env::var_os("MALVADO_TEST_EXIT").is_some() { std::process::exit(7); }
     Ok(())
 }

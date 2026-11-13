@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     audio::{Audio, Music},
 };
 use std::{
@@ -60,9 +60,9 @@ fn main() {
         other.play().unwrap();
         other.stop().unwrap();
     }
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let music = Music::load(audio.clone(), &path, true).unwrap();
-    let process = engine
+    let process = game
         .spawn(Default::default(), move |p| async move {
             let owned = p.resource(music)?;
             owned.play()?;
@@ -70,9 +70,9 @@ fn main() {
             Ok(())
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(process.kill().unwrap());
-    drop(engine);
+    drop(game);
     pump(&audio, Duration::from_millis(50)); // Orphaned streams still receive updates.
     let paused = Music::load(audio.clone(), &path, true).unwrap();
     paused.play().unwrap();

@@ -47,7 +47,7 @@ objects.
 
 Rust exposes the native constructors in unsafe `malvado_sys::graphics`, with
 installed-header signature checks. Raw adoption has the same caller obligations
-as C. Safe Rust programs use the existing `Engine::resource(value)` or
+as C. Safe Rust programs use the existing `Game::resource(value)` or
 `Process::resource(value)` with owned `Image`, `Font`, `Sound` and `Music` values.
 `Resource<T>` uses the same native owner/retain/transfer manager. Its Rust value
 retains the window/audio service until destruction; no raw pointer adoption is

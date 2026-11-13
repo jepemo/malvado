@@ -1,9 +1,9 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Engine, Error, graphic::TextAlignment};
+use malvado::{Error, Game, graphic::TextAlignment};
 #[test]
 fn context_and_process_lifetimes() {
-    let mut engine = Engine::new().unwrap();
-    let host = engine
+    let mut game = Game::new().unwrap();
+    let host = game
         .create_text("host", (i32::MIN, i32::MAX), TextAlignment::Center)
         .unwrap();
     let saved = host.snapshot().unwrap();
@@ -18,7 +18,7 @@ fn context_and_process_lifetimes() {
         Err(Error::InvalidArgument)
     ));
     assert_eq!(copy.snapshot().unwrap().position, (1, 2));
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -30,26 +30,26 @@ fn context_and_process_lifetimes() {
         .unwrap();
     actor.kill().unwrap();
     assert_eq!(owned.snapshot().unwrap().value, "owned");
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(matches!(owned.snapshot(), Err(Error::NotFound)));
     assert!(matches!(
         actor.create_text("dead", (0, 0), TextAlignment::Left),
         Err(Error::NotFound)
     ));
-    let done = engine
+    let done = game
         .spawn(Default::default(), |_| async { Ok(()) })
         .unwrap();
     let returned = done
         .create_text("return", (0, 0), TextAlignment::Left)
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(matches!(returned.remove(), Err(Error::NotFound)));
     copy.remove().unwrap();
     assert!(matches!(copy.remove(), Err(Error::NotFound)));
-    let closed = engine
+    let closed = game
         .create_text("shutdown", (0, 0), TextAlignment::Left)
         .unwrap();
-    drop(engine);
+    drop(game);
     assert!(matches!(closed.snapshot(), Err(Error::Closed)));
     assert!(matches!(closed.remove(), Err(Error::Closed)));
 }

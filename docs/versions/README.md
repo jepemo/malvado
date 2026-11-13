@@ -42,3 +42,14 @@ updated tests/docs, migration guidance and correct native ABI/SDK rejection.
 The existing [family review](../api/family-review.md) bounds current functionality.
 iOS and exploratory APIs remain roadmap research. The older alpha renumberings
 remain in Git history; preserve or redirect published URLs during future site work.
+
+## Rust support policy
+
+Malvado 2.0 supports C, Lua and experimental Rust. The Rust gameplay SDK is
+functional, maintained and tested over the shared C scheduler. Its public API
+can change in future 2.x releases, with migration guidance for significant
+changes and no long-term stability guarantee. This label does not apply to the
+C core. `Game` replaces the public Rust `Engine` name before 2.0; acceptance is
+tracked in [beta.1](2.0.0-beta.1.md), without reopening completed alphas.
+The current owned async API remains the baseline. [Future Rust ergonomics](../roadmap/rust-ergonomics.md)
+are proposals without an assigned version and are not 2.0 requirements.

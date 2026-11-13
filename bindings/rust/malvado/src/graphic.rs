@@ -68,9 +68,9 @@ impl crate::window::Frame<'_> {
 
 /// Copied primitive graph. Assignment retains no external resource.
 /// ```
-/// use malvado::{Engine, graphic::{Graphic, Geometry, Pivot, Color}};
-/// let engine = Engine::new()?;
-/// let actor = engine.spawn(Default::default(), |p| async move {
+/// use malvado::{Game, graphic::{Graphic, Geometry, Pivot, Color}};
+/// let game = Game::new()?;
+/// let actor = game.spawn(Default::default(), |p| async move {
 ///     loop { p.frame().await; }
 /// })?;
 /// actor.set_graphic(Graphic {
@@ -133,7 +133,7 @@ impl crate::window::Frame<'_> {
     /// Draw stored process graphs and commands in native visual order. This explicit
     /// pass uses registered camera selection and restores host clip/scroll scopes.
     /// It does not tick or advance animations.
-    pub fn process_graphics(&self, engine: &crate::Engine) -> Result<(), Error> {
+    pub fn process_graphics(&self, engine: &crate::Game) -> Result<(), Error> {
         // SAFETY: frame-bound call and borrowed live engine on its owner thread.
         crate::drawing::valid(unsafe {
             sys::graphics::mv_window_draw_process_graphics(engine.native_context()?)

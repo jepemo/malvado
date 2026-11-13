@@ -1,11 +1,22 @@
 # Rust native SDK
 
+Rust support is experimental in Malvado 2.0. The gameplay SDK is functional,
+maintained and tested over the shared native C scheduler. Its public API can
+change in future 2.x releases before Rust support is declared stable. Significant
+changes include migration guidance; no long-term API stability is promised.
+See the [support policy](../../docs/api/rust-support.md) for platform and toolchain limits.
+
 This workspace provides `malvado`, the safe owner-thread async process API,
 and `malvado-sys`, the unsafe native boundary. Optional `graphics` and `assets`
 features wrap the delivered native platform and asset services. Start an
 installed project with `malvado new --lang rust my-game`; see the
 [CLI guide](../../docs/specs/cli.md#rust-projects) and
 [language matrix](../../docs/api/language-parity.md).
+
+Use `Game::new()` as the main Rust entry point. It owns the native context;
+it does not open a window or run a host loop. Keep ordinary owned async process
+methods and explicit platform services. Existing projects can follow the
+[Engine to Game migration](../../docs/development/rust-game-migration.md).
 
 Use the project toolchain and run all local SDK checks:
 
@@ -65,8 +76,10 @@ which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 
 The installed CLI supports native Rust folder exports and macOS app bundles.
-No crates.io package, cross-compilation or completed alpha.7 release is implied. The development engine and crate identifiers now read
-`2.0.0-alpha.7`; the milestone is still in progress.
+No crates.io package or cross-compilation support is implied. The current
+native engine and crate identifiers are `2.0.0-alpha.7`; development toward 2.0
+continues under the [version plan](../../docs/versions/README.md). This identifier
+alone does not certify platform support or Rust API stability.
 
 ## Scheduler proof checks
 

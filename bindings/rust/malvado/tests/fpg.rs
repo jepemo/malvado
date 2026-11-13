@@ -1,7 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
 use malvado::{
-    Engine, Error,
+    Error, Game,
     fpg::{Fpg, Point},
 };
 const DATA: &[u8] = include_bytes!("../../../../tests/fixtures/fpg/bennugd-8.fpg");
@@ -76,11 +76,11 @@ fn preserve_raw_names_gamma_and_native_resource_retention() {
     let name = 8 + 768 + 576 + 8;
     data[name..name + 32].fill(0xff);
     data[8 + 768] = 23;
-    let engine = Engine::new().unwrap();
-    let fpg = engine.resource(Fpg::parse(&data).unwrap()).unwrap();
+    let game = Game::new().unwrap();
+    let fpg = game.resource(Fpg::parse(&data).unwrap()).unwrap();
     let retained = fpg.try_clone().unwrap();
     drop(fpg);
-    drop(engine);
+    drop(game);
     assert_eq!(retained.sprite(7).unwrap().info.name, [0xff; 32]);
     assert_eq!(retained.gamma()[0], 23);
     assert_eq!(retained.sprite(42).unwrap().pixels, [2, 1]);
@@ -144,10 +144,10 @@ fn metadata_round_trip_preserves_original_bytes_and_points() {
     }
     let json = fpg.json(true).unwrap();
     drop(fpg);
-    let engine = Engine::new().unwrap();
-    let manifest = engine.resource(Manifest::parse(&json).unwrap()).unwrap();
+    let game = Game::new().unwrap();
+    let manifest = game.resource(Manifest::parse(&json).unwrap()).unwrap();
     drop(json);
-    drop(engine);
+    drop(game);
     assert_eq!(manifest.sprite(7).unwrap().name, [0xff; 32]);
     assert_eq!(manifest.gamma()[0], 23);
     assert_eq!(

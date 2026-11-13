@@ -1,7 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
 use malvado::{
-    Engine, Error,
+    Error, Game,
     atlas::{Atlas, Region},
 };
 const ATLAS: &str = include_str!("../../../../tests/fixtures/atlas.json");
@@ -51,11 +51,11 @@ fn invalid_metadata_and_dimensions() {
 }
 #[test]
 fn resource_retains_atlas_after_context_shutdown() {
-    let engine = Engine::new().unwrap();
-    let atlas = engine.resource(Atlas::parse(ATLAS, 8, 8).unwrap()).unwrap();
+    let game = Game::new().unwrap();
+    let atlas = game.resource(Atlas::parse(ATLAS, 8, 8).unwrap()).unwrap();
     let retained = atlas.try_clone().unwrap();
     drop(atlas);
-    drop(engine);
+    drop(game);
     assert_eq!(retained.sprite(7).unwrap().name, "red");
 }
 

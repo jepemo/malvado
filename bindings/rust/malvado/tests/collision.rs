@@ -1,7 +1,7 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(not(miri))]
 use malvado::collision::{Rect, Shape, Transform, World};
-use malvado::{Engine, Error, Relation, Signal, SpawnOptions};
+use malvado::{Error, Game, Relation, Signal, SpawnOptions};
 use std::future::pending;
 
 fn wall() -> Rect {
@@ -150,8 +150,8 @@ fn corner_circle_collision_does_not_leave_an_overlap() {
 
 #[test]
 fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
-    let mut engine = Engine::new().unwrap();
-    let source = engine
+    let mut game = Game::new().unwrap();
+    let source = game
         .spawn(SpawnOptions::default(), |_| async {
             pending::<()>().await;
             Ok(())
@@ -161,7 +161,7 @@ fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
     let shape = Shape::circle(2.0).unwrap();
     source.set_collider(shape, Transform::default()).unwrap();
     for index in 1..=3 {
-        let target = engine
+        let target = game
             .spawn(
                 SpawnOptions {
                     type_id: index % 2,
@@ -191,8 +191,8 @@ fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
     assert_eq!(all.len(), 3);
     assert_eq!(source.collisions(1).unwrap().len(), 2);
     assert!(source.first_collision(0).unwrap().as_ref().unwrap() == &targets[0]);
-    engine.signal(&targets[0], Signal::Sleep).unwrap();
-    engine.signal(&targets[1], Signal::Freeze).unwrap();
+    game.signal(&targets[0], Signal::Sleep).unwrap();
+    game.signal(&targets[1], Signal::Freeze).unwrap();
     assert_eq!(source.collisions(0).unwrap().len(), 3);
     assert_eq!(
         source.set_collider(
@@ -208,23 +208,22 @@ fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
     targets[0].clear_collider().unwrap();
     targets[0].clear_collider().unwrap();
     assert_eq!(source.collisions(0).unwrap().len(), 2);
-    engine
-        .signal_tree(&targets[1], Signal::Kill, Relation::Ownership)
+    game.signal_tree(&targets[1], Signal::Kill, Relation::Ownership)
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(
         targets[1].set_collider(shape, Transform::default()),
         Err(Error::NotFound)
     );
-    drop(engine);
+    drop(game);
     assert_eq!(source.clear_collider(), Err(Error::Closed));
 }
 
 #[test]
 fn foreign_colliders_are_rejected_and_world_data_can_outlive_context() {
-    let engine = Engine::new().unwrap();
-    let other = Engine::new().unwrap();
-    let a = engine
+    let game = Game::new().unwrap();
+    let other = Game::new().unwrap();
+    let a = game
         .spawn(SpawnOptions::default(), |_| async { Ok(()) })
         .unwrap();
     let b = other
@@ -233,8 +232,8 @@ fn foreign_colliders_are_rejected_and_world_data_can_outlive_context() {
     assert_eq!(a.collides_with(&b), Err(Error::ForeignContext));
     let mut world = World::new().unwrap();
     world.add_rect(wall()).unwrap();
-    let retained = engine.resource(world).unwrap();
-    drop(engine);
+    let retained = game.resource(world).unwrap();
+    drop(game);
     assert_eq!(
         retained
             .query(Shape::circle(1.0).unwrap(), start())
@@ -246,13 +245,13 @@ fn foreign_colliders_are_rejected_and_world_data_can_outlive_context() {
 
 #[test]
 fn no_collider_returns_no_hit_and_stale_sources_are_errors() {
-    let mut engine = Engine::new().unwrap();
-    let source = engine
+    let mut game = Game::new().unwrap();
+    let source = game
         .spawn(SpawnOptions::default(), |_| async { Ok(()) })
         .unwrap();
     assert!(source.first_collision(0).unwrap().is_none());
     assert!(source.collisions(0).unwrap().is_empty());
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(matches!(source.collisions(0), Err(Error::NotFound)));
 }
 
@@ -289,8 +288,8 @@ fn world_trace_matches_c_and_lua_process_movement() {
     let mut world = World::new().unwrap();
     world.add_rect(wall()).unwrap();
     let shape = Shape::circle(1.0).unwrap();
-    let engine = Engine::new().unwrap();
-    let actor = engine
+    let game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -330,8 +329,8 @@ fn world_trace_matches_c_and_lua_process_movement() {
 
 #[test]
 fn contextual_world_movement_properties_errors_and_lifetime() {
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -363,9 +362,9 @@ fn contextual_world_movement_properties_errors_and_lifetime() {
     assert_eq!(actor.scale().unwrap(), 2.0);
     assert_eq!(world.query_process(&actor, Some(shape)).unwrap(), None);
     for signal in [Signal::Sleep, Signal::Freeze] {
-        engine.signal(&actor, signal).unwrap();
+        game.signal(&actor, signal).unwrap();
         world.move_process(&actor, None, 0.0, 1.0).unwrap();
-        engine.tick().unwrap();
+        game.tick().unwrap();
     }
     assert_eq!(actor.position().unwrap().1, 2.0);
     for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, f64::MAX] {
@@ -414,7 +413,7 @@ fn contextual_world_movement_properties_errors_and_lifetime() {
         world.move_process(&actor, None, 1.0, 0.0),
         Err(Error::NotFound)
     );
-    drop(engine);
+    drop(game);
     assert_eq!(world.query_process(&actor, None), Err(Error::Closed));
     assert_eq!(
         world.move_process(&actor, None, 1.0, 0.0),

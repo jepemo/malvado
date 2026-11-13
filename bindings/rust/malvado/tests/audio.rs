@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     audio::{Audio, Sound},
 };
 use std::{
@@ -53,11 +53,11 @@ fn main() {
     second.stop().unwrap();
     drop(second);
     // A process can release its last resource handle during playback.
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let slot = Rc::new(RefCell::new(None));
     let out = slot.clone();
     let sound = Sound::load(audio.clone(), &path).unwrap();
-    let process = engine
+    let process = game
         .spawn(Default::default(), move |p| async move {
             let resource = p.resource(sound)?;
             resource.play()?;
@@ -67,10 +67,10 @@ fn main() {
             Ok(())
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     drop(slot.borrow_mut().take());
     assert!(process.kill().unwrap());
-    drop(engine);
+    drop(game);
     audio.update().unwrap();
     // Shutdown releases paused and orphaned instances before closing the device.
     let weak = Rc::downgrade(&audio);

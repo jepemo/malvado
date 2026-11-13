@@ -1,12 +1,20 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-//! Owned async processes, polled only by the native Malvado scheduler.
+//! Experimental Rust gameplay SDK for Malvado 2.0.
+//!
+//! The SDK is functional and tested. Its public API may change in future 2.x
+//! releases before Rust support is declared stable. Significant changes include
+//! migration guidance. This label does not apply to the native C core.
+//!
+//! `Game` owns the current native context. Construction creates no window and
+//! installs no host loop. Owned async processes use the same C scheduler as Lua
+//! and C; window, input, audio and drawing services stay explicit.
 //!
 //! A process owns its game state. Native handles expose copied snapshots, not
 //! mutable references into a suspended future. Contexts and handles are local
 //! to one thread. A cloned waker may cross threads; waking never calls C.
 //!
 //! ```no_run
-//! use malvado::{Engine, Error, ProcessContext, SpawnOptions};
+//! use malvado::{Game, Error, ProcessContext, SpawnOptions};
 //! struct Counter(u32);
 //! impl Counter {
 //!     async fn run(mut self, process: ProcessContext) -> Result<(), Error> {
@@ -17,9 +25,9 @@
 //!         Ok(())
 //!     }
 //! }
-//! let mut engine = Engine::new()?;
-//! engine.spawn(SpawnOptions::default(), |process| Counter(0).run(process))?;
-//! while engine.process_count() != 0 { engine.tick()?; }
+//! let mut game = Game::new()?;
+//! game.spawn(SpawnOptions::default(), |process| Counter(0).run(process))?;
+//! while game.process_count() != 0 { game.tick()?; }
 //! # Ok::<(), Error>(())
 //! ```
 pub mod animation;
@@ -49,7 +57,7 @@ mod task;
 #[cfg(feature = "graphics")]
 pub mod window;
 
-pub use engine::{Engine, Handle, LineageEntry, ProcessContext, Relation, Snapshot, SpawnOptions};
+pub use engine::{Game, Handle, LineageEntry, ProcessContext, Relation, Snapshot, SpawnOptions};
 pub use resource::Resource;
 pub use task::Frame;
 
@@ -103,19 +111,19 @@ pub enum EndReason {
     Returned,
     Error,
 }
-/// Engine access is local to its owner thread. Moving it to another thread is
+/// Game access is local to its owner thread. Moving it to another thread is
 /// rejected, also when a process is suspended.
 /// ```compile_fail
-/// let mut engine = malvado::Engine::new().unwrap();
-/// std::thread::spawn(move || engine.tick());
+/// let mut game = malvado::Game::new().unwrap();
+/// std::thread::spawn(move || game.tick());
 /// ```
 /// Process futures own their state. A borrowed mutable local cannot escape
 /// into a native process whose lifetime extends past the spawn call.
 /// ```compile_fail
-/// use malvado::{Engine, SpawnOptions};
-/// let engine = Engine::new().unwrap();
+/// use malvado::{Game, SpawnOptions};
+/// let game = Game::new().unwrap();
 /// let mut state = 0;
-/// engine.spawn(SpawnOptions::default(), |_| async {
+/// game.spawn(SpawnOptions::default(), |_| async {
 ///     state += 1;
 ///     Ok(())
 /// }).unwrap();
@@ -124,10 +132,10 @@ pub enum EndReason {
 /// Once state moves into a process, external code cannot keep another mutable
 /// owner. This prevents aliases to data across an await.
 /// ```compile_fail
-/// use malvado::{Engine, SpawnOptions};
-/// let engine = Engine::new().unwrap();
+/// use malvado::{Game, SpawnOptions};
+/// let game = Game::new().unwrap();
 /// let mut state = vec![1];
-/// engine.spawn(SpawnOptions::default(), move |p| async move {
+/// game.spawn(SpawnOptions::default(), move |p| async move {
 ///     let borrowed = &mut state;
 ///     p.frame().await;
 ///     borrowed.push(2);
@@ -137,9 +145,9 @@ pub enum EndReason {
 /// ```
 /// A process token cannot recursively drive the native scheduler.
 /// ```compile_fail
-/// use malvado::{Engine, SpawnOptions};
-/// let engine = Engine::new().unwrap();
-/// engine.spawn(SpawnOptions::default(), |mut p| async move {
+/// use malvado::{Game, SpawnOptions};
+/// let game = Game::new().unwrap();
+/// game.spawn(SpawnOptions::default(), |mut p| async move {
 ///     p.tick()?;
 ///     Ok(())
 /// }).unwrap();

@@ -35,12 +35,13 @@ impl Runtime {
     }
 }
 
-/// Native scheduler owner. Dropping it cancels all remaining processes. Process
-/// tokens cannot tick or destroy the engine, and may safely outlive shutdown.
-pub struct Engine {
+/// Primary game owner over the native scheduler. Dropping it cancels all
+/// remaining processes. Process tokens cannot tick or destroy the game and
+/// may safely outlive shutdown.
+pub struct Game {
     runtime: Rc<Runtime>,
 }
-impl Engine {
+impl Game {
     /// Accumulate finite nonnegative wall time and return due logical ticks.
     /// The default clock is 60 Hz with at most five ticks per call. Excess time
     /// is recorded as dropped. Failure preserves all clock state.
@@ -48,10 +49,10 @@ impl Engine {
     /// Call `tick()` once per returned tick, committing window input before each
     /// tick when graphics are used. Do not advance again to consume this plan.
     /// ```
-    /// use malvado::Engine;
-    /// let mut engine = Engine::new()?;
-    /// for _ in 0..engine.advance_time(1.0 / 60.0)? { engine.tick()?; }
-    /// assert_eq!(engine.planned_ticks()?, 1);
+    /// use malvado::Game;
+    /// let mut game = Game::new()?;
+    /// for _ in 0..game.advance_time(1.0 / 60.0)? { game.tick()?; }
+    /// assert_eq!(game.planned_ticks()?, 1);
     /// # Ok::<(), malvado::Error>(())
     /// ```
     pub fn advance_time(&mut self, elapsed_seconds: f64) -> Result<u32, Error> {
@@ -112,6 +113,9 @@ impl Engine {
         self.runtime.live()
     }
 
+    /// Create a headless-capable game context with a 60 Hz native clock.
+    /// No window or host loop is created. Use the explicit window service and
+    /// call `tick` or `advance_time` according to the host timing contract.
     pub fn new() -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: fixed valid native clock settings; this owner destroys once.
@@ -144,11 +148,11 @@ impl Engine {
             .collect()
     }
     pub fn tick(&mut self) -> Result<(), Error> {
-        // SAFETY: the unique Engine borrow prevents reentrant tick/destruction.
+        // SAFETY: the unique Game borrow prevents reentrant tick/destruction.
         result(unsafe { sys::mv_process_tick(self.runtime.live()?) })
     }
     pub fn process_count(&self) -> usize {
-        // SAFETY: Engine keeps the native context live on its owner thread.
+        // SAFETY: Game keeps the native context live on its owner thread.
         unsafe { sys::mv_process_count(self.runtime.native.get().unwrap().as_ptr()) }
     }
     pub fn signal(&self, target: &Handle, signal: Signal) -> Result<(), Error> {
@@ -189,11 +193,11 @@ impl Engine {
         Resource::create(&self.runtime, None, value)
     }
 }
-impl Drop for Engine {
+impl Drop for Game {
     fn drop(&mut self) {
         // Invalidate tokens before destructors run; none can reenter shutdown.
         if let Some(native) = self.runtime.native.take() {
-            // SAFETY: Engine is not Send and cannot be dropped during its tick.
+            // SAFETY: Game is not Send and cannot be dropped during its tick.
             unsafe {
                 sys::mv_context_destroy(native.as_ptr());
             }

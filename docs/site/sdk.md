@@ -70,6 +70,12 @@ To create a C game, use `malvado new --c my-c-game`. Run it with `malvado run` f
 
 ## Create a Rust game
 
+Rust's gameplay SDK is experimental in 2.0. It is functional and tested, but
+future 2.x changes can require source updates. Use `Game` as the public entry
+point; window creation and the host loop remain explicit. See the
+[support policy](https://github.com/jepemo/malvado/blob/master/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/master/docs/development/rust-game-migration.md).
+Rust games are native executables; players do not need Cargo or rustc.
+
 Install Cargo, rustc, CMake and a C compiler, then use a matching macOS or Linux
 SDK:
 

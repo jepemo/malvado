@@ -63,16 +63,16 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
         ' drop(frame); drop(window);\n'
     ) if graphics else ""
     (game / "src/main.rs").write_text(
-        'use malvado::{Engine, SpawnOptions};\n'
+        'use malvado::{Game, SpawnOptions};\n'
         'fn main() -> Result<(), malvado::Error> {\n' + window_probe +
-        ' let mut engine = Engine::new()?;\n'
-        ' let process = engine.spawn(SpawnOptions::default(), |p| async move {\n'
+        ' let mut game = Game::new()?;\n'
+        ' let process = game.spawn(SpawnOptions::default(), |p| async move {\n'
         '  p.frame().await; Ok(())\n'
         ' })?;\n'
         ' process.set_position(3.0,4.0)?;\n'
         ' assert_eq!(process.position()?, (3.0,4.0));\n'
-        ' engine.tick()?; engine.tick()?;\n'
-        ' assert_eq!(engine.process_count(),0); Ok(())\n'
+        ' game.tick()?; game.tick()?;\n'
+        ' assert_eq!(game.process_count(),0); Ok(())\n'
         '}\n', encoding="utf-8")
     command = ["cargo", "run", "--offline", "--manifest-path", str(game / "Cargo.toml")]
     if config == "Release":

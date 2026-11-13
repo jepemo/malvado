@@ -84,10 +84,10 @@ graph geometry. A local override survives graph clearing and replacement.
 contract. A failed bind preserves the previous selection.
 
 ```rust
-use malvado::{Engine, graphic::{Graphic, Geometry, Color}};
-let engine = Engine::new()?;
-let a = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-let b = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+use malvado::{Game, graphic::{Graphic, Geometry, Color}};
+let game = Game::new()?;
+let a = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let b = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
 let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
 a.set_graphic(graphic)?;
 b.set_graphic(graphic)?;
@@ -123,9 +123,9 @@ selection or no graph means free movement and no query hit. Nothing is retained
 and no tick or future activation is added.
 
 ```rust
-use malvado::{Engine, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+use malvado::{Game, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
 actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
 actor.set_position(0.0, 5.0)?;
 let mut world = World::new()?;
@@ -169,10 +169,10 @@ or updated implicitly. Explicit shape selection keeps ownership and side effects
 clear when the caller supplies its own geometry.
 
 ```rust
-use malvado::{Engine, Error};
+use malvado::{Game, Error};
 use malvado::collision::{World, Rect, Shape};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) })?;
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) })?;
 actor.set_position(0.0, 5.0)?;
 let mut world = World::new()?;
 world.add_rect(Rect { x: 10.0, y: 0.0, width: 10.0, height: 10.0 })?;

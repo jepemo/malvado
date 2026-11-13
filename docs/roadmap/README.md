@@ -13,6 +13,7 @@ teaching catalog, or minigames. Those candidates are organized here.
 
 | Proposal | Goal | Current state and dependencies |
 | --- | --- | --- |
+| [Rust API Ergonomics and DIV-Style Processes](rust-ergonomics.md) | Evaluate concise functions and typed structs over the existing owned-future adapter | Proposal; both frontends remain open, with no syntax, architecture or version commitment. |
 | [API candidate catalog](api-candidates.md) | Review historical calls and select useful modern capabilities | Existing pinned Bennu catalogs; DIV/Fénix coverage gaps are explicit. No blanket implementation selection. |
 | [Visual properties, effects and shaders](visual-effects.md) | Small process effects, reusable shaders, then camera effects | Proposal; requires completed shared process drawing and resource ownership. |
 | [Spatial attachments](spatial-attachments.md) | Explicit relative transforms and named visual points | Proposal; separate from delivered creator/owner genealogy. |

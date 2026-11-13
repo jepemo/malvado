@@ -1,14 +1,19 @@
-# C, Lua and Rust support
+# C, Lua and experimental Rust support
 
 All three APIs use the C engine and its process scheduler. Lua coroutines and
 Rust owned futures adapt that scheduler; they do not run a second executor.
-This matrix covers delivered capabilities on native macOS and Linux. Windows
-and Android acceptance is alpha.8 work. It does not freeze the 2.x API or ABI.
+Rust's gameplay API is experimental, functional and maintained; this label does
+not apply to the C core. See the [Rust support policy](rust-support.md).
+This feature matrix covers the shared native APIs. macOS/Linux SDK and CLI paths
+are verified. Windows x64 MSVC headless and graphical SDKs are verified; Windows
+CLI/export and Android acceptance remain alpha.8 work. See the
+[platform matrix](../development/alpha8-platforms.md). This does not freeze the
+2.x API or ABI.
 
-| Capability | C | Lua | Rust |
+| Capability | C | Lua | Rust (experimental) |
 | --- | --- | --- | --- |
 | Processes, cadence, priority, genealogy, signals and cleanup | Native callbacks and explicit context ticks | Processes/coroutines in the same context | Owned async futures, typed handles and frame waits over native callbacks |
-| Clock and host loop | Context planner and explicit input/tick/draw calls | `start` owns the elapsed-time loop and immediate startup tick | `Engine::advance_time` plans; `tick` executes; host input/audio/drawing stay explicit |
+| Clock and host loop | Context planner and explicit input/tick/draw calls | `start` owns the elapsed-time loop and immediate startup tick | `Game::advance_time` plans; `tick` executes; host input/audio/drawing stay explicit |
 | Native position, depth, angle, scale, graph and collider | Context-bound process operations | Fields/descriptors synchronize with the native record | Checked handle methods; no mirrored Rust position state |
 | PNG, atlas, Aseprite export JSON and selected FPG subset | Native loaders and explicit ownership | Shared loaders with userdata descriptors | Optional `assets`; owned metadata and borrowed views; `graphics` adds textures |
 | Images, sprites, shapes, graph animation, drawing and cameras | Native storage, tick updates and explicit draw pass | Shared native pass with live descriptor preparation | Optional `graphics`; retained images/sprites, explicit frame process pass |

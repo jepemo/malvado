@@ -96,7 +96,7 @@ Unstyled entries remain invisible. The registry works without Lua or graphics.
 
 ## Rust context text handles
 
-Use `Engine::create_text` for host-owned entries and `Handle::create_text` for
+Use `Game::create_text` for host-owned entries and `Handle::create_text` for
 process-owned entries. Both return `TextHandle`. Its clones refer to the same
 context entry; dropping a handle does not remove it. Call `remove` to remove it
 explicitly. Process cleanup and engine shutdown remove entries automatically.
@@ -205,13 +205,13 @@ its original font/window variables, and release it when the final style ends.
 
 ```rust
 use std::rc::Rc;
-use malvado::{Engine, graphic::TextAlignment, window::{Window, Color}};
+use malvado::{Game, graphic::TextAlignment, window::{Window, Color}};
 let window = Rc::new(Window::open(320, 200, "Text")?);
-let engine = Engine::new()?;
-let text = engine.create_text("Score: 1", (10, 10), TextAlignment::Left)?;
+let game = Game::new()?;
+let text = game.create_text("Score: 1", (10, 10), TextAlignment::Left)?;
 text.set_builtin_font(window.clone(), 20, Color {r:255,g:255,b:255,a:255})?;
 let frame = window.frame(Color {r:0,g:0,b:0,a:255})?;
-frame.texts(&engine)?;
+frame.texts(&game)?;
 drop(frame);
 text.remove()?;
 # Ok::<(), malvado::Error>(())

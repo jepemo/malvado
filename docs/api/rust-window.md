@@ -33,7 +33,7 @@ finishes it before closing. Dropping the window closes the native service and
 resets its input. A new window can then be opened.
 
 The caller controls rendering and simulation timing. This service does not
-create another scheduler, advance `Engine`, or derive process graphics.
+create another scheduler, advance `Game`, or derive process graphics.
 Owned image and immediate drawing services are described in the
 [drawing guide](rust-drawing.md). Owned fonts use the same retained-frame model; see the [font guide](rust-font.md).
 Audio is covered in the [audio guide](rust-audio.md); process collection uses
@@ -49,13 +49,13 @@ CI display capability is claimed.
 ## Keyboard and the native process tick
 
 ```rust
-use malvado::{Engine, window::{Window, Key, Color}};
-let mut engine = Engine::new()?;
+use malvado::{Game, window::{Window, Key, Color}};
+let mut game = Game::new()?;
 let window = Window::open(640, 480, "Game")?;
 for _ in 0..3 {
     window.input_tick(); // Once for the shared logical tick, before all readers.
     if window.key_pressed(Key::Escape) { break; }
-    engine.tick()?;
+    game.tick()?;
     drop(window.frame(Color { r: 20, g: 30, b: 40, a: 255 })?);
 }
 # Ok::<(), malvado::Error>(())
@@ -67,7 +67,7 @@ installed-header probe checks each value. `key_down` reads held state;
 They do not add text input, autorepeat or per-process key history.
 
 `input_tick` commits the native pending edges. Call it once for the shared
-window tick, including catch-up ticks, before `Engine::tick` or other readers.
+window tick, including catch-up ticks, before `Game::tick` or other readers.
 Do not call it separately in each process or context. Frames without ticks
 retain pending edges. Catch-up ticks clear them without replay. Both edges
 can be true when both transitions were observed between ticks. A slower,
@@ -77,7 +77,7 @@ See the [shared keyboard timing contract](keyboard.md).
 An `Rc<Window>` lets owned process futures query this one native service without
 another input cache. The host remains responsible for commit timing. Dropping
 all window owners resets input; reopening starts neutral. The default headless
-Engine still has no live-window service. Mouse, controller and Unicode text queries are described in the
+Game still has no live-window service. Mouse, controller and Unicode text queries are described in the
 [input guide](rust-input.md). See the [language matrix](language-parity.md)
 for the other delivered platform services.
 

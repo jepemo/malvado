@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal, SpawnOptions,
+    Error, Game, Signal, SpawnOptions,
     atlas::SpriteFrame,
     graphic::{Geometry, Graphic},
     image::Image,
@@ -27,10 +27,10 @@ fn frames(window: Rc<Window>) -> Vec<SpriteFrame> {
 fn main() {
     let window = Rc::new(Window::open(64, 64, "Rust native sprite animation").unwrap());
     let weak = Rc::downgrade(&window);
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
-    let actor = engine
+    let actor = game
         .spawn(
             SpawnOptions {
                 fps: 15,
@@ -44,7 +44,7 @@ fn main() {
             },
         )
         .unwrap();
-    let target = engine
+    let target = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -157,7 +157,7 @@ fn main() {
                 a: 255,
             })
             .unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         // SAFETY: live main-thread frame; helper only reads rendered pixels.
         assert_eq!(
             unsafe {
@@ -186,21 +186,21 @@ fn main() {
             );
         }
         if i + 1 < trace.len() {
-            engine.tick().unwrap();
+            game.tick().unwrap();
         }
     }
     assert_eq!(polls.get(), 2);
     for signal in [Signal::Freeze, Signal::Sleep] {
-        engine.signal(&actor, signal).unwrap();
-        engine.tick().unwrap();
+        game.signal(&actor, signal).unwrap();
+        game.tick().unwrap();
         assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 0);
     }
-    engine.signal(&actor, Signal::Wake).unwrap();
+    game.signal(&actor, Signal::Wake).unwrap();
     let sequence = frames(window.clone());
     actor.set_sprite_animation(&sequence, false).unwrap();
     drop(sequence);
     for _ in 0..10 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
     }
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 100000);
     assert_eq!(actor.sprite_geometry().unwrap().unwrap().region.width, 4);
@@ -213,9 +213,9 @@ fn main() {
         let window = Rc::new(Window::open(32, 32, "Animated graph cleanup").unwrap());
         let weak = Rc::downgrade(&window);
         let sequence = frames(window.clone());
-        let mut engine = Engine::new().unwrap();
+        let mut game = Game::new().unwrap();
         let natural = mode == "return";
-        let actor = engine
+        let actor = game
             .spawn(Default::default(), move |p| async move {
                 if !natural {
                     loop {
@@ -238,16 +238,16 @@ fn main() {
         match mode {
             "kill" => {
                 actor.kill().unwrap();
-                engine.tick().unwrap();
+                game.tick().unwrap();
             }
             "return" => {
-                engine.tick().unwrap();
+                game.tick().unwrap();
             }
             "static" => {
                 actor.clear_graphic().unwrap();
             }
             "context" => {
-                drop(engine);
+                drop(game);
             }
             _ => unreachable!(),
         }
@@ -256,16 +256,16 @@ fn main() {
     let window = Rc::new(Window::open(32, 32, "Animation failure cleanup").unwrap());
     let weak = Rc::downgrade(&window);
     let sequence = frames(window.clone());
-    let mut engine = Engine::new().unwrap();
-    let ended = engine
+    let mut game = Game::new().unwrap();
+    let ended = game
         .spawn(Default::default(), |_| async { Ok(()) })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(
         ended.set_sprite_animation(&sequence, true),
         Err(Error::NotFound)
     );
-    drop(engine);
+    drop(game);
     assert_eq!(
         ended.set_sprite_animation(&sequence, true),
         Err(Error::Closed)
@@ -276,8 +276,8 @@ fn main() {
     let window = Rc::new(Window::open(32, 32, "Shared animation owners").unwrap());
     let weak = Rc::downgrade(&window);
     let sequence = frames(window.clone());
-    let first = Engine::new().unwrap();
-    let second = Engine::new().unwrap();
+    let first = Game::new().unwrap();
+    let second = Game::new().unwrap();
     let a = first
         .spawn(Default::default(), |p| async move {
             loop {

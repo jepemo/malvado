@@ -1,10 +1,10 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Engine, Error, Signal};
+use malvado::{Error, Game, Signal};
 
 #[test]
 fn atomic_position_and_handle_lifetime() {
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -37,8 +37,8 @@ fn atomic_position_and_handle_lifetime() {
     assert_eq!(copied, (-1.5, 2.25));
     assert_eq!(actor.position().unwrap(), (7.0, 8.0));
     for signal in [Signal::Sleep, Signal::Freeze, Signal::Wake] {
-        engine.signal(&actor, signal).unwrap();
-        engine.tick().unwrap();
+        game.signal(&actor, signal).unwrap();
+        game.tick().unwrap();
         assert_eq!(actor.position().unwrap(), (7.0, 8.0));
     }
     actor.kill().unwrap();
@@ -48,7 +48,7 @@ fn atomic_position_and_handle_lifetime() {
     assert_eq!(actor.set_scale(1.0), Err(Error::NotFound));
     assert_eq!(actor.position(), Err(Error::NotFound));
     assert_eq!(actor.set_position(0.0, 0.0), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert_eq!(alias.angle(), Err(Error::Closed));
     assert_eq!(alias.scale(), Err(Error::Closed));
     assert_eq!(alias.set_angle(0.0), Err(Error::Closed));

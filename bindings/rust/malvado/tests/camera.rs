@@ -89,9 +89,9 @@ fn viewport_clipping_and_copy_independence() {
 
 #[test]
 fn native_follow_trace_matches_c_and_lua() {
-    use malvado::{Engine, Signal, camera::Follow};
-    let engine = Engine::new().unwrap();
-    let actor = engine
+    use malvado::{Game, Signal, camera::Follow};
+    let game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -107,7 +107,7 @@ fn native_follow_trace_matches_c_and_lua() {
         camera.position().0,
         camera.position().1
     );
-    engine.signal(&actor, Signal::Freeze).unwrap();
+    game.signal(&actor, Signal::Freeze).unwrap();
     actor.set_position(120.0, 90.0).unwrap();
     assert!(follow.update(&mut camera, (100, 80)).unwrap());
     trace.push_str(&format!(
@@ -141,9 +141,9 @@ fn native_follow_trace_matches_c_and_lua() {
 
 #[test]
 fn follow_error_atomicity_independence_and_closed_context() {
-    use malvado::{Engine, Signal, camera::Follow};
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    use malvado::{Game, Signal, camera::Follow};
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -166,8 +166,8 @@ fn follow_error_atomicity_independence_and_closed_context() {
     assert_eq!(camera.position(), original);
     assert!(first.is_following());
     actor.set_position(120.0, 90.0).unwrap();
-    engine.signal(&actor, Signal::Sleep).unwrap();
-    engine.tick().unwrap();
+    game.signal(&actor, Signal::Sleep).unwrap();
+    game.tick().unwrap();
     assert!(first.update(&mut camera, (100, 80)).unwrap());
     assert_eq!(camera.position(), (70.0, 50.0));
     first.clear();
@@ -177,7 +177,7 @@ fn follow_error_atomicity_independence_and_closed_context() {
     assert!(second.is_following());
     assert!(second.update(&mut camera, (100, 80)).unwrap());
     assert_eq!(camera.position(), (70.0, 50.0));
-    drop(engine);
+    drop(game);
     let original = camera.position();
     assert_eq!(second.update(&mut camera, (100, 80)), Err(Error::Closed));
     assert_eq!(camera.position(), original);
@@ -189,7 +189,7 @@ fn follow_error_atomicity_independence_and_closed_context() {
 
 #[test]
 fn follow_does_not_retain_naturally_ended_process_state() {
-    use malvado::{Engine, camera::Follow};
+    use malvado::{Game, camera::Follow};
     use std::{cell::Cell, rc::Rc};
     struct CountDrop(Rc<Cell<u32>>);
     impl Drop for CountDrop {
@@ -197,10 +197,10 @@ fn follow_does_not_retain_naturally_ended_process_state() {
             self.0.set(self.0.get() + 1);
         }
     }
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let drops = Rc::new(Cell::new(0));
     let owned = CountDrop(drops.clone());
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), |p| async move {
             let _owned = owned;
             p.frame().await;
@@ -209,9 +209,9 @@ fn follow_does_not_retain_naturally_ended_process_state() {
         .unwrap();
     let mut follow = Follow::new(&actor).unwrap();
     let mut camera = Camera::new(3.0, 4.0, None).unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(follow.update(&mut camera, (100, 80)).unwrap());
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(drops.get(), 1);
     assert!(!follow.update(&mut camera, (100, 80)).unwrap());
     assert_eq!(camera.position(), (-50.0, -40.0));

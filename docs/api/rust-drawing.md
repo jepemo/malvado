@@ -104,16 +104,16 @@ pass. Linux host CI includes the GLX-scoped leak-filter negative fixture.
 Use handle methods to keep drawing between process activations:
 
 ```rust
-use malvado::{Engine, Error, graphic::Color};
-let mut engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |process| async move {
+use malvado::{Game, Error, graphic::Color};
+let mut game = Game::new()?;
+let actor = game.spawn(Default::default(), |process| async move {
     loop {
         process.current().draw_box((10, 20), (30, 40), true,
             Color { r: 255, g: 80, b: 40, a: 255 })?;
         process.frame().await;
     }
 })?;
-engine.tick()?;
+game.tick()?;
 assert_eq!(actor.draw_count()?, 1);
 # Ok::<(), Error>(())
 ```

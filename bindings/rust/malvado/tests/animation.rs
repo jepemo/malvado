@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     animation::{Animation, Frame},
 };
 const FRAMES: [Frame; 2] = [
@@ -85,11 +85,11 @@ fn fixed_ticks_rate_reset_and_independent_playback() {
 }
 #[test]
 fn stopped_and_looping_playback_and_native_resource_ownership() {
-    let engine = Engine::new().unwrap();
-    let animation = engine
+    let game = Game::new().unwrap();
+    let animation = game
         .resource(Animation::new(&FRAMES, false).unwrap())
         .unwrap();
-    drop(engine);
+    drop(game);
     let mut playback = animation.playback();
     for _ in 0..100 {
         playback.advance(60).unwrap();

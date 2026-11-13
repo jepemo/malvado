@@ -105,21 +105,21 @@ unsafe extern "C" fn destroy<T>(data: *mut c_void) {
 
 /// Resource values own their data and have shared-only access.
 /// ```compile_fail
-/// let engine = malvado::Engine::new().unwrap();
-/// let mut resource = engine.resource(vec![1]).unwrap();
+/// let game = malvado::Game::new().unwrap();
+/// let mut resource = game.resource(vec![1]).unwrap();
 /// let retained = resource.try_clone().unwrap();
 /// resource.push(2); // no DerefMut while retained references can exist
 /// ```
 /// Borrowed caller data cannot outlive its native resource registration.
 /// ```compile_fail
-/// let engine = malvado::Engine::new().unwrap();
+/// let game = malvado::Game::new().unwrap();
 /// let value = String::from("local");
-/// let resource = engine.resource(&value).unwrap();
+/// let resource = game.resource(&value).unwrap();
 /// ```
 /// Native resource release stays on the owner thread.
 /// ```compile_fail
-/// let engine = malvado::Engine::new().unwrap();
-/// let resource = engine.resource(42).unwrap();
+/// let game = malvado::Game::new().unwrap();
+/// let resource = game.resource(42).unwrap();
 /// std::thread::spawn(move || drop(resource));
 /// ```
 mod ownership_contract {}

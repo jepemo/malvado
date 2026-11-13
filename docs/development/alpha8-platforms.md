@@ -2,6 +2,9 @@
 
 Alpha.8 is in progress. A configured CI job is not proof of platform support.
 Use the logs from the exact candidate revision to establish support.
+Malvado 2.0 supports C, Lua and experimental Rust. The experimental label applies
+to the maintained Rust gameplay API, not the C core. It does not widen the
+platform claims below; see the [Rust support policy](../api/rust-support.md).
 
 | Host / target | Current verification | Remaining work |
 | --- | --- | --- |

@@ -2,7 +2,7 @@
 
 Enable `graphics` and use the same live [Window](rust-window.md) as the native
 keyboard service. No extra input loop, cache or process scheduler is created.
-The default headless Engine has no live device service.
+The default headless Game has no live device service.
 
 ```rust
 use malvado::window::{Window, MouseButton};

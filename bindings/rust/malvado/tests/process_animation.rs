@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal, SpawnOptions,
+    Error, Game, Signal, SpawnOptions,
     animation::{Animation, Frame},
 };
 use std::{cell::Cell, rc::Rc};
@@ -22,8 +22,8 @@ fn definition(looping: bool) -> Animation {
 }
 #[test]
 fn shared_clock_trace_and_retained_definition() {
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -47,16 +47,16 @@ fn shared_clock_trace_and_retained_definition() {
         assert_eq!(clock.elapsed_us, values[0]);
         assert_eq!(clock.sample.graph_id as u64, values[1]);
         if i + 1 < lines.len() {
-            engine.tick().unwrap();
+            game.tick().unwrap();
         }
     }
     for signal in [Signal::Sleep, Signal::Freeze] {
-        engine.signal(&actor, signal).unwrap();
-        engine.tick().unwrap();
+        game.signal(&actor, signal).unwrap();
+        game.tick().unwrap();
         assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 0);
     }
-    engine.signal(&actor, Signal::Wake).unwrap();
-    engine.tick().unwrap();
+    game.signal(&actor, Signal::Wake).unwrap();
+    game.tick().unwrap();
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 16666);
     actor.clear_animation_clock().unwrap();
     actor.clear_animation_clock().unwrap();
@@ -65,7 +65,7 @@ fn shared_clock_trace_and_retained_definition() {
     actor.set_animation_clock(&once).unwrap();
     drop(once);
     for _ in 0..10 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
     }
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 100000);
     assert_eq!(
@@ -73,22 +73,22 @@ fn shared_clock_trace_and_retained_definition() {
         42
     );
     actor.kill().unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(actor.animation_clock(), Err(Error::NotFound));
     assert_eq!(
         actor.set_animation_clock(&definition(true)),
         Err(Error::NotFound)
     );
-    drop(engine);
+    drop(game);
     assert_eq!(actor.animation_clock(), Err(Error::Closed));
     assert_eq!(actor.clear_animation_clock(), Err(Error::Closed));
 }
 #[test]
 fn cadence_and_in_tick_assignment_use_one_native_tick() {
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
-    let slow = engine
+    let slow = game
         .spawn(
             SpawnOptions {
                 fps: 15,
@@ -106,7 +106,7 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
     slow.set_animation_clock(&animation).unwrap();
     let mut expected = animation.playback();
     for _ in 0..9 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
         let sample = expected.advance(60).unwrap();
         let clock = slow.animation_clock().unwrap().unwrap();
         assert_eq!(clock.elapsed_us, expected.elapsed_us());
@@ -114,7 +114,7 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
     }
     assert_eq!(polls.get(), 3);
     let during = definition(true);
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), move |p| async move {
             p.current().set_animation_clock(&during)?;
             drop(during);
@@ -123,16 +123,16 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
             }
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 0);
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 16666);
-    let ended = engine
+    let ended = game
         .spawn(Default::default(), |_| async { Ok(()) })
         .unwrap();
     ended.set_animation_clock(&definition(true)).unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(ended.animation_clock(), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert_eq!(actor.animation_clock(), Err(Error::Closed));
 }

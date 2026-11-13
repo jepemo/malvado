@@ -1,6 +1,6 @@
 # Welcome to Malvado
 
-Malvado is a game runtime with C, Lua and Rust APIs. Version 2 is in development.
+Malvado is a game runtime with C, Lua and experimental Rust APIs. Version 2 is in development.
 
 Start with [Get started](getting-started.md) to build Malvado and run your first example. Then explore these guides:
 
@@ -16,3 +16,6 @@ Start with [Get started](getting-started.md) to build Malvado and run your first
 These links follow the development branch. Features can change before release.
 
 The [previous documentation](https://jepemo.github.io/malvado/legacy/) is also available after deployment.
+
+Rust is functional and tested; its gameplay API can change in future 2.x releases.
+See the [Rust support policy](https://github.com/jepemo/malvado/blob/master/docs/api/rust-support.md).

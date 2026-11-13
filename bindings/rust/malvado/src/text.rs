@@ -298,7 +298,7 @@ unsafe extern "C" fn release_text_owner<T>(owner: *mut std::ffi::c_void) {
 impl crate::window::Frame<'_> {
     /// Draw native retained text after process graphics and before an overlay.
     /// Active clip/scroll scopes return an error without drawing.
-    pub fn texts(&self, engine: &crate::Engine) -> Result<(), Error> {
+    pub fn texts(&self, engine: &crate::Game) -> Result<(), Error> {
         // SAFETY: frame-bound drawing and a live owner-thread engine.
         crate::drawing::valid(unsafe {
             sys::graphics::mv_window_draw_texts(engine.native_context()?)

@@ -40,21 +40,21 @@ The Lua slot lookup uses increasing creation IDs without another slot map.
 
 ## Rust
 
-Use `handle.z()?`, `handle.set_z(value)?`, and `engine.draw_order()?`.
+Use `handle.z()?`, `handle.set_z(value)?`, and `game.draw_order()?`.
 The ordered result contains owned handles. These handles do not retain processes
 or resources. A process can be gone when later inspected. After engine shutdown,
 depth operations return `Closed`. During a process, use `process.current()` to
 get its handle. No graphics feature or window is required.
 
 ```rust
-use malvado::{Engine, Error};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+use malvado::{Game, Error};
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_z(-2.5)?;
 assert_eq!(actor.z()?, -2.5);
-let visible = engine.draw_order()?;
+let visible = game.draw_order()?;
 assert_eq!(visible[0].id(), actor.id());
 # Ok::<(), Error>(())
 ```
@@ -146,9 +146,9 @@ closed/dead handle errors as position. Collider registration stays explicit in
 Rust; these properties do not introduce automatic Rust graph drawing.
 
 ```rust
-# use malvado::{Engine, Error};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+# use malvado::{Game, Error};
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_angle(90.0)?;

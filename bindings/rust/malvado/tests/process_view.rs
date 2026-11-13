@@ -1,13 +1,13 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Signal,
+    Error, Game, Signal,
     camera::{Camera, Selection, Viewport},
 };
 
 #[test]
 fn copied_descriptors_composition_errors_and_lifetime() {
-    let mut engine = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -17,7 +17,7 @@ fn copied_descriptors_composition_errors_and_lifetime() {
     assert_eq!(actor.region().unwrap(), None);
     assert_eq!(actor.scroll().unwrap(), (0.0, 0.0));
     actor.set_position(60.0, 50.0).unwrap();
-    engine.signal(&actor, Signal::Freeze).unwrap();
+    game.signal(&actor, Signal::Freeze).unwrap();
     let alias = actor.clone();
     let mut region = Viewport {
         x: 10,
@@ -29,12 +29,11 @@ fn copied_descriptors_composition_errors_and_lifetime() {
     region.width = 1;
     assert_eq!(alias.region().unwrap().unwrap().width, 40);
     actor.set_scroll((3.0, 4.0)).unwrap();
-    engine
-        .main_camera()
+    game.main_camera()
         .unwrap()
         .set_position(100.0, 50.0)
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(alias.view_offset().unwrap(), (-103.0, -54.0));
     assert_eq!(actor.position().unwrap(), (60.0, 50.0));
     let host = Viewport {
@@ -69,7 +68,7 @@ fn copied_descriptors_composition_errors_and_lifetime() {
         Err(Error::InvalidArgument)
     );
     actor.set_region(None).unwrap();
-    let camera = engine
+    let camera = game
         .create_camera(Camera::new(1.0, 2.0, Some(host)).unwrap())
         .unwrap();
     actor
@@ -98,7 +97,7 @@ fn copied_descriptors_composition_errors_and_lifetime() {
     assert_eq!(actor.set_region(None), Err(Error::NotFound));
     assert_eq!(actor.scroll(), Err(Error::NotFound));
     assert_eq!(actor.set_scroll((0.0, 0.0)), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert_eq!(alias.region(), Err(Error::Closed));
     assert_eq!(alias.view_offset(), Err(Error::Closed));
     assert_eq!(alias.view_clip(None, (100, 80)), Err(Error::Closed));

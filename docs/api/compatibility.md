@@ -14,6 +14,17 @@ updated contracts/tests/docs, migration notes and native ABI/SDK mismatch checks
 No 1.0 source/API compatibility is required. External format fidelity is a separate
 per-format decision. See the [release direction](../planning/roadmap.md).
 
+## Experimental Rust gameplay API
+
+Malvado 2.0 supports C, Lua and experimental Rust. Rust is a maintained, tested
+SDK over the same C core and scheduler. The experimental label applies to its
+public gameplay API, including naming and process ergonomics. It does not make
+the C core experimental or permit broken documented behavior. Future 2.x Rust
+API changes can require source updates; significant changes need migration
+guidance. No long-term Rust API stability guarantee exists yet. See the
+[Rust support policy](rust-support.md) and the approved
+[Engine to Game migration](../development/rust-game-migration.md).
+
 ## Independent profiles
 
 - **malvado-legacy:** historical reference for the old DSL, degrees, size 1.0, text keyboard keys, text, and examples. Preserving this profile is not a 2.0 release gate.

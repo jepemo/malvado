@@ -54,24 +54,24 @@ services are delivered separately; host service calls remain explicit.
 
 ## Rust host integration
 
-`Engine::advance_time(elapsed_seconds)` uses the same context planner. The default
+`Game::advance_time(elapsed_seconds)` uses the same context planner. The default
 engine runs at 60 Hz and returns at most five steps per call. `planned_ticks()`
 and `dropped_seconds()` read native clock accounting. All input and overflow
 errors preserve the existing clock state. Each engine has an independent clock.
 
 ```rust
-use malvado::Engine;
-let mut engine = Engine::new()?;
-let steps = engine.advance_time(1.0 / 60.0)?;
+use malvado::Game;
+let mut game = Game::new()?;
+let steps = game.advance_time(1.0 / 60.0)?;
 for _ in 0..steps {
-    engine.tick()?;
+    game.tick()?;
 }
-assert_eq!(engine.planned_ticks()?, 1);
+assert_eq!(game.planned_ticks()?, 1);
 # Ok::<(), malvado::Error>(())
 ```
 
 In a graphics host, call `window.input_tick()` immediately before each
-`engine.tick()`. Update audio regularly and draw once per host frame. Advance
+`game.tick()`. Update audio regularly and draw once per host frame. Advance
 fade values once per logical tick. These services remain explicit.
 
 Time planning does not activate a future, wake a process, or execute a tick.

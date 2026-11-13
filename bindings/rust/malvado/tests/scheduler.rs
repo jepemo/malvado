@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(not(miri))]
-use malvado::{EndReason, Engine, Error, Signal, SpawnOptions, Status};
+use malvado::{EndReason, Error, Game, Signal, SpawnOptions, Status};
 use std::cell::{Cell, RefCell};
 use std::future::{pending, poll_fn};
 use std::rc::Rc;
@@ -18,65 +18,63 @@ fn golden_native_trace_matches_c_and_lua() {
     let tick = Rc::new(Cell::new(0));
     let output = Rc::new(RefCell::new(String::new()));
     let drops = Rc::new(Cell::new(0));
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let (t, out, d) = (tick.clone(), output.clone(), drops.clone());
-    engine
-        .spawn(SpawnOptions::default(), move |process| async move {
-            let _guard = Guard(d.clone());
-            let mut value = 40;
-            out.borrow_mut()
-                .push_str(&format!("{} parent {value}\n", t.get()));
-            let (t2, out2) = (t.clone(), out.clone());
-            process.spawn(
-                SpawnOptions {
-                    attached: false,
-                    ..Default::default()
-                },
-                move |child| async move {
-                    let _guard = Guard(d);
-                    let mut value = 7;
-                    out2.borrow_mut()
-                        .push_str(&format!("{} child {value}\n", t2.get()));
-                    child.frame().await;
-                    value += 1;
-                    out2.borrow_mut()
-                        .push_str(&format!("{} child {value}\n", t2.get()));
-                    Ok(())
-                },
-            )?;
-            process.frame().await;
-            value += 1;
-            out.borrow_mut()
-                .push_str(&format!("{} parent {value}\n", t.get()));
-            Ok(())
-        })
-        .unwrap();
-    let (t, out, d) = (tick.clone(), output.clone(), drops.clone());
-    engine
-        .spawn(
+    game.spawn(SpawnOptions::default(), move |process| async move {
+        let _guard = Guard(d.clone());
+        let mut value = 40;
+        out.borrow_mut()
+            .push_str(&format!("{} parent {value}\n", t.get()));
+        let (t2, out2) = (t.clone(), out.clone());
+        process.spawn(
             SpawnOptions {
-                fps: 15,
+                attached: false,
                 ..Default::default()
             },
-            move |process| async move {
+            move |child| async move {
                 let _guard = Guard(d);
-                for value in 1..=3 {
-                    out.borrow_mut()
-                        .push_str(&format!("{} slow {value}\n", t.get()));
-                    if value < 3 {
-                        process.frame().await;
-                    }
-                }
+                let mut value = 7;
+                out2.borrow_mut()
+                    .push_str(&format!("{} child {value}\n", t2.get()));
+                child.frame().await;
+                value += 1;
+                out2.borrow_mut()
+                    .push_str(&format!("{} child {value}\n", t2.get()));
                 Ok(())
             },
-        )
-        .unwrap();
+        )?;
+        process.frame().await;
+        value += 1;
+        out.borrow_mut()
+            .push_str(&format!("{} parent {value}\n", t.get()));
+        Ok(())
+    })
+    .unwrap();
+    let (t, out, d) = (tick.clone(), output.clone(), drops.clone());
+    game.spawn(
+        SpawnOptions {
+            fps: 15,
+            ..Default::default()
+        },
+        move |process| async move {
+            let _guard = Guard(d);
+            for value in 1..=3 {
+                out.borrow_mut()
+                    .push_str(&format!("{} slow {value}\n", t.get()));
+                if value < 3 {
+                    process.frame().await;
+                }
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
     assert_eq!(output.borrow().as_str(), "");
     for i in 1..=9 {
         tick.set(i);
-        engine.tick().unwrap();
+        game.tick().unwrap();
     }
-    assert_eq!(engine.process_count(), 0);
+    assert_eq!(game.process_count(), 0);
     assert_eq!(drops.get(), 3);
     output
         .borrow_mut()
@@ -92,23 +90,22 @@ fn all_native_cadences_match_the_lua_baseline() {
     for fps in 0..=60 {
         let count = Rc::new(Cell::new(0));
         let output = count.clone();
-        let mut engine = Engine::new().unwrap();
-        engine
-            .spawn(
-                SpawnOptions {
-                    fps,
-                    ..Default::default()
-                },
-                move |p| async move {
-                    loop {
-                        output.set(output.get() + 1);
-                        p.frame().await;
-                    }
-                },
-            )
-            .unwrap();
+        let mut game = Game::new().unwrap();
+        game.spawn(
+            SpawnOptions {
+                fps,
+                ..Default::default()
+            },
+            move |p| async move {
+                loop {
+                    output.set(output.get() + 1);
+                    p.frame().await;
+                }
+            },
+        )
+        .unwrap();
         for _ in 0..=60 {
-            engine.tick().unwrap();
+            game.tick().unwrap();
         }
         assert_eq!(
             count.get(),
@@ -123,8 +120,8 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
     for signal in [Signal::Sleep, Signal::Freeze] {
         let count = Rc::new(Cell::new(0));
         let output = count.clone();
-        let mut engine = Engine::new().unwrap();
-        let h = engine
+        let mut game = Game::new().unwrap();
+        let h = game
             .spawn(SpawnOptions::default(), move |p| async move {
                 let mut local = 5;
                 output.set(local);
@@ -134,8 +131,8 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
                 Ok(())
             })
             .unwrap();
-        engine.tick().unwrap();
-        engine.signal(&h, signal).unwrap();
+        game.tick().unwrap();
+        game.signal(&h, signal).unwrap();
         assert_eq!(
             h.snapshot().unwrap().status,
             Some(if signal == Signal::Sleep {
@@ -145,11 +142,11 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
             })
         );
         for _ in 0..20 {
-            engine.tick().unwrap();
+            game.tick().unwrap();
         }
         assert_eq!(count.get(), 5);
-        engine.signal(&h, Signal::Wake).unwrap();
-        engine.tick().unwrap();
+        game.signal(&h, Signal::Wake).unwrap();
+        game.tick().unwrap();
         assert_eq!(count.get(), 6);
         assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Returned));
     }
@@ -159,17 +156,16 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
 fn unsupported_pending_future_is_not_busy_polled() {
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
-    let mut engine = Engine::new().unwrap();
-    engine
-        .spawn(SpawnOptions::default(), move |_| {
-            poll_fn(move |_| {
-                count.set(count.get() + 1);
-                Poll::Pending
-            })
+    let mut game = Game::new().unwrap();
+    game.spawn(SpawnOptions::default(), move |_| {
+        poll_fn(move |_| {
+            count.set(count.get() + 1);
+            Poll::Pending
         })
-        .unwrap();
+    })
+    .unwrap();
     for _ in 0..100 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
     }
     assert_eq!(polls.get(), 1);
 }
@@ -178,8 +174,8 @@ fn unsupported_pending_future_is_not_busy_polled() {
 fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
     let drops = Rc::new(Cell::new(0));
     let d = drops.clone();
-    let mut engine = Engine::new().unwrap();
-    let h = engine
+    let mut game = Game::new().unwrap();
+    let h = game
         .spawn(SpawnOptions::default(), move |p| async move {
             let _guard = Guard(d.clone());
             assert!(p.current().kill()?);
@@ -188,11 +184,11 @@ fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
             panic!("a killed future must never resume");
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(drops.get(), 1);
     assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Killed));
     let guard = Guard(drops.clone());
-    let h = engine
+    let h = game
         .spawn(SpawnOptions::default(), move |_| async move {
             let _guard = guard;
             pending::<()>().await;
@@ -201,7 +197,7 @@ fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
         .unwrap();
     assert!(h.kill().unwrap());
     assert_eq!(drops.get(), 1);
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(drops.get(), 2);
     assert!(!h.kill().unwrap());
 }
@@ -210,8 +206,8 @@ fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
 fn attached_and_detached_children_keep_native_creator_and_owner() {
     let children = Rc::new(RefCell::new(Vec::new()));
     let output = children.clone();
-    let mut engine = Engine::new().unwrap();
-    let parent = engine
+    let mut game = Game::new().unwrap();
+    let parent = game
         .spawn(SpawnOptions::default(), move |p| async move {
             for attached in [true, false] {
                 output.borrow_mut().push(p.spawn(
@@ -229,21 +225,21 @@ fn attached_and_detached_children_keep_native_creator_and_owner() {
             Ok(())
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     let children = children.borrow();
     for (i, child) in children.iter().enumerate() {
         let snapshot = child.snapshot().unwrap();
         assert_eq!(snapshot.creator_id, parent.id());
         assert_eq!(snapshot.owner_id, if i == 0 { parent.id() } else { 0 });
     }
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(
         children[0].snapshot().unwrap().reason,
         Some(EndReason::Killed)
     );
     assert!(children[1].snapshot().unwrap().alive);
-    assert_eq!(engine.process_count(), 1);
-    drop(engine);
+    assert_eq!(game.process_count(), 1);
+    drop(game);
     assert_eq!(
         children[1].snapshot().unwrap().reason,
         Some(EndReason::Killed)
@@ -256,8 +252,8 @@ fn panic_and_async_error_have_native_error_reason_and_safe_cleanup() {
     for panic in [false, true] {
         let drops = Rc::new(Cell::new(0));
         let d = drops.clone();
-        let mut engine = Engine::new().unwrap();
-        let h = engine
+        let mut game = Game::new().unwrap();
+        let h = game
             .spawn(SpawnOptions::default(), move |_| async move {
                 let _guard = Guard(d);
                 if panic {
@@ -266,10 +262,10 @@ fn panic_and_async_error_have_native_error_reason_and_safe_cleanup() {
                 Err(Error::Closed)
             })
             .unwrap();
-        assert_eq!(engine.tick(), Err(Error::Process));
+        assert_eq!(game.tick(), Err(Error::Process));
         assert_eq!(drops.get(), 1);
         assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Error));
-        assert_eq!(engine.process_count(), 0);
+        assert_eq!(game.process_count(), 0);
     }
 }
 
@@ -281,9 +277,9 @@ fn destructor_panics_do_not_unwind_across_native_cleanup() {
             panic!("destructor failure");
         }
     }
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let value = BadDrop;
-    let h = engine
+    let h = game
         .spawn(SpawnOptions::default(), move |_| async move {
             let _value = value;
             pending::<()>().await;
@@ -291,17 +287,16 @@ fn destructor_panics_do_not_unwind_across_native_cleanup() {
         })
         .unwrap();
     h.kill().unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Killed));
     let value = BadDrop;
-    engine
-        .spawn(SpawnOptions::default(), move |_| async move {
-            let _v = value;
-            pending::<()>().await;
-            Ok(())
-        })
-        .unwrap();
-    drop(engine);
+    game.spawn(SpawnOptions::default(), move |_| async move {
+        let _v = value;
+        pending::<()>().await;
+        Ok(())
+    })
+    .unwrap();
+    drop(game);
 }
 
 #[test]
@@ -311,8 +306,8 @@ fn wake_after_shutdown_and_saved_process_tokens_are_safe() {
     let (waker_out, context_out) = (saved_waker.clone(), saved_context.clone());
     let drops = Rc::new(Cell::new(0));
     let guard = Guard(drops.clone());
-    let mut engine = Engine::new().unwrap();
-    let h = engine
+    let mut game = Game::new().unwrap();
+    let h = game
         .spawn(SpawnOptions::default(), move |p| {
             *context_out.borrow_mut() = Some(p);
             let guard = guard;
@@ -323,8 +318,8 @@ fn wake_after_shutdown_and_saved_process_tokens_are_safe() {
             })
         })
         .unwrap();
-    engine.tick().unwrap();
-    drop(engine);
+    game.tick().unwrap();
+    drop(game);
     assert_eq!(drops.get(), 1);
     let waker = saved_waker.borrow().as_ref().unwrap().clone();
     std::thread::spawn(move || waker.wake()).join().unwrap();

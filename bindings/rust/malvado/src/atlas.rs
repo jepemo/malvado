@@ -536,7 +536,7 @@ pub struct SpriteFrame {
 #[cfg(feature = "graphics")]
 impl crate::Handle {
     /// Copy and retain 1..8192 visual frames in the native process. Durations
-    /// are 1..3600000000 us; playback uses Engine's 60 Hz ticks. The transferred
+    /// are 1..3600000000 us; playback uses Game's 60 Hz ticks. The transferred
     /// image owners keep the window alive after the source frames are dropped.
     pub fn set_sprite_animation(&self, frames: &[SpriteFrame], looping: bool) -> Result<(), Error> {
         let ctx = self.inner.runtime.live()?;

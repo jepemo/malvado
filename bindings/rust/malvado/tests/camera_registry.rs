@@ -1,25 +1,25 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     camera::{Camera, Follow, Selection, Viewport},
 };
 #[test]
 fn identity_selection_close_and_lifetime() {
-    let engine = Engine::new().unwrap();
-    let other = Engine::new().unwrap();
-    let actor = engine
+    let game = Game::new().unwrap();
+    let other = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
             }
         })
         .unwrap();
-    let main = engine.main_camera().unwrap();
-    assert_eq!(main.id(), engine.main_camera().unwrap().id());
+    let main = game.main_camera().unwrap();
+    assert_eq!(main.id(), game.main_camera().unwrap().id());
     main.set_position(10.0, 20.0).unwrap();
     assert_eq!(actor.resolve_camera().unwrap().position(), (10.0, 20.0));
     assert_eq!(main.close(), Err(Error::InvalidArgument));
-    let camera = engine
+    let camera = game
         .create_camera(Camera::new(3.0, 4.0, None).unwrap())
         .unwrap();
     let alias = camera.clone();
@@ -56,30 +56,30 @@ fn identity_selection_close_and_lifetime() {
     assert_eq!(actor.resolve_camera().unwrap().position(), (0.0, 0.0));
     actor.set_camera(Selection::Main).unwrap();
     assert!(matches!(actor.camera_selection().unwrap(), Selection::Main));
-    let id = engine
+    let id = game
         .create_camera(Camera::new(5.0, 6.0, None).unwrap())
         .unwrap()
         .id();
     assert!(id > camera.id());
     for _ in 0..256 {
-        let temporary = engine.create_camera(snapshot).unwrap();
+        let temporary = game.create_camera(snapshot).unwrap();
         temporary.close().unwrap();
     }
     for _ in 0..16 {
-        let _ = engine.create_camera(snapshot).unwrap();
+        let _ = game.create_camera(snapshot).unwrap();
     }
     actor.kill().unwrap();
     assert_eq!(actor.set_camera(Selection::Main), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert!(matches!(main.snapshot(), Err(Error::Closed)));
     assert_eq!(main.close(), Err(Error::Closed));
     assert!(matches!(actor.camera_selection(), Err(Error::Closed)));
 }
 #[test]
 fn registered_follow_and_error_atomicity() {
-    let mut engine = Engine::new().unwrap();
-    let other = Engine::new().unwrap();
-    let actor = engine
+    let mut game = Game::new().unwrap();
+    let other = Game::new().unwrap();
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -87,7 +87,7 @@ fn registered_follow_and_error_atomicity() {
         })
         .unwrap();
     actor.set_position(100.0, 80.0).unwrap();
-    let camera = engine
+    let camera = game
         .create_camera(
             Camera::new(
                 3.0,
@@ -103,7 +103,7 @@ fn registered_follow_and_error_atomicity() {
         )
         .unwrap();
     let mut follow = Follow::new(&actor).unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(follow.update_handle(&camera, (100, 80)).unwrap());
     assert_eq!(camera.snapshot().unwrap().position(), (80.0, 50.0));
     let before = camera.snapshot().unwrap().position();
@@ -121,7 +121,7 @@ fn registered_follow_and_error_atomicity() {
     );
     assert_eq!(camera.snapshot().unwrap().position(), before);
     actor.kill().unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert!(!follow.update_handle(&camera, (100, 80)).unwrap());
     assert_eq!(camera.snapshot().unwrap().position(), before);
     camera.close().unwrap();

@@ -105,7 +105,7 @@ Source-open errors return a static `Asset` diagnostic; a NUL-containing input
 path returns `InvalidArgument`. Opening takes the existing Rust JSON parser
 lock, so concurrent safe imports do not race cJSON's global error record.
 
-Sources stay on their creating thread and need no Engine, scheduler or window.
+Sources stay on their creating thread and need no Game, scheduler or window.
 Paths retain their Unix bytes without forced UTF-8 conversion; actual filenames
 must also meet host filesystem rules. `Format::Unknown` is a usable snapshot,
 including for unsupported or ambiguous content. Feed the copied bytes to the

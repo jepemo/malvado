@@ -2,6 +2,13 @@
 
 Status: the owned-future adapter is implemented and verified for A7.3; see the [proof and limits](../versions/2.0.0-alpha.7-scheduler.md). A struct can use an owned async `run(self, ProcessContext)`. Macros and visual field syntax remain outside this proof. Native process properties are authoritative: do not mirror `x`, `y`, `z`, `angle` or `size` in Rust user state. Recommend typed state plus a context-bound process handle with checked native property accessors; generated convenience is optional after safety validation. `z` remains 2D draw order.
 
+The 2.0 gameplay SDK is [experimental](../api/rust-support.md), with `Game` as
+the public context owner. The existing owned async adapter remains the baseline.
+The [future ergonomics proposal](../roadmap/rust-ergonomics.md) keeps function
+and struct declarations open for evaluation as possible frontends over this
+same runtime. No macro, field syntax, builder or alternate executor is required
+for 2.0.
+
 ## Execution and lifetime
 
 Prototype a single-threaded, non-`Send` adapter registered as a native process callback. On creation, associate a stable heap allocation with a native process identity and pin its future. The native scheduler invokes the adapter once per eligible activation, in its existing creation and tick order. The first activation and children spawned during a tick must match the native scheduler, measured by existing trace tests; do not assume they run immediately.

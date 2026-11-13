@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     font::Font,
     window::{Color, Window},
 };
@@ -74,17 +74,17 @@ fn main() {
     drop(basic);
     let glyphs = ['?', 'Ω', 'C', 'a', 'f', 'é', ' '];
     let selected = Font::load_glyphs(window.clone(), &path, 24, &glyphs).unwrap();
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let slot = Rc::new(RefCell::new(None));
     let owned = slot.clone();
-    let handle = engine
+    let handle = game
         .spawn(Default::default(), move |process| async move {
             *owned.borrow_mut() = Some(process.resource(selected)?);
             process.frame().await;
             Ok(())
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     let resource = slot.borrow_mut().take().unwrap();
     let frame = window.frame(black).unwrap();
     frame
@@ -92,7 +92,7 @@ fn main() {
         .unwrap();
     drop(resource);
     assert!(handle.kill().unwrap());
-    drop(engine);
+    drop(game);
     assert_ne!(capture(), fallback); // Selected Unicode glyph differs from fallback.
     drop(frame);
     assert_eq!(Rc::strong_count(&window), 1);
@@ -106,9 +106,9 @@ fn main() {
     assert!(weak.upgrade().is_none());
     let window = Rc::new(Window::open(200, 100, "Persistent text").unwrap());
     let weak = Rc::downgrade(&window);
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let font = Font::load(window.clone(), &path, 24).unwrap();
-    let text = engine
+    let text = game
         .create_text("Café", (20, 20), malvado::graphic::TextAlignment::Left)
         .unwrap();
     text.set_font(&font, 24, white).unwrap();
@@ -122,13 +122,13 @@ fn main() {
         Err(Error::InvalidArgument)
     );
     let frame = window.frame(black).unwrap();
-    frame.texts(&engine).unwrap();
+    frame.texts(&game).unwrap();
     assert_eq!(capture(), reference);
     text.clear_font().unwrap(); // Safe even with glyphs queued in this frame.
     drop(frame);
     text.set_builtin_font(window.clone(), 24, white).unwrap();
     let frame = window.frame(black).unwrap();
-    frame.texts(&engine).unwrap();
+    frame.texts(&game).unwrap();
     capture();
     drop(frame);
     text.remove().unwrap();
@@ -137,7 +137,7 @@ fn main() {
         Err(Error::NotFound)
     );
     assert_eq!(Rc::strong_count(&window), 1);
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -149,16 +149,16 @@ fn main() {
         .unwrap();
     owned.set_builtin_font(window.clone(), 20, white).unwrap();
     actor.kill().unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(owned.clear_font(), Err(Error::NotFound));
     assert_eq!(Rc::strong_count(&window), 1);
-    let host = engine
+    let host = game
         .create_text("shutdown", (0, 0), malvado::graphic::TextAlignment::Left)
         .unwrap();
     host.set_builtin_font(window.clone(), 20, white).unwrap();
     drop(window);
     assert!(weak.upgrade().is_some());
-    drop(engine);
+    drop(game);
     assert!(weak.upgrade().is_none());
     assert_eq!(host.clear_font(), Err(Error::Closed));
     drop(Window::open(32, 32, "After font cleanup").unwrap());

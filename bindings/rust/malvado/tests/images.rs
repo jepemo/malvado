@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error,
+    Error, Game,
     drawing::Rectangle,
     image::{Image, Transform},
     window::{Color, Window},
@@ -48,8 +48,8 @@ fn main() {
     let data = vec![255, 0, 0, 255, 0, 0, 0, 0, 0, 255, 0, 255, 0, 0, 255, 255];
     let image = Image::from_rgba(window.clone(), 2, 2, &data).unwrap();
     drop(data);
-    let engine = Engine::new().unwrap();
-    let resource = engine.resource(image).unwrap();
+    let game = Game::new().unwrap();
+    let resource = game.resource(image).unwrap();
     let background = Color {
         r: 30,
         g: 40,
@@ -458,7 +458,7 @@ fn main() {
     }
     // Queued references survive both resource/context cleanup and caller drops.
     drop(resource);
-    drop(engine);
+    drop(game);
     drop(second);
     pixel(
         15,
@@ -506,15 +506,15 @@ fn main() {
     let pending = Image::from_rgba(window.clone(), 1, 1, &[255, 0, 0, 255]).unwrap();
     let slot = Rc::new(RefCell::new(None));
     let process_slot = slot.clone();
-    let mut engine = Engine::new().unwrap();
-    let handle = engine
+    let mut game = Game::new().unwrap();
+    let handle = game
         .spawn(Default::default(), move |process| async move {
             *process_slot.borrow_mut() = Some(process.resource(pending)?);
             process.frame().await;
             Ok(())
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     let resource = slot.borrow_mut().take().unwrap();
     let frame = window.frame(background).unwrap();
     frame
@@ -535,7 +535,7 @@ fn main() {
         .unwrap();
     drop(resource);
     assert!(handle.kill().unwrap());
-    assert_eq!(engine.process_count(), 0);
+    assert_eq!(game.process_count(), 0);
     pixel(
         15,
         55,
@@ -547,10 +547,10 @@ fn main() {
         },
     );
     drop(frame);
-    drop(engine);
+    drop(game);
     assert_eq!(Rc::strong_count(&window), 1);
     // Stored commands retain the image and window independently of caller values.
-    let retained_engine = Engine::new().unwrap();
+    let retained_engine = Game::new().unwrap();
     let actor = retained_engine
         .spawn(Default::default(), |p| async move {
             loop {

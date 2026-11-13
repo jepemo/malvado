@@ -135,7 +135,7 @@ pub struct ProcessClock {
 }
 impl crate::Handle {
     /// Retain this definition in the native process and reset its clock.
-    /// Uses Engine's fixed 60 Hz logical ticks, independently of process FPS.
+    /// Uses Game's fixed 60 Hz logical ticks, independently of process FPS.
     /// No image selection or drawing is implicit.
     pub fn set_animation_clock(&self, animation: &Animation) -> Result<(), Error> {
         // SAFETY: live owner-thread context and borrowed immutable definition;

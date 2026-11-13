@@ -193,8 +193,8 @@ fn main() {
             .unwrap();
         pixel(90, 70, (255, 0, 0));
     }
-    use malvado::{Engine, Signal, graphic::Graphic};
-    let engine = Engine::new().unwrap();
+    use malvado::{Game, Signal, graphic::Graphic};
+    let game = Game::new().unwrap();
     let mut actors = Vec::new();
     for color in [
         red,
@@ -205,7 +205,7 @@ fn main() {
             a: 255,
         },
     ] {
-        let actor = engine
+        let actor = game
             .spawn(Default::default(), |p| async move {
                 loop {
                     p.frame().await;
@@ -223,21 +223,21 @@ fn main() {
     }
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(20, 20, (0, 255, 0));
     }
     actors[0].set_z(10.0).unwrap();
-    engine.signal(&actors[0], Signal::Freeze).unwrap();
-    engine.signal(&actors[1], Signal::Sleep).unwrap();
+    game.signal(&actors[0], Signal::Freeze).unwrap();
+    game.signal(&actors[1], Signal::Sleep).unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(20, 20, (255, 0, 0));
     }
     actors[0].set_scale(0.0).unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(20, 20, (0, 0, 0));
     }
     actors[0].set_scale(1.0).unwrap();
@@ -252,23 +252,23 @@ fn main() {
                     height: 5,
                 },
                 |frame| {
-                    frame.process_graphics(&engine)?;
+                    frame.process_graphics(&game)?;
                     Ok(())
                 },
             )
             .unwrap();
         pixel(20, 20, (0, 0, 0));
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(20, 20, (255, 0, 0));
     }
     actors[0].clear_graphic().unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(20, 20, (0, 0, 0));
     }
     use malvado::camera::{Camera, Selection, Viewport};
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -282,24 +282,20 @@ fn main() {
             color: red,
         })
         .unwrap();
-    engine
-        .main_camera()
-        .unwrap()
-        .set_position(10.0, 5.0)
-        .unwrap();
+    game.main_camera().unwrap().set_position(10.0, 5.0).unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(50, 45, (255, 0, 0));
         pixel(60, 50, (0, 0, 0));
     }
     actor.set_camera(Selection::Screen).unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(60, 50, (255, 0, 0));
     }
-    let camera = engine
+    let camera = game
         .create_camera(
             Camera::new(
                 60.0,
@@ -319,14 +315,14 @@ fn main() {
         .unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(80, 10, (255, 0, 0));
         pixel(79, 10, (0, 0, 0));
     }
     camera.close().unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(80, 10, (0, 0, 0));
     }
     actor.set_camera(Selection::Main).unwrap();
@@ -342,7 +338,7 @@ fn main() {
                 },
                 |frame| {
                     frame.with_scroll((5.0, 5.0), |frame| {
-                        frame.process_graphics(&engine)?;
+                        frame.process_graphics(&game)?;
                         pixel(45, 40, (255, 0, 0));
                         Ok(())
                     })
@@ -371,7 +367,7 @@ fn main() {
                 },
                 |frame| {
                     frame.with_scroll((2.0, 2.0), |frame| {
-                        frame.process_graphics(&engine)?;
+                        frame.process_graphics(&game)?;
                         pixel(37, 37, (255, 0, 0));
                         pixel(36, 37, (0, 0, 0));
                         pixel(39, 37, (0, 0, 0));
@@ -403,14 +399,14 @@ fn main() {
         .unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(40, 40, (0, 0, 0));
     }
     actor.set_region(None).unwrap();
     actor.set_scroll((0.0, 0.0)).unwrap();
     {
         let frame = window.frame(black).unwrap();
-        frame.process_graphics(&engine).unwrap();
+        frame.process_graphics(&game).unwrap();
         pixel(50, 45, (255, 0, 0));
     }
     assert_eq!(actor.position().unwrap(), (60.0, 50.0));

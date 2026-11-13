@@ -1,5 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Engine, Error, SpawnOptions, graphic::Color};
+use malvado::{Error, Game, SpawnOptions, graphic::Color};
 use std::{
     cell::{Cell, RefCell},
     future::poll_fn,
@@ -15,10 +15,10 @@ const WHITE: Color = Color {
 
 #[test]
 fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let activations = Rc::new(Cell::new(0));
     let observed = activations.clone();
-    let actor = engine
+    let actor = game
         .spawn(
             SpawnOptions {
                 fps: 5,
@@ -40,7 +40,7 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
         .draw_text("before activation", (0, 0), 20, WHITE)
         .unwrap();
     assert_eq!(actor.draw_count().unwrap(), 1);
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(activations.get(), 1);
     assert_eq!(actor.draw_count().unwrap(), 2);
     actor
@@ -55,10 +55,10 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
         assert_eq!(invalid, Err(Error::InvalidArgument));
     }
     for _ in 0..11 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
         assert_eq!(actor.draw_count().unwrap(), 3);
     }
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(activations.get(), 2);
     assert_eq!(actor.draw_count().unwrap(), 2);
     actor.clear_draw_commands().unwrap();
@@ -74,10 +74,10 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
 
 #[test]
 fn pending_without_wake_keeps_commands_until_the_next_real_poll() {
-    let mut engine = Engine::new().unwrap();
+    let mut game = Game::new().unwrap();
     let saved = Rc::new(RefCell::new(None::<Waker>));
     let output = saved.clone();
-    let actor = engine
+    let actor = game
         .spawn(Default::default(), move |p| async move {
             let actor = p.current();
             let mut first = true;
@@ -95,13 +95,13 @@ fn pending_without_wake_keeps_commands_until_the_next_real_poll() {
             .await
         })
         .unwrap();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     actor.draw_text("retained", (0, 0), 20, WHITE).unwrap();
     for _ in 0..5 {
-        engine.tick().unwrap();
+        game.tick().unwrap();
         assert_eq!(actor.draw_count().unwrap(), 2);
     }
     saved.borrow().as_ref().unwrap().wake_by_ref();
-    engine.tick().unwrap();
+    game.tick().unwrap();
     assert_eq!(actor.draw_count(), Err(Error::NotFound));
 }

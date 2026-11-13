@@ -34,7 +34,7 @@ On runner shutdown, stop process execution and reject new spawns. Close process 
 ## Rust native resources
 
 The Rust `Resource<T>` wrapper implements the native owner/retain/transfer
-contract for owned Rust values. `Engine::resource` selects context ownership;
+contract for owned Rust values. `Game::resource` selects context ownership;
 `ProcessContext::resource` selects its live process. Retained wrappers expose
 shared data and release one native reference on Drop. They can outlive their
 owner and context; transfer requires a live same-context owner or context.

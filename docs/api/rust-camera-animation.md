@@ -27,16 +27,16 @@ its camera; these values do not add an update loop.
 
 ## Registered cameras and process selection
 
-`engine.main_camera()?` returns the canonical context-owned main camera.
-`engine.create_camera(value)?` registers a copied Camera value and returns a
+`game.main_camera()?` returns the canonical context-owned main camera.
+`game.create_camera(value)?` registers a copied Camera value and returns a
 `CameraHandle`. Clones share identity; `snapshot()` returns an independent
 Camera copy. `replace`, `set_position` and `move_by` update native values.
 
 ```rust
-use malvado::{Engine, Error, camera::{Camera, Selection}};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-let view = engine.create_camera(Camera::new(10.0, 20.0, None)?)?;
+use malvado::{Game, Error, camera::{Camera, Selection}};
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let view = game.create_camera(Camera::new(10.0, 20.0, None)?)?;
 actor.set_camera(Selection::Explicit(view.clone()))?;
 view.move_by(1.0, 2.0)?;
 assert_eq!(actor.resolve_camera()?.position(), (11.0, 22.0));
@@ -88,9 +88,9 @@ Use handle methods to assign copied native descriptors. No window or tick is
 needed to read values or compose the effective view.
 
 ```rust
-use malvado::{Engine, camera::Viewport};
-let engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+use malvado::{Game, camera::Viewport};
+let game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
 actor.set_scroll((3.0, 4.0))?;
 actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
 assert_eq!(actor.view_offset()?, (-3.0, -4.0));
@@ -134,15 +134,15 @@ When the target ends, update clears the target, returns `false` and preserves
 the last camera position. It does not tick or poll any future.
 
 ```rust
-use malvado::{Engine, camera::{Camera, Follow}};
-let mut engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+use malvado::{Game, camera::{Camera, Follow}};
+let mut game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_position(100.0, 80.0)?;
 let mut camera = Camera::new(0.0, 0.0, None)?;
 let mut follow = Follow::new(&actor)?;
-engine.tick()?;
+game.tick()?;
 assert!(follow.update(&mut camera, (100, 80))?);
 assert_eq!(camera.position(), (50.0, 40.0));
 # Ok::<(), malvado::Error>(())
@@ -245,16 +245,16 @@ immediately. `actor.animation_clock()?` returns a copied `ProcessClock` with
 observe the same state. `clear_animation_clock()` stops it without changing the
 graphic. Set always resets, including reassignment of the same definition.
 
-The clock uses Engine's 60 Hz native ticks. Process FPS controls async activation,
+The clock uses Game's 60 Hz native ticks. Process FPS controls async activation,
 not animation speed. Sleep and freeze pause without catch-up. Assignment during
 a tick skips that tick. Return, kill and context shutdown release the retained
 definition. Dead handles return NotFound; closed contexts return Closed. Failed
 operations preserve the clock. No borrowed native state escapes.
 
 ```rust
-use malvado::{Engine, Error, animation::{Animation, Frame}};
-let mut engine = Engine::new()?;
-let actor = engine.spawn(Default::default(), |p| async move {
+use malvado::{Game, Error, animation::{Animation, Frame}};
+let mut game = Game::new()?;
+let actor = game.spawn(Default::default(), |p| async move {
     loop { p.frame().await; }
 })?;
 let animation = Animation::new(&[
@@ -263,7 +263,7 @@ let animation = Animation::new(&[
 ], true)?;
 actor.set_animation_clock(&animation)?;
 drop(animation);
-engine.tick()?;
+game.tick()?;
 assert_eq!(actor.animation_clock()?.unwrap().elapsed_us, 16_666);
 actor.clear_animation_clock()?;
 # Ok::<(), Error>(())

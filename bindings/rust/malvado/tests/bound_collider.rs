@@ -1,11 +1,11 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Engine, Error, Handle, Signal,
+    Error, Game, Handle, Signal,
     collision::{Rect, Shape, Transform, World},
     graphic::{Color, Geometry, Graphic, Pivot},
 };
-fn actor(engine: &Engine, geometry: Geometry, x: f64) -> Handle {
-    let handle = engine
+fn actor(game: &Game, geometry: Geometry, x: f64) -> Handle {
+    let handle = game
         .spawn(Default::default(), |p| async move {
             loop {
                 p.frame().await;
@@ -39,12 +39,12 @@ fn trace(source: &Handle, phase: &str, out: &mut String) {
 }
 #[test]
 fn bound_trace_matches_c_and_lua() {
-    let engine = Engine::new().unwrap();
+    let game = Game::new().unwrap();
     let rect = Geometry::rectangle(4.0, 2.0, Pivot::Center).unwrap();
     let circle = Geometry::circle(1.0).unwrap();
-    let a = actor(&engine, rect, 0.0);
-    let b = actor(&engine, circle, 2.0);
-    let c = actor(&engine, circle, 7.75);
+    let a = actor(&game, rect, 0.0);
+    let b = actor(&game, circle, 2.0);
+    let c = actor(&game, circle, 7.75);
     let mut out = String::new();
     trace(&a, "initial", &mut out);
     a.set_position(10.0, 0.0).unwrap();
@@ -87,8 +87,8 @@ fn bound_trace_matches_c_and_lua() {
             .is_some()
     );
     trace(&a, "world", &mut out);
-    engine.signal(&b, Signal::Sleep).unwrap();
-    engine.signal(&c, Signal::Freeze).unwrap();
+    game.signal(&b, Signal::Sleep).unwrap();
+    game.signal(&c, Signal::Freeze).unwrap();
     trace(&a, "inactive", &mut out);
     c.set_scale(0.0).unwrap();
     trace(&a, "invalid-target", &mut out);
@@ -97,10 +97,10 @@ fn bound_trace_matches_c_and_lua() {
 }
 #[test]
 fn bound_errors_fixed_override_recovery_and_lifetime() {
-    let engine = Engine::new().unwrap();
+    let game = Game::new().unwrap();
     let geometry = Geometry::circle(1.0).unwrap();
-    let a = actor(&engine, geometry, 0.0);
-    let b = actor(&engine, geometry, 0.0);
+    let a = actor(&game, geometry, 0.0);
+    let b = actor(&game, geometry, 0.0);
     assert!(a.collides_with(&b).unwrap());
     a.set_collider(Shape::circle(1.0).unwrap(), Transform::default())
         .unwrap();
@@ -134,6 +134,6 @@ fn bound_errors_fixed_override_recovery_and_lifetime() {
     assert!(!a.collides_with(&b).unwrap());
     a.kill().unwrap();
     assert_eq!(a.bind_collider(None), Err(Error::NotFound));
-    drop(engine);
+    drop(game);
     assert_eq!(a.bind_collider(None), Err(Error::Closed));
 }
