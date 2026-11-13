@@ -1,7 +1,11 @@
 # Rust native SDK
 
 This workspace provides `malvado`, the safe owner-thread async process API,
-and `malvado-sys`, the unsafe native boundary. Graphics and platform resource wrappers remain in the [alpha.7 checklist](../../docs/versions/2.0.0-alpha.7.md).
+and `malvado-sys`, the unsafe native boundary. Optional `graphics` and `assets`
+features wrap the delivered native platform and asset services. Start an
+installed project with `malvado new --lang rust my-game`; see the
+[CLI guide](../../docs/specs/cli.md#rust-projects) and
+[language matrix](../../docs/api/language-parity.md).
 
 Use the project toolchain and run all local SDK checks:
 
@@ -56,10 +60,10 @@ The host C compiler must match the Rust target. The executable probe detects
 wrong native architectures through link or execution errors. Cross compilation,
 Windows and Android are not supported by this initial SDK. A CMake package
 which resolves the core archive outside the selected prefix is rejected.
-SDK prefixes cannot contain newlines, carriage returns or semicolons.
+SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 
-No crates.io package, complete graphics API, player export, or completed alpha.7
-release is implied. The development engine and crate identifiers now read
+The installed CLI supports native Rust folder exports and macOS app bundles.
+No crates.io package, cross-compilation or completed alpha.7 release is implied. The development engine and crate identifiers now read
 `2.0.0-alpha.7`; the milestone is still in progress.
 
 ## Scheduler proof checks

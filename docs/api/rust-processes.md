@@ -1,8 +1,10 @@
 # Rust processes
 
 The `malvado` crate provides one owned async process API over the C scheduler.
-The current API supports headless processes. Graphics and the complete native
-resource wrapper family remain in alpha.7 A7.6. This is not a full game runner.
+The default crate supports headless processes; optional `graphics` and `assets`
+features add the delivered native visual, input, audio and asset services. Use
+[SDK and projects](../site/sdk.md#create-a-rust-game) to create an installed game.
+See the [language matrix](language-parity.md) for shared behavior and differences.
 
 Use the toolchain pinned in mise:
 
@@ -13,7 +15,7 @@ MALVADO_SDK_PREFIX="$PWD/build-rust/Debug/relocated sdk" mise exec -- \
   cargo run --manifest-path bindings/rust/Cargo.toml -p malvado --example counter
 ```
 
-`malvado/examples/counter.rs` is a complete runnable example. Its game state is
+`malvado/examples/counter.rs` is a runnable SDK verification program. Its game state is
 an ordinary Rust struct:
 
 ```rust
@@ -35,7 +37,9 @@ Create an `Engine`, then call `engine.spawn(SpawnOptions::default(), |process|
 Counter { value: 0 }.run(process))`. Each `engine.tick()` executes one native
 scheduler tick. It does not read wall time, render, or run another executor.
 `Engine::new()` configures a 60 Hz native clock with a five-step advance limit;
-the current safe API drives explicit ticks, not clock advances. The native
+`advance_time` plans elapsed-time ticks and `tick` executes them. See
+[host timing](runner-timing.md#rust-host-integration) for the explicit input,
+audio and drawing order. The native
 scheduler decides creation order and priority. No process runs inside spawn.
 Its factory runs at first activation, inside the panic boundary.
 
@@ -44,8 +48,8 @@ Its factory runs at first activation, inside the panic boundary.
 A future owns its state and must be `'static`; this does not require leaking
 state. Moving owned game data into the future satisfies that bound. Locals and
 mutable borrows of those locals can span awaits because the future is pinned.
-Do not store native visual properties in parallel Rust fields. Their native
-accessors are A7.6 work. `z` remains draw depth.
+Do not store native visual properties in parallel Rust fields. Use the handle's native position, z, angle, scale and graph accessors.
+`z` remains draw depth.
 
 `ProcessContext` is an owned, cloneable context token. It can create children,
 request a frame wait, signal same-context handles, and return the current

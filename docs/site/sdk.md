@@ -1,6 +1,6 @@
 # SDK and projects
 
-The development SDK includes the `malvado` command, the Lua runtime, and the C libraries. It works on the macOS or Linux host for which it was built. Malvado 2 is in development, and its tools can change.
+The development SDK includes the `malvado` command, the Lua runtime, the C libraries, and Rust crate sources. It works on the macOS or Linux host for which it was built. Malvado 2 is in development, and its tools can change.
 
 ## Install a local development build
 
@@ -68,6 +68,34 @@ The new Lua project returns a game table. Its `init` function starts the game pr
 
 To create a C game, use `malvado new --c my-c-game`. Run it with `malvado run` from the new directory. C projects need CMake and a C compiler. Use `malvado build` to build without starting the game.
 
+## Create a Rust game
+
+Install Cargo, rustc, CMake and a C compiler, then use a matching macOS or Linux
+SDK:
+
+```sh
+malvado doctor
+malvado new --lang rust my-rust-game
+cd my-rust-game
+malvado check
+malvado build
+malvado run
+```
+
+Edit `main.rs` to change the game. The starter runs an async process on the native
+scheduler and draws its greeting in an explicit window loop. Press Escape to
+close it. `Cargo.toml` defines the package, the `game` binary and the dependency
+on the SDK's installed `malvado` crate. The CLI supplies the native SDK prefix;
+you do not need a Malvado source checkout. If you move the SDK, update the crate
+path in the manifest. Rustup automatic toolchain installation is disabled by the
+CLI; install the required tools before building.
+
+`check` uses Cargo and can execute dependency build scripts and procedural macros.
+It does not start the game. `run` builds first and uses the project directory for
+asset paths. Rust owns its host loop; `--headless` is a Lua runner option. See the
+[Rust process guide](https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md)
+for state, frame waits, cancellation and resource lifetimes.
+
 ## Export a game
 
 From the project directory, run:
@@ -78,6 +106,11 @@ malvado export
 ```
 
 The exported folder contains the game and its license notices. Copy the full folder to the target computer. The export is for the current host; cross-platform export is not available yet. The destination must not already exist. Use `malvado export ../another-folder` to choose a different destination.
+
+For C and Rust, export builds the `game` target and includes its executable.
+Players do not need the SDK or authoring tools. Source files and build outputs
+are excluded. A Rust game's extra dependency runtimes and notices must be
+provided by its author; the exporter does not discover them automatically.
 
 For a Lua game, the launcher loads `main.lua` from the exported folder. It supports both a returned game table and `mv.start()`.
 
