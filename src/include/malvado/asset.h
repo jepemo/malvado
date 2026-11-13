@@ -29,6 +29,7 @@ typedef enum {
 typedef struct MvAssetSource MvAssetSource;
 
 /* Read one file of at most 64 MiB into owned memory and copy its input path.
+ * Windows input paths use UTF-8; Unix paths retain native bytes.
  * Return NULL on invalid path, I/O or allocation failure. Optional error receives
  * a static message, or NULL on success. Close the FILE before returning.
  * Content detection is routing only, not full format/image validation. JSON

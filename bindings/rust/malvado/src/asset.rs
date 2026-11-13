@@ -16,13 +16,26 @@ pub(crate) fn json_guard() -> MutexGuard<'static, ()> {
 use crate::Error;
 use malvado_sys::{self as sys, assets as ffi};
 use std::{
-    ffi::{CStr, CString, OsStr, OsString},
+    ffi::{CStr, CString},
     marker::PhantomData,
-    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
     ptr::NonNull,
     rc::Rc,
 };
+
+#[cfg(unix)]
+use std::{
+    ffi::{OsStr, OsString},
+    os::unix::ffi::{OsStrExt, OsStringExt},
+};
+
+fn native_path(path: &Path) -> Result<CString, Error> {
+    #[cfg(unix)]
+    let bytes = path.as_os_str().as_bytes();
+    #[cfg(windows)]
+    let bytes = path.to_str().ok_or(Error::InvalidArgument)?.as_bytes();
+    CString::new(bytes).map_err(|_| Error::InvalidArgument)
+}
 
 /// Content routing hint. Importers must still validate the complete format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -59,8 +72,7 @@ pub struct Source {
 impl Source {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
-        let path = CString::new(path.as_ref().as_os_str().as_bytes())
-            .map_err(|_| Error::InvalidArgument)?;
+        let path = native_path(path.as_ref())?;
         let mut error = std::ptr::null();
         let _json = json_guard();
         // SAFETY: borrowed path/output, no callbacks. Native owns a copied path
@@ -89,12 +101,21 @@ impl Source {
         // SAFETY: the native allocation remains borrowed for self's lifetime.
         unsafe { std::slice::from_raw_parts(bytes.cast(), length) }
     }
-    /// Original path, preserved without canonicalization or UTF-8 conversion.
+    /// Original path, preserved without canonicalization. Unix paths retain
+    /// native bytes. Windows paths must be valid Unicode (encoded as UTF-8).
     pub fn path(&self) -> &Path {
         // SAFETY: live native source owns a NUL-terminated copied path.
         let bytes =
             unsafe { CStr::from_ptr(ffi::mv_asset_source_path(self.native.as_ptr())) }.to_bytes();
-        Path::new(OsStr::from_bytes(bytes))
+        #[cfg(unix)]
+        {
+            Path::new(OsStr::from_bytes(bytes))
+        }
+        #[cfg(windows)]
+        {
+            // Source::open validates Unicode before native code copies it.
+            Path::new(std::str::from_utf8(bytes).expect("validated source path"))
+        }
     }
     pub fn format(&self) -> Format {
         // SAFETY: immutable copied source metadata.
@@ -117,8 +138,7 @@ impl Source {
     }
     /// Join an image reference to the source directory. Does not open a file.
     pub fn image_path(&self, image: impl AsRef<Path>) -> Result<PathBuf, Error> {
-        let image = CString::new(image.as_ref().as_os_str().as_bytes())
-            .map_err(|_| Error::InvalidArgument)?;
+        let image = native_path(image.as_ref())?;
         // SAFETY: live source and borrowed, NUL-terminated image path.
         let size =
             unsafe { ffi::mv_asset_source_image_path_size(self.native.as_ptr(), image.as_ptr()) };
@@ -143,7 +163,16 @@ impl Source {
             return Err(Error::InvalidArgument);
         }
         bytes.pop();
-        Ok(PathBuf::from(OsString::from_vec(bytes)))
+        #[cfg(unix)]
+        {
+            Ok(PathBuf::from(OsString::from_vec(bytes)))
+        }
+        #[cfg(windows)]
+        {
+            Ok(PathBuf::from(
+                String::from_utf8(bytes).map_err(|_| Error::InvalidArgument)?,
+            ))
+        }
     }
 }
 impl Drop for Source {

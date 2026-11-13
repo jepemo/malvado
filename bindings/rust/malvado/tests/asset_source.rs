@@ -5,7 +5,9 @@ use malvado::{
     asset::{Format, Source},
     atlas::Atlas,
 };
-use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::Path};
+use std::path::Path;
+#[cfg(unix)]
+use std::{ffi::OsString, os::unix::ffi::OsStringExt};
 #[test]
 fn content_detection_and_existing_native_importers() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -68,10 +70,13 @@ fn snapshots_paths_unknown_content_and_failures() {
         assert_eq!(source.path(), path);
     }
     // Referenced names remain byte paths even on filesystems that require UTF-8.
-    let name = OsString::from_vec(b"asset-\xff.json".to_vec());
     std::fs::write(&path, b"{}").unwrap();
     let source = Source::open(&path).unwrap();
-    assert_eq!(source.image_path(&name).unwrap(), directory.join(&name));
+    #[cfg(unix)]
+    {
+        let name = OsString::from_vec(b"asset-\xff.json".to_vec());
+        assert_eq!(source.image_path(&name).unwrap(), directory.join(&name));
+    }
     std::fs::remove_file(&path).unwrap();
     assert!(matches!(Source::open(&path), Err(Error::Asset(_))));
     assert!(matches!(Source::open(""), Err(Error::Asset(_))));
@@ -82,11 +87,41 @@ fn snapshots_paths_unknown_content_and_failures() {
     drop(source);
     #[cfg(target_os = "linux")]
     {
-        let byte_path = directory.join(name);
+        let byte_path = directory.join(OsString::from_vec(b"asset-\xff.json".to_vec()));
         std::fs::write(&byte_path, b"{}").unwrap();
         let source = Source::open(&byte_path).unwrap();
         assert_eq!(source.path(), byte_path);
         std::fs::remove_file(byte_path).unwrap();
     }
+    std::fs::remove_dir(directory).unwrap();
+}
+
+#[test]
+fn unicode_source_and_image_paths() {
+    let directory = std::env::temp_dir().join(format!("malvado-unicode-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("cámara-日本.json");
+    std::fs::write(&path, b"{}").unwrap();
+    let source = Source::open(&path).unwrap();
+    assert_eq!(source.path(), path);
+    assert_eq!(
+        source.image_path("imagen-日本.png").unwrap(),
+        directory.join("imagen-日本.png")
+    );
+    #[cfg(windows)]
+    {
+        use std::{ffi::OsString, os::windows::ffi::OsStringExt};
+        let invalid = OsString::from_wide(&[0xd800]);
+        assert!(matches!(
+            Source::open(&invalid),
+            Err(Error::InvalidArgument)
+        ));
+        assert!(matches!(
+            source.image_path(&invalid),
+            Err(Error::InvalidArgument)
+        ));
+    }
+    drop(source);
+    std::fs::remove_file(path).unwrap();
     std::fs::remove_dir(directory).unwrap();
 }

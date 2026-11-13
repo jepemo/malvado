@@ -63,7 +63,11 @@ int main(int argc, char **argv)
         assert(!outstanding);
         if (calls < index) break;
     }
+#ifdef _WIN32
+    assert(rejected == 4 && unknown > 0);
+#else
     assert(rejected == 3 && unknown > 0);
+#endif
     cJSON_InitHooks(NULL);
     return 0;
 }

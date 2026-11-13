@@ -56,3 +56,11 @@ This matches Rust's native runtime. Debug builds retain symbols and assertions.
 A Debug CRT SDK cannot be linked into the default Rust runtime: Windows run
 [43412891860](https://github.com/jepemo/malvado/actions/runs/43412891860) exposed
 unresolved debug-CRT atomic helper symbols after passing all 202 C/Lua checks.
+
+Asset source paths use UTF-8 on Windows. The core converts them to UTF-16 for
+`_wfopen`; C, Lua and Rust use the same file snapshot implementation. Unix byte
+paths retain their existing behavior. Rust rejects unpaired UTF-16 surrogates
+and embedded NUL characters with `InvalidArgument`. Tests open and remove a
+source with accented and Japanese characters, verify image path joins and check
+invalid Windows surrogate input. Windows allocation-failure coverage includes
+the temporary UTF-16 path allocation.

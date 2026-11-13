@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 struct MvAssetSource {
     char *path, *bytes;
@@ -74,6 +77,24 @@ mv_asset_source_destroy(MvAssetSource *source)
     free(source);
 }
 
+static FILE *
+open_asset_file(const char *path)
+{
+#ifdef _WIN32
+    int count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+    if (count <= 0) return NULL;
+    wchar_t *wide = malloc((size_t)count * sizeof(*wide));
+    if (!wide) return NULL;
+    FILE *file = NULL;
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, count) == count)
+        file = _wfopen(wide, L"rb");
+    free(wide);
+    return file;
+#else
+    return fopen(path, "rb");
+#endif
+}
+
 MvAssetSource *
 mv_asset_source_open(const char *path, const char **error)
 {
@@ -82,7 +103,7 @@ mv_asset_source_open(const char *path, const char **error)
     MvAssetSource *source = NULL;
     if (!path || !*path) goto fail;
     message = "cannot open asset";
-    file = fopen(path, "rb");
+    file = open_asset_file(path);
     if (!file) goto fail;
     message = "cannot read asset (maximum 64 MiB)";
     if (fseek(file, 0, SEEK_END) != 0) goto fail;

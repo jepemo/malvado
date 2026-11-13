@@ -39,6 +39,9 @@ int main(int argc, char **argv)
     const char *path = argv[1], *error = NULL;
     assert(!mv_asset_source_open(NULL, &error) && error);
     assert(!mv_asset_source_open("", &error) && error);
+#ifdef _WIN32
+    assert(!mv_asset_source_open("invalid-\xff.json", &error) && error);
+#endif
     remove(path);
     assert(!mv_asset_source_open(path, &error) && error);
     const char *samples[] = {"", "garbage", "{", "{}", "{\"kind\":\"graphics-library\"}",
