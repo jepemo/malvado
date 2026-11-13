@@ -13,7 +13,7 @@
  * See LICENSE for details.
  */
 
-#if !defined(_WIN32) && defined(MALVADO_EXPORT_GRAPHICS)
+#if defined(MALVADO_EXPORT_GRAPHICS)
 #ifdef __linux__
 #define _GNU_SOURCE
 #endif
@@ -21,22 +21,51 @@
 #define _DARWIN_C_SOURCE
 #endif
 #define _XOPEN_SOURCE 700
+#ifndef _WIN32
 #include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <ftw.h>
+#include <unistd.h>
+#endif
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <sys/stdio.h>
 #endif
 #include "export.h"
 #include "build.h"
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#include "windows_files.h"
+#define PATH_MAX MALVADO_CLI_PATH_MAX
+#define DIR MalvadoWindowsDirectory
+#define opendir malvado_windows_directory_open
+#define closedir malvado_windows_directory_close
+#define lstat malvado_windows_lstat
+#define realpath malvado_windows_realpath
+#define mkdir(path, mode) _mkdir(path)
+#define chmod(path, mode) _chmod(path, _S_IREAD | _S_IWRITE)
+#define access(path, mode) _access(path, (mode) & 4)
+#define R_OK 4
+#define X_OK 0
+#define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
+#define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#define strdup _strdup
+#define strcmp _stricmp
+#define strncmp _strnicmp
+#define GAME_EXECUTABLE "game.exe"
+#define NATIVE_EXECUTABLE "game-bin.exe"
+#else
+#define GAME_EXECUTABLE "game"
+#define NATIVE_EXECUTABLE "game-bin"
+#endif
+
 
 static char *
 join_path(const char *directory, const char *name)
@@ -47,6 +76,7 @@ join_path(const char *directory, const char *name)
     return result;
 }
 
+#ifndef _WIN32
 static int
 remove_stage_entry(const char *path, const struct stat *info, int type, struct FTW *position)
 {
@@ -66,12 +96,41 @@ publish_stage(const char *stage, const char *output)
 #endif
 }
 
+#endif
+
+static char *
+create_stage(const char *parent)
+{
+#ifdef _WIN32
+    return malvado_windows_stage(parent);
+#else
+    char *stage = join_path(parent, ".malvado-export-XXXXXX");
+    if (stage && mkdtemp(stage)) return stage;
+    free(stage);
+    return NULL;
+#endif
+}
+
+static int
+remove_stage(const char *stage)
+{
+#ifdef _WIN32
+    return malvado_windows_remove_tree(stage);
+#else
+    return nftw(stage, remove_stage_entry, 32, FTW_DEPTH | FTW_PHYS);
+#endif
+}
+
+#ifdef _WIN32
+#define publish_stage malvado_windows_publish
+#endif
+
 static int
 copy_file(const char *source, const char *destination, int executable)
 {
     FILE *input = fopen(source, "rb");
     if (!input) { perror(source); return 0; }
-    FILE *output = fopen(destination, "wx");
+    FILE *output = fopen(destination, "wbx");
     if (!output) { perror(destination); fclose(input); return 0; }
     char buffer[16384];
     size_t count;
@@ -98,11 +157,18 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
     int ok = 1;
     for (;;) {
         errno = 0;
+#ifdef _WIN32
+        const char *name = malvado_windows_directory_next(dir);
+        if (!name) { if (errno) ok = 0; break; }
+#else
         struct dirent *entry = readdir(dir);
         if (!entry) { if (errno) ok = 0; break; }
         const char *name = entry->d_name;
+#endif
         if (name[0] == '.') continue;
-        if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "game-bin") || !strcmp(name, "licenses"))) {
+        if (depth == 0 && (!strcmp(name, "game") || !strcmp(name, "game-bin") ||
+                           !strcmp(name, GAME_EXECUTABLE) || !strcmp(name, NATIVE_EXECUTABLE) ||
+                           !strcmp(name, "licenses"))) {
             fprintf(stderr, "Reserved project name: %s\n", name); ok = 0; break;
         }
         char *from = join_path(source, name);
@@ -137,7 +203,11 @@ copy_tree(const char *source, const char *destination, unsigned depth, int nativ
 static int
 executable_directory(char *path, size_t size)
 {
-#ifdef __APPLE__
+#ifdef _WIN32
+    DWORD length = GetModuleFileNameA(NULL, path, (DWORD)size);
+    if (!length || length >= size) return 0;
+    for (char *p = path; *p; ++p) if (*p == '\\') *p = '/';
+#elif defined(__APPLE__)
     uint32_t length = (uint32_t)size;
     if (_NSGetExecutablePath(path, &length) != 0) return 0;
 #else
@@ -319,7 +389,7 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
         fprintf(stderr, "Project needs a regular %s file\n", entry); return 1;
     }
     char rust_binary[PATH_MAX];
-    const char *binary = ".malvado/build/game";
+    const char *binary = ".malvado/build/" GAME_EXECUTABLE;
     if (native == 2) {
         if (!malvado_rust_binary(rust_binary, sizeof(rust_binary))) {
             fprintf(stderr, "Rust game executable is missing; build the project first\n");
@@ -342,9 +412,9 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
         free(launcher); free(notices); return 1;
     }
     if (errno != ENOENT) { perror(output); free(launcher); free(notices); return 1; }
-    char *stage = join_path(resolved_parent, ".malvado-export-XXXXXX");
-    if (!stage || !mkdtemp(stage)) {
-        if (stage) perror(stage);
+    char *stage = create_stage(resolved_parent);
+    if (!stage) {
+        perror("Cannot create export staging directory");
         free(stage); free(launcher); free(notices); return 1;
     }
     char *contents = app ? join_path(stage, "Contents") : NULL;
@@ -352,9 +422,9 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     char *plist = app && contents ? join_path(contents, "Info.plist") : NULL;
     int ok = payload && (!app || (contents && plist && mkdir(contents, 0755) == 0 &&
                                   mkdir(payload, 0755) == 0 && write_bundle_info(plist, app_name, app_name_length, bundle_id)));
-    char *game = payload ? join_path(payload, "game") : NULL;
+    char *game = payload ? join_path(payload, GAME_EXECUTABLE) : NULL;
     char *license_dir = payload ? join_path(payload, "licenses") : NULL;
-    char *native_game = native && payload ? join_path(payload, "game-bin") : NULL;
+    char *native_game = native && payload ? join_path(payload, NATIVE_EXECUTABLE) : NULL;
     ok = ok && game && license_dir && (!native || native_game) && copy_file(launcher, game, 1) &&
              (!native || copy_file(binary, native_game, 1)) &&
              mkdir(license_dir, 0755) == 0 && copy_tree(notices, license_dir, 1, 0) &&
@@ -364,7 +434,7 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     if (ok && chmod(stage, 0755) != 0) { perror(stage); ok = 0; }
     if (ok && publish_stage(stage, output) != 0) { perror(output); ok = 0; }
     if (!ok) {
-        if (nftw(stage, remove_stage_entry, 32, FTW_DEPTH | FTW_PHYS) != 0)
+        if (remove_stage(stage) != 0)
             fprintf(stderr, "Cannot remove incomplete export: %s\n", stage);
         free(stage);
         return 1;

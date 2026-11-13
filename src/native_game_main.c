@@ -29,10 +29,11 @@ main(int argc, char **argv)
         fprintf(stderr, "Cannot open game directory\n");
         return 1;
     }
-    argv[0] = "./game-bin";
 #ifdef _WIN32
+    argv[0] = "./game-bin.exe";
     _execv(argv[0], (const char *const *)argv);
 #else
+    argv[0] = "./game-bin";
     execv(argv[0], argv);
 #endif
     perror("game-bin");

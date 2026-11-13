@@ -1,6 +1,11 @@
 # Malvado 2; project created by Jeremías Pérez and contributors.
 # SPDX-License-Identifier: Apache-2.0
 
+set(exe_suffix "")
+if(CMAKE_HOST_WIN32)
+  set(exe_suffix ".exe")
+endif()
+
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}/C game/assets" "${WORK}/elsewhere")
 file(WRITE "${WORK}/C game/assets/value.txt" "asset")
@@ -35,7 +40,7 @@ add_custom_target(unrelated ALL COMMAND "${CMAKE_COMMAND}" -E false)
 ]=])
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CFLAGS=${C_FLAGS}" "LDFLAGS=${EXE_LINKER_FLAGS}"
   "${CLI}" build "${WORK}/C game" WORKING_DIRECTORY "${WORK}/elsewhere" RESULT_VARIABLE result)
-if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/.malvado/build/game")
+if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/.malvado/build/game${exe_suffix}")
   message(FATAL_ERROR "Native build failed")
 endif()
 execute_process(COMMAND "${CLI}" run "${WORK}/C game" WORKING_DIRECTORY "${WORK}/elsewhere"
@@ -44,7 +49,7 @@ if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
   message(FATAL_ERROR "Native run failed: ${output}")
 endif()
 execute_process(COMMAND "${CLI}" export WORKING_DIRECTORY "${WORK}/C game" RESULT_VARIABLE result)
-if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/dist/game/game-bin" OR
+if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/dist/game/game-bin${exe_suffix}" OR
    NOT EXISTS "${WORK}/C game/dist/game/assets/texture.h/pixel.dat" OR
    EXISTS "${WORK}/C game/dist/game/assets/ignored.c" OR
    EXISTS "${WORK}/C game/dist/game/main.c" OR EXISTS "${WORK}/C game/dist/game/CMakeLists.txt")
@@ -55,7 +60,7 @@ foreach(notice LICENSE Lua-readme.html raylib-LICENSE)
     message(FATAL_ERROR "Native game license notice is missing: ${notice}")
   endif()
 endforeach()
-execute_process(COMMAND "${WORK}/C game/dist/game/game" WORKING_DIRECTORY "${WORK}/elsewhere"
+execute_process(COMMAND "${WORK}/C game/dist/game/game${exe_suffix}" WORKING_DIRECTORY "${WORK}/elsewhere"
   RESULT_VARIABLE result OUTPUT_VARIABLE output)
 if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
   message(FATAL_ERROR "Exported native game failed: ${output}")
@@ -72,7 +77,7 @@ endif()
 if(CMAKE_HOST_APPLE)
   execute_process(COMMAND "${CLI}" export --app WORKING_DIRECTORY "${WORK}/C game" RESULT_VARIABLE result)
   set(bundle "${WORK}/C game/dist/game.app")
-  if(NOT result EQUAL 0 OR NOT EXISTS "${bundle}/Contents/MacOS/game-bin")
+  if(NOT result EQUAL 0 OR NOT EXISTS "${bundle}/Contents/MacOS/game-bin${exe_suffix}")
     message(FATAL_ERROR "Native app export failed")
   endif()
   execute_process(COMMAND plutil -lint "${bundle}/Contents/Info.plist" RESULT_VARIABLE result)
@@ -84,14 +89,14 @@ if(CMAKE_HOST_APPLE)
   if(NOT result EQUAL 0 OR NOT bundle_id STREQUAL "org.malvado.game")
     message(FATAL_ERROR "Native app default ID is incorrect: ${bundle_id}")
   endif()
-  execute_process(COMMAND "${bundle}/Contents/MacOS/game" WORKING_DIRECTORY "${WORK}/elsewhere"
+  execute_process(COMMAND "${bundle}/Contents/MacOS/game${exe_suffix}" WORKING_DIRECTORY "${WORK}/elsewhere"
     RESULT_VARIABLE result OUTPUT_VARIABLE output)
   if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
     message(FATAL_ERROR "Exported native app failed: ${output}")
   endif()
 endif()
 find_program(ninja_program ninja)
-if(ninja_program)
+if(ninja_program AND NOT CMAKE_HOST_WIN32)
   set(multi "${WORK}/multi config")
   file(MAKE_DIRECTORY "${multi}")
   file(COPY "${WORK}/C game/main.c" "${WORK}/C game/CMakeLists.txt" "${WORK}/C game/assets" DESTINATION "${multi}")
@@ -102,10 +107,10 @@ if(ninja_program)
   endif()
   execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CMAKE_GENERATOR=Ninja Multi-Config"
     "${CLI}" export WORKING_DIRECTORY "${multi}" RESULT_VARIABLE result)
-  if(NOT result EQUAL 0 OR NOT EXISTS "${multi}/dist/game/game-bin")
+  if(NOT result EQUAL 0 OR NOT EXISTS "${multi}/dist/game/game-bin${exe_suffix}")
     message(FATAL_ERROR "Multi-config native export failed")
   endif()
-  execute_process(COMMAND "${multi}/dist/game/game" WORKING_DIRECTORY "${WORK}/elsewhere"
+  execute_process(COMMAND "${multi}/dist/game/game${exe_suffix}" WORKING_DIRECTORY "${WORK}/elsewhere"
     RESULT_VARIABLE result OUTPUT_VARIABLE output)
   if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")
     message(FATAL_ERROR "Multi-config exported game failed: ${output}")
