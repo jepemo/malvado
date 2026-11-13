@@ -186,6 +186,13 @@ def play(players, work):
             assert hashlib.sha256((directory / "assets" / name).read_bytes()).hexdigest() == expected
         deploy(directory)
         assert game["trace"] in run(directory / "game.exe", cwd=work, env=env, timeout=30)
+        asset = directory / "assets/value.txt"
+        hidden = asset.with_suffix(".saved")
+        asset.rename(hidden)
+        try:
+            run(directory / "game.exe", cwd=work, env=env, success=False, timeout=30)
+        finally:
+            hidden.rename(asset)
     print("PASS: fresh Windows players run outside their directories without SDK, Cargo, rustc or compilers on PATH", flush=True)
 
 

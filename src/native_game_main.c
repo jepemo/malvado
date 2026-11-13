@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #ifdef _WIN32
-#include <process.h>
+#include "windows_process.h"
 #else
 #include <unistd.h>
 #endif
@@ -31,7 +31,7 @@ main(int argc, char **argv)
     }
 #ifdef _WIN32
     argv[0] = "./game-bin.exe";
-    _execv(argv[0], (const char *const *)argv);
+    return malvado_windows_process(argv, NULL, NULL, 0);
 #else
     argv[0] = "./game-bin";
     execv(argv[0], argv);
