@@ -43,6 +43,18 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CFLAGS=${C_FLAGS}" "LDFLAGS=$
 if(NOT result EQUAL 0 OR NOT EXISTS "${WORK}/C game/.malvado/build/game${exe_suffix}")
   message(FATAL_ERROR "Native build failed")
 endif()
+execute_process(COMMAND "${CLI}" check "${WORK}/C game" WORKING_DIRECTORY "${WORK}/elsewhere"
+  RESULT_VARIABLE result OUTPUT_VARIABLE output)
+if(NOT result EQUAL 0 OR output MATCHES "native game works")
+  message(FATAL_ERROR "C check failed or executed the game: ${output}")
+endif()
+file(MAKE_DIRECTORY "${WORK}/invalid C game")
+file(COPY "${WORK}/C game/CMakeLists.txt" DESTINATION "${WORK}/invalid C game")
+file(WRITE "${WORK}/invalid C game/main.c" "#error invalid C check\n")
+execute_process(COMMAND "${CLI}" check "${WORK}/invalid C game" RESULT_VARIABLE result)
+if(result EQUAL 0)
+  message(FATAL_ERROR "C check accepted invalid C source")
+endif()
 execute_process(COMMAND "${CLI}" run "${WORK}/C game" WORKING_DIRECTORY "${WORK}/elsewhere"
   RESULT_VARIABLE result OUTPUT_VARIABLE output)
 if(NOT result EQUAL 0 OR NOT output MATCHES "native game works")

@@ -115,8 +115,14 @@ def author_game(cli, sdk, work, players, host, language, source, filename, label
                             else ".malvado/build/game.exe")
         assert binary.is_file()
         deploy(binary.parent)
-    if language != "c":
-        run(cli, "check", project, cwd=work)
+    checked = run(cli, "check", project, cwd=work)
+    assert f"{label} export: 3" not in checked
+    if language == "c":
+        invalid = work / "invalid C project"
+        invalid.mkdir()
+        shutil.copy2(project / "CMakeLists.txt", invalid / "CMakeLists.txt")
+        (invalid / "main.c").write_text("#error invalid C check\n", encoding="utf-8")
+        run(cli, "check", invalid, cwd=work, success=False)
     assert f"{label} export: 3" in run(cli, "run", project, cwd=work)
     output = players / f"{label} exported game"
     run(cli, "export", output, cwd=project)

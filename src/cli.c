@@ -54,7 +54,7 @@ print_help(FILE *output)
             "  new [--c | --lang lua|c|rust] PATH  Create a project\n"
             "  build [PATH]         Build a C or Rust project\n"
             "  run [--headless] [PATH]  Run a game\n"
-            "  check [PATH]         Check Lua syntax or a Rust project\n"
+            "  check [PATH]         Check Lua syntax or a C/Rust project\n"
             "  export [PATH]        Export a game for this host\n"
             "  export --app [--id ID] [PATH]  Export a macOS app\n"
 #ifdef MALVADO_BUILD_ASSETS
@@ -545,7 +545,8 @@ main(int argc, char **argv)
         if (argc == 3 && change_directory(argv[2]) != 0) { perror(argv[2]); return 1; }
         int language = project_language();
         if (language < 0) return 2;
-        return language == 2 ? malvado_rust_build(1) : check_project(".", 0);
+        return language == 2 ? malvado_rust_build(1) :
+               language == 1 ? malvado_native_build() : check_project(".", 0);
     }
     if (argc >= 2 && strcmp(argv[1], "run") == 0) {
         if (argc == 2) {

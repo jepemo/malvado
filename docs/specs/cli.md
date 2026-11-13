@@ -21,6 +21,13 @@ The Lua template returns a game table. The runner also supports `mv.start()`. Ex
 
 `malvado new --c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS and Linux, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
 
+`check` in a C project directory configures, compiles and links the `game`
+target through the existing managed C build. As with C builds, an installed
+graphical SDK is required. It does not run the game. It can
+execute CMake project commands and build scripts, and it produces build
+artifacts. A missing tool, invalid C source or link failure returns 1. Pass a
+project directory for C; individual-file syntax checking remains a Lua operation.
+
 `check` checks Lua source syntax without executing it. With no argument, it checks `.lua` files recursively from the current directory. Pass a directory to check its Lua files, or a file to check only that file. It skips hidden files, hidden directories, and symbolic links. It reports an error if no Lua files are found. It does not check assets, dependencies, or runtime behavior yet.
 
 `doctor` reports the Lua version, whether CMake, Cargo and rustc are available, whether installed Rust crate sources are present, whether this build has graphics, and whether both export launchers and the required license files are present. These include Malvado, Lua, raylib, and cJSON when asset support is enabled. The CMake check does not test a compiler. Doctor does not open a window or verify the graphics driver or target SDKs. It returns success after the report even when an optional capability is unavailable.
@@ -83,7 +90,7 @@ The player receives the package and does not need CLI, Lua, LuaRocks, or LÖVE. 
 | `assets import` | Convert validated FPG/Aseprite subset to PNG+JSON library | alpha.6 |
 | `assets export --format fpg` | Export a selected FPG variant and document losses | Future proposal, unassigned |
 
-`check` does not prove that a game works. Lua syntax checks do not execute scripts. Rust checks use Cargo, which can execute project and dependency build scripts and procedural macros. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
+`check` does not prove that a game works. Lua syntax checks do not execute scripts. C checks execute the native build, without starting the game. Rust checks use Cargo, which can execute project and dependency build scripts and procedural macros. `run` does execute the project. Exit codes: 0 success, 1 operation/game failure, 2 invalid usage or configuration. Add structured JSON for CI when the error contract is defined.
 
 ## Generated project
 
