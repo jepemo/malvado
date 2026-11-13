@@ -12,10 +12,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(log, *args, env=None, timeout=600):
+    print(f">>> {args!r}", flush=True)
     log.write(f"\n>>> {args!r}\n")
     log.flush()
-    subprocess.run(args, cwd=ROOT, env=env, stdout=log,
-                   stderr=subprocess.STDOUT, check=True, timeout=timeout)
+    try:
+        subprocess.run(args, cwd=ROOT, env=env, stdout=log,
+                       stderr=subprocess.STDOUT, check=True, timeout=timeout)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        log.flush()
+        print(f"Command failed; full evidence: {log.name}", flush=True)
+        print("\n".join(Path(log.name).read_text(encoding="utf-8", errors="replace").splitlines()[-60:]),
+              flush=True)
+        raise
 
 
 def verify_rust_sdk(log, work, prefix, config):
