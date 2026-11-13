@@ -110,3 +110,18 @@ Local evidence uses an env-based rustc proxy that cannot run on the old limited
 PATH. The full relocated SDK CLI suite then passes, including the bounded
 starter/player, missing Cargo, compiler recovery, exports and independent player
 checks. Final fresh-runner acceptance remains required.
+
+
+## Player-only tool environment
+
+The extracted SDK acceptance now runs every C/Lua player after SDK removal with
+an empty PATH, matching the existing Rust player check. This includes folders,
+macOS app bundles and ZIP roundtrips, Linux tar.gz roundtrips and the bounded C
+graphical game. Authoring and archive tools keep the parent environment; only
+the player child has its tool search path removed.
+
+The complete macOS package/extract/author/player flow passes with `CHECK_RUST=ON`
+and `VISUAL=ON`, including C/Lua app archive roundtrips and the Rust starter,
+custom source entry, folder/app player and compiler diagnostics. The existing
+source revision's runtime binaries are unchanged. Hosted Linux runs the same
+player helper through the fresh SDK consumer job.
