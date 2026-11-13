@@ -50,3 +50,9 @@ crate sources in a project path with spaces. The consumer checks process
 execution and cleanup. Both configurations must reject missing and nonexistent
 SDK prefixes with the documented errors. These diagnostics use Cargo and CMake;
 they do not depend on Unix archive tools.
+
+MSVC SDK targets use the DLL release CRT (`/MD`) in both Debug and Release.
+This matches Rust's native runtime. Debug builds retain symbols and assertions.
+A Debug CRT SDK cannot be linked into the default Rust runtime: Windows run
+[43412891860](https://github.com/jepemo/malvado/actions/runs/43412891860) exposed
+unresolved debug-CRT atomic helper symbols after passing all 202 C/Lua checks.

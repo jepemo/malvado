@@ -15,6 +15,9 @@ file(WRITE "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt"
   "version=${MALVADO_VERSION_STRING}\nsystem=${MALVADO_SDK_SYSTEM}\narchitecture=${MALVADO_SDK_ARCH}\n")
 set(CMAKE_C_STANDARD 11)
 if(MSVC)
+  # Rust uses the release DLL CRT in both profiles. Use the same allocator
+  # runtime for all SDK components, while keeping Debug symbols/assertions.
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
   # MSVC requires this switch even with /std:c11. The scheduler uses
   # stdatomic.h for runtime identity; allocation fixtures compile it too.
   add_compile_options("$<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>")
