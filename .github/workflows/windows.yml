@@ -1,0 +1,36 @@
+# Malvado 2; SPDX-License-Identifier: Apache-2.0
+name: Windows
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 1'
+permissions:
+  contents: read
+jobs:
+  headless:
+    name: Windows x64 MSVC headless SDK
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Record native toolchain
+        shell: pwsh
+        run: |
+          cmake --version
+          rustc -vV
+          python --version
+          & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -format json
+      - name: Verify native C and Lua
+        run: mise run test-platform
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-headless-${{ github.sha }}
+          path: |
+            build-platform/*.log
+            build-platform/**/Testing/Temporary/*.log
+          if-no-files-found: warn
+          retention-days: 14

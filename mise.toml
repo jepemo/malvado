@@ -153,3 +153,7 @@ run = "python3 tools/test_rust_graphics.py"
 [tasks.test-rust-graphics-sanitize]
 description = "Test Rust platform and asset ownership with native ASan/UBSan (requires display)"
 run = "python3 tools/test_rust_sanitize.py --graphics --assets"
+
+[tasks.test-platform]
+description = "Test native headless C/Lua SDKs in Debug and Release with logs"
+run = "python3 tools/test_platform.py"
