@@ -291,3 +291,12 @@ impl Window {
         char::from_u32(codepoint)
     }
 }
+
+#[cfg(windows)]
+pub(crate) fn main_thread() -> bool {
+    unsafe extern "C" {
+        fn malvado_rust_main_thread() -> std::ffi::c_int;
+    }
+    // SAFETY: read-only native thread inventory; no pointers or callbacks.
+    unsafe { malvado_rust_main_thread() != 0 }
+}

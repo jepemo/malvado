@@ -80,10 +80,6 @@ fn main() {
         "Rust SDK requires native macOS, Linux or Windows x64 MSVC"
     );
     let windows = target == "x86_64-pc-windows-msvc";
-    assert!(
-        !windows || !graphics,
-        "Rust Windows graphics are not yet supported"
-    );
     let prefix = PathBuf::from(
         env::var_os("MALVADO_SDK_PREFIX")
             .expect("set MALVADO_SDK_PREFIX to an installed Malvado C SDK prefix"),
@@ -142,6 +138,9 @@ fn main() {
         ));
     if let Some(cc) = env::var_os("CC") {
         configure.arg(format!("-DCMAKE_C_COMPILER={}", cc.to_string_lossy()));
+    }
+    if windows {
+        configure.arg(format!("-DCMAKE_CONFIGURATION_TYPES={config}"));
     }
     run(&mut configure);
     run(Command::new("cmake")
@@ -270,7 +269,12 @@ fn main() {
                 library.starts_with(&prefix),
                 "graphics dependency outside MALVADO_SDK_PREFIX"
             );
-            assert_eq!(library.file_name().unwrap(), archive);
+            let archive = if windows {
+                format!("{}.lib", link)
+            } else {
+                archive.to_owned()
+            };
+            assert_eq!(library.file_name().unwrap().to_string_lossy(), archive);
             println!(
                 "cargo:rustc-link-search=native={}",
                 library.parent().unwrap().display()
@@ -284,15 +288,34 @@ fn main() {
             for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation"] {
                 println!("cargo:rustc-link-lib=framework={framework}");
             }
+        } else if windows {
+            for library in ["opengl32", "gdi32", "winmm", "shell32", "user32"] {
+                println!("cargo:rustc-link-lib={library}");
+            }
         } else {
             for library in ["GL", "dl", "pthread"] {
                 println!("cargo:rustc-link-lib={library}");
             }
         }
-        let probe = if output.join("graphics-probe").exists() {
-            output.join("graphics-probe")
+        let probe = if output
+            .join(if windows {
+                "graphics-probe.exe"
+            } else {
+                "graphics-probe"
+            })
+            .exists()
+        {
+            output.join(if windows {
+                "graphics-probe.exe"
+            } else {
+                "graphics-probe"
+            })
         } else {
-            output.join(config).join("graphics-probe")
+            output.join(config).join(if windows {
+                "graphics-probe.exe"
+            } else {
+                "graphics-probe"
+            })
         };
         let layout = run(&mut Command::new(probe));
         let values: Vec<usize> = String::from_utf8(layout.stdout)
