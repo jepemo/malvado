@@ -131,6 +131,13 @@ def main():
         cargo = ["cargo", "test", "--manifest-path", MANIFEST, "--workspace", "--all-features"]
         if profile == "Release":
             cargo.append("--release")
+        # Graphics is independently selectable. All-features alone can hide
+        # accidental dependencies on the optional asset metadata module.
+        graphics_only = ["cargo", "test", "--manifest-path", MANIFEST,
+                         "--workspace", "--features", "graphics", "--no-run"]
+        if profile == "Release":
+            graphics_only.append("--release")
+        run(*graphics_only, env=env)
         output = capture(cargo, env=env)
         parity(output, "rust-key: ")
         output = capture([str(build / "key-edges-visual-test"), str(ROOT / "tests/key_edges_visual.lua")])

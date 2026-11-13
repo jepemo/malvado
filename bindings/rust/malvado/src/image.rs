@@ -94,7 +94,6 @@ impl Image {
             }),
         })
     }
-    #[cfg(feature = "assets")]
     pub(crate) fn native(&self) -> *mut ffi::MvImage {
         self.inner.native.as_ptr()
     }
