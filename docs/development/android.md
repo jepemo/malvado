@@ -424,6 +424,14 @@ queue, and no on-screen keyboard service is delivered. Malvado derives observed
 key edges from held state to avoid raylib's incomplete navigation-key history;
 this keeps the existing [tick snapshot contract](../api/keyboard.md).
 
+All twelve cases also passed on the pinned x86_64 emulator on `a7f850e` in
+[run 43897792937](https://github.com/jepemo/malvado/actions/runs/43897792937).
+Both independent profile jobs passed their complete 28-case APK matrices and
+headless suites. Artifact review confirmed all 56 APK results, positive package
+broadcast-idle evidence, compiled size-change flags, eight Lua catch-up markers
+and 92 PNG headers. Initial-window cancellation and runtime overlay changes
+remain A8.4 work; this passing baseline does not establish recovery from them.
+
 ## Android audio API verification
 
 Add `--audio` to the C installed-SDK or Lua APK verifier. The test packages silent
