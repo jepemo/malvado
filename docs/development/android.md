@@ -391,6 +391,12 @@ The native Lua observer runs between logical ticks. A bounded 100 ms fixture
 stall requires multiple ticks between rendered frames and has its own acceptance
 marker. A render callback can miss a tick transition and is used only for
 graphics and the Lua completion files. Engine timing is unchanged.
+
+Failed launches retain the full available filtered startup log, including the
+NDK glue's `threaded_app` tag, plus entry/window/runtime stage markers. A bounded
+`debuggerd -b` query attempts a native stack for the single selected APK PID.
+Unavailable stack permissions or diagnostic timeouts preserve the original
+failure. This diagnostic does not establish a fix for the recorded startup stall.
 Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
 evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
 

@@ -166,15 +166,22 @@ def prepare_foreground(log, adb):
     run(log, adb + ['shell', 'wm', 'dismiss-keyguard'], timeout=10)
 
 
-def failure_evidence(log, adb, work):
+def failure_evidence(log, adb, work, package=None):
     for command in (['shell', 'dumpsys', 'power'],
                     ['shell', 'dumpsys', 'window', 'windows'],
                     ['shell', 'dumpsys', 'activity', 'activities'],
-                    ['logcat', '-d', '-t', '400', '-s', 'raylib', 'native_app_glue', 'AndroidRuntime', 'ActivityManager']):
+                    ['logcat', '-d', '-s', 'raylib:D', 'threaded_app:V', 'MalvadoAcceptance:I', 'AndroidRuntime:E', '*:S']):
         try:
             run(log, adb + command, timeout=10, check=False)
         except (OSError, subprocess.SubprocessError) as error:
             log.write(f"\nCannot collect Android state: {error}\n")
+    if package:
+        try:
+            pid = run(log, adb + ['shell', 'pidof', package], timeout=10, check=False).stdout.strip()
+            if pid.isascii() and pid.isdigit():
+                run(log, adb + ['shell', 'debuggerd', '-b', pid], timeout=15, check=False)
+        except (OSError, subprocess.SubprocessError) as error:
+            log.write(f"\nCannot collect Android native stack: {error}\n")
     try:
         capture_screen(log, adb, work / 'failure.png')
     except (OSError, ValueError, subprocess.SubprocessError) as error:
@@ -289,7 +296,7 @@ def main():
             completed = True
         finally:
             if not completed:
-                failure_evidence(log, adb, work)
+                failure_evidence(log, adb, work, package)
                 if args.language == 'lua':
                     run(log, adb + ['shell', 'run-as', package, 'cat', 'files/stderr.txt'], timeout=15, check=False)
                 run(log, adb + ['logcat', '-b', 'crash', '-d', '-t', '100'], timeout=15, check=False)

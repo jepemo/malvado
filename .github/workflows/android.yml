@@ -27,7 +27,7 @@ jobs:
           # Host AVD management still uses SDK Manager metadata. Compilation,
           # transport, packaging, emulator and runtime image use fixed archives.
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-34;google_apis;x86_64"
-      - name: Verify Debug and Release on an isolated emulator
+      - name: Verify ${{ matrix.config }} on an isolated emulator
         env:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
           ACCEPTANCE_CONFIG: ${{ matrix.config }}

@@ -35,6 +35,18 @@ class ForegroundTests(unittest.TestCase):
         self.assertIn('Cannot collect Android state', log.getvalue())
         self.assertIn('Cannot capture Android failure screen', log.getvalue())
 
+    def test_native_stack_is_limited_to_the_selected_process(self):
+        for pid in ('123', '', '123 456', '123;other'):
+            with self.subTest(pid=pid):
+                def run(log, arguments, **kwargs):
+                    return subprocess.CompletedProcess(arguments, 0, pid if 'pidof' in arguments else '')
+                with patch.object(verifier, 'run', side_effect=run) as command, patch.object(verifier, 'capture_screen'):
+                    verifier.failure_evidence(io.StringIO(), ['adb'], Path('owned'), 'selected.package')
+                traces = [call for call in command.call_args_list if 'debuggerd' in call.args[1]]
+                self.assertEqual(len(traces), int(pid == '123'))
+                if traces:
+                    self.assertEqual(traces[0].args[1], ['adb', 'shell', 'debuggerd', '-b', '123'])
+
 
 if __name__ == '__main__':
     unittest.main()

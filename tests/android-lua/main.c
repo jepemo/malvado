@@ -128,6 +128,7 @@ main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s Lua entry", ACCEPTANCE_TOKEN);
     struct android_app *app = GetAndroidApp();
     assert(app && app->activity);
     assert(chdir(app->activity->internalDataPath) == 0);
@@ -154,7 +155,9 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(check_frame, NULL);
     if (keyboard_mode()) malvado_debug_set_hook(check_tick, NULL);
     char *arguments[] = {"game", "main.lua"};
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s Lua runtime starting", ACCEPTANCE_TOKEN);
     int result = malvado_run(2, arguments);
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s Lua runtime stopped", ACCEPTANCE_TOKEN);
     malvado_debug_set_frame_hook(NULL, NULL);
     if (keyboard_mode()) malvado_debug_set_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
