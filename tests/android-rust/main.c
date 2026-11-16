@@ -47,6 +47,11 @@ acceptance_pixel(void)
     return pixel.r > 240 && pixel.g < 15 && pixel.b < 15;
 }
 int
+acceptance_audio(void)
+{
+    return ACCEPTANCE_AUDIO;
+}
+int
 acceptance_failure(void)
 {
     return ACCEPTANCE_FAILURE;
@@ -75,8 +80,8 @@ stage_assets(void)
     struct android_app *app = GetAndroidApp();
     assert(app && app->activity);
     assert(chdir(app->activity->internalDataPath) == 0);
-    const char *names[] = {"message.bin", "atlas.json", "red.png"};
-    for (unsigned i = 0; i < 3; ++i) {
+    const char *names[] = {"message.bin", "atlas.json", "red.png", "silence.wav", "silence.ogg", "empty.wav"};
+    for (unsigned i = 0; i < (ACCEPTANCE_AUDIO ? 6u : 3u); ++i) {
         AAsset *asset = AAssetManager_open(app->activity->assetManager, names[i], AASSET_MODE_BUFFER);
         if (i == 2 && ACCEPTANCE_FAILURE == 2) {
             assert(!asset && access(names[i], F_OK) != 0);
@@ -102,7 +107,7 @@ main(int argc, char **argv)
     acceptance_log("Rust entry");
     stage_assets();
     malvado_rust_entry();
-    if (IsWindowReady()) abort();
+    if (IsWindowReady() || (ACCEPTANCE_AUDIO && IsAudioDeviceReady())) abort();
     acceptance_log(ACCEPTANCE_FAILURE ? "Rust failure cleanup passed" : "window pixels and shutdown passed");
     return 0;
 }

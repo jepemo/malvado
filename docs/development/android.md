@@ -594,3 +594,9 @@ the APK omission and absence of a staged file. Rust requires the image-load
 error and propagates it through a process. Acceptance requires the scheduler
 error and the same cleanup/snapshot checks as the process-error case. It does
 not treat a crash or a missing completion marker as success.
+
+Rust APK sound verification uses `--language rust --installed-sdk --audio`.
+It loads packaged WAV media, checks invalid/empty paths and volume boundaries,
+clones ownership, pause/resume/stop, bounded finite completion and final device
+release. The native entry also requires a closed audio device before success.
+This checks emulator API state, not audible output or audio-focus policy.

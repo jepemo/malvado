@@ -62,6 +62,10 @@ jobs:
               if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
             done
           done
+          work="build-android/rust-window-$config"
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --audio --work "$work"
+          cp "$work/window.log" "$work/audio-normal.log"
+          cp "$work/results.json" "$work/audio-normal-results.json"
           for failure in process missing-image; do
             work="build-android/rust-window-$config"
             mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --failure "$failure" --work "$work"

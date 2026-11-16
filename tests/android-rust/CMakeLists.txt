@@ -12,3 +12,5 @@ target_compile_definitions(game PRIVATE ACCEPTANCE_LIFECYCLE=${ACCEPTANCE_LIFECY
 target_include_directories(game PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../android-window" "${ANDROID_NDK}/sources/android/native_app_glue")
 
 target_compile_definitions(game PRIVATE ACCEPTANCE_FAILURE=${ACCEPTANCE_FAILURE})
+
+target_compile_definitions(game PRIVATE ACCEPTANCE_AUDIO=${ACCEPTANCE_AUDIO})

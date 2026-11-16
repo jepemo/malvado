@@ -37,9 +37,20 @@ class RustPackageTests(unittest.TestCase):
                 verifier.add_rust_assets(archive, 'invalid')
             self.assertEqual(archive.namelist(), [])
 
+    def test_rust_audio_payload_keeps_exact_media_bytes_without_lua(self):
+        payload = io.BytesIO()
+        with zipfile.ZipFile(payload, 'w') as archive:
+            verifier.add_rust_assets(archive)
+            verifier.add_audio_assets(archive)
+        with zipfile.ZipFile(payload) as archive:
+            self.assertEqual(len(archive.namelist()), 6)
+            self.assertFalse(any(name.endswith('.lua') for name in archive.namelist()))
+            for name in ('silence.wav', 'silence.ogg', 'empty.wav'):
+                self.assertEqual(archive.read('assets/' + name), (verifier.ROOT / 'tests/fixtures' / name).read_bytes())
+
     def test_unsupported_modes_never_start_build_or_device_work(self):
         base = ['test_android_window.py', '--sdk', 'unused', '--serial', 'emulator-5580', '--language', 'rust']
-        for extra in ([], ['--installed-sdk', '--audio'],
+        for extra in ([], ['--installed-sdk', '--audio', '--lifecycle', 'resume'],
                       ['--installed-sdk', '--failure', 'process', '--lifecycle', 'resume'], ['--installed-sdk', '--entry', 'declarative']):
             with self.subTest(extra=extra), patch.object(sys, 'argv', base + extra), patch.object(verifier, 'preflight') as preflight, contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:

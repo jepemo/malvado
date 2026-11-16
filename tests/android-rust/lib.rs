@@ -1,5 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 mod assets;
+mod audio;
 mod failures;
 mod keyboard;
 mod touch;
@@ -13,6 +14,7 @@ unsafe extern "C" {
     fn acceptance_log(message: *const std::ffi::c_char);
     fn acceptance_pixel() -> i32;
     fn acceptance_mode() -> i32;
+    fn acceptance_audio() -> i32;
     fn acceptance_failure() -> i32;
     fn acceptance_lifecycle_frame(verified: i32);
     fn acceptance_lifecycle_finish();
@@ -63,12 +65,21 @@ pub extern "C" fn malvado_rust_entry() {
     .unwrap();
     // SAFETY: fixture configuration is immutable and this is the app thread.
     let mode = unsafe { acceptance_mode() };
+    // SAFETY: immutable fixture flag on the application thread.
+    let audio = if unsafe { acceptance_audio() } != 0 {
+        Some(audio::Case::begin())
+    } else {
+        None
+    };
     let mut keyboard = keyboard::Keyboard::default();
     let mut touch = touch::Touch::default();
     let mut verified = false;
     for index in 0..if mode == 0 { 90 } else { 3600 } {
         if window.should_close() {
             break;
+        }
+        if let Some(audio) = &audio {
+            audio.tick();
         }
         window.input_tick();
         if mode == 4 || mode == 5 {
@@ -127,6 +138,9 @@ pub extern "C" fn malvado_rust_entry() {
     // SAFETY: validate and restore only this fixture's lifecycle observer.
     unsafe {
         acceptance_lifecycle_finish();
+    }
+    if let Some(audio) = audio {
+        audio.finish();
     }
     drop(game);
     assert_eq!(drops.get(), 1);

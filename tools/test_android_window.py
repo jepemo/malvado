@@ -235,10 +235,10 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard and expected-error cleanup')
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle is not None) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and foreground audio')
     if args.audio and args.failure != 'none':
-        parser.error('--audio cannot be combined with expected Lua failures')
+        parser.error('--audio cannot be combined with expected failures')
     if args.lifecycle and args.failure != 'none':
         parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
@@ -290,7 +290,7 @@ def main():
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         if args.language == 'rust':
             from android_rust_apk import build as build_rust
-            build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure)
+            build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure, args.audio)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(android_manifest(package))
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
