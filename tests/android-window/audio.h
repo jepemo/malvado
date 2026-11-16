@@ -87,5 +87,6 @@ audio_finish(void)
     mv_audio_close();
     mv_audio_close();
     assert(!IsAudioDeviceReady() && !mv_audio_update());
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s audio API passed", ACCEPTANCE_TOKEN);
 }
 #endif

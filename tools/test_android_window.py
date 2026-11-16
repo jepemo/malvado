@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run a bounded C NativeActivity APK with the existing Android backend."""
+"""Build and run bounded C/Lua NativeActivity APK checks with the existing backend."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 from pathlib import Path
@@ -226,6 +226,8 @@ def main():
             if args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua')
             wait_marker(log, adb, token + ' ' + expectation)
+            if args.audio:
+                wait_marker(log, adb, token + ' audio API passed')
             facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True
         finally:

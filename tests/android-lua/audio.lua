@@ -44,6 +44,9 @@ return function()
       mv.pause_sound(sound)
       mv.play_music(music)
       mv.pause_music(music)
+      local file = assert(io.open("audio.txt", "ab"))
+      assert(file:write("1"))
+      assert(file:close())
     end,
   }
 end

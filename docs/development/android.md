@@ -344,3 +344,15 @@ establish API state and ownership, not audible output, latency or physical-devic
 audio focus. Native Release profile APKs still use the test signing configuration.
 No new audio API, automatic background-pause policy or production exporter is
 introduced. `--audio` cannot be combined with expected Lua failure fixtures.
+
+Combine `--audio --lifecycle resume` to keep explicitly paused sound/music alive
+across Home and foreground restoration. All six C/Lua entry/profile cases passed
+on arm64. C checks native paused flags and the maintenance pass; Lua checks
+non-playing state and retained playback roots after collection. At cleanup both
+resume and stop playback before device shutdown. This is an explicit test-game
+policy, not automatic SDK audio focus handling.
+
+Audio cases require a token-specific native acceptance marker after the audio
+assertions. Lua also writes an exactly-once audio-close marker in its sandbox.
+A successful graphics-only run cannot satisfy audio acceptance. Host payload
+regressions check WAV/OGG bytes, the empty-WAV fixture and Lua module selection.

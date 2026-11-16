@@ -115,6 +115,12 @@ main(int argc, char **argv)
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
     lifecycle_finish();
     assert(!IsAudioDeviceReady());
+    if (ACCEPTANCE_AUDIO) {
+        FILE *audio = fopen("audio.txt", "rb");
+        assert(audio && fgetc(audio) == '1' && fgetc(audio) == EOF);
+        assert(fclose(audio) == 0);
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s audio API passed", ACCEPTANCE_TOKEN);
+    }
     assert(!IsWindowReady() && malvado_debug_context() == NULL);
     assert(ACCEPTANCE_FAILURE == 2 || verified);
     FILE *closed = fopen("closed.txt", "rb");
