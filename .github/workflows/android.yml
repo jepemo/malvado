@@ -20,13 +20,23 @@ jobs:
         run: |
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "system-images;android-34;google_apis;x86_64" "platform-tools" "emulator" "build-tools;34.0.0" "platforms;android-34"
+          # Host AVD management still uses SDK Manager metadata. Compilation,
+          # transport, packaging, emulator and runtime image use fixed archives.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-34;google_apis;x86_64"
       - name: Verify Debug and Release on an isolated emulator
         env:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
         run: |
           mkdir -p "$ANDROID_AVD_HOME" build-android
+          python3 tools/android_sdk.py --output build-android/linux-sdk
           python3 tools/android_archives.py --output build-android/pinned
+          acceptance_sdk="$PWD/build-android/linux-sdk"
+          ln -s "$PWD/build-android/pinned/emulator" "$acceptance_sdk/emulator"
+          mkdir -p "$acceptance_sdk/system-images/android-34/google_apis"
+          ln -s "$PWD/build-android/pinned/x86_64" "$acceptance_sdk/system-images/android-34/google_apis/x86_64"
+          # Prevent a preinstalled adb server from supplying another revision.
+          "$ANDROID_HOME/platform-tools/adb" kill-server
+          "$acceptance_sdk/platform-tools/adb" start-server
           "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name malvado-alpha8 --package "system-images;android-34;google_apis;x86_64" --device pixel_2
           python3 - <<'PYCONFIG'
           import os
@@ -42,11 +52,10 @@ jobs:
           emulator_pid=$!
           trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
           python3 - <<'PY'
-          import os
           from pathlib import Path
           import subprocess
           import time
-          adb = str(Path(os.environ["ANDROID_HOME"]) / "platform-tools/adb")
+          adb = str(Path("build-android/linux-sdk/platform-tools/adb").resolve())
           deadline = time.monotonic() + 240
           while time.monotonic() < deadline:
               result = subprocess.run([adb, "-s", "emulator-5580", "shell", "getprop", "sys.boot_completed"],
@@ -57,14 +66,14 @@ jobs:
           else:
               raise SystemExit("Android emulator did not boot within 240 seconds")
           PY
-          mise run test-android -- --sdk "$ANDROID_HOME" --serial emulator-5580
-          mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Debug --work build-android/window-Debug
-          mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Release --work build-android/window-Release
+          mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config Debug --work build-android/window-Debug
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config Release --work build-android/window-Release
           for config in Debug Release; do
             for entry in explicit declarative; do
               for failure in none process missing-image; do
                 work="build-android/lua-$config"
-                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --language lua --entry "$entry" --failure "$failure" --config "$config" --work "$work"
+                mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language lua --entry "$entry" --failure "$failure" --config "$config" --work "$work"
                 cp "$work/window.log" "$work/$entry-$failure.log"
                 cp "$work/results.json" "$work/$entry-$failure-results.json"
               done
@@ -73,7 +82,7 @@ jobs:
           for config in Debug Release; do
             for lifecycle in back resume touch; do
               work="build-android/c-lifecycle-$config"
-              mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
+              mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
               cp "$work/window.log" "$work/$lifecycle.log"
               cp "$work/results.json" "$work/$lifecycle-results.json"
               for image in before resumed released; do
@@ -81,7 +90,7 @@ jobs:
               done
               for entry in explicit declarative; do
                 work="build-android/lua-$config"
-                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --language lua --entry "$entry" --lifecycle "$lifecycle" --config "$config" --work "$work"
+                mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language lua --entry "$entry" --lifecycle "$lifecycle" --config "$config" --work "$work"
                 cp "$work/window.log" "$work/$entry-$lifecycle.log"
                 cp "$work/results.json" "$work/$entry-$lifecycle-results.json"
                 for image in before resumed released; do
@@ -95,7 +104,7 @@ jobs:
               extra=()
               if [ "$mode" = resume ]; then extra=(--lifecycle resume); fi
               work="build-android/c-audio-$config"
-              mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --audio --installed-sdk --config "$config" --work "$work" "${extra[@]}"
+              mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --audio --installed-sdk --config "$config" --work "$work" "${extra[@]}"
               cp "$work/window.log" "$work/$mode.log"
               cp "$work/results.json" "$work/$mode-results.json"
               for image in before resumed; do
@@ -103,7 +112,7 @@ jobs:
               done
               for entry in explicit declarative; do
                 work="build-android/lua-audio-$config"
-                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --audio --language lua --entry "$entry" --config "$config" --work "$work" "${extra[@]}"
+                mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --audio --language lua --entry "$entry" --config "$config" --work "$work" "${extra[@]}"
                 cp "$work/window.log" "$work/$entry-$mode.log"
                 cp "$work/results.json" "$work/$entry-$mode-results.json"
                 for image in before resumed; do
@@ -120,6 +129,7 @@ jobs:
             build-android/*.log
             build-android/*-results.json
             build-android/toolchain.json
+            build-android/linux-sdk/malvado-archives.json
             build-android/window-*/*.log
             build-android/window-*/results.json
             build-android/window-*/*.png

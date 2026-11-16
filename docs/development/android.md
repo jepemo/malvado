@@ -36,10 +36,21 @@ Windows is not verified. Native desktop support remains documented in the
 
 The NDK is an exact prerequisite and is checked before configuration. The
 verifier records the actual emulator and adb revisions in `toolchain.json`.
+APK results also record Build Tools, the API platform revision/extension and
+Java. An isolated SDK from `tools/android_sdk.py` adds its archive provenance
+to the results. APK verification rejects a mislabeled Build Tools directory
+or a platform other than API 34 before configuration.
 SDK Manager can update system images and emulator packages. A different package
 revision is a new verification configuration, not evidence for the baseline
 above. Finishing archive pins and the broader host matrix remains A8.1 work.
 No Gradle, signing or store toolchain is claimed by this headless gate.
+
+Linux CI uses `build-android/linux-sdk` for the NDK, adb, Build Tools and
+`android.jar`. It links the separately pinned emulator/image into that SDK.
+It stops the runner's previous adb server and starts the fixed adb before
+verification. SDK Manager and the host command-line tools only prepare AVD
+metadata; the AVD configuration selects the fixed image path. Java and host
+AVD management are recorded prerequisites, not hermetic archive inputs.
 
 ## Local commands
 
