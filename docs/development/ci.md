@@ -115,3 +115,8 @@ entry/profile/failure combinations. It checks framebuffer pixels, fixed-allowlis
 APK asset staging, normal/error cleanup and uninstall. Logs and result JSON are
 retained per case. This does not implement CLI APK/AAB export or validate Rust
 on Android.
+
+Primary-contact cases also exercise the existing C/Lua mouse API on Android.
+Lifecycle cases retain native PNGs before interaction and after resume/release.
+Distinct filenames preserve each case's evidence when native build caches are
+reused. Screenshot and payload regressions also run without an emulator.

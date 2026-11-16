@@ -312,3 +312,15 @@ and preserves an existing destination. Each verification run clears its known
 base screenshot names and old result JSON before starting. Host regressions
 cover malformed geometry, binary preservation and timeout cleanup. Screenshots
 are evidence alongside the native pixel checks, not a replacement for them.
+
+The pinned x86_64 emulator passed all six contact entry/profile cases on
+`55ba294` in [run 43872267669](https://github.com/jepemo/malvado/actions/runs/43872267669).
+The artifact retains distinct images, logs and results per interaction. All
+38 native PNG artifacts were checked for valid headers, including the before
+and release image for each touch case. Existing Back/resume, C graphical SDK,
+Lua assets/errors and headless suites passed in the same run.
+
+Host verification passed 208 headless tests, 18 Android verifier regressions and
+675 guide links. All local test APKs were uninstalled and the dedicated emulator
+was stopped. No Docker images were created. Audio and the remaining input/device
+coverage stay open; no multi-touch or gesture-recognition API is promised.

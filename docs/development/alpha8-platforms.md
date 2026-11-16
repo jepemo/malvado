@@ -11,8 +11,8 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| macOS arm64 / Android arm64 API 34 | Headless C/Lua, C graphical SDK and both Lua APK entries/assets and Back/resume in Debug and Release | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio behavior |
-| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua, C graphical SDK and Lua APK and twelve Back/resume cases passed in CI | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio behavior |
+| macOS arm64 / Android arm64 API 34 | Headless C/Lua, C graphical SDK and both Lua APK entries/assets, Back/resume and primary contact in Debug and Release | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio behavior |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua, C graphical SDK and Lua APK, Back/resume and primary contact cases with screenshots passed in CI | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio behavior |
 
 ## Native Windows baseline
 
