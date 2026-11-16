@@ -109,3 +109,9 @@ actual tool revisions on failure. See [Android verification](android.md).
 Headless runtime evidence does not establish APK startup, graphics, Rust or
 mobile lifecycle behavior. A8.7 stays open for those checks and complete candidate
 acceptance. The existing macOS/Linux and Windows workflows remain in place.
+
+The Android job also runs C graphical installed-SDK APKs and twelve Lua APK
+entry/profile/failure combinations. It checks framebuffer pixels, fixed-allowlist
+APK asset staging, normal/error cleanup and uninstall. Logs and result JSON are
+retained per case. This does not implement CLI APK/AAB export or validate Rust
+on Android.

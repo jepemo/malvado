@@ -1,10 +1,10 @@
 # Android foundation verification
 
 Android support is in progress for alpha.8. The current delivered path is an
-NDK-built headless C/Lua runtime and C NativeActivity graphics on an Android
+NDK-built headless C/Lua runtime and C/Lua NativeActivity graphics on an Android
 emulator. These are verification paths, not an Android CLI authoring host or
-a CLI APK exporter. Lua/Rust graphical startup, packaged assets, experimental
-Rust runtime, APK/AAB exports and mobile
+a CLI APK exporter. Rust graphical startup, general packaged-game integration, experimental
+Rust runtime, CLI APK/AAB exports and mobile
 behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
 
 ## Tested baseline
@@ -129,8 +129,8 @@ Back, pause/resume, audible output or physical devices. Those gates stay open.
 
 `.github/workflows/android.yml` runs this same verifier on Ubuntu 24.04 with
 KVM and an isolated API 34 Google APIs `x86_64` emulator. It runs both profiles
-on pushes, pull requests, manual requests and weekly. No Android app, store key
-or production signing credential is used. AVD boot has a 240-second limit;
+on pushes, pull requests, manual requests and weekly. Bounded C/Lua test APKs
+run after the headless suite. No store key or production signing credential is used. AVD boot has a 240-second limit;
 command and job timeouts remain active. The job uploads emulator/build/test
 logs and tool/result JSON even after failure.
 
@@ -138,7 +138,7 @@ NDK r27c is pinned. Linux CI uses checksum-pinned emulator and image archives
 as described below. SDK Manager supplies the remaining authoring tools.
 Complete toolchain archive pins remain A8.1 work. The exact-commit run linked above passed 156 native checks, one installed-SDK
 consumer and 15 contract/parity suites per profile, with no uncommitted files.
-This headless job does not close A8.7's graphical/mobile or candidate acceptance gates.
+These checks do not close A8.7's Rust, mobile, general export or candidate acceptance gates.
 
 ## Pinned Linux emulator archives
 
@@ -228,3 +228,15 @@ also requires the framebuffer pixel check before the error.
 direct APK asset paths and image presence for each mode without an emulator.
 These host checks do not replace native execution. The helper rejects invalid
 Lua modes before mutating the archive.
+
+The Lua framebuffer check observes presented frames until the process terminates.
+It requires the red pixel but does not require 30 rendered frames within 60
+simulation ticks. A slow emulator can run several native simulation steps per
+presented frame. This preserves the existing clock and scheduler contracts.
+
+The pinned x86_64 emulator passed all twelve Lua APK combinations on `e33d844`
+in [run 43849456706](https://github.com/jepemo/malvado/actions/runs/43849456706).
+The workflow retains a separate log and JSON for each entry/profile/failure case,
+including the current log when a case fails before a result can be written.
+Local host verification passed 206 headless checks, the APK payload regressions
+and 673 guide links. The installed C graphical consumer also passed again.
