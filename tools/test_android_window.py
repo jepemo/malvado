@@ -146,6 +146,7 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         wait_marker(log, adb, token + ' keyboard passed')
         if lua:
             wait_marker(log, adb, token + ' lua keyboard passed')
+            wait_marker(log, adb, token + ' lua keyboard catch-up passed')
         if screenshots:
             capture_screen(log, adb, screenshots / 'keyboard.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)

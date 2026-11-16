@@ -33,7 +33,17 @@ extern struct android_app *GetAndroidApp(void);
 static int verified;
 static int lua_touch_seen;
 static unsigned lua_keyboard_seen;
+static unsigned keyboard_ticks, keyboard_frame_ticks;
+static int keyboard_stall, keyboard_catchup;
 #include "lifecycle.h"
+
+static void
+check_tick(void *user)
+{
+    (void)user;
+    keyboard_ticks++;
+    keyboard_frame();
+}
 
 /* The fixture copies a fixed allowlist into its own application sandbox.
  * This is not the general APK asset service or a public extraction API. */
@@ -61,6 +71,19 @@ check_frame(void *user)
      * Startup frames can precede the first process draw command. Require the
      * expected pixel before termination, without assuming a render count. */
     lifecycle_frame(verified);
+    if (keyboard_mode()) {
+        if (keyboard_stall && !keyboard_catchup && keyboard_ticks - keyboard_frame_ticks > 1) {
+            keyboard_catchup = 1;
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua keyboard catch-up passed", ACCEPTANCE_TOKEN);
+        }
+        keyboard_frame_ticks = keyboard_ticks;
+        /* Force multiple logical ticks after a render frame. A render-only
+         * observer can legitimately miss the first tick's input edge. */
+        if (!keyboard_stall && mv_key_down(MV_KEY_LEFT)) {
+            keyboard_stall = 1;
+            mv_platform_wait(0.1);
+        }
+    }
     if (keyboard_mode() && lua_keyboard_seen < 3) {
         FILE *keyboard = fopen("keyboard.txt", "rb");
         if (keyboard) {
@@ -129,12 +152,14 @@ main(int argc, char **argv)
     }
     assert(freopen("stderr.txt", "w", stderr));
     malvado_debug_set_frame_hook(check_frame, NULL);
+    if (keyboard_mode()) malvado_debug_set_hook(check_tick, NULL);
     char *arguments[] = {"game", "main.lua"};
     int result = malvado_run(2, arguments);
     malvado_debug_set_frame_hook(NULL, NULL);
+    if (keyboard_mode()) malvado_debug_set_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
     lifecycle_finish();
-    if (keyboard_mode()) assert(lua_keyboard_seen == 3);
+    if (keyboard_mode()) assert(lua_keyboard_seen == 3 && keyboard_stall && keyboard_catchup);
     assert(!IsAudioDeviceReady());
     if (ACCEPTANCE_AUDIO) {
         FILE *audio = fopen("audio.txt", "rb");

@@ -384,6 +384,10 @@ ready. Native code and Lua each require held state, press/release snapshots,
 consistent repeated reads and a later neutral tick. Lua writes ordered sandbox
 markers; native success cannot substitute for Lua observations. Each case ends
 through Back with normal resource cleanup. Resume must preserve the PID.
+The native Lua observer runs between logical ticks. A bounded 100 ms fixture
+stall requires multiple ticks between rendered frames and has its own acceptance
+marker. A render callback can miss a tick transition and is used only for
+graphics and the Lua completion files. Engine timing is unchanged.
 Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
 evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
 

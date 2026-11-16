@@ -35,7 +35,10 @@ main(int argc, char **argv)
     audio_begin();
     int verified = 0;
     for (int frame = 0; frame < (ACCEPTANCE_LIFECYCLE ? 3600 : 180) && !mv_window_should_close(); ++frame) {
-        if (keyboard_mode()) mv_input_tick();
+        if (keyboard_mode()) {
+            mv_input_tick();
+            keyboard_frame();
+        }
         mv_window_begin((MvColor){20, 40, 80, 255});
         assert(mv_window_draw_box(width / 4, height / 4, width / 2, height / 2, 1, (MvColor){255, 0, 0, 255}));
         mv_window_flush();

@@ -39,7 +39,6 @@ static void
 lifecycle_frame(int visible)
 {
     if (!ACCEPTANCE_LIFECYCLE) return;
-    keyboard_frame();
     if (!lifecycle_app) {
         lifecycle_app = GetAndroidApp();
         assert(lifecycle_app);
