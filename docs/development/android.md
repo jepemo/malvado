@@ -163,6 +163,9 @@ on pushes, pull requests, manual requests and weekly. Bounded C/Lua test APKs
 run after the headless suite. No store key or production signing credential is used. AVD boot has a 240-second limit;
 command and job timeouts remain active. The job uploads emulator/build/test
 logs and tool/result JSON even after failure.
+Debug and Release run in independent jobs with fail-fast disabled. Each owns
+its emulator and uploads `android-foundation-COMMIT-PROFILE`. Candidate review
+requires both profiles; a failed Debug job cannot cancel Release evidence.
 
 Linux CI uses checksum-pinned NDK, adb, APK tools, platform, emulator and image
 archives. Host Java and command-line AVD management remain prerequisites.

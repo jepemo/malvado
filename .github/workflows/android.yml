@@ -10,9 +10,13 @@ permissions:
   contents: read
 jobs:
   headless:
-    name: Android API 34 x86_64 headless C and Lua
+    name: Android API 34 x86_64 ${{ matrix.config }} C and Lua
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
@@ -26,8 +30,10 @@ jobs:
       - name: Verify Debug and Release on an isolated emulator
         env:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
+          ACCEPTANCE_CONFIG: ${{ matrix.config }}
         run: |
           mkdir -p "$ANDROID_AVD_HOME" build-android
+          config="$ACCEPTANCE_CONFIG"
           python3 tools/android_sdk.py --output build-android/linux-sdk
           python3 tools/android_archives.py --output build-android/pinned
           acceptance_sdk="$PWD/build-android/linux-sdk"
@@ -66,10 +72,9 @@ jobs:
           else:
               raise SystemExit("Android emulator did not boot within 240 seconds")
           PY
-          mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580
-          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config Debug --work build-android/window-Debug
-          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config Release --work build-android/window-Release
-          for config in Debug Release; do
+          mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
+          for config in "$ACCEPTANCE_CONFIG"; do
             for entry in explicit declarative; do
               for failure in none process missing-image; do
                 work="build-android/lua-$config"
@@ -79,7 +84,7 @@ jobs:
               done
             done
           done
-          for config in Debug Release; do
+          for config in "$ACCEPTANCE_CONFIG"; do
             for lifecycle in back resume touch keyboard keyboard-resume; do
               work="build-android/c-lifecycle-$config"
               mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
@@ -99,7 +104,7 @@ jobs:
               done
             done
           done
-          for config in Debug Release; do
+          for config in "$ACCEPTANCE_CONFIG"; do
             for mode in normal resume; do
               extra=()
               if [ "$mode" = resume ]; then extra=(--lifecycle resume); fi
@@ -124,7 +129,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: android-foundation-${{ github.sha }}
+          name: android-foundation-${{ github.sha }}-${{ matrix.config }}
           path: |
             build-android/*.log
             build-android/*-results.json
