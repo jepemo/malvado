@@ -15,6 +15,18 @@ sys.dont_write_bytecode = True
 from test_android import ROOT, preflight, run
 
 
+def add_lua_assets(archive, entry, failure):
+    if entry not in ('explicit', 'declarative') or failure not in ('none', 'process', 'missing-image'):
+        raise ValueError('Unsupported Lua APK fixture mode')
+    fixture = ROOT / 'tests/android-lua'
+    archive.write(fixture / (entry + '.lua'), 'assets/main.lua')
+    archive.write(fixture / 'behavior.lua', 'assets/behavior.lua')
+    archive.write(ROOT / 'tests/fixtures/atlas.json', 'assets/atlas.json')
+    archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
+    if failure != 'missing-image':
+        archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', type=Path, required=True)
@@ -87,12 +99,7 @@ def main():
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
             if args.language == 'lua':
-                archive.write(fixture / (args.entry + '.lua'), 'assets/main.lua')
-                archive.write(fixture / 'behavior.lua', 'assets/behavior.lua')
-                archive.write(ROOT / 'tests/fixtures/atlas.json', 'assets/atlas.json')
-                archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
-                if args.failure != 'missing-image':
-                    archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
+                add_lua_assets(archive, args.entry, args.failure)
         run(log, [tools / 'zipalign', '-f', '4', unsigned, aligned])
         key = work / 'test-only.p12'
         if not key.exists():

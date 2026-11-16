@@ -215,3 +215,16 @@ Lua APK verification currently builds from source; `--installed-sdk` remains a
 C-only check. APK fixtures are debuggable, with a local test signing key. Native
 Release profile tests do not establish production release APK signing. Failure
 evidence includes the application's captured Lua stderr before uninstall.
+
+Use `--failure process` or `--failure missing-image` to check expected errors.
+The first mode fails after visible frames; the second omits only the PNG while
+keeping its atlas metadata. Both entry forms passed both negative cases in
+Debug and Release on arm64. A run passes only with the expected runner status
+and diagnostic, exactly one close marker, no live window/context, a valid C asset
+snapshot after file removal and successful uninstall. The process-error case
+also requires the framebuffer pixel check before the error.
+
+`tests/android_lua_package.py` checks the exact entry script and binary bytes,
+direct APK asset paths and image presence for each mode without an emulator.
+These host checks do not replace native execution. The helper rejects invalid
+Lua modes before mutating the archive.
