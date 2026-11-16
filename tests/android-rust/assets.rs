@@ -7,7 +7,9 @@ use malvado::{
 };
 use std::rc::Rc;
 pub fn load(window: Rc<Window>) -> (Source, Result<Image, Error>) {
-    let snapshot = Source::open("message.bin").unwrap();
+    // Use an absolute sandbox path: raylib 6.2 resolves relative reads from
+    // packaged assets first. Unlink must remove the actual snapshot source.
+    let snapshot = Source::open(std::env::current_dir().unwrap().join("message.bin")).unwrap();
     assert_eq!(snapshot.bytes(), &[0, 13, 10, 255]);
     std::fs::remove_file("message.bin").unwrap();
     assert_eq!(snapshot.bytes(), &[0, 13, 10, 255]);

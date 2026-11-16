@@ -66,8 +66,9 @@ matching timing contracts.
 
 ## Verification and Rust status
 
-Android captures held-key changes in Malvado. This avoids raylib 5.5's incomplete
-previous-key history for navigation keys. Pending changes still coalesce until
+Android captures held-key changes in Malvado. This was introduced to handle
+raylib 5.5's incomplete navigation-key history and keeps the same tick contract
+with raylib 6.2. Pending changes still coalesce until
 the next logical tick; repeated queries never consume an edge. Window reset also
 resets the held-key history. This is physical-key state, not text composition.
 The current Android backend does not populate the Unicode character queue and

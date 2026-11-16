@@ -606,3 +606,20 @@ missing/empty media and invalid volumes, repeated play, pause state, resume/stop
 finite OGG completion and stream release before device shutdown. The host
 requires a Rust-specific stream completion marker as well as the final audio
 marker. Silent fixtures do not establish audible quality, latency or focus.
+
+## Raylib 6.2 dependency update
+
+The build pins the official 6.2 archive and its SHA-256. That release stops the
+audio device before destroying the callback mutex and owns WAV decoder context
+cleanup. The Malvado adapter removes its 5.5-only WAV free. Installed SDKs and
+Rust link QuartzCore on macOS. Android final links retain NativeActivity and
+raylib's `--wrap=fopen` requirement.
+
+Raylib 6.2 resolves relative `fopen` reads from APK assets first, then the private
+app directory/filesystem. Writes use the private directory with filesystem
+fallback. This applies to final graphical APK links; headless SDKs do not add
+the wrapper. Use absolute sandbox paths when a test or game requires a writable
+file to take priority over a packaged asset with the same name. The Rust binary
+snapshot fixture uses that rule to test removal of its actual source file.
+This backend resolution rule does not deliver CLI APK/AAB exports or replace
+the general packaged-game acceptance gate.

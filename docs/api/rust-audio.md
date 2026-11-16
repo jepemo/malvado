@@ -115,12 +115,12 @@ ASan/UBSan with leak detection enabled. This includes the WAV cleanup regression
 below. The existing graphics-provider filters are unchanged. Local macOS checks
 also pass; its existing leak-detection limitation remains explicit.
 
-Linux sanitizer regression: the raylib 5.5 WAV decoder allocation survived
-`UnloadMusicStream`. The native adapter now frees that context through raylib's
-allocator after decoder shutdown, including wrapper allocation and invalid-stream
-failure paths. OGG cleanup stays in raylib. A version assertion requires review
-on a provider upgrade. Empty WAV rejection is covered by C and Rust fixtures.
-No third-party source or leak suppression was changed.
+The original Linux sanitizer regression found a raylib 5.5 WAV decoder context
+that survived `UnloadMusicStream`. The adapter previously released that context
+through raylib's allocator. Raylib 6.2 now owns this cleanup, so the adapter uses
+`UnloadMusicStream` for every format and no longer frees the WAV context twice.
+Empty WAV rejection remains covered by C and Rust fixtures. No third-party
+source or leak suppression is changed by this upgrade.
 
 The [shared maintenance contract](audio-maintenance.md#rust-service) defines native
 pause queries, refill, binding playback roots and device ownership.

@@ -108,7 +108,7 @@ target_link_libraries(example-c-parity PRIVATE malvado_core)
 if(MALVADO_BUILD_RAYLIB)
   set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-  FetchContent_Declare(raylib URL https://github.com/raysan5/raylib/archive/refs/tags/5.5.tar.gz URL_HASH SHA256=aea98ecf5bc5c5e0b789a76de0083a21a70457050ea4cc2aec7566935f5e258e DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  FetchContent_Declare(raylib URL https://github.com/raysan5/raylib/archive/refs/tags/6.2.tar.gz URL_HASH SHA256=df7a13129b1bec9e73a6962efff170beba310ee6eab8f94cd000b7316b4db5ee DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_MakeAvailable(raylib)
   if(MALVADO_TEST_NULL_AUDIO)
     # ALSA's null PCM consumes without wall-clock pacing. Use miniaudio's

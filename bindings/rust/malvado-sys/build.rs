@@ -383,7 +383,7 @@ fn main() {
         // core archive after the adapter on linkers that resolve left to right.
         println!("cargo:rustc-link-lib=static=malvado_core");
         if target.contains("apple-darwin") {
-            for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation"] {
+            for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation", "QuartzCore"] {
                 println!("cargo:rustc-link-lib=framework={framework}");
             }
         } else if android {
@@ -393,6 +393,7 @@ fn main() {
                 println!("cargo:rustc-link-lib={library}");
             }
             println!("cargo:rustc-link-arg=-uANativeActivity_onCreate");
+            println!("cargo:rustc-link-arg=-Wl,--wrap=fopen");
         } else if windows {
             for library in ["opengl32", "gdi32", "winmm", "shell32", "user32"] {
                 println!("cargo:rustc-link-lib={library}");

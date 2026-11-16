@@ -18,7 +18,7 @@ Publishing requires GitHub permissions and Pages configuration. Writing workflow
 ## Initial CI: alpha.1
 
 1. **Linux and macOS:** configure CMake with documented versions/toolchains, build, and run `ctest --output-on-failure`. Install raylib system dependencies. Add and validate Windows in alpha.9; it does not block earlier alphas.
-2. **Raylib/Lua:** CMake downloads Lua 5.4.8 and raylib 5.5 into the build directory and verifies SHA-256 hashes. Cache downloads where useful without skipping verification. Limit style checks to project code; exclude `vendor/` and `_deps/`.
+2. **Raylib/Lua:** CMake downloads Lua 5.4.8 and raylib 6.2 into the build directory and verifies SHA-256 hashes. Cache downloads where useful without skipping verification. Limit style checks to project code; exclude `vendor/` and `_deps/`.
 3. **Static checks and style:** enable compiler warnings for `src/`. Add `clang-format --dry-run --Werror` when configuration is applied, then `clang-tidy` on `compile_commands.json` with agreed rules. Add `luacheck` for Lua examples and tests when configured. Document known warnings and exceptions. Do not describe an unconfigured tool as an active check.
 4. **Memory tests:** use ASan/UBSan in a compatible Linux configuration as process tests expand. Record platform limits. Add creation/removal, error, and coroutine cleanup cases.
 5. **Documentation:** download pinned sources with `python3 docs/tools/fetch_api_sources.py`, run `python3 docs/tools/catalog_api.py`, compare generated files with the repository, and fail on differences. Both commands check source hashes. Validate internal links and site build when a generator exists. Also check generated files if they are initially untracked.

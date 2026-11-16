@@ -54,7 +54,7 @@ struct MvSound {
 };
 struct MvMusic {
     Music stream;
-    int wav, paused, active;
+    int paused, active;
     struct MvMusic *next;
 };
 /* Borrowed index; loaded streams retain no extra reference to their device. */
@@ -247,39 +247,24 @@ mv_sound_set_volume(MvSound *sound, float volume)
     return 1;
 }
 
-/* raylib 5.5 uninitializes dr_wav but does not free its separately allocated
- * WAV context. Keep this provider-specific cleanup in the adapter, including
- * load failure paths. Other formats release their context in raylib itself. */
-static void
-destroy_music_stream(Music stream, int wav)
-{
-    _Static_assert(RAYLIB_VERSION_MAJOR == 5 && RAYLIB_VERSION_MINOR == 5,
-                   "Review WAV context cleanup when upgrading raylib");
-    UnloadMusicStream(stream);
-    if (wav)
-        MemFree(stream.ctxData);
-}
-
 MvMusic *
 mv_music_load(const char *path, int loop)
 {
     if (!path || !IsAudioDeviceReady() || (loop != 0 && loop != 1) ||
         (!IsFileExtension(path, ".wav") && !IsFileExtension(path, ".ogg")))
         return NULL;
-    int wav = IsFileExtension(path, ".wav");
     Music stream = LoadMusicStream(path);
     if (!IsMusicValid(stream)) {
-        destroy_music_stream(stream, wav);
+        UnloadMusicStream(stream);
         return NULL;
     }
     MvMusic *music = malloc(sizeof(*music));
     if (!music) {
-        destroy_music_stream(stream, wav);
+        UnloadMusicStream(stream);
         return NULL;
     }
     stream.looping = loop != 0;
     music->stream = stream;
-    music->wav = wav;
     music->paused = music->active = 0;
     music->next = music_streams;
     music_streams = music;
@@ -294,7 +279,7 @@ mv_music_destroy(MvMusic *music)
     MvMusic **link = &music_streams;
     while (*link && *link != music) link = &(*link)->next;
     if (*link) *link = music->next;
-    destroy_music_stream(music->stream, music->wav);
+    UnloadMusicStream(music->stream);
     free(music);
 }
 
@@ -482,9 +467,9 @@ capture_keyboard(void)
         int code = key_code((MvKey)key);
         if (code != KEY_NULL) {
 #ifdef __ANDROID__
-            /* raylib 5.5 Android updates previous state only below index 260.
-             * Navigation keys exceed that bound. Own observed held history so
-             * every supported key has the same tick transition contract. */
+            /* Own observed held history so supported keys share the same
+             * tick transition contract. This also handles the truncated
+             * previous-state history in the former raylib 5.5 backend. */
             mv_keyboard_sample_held((MvKey)key, IsKeyDown(code));
 #else
             mv_keyboard_sample((MvKey)key, IsKeyPressed(code), IsKeyReleased(code));
