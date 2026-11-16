@@ -47,6 +47,8 @@ jobs:
           emulator_pid=$!
           trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
           python3 tools/android_boot.py --adb "$acceptance_sdk/platform-tools/adb" --serial emulator-5580
+          rustup target add x86_64-linux-android
+          mise run test-android-rust -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
           for config in "$ACCEPTANCE_CONFIG"; do
@@ -106,6 +108,8 @@ jobs:
         with:
           name: android-foundation-${{ github.sha }}-${{ matrix.config }}
           path: |
+            build-android-rust/*.log
+            build-android-rust/*results.json
             build-android/*.log
             build-android/*-results.json
             build-android/toolchain.json

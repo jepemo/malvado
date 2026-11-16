@@ -17,6 +17,17 @@ fn run(command: &mut Command) -> Output {
     output
 }
 
+// Android probes must run on the target to preserve ABI/release rejection.
+fn probe_output(probe: PathBuf, android: bool) -> Output {
+    if android {
+        let runner = env::var_os("MALVADO_ANDROID_RUNNER")
+            .expect("set MALVADO_ANDROID_RUNNER to an executable target probe runner");
+        run(Command::new(runner).arg(probe))
+    } else {
+        run(&mut Command::new(probe))
+    }
+}
+
 // CMake's imported-target glob cannot use Win32 verbatim path prefixes.
 // Keep the canonical PathBuf for ownership checks and normalize only its CLI value.
 fn cmake_sdk_path(path: &Path, windows: bool) -> String {
@@ -100,6 +111,10 @@ fn main() {
         "CMAKE_GENERATOR",
         "CFLAGS",
         "LDFLAGS",
+        "MALVADO_ANDROID_NDK",
+        "MALVADO_ANDROID_RUNNER",
+        "MALVADO_ANDROID_ADB",
+        "MALVADO_ANDROID_SERIAL",
     ] {
         println!("cargo:rerun-if-env-changed={name}");
     }
@@ -108,15 +123,30 @@ fn main() {
     let assets = env::var_os("CARGO_FEATURE_ASSETS").is_some();
     let host = env::var("HOST").unwrap();
     let target = env::var("TARGET").unwrap();
-    assert_eq!(
-        host, target,
-        "Rust SDK cross compilation is not yet supported"
+    let android_abi = match target.as_str() {
+        "aarch64-linux-android" => Some("arm64-v8a"),
+        "x86_64-linux-android" => Some("x86_64"),
+        _ => None,
+    };
+    let android = android_abi.is_some();
+    assert!(
+        host == target || android,
+        "Rust SDK cross compilation is supported only for Android arm64/x86_64"
     );
     assert!(
-        target.contains("apple-darwin")
+        android
+            || target.contains("apple-darwin")
             || target.contains("linux")
             || target == "x86_64-pc-windows-msvc",
-        "Rust SDK requires native macOS, Linux or Windows x64 MSVC"
+        "Rust SDK requires macOS, Linux, Windows x64 MSVC or Android arm64/x86_64"
+    );
+    assert!(
+        !android || !graphics,
+        "Rust Android graphics is not yet supported"
+    );
+    assert!(
+        !android || !assets,
+        "Rust Android assets is not yet supported"
     );
     let windows = target == "x86_64-pc-windows-msvc";
     let prefix = PathBuf::from(
@@ -180,6 +210,29 @@ fn main() {
             "-DEXPECTED_VERSION={}",
             env::var("CARGO_PKG_VERSION").unwrap()
         ));
+    if let Some(abi) = android_abi {
+        let ndk = PathBuf::from(
+            env::var_os("MALVADO_ANDROID_NDK")
+                .expect("set MALVADO_ANDROID_NDK to Android NDK r27c"),
+        );
+        let properties = std::fs::read_to_string(ndk.join("source.properties"))
+            .expect("cannot read Android NDK source.properties");
+        assert!(
+            properties.lines().any(|line| line
+                .split_once('=')
+                .is_some_and(
+                    |(key, value)| key.trim() == "Pkg.Revision" && value.trim() == "27.2.12479018"
+                )),
+            "Android Rust requires NDK r27c (27.2.12479018)"
+        );
+        configure
+            .arg(format!(
+                "-DCMAKE_TOOLCHAIN_FILE={}",
+                ndk.join("build/cmake/android.toolchain.cmake").display()
+            ))
+            .arg(format!("-DANDROID_ABI={abi}"))
+            .arg("-DANDROID_PLATFORM=android-28");
+    }
     if let Some(cc) = env::var_os("CC") {
         configure.arg(format!("-DCMAKE_C_COMPILER={}", cc.to_string_lossy()));
     }
@@ -219,7 +272,7 @@ fn main() {
             .join(config)
             .join(if windows { "probe.exe" } else { "probe" })
     };
-    let layout = run(&mut Command::new(probe));
+    let layout = probe_output(probe, android);
     let values: Vec<usize> = String::from_utf8(layout.stdout)
         .unwrap()
         .split_whitespace()
@@ -275,7 +328,7 @@ fn main() {
                 "assets-probe"
             })
         };
-        let layout = run(&mut Command::new(probe));
+        let layout = probe_output(probe, android);
         let values: Vec<usize> = String::from_utf8(layout.stdout)
             .unwrap()
             .split_whitespace()
@@ -370,7 +423,7 @@ fn main() {
                 "graphics-probe"
             })
         };
-        let layout = run(&mut Command::new(probe));
+        let layout = probe_output(probe, android);
         let values: Vec<usize> = String::from_utf8(layout.stdout)
             .unwrap()
             .split_whitespace()

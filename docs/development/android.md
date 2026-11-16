@@ -493,3 +493,28 @@ collects Activity/window/power state and a best-effort `failure.png` before
 uninstall. Evidence collection errors are logged without replacing the original
 acceptance failure. This improves diagnostics for stalls without Lua errors or
 native crashes; it does not add retries or change engine timing.
+
+## Rust headless verification
+
+Install the target standard library, then run the shared verification command:
+
+```sh
+rustup target add aarch64-linux-android
+mise run test-android-rust -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5582
+```
+
+Use `x86_64-linux-android` for the Linux CI emulator. The command builds Debug
+and Release C-only SDKs, relocates each SDK and runs the Rust core test suites
+on the selected API 34 emulator. `--config Debug` selects one profile. Logs and
+result metadata remain in `build-android-rust`. Graphics, assets and APK paths
+are unavailable for Rust Android in this verification step.
+
+For direct Cargo use, set `MALVADO_SDK_PREFIX` to the installed target SDK,
+`MALVADO_ANDROID_NDK` to NDK r27c and `MALVADO_ANDROID_RUNNER` to one executable
+that accepts a target program path and returns its stdout and exit status.
+The SDK uses this runner for ABI/release probes; it does not substitute host
+layout values. The supplied runner requires `MALVADO_ANDROID_ADB` and
+`MALVADO_ANDROID_SERIAL`. Set Cargo's target linker to the NDK API 28 clang
+wrapper and Cargo's target runner to the same executable. The verification
+script sets these values, including paths with spaces. General cross compilation
+outside Android arm64/x86_64 remains unavailable.

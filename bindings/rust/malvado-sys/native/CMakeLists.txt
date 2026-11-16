@@ -16,7 +16,7 @@ if(MALVADO_RUST_GRAPHICS)
   list(APPEND components graphics)
 endif()
 find_package(Malvado CONFIG REQUIRED COMPONENTS ${components}
-  PATHS "${MALVADO_SDK_PREFIX}" NO_DEFAULT_PATH)
+  PATHS "${MALVADO_SDK_PREFIX}" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 get_target_property(core_type Malvado::core TYPE)
 if(NOT core_type STREQUAL "STATIC_LIBRARY")
   message(FATAL_ERROR "Rust currently requires a static Malvado core SDK")

@@ -165,3 +165,7 @@ run = "python3 tools/test_android.py"
 [tasks.test-android-window]
 description = "Verify C/Lua APK graphics, input and audio contracts on an Android emulator"
 run = "python3 tools/test_android_window.py"
+
+[tasks.test-android-rust]
+description = "Verify headless Rust against installed Android SDKs on an explicit emulator"
+run = "python3 tools/test_android_rust.py"
