@@ -28,6 +28,13 @@ def add_lua_assets(archive, entry, failure):
         archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
 
 
+def add_audio_assets(archive, lua=False):
+    for name in ('silence.wav', 'silence.ogg', 'empty.wav'):
+        archive.write(ROOT / 'tests/fixtures' / name, 'assets/' + name)
+    if lua:
+        archive.write(ROOT / 'tests/android-lua/audio.lua', 'assets/audio.lua')
+
+
 def wait_marker(log, adb, marker, timeout=30):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -126,10 +133,13 @@ def main():
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
     parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch'))
+    parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
+    if args.audio and args.failure != 'none':
+        parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
         parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
@@ -162,7 +172,7 @@ def main():
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                   f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                   f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                  f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}'])
+                  f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
         run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '8'])
         if args.installed_sdk:
             staged, installed = work / 'staged sdk', work / 'relocated sdk'
@@ -173,14 +183,14 @@ def main():
             staged.rename(installed)
             external = work / 'external C project'
             external.mkdir(exist_ok=True)
-            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h'):
+            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h', 'audio.h'):
                 shutil.copyfile(ROOT / 'tests/android-window' / name, external / name)
             build = external / 'build'
             run(log, ['cmake', '-S', external, '-B', build,
                       f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                       f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                       f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                      f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}'])
+                      f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
@@ -197,6 +207,8 @@ def main():
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
             if args.language == 'lua':
                 add_lua_assets(archive, args.entry, args.failure)
+            if args.audio:
+                add_audio_assets(archive, lua=args.language == 'lua')
         run(log, [tools / 'zipalign', '-f', '4', unsigned, aligned])
         key = work / 'test-only.p12'
         if not key.exists():
@@ -214,7 +226,7 @@ def main():
             if args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua')
             wait_marker(log, adb, token + ' ' + expectation)
-            facts.update(lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
+            facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True
         finally:
             if not completed:

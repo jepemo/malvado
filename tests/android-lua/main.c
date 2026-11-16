@@ -95,6 +95,11 @@ main(int argc, char **argv)
     const char *required[] = {"main.lua", "behavior.lua", "atlas.json", "message.bin"};
     for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i)
         assert(copy_asset(app->activity->assetManager, required[i]));
+    if (ACCEPTANCE_AUDIO) {
+        const char *audio[] = {"audio.lua", "silence.wav", "silence.ogg", "empty.wav"};
+        for (unsigned i = 0; i < 4; ++i) assert(copy_asset(app->activity->assetManager, audio[i]));
+        assert(setenv("MALVADO_APK_AUDIO", "1", 1) == 0);
+    }
     int image = copy_asset(app->activity->assetManager, "red.png");
     assert(image == (ACCEPTANCE_FAILURE != 2));
     MvAssetSource *snapshot = mv_asset_source_open("message.bin", NULL);
@@ -109,6 +114,7 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
     lifecycle_finish();
+    assert(!IsAudioDeviceReady());
     assert(!IsWindowReady() && malvado_debug_context() == NULL);
     assert(ACCEPTANCE_FAILURE == 2 || verified);
     FILE *closed = fopen("closed.txt", "rb");

@@ -13,3 +13,5 @@ target_compile_definitions(game PRIVATE ACCEPTANCE_TOKEN="${ACCEPTANCE_TOKEN}" A
 target_compile_definitions(game PRIVATE ACCEPTANCE_LIFECYCLE=${ACCEPTANCE_LIFECYCLE})
 target_include_directories(game PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
 target_include_directories(game PRIVATE ../android-window)
+
+target_compile_definitions(game PRIVATE ACCEPTANCE_AUDIO=${ACCEPTANCE_AUDIO})

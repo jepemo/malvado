@@ -1,7 +1,9 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
 local task = mv.process(function()
+  local audio
   local guard <close> = setmetatable({}, {__close = function()
+    if audio then audio.finish() end
     local file = assert(io.open("closed.txt", "ab"))
     assert(file:write("1"))
     assert(file:close())
@@ -13,6 +15,7 @@ local task = mv.process(function()
   assert(os.remove(temporary))
   local atlas = mv.load_asset("atlas.json")
   assert(mv.sprite_id(atlas, "red") == 7)
+  if os.getenv("MALVADO_APK_AUDIO") then audio = require("audio")() end
   local first_x, maximum_x, released
   local remaining = 60
   while os.getenv("MALVADO_APK_LIFECYCLE") or remaining > 0 do
@@ -34,6 +37,7 @@ local task = mv.process(function()
         released = true
       end
     end
+    if audio then audio.frame() end
     mv.set_color(255, 0, 0)
     mv.draw_box(80, 60, 240, 180)
     mv.frame()

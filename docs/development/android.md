@@ -324,3 +324,23 @@ Host verification passed 208 headless tests, 18 Android verifier regressions and
 675 guide links. All local test APKs were uninstalled and the dedicated emulator
 was stopped. No Docker images were created. Audio and the remaining input/device
 coverage stay open; no multi-touch or gesture-recognition API is promised.
+
+## Android audio API verification
+
+Add `--audio` to the C installed-SDK or Lua APK verifier. The test packages silent
+WAV/OGG and empty-WAV fixtures directly as APK assets. Its fixed bootstrap places
+them in the application sandbox. Both C and Lua entry forms passed Debug and
+Release on the arm64 API 34 emulator.
+
+Checks cover device opening, invalid paths/empty files/volume, independent sound
+clones after source release, playback, explicit pause/resume/stop and finite
+sound completion. C destroys its owned audio objects before device close. Lua
+uses weak references to verify that paused playback roots survive collection,
+then leaves roots for runner shutdown to release. The native host requires the
+audio device to be closed after Lua shutdown.
+
+The emulator uses silent media and runs with host audio disabled. These results
+establish API state and ownership, not audible output, latency or physical-device
+audio focus. Native Release profile APKs still use the test signing configuration.
+No new audio API, automatic background-pause policy or production exporter is
+introduced. `--audio` cannot be combined with expected Lua failure fixtures.

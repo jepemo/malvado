@@ -22,6 +22,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include "lifecycle.h"
+#include "audio.h"
 
 int
 main(int argc, char **argv)
@@ -31,6 +32,7 @@ main(int argc, char **argv)
     if (!mv_window_open(320, 240, "Malvado Android")) return 1;
     int width, height;
     assert(mv_window_size(&width, &height) && width > 0 && height > 0);
+    audio_begin();
     int verified = 0;
     for (int frame = 0; frame < (ACCEPTANCE_LIFECYCLE ? 3600 : 180) && !mv_window_should_close(); ++frame) {
         mv_window_begin((MvColor){20, 40, 80, 255});
@@ -51,12 +53,14 @@ main(int argc, char **argv)
             UnloadImage(pixels);
             verified = 1;
         }
+        audio_frame();
         lifecycle_frame(verified);
         mv_window_end();
     }
     assert(verified);
     if (ACCEPTANCE_LIFECYCLE) assert(mv_window_should_close());
     lifecycle_finish();
+    audio_finish();
     mv_window_close();
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s window pixels and shutdown passed", ACCEPTANCE_TOKEN);
     return 0;
