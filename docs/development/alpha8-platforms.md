@@ -19,6 +19,13 @@ state, resource lifetime and explicit game-requested pause across Activity
 transitions. It does not establish audible output, latency or automatic audio
 focus handling. See [Android audio verification](android.md#android-audio-api-verification).
 
+Android C and both Lua entries also passed physical-key A/Left state and
+transition checks on arm64, in both profiles and after Activity resume. This
+does not establish Unicode/IME input or release while backgrounded. The current
+Android backend does not populate the text-input character queue, and Malvado
+does not provide an on-screen keyboard service. See
+[keyboard verification](android.md#android-keyboard-verification).
+
 ## Delivered artifacts and unavailable paths
 
 | Target | Current artifacts | Authoring and verification limits |

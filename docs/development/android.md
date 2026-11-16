@@ -365,6 +365,35 @@ Host verification passed 208 headless tests, 18 Android verifier regressions and
 was stopped. No Docker images were created. Audio and the remaining input/device
 coverage stay open; no multi-touch or gesture-recognition API is promised.
 
+## Android keyboard verification
+
+Use `--lifecycle keyboard` to verify physical-key state and transitions. Use
+`--lifecycle keyboard-resume` to run the same checks after Home and foreground.
+Both modes accept the C installed-SDK fixture or either Lua entry, in Debug and
+Release. For example:
+
+```sh
+mise run test-android-window -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5580 \
+  --installed-sdk --config Release --lifecycle keyboard-resume
+mise run test-android-window -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5580 \
+  --language lua --entry declarative --config Debug --lifecycle keyboard
+```
+
+The host injects Android A and D-pad Left long presses after the framebuffer is
+ready. Native code and Lua each require held state, press/release snapshots,
+consistent repeated reads and a later neutral tick. Lua writes ordered sandbox
+markers; native success cannot substitute for Lua observations. Each case ends
+through Back with normal resource cleanup. Resume must preserve the PID.
+Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
+evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
+
+The arm64 API 34 emulator passed all twelve entry/profile/mode cases. These
+checks do not establish a physical keyboard, key release while backgrounded,
+Unicode typing or IME composition. raylib 5.5 Android does not fill its character
+queue, and no on-screen keyboard service is delivered. Malvado derives observed
+key edges from held state to avoid raylib's incomplete navigation-key history;
+this keeps the existing [tick snapshot contract](../api/keyboard.md).
+
 ## Android audio API verification
 
 Add `--audio` to the C installed-SDK or Lua APK verifier. The test packages silent
