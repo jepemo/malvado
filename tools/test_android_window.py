@@ -45,7 +45,7 @@ def activity_is_background(state, package):
 
 
 def png_dimensions(header):
-    if len(header) < 24 or header[:8] != b'\x89PNG\r\n\x1a\n' or header[12:16] != b'IHDR':
+    if len(header) < 24 or header[:8] != b'\x89PNG\r\n\x1a\n' or header[8:12] != b'\x00\x00\x00\x0d' or header[12:16] != b'IHDR':
         raise ValueError('Invalid Android screenshot PNG header')
     width, height = struct.unpack('>II', header[16:24])
     if not (0 < width <= 16384 and 0 < height <= 16384):
@@ -58,9 +58,15 @@ def capture_screen(log, adb, destination):
     try:
         log.write(f"\n>>> Capture Android screenshot: {destination}\n")
         log.flush()
-        with temporary.open('wb') as output:
-            subprocess.run(adb + ['exec-out', 'screencap', '-p'], stdout=output,
-                           stderr=subprocess.PIPE, check=True, timeout=15)
+        try:
+            with temporary.open('wb') as output:
+                subprocess.run(adb + ['exec-out', 'screencap', '-p'], stdout=output,
+                               stderr=subprocess.PIPE, check=True, timeout=15)
+        except subprocess.SubprocessError as error:
+            detail = getattr(error, 'stderr', None) or b''
+            log.write(detail.decode(errors='replace') if isinstance(detail, bytes) else detail)
+            log.flush()
+            raise
         with temporary.open('rb') as image:
             dimensions = png_dimensions(image.read(24))
         temporary.replace(destination)

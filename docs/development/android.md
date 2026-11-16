@@ -296,3 +296,19 @@ All six entry/profile cases passed locally on arm64. The contact lasts 1500 ms;
 this verifies sampled held state, not short-tap buffering, multi-touch or gesture
 recognition. The current backend already supplies this mapping. No new public
 mobile input API, scheduler or native property copy is introduced.
+
+## Native screenshot evidence
+
+Lifecycle runs retain `before.png`; resume and touch runs also retain
+`resumed.png` or `released.png`. `adb exec-out screencap -p` supplies binary PNG
+bytes without terminal newline conversion. Dimensions come from the screenshot
+header, not an assumed portrait display size. The scene can change display
+orientation during Activity transitions; framebuffer checks remain in logical
+window coordinates. Six local resume cases passed with native screenshots.
+
+The capture helper validates the PNG signature, IHDR size and positive bounded
+dimensions before publication. A failed capture removes only its partial file
+and preserves an existing destination. Each verification run clears its known
+base screenshot names and old result JSON before starting. Host regressions
+cover malformed geometry, binary preservation and timeout cleanup. Screenshots
+are evidence alongside the native pixel checks, not a replacement for them.
