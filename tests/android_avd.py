@@ -30,7 +30,7 @@ class AvdTests(unittest.TestCase):
                 config = (output / 'malvado-alpha8.avd/config.ini').read_text()
                 self.assertIn(f'image.sysdir.1={image.resolve()}\n', config)
                 self.assertIn(f'hw.cpu.arch={arch}\n', config)
-                self.assertIn(f'path={output.resolve()}/malvado-alpha8.avd\n', (output / 'malvado-alpha8.ini').read_text())
+                self.assertIn(f'path={output.resolve() / "malvado-alpha8.avd"}\n', (output / 'malvado-alpha8.ini').read_text())
                 before = config
                 with self.assertRaises(FileExistsError):
                     create(output, image)
