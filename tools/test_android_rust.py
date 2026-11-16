@@ -53,6 +53,44 @@ def diagnostics(log, work, prefix, linker, target, env, config):
     return len(cases) + 1
 
 
+def asset_diagnostics(log, work, prefix, ndk, abi, target, env, config):
+    drift = work / config / 'asset layout drift sdk'
+    if drift.exists():
+        shutil.rmtree(drift)
+    shutil.copytree(prefix, drift)
+    header = drift / 'include/malvado/atlas.h'
+    text = header.read_text()
+    changed = text.replace('int pivot_x, pivot_y;', 'long long pivot_x, pivot_y;')
+    if changed == text:
+        raise RuntimeError('Asset drift fixture did not change the native header')
+    header.write_text(changed)
+    core = work / config / 'core only'
+    run(log, ['cmake', '-S', ROOT, '-B', core,
+              f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
+              f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
+              f'-DCMAKE_BUILD_TYPE={config}', '-DCMAKE_INSTALL_LIBDIR=lib',
+              '-DMALVADO_BUILD_LUA=OFF', '-DMALVADO_BUILD_RAYLIB=OFF',
+              '-DMALVADO_BUILD_ASSETS=OFF', '-DFETCHCONTENT_FULLY_DISCONNECTED=ON'])
+    run(log, ['cmake', '--build', core, '--parallel', '8'])
+    run(log, ['cmake', '--install', core, '--prefix', core / 'sdk'])
+    for label, sdk, expected in [('asset layout drift', drift, 'assets ABI layout/value mismatch'),
+                                 ('missing asset component', core / 'sdk', 'Malvado_FOUND to FALSE')]:
+        result = subprocess.run(['cargo', 'check', '--manifest-path', str(ROOT / 'bindings/rust/Cargo.toml'),
+                                 '-p', 'malvado-sys', '--target', target, '--features', 'assets'],
+                                env=dict(env, MALVADO_SDK_PREFIX=str(sdk)), cwd=ROOT,
+                                capture_output=True, text=True, timeout=120)
+        log.write(result.stdout + result.stderr); log.flush()
+        if result.returncode == 0 or expected not in result.stdout + result.stderr:
+            raise RuntimeError(f'{label}: expected asset SDK rejection: {expected}')
+        print(f'PASS: Android Rust {config}: {label}', flush=True)
+    # Optional assets must not prevent a core-only target SDK from being used.
+    subprocess.run(['cargo', 'check', '--manifest-path', str(ROOT / 'bindings/rust/Cargo.toml'),
+                             '-p', 'malvado', '--target', target],
+                            env=dict(env, MALVADO_SDK_PREFIX=str(core / 'sdk')), cwd=ROOT,
+                            stdout=log, stderr=subprocess.STDOUT, timeout=120, check=True)
+    return 2
+
+
 def installed_consumer(log, work, prefix, target, env, config, wrapper):
     game = work / config / 'external assets game'
     (game / 'src').mkdir(parents=True, exist_ok=True)
@@ -138,8 +176,9 @@ def verify(sdk, serial, work, config, *, assets=False):
         if assets:
             installed_consumer(log, work, prefix, target, env, config, wrapper)
         rejected = diagnostics(log, work, prefix, linker, target, env, config)
-        result_file.write_text(json.dumps(dict(facts, configuration=config, target=target, assets=assets, installed_assets_consumer='passed' if assets else 'not requested', sdk_rejections=rejected,
-            rust='headless core tests passed', source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip(),
+        asset_rejections = asset_diagnostics(log, work, prefix, ndk, abi, target, env, config) if assets else 0
+        result_file.write_text(json.dumps(dict(facts, configuration=config, target=target, assets=assets, asset_rejections=asset_rejections, installed_assets_consumer='passed' if assets else 'not requested', sdk_rejections=rejected,
+            rust='headless core/assets tests passed' if assets else 'headless core tests passed', source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip(),
             dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT))), indent=2) + '\n')
     print(f'PASS: Android Rust {target} {config}', flush=True)
 

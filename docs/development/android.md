@@ -510,7 +510,10 @@ with a previous ABI, a mismatched ABI or a wrong release. Those probes execute
 on Android; an ABI mismatch must be rejected before calling the release query. Add `--assets` to build an asset-enabled SDK and run the shared PNG, atlas,
 Aseprite and FPG suites. CI uses this option. The runner stages committed
 `tests/fixtures` and `examples/aseprite` inputs in each test's private directory;
-Rust tests select that root through `MALVADO_TEST_ROOT`. They retain their normal
+Rust tests select that root through `MALVADO_TEST_ROOT`. Both profiles also
+build/run an external asset consumer from the relocated installed crates and
+reject an asset-layout mismatch and a core-only SDK requested with assets.
+The core-only SDK remains usable when the assets feature is disabled. They retain their normal
 source-root default on desktop. Temporary files and staged assets are removed
 with each invocation, including failed tests. Graphics and APK game paths remain
 unavailable for Rust Android.

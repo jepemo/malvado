@@ -33,7 +33,7 @@ does not provide an on-screen keyboard service. See
 | --- | --- | --- |
 | Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
 | Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
-| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua test executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. Rust headless core/assets SDK/probes pass locally on arm64; x86_64 CI acceptance is pending. No Rust graphics/APK, general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
+| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua executables, locally verified Rust core/assets executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. Rust headless core/assets SDK/probes pass locally on arm64; x86_64 CI acceptance is pending. No Rust graphics/APK, general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
 
 An installed Android C SDK consumer is an external CMake project. A Lua fixture
 APK currently builds the source runtime; it does not establish an installed Lua
