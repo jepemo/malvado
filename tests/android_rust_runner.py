@@ -34,6 +34,25 @@ class RunnerTests(unittest.TestCase):
                 runner.execute('adb', 'emulator-1', program.name, [], io.StringIO())
             self.assertEqual(shell.call_args_list[-1].args[2], ['rm', '-rf', shell.call_args_list[0].args[2][-1]])
 
+    def test_inputs_use_owned_root_and_are_removed_after_test_failure(self):
+        with tempfile.NamedTemporaryFile() as program, tempfile.TemporaryDirectory(prefix='inputs with spaces') as inputs:
+            with patch.object(runner, 'shell', return_value=subprocess.CompletedProcess([], 9, 'failed')) as shell, patch.object(runner, 'run') as run:
+                result = runner.execute('adb', 'emulator-1', program.name, [], io.StringIO(), inputs=inputs)
+            remote = shell.call_args_list[0].args[2][-1]
+            self.assertEqual(result.returncode, 9)
+            self.assertEqual(run.call_args.args[1][-2:], [Path(inputs).resolve(), remote + '/inputs'])
+            self.assertIn('MALVADO_TEST_ROOT=' + remote + '/inputs', shell.call_args_list[1].kwargs['environment'])
+            self.assertEqual(shell.call_args.args[2], ['rm', '-rf', remote])
+
+    def test_symlink_inputs_are_rejected_and_owned_staging_is_removed(self):
+        with tempfile.NamedTemporaryFile() as program, tempfile.TemporaryDirectory() as inputs:
+            (Path(inputs) / 'link').symlink_to(program.name)
+            with patch.object(runner, 'shell') as shell, patch.object(runner, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'without symlinks'):
+                    runner.execute('adb', 'emulator-1', program.name, [], io.StringIO(), inputs=inputs)
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(shell.call_args.args[2][:2], ['rm', '-rf'])
+
     def test_invalid_selection_never_invokes_transport(self):
         with patch.object(runner, 'shell') as shell:
             with self.assertRaises(ValueError):

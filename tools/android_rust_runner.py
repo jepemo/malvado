@@ -12,7 +12,7 @@ sys.dont_write_bytecode = True
 from test_android import run, shell
 
 
-def execute(adb, serial, program, arguments, log):
+def execute(adb, serial, program, arguments, log, *, inputs=None):
     if not serial.startswith('emulator-') or not serial[9:].isdigit():
         raise ValueError('Select an explicit emulator serial')
     program = Path(program).resolve(strict=True)
@@ -21,8 +21,15 @@ def execute(adb, serial, program, arguments, log):
     shell(prefix, log, ['mkdir', '-p', remote])
     try:
         run(log, prefix + ['push', program, remote + '/program'], timeout=30)
+        environment = ['TMPDIR=' + remote]
+        if inputs is not None:
+            inputs = Path(inputs).resolve(strict=True)
+            if not inputs.is_dir() or any(path.is_symlink() for path in inputs.rglob('*')):
+                raise ValueError('Test inputs must be a directory without symlinks')
+            run(log, prefix + ['push', inputs, remote + '/inputs'], timeout=30)
+            environment.append('MALVADO_TEST_ROOT=' + remote + '/inputs')
         result = shell(prefix, log, [remote + '/program', *arguments], cwd=remote,
-                       environment=['TMPDIR=' + remote], timeout=180, check=False)
+                       environment=environment, timeout=180, check=False)
         return result
     finally:
         shell(prefix, log, ['rm', '-rf', remote], timeout=30)
@@ -36,7 +43,7 @@ def main():
     try:
         # Keep transport logs off stdout: ABI probes parse stdout as integers.
         result = execute(os.environ['MALVADO_ANDROID_ADB'], os.environ['MALVADO_ANDROID_SERIAL'],
-                         args.program, args.arguments, sys.stderr)
+                         args.program, args.arguments, sys.stderr, inputs=os.environ.get('MALVADO_ANDROID_TEST_INPUTS'))
         sys.stdout.write(result.stdout)
         return result.returncode
     except (OSError, RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:

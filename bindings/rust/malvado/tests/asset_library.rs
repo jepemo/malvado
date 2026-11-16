@@ -1,5 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
+mod common;
 use malvado::{
     Error, Game,
     asset::{Format, Library, Metadata, Source},
@@ -8,7 +9,7 @@ use std::path::Path;
 
 #[test]
 fn dispatch_real_metadata_and_transfer_owned_values() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let root = common::root();
     for (path, format) in [
         ("tests/fixtures/atlas.json", Format::Atlas),
         ("examples/aseprite/sheet.json", Format::Aseprite),
@@ -53,7 +54,7 @@ fn dispatch_real_metadata_and_transfer_owned_values() {
 }
 #[test]
 fn manifest_source_removal_invalid_formats_and_cleanup() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let root = common::root();
     let path =
         std::env::temp_dir().join(format!("malvado-library-test-{}.json", std::process::id()));
     let fpg = Library::open(root.join("tests/fixtures/fpg/bennugd-8.fpg"), None)

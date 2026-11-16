@@ -1,5 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
+mod common;
 use malvado::{
     Error,
     asset::{Format, Source},
@@ -10,7 +11,7 @@ use std::path::Path;
 use std::{ffi::OsString, os::unix::ffi::OsStringExt};
 #[test]
 fn content_detection_and_existing_native_importers() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let root = common::root();
     for (path, expected) in [
         ("tests/fixtures/red.png", Format::Png),
         ("tests/fixtures/atlas.json", Format::Atlas),

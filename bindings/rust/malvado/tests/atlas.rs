@@ -1,5 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "assets")]
+mod common;
 use malvado::{
     Error, Game,
     atlas::{Atlas, Region},
@@ -185,7 +186,7 @@ fn native_metadata_adoption_and_retained_lookup() {
 #[test]
 fn validate_image_after_metadata_only_loading() {
     use malvado::asset::{Library, Metadata};
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let root = common::root();
     for (path, exact) in [
         ("tests/fixtures/atlas.json", false),
         ("examples/aseprite/sheet.json", true),
