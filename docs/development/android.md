@@ -97,6 +97,16 @@ a relative path in this configuration. The asset-loader fixture verifies temp
 creation, file writes, reads and removal on Android. No third-party source is
 modified.
 
+The verifier also installs and relocates each Android SDK to a path with spaces.
+It builds an external C project from a separate source directory with installed
+headers and `Malvado::core` / `Malvado::assets`. The emulator receives only its
+executable. It checks process execution, handles after context shutdown, binary
+asset snapshots after file removal and cleanup of an unfinished process. SDK
+metadata and Malvado/Lua/cJSON notices must be present. Both profiles passed.
+An explicitly selected target SDK outside the NDK sysroot needs
+`NO_CMAKE_FIND_ROOT_PATH` on its `find_package` call; see
+`tests/android-sdk/CMakeLists.txt` for the working consumer.
+
 Logs and JSON results remain under `build-android`, including on failure.
 They record the source commit and the actual tools. Uncommitted changes are not
 a release-candidate proof. Headless tests do not establish graphics, touch,

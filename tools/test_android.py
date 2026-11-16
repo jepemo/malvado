@@ -142,6 +142,41 @@ def stage_sources(stage):
     return stage
 
 
+def verify_installed_sdk(log, work, config, build, ndk, abi, prefix, remote):
+    staged = build / "staged sdk"
+    installed = build / "relocated sdk"
+    for path in (staged, installed):
+        if path.exists():
+            shutil.rmtree(path)
+    run(log, ["cmake", "--install", build, "--config", config, "--prefix", staged])
+    staged.rename(installed)
+    info = properties(installed / "share/malvado/malvado-sdk-info.txt")
+    if info["system"] != "android":
+        raise RuntimeError("Installed SDK does not identify its Android target")
+    for name in ("LICENSE", "Lua-readme.html", "cJSON-LICENSE"):
+        if not (installed / "share/licenses/malvado" / name).is_file():
+            raise RuntimeError(f"Missing SDK notice: {name}")
+    project = build / "external C game"
+    project.mkdir(exist_ok=True)
+    for name in ("CMakeLists.txt", "main.c"):
+        shutil.copyfile(ROOT / "tests/android-sdk" / name, project / name)
+    output = project / "build"
+    run(log, ["cmake", "-S", project, "-B", output,
+              f"-DCMAKE_TOOLCHAIN_FILE={ndk / 'build/cmake/android.toolchain.cmake'}",
+              f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{ANDROID_API}",
+              f"-DCMAKE_BUILD_TYPE={config}", f"-DMALVADO_SDK_PREFIX={installed}",
+              f"-DEXPECTED_VERSION={info['version']}"])
+    run(log, ["cmake", "--build", output, "--parallel", "2"])
+    # Only the consumer binary reaches this directory. No SDK or source tree is present.
+    destination = remote + "/external game"
+    shell(prefix, log, ["mkdir", "-p", destination])
+    run(log, prefix + ["push", output / "android-sdk-consumer", destination + "/game"])
+    result = shell(prefix, log, [destination + "/game"], cwd=destination)
+    if "Android installed SDK: process, handle, asset and shutdown passed" not in result.stdout:
+        raise RuntimeError("Installed SDK consumer did not produce its acceptance trace")
+    print(f"PASS: Android {abi} {config}: external installed C SDK", flush=True)
+
+
 def verify_profile(work, config, ndk, prefix, abi):
     build = work / config
     with (work / f"{config}.log").open("w", encoding="utf-8") as log:
@@ -179,7 +214,8 @@ def verify_profile(work, config, ndk, prefix, abi):
                 except (RuntimeError, subprocess.TimeoutExpired) as error:
                     failures.append(str(error))
                 print(f"{config}: {test['name']}: {'PASS' if test['name'] in passed else 'FAIL'}", flush=True)
-            summary = {"configuration": config, "abi": abi, "passed": passed, "failures": failures,
+            verify_installed_sdk(log, work, config, build, ndk, abi, prefix, remote)
+            summary = {"installed_sdk": "passed", "configuration": config, "abi": abi, "passed": passed, "failures": failures,
                        "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT).decode().strip(),
                        "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT))}
             (work / f"{config}-results.json").write_text(json.dumps(summary, indent=2) + "\n")
