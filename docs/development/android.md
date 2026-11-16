@@ -548,7 +548,11 @@ On Android, the window owner thread is the NativeActivity app thread. It is not
 the Java UI thread or an arbitrary Rust worker. The installed helper compares
 against the app thread before a window is created. Desktop thread rules remain
 the same. This fixture does not deliver a general CLI Android game exporter.
-Rust APK assets, input, audio, lifecycle and failure-path acceptance remain open;
+Rust Back and same-process background/foreground checks use the same command
+with `--lifecycle back` or `--lifecycle resume`. The latter requires native
+pause/resume events, the same PID, a restored framebuffer pixel and before/resumed
+screenshots, then Back cleanup. These fixtures do not establish process-death
+recovery. Rust APK assets, input, audio and failure-path acceptance remain open;
 the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
 coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
 remains pending until the new job passes.

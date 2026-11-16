@@ -51,7 +51,17 @@ jobs:
           mise run test-android-rust -- --assets --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
-          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --work "build-android/rust-window-$config"
+          for mode in none back resume; do
+            extra=()
+            if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi
+            work="build-android/rust-window-$config"
+            mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --work "$work" "${extra[@]}"
+            cp "$work/window.log" "$work/$mode.log"
+            cp "$work/results.json" "$work/$mode-results.json"
+            for image in before resumed; do
+              if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
+            done
+          done
           for config in "$ACCEPTANCE_CONFIG"; do
             for entry in explicit declarative; do
               for failure in none process missing-image; do
@@ -116,7 +126,7 @@ jobs:
             build-android/toolchain.json
             build-android/linux-sdk/malvado-archives.json
             build-android/rust-window-*/*.log
-            build-android/rust-window-*/results.json
+            build-android/rust-window-*/*results.json
             build-android/rust-window-*/*.png
             build-android/window-*/*.log
             build-android/window-*/results.json

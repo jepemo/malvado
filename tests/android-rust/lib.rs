@@ -8,6 +8,9 @@ use std::{cell::Cell, rc::Rc};
 unsafe extern "C" {
     fn acceptance_log(message: *const std::ffi::c_char);
     fn acceptance_pixel() -> i32;
+    fn acceptance_mode() -> i32;
+    fn acceptance_lifecycle_frame(verified: i32);
+    fn acceptance_lifecycle_finish();
 }
 struct Guard(Rc<Cell<usize>>);
 impl Drop for Guard {
@@ -42,8 +45,13 @@ pub extern "C" fn malvado_rust_entry() {
         }
     })
     .unwrap();
+    // SAFETY: fixture configuration is immutable and this is the app thread.
+    let mode = unsafe { acceptance_mode() };
     let mut verified = false;
-    for index in 0..90 {
+    for index in 0..if mode == 0 { 90 } else { 3600 } {
+        if window.should_close() {
+            break;
+        }
         game.tick().unwrap();
         let frame = window
             .frame(Color {
@@ -75,9 +83,20 @@ pub extern "C" fn malvado_rust_entry() {
             assert_eq!(unsafe { acceptance_pixel() }, 1);
             verified = true;
         }
+        // SAFETY: the fixture observes native lifecycle events during a live frame.
+        unsafe {
+            acceptance_lifecycle_frame(i32::from(verified));
+        }
         drop(frame);
     }
     assert!(verified);
+    if mode != 0 {
+        assert!(window.should_close());
+    }
+    // SAFETY: validate and restore only this fixture's lifecycle observer.
+    unsafe {
+        acceptance_lifecycle_finish();
+    }
     drop(game);
     assert_eq!(drops.get(), 1);
     drop(window);

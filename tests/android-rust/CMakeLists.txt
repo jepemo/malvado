@@ -7,3 +7,6 @@ add_library(game SHARED main.c)
 target_link_libraries(game PRIVATE "${RUST_ARCHIVE}" Malvado::graphics)
 target_link_options(game PRIVATE "-Wl,--no-undefined" "-uANativeActivity_onCreate")
 target_compile_definitions(game PRIVATE ACCEPTANCE_TOKEN="${ACCEPTANCE_TOKEN}")
+
+target_compile_definitions(game PRIVATE ACCEPTANCE_LIFECYCLE=${ACCEPTANCE_LIFECYCLE})
+target_include_directories(game PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../android-window" "${ANDROID_NDK}/sources/android/native_app_glue")

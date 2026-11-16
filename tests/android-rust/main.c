@@ -17,6 +17,11 @@
 #include "rlgl.h"
 #include <android/log.h>
 #include <stdlib.h>
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
+#include "lifecycle.h"
 extern void malvado_rust_entry(void);
 void
 acceptance_log(const char *message)
@@ -37,6 +42,22 @@ acceptance_pixel(void)
     Color pixel = GetImageColor(pixels, pixels.width / 2, pixels.height / 2);
     UnloadImage(pixels);
     return pixel.r > 240 && pixel.g < 15 && pixel.b < 15;
+}
+int
+acceptance_mode(void)
+{
+    return ACCEPTANCE_LIFECYCLE;
+}
+void
+acceptance_lifecycle_frame(int verified)
+{
+    mv_window_flush();
+    lifecycle_frame(verified);
+}
+void
+acceptance_lifecycle_finish(void)
+{
+    lifecycle_finish();
 }
 int
 main(int argc, char **argv)
