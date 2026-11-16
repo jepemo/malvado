@@ -60,6 +60,16 @@ jobs:
           mise run test-android -- --sdk "$ANDROID_HOME" --serial emulator-5580
           mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Debug --work build-android/window-Debug
           mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Release --work build-android/window-Release
+          for config in Debug Release; do
+            for entry in explicit declarative; do
+              for failure in none process missing-image; do
+                work="build-android/lua-$config"
+                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --language lua --entry "$entry" --failure "$failure" --config "$config" --work "$work"
+                cp "$work/window.log" "$work/$entry-$failure.log"
+                cp "$work/results.json" "$work/$entry-$failure-results.json"
+              done
+            done
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -70,5 +80,7 @@ jobs:
             build-android/toolchain.json
             build-android/window-*/*.log
             build-android/window-*/results.json
+            build-android/lua-*/*.log
+            build-android/lua-*/*results.json
           if-no-files-found: warn
           retention-days: 14
