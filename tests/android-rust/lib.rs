@@ -1,5 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 mod assets;
+mod failures;
 mod keyboard;
 mod touch;
 use malvado::{
@@ -12,6 +13,7 @@ unsafe extern "C" {
     fn acceptance_log(message: *const std::ffi::c_char);
     fn acceptance_pixel() -> i32;
     fn acceptance_mode() -> i32;
+    fn acceptance_failure() -> i32;
     fn acceptance_lifecycle_frame(verified: i32);
     fn acceptance_lifecycle_finish();
 }
@@ -34,6 +36,11 @@ pub extern "C" fn malvado_rust_entry() {
     let window = Rc::new(Window::open(320, 240, "Malvado Android Rust").unwrap());
     let weak = Rc::downgrade(&window);
     let (snapshot, image) = assets::load(window.clone());
+    // SAFETY: this reads immutable fixture configuration on the app thread.
+    if unsafe { acceptance_failure() } == 1 {
+        failures::process(window, snapshot, image);
+        return;
+    }
     let owned_image = image.clone();
     // SAFETY: the C fixture logs this static string and retains no pointer.
     unsafe {

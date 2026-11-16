@@ -27,7 +27,7 @@ class RustPackageTests(unittest.TestCase):
     def test_unsupported_modes_never_start_build_or_device_work(self):
         base = ['test_android_window.py', '--sdk', 'unused', '--serial', 'emulator-5580', '--language', 'rust']
         for extra in ([], ['--installed-sdk', '--audio'],
-                      ['--installed-sdk', '--entry', 'declarative'], ['--installed-sdk', '--failure', 'process']):
+                      ['--installed-sdk', '--failure', 'process', '--lifecycle', 'resume'], ['--installed-sdk', '--entry', 'declarative'], ['--installed-sdk', '--failure', 'missing-image']):
             with self.subTest(extra=extra), patch.object(sys, 'argv', base + extra), patch.object(verifier, 'preflight') as preflight, contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:
                     verifier.main()

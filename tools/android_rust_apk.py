@@ -11,14 +11,14 @@ import sys
 from test_android import ROOT, run
 
 
-def build(log, work, installed, ndk, adb, serial, abi, config, token, lifecycle=0):
+def build(log, work, installed, ndk, adb, serial, abi, config, token, lifecycle=0, failure=0):
     target = {'arm64-v8a': 'aarch64-linux-android', 'x86_64': 'x86_64-linux-android'}[abi]
     game = work / 'Rust game'
     (game / 'src').mkdir(parents=True, exist_ok=True)
     (game / 'Cargo.toml').write_text('[package]\nname="android-rust-window"\nversion="0.0.0"\nedition="2024"\n'
         + '[lib]\ncrate-type=["staticlib"]\n[dependencies]\nmalvado={path='
         + json.dumps(str(installed / 'share/malvado/rust/malvado')) + ',features=["graphics","assets"]}\n')
-    for name in ('lib.rs', 'keyboard.rs', 'touch.rs', 'assets.rs'):
+    for name in ('lib.rs', 'keyboard.rs', 'touch.rs', 'assets.rs', 'failures.rs'):
         (game / 'src' / name).write_text((ROOT / 'tests/android-rust' / name).read_text())
     wrapper = work / 'probe runner'
     wrapper.write_text('#!/bin/sh\nexec ' + shlex.join([sys.executable, str(ROOT / 'tools/android_rust_runner.py')]) + ' "$@"\n')
@@ -38,6 +38,6 @@ def build(log, work, installed, ndk, adb, serial, abi, config, token, lifecycle=
     run(log, ['cmake', '-S', ROOT / 'tests/android-rust', '-B', output,
               f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
               f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28', f'-DCMAKE_BUILD_TYPE={config}',
-              f'-DMALVADO_TEST_SDK={installed}', f'-DRUST_ARCHIVE={archive}', f'-DACCEPTANCE_TOKEN={token}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}'])
+              f'-DMALVADO_TEST_SDK={installed}', f'-DRUST_ARCHIVE={archive}', f'-DACCEPTANCE_TOKEN={token}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_FAILURE={failure}'])
     run(log, ['cmake', '--build', output, '--parallel', '2'])
     return output

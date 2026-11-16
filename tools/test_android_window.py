@@ -233,8 +233,8 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.failure != 'none' or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact and keyboard only')
+    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.failure not in ('none', 'process') or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard and process-error cleanup')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
@@ -288,7 +288,7 @@ def main():
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         if args.language == 'rust':
             from android_rust_apk import build as build_rust
-            build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle)
+            build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(android_manifest(package))
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
@@ -311,6 +311,8 @@ def main():
         run(log, [tools / 'aapt', 'dump', 'xmltree', apk, 'AndroidManifest.xml'])
         expectation = ('lua assets and shutdown passed' if args.language == 'lua'
                        else 'window pixels and shutdown passed')
+        if args.language == 'rust' and args.failure != 'none':
+            expectation = 'Rust failure cleanup passed'
         completed = False
         try:
             prepare_foreground(log, adb)
@@ -326,7 +328,11 @@ def main():
             wait_marker(log, adb, token + ' ' + expectation)
             if args.language == 'rust':
                 wait_marker(log, adb, token + ' Rust scheduler and cleanup passed')
-                wait_marker(log, adb, token + ' Rust APK assets passed')
+                if args.failure == 'none':
+                    wait_marker(log, adb, token + ' Rust APK assets passed')
+                else:
+                    wait_marker(log, adb, token + ' Rust process error observed')
+                    wait_marker(log, adb, token + ' Rust failure resources closed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')
             facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)

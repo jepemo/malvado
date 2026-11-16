@@ -579,3 +579,11 @@ checks that image owners release the window during shutdown. A binary snapshot
 remains valid after unlink and after process/window cleanup. This uses installed
 asset bindings and graphics from the same relocated SDK; it does not deliver a
 general APK extraction API or CLI exporter.
+
+Use `--language rust --installed-sdk --failure process` for the expected process
+error case. The process owns an image resource and returns `Error::Process`.
+The fixture requires the scheduler error, exactly-once destruction, an empty
+process list, window release, a valid retained binary snapshot and uninstall.
+The host requires separate error/resource-cleanup markers; successful rendering
+is not the acceptance condition for this negative case. Lifecycle/audio options
+cannot be combined with an expected failure.

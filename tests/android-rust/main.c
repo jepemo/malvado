@@ -47,6 +47,11 @@ acceptance_pixel(void)
     return pixel.r > 240 && pixel.g < 15 && pixel.b < 15;
 }
 int
+acceptance_failure(void)
+{
+    return ACCEPTANCE_FAILURE;
+}
+int
 acceptance_mode(void)
 {
     return ACCEPTANCE_LIFECYCLE;
@@ -94,6 +99,6 @@ main(int argc, char **argv)
     stage_assets();
     malvado_rust_entry();
     if (IsWindowReady()) abort();
-    acceptance_log("window pixels and shutdown passed");
+    acceptance_log(ACCEPTANCE_FAILURE ? "Rust failure cleanup passed" : "window pixels and shutdown passed");
     return 0;
 }
