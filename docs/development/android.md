@@ -178,3 +178,10 @@ Android backend automatically. The pixel fixture reads the actual render surface
 raylib 5.5's screen-image helper uses a DPI query that Android does not implement.
 No third-party source was changed. This gate does not establish Lua/Rust window
 startup, APK assets, input, Activity lifecycle or physical-device behavior.
+
+Add `--installed-sdk` to install and relocate the graphical SDK, copy the C
+consumer to a separate project, link through `Malvado::graphics`, and run its
+APK. This passed on Android arm64. Imported Android graphics dependencies are
+EGL, GLESv2 and Android system libraries. The NativeActivity entry point remains
+linked. Desktop OpenGL discovery is unchanged for desktop consumers.
+`--config Release` selects an optimized SDK and consumer; Debug is the default.
