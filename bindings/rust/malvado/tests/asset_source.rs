@@ -6,7 +6,6 @@ use malvado::{
     asset::{Format, Source},
     atlas::Atlas,
 };
-use std::path::Path;
 #[cfg(unix)]
 use std::{ffi::OsString, os::unix::ffi::OsStringExt};
 #[test]

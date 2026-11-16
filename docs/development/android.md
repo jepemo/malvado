@@ -3,7 +3,7 @@
 Android support is in progress for alpha.8. The current delivered path is an
 NDK-built headless C/Lua runtime and C/Lua NativeActivity graphics on an Android
 emulator. These are verification paths, not an Android CLI authoring host or
-a CLI APK exporter. Rust graphical startup, general packaged-game integration, Rust assets, Linux x86_64 Rust acceptance, CLI APK/AAB exports and mobile
+a CLI APK exporter. Rust graphical startup, general packaged-game integration, Linux x86_64 Rust acceptance, CLI APK/AAB exports and mobile
 behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
 
 ## Tested baseline
@@ -507,8 +507,13 @@ and Release C-only SDKs, relocates each SDK and runs the Rust core test suites
 on the selected API 34 emulator. `--config Debug` selects one profile. Logs and
 result metadata remain in `build-android-rust`. Each profile also rejects SDKs
 with a previous ABI, a mismatched ABI or a wrong release. Those probes execute
-on Android; an ABI mismatch must be rejected before calling the release query. Graphics, assets and APK paths
-are unavailable for Rust Android in this verification step.
+on Android; an ABI mismatch must be rejected before calling the release query. Add `--assets` to build an asset-enabled SDK and run the shared PNG, atlas,
+Aseprite and FPG suites. CI uses this option. The runner stages committed
+`tests/fixtures` and `examples/aseprite` inputs in each test's private directory;
+Rust tests select that root through `MALVADO_TEST_ROOT`. They retain their normal
+source-root default on desktop. Temporary files and staged assets are removed
+with each invocation, including failed tests. Graphics and APK game paths remain
+unavailable for Rust Android.
 
 For direct Cargo use, set `MALVADO_SDK_PREFIX` to the installed target SDK,
 `MALVADO_ANDROID_NDK` to NDK r27c and `MALVADO_ANDROID_RUNNER` to one executable

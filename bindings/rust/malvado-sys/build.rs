@@ -144,10 +144,6 @@ fn main() {
         !android || !graphics,
         "Rust Android graphics is not yet supported"
     );
-    assert!(
-        !android || !assets,
-        "Rust Android assets is not yet supported"
-    );
     let windows = target == "x86_64-pc-windows-msvc";
     let prefix = PathBuf::from(
         env::var_os("MALVADO_SDK_PREFIX")

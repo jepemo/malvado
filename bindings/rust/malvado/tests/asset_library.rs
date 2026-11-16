@@ -5,7 +5,6 @@ use malvado::{
     Error, Game,
     asset::{Format, Library, Metadata, Source},
 };
-use std::path::Path;
 
 #[test]
 fn dispatch_real_metadata_and_transfer_owned_values() {
