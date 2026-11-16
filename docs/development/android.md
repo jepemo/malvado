@@ -133,8 +133,32 @@ or production signing credential is used. AVD boot has a 240-second limit;
 command and job timeouts remain active. The job uploads emulator/build/test
 logs and tool/result JSON even after failure.
 
-NDK r27c is pinned. The hosted SDK Manager currently supplies the emulator,
-platform tools and image revisions; each run records them. Exact download pins
-remain A8.1 work. The exact-commit run linked above passed 156 native checks, one installed-SDK
+NDK r27c is pinned. Linux CI uses checksum-pinned emulator and image archives
+as described below. SDK Manager supplies the remaining authoring tools.
+Complete toolchain archive pins remain A8.1 work. The exact-commit run linked above passed 156 native checks, one installed-SDK
 consumer and 15 contract/parity suites per profile, with no uncommitted files.
 This headless job does not close A8.7's graphical/mobile or candidate acceptance gates.
+
+## Pinned Linux emulator archives
+
+`tools/android_archives.py --output build-android/pinned` downloads emulator
+37.2.13 (build 16740729) and Google APIs API 34 x86_64 image revision 14 from
+Google. Each archive has a SHA-256 digest in the script. Digests were computed
+after checking the archive against Google's repository checksum. The preparer
+checks the complete digest before extraction, rejects unsafe paths and symlinks,
+retains executable permissions, and refuses an existing destination. Downloads
+and staging are owned temporary files and are removed on success or failure.
+The full archives were downloaded, verified and extracted locally.
+
+The Android workflow uses the extracted emulator executable and sets the AVD's
+`image.sysdir.1` to the extracted image. SDK Manager still provides the pinned
+NDK version and the command-line/platform tools. It no longer selects the
+emulator or image used to run the tests. Remaining authoring-tool archive pins
+and the full host/target matrix stay in A8.1. No Docker images are created.
+
+Pinned-input execution passed Debug and Release on `80b95cd` in
+[run 43840474589](https://github.com/jepemo/malvado/actions/runs/43840474589).
+Each profile passed 156 native checks, one installed SDK consumer and 15
+contract/parity suites. The local 5 GiB extracted verification copy was removed
+after testing. Archive failure regressions confirm that owned temporary downloads
+are cleaned while unrelated files remain intact.
