@@ -67,9 +67,8 @@ check_frame(void *user)
     image.data = rlReadScreenPixels(image.width, image.height);
     assert(image.data);
     Color pixel = GetImageColor(image, image.width / 2, image.height / 2);
-    assert(pixel.r > 240 && pixel.g < 15 && pixel.b < 15);
+    verified = pixel.r > 240 && pixel.g < 15 && pixel.b < 15;
     UnloadImage(image);
-    verified = 1;
 }
 
 int
