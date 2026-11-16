@@ -24,10 +24,23 @@ class RustPackageTests(unittest.TestCase):
             self.assertEqual(archive.read('assets/red.png'), (verifier.ROOT / 'tests/fixtures/red.png').read_bytes())
             self.assertEqual(archive.read('assets/atlas.json'), (verifier.ROOT / 'tests/fixtures/atlas.json').read_bytes())
 
+    def test_missing_image_is_an_intentional_apk_omission(self):
+        payload = io.BytesIO()
+        with zipfile.ZipFile(payload, 'w') as archive:
+            verifier.add_rust_assets(archive, 'missing-image')
+        with zipfile.ZipFile(payload) as archive:
+            self.assertNotIn('assets/red.png', archive.namelist())
+            self.assertEqual(archive.read('assets/message.bin'), b'\x00\r\n\xff')
+            self.assertIn('assets/atlas.json', archive.namelist())
+        with zipfile.ZipFile(io.BytesIO(), 'w') as archive:
+            with self.assertRaises(ValueError):
+                verifier.add_rust_assets(archive, 'invalid')
+            self.assertEqual(archive.namelist(), [])
+
     def test_unsupported_modes_never_start_build_or_device_work(self):
         base = ['test_android_window.py', '--sdk', 'unused', '--serial', 'emulator-5580', '--language', 'rust']
         for extra in ([], ['--installed-sdk', '--audio'],
-                      ['--installed-sdk', '--failure', 'process', '--lifecycle', 'resume'], ['--installed-sdk', '--entry', 'declarative'], ['--installed-sdk', '--failure', 'missing-image']):
+                      ['--installed-sdk', '--failure', 'process', '--lifecycle', 'resume'], ['--installed-sdk', '--entry', 'declarative']):
             with self.subTest(extra=extra), patch.object(sys, 'argv', base + extra), patch.object(verifier, 'preflight') as preflight, contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:
                     verifier.main()

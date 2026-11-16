@@ -78,6 +78,10 @@ stage_assets(void)
     const char *names[] = {"message.bin", "atlas.json", "red.png"};
     for (unsigned i = 0; i < 3; ++i) {
         AAsset *asset = AAssetManager_open(app->activity->assetManager, names[i], AASSET_MODE_BUFFER);
+        if (i == 2 && ACCEPTANCE_FAILURE == 2) {
+            assert(!asset && access(names[i], F_OK) != 0);
+            continue;
+        }
         assert(asset);
         off_t size = AAsset_getLength(asset);
         assert(size > 0 && size <= 4 * 1024 * 1024);

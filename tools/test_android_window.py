@@ -47,9 +47,11 @@ def add_lua_assets(archive, entry, failure, *, keyboard=False):
         archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
 
 
-def add_rust_assets(archive):
+def add_rust_assets(archive, failure='none'):
+    if failure not in ('none', 'process', 'missing-image'):
+        raise ValueError('Unsupported Rust APK failure mode')
     archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
-    for name in ('atlas.json', 'red.png'):
+    for name in (('atlas.json',) if failure == 'missing-image' else ('atlas.json', 'red.png')):
         archive.write(ROOT / 'tests/fixtures' / name, 'assets/' + name)
 
 
@@ -233,8 +235,8 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.failure not in ('none', 'process') or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard and process-error cleanup')
+    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard and expected-error cleanup')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
@@ -296,7 +298,7 @@ def main():
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
             if args.language == 'rust':
-                add_rust_assets(archive)
+                add_rust_assets(archive, args.failure)
             if args.language == 'lua':
                 add_lua_assets(archive, args.entry, args.failure, keyboard=args.lifecycle in ('keyboard', 'keyboard-resume'))
             if args.audio:
@@ -331,7 +333,8 @@ def main():
                 if args.failure == 'none':
                     wait_marker(log, adb, token + ' Rust APK assets passed')
                 else:
-                    wait_marker(log, adb, token + ' Rust process error observed')
+                    diagnostic = 'Rust missing-image error observed' if args.failure == 'missing-image' else 'Rust process error observed'
+                    wait_marker(log, adb, token + ' ' + diagnostic)
                     wait_marker(log, adb, token + ' Rust failure resources closed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')

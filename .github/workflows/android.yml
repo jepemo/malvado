@@ -62,10 +62,12 @@ jobs:
               if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
             done
           done
-          work="build-android/rust-window-$config"
-          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --failure process --work "$work"
-          cp "$work/window.log" "$work/process-error.log"
-          cp "$work/results.json" "$work/process-error-results.json"
+          for failure in process missing-image; do
+            work="build-android/rust-window-$config"
+            mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --failure "$failure" --work "$work"
+            cp "$work/window.log" "$work/$failure-error.log"
+            cp "$work/results.json" "$work/$failure-error-results.json"
+          done
           for config in "$ACCEPTANCE_CONFIG"; do
             for entry in explicit declarative; do
               for failure in none process missing-image; do

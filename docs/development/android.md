@@ -552,7 +552,7 @@ Rust Back and same-process background/foreground checks use the same command
 with `--lifecycle back` or `--lifecycle resume`. The latter requires native
 pause/resume events, the same PID, a restored framebuffer pixel and before/resumed
 screenshots, then Back cleanup. These fixtures do not establish process-death
-recovery. Rust APK assets, audio, remaining input/lifecycle and failure-path acceptance remain open;
+recovery. Rust APK audio and remaining input/lifecycle/failure-path acceptance remain open;
 the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
 coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
 remains pending until the new job passes.
@@ -587,3 +587,10 @@ process list, window release, a valid retained binary snapshot and uninstall.
 The host requires separate error/resource-cleanup markers; successful rendering
 is not the acceptance condition for this negative case. Lifecycle/audio options
 cannot be combined with an expected failure.
+
+Use `--failure missing-image` for the Rust PNG failure case. The packager omits
+`red.png` while retaining the atlas and binary input. The native fixture verifies
+the APK omission and absence of a staged file. Rust requires the image-load
+error and propagates it through a process. Acceptance requires the scheduler
+error and the same cleanup/snapshot checks as the process-error case. It does
+not treat a crash or a missing completion marker as success.

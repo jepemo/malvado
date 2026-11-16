@@ -37,10 +37,12 @@ pub extern "C" fn malvado_rust_entry() {
     let weak = Rc::downgrade(&window);
     let (snapshot, image) = assets::load(window.clone());
     // SAFETY: this reads immutable fixture configuration on the app thread.
-    if unsafe { acceptance_failure() } == 1 {
-        failures::process(window, snapshot, image);
+    let failure = unsafe { acceptance_failure() };
+    if failure != 0 {
+        failures::run(window, snapshot, image, failure);
         return;
     }
+    let image = image.unwrap();
     let owned_image = image.clone();
     // SAFETY: the C fixture logs this static string and retains no pointer.
     unsafe {

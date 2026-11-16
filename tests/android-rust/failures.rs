@@ -1,14 +1,23 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{Error, Game, SpawnOptions, asset::Source, image::Image, window::Window};
 use std::{cell::Cell, rc::Rc};
-pub fn process(window: Rc<Window>, snapshot: Source, image: Image) {
+pub fn run(window: Rc<Window>, snapshot: Source, image: Result<Image, Error>, failure: i32) {
+    if failure == 2 {
+        assert_eq!(
+            image.as_ref().err(),
+            Some(&Error::Platform("image load or creation failed"))
+        );
+    } else {
+        assert_eq!(failure, 1);
+        assert!(image.is_ok());
+    }
     let weak = Rc::downgrade(&window);
     let count = Rc::new(Cell::new(0));
     let guard = super::Guard(count.clone());
     let mut game = Game::new().unwrap();
     game.spawn(SpawnOptions::default(), move |process| async move {
         let _guard = guard;
-        let _image = process.resource(image)?;
+        let _image = process.resource(image?)?;
         Err(Error::Process)
     })
     .unwrap();
@@ -17,7 +26,11 @@ pub fn process(window: Rc<Window>, snapshot: Source, image: Image) {
     assert_eq!(game.process_count(), 0);
     // SAFETY: the fixture logs a static string and retains nothing.
     unsafe {
-        super::acceptance_log(c"Rust process error observed".as_ptr());
+        super::acceptance_log(if failure == 2 {
+            c"Rust missing-image error observed".as_ptr()
+        } else {
+            c"Rust process error observed".as_ptr()
+        });
     }
     drop(game);
     assert_eq!(count.get(), 1);
