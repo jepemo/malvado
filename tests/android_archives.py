@@ -7,6 +7,7 @@ import stat
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -44,6 +45,17 @@ class ArchiveTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     android_archives.extract(archive, root / "output", hashlib.sha256(archive.read_bytes()).hexdigest())
                 self.assertFalse((root / "output").exists())
+
+    def test_download_failure_removes_only_owned_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marker = root / "unrelated"
+            marker.write_text("keep")
+            with patch.object(android_archives.urllib.request, "urlopen", side_effect=OSError("offline")):
+                with self.assertRaises(OSError):
+                    android_archives.prepare(root / "result")
+            self.assertEqual(list(root.iterdir()), [marker])
+            self.assertEqual(marker.read_text(), "keep")
 
     def test_existing_destination_is_preserved(self):
         with tempfile.TemporaryDirectory() as temporary:
