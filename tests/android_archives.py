@@ -59,6 +59,39 @@ class ArchiveTests(unittest.TestCase):
             self.assertEqual(list(root.iterdir()), [marker])
             self.assertEqual(marker.read_text(), "keep")
 
+    @unittest.skipIf(os.name == 'nt', 'NDK file links are a Linux SDK input')
+    def test_ndk_file_links_and_chains(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / 'ndk.zip'
+            with zipfile.ZipFile(archive, 'w') as bundle:
+                bundle.writestr('ndk/lib/file', b'native library')
+                for name, target in [('ndk/lib/alias', 'file'), ('ndk/bin/alias', '../lib/alias')]:
+                    entry = zipfile.ZipInfo(name)
+                    entry.external_attr = (stat.S_IFLNK | 0o777) << 16
+                    bundle.writestr(entry, target)
+            android_archives.extract(archive, root / 'sdk', hashlib.sha256(archive.read_bytes()).hexdigest(), file_symlinks=True)
+            self.assertTrue((root / 'sdk/ndk/bin/alias').is_symlink())
+            self.assertEqual((root / 'sdk/ndk/bin/alias').read_bytes(), b'native library')
+
+    def test_ndk_unsafe_links_are_rejected_before_writes(self):
+        for target, child in [('/outside', False), ('../../outside', False), ('missing', False),
+                              ('link', False), ('directory', False), ('file', True)]:
+            with self.subTest(target=target, child=child), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                archive = root / 'ndk.zip'
+                with zipfile.ZipFile(archive, 'w') as bundle:
+                    bundle.writestr('ndk/file', b'contents')
+                    bundle.writestr('ndk/directory/', b'')
+                    link = zipfile.ZipInfo('ndk/link')
+                    link.external_attr = (stat.S_IFLNK | 0o777) << 16
+                    bundle.writestr(link, target)
+                    if child:
+                        bundle.writestr('ndk/link/child', b'escape')
+                with self.assertRaises(ValueError):
+                    android_archives.extract(archive, root / 'sdk', hashlib.sha256(archive.read_bytes()).hexdigest(), file_symlinks=True)
+                self.assertFalse((root / 'sdk').exists())
+
     def test_existing_destination_is_preserved(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
