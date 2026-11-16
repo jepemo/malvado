@@ -90,6 +90,28 @@ jobs:
               done
             done
           done
+          for config in Debug Release; do
+            for mode in normal resume; do
+              extra=()
+              if [ "$mode" = resume ]; then extra=(--lifecycle resume); fi
+              work="build-android/c-audio-$config"
+              mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --audio --installed-sdk --config "$config" --work "$work" "${extra[@]}"
+              cp "$work/window.log" "$work/$mode.log"
+              cp "$work/results.json" "$work/$mode-results.json"
+              for image in before resumed; do
+                if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
+              done
+              for entry in explicit declarative; do
+                work="build-android/lua-audio-$config"
+                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --audio --language lua --entry "$entry" --config "$config" --work "$work" "${extra[@]}"
+                cp "$work/window.log" "$work/$entry-$mode.log"
+                cp "$work/results.json" "$work/$entry-$mode-results.json"
+                for image in before resumed; do
+                  if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$entry-$mode-$image.png"; fi
+                done
+              done
+            done
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -106,5 +128,8 @@ jobs:
             build-android/c-lifecycle-*/*results.json
             build-android/c-lifecycle-*/*.png
             build-android/lua-*/*.png
+            build-android/c-audio-*/*.log
+            build-android/c-audio-*/*results.json
+            build-android/c-audio-*/*.png
           if-no-files-found: warn
           retention-days: 14
