@@ -26,8 +26,17 @@ jobs:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
         run: |
           mkdir -p "$ANDROID_AVD_HOME" build-android
+          python3 tools/android_archives.py --output build-android/pinned
           "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name malvado-alpha8 --package "system-images;android-34;google_apis;x86_64" --device pixel_2
-          "$ANDROID_HOME/emulator/emulator" -avd malvado-alpha8 -port 5580 \
+          python3 - <<'PYCONFIG'
+          import os
+          from pathlib import Path
+          config = Path(os.environ["ANDROID_AVD_HOME"]) / "malvado-alpha8.avd/config.ini"
+          lines = [line for line in config.read_text().splitlines() if not line.startswith("image.sysdir.1=")]
+          lines.append("image.sysdir.1=" + str(Path("build-android/pinned/x86_64").resolve()))
+          config.write_text("\n".join(lines) + "\n")
+          PYCONFIG
+          "$PWD/build-android/pinned/emulator/emulator" -avd malvado-alpha8 -port 5580 \
             -no-window -no-audio -no-boot-anim -no-snapshot \
             -gpu swiftshader_indirect -cores 2 -memory 2048 > build-android/emulator.log 2>&1 &
           emulator_pid=$!
