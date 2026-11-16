@@ -43,3 +43,13 @@ Recommend matching crate and engine alpha versions initially, with an explicit n
 Future features update the C contract, Lua and Rust adapters, language tests, documentation and relevant examples together. Differences must be explicit. Existing 2D `z` remains draw depth; `x`, `y`, `angle`, `size` retain their native semantics. Future modes decide spatial semantics separately; no mandatory `position` field.
 
 See [scheduler design](../specs/rust-processes.md), [migration plan](../development/rust-migration.md), and [alpha.7 tasks](../versions/2.0.0-alpha.7.md).
+
+## Future optional physics
+
+The [physics exploration](../roadmap/physics.md) proposes native simulation as
+an optional process capability, with one shared lifecycle and tick boundary for
+C, Lua and experimental Rust. It preserves standalone collision queries and
+physics-free builds. Backend selection, property synchronization, safe events
+and scene-dependent 3D integration remain future design gates; no physics API
+or additional scheduler is approved. See the
+[candidate comparison](../roadmap/physics-libraries.md) for research evidence.

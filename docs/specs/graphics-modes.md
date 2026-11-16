@@ -89,3 +89,13 @@ only after its foundations exist. Do not add skeletons or a material framework
 solely to satisfy a first 2D feature. Graph/mesh representation and the explicit
 scene-object sketch above are alternative directions that require reconciliation
 before a public contract is selected.
+
+## Optional future physics
+
+The [process physics proposal](../roadmap/physics.md#physics-needs-by-visual-mode)
+keeps simulation optional and separate from basic mode collision. Mode 7 can
+use floor-plane 2D gameplay; Mode 8 must define sector heights and traversal
+before claiming volume collision. A 3D presentation can use a 2D gameplay plane.
+True 3D rigid bodies follow mature scene coordinates, geometry and lifetime
+contracts. No mode gains physics from its name, and current 2D `z` remains draw
+order. Physics P4 is unassigned and does not expand these mode milestones.

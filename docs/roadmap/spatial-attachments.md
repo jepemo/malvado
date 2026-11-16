@@ -116,3 +116,12 @@ again during implementation rather than copying this table into runtime code.
 C uses explicit identities, copied transforms and checked results. Lua property
 or spawn syntax must not dictate C layouts or Rust ownership. Reuse the existing
 scheduler, context identity, resource cleanup and platform acceptance practices.
+
+## Physics boundary
+
+[Future process physics](physics.md#lifecycle-signals-and-events) treats lifecycle
+ownership, spatial following and joints as separate relationships. A visual
+attachment can follow a simulated process after transform writeback. A dynamic
+body must not also inherit a competing spatial transform without an explicit
+policy. No attachment automatically creates a joint; resolve this boundary
+before promoting either integration.

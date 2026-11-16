@@ -53,3 +53,12 @@ C core. `Game` replaces the public Rust `Engine` name before 2.0; acceptance is
 tracked in [beta.1](2.0.0-beta.1.md), without reopening completed alphas.
 The current owned async API remains the baseline. [Future Rust ergonomics](../roadmap/rust-ergonomics.md)
 are proposals without an assigned version and are not 2.0 requirements.
+
+## Tentative web export direction after 2.0
+
+[WebAssembly / HTML5 export](../roadmap/webassembly.md) proposes 2.1 for an
+experimental C runtime, 2.2 for CLI export with C/Lua, 2.3 for browser reliability
+and persistence, and 2.4 or later for independent Rust support. These are
+planning slots, not approved release checklists or dates. They preserve the
+current 2.0 scope and other roadmap priorities. Promote each phase only after
+its dependencies and design decisions are resolved; no web work is complete.

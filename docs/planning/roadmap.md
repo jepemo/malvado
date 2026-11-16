@@ -6,8 +6,10 @@ documentation. New API families and larger tools are evaluated after release.
 
 - [Current version plan](../versions/README.md): alpha.7 integration, alpha.8
   platform automation, beta candidate review, then 2.0 publication.
-- [Future feature roadmap](../roadmap/README.md): unassigned proposals, the API
-  candidate catalog, effects/shaders, spatial attachments, graphics modes,
+- [Future feature roadmap](../roadmap/README.md): future proposals, including tentative post-2.0
+  [WebAssembly/HTML5 export phases](../roadmap/webassembly.md), the API
+  candidate catalog, effects/shaders, spatial attachments,
+  [optional process physics](../roadmap/physics.md), graphics modes,
   examples/minigames, assets, editor and website work.
 - [Delivered API selection](../api/family-review.md) and
   [current C symbols](../api/current-c-api.md): existing scope and evidence.

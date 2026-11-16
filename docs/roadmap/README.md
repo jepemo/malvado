@@ -1,7 +1,8 @@
 # Future feature roadmap
 
 Status: proposals for evaluation after the first 2.0 release. No item on this
-page is a release commitment, implemented capability, or assigned 2.x version.
+page is a release commitment or implemented capability. Web export has tentative
+post-2.0 version slots; other proposals remain unassigned.
 The [version plan](../versions/README.md) owns current release gates.
 
 The first 2.0 release completes and validates the engine already delivered by
@@ -13,9 +14,11 @@ teaching catalog, or minigames. Those candidates are organized here.
 
 | Proposal | Goal | Current state and dependencies |
 | --- | --- | --- |
+| [WebAssembly / HTML5 export](webassembly.md) | Export games to static web hosting through the existing CLI | Tentative 2.1 C proof, 2.2 C/Lua export, 2.3 reliability, 2.4+ independent Rust; depends on 2.0 completion and phase acceptance. |
 | [Rust API Ergonomics and DIV-Style Processes](rust-ergonomics.md) | Evaluate concise functions and typed structs over the existing owned-future adapter | Proposal; both frontends remain open, with no syntax, architecture or version commitment. |
 | [API candidate catalog](api-candidates.md) | Review historical calls and select useful modern capabilities | Existing pinned Bennu catalogs; DIV/Fénix coverage gaps are explicit. No blanket implementation selection. |
 | [Visual properties, effects and shaders](visual-effects.md) | Small process effects, reusable shaders, then camera effects | Proposal; requires completed shared process drawing and resource ownership. |
+| [Optional 2D and 3D process physics](physics.md) | Add simulation as a process capability while retaining lightweight collision APIs | Unassigned P1–P5; backend proof, integrated 2D, selected helpers, then scene-dependent 3D and optional tooling. [Library comparison](physics-libraries.md). |
 | [Spatial attachments](spatial-attachments.md) | Explicit relative transforms and named visual points | Proposal; separate from delivered creator/owner genealogy. |
 | [malvado-gui live editing, scenes and reload](live-editing.md) | Inspect/edit processes, reload assets, author/reconcile flat scenes and evaluate code reload | Dependency milestones E1–E7; native state remains authoritative. No version assigned. |
 | [Examples and minigames](examples.md) | Build a useful aligned C/Lua/Rust teaching catalog | Proposal; depends on delivered APIs and installed CLI workflows. |
@@ -66,3 +69,14 @@ Modes 7/8/9, teaching work and these systems can progress independently where
 there is no dependency. This order is a dependency guide, not a delivery queue.
 Minigames follow the selected API capabilities and test their composition; they
 do not force every exploratory API candidate to be implemented first.
+
+Web export follows [W1–W4](webassembly.md#tentative-release-slots-and-acceptance-gates)
+after 2.0. It does not depend on the editor or future graphics modes, and does
+not reorder their proposals. Version slots remain subject to owner scheduling.
+
+[Physics P1–P5](physics.md#future-milestones-without-release-numbers) follows
+the current release path without assigned versions. Basic 2D physics requires
+collision/lifecycle design and backend evidence, not future graphics modes.
+True 3D physics follows mature scene transforms and geometry; authoring follows
+stable runtime contracts. Lifecycle ownership and visual attachments never
+automatically create physical constraints.

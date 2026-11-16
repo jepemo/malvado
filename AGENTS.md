@@ -147,6 +147,7 @@ Choose tests based on the affected components. Run broader tests when a change a
 - Test resource ownership, cleanup, and process lifetime when affected.
 - Verify C and Lua behavior when a feature is shared.
 - Add automated graphics, input, and emulator checks in the relevant alpha milestone.
+- If platform tests create Docker images, remove those images and their test containers when the test run ends, including after failures. Track the resources created by each run to prevent disk usage from accumulating. Preserve pre-existing images and containers; do not use global cleanup commands such as `docker system prune -a`.
 - Keep manual user-flow and physical-device testing in beta.
 - Do not replace required automated tests with planned manual tests.
 
