@@ -77,6 +77,22 @@ class SdkTests(unittest.TestCase):
                     android_sdk.prepare(root / 'sdk')
             self.assertEqual(list(root.iterdir()), [])
 
+    def test_publication_failure_removes_only_claimed_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'sdk'
+            (root / 'keep').write_text('unrelated')
+            move = android_sdk.shutil.move
+            def fail_publication(source, destination):
+                if Path(destination).parent == output:
+                    move(source, destination)
+                    raise OSError('publication failed')
+                return move(source, destination)
+            with patch.object(android_sdk.shutil, 'move', side_effect=fail_publication):
+                with self.assertRaisesRegex(OSError, 'publication failed'):
+                    self.install(output, self.package())
+            self.assertEqual([p.name for p in root.iterdir()], ['keep'])
+
     def packaging_sdk(self, root):
         tools = root / 'build-tools/34.0.0'
         tools.mkdir(parents=True)
