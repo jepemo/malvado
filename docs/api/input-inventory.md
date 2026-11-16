@@ -43,3 +43,12 @@ in its source; it does not detect a new API with an unrelated name. It checks
 names only, not values or semantics. `input`, `keys`, and `lua_controllers`
 check conversions and headless behavior. The [global table](lua-globals.md)
 and `lua_global_inventory` cover Lua exports and aliases.
+
+## Android primary contact
+
+The current Android raylib backend maps the first touch contact to the existing
+left-mouse state and logical window coordinates. No separate Malvado touch API
+is added. The emulator check holds one contact, moves it horizontally, observes
+release and then exits through Back. It checks C and both Lua entry forms.
+This does not establish multi-touch, gesture recognition or very short taps
+between samples. See [Android verification](../development/android.md).

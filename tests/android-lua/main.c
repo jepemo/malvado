@@ -31,6 +31,7 @@
 
 extern struct android_app *GetAndroidApp(void);
 static int verified;
+static int lua_touch_seen;
 #include "lifecycle.h"
 
 /* The fixture copies a fixed allowlist into its own application sandbox.
@@ -59,6 +60,15 @@ check_frame(void *user)
      * Startup frames can precede the first process draw command. Require the
      * expected pixel before termination, without assuming a render count. */
     lifecycle_frame(verified);
+    if (ACCEPTANCE_LIFECYCLE == 3 && touch_released && !lua_touch_seen) {
+        FILE *touch = fopen("touch.txt", "rb");
+        if (touch) {
+            assert(fgetc(touch) == '1' && fgetc(touch) == EOF);
+            assert(fclose(touch) == 0);
+            lua_touch_seen = 1;
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua touch released", ACCEPTANCE_TOKEN);
+        }
+    }
     if (verified) return;
     mv_window_flush();
     Image image = {0};
@@ -91,6 +101,7 @@ main(int argc, char **argv)
     assert(snapshot);
     if (ACCEPTANCE_FAILURE == 1) assert(setenv("MALVADO_APK_FAIL", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE) assert(setenv("MALVADO_APK_LIFECYCLE", "1", 1) == 0);
+    if (ACCEPTANCE_LIFECYCLE == 3) assert(setenv("MALVADO_APK_TOUCH", "1", 1) == 0);
     assert(freopen("stderr.txt", "w", stderr));
     malvado_debug_set_frame_hook(check_frame, NULL);
     char *arguments[] = {"game", "main.lua"};
@@ -103,6 +114,11 @@ main(int argc, char **argv)
     FILE *closed = fopen("closed.txt", "rb");
     assert(closed && fgetc(closed) == '1' && fgetc(closed) == EOF);
     assert(fclose(closed) == 0);
+    if (ACCEPTANCE_LIFECYCLE == 3) {
+        FILE *touch = fopen("touch.txt", "rb");
+        assert(touch && fgetc(touch) == '1' && fgetc(touch) == EOF);
+        assert(fclose(touch) == 0);
+    }
     if (ACCEPTANCE_FAILURE) {
         assert(fflush(stderr) == 0);
         FILE *errors = fopen("stderr.txt", "rb");

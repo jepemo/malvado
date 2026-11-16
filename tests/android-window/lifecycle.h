@@ -16,10 +16,12 @@
 #ifndef MALVADO_TEST_ANDROID_LIFECYCLE_H
 #define MALVADO_TEST_ANDROID_LIFECYCLE_H
 #include <android_native_app_glue.h>
+#include <stdlib.h>
 extern struct android_app *GetAndroidApp(void);
 static struct android_app *lifecycle_app;
 static void (*lifecycle_previous)(struct android_app *, int32_t);
 static int lifecycle_pauses, lifecycle_resumes, lifecycle_pending, lifecycle_ready;
+static int touch_down, touch_released, touch_first_x, touch_max_x;
 
 static void
 lifecycle_command(struct android_app *app, int32_t command)
@@ -46,6 +48,23 @@ lifecycle_frame(int visible)
         lifecycle_ready = 1;
         __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle ready", ACCEPTANCE_TOKEN);
     }
+    if (ACCEPTANCE_LIFECYCLE == 3) {
+        int x, y;
+        if (mv_mouse_down(MV_MOUSE_LEFT)) {
+            assert(mv_mouse_position(&x, &y));
+            assert(!mv_mouse_down(MV_MOUSE_MIDDLE) && !mv_mouse_down(MV_MOUSE_RIGHT));
+            if (!touch_down) {
+                assert(abs(x - 160) <= 16 && abs(y - 120) <= 16);
+                touch_first_x = touch_max_x = x;
+                touch_down = 1;
+            }
+            if (x > touch_max_x) touch_max_x = x;
+        } else if (touch_down && !touch_released) {
+            assert(touch_max_x > touch_first_x + 4);
+            touch_released = 1;
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s touch released", ACCEPTANCE_TOKEN);
+        }
+    }
     if (lifecycle_pending) {
         Image image = {0};
         image.width = GetRenderWidth();
@@ -69,6 +88,7 @@ lifecycle_finish(void)
 {
     if (!ACCEPTANCE_LIFECYCLE) return;
     assert(lifecycle_ready);
+    if (ACCEPTANCE_LIFECYCLE == 3) assert(touch_down && touch_released);
     if (ACCEPTANCE_LIFECYCLE == 2)
         assert(lifecycle_pauses && lifecycle_resumes && !lifecycle_pending);
     assert(lifecycle_app && lifecycle_app->onAppCmd == lifecycle_command);

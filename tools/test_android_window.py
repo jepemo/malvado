@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 import os
 import subprocess
+import struct
 import shutil
 import sys
 import time
@@ -43,11 +44,37 @@ def activity_is_background(state, package):
     return bool(resumed) and all(package not in line for line in resumed)
 
 
-def lifecycle_actions(log, adb, package, token, mode):
+def png_dimensions(header):
+    if len(header) < 24 or header[:8] != b'\x89PNG\r\n\x1a\n' or header[12:16] != b'IHDR':
+        raise ValueError('Invalid Android screenshot PNG header')
+    width, height = struct.unpack('>II', header[16:24])
+    if not (0 < width <= 16384 and 0 < height <= 16384):
+        raise ValueError('Invalid Android screenshot dimensions')
+    return width, height
+
+
+def capture_screen(log, adb, destination):
+    temporary = destination.with_suffix('.tmp')
+    try:
+        log.write(f"\n>>> Capture Android screenshot: {destination}\n")
+        log.flush()
+        with temporary.open('wb') as output:
+            subprocess.run(adb + ['exec-out', 'screencap', '-p'], stdout=output,
+                           stderr=subprocess.PIPE, check=True, timeout=15)
+        with temporary.open('rb') as image:
+            dimensions = png_dimensions(image.read(24))
+        temporary.replace(destination)
+        return dimensions
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=False):
     wait_marker(log, adb, token + ' lifecycle ready')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
     if not before:
         raise RuntimeError('Acceptance process is missing')
+    dimensions = capture_screen(log, adb, screenshots / 'before.png') if screenshots else None
     if mode == 'resume':
         run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
         deadline = time.monotonic() + 10
@@ -64,9 +91,25 @@ def lifecycle_actions(log, adb, package, token, mode):
         if before != after:
             raise RuntimeError('Acceptance process was recreated during resume')
         wait_marker(log, adb, token + ' lifecycle resumed')
+        if screenshots:
+            capture_screen(log, adb, screenshots / 'resumed.png')
+    if mode == 'touch':
+        if dimensions is None:
+            raise RuntimeError('Touch verification needs screenshot dimensions')
+        width, height = dimensions
+        run(log, adb + ['shell', 'input', 'touchscreen', 'swipe', str(width // 2), str(height // 2),
+                        str(width * 6 // 10), str(height // 2), '1500'], timeout=10)
+        wait_marker(log, adb, token + ' touch released')
+        if lua:
+            wait_marker(log, adb, token + ' lua touch released')
+        capture_screen(log, adb, screenshots / 'released.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
     return {'initial_pid': before, 'resumed_pid': after if mode == 'resume' else None,
-            'background_foreground': mode == 'resume'}
+            'background_foreground': mode == 'resume',
+            'screen_dimensions': dimensions,
+            'touch_gesture': {'start': [width // 2, height // 2],
+                              'end': [width * 6 // 10, height // 2], 'duration_ms': 1500}
+                             if mode == 'touch' else None}
 
 
 def main():
@@ -76,7 +119,7 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch'))
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
@@ -95,6 +138,8 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
+    for screenshot in ('before.png', 'resumed.png', 'released.png'):
+        (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
     with (work / 'window.log').open('w') as log:
@@ -105,7 +150,7 @@ def main():
                 raise RuntimeError('Install Android build-tools;34.0.0')
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -161,7 +206,7 @@ def main():
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
             lifecycle_evidence = None
             if args.lifecycle:
-                lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle)
+                lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua')
             wait_marker(log, adb, token + ' ' + expectation)
             facts.update(lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True

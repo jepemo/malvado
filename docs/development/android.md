@@ -282,3 +282,17 @@ Desktop regression verification passed 207 standard and 207 headless checks.
 Fifteen Android verifier/payload/archive regressions and 674 guide links passed.
 The dedicated local emulator was stopped and no test APK remained installed.
 No Docker images were created.
+
+## Primary contact input
+
+Use `--lifecycle touch` with the C installed-SDK consumer or `--language lua`
+and either entry form. The host holds a contact at the physical screen center,
+moves it right and releases it. Screenshot dimensions supply the rotated display
+coordinates. The existing C mouse API and the Lua mouse API must observe left
+down, logical center coordinates, movement and release. Middle and right remain
+up. Lua must write its own release marker before Back can close the app.
+
+All six entry/profile cases passed locally on arm64. The contact lasts 1500 ms;
+this verifies sampled held state, not short-tap buffering, multi-touch or gesture
+recognition. The current backend already supplies this mapping. No new public
+mobile input API, scheduler or native property copy is introduced.
