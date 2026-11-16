@@ -12,6 +12,7 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
 | macOS arm64 / Android arm64 API 34 | Headless C/Lua foundation in Debug and Release | Window/startup, packaged assets, Rust, APK/AAB and mobile behavior |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Same headless C/Lua, external SDK and contract suites passed in CI | Window/startup, packaged assets, Rust, APK/AAB and mobile behavior |
 
 ## Native Windows baseline
 

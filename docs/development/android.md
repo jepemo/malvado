@@ -25,8 +25,11 @@ behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
 
 API 28 is a compilation baseline. These results establish runtime behavior on
 API 34 only. They do not establish other Android releases, 32-bit ABIs or devices.
-The verifier also accepts an API 34 `x86_64` emulator for Linux CI. That path must
-pass its own checks before it becomes a support claim. Android authoring from
+Linux x86_64 to Android API 34 `x86_64` also passed both profiles in
+[run 43833030421](https://github.com/jepemo/malvado/actions/runs/43833030421)
+on `873122b`. That run used Ubuntu 24.04, emulator 37.2.13, platform tools
+37.0.1 and Google APIs image revision 14. Its native API was also 28. The recorded
+fingerprint is `google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050/12077443:userdebug/dev-keys`. Android authoring from
 Windows is not verified. Native desktop support remains documented in the
 [platform matrix](alpha8-platforms.md).
 
@@ -132,6 +135,6 @@ logs and tool/result JSON even after failure.
 
 NDK r27c is pinned. The hosted SDK Manager currently supplies the emulator,
 platform tools and image revisions; each run records them. Exact download pins
-remain A8.1 work. A configured job alone does not establish Linux-to-Android
-support. Its exact-commit result must pass before that claim is added. This
-headless job does not close A8.7's graphical/mobile or candidate acceptance gates.
+remain A8.1 work. The exact-commit run linked above passed 156 native checks, one installed-SDK
+consumer and 15 contract/parity suites per profile, with no uncommitted files.
+This headless job does not close A8.7's graphical/mobile or candidate acceptance gates.
