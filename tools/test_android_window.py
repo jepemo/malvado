@@ -13,7 +13,24 @@ import time
 import uuid
 import zipfile
 sys.dont_write_bytecode = True
-from test_android import ROOT, preflight, run
+from test_android import ROOT, preflight, properties, run
+
+
+def packaging_tools(sdk, log, facts):
+    tools = sdk / 'build-tools/34.0.0'
+    for tool in ('aapt', 'zipalign', 'apksigner'):
+        if not (tools / tool).is_file():
+            raise RuntimeError('Install Android build-tools;34.0.0')
+    version = properties(tools / 'source.properties').get('Pkg.Revision')
+    if version != '34.0.0':
+        raise RuntimeError('Android APK verification requires Build Tools 34.0.0')
+    platform = properties(sdk / 'platforms/android-34/source.properties')
+    if platform.get('AndroidVersion.ApiLevel') != '34' or not (sdk / 'platforms/android-34/android.jar').is_file():
+        raise RuntimeError('Android APK verification requires platform API 34')
+    facts.update(build_tools=version, platform_revision=platform.get('Pkg.Revision'),
+                 platform_extension=platform.get('AndroidVersion.ExtensionLevel'),
+                 java=run(log, ['java', '-version'], timeout=15).stdout.strip())
+    return tools
 
 
 def add_lua_assets(archive, entry, failure):
@@ -182,10 +199,7 @@ def main():
     package = 'dev.malvado.acceptance.p' + token
     with (work / 'window.log').open('w') as log:
         ndk, adb, abi, facts = preflight(sdk, args.serial, log)
-        tools = sdk / 'build-tools/34.0.0'
-        for tool in ('aapt', 'zipalign', 'apksigner'):
-            if not (tools / tool).is_file():
-                raise RuntimeError('Install Android build-tools;34.0.0')
+        tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
         lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3}[args.lifecycle]

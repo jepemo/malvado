@@ -15,6 +15,12 @@ from android_archives import extract
 PACKAGES = (
     ("android-ndk-r27c-linux.zip", "59c2f6dc96743b5daf5d1626684640b20a6bd2b1d85b13156b90333741bad5cc",
      "android-ndk-r27c", "ndk/27.2.12479018", "build/cmake/android.toolchain.cmake", True),
+    ("platform-tools_r37.0.1-linux.zip", "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+     "platform-tools", "platform-tools", "adb", False),
+    ("build-tools_r34-linux.zip", "e858c4b60069d0431051b225d384413b1643e1289b00a4825aed347f25bd510f",
+     "android-14", "build-tools/34.0.0", "aapt", False),
+    ("platform-34-ext7_r03.zip", "16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3",
+     "android-34", "platforms/android-34", "android.jar", False),
 )
 
 

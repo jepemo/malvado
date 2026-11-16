@@ -43,6 +43,23 @@ No Gradle, signing or store toolchain is claimed by this headless gate.
 
 ## Local commands
 
+For the Linux x86_64 verification SDK, use the fixed archive installer:
+
+```sh
+python3 tools/android_sdk.py --output build-android/linux-sdk
+python3 tools/android_archives.py --output build-android/pinned
+```
+
+The first command installs NDK r27c, platform tools 37.0.1, Build Tools 34.0.0
+and API 34 extension 7 revision 3. The second installs the pinned emulator and
+image. Both commands require a new destination. They verify SHA-256 before
+extraction, remove their temporary downloads on failure and preserve existing
+SDKs. `linux-sdk/malvado-archives.json` records archive names and digests.
+The NDK archive contains internal file links; only links to archived files are
+accepted. This SDK executes on Linux x86_64. Extracting it on another host does
+not establish cross-host tool support. Google archive licenses remain in each
+package. Java and AVD management remain host prerequisites.
+
 Install [Android command-line tools](https://developer.android.com/tools) and
 [NDK r27c](https://github.com/android/ndk/releases/tag/r27c). Set
 `ANDROID_SDK_ROOT` to the installed SDK. Use

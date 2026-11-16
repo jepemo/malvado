@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 import zipfile
@@ -14,6 +15,7 @@ import zipfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import android_sdk
+import test_android_window as window
 
 
 class SdkTests(unittest.TestCase):
@@ -63,6 +65,52 @@ class SdkTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 android_sdk.prepare(root / 'sdk')
             self.assertEqual((root / 'sdk/keep').read_text(), 'pre-existing')
+
+    def test_later_package_failure_removes_earlier_staged_packages(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = self.package()
+            package = ('first.zip', hashlib.sha256(data).hexdigest(), 'ndk', 'ndk/version', 'toolchain.cmake', False)
+            packages = [package, ('second.zip', '0' * 64, *package[2:])]
+            with patch.object(android_sdk, 'PACKAGES', packages), patch.object(android_sdk.urllib.request, 'urlopen', side_effect=lambda *a, **kw: io.BytesIO(data)):
+                with self.assertRaisesRegex(ValueError, 'SHA-256'):
+                    android_sdk.prepare(root / 'sdk')
+            self.assertEqual(list(root.iterdir()), [])
+
+    def packaging_sdk(self, root):
+        tools = root / 'build-tools/34.0.0'
+        tools.mkdir(parents=True)
+        for name in ('aapt', 'zipalign', 'apksigner'):
+            (tools / name).touch()
+        (tools / 'source.properties').write_text('Pkg.Revision=34.0.0\n')
+        platform = root / 'platforms/android-34'
+        platform.mkdir(parents=True)
+        (platform / 'android.jar').touch()
+        (platform / 'source.properties').write_text('Pkg.Revision=3\nAndroidVersion.ApiLevel=34\nAndroidVersion.ExtensionLevel=7\n')
+        return tools, platform
+
+    def test_packaging_facts_identify_actual_platform_and_java(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tools, _ = self.packaging_sdk(root)
+            facts = {}
+            with patch.object(window, 'run', return_value=subprocess.CompletedProcess([], 0, 'java baseline')):
+                self.assertEqual(window.packaging_tools(root, io.StringIO(), facts), tools)
+            self.assertEqual(facts, dict(build_tools='34.0.0', platform_revision='3', platform_extension='7', java='java baseline'))
+
+    def test_packaging_rejects_mislabeled_tools_and_wrong_api(self):
+        for invalid in ('tools', 'api', 'jar'):
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                tools, platform = self.packaging_sdk(root)
+                if invalid == 'tools':
+                    (tools / 'source.properties').write_text('Pkg.Revision=35.0.0\n')
+                elif invalid == 'api':
+                    (platform / 'source.properties').write_text('AndroidVersion.ApiLevel=35\n')
+                else:
+                    (platform / 'android.jar').unlink()
+                with self.assertRaises(RuntimeError):
+                    window.packaging_tools(root, io.StringIO(), {})
 
 
 if __name__ == '__main__':

@@ -75,6 +75,9 @@ def preflight(sdk, serial, log):
     image = sdk / "system-images/android-34/google_apis" / abi / "source.properties"
     if image.is_file():
         facts["installed_google_apis_image_revision"] = properties(image).get("Pkg.Revision")
+    provenance = sdk / "malvado-archives.json"
+    if provenance.is_file():
+        facts["sdk_archive_inputs"] = json.loads(provenance.read_text())
     return ndk, prefix, abi, facts
 
 
