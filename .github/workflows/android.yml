@@ -32,7 +32,7 @@ jobs:
           import os
           from pathlib import Path
           config = Path(os.environ["ANDROID_AVD_HOME"]) / "malvado-alpha8.avd/config.ini"
-          lines = [line for line in config.read_text().splitlines() if not line.startswith("image.sysdir.1=")]
+          lines = [line for line in config.read_text().splitlines() if line.split("=", 1)[0].strip() != "image.sysdir.1"]
           lines.append("image.sysdir.1=" + str(Path("build-android/pinned/x86_64").resolve()))
           config.write_text("\n".join(lines) + "\n")
           PYCONFIG
