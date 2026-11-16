@@ -65,7 +65,7 @@ def lifecycle_actions(log, adb, package, token, mode):
             raise RuntimeError('Acceptance process was recreated during resume')
         wait_marker(log, adb, token + ' lifecycle resumed')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
-    return {'initial_pid': before, 'resumed_pid': after if mode == 'resume' else before,
+    return {'initial_pid': before, 'resumed_pid': after if mode == 'resume' else None,
             'background_foreground': mode == 'resume'}
 
 

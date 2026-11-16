@@ -70,6 +70,20 @@ jobs:
               done
             done
           done
+          for config in Debug Release; do
+            for lifecycle in back resume; do
+              work="build-android/c-lifecycle-$config"
+              mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
+              cp "$work/window.log" "$work/$lifecycle.log"
+              cp "$work/results.json" "$work/$lifecycle-results.json"
+              for entry in explicit declarative; do
+                work="build-android/lua-$config"
+                mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --language lua --entry "$entry" --lifecycle "$lifecycle" --config "$config" --work "$work"
+                cp "$work/window.log" "$work/$entry-$lifecycle.log"
+                cp "$work/results.json" "$work/$entry-$lifecycle-results.json"
+              done
+            done
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -82,5 +96,7 @@ jobs:
             build-android/window-*/results.json
             build-android/lua-*/*.log
             build-android/lua-*/*results.json
+            build-android/c-lifecycle-*/*.log
+            build-android/c-lifecycle-*/*results.json
           if-no-files-found: warn
           retention-days: 14
