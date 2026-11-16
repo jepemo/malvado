@@ -38,6 +38,16 @@ class LuaPackageTests(unittest.TestCase):
                 add_lua_assets(archive, 'explicit', 'unknown')
             self.assertEqual(archive.namelist(), [])
 
+    def test_keyboard_module_is_packaged_only_when_selected(self):
+        for enabled in (False, True):
+            payload = io.BytesIO()
+            with zipfile.ZipFile(payload, 'w') as archive:
+                add_lua_assets(archive, 'explicit', 'none', keyboard=enabled)
+            with zipfile.ZipFile(payload) as archive:
+                self.assertEqual('assets/keyboard.lua' in archive.namelist(), enabled)
+                if enabled:
+                    self.assertEqual(archive.read('assets/keyboard.lua'), (ROOT / 'tests/android-lua/keyboard.lua').read_bytes())
+
 
 if __name__ == '__main__':
     unittest.main()

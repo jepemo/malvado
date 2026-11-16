@@ -16,6 +16,8 @@ local task = mv.process(function()
   local atlas = mv.load_asset("atlas.json")
   assert(mv.sprite_id(atlas, "red") == 7)
   if os.getenv("MALVADO_APK_AUDIO") then audio = require("audio")() end
+  local keyboard
+  if os.getenv("MALVADO_APK_KEYBOARD") then keyboard = require("keyboard")() end
   local first_x, maximum_x, released
   local remaining = 60
   while os.getenv("MALVADO_APK_LIFECYCLE") or remaining > 0 do
@@ -38,6 +40,7 @@ local task = mv.process(function()
       end
     end
     if audio then audio.frame() end
+    if keyboard then keyboard() end
     mv.set_color(255, 0, 0)
     mv.draw_box(80, 60, 240, 180)
     mv.frame()

@@ -33,12 +33,14 @@ def packaging_tools(sdk, log, facts):
     return tools
 
 
-def add_lua_assets(archive, entry, failure):
+def add_lua_assets(archive, entry, failure, *, keyboard=False):
     if entry not in ('explicit', 'declarative') or failure not in ('none', 'process', 'missing-image'):
         raise ValueError('Unsupported Lua APK fixture mode')
     fixture = ROOT / 'tests/android-lua'
     archive.write(fixture / (entry + '.lua'), 'assets/main.lua')
     archive.write(fixture / 'behavior.lua', 'assets/behavior.lua')
+    if keyboard:
+        archive.write(fixture / 'keyboard.lua', 'assets/keyboard.lua')
     archive.write(ROOT / 'tests/fixtures/atlas.json', 'assets/atlas.json')
     archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
     if failure != 'missing-image':
@@ -105,7 +107,9 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
     if not before:
         raise RuntimeError('Acceptance process is missing')
     dimensions = capture_screen(log, adb, screenshots / 'before.png') if screenshots else None
-    if mode == 'resume':
+    resume = mode in ('resume', 'keyboard-resume')
+    keyboard = mode in ('keyboard', 'keyboard-resume')
+    if resume:
         run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
@@ -133,9 +137,21 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         if lua:
             wait_marker(log, adb, token + ' lua touch released')
         capture_screen(log, adb, screenshots / 'released.png')
+    if keyboard:
+        for keycode, name in (('29', 'a'), ('21', 'left')):
+            run(log, adb + ['shell', 'input', 'keyboard', 'keyevent', '--longpress', keycode], timeout=10)
+            wait_marker(log, adb, token + ' keyboard ' + name + ' released')
+            if lua:
+                wait_marker(log, adb, token + ' lua keyboard ' + name + ' released')
+        wait_marker(log, adb, token + ' keyboard passed')
+        if lua:
+            wait_marker(log, adb, token + ' lua keyboard passed')
+        if screenshots:
+            capture_screen(log, adb, screenshots / 'keyboard.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
-    return {'initial_pid': before, 'resumed_pid': after if mode == 'resume' else None,
-            'background_foreground': mode == 'resume',
+    return {'initial_pid': before, 'resumed_pid': after if resume else None,
+            'background_foreground': resume,
+            'keyboard_keycodes': [29, 21] if keyboard else None,
             'screen_dimensions': dimensions,
             'touch_gesture': {'start': [width // 2, height // 2],
                               'end': [width * 6 // 10, height // 2], 'duration_ms': 1500}
@@ -172,7 +188,7 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
@@ -194,7 +210,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png', 'failure.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -203,7 +219,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -220,7 +236,7 @@ def main():
             staged.rename(installed)
             external = work / 'external C project'
             external.mkdir(exist_ok=True)
-            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h', 'audio.h'):
+            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h', 'keyboard.h', 'audio.h'):
                 shutil.copyfile(ROOT / 'tests/android-window' / name, external / name)
             build = external / 'build'
             run(log, ['cmake', '-S', external, '-B', build,
@@ -243,7 +259,7 @@ def main():
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
             if args.language == 'lua':
-                add_lua_assets(archive, args.entry, args.failure)
+                add_lua_assets(archive, args.entry, args.failure, keyboard=args.lifecycle in ('keyboard', 'keyboard-resume'))
             if args.audio:
                 add_audio_assets(archive, lua=args.language == 'lua')
         run(log, [tools / 'zipalign', '-f', '4', unsigned, aligned])

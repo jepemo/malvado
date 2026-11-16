@@ -34,6 +34,20 @@ class LifecycleTests(unittest.TestCase):
         marker.assert_called_once()
         self.assertFalse(any(command[-2:] == ['keyevent', '4'] for command in commands))
 
+    def test_lua_keyboard_needs_its_own_confirmation_before_next_key_or_back(self):
+        commands = []
+        def run(log, arguments, **kwargs):
+            commands.append(arguments)
+            return subprocess.CompletedProcess(arguments, 0, '123\n')
+        def marker(log, adb, message):
+            if message.endswith('lua keyboard a released'):
+                raise RuntimeError('Lua input not observed')
+        with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker', side_effect=marker), patch.object(verifier, 'capture_screen', return_value=(1920,1080)):
+            with self.assertRaisesRegex(RuntimeError, 'Lua input not observed'):
+                verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token', 'keyboard', Path('owned'), lua=True)
+        self.assertTrue(any(command[-2:] == ['--longpress', '29'] for command in commands))
+        self.assertFalse(any(command[-1] in ('21', '4') for command in commands))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -22,6 +22,7 @@ static struct android_app *lifecycle_app;
 static void (*lifecycle_previous)(struct android_app *, int32_t);
 static int lifecycle_pauses, lifecycle_resumes, lifecycle_pending, lifecycle_ready;
 static int touch_down, touch_released, touch_first_x, touch_max_x;
+#include "keyboard.h"
 
 static void
 lifecycle_command(struct android_app *app, int32_t command)
@@ -38,6 +39,7 @@ static void
 lifecycle_frame(int visible)
 {
     if (!ACCEPTANCE_LIFECYCLE) return;
+    keyboard_frame();
     if (!lifecycle_app) {
         lifecycle_app = GetAndroidApp();
         assert(lifecycle_app);
@@ -89,7 +91,8 @@ lifecycle_finish(void)
     if (!ACCEPTANCE_LIFECYCLE) return;
     assert(lifecycle_ready);
     if (ACCEPTANCE_LIFECYCLE == 3) assert(touch_down && touch_released);
-    if (ACCEPTANCE_LIFECYCLE == 2)
+    if (keyboard_mode()) assert(keyboard_complete);
+    if (ACCEPTANCE_LIFECYCLE == 2 || ACCEPTANCE_LIFECYCLE == 5)
         assert(lifecycle_pauses && lifecycle_resumes && !lifecycle_pending);
     assert(lifecycle_app && lifecycle_app->onAppCmd == lifecycle_command);
     lifecycle_app->onAppCmd = lifecycle_previous;

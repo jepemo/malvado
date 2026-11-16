@@ -32,6 +32,7 @@
 extern struct android_app *GetAndroidApp(void);
 static int verified;
 static int lua_touch_seen;
+static unsigned lua_keyboard_seen;
 #include "lifecycle.h"
 
 /* The fixture copies a fixed allowlist into its own application sandbox.
@@ -60,6 +61,21 @@ check_frame(void *user)
      * Startup frames can precede the first process draw command. Require the
      * expected pixel before termination, without assuming a render count. */
     lifecycle_frame(verified);
+    if (keyboard_mode() && lua_keyboard_seen < 3) {
+        FILE *keyboard = fopen("keyboard.txt", "rb");
+        if (keyboard) {
+            char state[4] = {0};
+            size_t count = fread(state, 1, sizeof(state), keyboard);
+            assert(count <= 3 && memcmp(state, "123", count) == 0);
+            assert(fclose(keyboard) == 0);
+            const char *messages[] = {"a released", "left released", "passed"};
+            while (lua_keyboard_seen < count) {
+                __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua keyboard %s",
+                                    ACCEPTANCE_TOKEN, messages[lua_keyboard_seen]);
+                lua_keyboard_seen++;
+            }
+        }
+    }
     if (ACCEPTANCE_LIFECYCLE == 3 && touch_released && !lua_touch_seen) {
         FILE *touch = fopen("touch.txt", "rb");
         if (touch) {
@@ -107,6 +123,10 @@ main(int argc, char **argv)
     if (ACCEPTANCE_FAILURE == 1) assert(setenv("MALVADO_APK_FAIL", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE) assert(setenv("MALVADO_APK_LIFECYCLE", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE == 3) assert(setenv("MALVADO_APK_TOUCH", "1", 1) == 0);
+    if (keyboard_mode()) {
+        assert(copy_asset(app->activity->assetManager, "keyboard.lua"));
+        assert(setenv("MALVADO_APK_KEYBOARD", "1", 1) == 0);
+    }
     assert(freopen("stderr.txt", "w", stderr));
     malvado_debug_set_frame_hook(check_frame, NULL);
     char *arguments[] = {"game", "main.lua"};
@@ -114,6 +134,7 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
     lifecycle_finish();
+    if (keyboard_mode()) assert(lua_keyboard_seen == 3);
     assert(!IsAudioDeviceReady());
     if (ACCEPTANCE_AUDIO) {
         FILE *audio = fopen("audio.txt", "rb");

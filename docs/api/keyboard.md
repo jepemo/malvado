@@ -66,6 +66,14 @@ matching timing contracts.
 
 ## Verification and Rust status
 
+Android captures held-key changes in Malvado. This avoids raylib 5.5's incomplete
+previous-key history for navigation keys. Pending changes still coalesce until
+the next logical tick; repeated queries never consume an edge. Window reset also
+resets the held-key history. This is physical-key state, not text composition.
+The current Android backend does not populate the Unicode character queue and
+Malvado does not yet provide an on-screen keyboard service. See
+[Android verification](../development/android.md) for emulator checks and limits.
+
 Deterministic C tests cover frames without ticks, repeated reads, multiple
 process readers, catch-up ticks, press/release coalescing, invalid keys and window
 reset. A backend integration test checks two Lua readers, lower process cadence,
