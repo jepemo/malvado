@@ -480,8 +480,16 @@ capture_keyboard(void)
 {
     for (int key = MV_KEY_0; key <= MV_KEY_BACKSPACE; ++key) {
         int code = key_code((MvKey)key);
-        if (code != KEY_NULL)
+        if (code != KEY_NULL) {
+#ifdef __ANDROID__
+            /* raylib 5.5 Android updates previous state only below index 260.
+             * Navigation keys exceed that bound. Own observed held history so
+             * every supported key has the same tick transition contract. */
+            mv_keyboard_sample_held((MvKey)key, IsKeyDown(code));
+#else
             mv_keyboard_sample((MvKey)key, IsKeyPressed(code), IsKeyReleased(code));
+#endif
+        }
     }
 }
 

@@ -20,6 +20,8 @@
 void mv_keyboard_open(void);
 void mv_keyboard_reset(void);
 void mv_keyboard_sample(MvKey key, int pressed, int released);
+/* Derive observed edges when a backend cannot supply reliable edge state. */
+void mv_keyboard_sample_held(MvKey key, int down);
 /* Append an observed scalar to the backend text queue; ignore unavailable
  * input, NUL, invalid scalars and a full queue. Headless sampling is neutral. */
 void mv_text_input_sample(uint32_t codepoint);

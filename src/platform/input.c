@@ -23,6 +23,7 @@ static struct {
     int open;
     unsigned char pressed[MV_KEY_BACKSPACE + 1], released[MV_KEY_BACKSPACE + 1];
     unsigned char pending_pressed[MV_KEY_BACKSPACE + 1], pending_released[MV_KEY_BACKSPACE + 1];
+    unsigned char held[MV_KEY_BACKSPACE + 1];
 } keyboard;
 
 static int
@@ -53,6 +54,16 @@ mv_keyboard_sample(MvKey key, int pressed, int released)
         return;
     keyboard.pending_pressed[key] |= pressed != 0;
     keyboard.pending_released[key] |= released != 0;
+}
+
+void
+mv_keyboard_sample_held(MvKey key, int down)
+{
+    if (!keyboard.open || !supported_key(key))
+        return;
+    down = down != 0;
+    mv_keyboard_sample(key, down && !keyboard.held[key], !down && keyboard.held[key]);
+    keyboard.held[key] = (unsigned char)down;
 }
 
 void

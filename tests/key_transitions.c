@@ -78,6 +78,36 @@ main(void)
     mv_input_tick();
     mv_keyboard_reset();
     assert(!mv_key_pressed(MV_KEY_SPACE));
+    /* Android must not depend on backend edge history for high key codes. */
+    mv_keyboard_sample_held(MV_KEY_LEFT, 1);
+    mv_keyboard_open();
+    mv_input_tick();
+    assert(!mv_key_pressed(MV_KEY_LEFT));
+    mv_keyboard_sample_held((MvKey)-1, 1);
+    mv_keyboard_sample_held((MvKey)999, 1);
+    MvKey keys[] = {MV_KEY_A, MV_KEY_LEFT, MV_KEY_UP, MV_KEY_TAB, MV_KEY_BACKSPACE};
+    for (unsigned i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
+        MvKey key = keys[i];
+        mv_keyboard_sample_held(key, 7);
+        mv_input_tick();
+        assert(mv_key_pressed(key) && !mv_key_released(key));
+        mv_keyboard_sample_held(key, 1);
+        mv_input_tick();
+        assert(!mv_key_pressed(key) && !mv_key_released(key));
+        mv_keyboard_sample_held(key, 0);
+        mv_keyboard_sample_held(key, 0);
+        mv_input_tick();
+        assert(!mv_key_pressed(key) && mv_key_released(key));
+        mv_keyboard_sample_held(key, 1);
+        mv_keyboard_sample_held(key, 0);
+        mv_input_tick();
+        assert(mv_key_pressed(key) && mv_key_released(key));
+    }
+    mv_keyboard_sample_held(MV_KEY_LEFT, 1);
+    mv_keyboard_open();
+    mv_keyboard_sample_held(MV_KEY_LEFT, 0);
+    mv_input_tick();
+    assert(!mv_key_pressed(MV_KEY_LEFT) && !mv_key_released(MV_KEY_LEFT));
     mv_context_destroy(ctx);
     return 0;
 }
