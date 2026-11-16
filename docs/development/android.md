@@ -164,9 +164,10 @@ run after the headless suite. No store key or production signing credential is u
 command and job timeouts remain active. The job uploads emulator/build/test
 logs and tool/result JSON even after failure.
 
-NDK r27c is pinned. Linux CI uses checksum-pinned emulator and image archives
-as described below. SDK Manager supplies the remaining authoring tools.
-Complete toolchain archive pins remain A8.1 work. The exact-commit run linked above passed 156 native checks, one installed-SDK
+Linux CI uses checksum-pinned NDK, adb, APK tools, platform, emulator and image
+archives. Host Java and command-line AVD management remain prerequisites.
+Their reproducibility review and the Windows toolchain remain A8.1 work.
+The exact-commit run linked above passed 156 native checks, one installed-SDK
 consumer and 15 contract/parity suites per profile, with no uncommitted files.
 These checks do not close A8.7's Rust, mobile, general export or candidate acceptance gates.
 
@@ -182,10 +183,19 @@ and staging are owned temporary files and are removed on success or failure.
 The full archives were downloaded, verified and extracted locally.
 
 The Android workflow uses the extracted emulator executable and sets the AVD's
-`image.sysdir.1` to the extracted image. SDK Manager still provides the pinned
-NDK version and the command-line/platform tools. It no longer selects the
-emulator or image used to run the tests. Remaining authoring-tool archive pins
-and the full host/target matrix stay in A8.1. No Docker images are created.
+`image.sysdir.1` to the extracted image. The SDK archive installer supplies the
+fixed NDK, adb, Build Tools and API platform. SDK Manager supplies metadata for
+host AVD management; it does not select compilation or runtime archive inputs.
+The full reproducibility review and host/target matrix stay in A8.1.
+No Docker images are created.
+
+The complete isolated SDK passed on `75c973c` in
+[run 43884605632](https://github.com/jepemo/malvado/actions/runs/43884605632).
+Both profiles passed 156 native checks and 15 contract/parity suites. The 44
+graphical APK cases used the same four SDK archive digests, Build Tools 34.0.0,
+API platform revision 3/extension 7 and complete APK installation. Results
+record Temurin 17.0.21+9 for the host Java prerequisite. The downloaded artifact
+also passed the per-case metadata, same-PID resume and PNG-header review.
 
 Pinned-input execution passed Debug and Release on `80b95cd` in
 [run 43840474589](https://github.com/jepemo/malvado/actions/runs/43840474589).

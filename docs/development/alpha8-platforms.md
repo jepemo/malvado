@@ -19,6 +19,27 @@ state, resource lifetime and explicit game-requested pause across Activity
 transitions. It does not establish audible output, latency or automatic audio
 focus handling. See [Android audio verification](android.md#android-audio-api-verification).
 
+## Delivered artifacts and unavailable paths
+
+| Target | Current artifacts | Authoring and verification limits |
+| --- | --- | --- |
+| Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
+| Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
+| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua test executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. No Rust Android SDK path, general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
+
+An installed Android C SDK consumer is an external CMake project. A Lua fixture
+APK currently builds the source runtime; it does not establish an installed Lua
+APK authoring flow. Headless executables run through adb and are not player
+packages. Fixture APKs do not establish production signing, store publication,
+other API levels, 32-bit ABIs or Android as an authoring host.
+
+Use the same scripts locally and in CI: `mise run test-platform` for native
+desktop SDKs, `mise run test-android` for the Android headless foundation and
+`mise run test-android-window` for APK verification. The commands and required
+flags are in the sections below and [Android verification](android.md).
+Future artifact formats in the CLI specification remain planned until their
+version checklist and executable acceptance checks are complete.
+
 ## Native Windows baseline
 
 Use the Visual Studio 2022 C++ desktop workload and Windows SDK on x64.
