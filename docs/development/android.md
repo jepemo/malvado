@@ -1,9 +1,10 @@
 # Android foundation verification
 
 Android support is in progress for alpha.8. The current delivered path is an
-NDK-built, headless C/Lua runtime on an Android emulator. This is an internal
-verification path, not an Android CLI authoring host or an APK exporter.
-Window startup, packaged assets, experimental Rust, APK/AAB exports and mobile
+NDK-built headless C/Lua runtime and C NativeActivity graphics on an Android
+emulator. These are verification paths, not an Android CLI authoring host or
+a CLI APK exporter. Lua/Rust graphical startup, packaged assets, experimental
+Rust runtime, APK/AAB exports and mobile
 behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
 
 ## Tested baseline
@@ -185,3 +186,10 @@ APK. This passed on Android arm64. Imported Android graphics dependencies are
 EGL, GLESv2 and Android system libraries. The NativeActivity entry point remains
 linked. Desktop OpenGL discovery is unchanged for desktop consumers.
 `--config Release` selects an optimized SDK and consumer; Debug is the default.
+
+The installed graphical consumer passed both profiles on x86_64 in
+[run 43845179661](https://github.com/jepemo/malvado/actions/runs/43845179661),
+commit `1b9012e`. The same fixtures passed Debug and Release on local arm64.
+The workflow uploads each window log and result JSON. A unique token prevents
+old logcat messages from satisfying a new run. Failed runs retain crash-buffer
+diagnostics. Results are written only after package removal is verified.
