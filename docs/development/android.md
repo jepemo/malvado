@@ -3,8 +3,7 @@
 Android support is in progress for alpha.8. The current delivered path is an
 NDK-built headless C/Lua runtime and C/Lua NativeActivity graphics on an Android
 emulator. These are verification paths, not an Android CLI authoring host or
-a CLI APK exporter. Rust graphical startup, general packaged-game integration, experimental
-Rust runtime, CLI APK/AAB exports and mobile
+a CLI APK exporter. Rust graphical startup, general packaged-game integration, Rust assets, Linux x86_64 Rust acceptance, CLI APK/AAB exports and mobile
 behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
 
 ## Tested baseline
@@ -506,7 +505,9 @@ mise run test-android-rust -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5582
 Use `x86_64-linux-android` for the Linux CI emulator. The command builds Debug
 and Release C-only SDKs, relocates each SDK and runs the Rust core test suites
 on the selected API 34 emulator. `--config Debug` selects one profile. Logs and
-result metadata remain in `build-android-rust`. Graphics, assets and APK paths
+result metadata remain in `build-android-rust`. Each profile also rejects SDKs
+with a previous ABI, a mismatched ABI or a wrong release. Those probes execute
+on Android; an ABI mismatch must be rejected before calling the release query. Graphics, assets and APK paths
 are unavailable for Rust Android in this verification step.
 
 For direct Cargo use, set `MALVADO_SDK_PREFIX` to the installed target SDK,

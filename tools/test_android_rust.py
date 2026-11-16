@@ -14,6 +14,45 @@ sys.dont_write_bytecode = True
 from test_android import ROOT, preflight, run
 
 
+def diagnostics(log, work, prefix, linker, target, env, config):
+    fake = work / config / 'incompatible sdk'
+    if fake.exists():
+        shutil.rmtree(fake)
+    shutil.copytree(prefix, fake)
+    archive = fake / 'lib/libmalvado_core.a'
+    source = fake / 'version.c'
+    header = (ROOT / 'src/main.c').read_text().split('*/', 1)[0] + '*/\n'
+    cases = [('previous ABI', 1, None, 'incompatible Malvado native ABI revision'),
+             ('ABI mismatch', 999, None, 'incompatible Malvado native ABI revision'),
+             ('release mismatch', 2, 'wrong-release', 'incompatible Malvado native release')]
+    for label, abi, release, expected in cases:
+        body = 'abort();' if release is None else f'return "{release}";'
+        source.write_text(header + '#include <stdint.h>\n#include <stdlib.h>\n'
+                          + f'uint32_t mv_abi_version(void) {{ return {abi}; }}\n'
+                          + f'const char *mv_version_string(void) {{ {body} }}\n')
+        run(log, [linker, '-c', source, '-o', fake / 'version.o'])
+        archive.unlink()
+        run(log, [linker.parent / 'llvm-ar', 'rcs', archive, fake / 'version.o'])
+        rejected_env = dict(env, MALVADO_SDK_PREFIX=str(fake))
+        result = subprocess.run(['cargo', 'check', '--manifest-path', str(ROOT / 'bindings/rust/Cargo.toml'),
+                                 '-p', 'malvado-sys', '--target', target], env=rejected_env,
+                                cwd=ROOT, capture_output=True, text=True, timeout=120)
+        log.write(result.stdout + result.stderr); log.flush()
+        if result.returncode == 0 or expected not in result.stdout + result.stderr:
+            raise RuntimeError(f'{label}: expected target SDK rejection: {expected}')
+        print(f'PASS: Android Rust {config}: {label}', flush=True)
+    for feature in ('assets', 'graphics'):
+        result = subprocess.run(['cargo', 'check', '--manifest-path', str(ROOT / 'bindings/rust/Cargo.toml'),
+                                 '-p', 'malvado-sys', '--target', target, '--features', feature],
+                                env=env, cwd=ROOT, capture_output=True, text=True, timeout=120)
+        log.write(result.stdout + result.stderr); log.flush()
+        expected = f'Rust Android {feature} is not yet supported'
+        if result.returncode == 0 or expected not in result.stdout + result.stderr:
+            raise RuntimeError(f'Expected explicit unsupported-feature rejection: {feature}')
+        print(f'PASS: Android Rust {config}: unavailable {feature}', flush=True)
+    return len(cases) + 2
+
+
 def verify(sdk, serial, work, config):
     work.mkdir(parents=True, exist_ok=True)
     result_file = work / f'{config}-results.json'
@@ -53,7 +92,8 @@ def verify(sdk, serial, work, config):
             command.append('--release')
         log.write(f'\n>>> {command!r}\n'); log.flush()
         subprocess.run(command, env=env, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
-        result_file.write_text(json.dumps(dict(facts, configuration=config, target=target,
+        rejected = diagnostics(log, work, prefix, linker, target, env, config)
+        result_file.write_text(json.dumps(dict(facts, configuration=config, target=target, sdk_rejections=rejected,
             rust='headless core tests passed', source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip(),
             dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT))), indent=2) + '\n')
     print(f'PASS: Android Rust {target} {config}', flush=True)

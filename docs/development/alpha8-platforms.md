@@ -11,8 +11,8 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| macOS arm64 / Android arm64 API 34 | Headless C/Lua, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
-| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua, C graphical SDK and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Rust runtime/graphics, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
+| macOS arm64 / Android arm64 API 34 | Headless C/Lua/Rust core, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Rust assets/graphics/APK, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua, C graphical SDK and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Rust headless CI acceptance, assets/graphics/APK, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity
@@ -33,7 +33,7 @@ does not provide an on-screen keyboard service. See
 | --- | --- | --- |
 | Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
 | Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
-| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua test executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. No Rust Android SDK path, general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
+| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua test executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. Rust headless core SDK/probes pass locally on arm64; x86_64 CI acceptance is pending. No Rust assets/graphics/APK, general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
 
 An installed Android C SDK consumer is an external CMake project. A Lua fixture
 APK currently builds the source runtime; it does not establish an installed Lua

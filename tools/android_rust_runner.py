@@ -5,6 +5,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+import subprocess
 import uuid
 
 sys.dont_write_bytecode = True
@@ -38,7 +39,7 @@ def main():
                          args.program, args.arguments, sys.stderr)
         sys.stdout.write(result.stdout)
         return result.returncode
-    except (OSError, RuntimeError, ValueError, KeyError) as error:
+    except (OSError, RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print(f'Android Rust transport failed: {error}', file=sys.stderr)
         return 125
 
