@@ -107,7 +107,16 @@ ANDROID_AVD_HOME="$PWD/build-android/avd" \
   -gpu swiftshader_indirect -cores 2 -memory 2048
 ```
 
-Run the emulator in a separate terminal. After `sys.boot_completed` is `1`, run:
+Run the emulator in a separate terminal. Wait for it with the CI boot check:
+
+```sh
+python3 tools/android_boot.py --adb "$ANDROID_SDK_ROOT/platform-tools/adb" --serial emulator-5580 --timeout 240
+```
+
+This command selects one emulator, retries transient adb timeouts and requires
+`sys.boot_completed=1` with a successful exit status. The deadline bounds each
+adb command and retry delay. A failure reports the last response. A successful
+boot check does not establish APK startup or graphical behavior. Then run:
 
 ```sh
 mise run test-android -- --serial emulator-5580 --preflight
