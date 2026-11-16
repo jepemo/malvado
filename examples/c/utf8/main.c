@@ -6,7 +6,7 @@
  * | || || ( ( | | |\ V ( ( | ( (_| | |_| |
  * |_||_||_|\_||_|_| \_/ \_||_|\____|\___/
  *
- * malvado - A game engine for Lua, inspired by DIV Games Studio.
+ * malvado - A game engine inspired by DIV Games Studio.
  *
  * Created by Jeremías Pérez and contributors.
  * SPDX-License-Identifier: Apache-2.0
