@@ -42,3 +42,13 @@ and audio maps against `platform.h`. It does not certify contracts, enum values,
 Lua parity, or behavior. See the individual maps for those checks and limits.
 
 `MvColor` is declared in the backend-independent `graphic.h` and remains available through `platform.h`. Its four-byte layout is unchanged.
+
+## Android Back behavior
+
+While an Android graphics window is open, Back requests window closure through
+`mv_window_should_close`. C hosts must observe that request and perform their
+normal cleanup. The Lua host stops through its existing loop and closes live
+processes and resources before closing the window. Back does not force process
+termination. Other input events still pass to the raylib handler. The handler
+is restored when the window closes. No new public key or lifecycle API is added.
+See [Android verification](../development/android.md) for emulator evidence and limits.

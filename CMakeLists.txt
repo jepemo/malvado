@@ -116,6 +116,10 @@ if(MALVADO_BUILD_RAYLIB)
     target_compile_definitions(raylib PRIVATE MA_ENABLE_ONLY_SPECIFIC_BACKENDS MA_ENABLE_NULL)
   endif()
   add_library(malvado_platform_raylib STATIC src/platform/raylib.c src/platform/image.c src/platform/input.c src/platform/time.c src/platform/fade.c src/platform/draw_state.c src/platform/text.c src/platform/managed.c)
+  if(ANDROID)
+    target_sources(malvado_platform_raylib PRIVATE src/platform/android_window.c)
+    target_include_directories(malvado_platform_raylib PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
+  endif()
   target_include_directories(malvado_platform_raylib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

@@ -27,6 +27,41 @@ def add_lua_assets(archive, entry, failure):
         archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
 
 
+def wait_marker(log, adb, marker, timeout=30):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        output = run(log, adb + ['logcat', '-d', '-s', 'MalvadoAcceptance:I', '*:S'], timeout=10).stdout
+        if marker in output:
+            return
+        time.sleep(0.5)
+    raise RuntimeError('Android acceptance marker missing: ' + marker)
+
+
+def lifecycle_actions(log, adb, package, token, mode):
+    wait_marker(log, adb, token + ' lifecycle ready')
+    before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if not before:
+        raise RuntimeError('Acceptance process is missing')
+    if mode == 'resume':
+        run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            state = run(log, adb + ['shell', 'dumpsys', 'activity', 'activities'], timeout=10).stdout
+            resumed = [line for line in state.splitlines() if 'mResumedActivity:' in line or 'topResumedActivity=' in line]
+            if resumed and all(package not in line for line in resumed):
+                break
+            time.sleep(0.2)
+        else:
+            raise RuntimeError('Acceptance Activity did not enter background')
+        time.sleep(2)
+        run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=30)
+        after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+        if before != after:
+            raise RuntimeError('Acceptance process was recreated during resume')
+        wait_marker(log, adb, token + ' lifecycle resumed')
+    run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', type=Path, required=True)
@@ -34,10 +69,13 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
+    parser.add_argument('--lifecycle', choices=('back', 'resume'))
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
+    if args.lifecycle and args.failure != 'none':
+        parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
         parser.error('Lua APK verification currently uses the source runtime')
     if args.language == 'c' and args.failure != 'none':
@@ -60,12 +98,13 @@ def main():
                 raise RuntimeError('Install Android build-tools;34.0.0')
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
+        lifecycle = {None: 0, 'back': 1, 'resume': 2}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                   f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                   f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                  f'-DACCEPTANCE_FAILURE={failure}'])
+                  f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}'])
         run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '8'])
         if args.installed_sdk:
             staged, installed = work / 'staged sdk', work / 'relocated sdk'
@@ -76,14 +115,14 @@ def main():
             staged.rename(installed)
             external = work / 'external C project'
             external.mkdir(exist_ok=True)
-            for name in ('CMakeLists.txt', 'main.c'):
+            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h'):
                 shutil.copyfile(ROOT / 'tests/android-window' / name, external / name)
             build = external / 'build'
             run(log, ['cmake', '-S', external, '-B', build,
                       f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                       f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                       f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                      f'-DMALVADO_TEST_SDK={installed}'])
+                      f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
@@ -113,15 +152,10 @@ def main():
         try:
             run(log, adb + ['install', str(apk)], timeout=90)
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
-            deadline = time.monotonic() + 30
-            while time.monotonic() < deadline:
-                output = run(log, adb + ['logcat', '-d', '-s', 'MalvadoAcceptance:I', '*:S'], timeout=10).stdout
-                if token + ' ' + expectation in output:
-                    break
-                time.sleep(1)
-            else:
-                raise RuntimeError('Android window acceptance did not complete within 30 seconds')
-            facts.update(language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
+            if args.lifecycle:
+                lifecycle_actions(log, adb, package, token, args.lifecycle)
+            wait_marker(log, adb, token + ' ' + expectation)
+            facts.update(lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True
         finally:
             if not completed:

@@ -240,3 +240,25 @@ The workflow retains a separate log and JSON for each entry/profile/failure case
 including the current log when a case fails before a result can be written.
 Local host verification passed 206 headless checks, the APK payload regressions
 and 673 guide links. The installed C graphical consumer also passed again.
+
+## Back and Activity lifecycle checks
+
+`--lifecycle back` keeps the C or Lua fixture alive until the host injects Back.
+Android Back now requests closure through the existing platform window query.
+C remains responsible for its host loop; Lua uses its existing cancellation and
+resource cleanup path. The backend forwards events to raylib and restores its
+input handler on window close. This is a platform adaptation, not a new public
+input operation.
+
+C installed-SDK and both Lua entry forms passed this mode in Debug and Release
+on the API 34 arm64 emulator. A normal timeout cannot satisfy the test: the C
+fixture requires a close request and the Lua fixture runs until cancellation.
+Both retain their pixel/shutdown checks and verify package removal.
+
+`--lifecycle resume` additionally drives Home and foreground restoration. The
+fixture chains the existing native Activity callback for observation. It must
+see pause and resume, retain the same PID and read the expected framebuffer
+pixel after resuming before Back can finish the test. This does not establish
+OS process-death recovery, audio behavior, touch, physical devices or all OEM
+Activity implementations. Lifecycle modes cannot be combined with expected
+Lua failures.

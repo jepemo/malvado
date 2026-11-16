@@ -13,7 +13,9 @@ local task = mv.process(function()
   assert(os.remove(temporary))
   local atlas = mv.load_asset("atlas.json")
   assert(mv.sprite_id(atlas, "red") == 7)
-  for _ = 1, 60 do
+  local remaining = 60
+  while os.getenv("MALVADO_APK_LIFECYCLE") or remaining > 0 do
+    remaining = remaining - 1
     mv.set_color(255, 0, 0)
     mv.draw_box(80, 60, 240, 180)
     mv.frame()

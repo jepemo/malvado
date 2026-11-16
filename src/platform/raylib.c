@@ -24,6 +24,9 @@
 #include "render_internal.h"
 #include "../core/process.h"
 #include "raylib.h"
+#ifdef __ANDROID__
+#include "android_window.h"
+#endif
 #include "rlgl.h"
 #include <math.h>
 #include <float.h>
@@ -386,6 +389,9 @@ int mv_window_open(int width, int height, const char *title)
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
     mv_keyboard_open();
+#ifdef __ANDROID__
+    mv_android_window_attach();
+#endif
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
     return 1;
@@ -416,6 +422,9 @@ mv_window_size(int *width, int *height)
 
 void mv_window_close(void)
 {
+#ifdef __ANDROID__
+    mv_android_window_detach();
+#endif
     if (IsWindowReady()) CloseWindow();
     mv_keyboard_reset();
     drawing_active = 0;
@@ -424,7 +433,13 @@ void mv_window_close(void)
     text_head = 0;
     text_count = 0;
 }
-int mv_window_should_close(void) { return WindowShouldClose(); }
+int mv_window_should_close(void)
+{
+#ifdef __ANDROID__
+    if (mv_android_window_close_requested()) return 1;
+#endif
+    return WindowShouldClose();
+}
 int mv_window_escape_down(void) { return mv_key_down(MV_KEY_ESCAPE); }
 int mv_window_space_down(void) { return mv_key_down(MV_KEY_SPACE); }
 

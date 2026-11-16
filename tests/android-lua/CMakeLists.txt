@@ -9,3 +9,7 @@ target_include_directories(game PRIVATE ../../src "${ANDROID_NDK}/sources/androi
 target_link_libraries(game PRIVATE malvado_lua_binding)
 target_link_options(game PRIVATE "-uANativeActivity_onCreate" "-Wl,--no-undefined")
 target_compile_definitions(game PRIVATE ACCEPTANCE_TOKEN="${ACCEPTANCE_TOKEN}" ACCEPTANCE_FAILURE=${ACCEPTANCE_FAILURE})
+
+target_compile_definitions(game PRIVATE ACCEPTANCE_LIFECYCLE=${ACCEPTANCE_LIFECYCLE})
+target_include_directories(game PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
+target_include_directories(game PRIVATE ../android-window)

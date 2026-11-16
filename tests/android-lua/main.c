@@ -31,6 +31,7 @@
 
 extern struct android_app *GetAndroidApp(void);
 static int verified;
+#include "lifecycle.h"
 
 /* The fixture copies a fixed allowlist into its own application sandbox.
  * This is not the general APK asset service or a public extraction API. */
@@ -57,6 +58,7 @@ check_frame(void *user)
     /* Simulation ticks and presented frames do not have a one-to-one cadence.
      * Startup frames can precede the first process draw command. Require the
      * expected pixel before termination, without assuming a render count. */
+    lifecycle_frame(verified);
     if (verified) return;
     mv_window_flush();
     Image image = {0};
@@ -69,6 +71,7 @@ check_frame(void *user)
     Color pixel = GetImageColor(image, image.width / 2, image.height / 2);
     verified = pixel.r > 240 && pixel.g < 15 && pixel.b < 15;
     UnloadImage(image);
+    lifecycle_frame(verified);
 }
 
 int
@@ -87,12 +90,14 @@ main(int argc, char **argv)
     MvAssetSource *snapshot = mv_asset_source_open("message.bin", NULL);
     assert(snapshot);
     if (ACCEPTANCE_FAILURE == 1) assert(setenv("MALVADO_APK_FAIL", "1", 1) == 0);
+    if (ACCEPTANCE_LIFECYCLE) assert(setenv("MALVADO_APK_LIFECYCLE", "1", 1) == 0);
     assert(freopen("stderr.txt", "w", stderr));
     malvado_debug_set_frame_hook(check_frame, NULL);
     char *arguments[] = {"game", "main.lua"};
     int result = malvado_run(2, arguments);
     malvado_debug_set_frame_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
+    lifecycle_finish();
     assert(!IsWindowReady() && malvado_debug_context() == NULL);
     assert(ACCEPTANCE_FAILURE == 2 || verified);
     FILE *closed = fopen("closed.txt", "rb");

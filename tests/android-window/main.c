@@ -21,6 +21,7 @@
 #include <assert.h>
 #include "raylib.h"
 #include "rlgl.h"
+#include "lifecycle.h"
 
 int
 main(int argc, char **argv)
@@ -31,7 +32,7 @@ main(int argc, char **argv)
     int width, height;
     assert(mv_window_size(&width, &height) && width > 0 && height > 0);
     int verified = 0;
-    for (int frame = 0; frame < 180 && !mv_window_should_close(); ++frame) {
+    for (int frame = 0; frame < (ACCEPTANCE_LIFECYCLE ? 3600 : 180) && !mv_window_should_close(); ++frame) {
         mv_window_begin((MvColor){20, 40, 80, 255});
         assert(mv_window_draw_box(width / 4, height / 4, width / 2, height / 2, 1, (MvColor){255, 0, 0, 255}));
         mv_window_flush();
@@ -50,9 +51,12 @@ main(int argc, char **argv)
             UnloadImage(pixels);
             verified = 1;
         }
+        lifecycle_frame(verified);
         mv_window_end();
     }
     assert(verified);
+    if (ACCEPTANCE_LIFECYCLE) assert(mv_window_should_close());
+    lifecycle_finish();
     mv_window_close();
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s window pixels and shutdown passed", ACCEPTANCE_TOKEN);
     return 0;
