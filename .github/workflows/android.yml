@@ -71,16 +71,22 @@ jobs:
             done
           done
           for config in Debug Release; do
-            for lifecycle in back resume; do
+            for lifecycle in back resume touch; do
               work="build-android/c-lifecycle-$config"
               mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
               cp "$work/window.log" "$work/$lifecycle.log"
               cp "$work/results.json" "$work/$lifecycle-results.json"
+              for image in before resumed released; do
+                if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$lifecycle-$image.png"; fi
+              done
               for entry in explicit declarative; do
                 work="build-android/lua-$config"
                 mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --language lua --entry "$entry" --lifecycle "$lifecycle" --config "$config" --work "$work"
                 cp "$work/window.log" "$work/$entry-$lifecycle.log"
                 cp "$work/results.json" "$work/$entry-$lifecycle-results.json"
+                for image in before resumed released; do
+                  if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$entry-$lifecycle-$image.png"; fi
+                done
               done
             done
           done
@@ -98,5 +104,7 @@ jobs:
             build-android/lua-*/*results.json
             build-android/c-lifecycle-*/*.log
             build-android/c-lifecycle-*/*results.json
+            build-android/c-lifecycle-*/*.png
+            build-android/lua-*/*.png
           if-no-files-found: warn
           retention-days: 14
