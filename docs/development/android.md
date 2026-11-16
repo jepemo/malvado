@@ -397,6 +397,23 @@ NDK glue's `threaded_app` tag, plus entry/window/runtime stage markers. A bounde
 `debuggerd -b` query attempts a native stack for the single selected APK PID.
 Unavailable stack permissions or diagnostic timeouts preserve the original
 failure. This diagnostic does not establish a fix for the recorded startup stall.
+
+The fixture manifest handles `orientation`, `screenSize`, `screenLayout` and
+`smallestScreenSize`, plus `keyboardHidden`. These are the size-related changes
+documented by [Android](https://developer.android.com/guide/topics/resources/runtime-changes).
+The packaged manifest is dumped with aapt before installation. A host regression
+requires all four size flags. Startup evidence showed an Activity relaunch and
+`APP_CMD_DESTROY` before `APP_CMD_INIT_WINDOW`; raylib 5.5 waits for a window in
+that state. General cancellation before the first surface remains a runtime
+limitation; this manifest change does not add process-death recovery.
+The observed local relaunch event used
+[`CONFIG_ASSETS_PATHS`](https://developer.android.com/reference/android/R.attr#configChanges)
+(`0x80000000`),
+not a size flag. Cold-start verification now waits for
+`am wait-for-broadcast-idle` after APK installation and requires its positive
+completion message. This separates the baseline from in-flight package-added
+resource updates. Runtime overlay changes and destruction during initial window
+creation remain unverified; waiting for broadcasts does not fix that runtime path.
 Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
 evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
 

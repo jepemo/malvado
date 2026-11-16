@@ -166,11 +166,19 @@ def prepare_foreground(log, adb):
     run(log, adb + ['shell', 'wm', 'dismiss-keyguard'], timeout=10)
 
 
+def settle_installation(log, adb):
+    # Package-added resource updates must finish before this cold-start baseline.
+    result = run(log, adb + ['shell', 'am', 'wait-for-broadcast-idle'], timeout=30)
+    if 'All broadcast queues are idle!' not in result.stdout:
+        raise RuntimeError('Android package broadcasts did not reach idle')
+
+
 def failure_evidence(log, adb, work, package=None):
     for command in (['shell', 'dumpsys', 'power'],
                     ['shell', 'dumpsys', 'window', 'windows'],
                     ['shell', 'dumpsys', 'activity', 'activities'],
-                    ['logcat', '-d', '-s', 'raylib:D', 'threaded_app:V', 'MalvadoAcceptance:I', 'AndroidRuntime:E', '*:S']):
+                    ['logcat', '-d', '-s', 'raylib:D', 'threaded_app:V', 'MalvadoAcceptance:I', 'AndroidRuntime:E', '*:S'],
+                    ['logcat', '-b', 'events', '-d', '-s', 'wm_relaunch_activity:I', 'wm_relaunch_resume_activity:I', 'wm_destroy_activity:I', '*:S']):
         try:
             run(log, adb + command, timeout=10, check=False)
         except (OSError, subprocess.SubprocessError) as error:
@@ -187,6 +195,17 @@ def failure_evidence(log, adb, work, package=None):
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         log.write(f"\nCannot capture Android failure screen: {error}\n")
     log.flush()
+
+
+def android_manifest(package):
+    return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
+<uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
+<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+<application android:hasCode="false" android:debuggable="true" android:label="Malvado acceptance">
+<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
+<meta-data android:name="android.app.lib_name" android:value="game"/>
+<intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+</activity></application></manifest>'''
 
 
 def main():
@@ -254,14 +273,7 @@ def main():
                       f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         manifest = work / 'AndroidManifest.xml'
-        manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
-<uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
-<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-<application android:hasCode="false" android:debuggable="true" android:label="Malvado acceptance">
-<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize">
-<meta-data android:name="android.app.lib_name" android:value="game"/>
-<intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
-</activity></application></manifest>''')
+        manifest.write_text(android_manifest(package))
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
@@ -277,6 +289,7 @@ def main():
                       '-alias', 'test', '-keyalg', 'RSA', '-validity', '30', '-dname', 'CN=Malvado test only'])
         run(log, [tools / 'apksigner', 'sign', '--ks', key, '--ks-pass', 'pass:android', '--out', apk, aligned])
         run(log, [tools / 'apksigner', 'verify', apk])
+        run(log, [tools / 'aapt', 'dump', 'xmltree', apk, 'AndroidManifest.xml'])
         expectation = ('lua assets and shutdown passed' if args.language == 'lua'
                        else 'window pixels and shutdown passed')
         completed = False
@@ -285,6 +298,8 @@ def main():
             # Install the whole APK before startup. Incremental APK loading is
             # a separate transport capability, outside this runtime matrix.
             run(log, adb + ['install', '--no-incremental', str(apk)], timeout=90)
+            settle_installation(log, adb)
+            facts['package_broadcasts_idle'] = True
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
             lifecycle_evidence = None
             if args.lifecycle:
