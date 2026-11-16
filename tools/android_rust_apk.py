@@ -18,7 +18,7 @@ def build(log, work, installed, ndk, adb, serial, abi, config, token, lifecycle=
     (game / 'Cargo.toml').write_text('[package]\nname="android-rust-window"\nversion="0.0.0"\nedition="2024"\n'
         + '[lib]\ncrate-type=["staticlib"]\n[dependencies]\nmalvado={path='
         + json.dumps(str(installed / 'share/malvado/rust/malvado')) + ',features=["graphics","assets"]}\n')
-    for name in ('lib.rs', 'keyboard.rs', 'touch.rs', 'assets.rs', 'failures.rs', 'audio.rs'):
+    for name in ('lib.rs', 'keyboard.rs', 'touch.rs', 'assets.rs', 'failures.rs', 'audio.rs', 'music.rs'):
         (game / 'src' / name).write_text((ROOT / 'tests/android-rust' / name).read_text())
     wrapper = work / 'probe runner'
     wrapper.write_text('#!/bin/sh\nexec ' + shlex.join([sys.executable, str(ROOT / 'tools/android_rust_runner.py')]) + ' "$@"\n')

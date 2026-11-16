@@ -600,3 +600,9 @@ It loads packaged WAV media, checks invalid/empty paths and volume boundaries,
 clones ownership, pause/resume/stop, bounded finite completion and final device
 release. The native entry also requires a closed audio device before success.
 This checks emulator API state, not audible output or audio-focus policy.
+
+The Rust audio fixture also loads WAV and OGG streams through `Music`, checks
+missing/empty media and invalid volumes, repeated play, pause state, resume/stop,
+finite OGG completion and stream release before device shutdown. The host
+requires a Rust-specific stream completion marker as well as the final audio
+marker. Silent fixtures do not establish audible quality, latency or focus.

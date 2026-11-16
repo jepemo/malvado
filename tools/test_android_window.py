@@ -338,6 +338,8 @@ def main():
                     wait_marker(log, adb, token + ' Rust failure resources closed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')
+                if args.language == 'rust':
+                    wait_marker(log, adb, token + ' Rust music API passed')
             facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True
         finally:

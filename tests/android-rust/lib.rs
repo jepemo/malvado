@@ -3,6 +3,7 @@ mod assets;
 mod audio;
 mod failures;
 mod keyboard;
+mod music;
 mod touch;
 use malvado::{
     Error, Game, SpawnOptions,

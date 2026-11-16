@@ -8,6 +8,7 @@ pub struct Case {
     device: Rc<Audio>,
     sound: Sound,
     finite: Sound,
+    streams: super::music::Streams,
 }
 impl Case {
     pub fn begin() -> Self {
@@ -33,7 +34,9 @@ impl Case {
         assert!(sound.paused() && !sound.playing());
         let finite = Sound::load(device.clone(), "silence.wav").unwrap();
         finite.play().unwrap();
+        let streams = super::music::Streams::begin(device.clone());
         Self {
+            streams,
             device,
             sound,
             finite,
@@ -41,6 +44,7 @@ impl Case {
     }
     pub fn tick(&self) {
         self.device.update().unwrap();
+        self.streams.tick();
         assert!(self.sound.paused() && !self.sound.playing());
     }
     pub fn finish(self) {
@@ -54,7 +58,9 @@ impl Case {
             device,
             sound,
             finite,
+            streams,
         } = self;
+        streams.finish();
         drop(device);
         assert!(weak.upgrade().is_some());
         drop(sound);
