@@ -47,6 +47,12 @@ def add_lua_assets(archive, entry, failure, *, keyboard=False):
         archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
 
 
+def add_rust_assets(archive):
+    archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
+    for name in ('atlas.json', 'red.png'):
+        archive.write(ROOT / 'tests/fixtures' / name, 'assets/' + name)
+
+
 def add_audio_assets(archive, lua=False, rust=False):
     for name in ('silence.wav', 'silence.ogg', 'empty.wav'):
         archive.write(ROOT / 'tests/fixtures' / name, 'assets/' + name)
@@ -260,7 +266,7 @@ def main():
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                   f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                   f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                  f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
+                  f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}', f'-DMALVADO_TEST_ASSETS={"ON" if args.language == "rust" else "OFF"}'])
         run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '8'])
         if args.installed_sdk:
             staged, installed = work / 'staged sdk', work / 'relocated sdk'
@@ -289,6 +295,8 @@ def main():
         run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
+            if args.language == 'rust':
+                add_rust_assets(archive)
             if args.language == 'lua':
                 add_lua_assets(archive, args.entry, args.failure, keyboard=args.lifecycle in ('keyboard', 'keyboard-resume'))
             if args.audio:
@@ -318,6 +326,7 @@ def main():
             wait_marker(log, adb, token + ' ' + expectation)
             if args.language == 'rust':
                 wait_marker(log, adb, token + ' Rust scheduler and cleanup passed')
+                wait_marker(log, adb, token + ' Rust APK assets passed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')
             facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)

@@ -6,6 +6,7 @@ import io
 from pathlib import Path
 import sys
 import unittest
+import zipfile
 from unittest.mock import patch
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
@@ -13,6 +14,16 @@ import test_android_window as verifier
 
 
 class RustPackageTests(unittest.TestCase):
+    def test_rust_payload_has_exact_binary_png_and_atlas_inputs(self):
+        payload = io.BytesIO()
+        with zipfile.ZipFile(payload, 'w') as archive:
+            verifier.add_rust_assets(archive)
+        with zipfile.ZipFile(payload) as archive:
+            self.assertEqual(set(archive.namelist()), {'assets/message.bin', 'assets/atlas.json', 'assets/red.png'})
+            self.assertEqual(archive.read('assets/message.bin'), b'\x00\r\n\xff')
+            self.assertEqual(archive.read('assets/red.png'), (verifier.ROOT / 'tests/fixtures/red.png').read_bytes())
+            self.assertEqual(archive.read('assets/atlas.json'), (verifier.ROOT / 'tests/fixtures/atlas.json').read_bytes())
+
     def test_unsupported_modes_never_start_build_or_device_work(self):
         base = ['test_android_window.py', '--sdk', 'unused', '--serial', 'emulator-5580', '--language', 'rust']
         for extra in ([], ['--installed-sdk', '--audio'],

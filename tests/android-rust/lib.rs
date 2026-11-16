@@ -1,4 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
+mod assets;
 mod keyboard;
 mod touch;
 use malvado::{
@@ -30,7 +31,10 @@ pub extern "C" fn malvado_rust_entry() {
     })
     .join()
     .unwrap();
-    let window = Window::open(320, 240, "Malvado Android Rust").unwrap();
+    let window = Rc::new(Window::open(320, 240, "Malvado Android Rust").unwrap());
+    let weak = Rc::downgrade(&window);
+    let (snapshot, image) = assets::load(window.clone());
+    let owned_image = image.clone();
     // SAFETY: the C fixture logs this static string and retains no pointer.
     unsafe {
         acceptance_log(c"window opened".as_ptr());
@@ -42,6 +46,7 @@ pub extern "C" fn malvado_rust_entry() {
     let mut game = Game::new().unwrap();
     game.spawn(SpawnOptions::default(), move |process| async move {
         let _guard = guard;
+        let _image = owned_image;
         loop {
             process.frame().await;
         }
@@ -116,7 +121,14 @@ pub extern "C" fn malvado_rust_entry() {
     }
     drop(game);
     assert_eq!(drops.get(), 1);
+    drop(image);
     drop(window);
+    assert!(weak.upgrade().is_none());
+    assert_eq!(snapshot.bytes(), &[0, 13, 10, 255]);
+    // SAFETY: the fixture logs this static string and retains nothing.
+    unsafe {
+        acceptance_log(c"Rust APK assets passed".as_ptr());
+    }
     // SAFETY: the C fixture logs this static string and retains no pointer.
     unsafe {
         acceptance_log(c"Rust scheduler and cleanup passed".as_ptr());

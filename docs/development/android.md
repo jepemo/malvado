@@ -571,3 +571,11 @@ horizontal movement and release through its own API. The host waits for both
 native and Rust release markers before Back, and retains before/released PNGs.
 This establishes one contact through the existing mouse mapping; it does not
 establish multi-touch, gestures or physical-device behavior.
+
+Rust APK fixtures include a fixed binary/PNG/atlas payload. A test-only allowlist
+copies it from the APK into the private app directory. Rust loads the atlas,
+decodes the PNG through file and byte APIs, retains an image in a process and
+checks that image owners release the window during shutdown. A binary snapshot
+remains valid after unlink and after process/window cleanup. This uses installed
+asset bindings and graphics from the same relocated SDK; it does not deliver a
+general APK extraction API or CLI exporter.

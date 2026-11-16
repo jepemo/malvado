@@ -21,6 +21,9 @@
 #undef NDEBUG
 #endif
 #include <assert.h>
+#include <android/asset_manager.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "lifecycle.h"
 extern void malvado_rust_entry(void);
 void
@@ -60,12 +63,35 @@ acceptance_lifecycle_finish(void)
 {
     lifecycle_finish();
 }
+/* Fixed verification payload only. This is not a public APK extractor. */
+static void
+stage_assets(void)
+{
+    struct android_app *app = GetAndroidApp();
+    assert(app && app->activity);
+    assert(chdir(app->activity->internalDataPath) == 0);
+    const char *names[] = {"message.bin", "atlas.json", "red.png"};
+    for (unsigned i = 0; i < 3; ++i) {
+        AAsset *asset = AAssetManager_open(app->activity->assetManager, names[i], AASSET_MODE_BUFFER);
+        assert(asset);
+        off_t size = AAsset_getLength(asset);
+        assert(size > 0 && size <= 4 * 1024 * 1024);
+        const void *bytes = AAsset_getBuffer(asset);
+        assert(bytes);
+        FILE *file = fopen(names[i], "wb");
+        assert(file);
+        assert(fwrite(bytes, 1, (size_t)size, file) == (size_t)size);
+        assert(fclose(file) == 0);
+        AAsset_close(asset);
+    }
+}
 int
 main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
     acceptance_log("Rust entry");
+    stage_assets();
     malvado_rust_entry();
     if (IsWindowReady()) abort();
     acceptance_log("window pixels and shutdown passed");
