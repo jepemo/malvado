@@ -98,3 +98,14 @@ software-rendering and emulator results certify different capabilities; record
 limits. Physical-device and audible tests remain beta work. Future features must
 add relevant supported-platform checks when implemented. Publishing/stores and
 production signing stay separate from ordinary CI and require authorization.
+
+## Android foundation job
+
+`android.yml` adds an isolated API 34 x86_64 emulator on Ubuntu 24.04. It runs
+`mise run test-android` in Debug and Release with the pinned NDK r27c. The same
+script verifies native C/Lua executables, a relocated installed C SDK consumer,
+Lua errors/cleanup and shared C/Lua traces. It uploads bounded command logs and
+actual tool revisions on failure. See [Android verification](android.md).
+Headless runtime evidence does not establish APK startup, graphics, Rust or
+mobile lifecycle behavior. A8.7 stays open for those checks and complete candidate
+acceptance. The existing macOS/Linux and Windows workflows remain in place.

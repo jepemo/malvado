@@ -24,9 +24,16 @@ EMULATOR_API = "34"
 def run(log, args, *, timeout=600, cwd=ROOT, check=True):
     log.write(f"\n>>> {args!r}\n")
     log.flush()
-    result = subprocess.run([str(arg) for arg in args], cwd=cwd, text=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            timeout=timeout)
+    try:
+        result = subprocess.run([str(arg) for arg in args], cwd=cwd, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or b""
+        log.write(output.decode(errors="replace") if isinstance(output, bytes) else output)
+        log.write(f"\nCommand timed out after {timeout} seconds\n")
+        log.flush()
+        raise
     log.write(result.stdout)
     log.flush()
     if check and result.returncode:
@@ -40,6 +47,8 @@ def properties(path):
 
 
 def preflight(sdk, serial, log):
+    if platform.system() not in ("Darwin", "Linux"):
+        raise RuntimeError("Android verification currently requires a macOS/Linux authoring host")
     ndk = sdk / "ndk" / NDK_VERSION
     if not ndk.is_dir() or properties(ndk / "source.properties").get("Pkg.Revision") != NDK_VERSION:
         raise RuntimeError(f"Install ndk;{NDK_VERSION} in {sdk}")
@@ -47,7 +56,8 @@ def preflight(sdk, serial, log):
     prefix = [adb, "-s", serial]
     run(log, prefix + ["get-state"], timeout=15)
     facts = {}
-    for name in ("ro.kernel.qemu", "ro.product.cpu.abi", "ro.build.version.sdk", "sys.boot_completed"):
+    for name in ("ro.kernel.qemu", "ro.product.cpu.abi", "ro.build.version.sdk",
+                 "sys.boot_completed", "ro.build.fingerprint"):
         facts[name] = run(log, prefix + ["shell", "getprop", name], timeout=15).stdout.strip()
     if facts["ro.kernel.qemu"] != "1":
         raise RuntimeError("Use an emulator, not a physical device, for this verification")
@@ -62,6 +72,9 @@ def preflight(sdk, serial, log):
         facts[tool] = run(log, [tool, "--version"], timeout=15).stdout.strip()
     for name in ("platform-tools", "emulator"):
         facts[name] = properties(sdk / name / "source.properties").get("Pkg.Revision")
+    image = sdk / "system-images/android-34/google_apis" / abi / "source.properties"
+    if image.is_file():
+        facts["installed_google_apis_image_revision"] = properties(image).get("Pkg.Revision")
     return ndk, prefix, abi, facts
 
 
@@ -102,8 +115,11 @@ def native_tests(catalog, build):
         # Host CMake/Python/shell checks and the desktop CLI are not Android tests.
         if executable.parent != build or executable.name in ("malvado", "malvado-game", "malvado-native-game"):
             continue
-        if not executable.is_file() or executable.read_bytes()[:4] != b"\x7fELF":
+        if not executable.is_file():
             raise RuntimeError(f"Missing Android executable: {executable}")
+        with executable.open("rb") as stream:
+            if stream.read(4) != b"\x7fELF":
+                raise RuntimeError(f"Not an Android ELF executable: {executable}")
         selected.append(test)
     if not selected:
         raise RuntimeError("No Android executable tests were discovered")
@@ -240,6 +256,8 @@ def verify_lua_contracts(log, work, config, build, prefix, remote):
 
 def verify_profile(work, config, ndk, prefix, abi):
     build = work / config
+    # A failed rerun must not leave a previous successful result in CI evidence.
+    (work / f"{config}-results.json").unlink(missing_ok=True)
     with (work / f"{config}.log").open("w", encoding="utf-8") as log:
         run(log, ["cmake", "-S", ROOT, "-B", build,
                   f"-DCMAKE_TOOLCHAIN_FILE={ndk / 'build/cmake/android.toolchain.cmake'}",

@@ -120,3 +120,18 @@ Logs and JSON results remain under `build-android`, including on failure.
 They record the source commit and the actual tools. Uncommitted changes are not
 a release-candidate proof. Headless tests do not establish graphics, touch,
 Back, pause/resume, audible output or physical devices. Those gates stay open.
+
+## Continuous verification
+
+`.github/workflows/android.yml` runs this same verifier on Ubuntu 24.04 with
+KVM and an isolated API 34 Google APIs `x86_64` emulator. It runs both profiles
+on pushes, pull requests, manual requests and weekly. No Android app, store key
+or production signing credential is used. AVD boot has a 240-second limit;
+command and job timeouts remain active. The job uploads emulator/build/test
+logs and tool/result JSON even after failure.
+
+NDK r27c is pinned. The hosted SDK Manager currently supplies the emulator,
+platform tools and image revisions; each run records them. Exact download pins
+remain A8.1 work. A configured job alone does not establish Linux-to-Android
+support. Its exact-commit result must pass before that claim is added. This
+headless job does not close A8.7's graphical/mobile or candidate acceptance gates.
