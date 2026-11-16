@@ -30,7 +30,6 @@
 #include <unistd.h>
 
 extern struct android_app *GetAndroidApp(void);
-static unsigned frames;
 static int verified;
 
 /* The fixture copies a fixed allowlist into its own application sandbox.
@@ -55,7 +54,10 @@ static void
 check_frame(void *user)
 {
     (void)user;
-    if (++frames != 30) return;
+    /* Simulation ticks and presented frames do not have a one-to-one cadence.
+     * Startup frames can precede the first process draw command. Require the
+     * expected pixel before termination, without assuming a render count. */
+    if (verified) return;
     mv_window_flush();
     Image image = {0};
     image.width = GetRenderWidth();
