@@ -30,7 +30,7 @@ class ForegroundTests(unittest.TestCase):
         log = io.StringIO()
         with patch.object(verifier, 'run', side_effect=subprocess.TimeoutExpired('adb', 10)) as run, patch.object(verifier, 'capture_screen', side_effect=ValueError('invalid PNG')) as capture:
             verifier.failure_evidence(log, ['adb'], Path('owned-work'))
-        self.assertEqual(run.call_count, 3)
+        self.assertEqual(run.call_count, 4)
         capture.assert_called_once_with(log, ['adb'], Path('owned-work/failure.png'))
         self.assertIn('Cannot collect Android state', log.getvalue())
         self.assertIn('Cannot capture Android failure screen', log.getvalue())

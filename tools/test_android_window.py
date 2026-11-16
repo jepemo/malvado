@@ -152,7 +152,8 @@ def prepare_foreground(log, adb):
 def failure_evidence(log, adb, work):
     for command in (['shell', 'dumpsys', 'power'],
                     ['shell', 'dumpsys', 'window', 'windows'],
-                    ['shell', 'dumpsys', 'activity', 'activities']):
+                    ['shell', 'dumpsys', 'activity', 'activities'],
+                    ['logcat', '-d', '-t', '400', '-s', 'raylib', 'native_app_glue', 'AndroidRuntime', 'ActivityManager']):
         try:
             run(log, adb + command, timeout=10, check=False)
         except (OSError, subprocess.SubprocessError) as error:
@@ -257,7 +258,9 @@ def main():
         completed = False
         try:
             prepare_foreground(log, adb)
-            run(log, adb + ['install', str(apk)], timeout=90)
+            # Install the whole APK before startup. Incremental APK loading is
+            # a separate transport capability, outside this runtime matrix.
+            run(log, adb + ['install', '--no-incremental', str(apk)], timeout=90)
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
             lifecycle_evidence = None
             if args.lifecycle:

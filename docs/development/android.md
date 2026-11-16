@@ -40,6 +40,8 @@ APK results also record Build Tools, the API platform revision/extension and
 Java. An isolated SDK from `tools/android_sdk.py` adds its archive provenance
 to the results. APK verification rejects a mislabeled Build Tools directory
 or a platform other than API 34 before configuration.
+The verifier installs complete APKs with `adb install --no-incremental`.
+Incremental APK loading is not part of this runtime baseline.
 SDK Manager can update system images and emulator packages. A different package
 revision is a new verification configuration, not evidence for the baseline
 above. Finishing archive pins and the broader host matrix remains A8.1 work.
