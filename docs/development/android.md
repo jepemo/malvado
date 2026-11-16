@@ -193,3 +193,25 @@ commit `1b9012e`. The same fixtures passed Debug and Release on local arm64.
 The workflow uploads each window log and result JSON. A unique token prevents
 old logcat messages from satisfying a new run. Failed runs retain crash-buffer
 diagnostics. Results are written only after package removal is verified.
+
+## Lua NativeActivity and packaged assets
+
+Use `mise run test-android-window -- --sdk "$ANDROID_SDK_ROOT"
+--serial emulator-5580 --language lua --entry explicit`. Select
+`--entry declarative` for a returned game table, and `--config Release` for
+the optimized native build. The two forms use the same runtime, native
+scheduler and behavior module. Both profiles passed on the arm64 API 34 emulator.
+
+The test APK stores its scripts, PNG, atlas metadata and binary payload directly
+in APK assets. Its fixed-allowlist C host reads these with Android AssetManager
+and copies them into its private application directory before starting Lua.
+The existing file APIs then read them without a new process API or asset VFS.
+The checks cover binary NUL/CRLF/255 bytes, atlas lookup, atomic temporary files,
+a framebuffer pixel, exactly-once process closure, and asset snapshot bytes
+after source removal. The APK is uninstalled after each run.
+
+This test bootstrap is not a general extraction API or CLI export implementation.
+Lua APK verification currently builds from source; `--installed-sdk` remains a
+C-only check. APK fixtures are debuggable, with a local test signing key. Native
+Release profile tests do not establish production release APK signing. Failure
+evidence includes the application's captured Lua stderr before uninstall.
