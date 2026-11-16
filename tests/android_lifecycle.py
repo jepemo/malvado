@@ -61,6 +61,19 @@ class LifecycleTests(unittest.TestCase):
                 verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token', 'keyboard', Path('owned'), rust=True)
         self.assertFalse(any(command[-1] in ('21', '4') for command in commands))
 
+    def test_rust_touch_needs_its_own_release_before_back(self):
+        commands = []
+        def run(log, arguments, **kwargs):
+            commands.append(arguments)
+            return subprocess.CompletedProcess(arguments, 0, '123\n')
+        def marker(log, adb, message):
+            if message.endswith('rust touch released'):
+                raise RuntimeError('Rust release not observed')
+        with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker', side_effect=marker), patch.object(verifier, 'capture_screen', return_value=(1920,1080)):
+            with self.assertRaisesRegex(RuntimeError, 'Rust release not observed'):
+                verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token', 'touch', Path('owned'), rust=True)
+        self.assertFalse(any(command[-2:] == ['keyevent', '4'] for command in commands))
+
 
 if __name__ == '__main__':
     unittest.main()

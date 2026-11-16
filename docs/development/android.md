@@ -552,7 +552,7 @@ Rust Back and same-process background/foreground checks use the same command
 with `--lifecycle back` or `--lifecycle resume`. The latter requires native
 pause/resume events, the same PID, a restored framebuffer pixel and before/resumed
 screenshots, then Back cleanup. These fixtures do not establish process-death
-recovery. Rust APK assets, input, audio and failure-path acceptance remain open;
+recovery. Rust APK assets, audio, remaining input/lifecycle and failure-path acceptance remain open;
 the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
 coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
 remains pending until the new job passes.
@@ -564,3 +564,10 @@ later neutral tick. The host requires Rust-specific completion markers before
 injecting another key or Back. The resume case also retains PID continuity and
 before/resumed/keyboard screenshots. Release while backgrounded and IME/text
 input remain outside this check.
+
+Rust primary-contact verification uses `--lifecycle touch`. Rust must observe
+only the left mouse button, a contact near the logical center, positive
+horizontal movement and release through its own API. The host waits for both
+native and Rust release markers before Back, and retains before/released PNGs.
+This establishes one contact through the existing mouse mapping; it does not
+establish multi-touch, gestures or physical-device behavior.

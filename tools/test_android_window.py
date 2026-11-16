@@ -134,6 +134,8 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         run(log, adb + ['shell', 'input', 'touchscreen', 'swipe', str(width // 2), str(height // 2),
                         str(width * 6 // 10), str(height // 2), '1500'], timeout=10)
         wait_marker(log, adb, token + ' touch released')
+        if rust:
+            wait_marker(log, adb, token + ' rust touch released')
         if lua:
             wait_marker(log, adb, token + ' lua touch released')
         capture_screen(log, adb, screenshots / 'released.png')
@@ -225,8 +227,8 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'keyboard', 'keyboard-resume') or args.failure != 'none' or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume and keyboard only')
+    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.failure != 'none' or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact and keyboard only')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
