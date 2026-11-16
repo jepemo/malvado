@@ -2,6 +2,7 @@
 """Test Android archive integrity and extraction boundaries without downloads."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import hashlib
+import os
 from pathlib import Path
 import stat
 import sys
@@ -29,7 +30,8 @@ class ArchiveTests(unittest.TestCase):
             android_archives.extract(archive, root / "good", hashlib.sha256(archive.read_bytes()).hexdigest())
             target = root / "good/emulator/emulator"
             self.assertEqual(target.read_bytes(), b"binary")
-            self.assertTrue(target.stat().st_mode & stat.S_IXUSR)
+            if os.name != "nt":
+                self.assertTrue(target.stat().st_mode & stat.S_IXUSR)
 
     def test_traversal_and_symlinks_are_rejected_before_writes(self):
         for name, mode in (("../outside", stat.S_IFREG), ("/absolute", stat.S_IFREG),
