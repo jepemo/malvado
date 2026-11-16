@@ -177,6 +177,67 @@ def verify_installed_sdk(log, work, config, build, ndk, abi, prefix, remote):
     print(f"PASS: Android {abi} {config}: external installed C SDK", flush=True)
 
 
+def verify_lua_contracts(log, work, config, build, prefix, remote):
+    if os.name == "nt":
+        raise RuntimeError("Android contract verification currently requires a macOS/Linux authoring host")
+    wrappers = work / config / "host contract wrappers"
+    wrappers.mkdir(parents=True, exist_ok=True)
+
+    def wrapper(program):
+        run(log, prefix + ["push", build / program, remote + "/bin/" + program])
+        state = wrappers / (program + ".json")
+        state.write_text(json.dumps({
+            "adb": [str(value) for value in prefix],
+            "program": remote + "/bin/" + program,
+            "cwd": remote + "/source",
+            "paths": [[str(wrappers), remote + "/generated"],
+                      [str(build), remote + "/bin"],
+                      [str(ROOT), remote + "/source"]],
+        }))
+        launcher = wrappers / program
+        launcher.write_text("#!/bin/sh\nexec " + shlex.join([
+            sys.executable, str(ROOT / "tools/android_command.py"), "--state", str(state), "--"
+        ]) + ' "$@"\n')
+        launcher.chmod(0o755)
+        return str(launcher)
+
+    runner = wrapper("malvado-run")
+    contracts = [
+        ("invalid game configuration", "declarative_invalid.cmake", {}),
+        ("startup results", "start_results.cmake", {}),
+        ("startup failure cleanup", "start_failure_cleanup.cmake", {}),
+        ("process error traceback", "check_error.cmake", {"SCRIPT": ROOT / "tests/error.lua"}),
+        ("shutdown handles", "handle_shutdown.cmake", {"SCRIPT": ROOT / "tests/handle_shutdown.lua"}),
+        ("close failure cleanup", "check_close_failure.cmake", {"SCRIPT": ROOT / "tests/close_failure.lua"}),
+        ("natural close failure", "check_close_failure.cmake", {
+            "SCRIPT": ROOT / "tests/close_failure_natural.lua", "EXPECTED_ERROR": "natural close failed"}),
+        ("close after process error", "check_close_failure.cmake", {
+            "SCRIPT": ROOT / "tests/close_failure_error.lua", "EXPECTED_ERROR": "close after error"}),
+        ("close after self kill", "check_close_failure.cmake", {
+            "SCRIPT": ROOT / "tests/close_failure_self.lua", "EXPECTED_ERROR": "close after self-kill"}),
+    ]
+    for name, script, values in contracts:
+        run(log, ["cmake", f"-DPROGRAM={runner}",
+                  *[f"-D{key}={value}" for key, value in values.items()],
+                  "-P", ROOT / "tests" / script], cwd=wrappers, timeout=90)
+        print(f"PASS: Android {config}: {name}", flush=True)
+    traces = [
+        ("bound-collider-test", "bound_collider.lua", "bound_collider.txt"),
+        ("camera-follow-test", "alpha7_camera_follow.lua", "camera_follow.txt"),
+        ("alpha7-world-test", "alpha7_world.lua", "world.txt"),
+        ("alpha7-fade-test", "alpha7_fade.lua", "fade.txt"),
+        ("alpha7-lifecycle-test", "alpha7_lifecycle.lua", "lifecycle.txt"),
+        ("alpha7-baseline-test", "alpha7_baseline.lua", "alpha7_baseline.txt"),
+    ]
+    for program, script, expected in traces:
+        run(log, ["cmake", f"-DC_PROGRAM={wrapper(program)}", f"-DLUA_PROGRAM={runner}",
+                  f"-DLUA_SCRIPT={ROOT / 'tests' / script}",
+                  f"-DEXPECTED_FILE={ROOT / 'bindings/rust/malvado/tests/fixtures' / expected}",
+                  "-P", ROOT / "tests/compare_parity.cmake"], cwd=wrappers, timeout=45)
+        print(f"PASS: Android {config}: shared C/Lua {expected}", flush=True)
+    return len(contracts) + len(traces)
+
+
 def verify_profile(work, config, ndk, prefix, abi):
     build = work / config
     with (work / f"{config}.log").open("w", encoding="utf-8") as log:
@@ -215,7 +276,8 @@ def verify_profile(work, config, ndk, prefix, abi):
                     failures.append(str(error))
                 print(f"{config}: {test['name']}: {'PASS' if test['name'] in passed else 'FAIL'}", flush=True)
             verify_installed_sdk(log, work, config, build, ndk, abi, prefix, remote)
-            summary = {"installed_sdk": "passed", "configuration": config, "abi": abi, "passed": passed, "failures": failures,
+            contract_count = verify_lua_contracts(log, work, config, build, prefix, remote)
+            summary = {"lua_contracts": contract_count, "installed_sdk": "passed", "configuration": config, "abi": abi, "passed": passed, "failures": failures,
                        "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT).decode().strip(),
                        "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT))}
             (work / f"{config}-results.json").write_text(json.dumps(summary, indent=2) + "\n")

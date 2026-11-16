@@ -107,6 +107,15 @@ An explicitly selected target SDK outside the NDK sysroot needs
 `NO_CMAKE_FIND_ROOT_PATH` on its `find_package` call; see
 `tests/android-sdk/CMakeLists.txt` for the working consumer.
 
+Nine existing CMake suites also run the Android Lua executable through a bounded
+adb adapter. These check invalid game tables, startup results, cleanup after
+load/init/process errors, tracebacks, shutdown handles and four close-failure
+paths. Generated scripts are copied to the verifier's own directory. stdout,
+stderr and exit status reach the original contract checks. The same adapter
+compares six C/Lua traces with the shared fixtures: bound colliders, camera
+following, worlds, fades, lifecycle and the alpha.7 baseline. Both profiles
+passed all 15 suites. This does not verify Android Activity lifecycle events.
+
 Logs and JSON results remain under `build-android`, including on failure.
 They record the source commit and the actual tools. Uncommitted changes are not
 a release-candidate proof. Headless tests do not establish graphics, touch,
