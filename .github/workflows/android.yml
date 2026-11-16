@@ -20,7 +20,7 @@ jobs:
         run: |
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "system-images;android-34;google_apis;x86_64" "platform-tools" "emulator"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "system-images;android-34;google_apis;x86_64" "platform-tools" "emulator" "build-tools;34.0.0" "platforms;android-34"
       - name: Verify Debug and Release on an isolated emulator
         env:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
@@ -58,6 +58,8 @@ jobs:
               raise SystemExit("Android emulator did not boot within 240 seconds")
           PY
           mise run test-android -- --sdk "$ANDROID_HOME" --serial emulator-5580
+          mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Debug --work build-android/window-Debug
+          mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 --installed-sdk --config Release --work build-android/window-Release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -66,5 +68,7 @@ jobs:
             build-android/*.log
             build-android/*-results.json
             build-android/toolchain.json
+            build-android/window-*/*.log
+            build-android/window-*/results.json
           if-no-files-found: warn
           retention-days: 14

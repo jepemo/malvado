@@ -59,7 +59,7 @@ def main():
                       f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
                       f'-DMALVADO_TEST_SDK={installed}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
-        manifest = work / 'AndroidManifest.xml' 
+        manifest = work / 'AndroidManifest.xml'
         manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
 <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
 <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
