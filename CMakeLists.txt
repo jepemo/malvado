@@ -4,6 +4,11 @@
 cmake_minimum_required(VERSION 3.20)
 include(tools/cmake/version.cmake)
 project(malvado VERSION ${MALVADO_BASE_VERSION} LANGUAGES C)
+if(ANDROID)
+  # Android games link the SDK archives into a NativeActivity shared library.
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(PLATFORM Android CACHE STRING "raylib target platform" FORCE)
+endif()
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" MALVADO_SDK_SYSTEM)
 if(APPLE AND CMAKE_OSX_ARCHITECTURES)
   string(REPLACE ";" "-" MALVADO_SDK_ARCH "${CMAKE_OSX_ARCHITECTURES}")

@@ -161,3 +161,7 @@ run = "python3 tools/test_platform.py"
 [tasks.test-android]
 description = "Test native headless C/Lua on an explicitly selected Android API 34 emulator"
 run = "python3 tools/test_android.py"
+
+[tasks.test-android-window]
+description = "Verify C NativeActivity startup, pixels and shutdown on an Android emulator"
+run = "python3 tools/test_android_window.py"

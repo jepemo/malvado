@@ -162,3 +162,19 @@ Each profile passed 156 native checks, one installed SDK consumer and 15
 contract/parity suites. The local 5 GiB extracted verification copy was removed
 after testing. Archive failure regressions confirm that owned temporary downloads
 are cleaned while unrelated files remain intact.
+
+## C NativeActivity window verification
+
+`mise run test-android-window -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5580`
+builds a C NativeActivity APK with the existing Android raylib backend. It checks
+startup, a red framebuffer pixel, bounded rendering and window shutdown, then
+uninstalls its unique test package and verifies removal. Commands have timeouts;
+logs and results remain in `build-android-window-test`. Build-tools 34.0.0,
+platform android-34 and Java/keytool are required. The local signing key is for
+tests only. This is not a CLI exporter or a production signing configuration.
+
+The arm64 API 34 emulator passed. Android SDK archives use PIC and select raylib's
+Android backend automatically. The pixel fixture reads the actual render surface:
+raylib 5.5's screen-image helper uses a DPI query that Android does not implement.
+No third-party source was changed. This gate does not establish Lua/Rust window
+startup, APK assets, input, Activity lifecycle or physical-device behavior.

@@ -1,0 +1,10 @@
+# Malvado 2; SPDX-License-Identifier: Apache-2.0
+cmake_minimum_required(VERSION 3.20)
+project(android_window C)
+set(MALVADO_BUILD_LUA OFF CACHE BOOL "" FORCE)
+set(MALVADO_BUILD_ASSETS OFF CACHE BOOL "" FORCE)
+add_subdirectory(../.. engine EXCLUDE_FROM_ALL)
+add_library(game SHARED main.c)
+target_link_libraries(game PRIVATE malvado_platform_raylib)
+target_link_options(game PRIVATE "-uANativeActivity_onCreate" "-Wl,--no-undefined")
+target_compile_definitions(game PRIVATE ACCEPTANCE_TOKEN="${ACCEPTANCE_TOKEN}")
