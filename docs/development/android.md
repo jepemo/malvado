@@ -262,3 +262,10 @@ pixel after resuming before Back can finish the test. This does not establish
 OS process-death recovery, audio behavior, touch, physical devices or all OEM
 Activity implementations. Lifecycle modes cannot be combined with expected
 Lua failures.
+
+The resume mode passed all six C/Lua entry/profile cases on arm64. The host
+requires known resumed-Activity fields before accepting a background transition,
+and rejects a changed PID before sending Back. Result JSON records the initial
+and resumed PID. The native fixture requires actual pause/resume callbacks and
+a red pixel after resume, rather than only a successful `am start` command.
+Host regression tests cover unknown Activity output and process recreation.

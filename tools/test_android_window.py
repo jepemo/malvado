@@ -37,6 +37,12 @@ def wait_marker(log, adb, marker, timeout=30):
     raise RuntimeError('Android acceptance marker missing: ' + marker)
 
 
+def activity_is_background(state, package):
+    resumed = [line for line in state.splitlines()
+               if 'mResumedActivity:' in line or 'topResumedActivity=' in line]
+    return bool(resumed) and all(package not in line for line in resumed)
+
+
 def lifecycle_actions(log, adb, package, token, mode):
     wait_marker(log, adb, token + ' lifecycle ready')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
@@ -47,8 +53,7 @@ def lifecycle_actions(log, adb, package, token, mode):
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             state = run(log, adb + ['shell', 'dumpsys', 'activity', 'activities'], timeout=10).stdout
-            resumed = [line for line in state.splitlines() if 'mResumedActivity:' in line or 'topResumedActivity=' in line]
-            if resumed and all(package not in line for line in resumed):
+            if activity_is_background(state, package):
                 break
             time.sleep(0.2)
         else:
@@ -60,6 +65,8 @@ def lifecycle_actions(log, adb, package, token, mode):
             raise RuntimeError('Acceptance process was recreated during resume')
         wait_marker(log, adb, token + ' lifecycle resumed')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
+    return {'initial_pid': before, 'resumed_pid': after if mode == 'resume' else before,
+            'background_foreground': mode == 'resume'}
 
 
 def main():
@@ -152,10 +159,11 @@ def main():
         try:
             run(log, adb + ['install', str(apk)], timeout=90)
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
+            lifecycle_evidence = None
             if args.lifecycle:
-                lifecycle_actions(log, adb, package, token, args.lifecycle)
+                lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle)
             wait_marker(log, adb, token + ' ' + expectation)
-            facts.update(lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
+            facts.update(lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)
             completed = True
         finally:
             if not completed:
