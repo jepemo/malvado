@@ -72,6 +72,9 @@ pub extern "C" fn malvado_rust_entry() {
     } else {
         None
     };
+    if let Some(audio) = &audio {
+        audio.attach(&mut game);
+    }
     let mut keyboard = keyboard::Keyboard::default();
     let mut touch = touch::Touch::default();
     let mut verified = false;
@@ -140,10 +143,10 @@ pub extern "C" fn malvado_rust_entry() {
     unsafe {
         acceptance_lifecycle_finish();
     }
+    drop(game);
     if let Some(audio) = audio {
         audio.finish();
     }
-    drop(game);
     assert_eq!(drops.get(), 1);
     drop(image);
     drop(window);

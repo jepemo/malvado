@@ -552,7 +552,7 @@ Rust Back and same-process background/foreground checks use the same command
 with `--lifecycle back` or `--lifecycle resume`. The latter requires native
 pause/resume events, the same PID, a restored framebuffer pixel and before/resumed
 screenshots, then Back cleanup. These fixtures do not establish process-death
-recovery. Rust APK audio and remaining input/lifecycle/failure-path acceptance remain open;
+recovery. Remaining Rust input/lifecycle/failure-path acceptance stays open;
 the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
 coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
 remains pending until the new job passes.
@@ -606,6 +606,22 @@ missing/empty media and invalid volumes, repeated play, pause state, resume/stop
 finite OGG completion and stream release before device shutdown. The host
 requires a Rust-specific stream completion marker as well as the final audio
 marker. Silent fixtures do not establish audible quality, latency or focus.
+
+Add `--lifecycle resume` to the Rust `--audio` command to verify game-requested
+pause across Home/foreground. Both WAV instances and WAV/OGG streams must stay
+paused through frame maintenance, then resume/stop after foreground. A paused
+sound belongs to a process resource; process shutdown must release it exactly
+once before the final audio-device owner is dropped. Native device closure is
+checked after Rust returns. The host also requires native pause/resume, the same
+PID, restored pixels, before/resumed screenshots and uninstall. This establishes
+explicit pause continuity, not automatic audio-focus behavior.
+
+A repeated local Rust Debug audio/resume run exposed a raylib 5.5 shutdown race:
+the AudioTrack callback accessed the mixer mutex after `CloseAudioDevice`
+destroyed it. Normal API-state and earlier resume successes do not establish
+reliable shutdown. The upstream fix is included in raylib 6.2. The current upgrade uses that
+checksum-pinned release without editing third-party source. The updated C/Lua/Rust checks passed locally in both profiles. Linux/Windows
+candidate CI remains open.
 
 ## Raylib 6.2 dependency update
 

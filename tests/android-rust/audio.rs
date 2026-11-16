@@ -1,14 +1,15 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Error,
+    Error, Game, SpawnOptions,
     audio::{Audio, Sound},
 };
-use std::rc::Rc;
+use std::{cell::Cell, rc::Rc};
 pub struct Case {
     device: Rc<Audio>,
     sound: Sound,
     finite: Sound,
     streams: super::music::Streams,
+    drops: Rc<Cell<usize>>,
 }
 impl Case {
     pub fn begin() -> Self {
@@ -36,11 +37,28 @@ impl Case {
         finite.play().unwrap();
         let streams = super::music::Streams::begin(device.clone());
         Self {
+            drops: Rc::new(Cell::new(0)),
             streams,
             device,
             sound,
             finite,
         }
+    }
+    pub fn attach(&self, game: &mut Game) {
+        let sound = self.sound.try_clone().unwrap();
+        sound.play().unwrap();
+        sound.pause().unwrap();
+        let guard = super::Guard(self.drops.clone());
+        game.spawn(SpawnOptions::default(), move |process| async move {
+            let _guard = guard;
+            let sound = process.resource(sound)?;
+            loop {
+                assert!(sound.paused() && !sound.playing());
+                process.frame().await;
+            }
+        })
+        .unwrap();
+        assert_eq!(self.drops.get(), 0);
     }
     pub fn tick(&self) {
         self.device.update().unwrap();
@@ -48,6 +66,7 @@ impl Case {
         assert!(self.sound.paused() && !self.sound.playing());
     }
     pub fn finish(self) {
+        assert_eq!(self.drops.get(), 1);
         self.sound.resume().unwrap();
         assert!(self.sound.playing());
         self.sound.stop().unwrap();
@@ -59,6 +78,7 @@ impl Case {
             sound,
             finite,
             streams,
+            drops: _,
         } = self;
         streams.finish();
         drop(device);

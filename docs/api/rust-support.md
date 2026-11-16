@@ -31,8 +31,9 @@ locally and x86_64 in CI. It requires NDK r27c and target-side ABI probes. Andro
 Rust NativeActivity window/pixel/scheduler cleanup has a local fixture;
 Back, same-process pause/resume, A/Left keyboard snapshots and primary contact
 also have local arm64 fixtures. Packaged binary/PNG/atlas reads, image ownership, process errors and missing-PNG
-cleanup also have local arm64 checks. Linux CI acceptance, APK audio and remaining
-input/lifecycle behavior stay open. General APK exports, other cross targets and Windows GNU/ARM64 are
+cleanup also have local arm64 checks. Packaged sound/stream API state and explicit pause continuity also have local
+arm64 checks. Linux CI acceptance and remaining input/lifecycle/audio-focus
+behavior stay open. General APK exports, other cross targets and Windows GNU/ARM64 are
 not delivered. See the
 [Android Rust commands](../development/android.md#rust-headless-verification). Software
 rendering and silent audio CI do not establish physical device behavior. See
