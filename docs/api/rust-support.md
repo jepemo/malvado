@@ -26,8 +26,7 @@ an exported game according to its target's distribution contract.
 CLI project creation, build/check/run and exports are delivered for matching
 native macOS/Linux and Windows x64 MSVC SDKs. Windows headless/graphical SDKs,
 CLI authoring and fresh exported players are verified in the recorded baseline.
-Android headless core and asset cross compilation is verified locally on arm64 API 34;
-Linux x86_64 CI acceptance remains pending. It requires NDK r27c and target-side
+Android headless core and asset cross compilation is verified on arm64 API 34 locally and x86_64 in CI. It requires NDK r27c and target-side
 ABI probes. Android Rust graphics and APK game paths, other cross targets
 and Windows GNU/ARM64 are not delivered. See the
 [Android Rust commands](../development/android.md#rust-headless-verification). Software
