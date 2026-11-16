@@ -122,6 +122,7 @@ jobs:
             build-android/toolchain.json
             build-android/window-*/*.log
             build-android/window-*/results.json
+            build-android/window-*/*.png
             build-android/lua-*/*.log
             build-android/lua-*/*results.json
             build-android/c-lifecycle-*/*.log

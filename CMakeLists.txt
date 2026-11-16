@@ -339,6 +339,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME android_archives COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_archives.py)
   set_tests_properties(android_archives PROPERTIES TIMEOUT 15)
+  add_test(NAME android_foreground COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_foreground.py)
+  set_tests_properties(android_foreground PROPERTIES TIMEOUT 15)
   add_test(NAME android_audio_package COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_audio_package.py)
   set_tests_properties(android_audio_package PROPERTIES TIMEOUT 15)

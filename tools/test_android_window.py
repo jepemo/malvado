@@ -125,6 +125,28 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
                              if mode == 'touch' else None}
 
 
+def prepare_foreground(log, adb):
+    # Foreground tests need an awake, unlocked emulator. This does not toggle
+    # power or interfere with the controlled Home transition inside a case.
+    run(log, adb + ['shell', 'input', 'keyevent', '224'], timeout=10)
+    run(log, adb + ['shell', 'wm', 'dismiss-keyguard'], timeout=10)
+
+
+def failure_evidence(log, adb, work):
+    for command in (['shell', 'dumpsys', 'power'],
+                    ['shell', 'dumpsys', 'window', 'windows'],
+                    ['shell', 'dumpsys', 'activity', 'activities']):
+        try:
+            run(log, adb + command, timeout=10, check=False)
+        except (OSError, subprocess.SubprocessError) as error:
+            log.write(f"\nCannot collect Android state: {error}\n")
+    try:
+        capture_screen(log, adb, work / 'failure.png')
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        log.write(f"\nCannot capture Android failure screen: {error}\n")
+    log.flush()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', type=Path, required=True)
@@ -154,7 +176,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'failure.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -220,6 +242,7 @@ def main():
                        else 'window pixels and shutdown passed')
         completed = False
         try:
+            prepare_foreground(log, adb)
             run(log, adb + ['install', str(apk)], timeout=90)
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
             lifecycle_evidence = None
@@ -232,6 +255,7 @@ def main():
             completed = True
         finally:
             if not completed:
+                failure_evidence(log, adb, work)
                 if args.language == 'lua':
                     run(log, adb + ['shell', 'run-as', package, 'cat', 'files/stderr.txt'], timeout=15, check=False)
                 run(log, adb + ['logcat', '-b', 'crash', '-d', '-t', '100'], timeout=15, check=False)

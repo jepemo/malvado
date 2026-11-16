@@ -356,3 +356,11 @@ Audio cases require a token-specific native acceptance marker after the audio
 assertions. Lua also writes an exactly-once audio-close marker in its sandbox.
 A successful graphics-only run cannot satisfy audio acceptance. Host payload
 regressions check WAV/OGG bytes, the empty-WAV fixture and Lua module selection.
+
+Foreground APK tests issue `KEYCODE_WAKEUP` and dismiss the emulator keyguard
+before installation/launch. The controlled Home transition remains inside the
+case. Preparation failures stop acceptance. If a case fails, the verifier also
+collects Activity/window/power state and a best-effort `failure.png` before
+uninstall. Evidence collection errors are logged without replacing the original
+acceptance failure. This improves diagnostics for stalls without Lua errors or
+native crashes; it does not add retries or change engine timing.
