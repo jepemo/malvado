@@ -24,15 +24,12 @@ jobs:
         run: |
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
-          # Host AVD management still uses SDK Manager metadata. Compilation,
-          # transport, packaging, emulator and runtime image use fixed archives.
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-34;google_apis;x86_64"
       - name: Verify ${{ matrix.config }} on an isolated emulator
         env:
           ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
           ACCEPTANCE_CONFIG: ${{ matrix.config }}
         run: |
-          mkdir -p "$ANDROID_AVD_HOME" build-android
+          mkdir -p build-android
           config="$ACCEPTANCE_CONFIG"
           python3 tools/android_sdk.py --output build-android/linux-sdk
           python3 tools/android_archives.py --output build-android/pinned
@@ -43,15 +40,7 @@ jobs:
           # Prevent a preinstalled adb server from supplying another revision.
           "$ANDROID_HOME/platform-tools/adb" kill-server
           "$acceptance_sdk/platform-tools/adb" start-server
-          "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name malvado-alpha8 --package "system-images;android-34;google_apis;x86_64" --device pixel_2
-          python3 - <<'PYCONFIG'
-          import os
-          from pathlib import Path
-          config = Path(os.environ["ANDROID_AVD_HOME"]) / "malvado-alpha8.avd/config.ini"
-          lines = [line for line in config.read_text().splitlines() if line.split("=", 1)[0].strip() != "image.sysdir.1"]
-          lines.append("image.sysdir.1=" + str(Path("build-android/pinned/x86_64").resolve()))
-          config.write_text("\n".join(lines) + "\n")
-          PYCONFIG
+          python3 tools/android_avd.py --output "$ANDROID_AVD_HOME" --image build-android/pinned/x86_64
           "$PWD/build-android/pinned/emulator/emulator" -avd malvado-alpha8 -port 5580 \
             -no-window -no-audio -no-boot-anim -no-snapshot \
             -gpu swiftshader_indirect -cores 2 -memory 2048 > build-android/emulator.log 2>&1 &

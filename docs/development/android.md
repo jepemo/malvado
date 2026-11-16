@@ -50,9 +50,9 @@ No Gradle, signing or store toolchain is claimed by this headless gate.
 Linux CI uses `build-android/linux-sdk` for the NDK, adb, Build Tools and
 `android.jar`. It links the separately pinned emulator/image into that SDK.
 It stops the runner's previous adb server and starts the fixed adb before
-verification. SDK Manager and the host command-line tools only prepare AVD
-metadata; the AVD configuration selects the fixed image path. Java and host
-AVD management are recorded prerequisites, not hermetic archive inputs.
+verification. The shared `tools/android_avd.py` command creates fixed AVD metadata directly
+from the selected image. It does not require SDK Manager, avdmanager or Java.
+Java is still required for APK signing and its host version is not pinned.
 
 ## Local commands
 
@@ -71,7 +71,20 @@ SDKs. `linux-sdk/malvado-archives.json` records archive names and digests.
 The NDK archive contains internal file links; only links to archived files are
 accepted. This SDK executes on Linux x86_64. Extracting it on another host does
 not establish cross-host tool support. Google archive licenses remain in each
-package. Java and AVD management remain host prerequisites.
+package. Java remains a host prerequisite for APK signing.
+
+Create a dedicated AVD directory with the same command used by CI:
+
+```sh
+python3 tools/android_avd.py --output build-android/isolated-avd --image build-android/pinned/x86_64
+```
+
+Set `ANDROID_AVD_HOME` to that absolute output path when starting the emulator.
+The command accepts API 34 Google APIs arm64-v8a and x86_64 images, requires
+system/userdata/ramdisk files and refuses an existing output directory. It fixes
+1080×1920 pixels, density 420, two cores and 2048 MiB. It does not download or
+verify image archives; use the checksum-verified installer above for Linux CI.
+The historical commands below remain an alternative for host-managed images.
 
 Install [Android command-line tools](https://developer.android.com/tools) and
 [NDK r27c](https://github.com/android/ndk/releases/tag/r27c). Set

@@ -336,6 +336,9 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
   add_test(NAME windows_graphics_driver COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_graphics.py)
+  add_test(NAME android_avd COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_avd.py)
+  set_tests_properties(android_avd PROPERTIES TIMEOUT 15)
   add_test(NAME android_archives COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_archives.py)
   set_tests_properties(android_archives PROPERTIES TIMEOUT 15)
