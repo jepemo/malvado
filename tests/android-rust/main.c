@@ -51,6 +51,7 @@ acceptance_mode(void)
 void
 acceptance_lifecycle_frame(int verified)
 {
+    keyboard_frame();
     mv_window_flush();
     lifecycle_frame(verified);
 }

@@ -51,14 +51,14 @@ jobs:
           mise run test-android-rust -- --assets --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
-          for mode in none back resume; do
+          for mode in none back resume keyboard keyboard-resume; do
             extra=()
             if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi
             work="build-android/rust-window-$config"
             mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --work "$work" "${extra[@]}"
             cp "$work/window.log" "$work/$mode.log"
             cp "$work/results.json" "$work/$mode-results.json"
-            for image in before resumed; do
+            for image in before resumed keyboard; do
               if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
             done
           done

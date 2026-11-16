@@ -1,4 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
+mod keyboard;
 use malvado::{
     Error, Game, SpawnOptions,
     drawing::Rectangle,
@@ -47,10 +48,15 @@ pub extern "C" fn malvado_rust_entry() {
     .unwrap();
     // SAFETY: fixture configuration is immutable and this is the app thread.
     let mode = unsafe { acceptance_mode() };
+    let mut keyboard = keyboard::Keyboard::default();
     let mut verified = false;
     for index in 0..if mode == 0 { 90 } else { 3600 } {
         if window.should_close() {
             break;
+        }
+        window.input_tick();
+        if mode == 4 || mode == 5 {
+            keyboard.tick(&window);
         }
         game.tick().unwrap();
         let frame = window
@@ -92,6 +98,9 @@ pub extern "C" fn malvado_rust_entry() {
     assert!(verified);
     if mode != 0 {
         assert!(window.should_close());
+    }
+    if mode == 4 || mode == 5 {
+        assert!(keyboard.complete);
     }
     // SAFETY: validate and restore only this fixture's lifecycle observer.
     unsafe {

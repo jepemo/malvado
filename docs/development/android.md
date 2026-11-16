@@ -556,3 +556,11 @@ recovery. Rust APK assets, input, audio and failure-path acceptance remain open;
 the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
 coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
 remains pending until the new job passes.
+
+Rust physical-key verification uses `--language rust --installed-sdk` with
+`--lifecycle keyboard` or `--lifecycle keyboard-resume`. Rust checks A and Left
+held/pressed/released snapshots, repeated non-consuming reads, neutral B and a
+later neutral tick. The host requires Rust-specific completion markers before
+injecting another key or Back. The resume case also retains PID continuity and
+before/resumed/keyboard screenshots. Release while backgrounded and IME/text
+input remain outside this check.

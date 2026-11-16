@@ -47,7 +47,7 @@ def add_lua_assets(archive, entry, failure, *, keyboard=False):
         archive.write(ROOT / 'tests/fixtures/red.png', 'assets/red.png')
 
 
-def add_audio_assets(archive, lua=False):
+def add_audio_assets(archive, lua=False, rust=False):
     for name in ('silence.wav', 'silence.ogg', 'empty.wav'):
         archive.write(ROOT / 'tests/fixtures' / name, 'assets/' + name)
     if lua:
@@ -101,7 +101,7 @@ def capture_screen(log, adb, destination):
         temporary.unlink(missing_ok=True)
 
 
-def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=False):
+def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=False, rust=False):
     wait_marker(log, adb, token + ' lifecycle ready')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
     if not before:
@@ -141,9 +141,13 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         for keycode, name in (('29', 'a'), ('21', 'left')):
             run(log, adb + ['shell', 'input', 'keyboard', 'keyevent', '--longpress', keycode], timeout=10)
             wait_marker(log, adb, token + ' keyboard ' + name + ' released')
+            if rust:
+                wait_marker(log, adb, token + ' rust keyboard ' + name + ' released')
             if lua:
                 wait_marker(log, adb, token + ' lua keyboard ' + name + ' released')
         wait_marker(log, adb, token + ' keyboard passed')
+        if rust:
+            wait_marker(log, adb, token + ' rust keyboard passed')
         if lua:
             wait_marker(log, adb, token + ' lua keyboard passed')
             wait_marker(log, adb, token + ' lua keyboard catch-up passed')
@@ -221,8 +225,8 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume') or args.failure != 'none' or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back and resume only')
+    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle not in (None, 'back', 'resume', 'keyboard', 'keyboard-resume') or args.failure != 'none' or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume and keyboard only')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
@@ -308,7 +312,7 @@ def main():
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
             lifecycle_evidence = None
             if args.lifecycle:
-                lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua')
+                lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua', rust=args.language == 'rust')
             wait_marker(log, adb, token + ' ' + expectation)
             if args.language == 'rust':
                 wait_marker(log, adb, token + ' Rust scheduler and cleanup passed')
