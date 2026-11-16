@@ -11,7 +11,7 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| Desktop / Android | Not implemented | C/Lua/Rust runtime, APK/AAB and emulator behavior |
+| macOS arm64 / Android arm64 API 34 | Headless C/Lua foundation in Debug and Release | Window/startup, packaged assets, Rust, APK/AAB and mobile behavior |
 
 ## Native Windows baseline
 
@@ -34,7 +34,8 @@ macOS workflow remains required. Candidate acceptance must also check Windows;
 the existing SDK candidate collector does not yet include Windows packages.
 
 Windows GUI, input and audible output are not established by headless tests.
-Android toolchain and emulator selection remain part of A8.1; do not infer
+The initial [Android foundation](android.md) records its NDK, emulator and commands.
+Complete archive pins and the host matrix remain part of A8.1; do not infer
 Android support from desktop or Rust native success. Android is an export target,
 not an Android CLI authoring host. No store credentials are needed for these tests.
 

@@ -157,3 +157,7 @@ run = "python3 tools/test_rust_sanitize.py --graphics --assets"
 [tasks.test-platform]
 description = "Test native headless C/Lua SDKs in Debug and Release with logs"
 run = "python3 tools/test_platform.py"
+
+[tasks.test-android]
+description = "Test native headless C/Lua on an explicitly selected Android API 34 emulator"
+run = "python3 tools/test_android.py"

@@ -173,6 +173,11 @@ if(MALVADO_BUILD_LUA)
     target_compile_definitions(malvado_lua PRIVATE LUA_USE_POSIX)
     target_link_libraries(malvado_lua PUBLIC m)
   endif()
+  if(ANDROID)
+    # Android has no writable /tmp. The runtime host must enter its writable
+    # game directory before Lua runs. Keep Lua's atomic mkstemp implementation.
+    target_compile_definitions(malvado_lua PRIVATE LUA_TMPNAMTEMPLATE="lua_XXXXXX")
+  endif()
   add_library(malvado_lua_binding STATIC bindings/lua/runtime.c bindings/lua/globals.c)
   target_include_directories(malvado_lua_binding PRIVATE src)
   if(MALVADO_BUILD_ASSETS)
@@ -322,7 +327,9 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
   add_test(NAME windows_graphics_driver COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_graphics.py)
-  set_tests_properties(documentation_links documentation_links_test windows_graphics_driver PROPERTIES TIMEOUT 15)
+  add_test(NAME android_verifier COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_verifier.py)
+  set_tests_properties(documentation_links documentation_links_test windows_graphics_driver android_verifier PROPERTIES TIMEOUT 15)
   add_test(NAME c_api_inventory COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/current_c_api.py --check)
   set_tests_properties(c_api_inventory PROPERTIES TIMEOUT 15)
