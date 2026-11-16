@@ -140,10 +140,6 @@ fn main() {
             || target == "x86_64-pc-windows-msvc",
         "Rust SDK requires macOS, Linux, Windows x64 MSVC or Android arm64/x86_64"
     );
-    assert!(
-        !android || !graphics,
-        "Rust Android graphics is not yet supported"
-    );
     let windows = target == "x86_64-pc-windows-msvc";
     let prefix = PathBuf::from(
         env::var_os("MALVADO_SDK_PREFIX")
@@ -390,6 +386,13 @@ fn main() {
             for framework in ["OpenGL", "Cocoa", "IOKit", "CoreFoundation"] {
                 println!("cargo:rustc-link-lib=framework={framework}");
             }
+        } else if android {
+            for library in [
+                "log", "android", "EGL", "GLESv2", "OpenSLES", "atomic", "c", "dl",
+            ] {
+                println!("cargo:rustc-link-lib={library}");
+            }
+            println!("cargo:rustc-link-arg=-uANativeActivity_onCreate");
         } else if windows {
             for library in ["opengl32", "gdi32", "winmm", "shell32", "user32"] {
                 println!("cargo:rustc-link-lib={library}");

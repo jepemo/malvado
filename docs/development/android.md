@@ -1,10 +1,12 @@
 # Android foundation verification
 
-Android support is in progress for alpha.8. The current delivered path is an
-NDK-built headless C/Lua runtime and C/Lua NativeActivity graphics on an Android
-emulator. These are verification paths, not an Android CLI authoring host or
-a CLI APK exporter. Rust graphical startup, general packaged-game integration, Linux x86_64 Rust acceptance, CLI APK/AAB exports and mobile
-behavior remain open in the [version plan](../versions/2.0.0-alpha.8.md).
+Android support is in progress for alpha.8. The delivered verification paths
+include headless C/Lua/Rust core and assets, C/Lua NativeActivity graphics, and
+local Rust NativeActivity startup/pixels/cleanup. These are verification paths,
+not an Android CLI authoring host or a general APK exporter. Linux graphical
+Rust acceptance, remaining Rust APK behavior, general packaged-game integration,
+CLI APK/AAB exports and remaining mobile behavior stay open in the
+[version plan](../versions/2.0.0-alpha.8.md).
 
 ## Tested baseline
 
@@ -515,8 +517,7 @@ build/run an external asset consumer from the relocated installed crates and
 reject an asset-layout mismatch and a core-only SDK requested with assets.
 The core-only SDK remains usable when the assets feature is disabled. They retain their normal
 source-root default on desktop. Temporary files and staged assets are removed
-with each invocation, including failed tests. Graphics and APK game paths remain
-unavailable for Rust Android.
+with each invocation, including failed tests. Graphics/APK startup uses the separate NativeActivity fixture below. General APK game exports remain unavailable.
 
 For direct Cargo use, set `MALVADO_SDK_PREFIX` to the installed target SDK,
 `MALVADO_ANDROID_NDK` to NDK r27c and `MALVADO_ANDROID_RUNNER` to one executable
@@ -527,3 +528,27 @@ layout values. The supplied runner requires `MALVADO_ANDROID_ADB` and
 wrapper and Cargo's target runner to the same executable. The verification
 script sets these values, including paths with spaces. General cross compilation
 outside Android arm64/x86_64 remains unavailable.
+
+## Rust NativeActivity startup
+
+The installed graphical SDK also has a bounded Rust APK fixture:
+
+```sh
+mise run test-android-window -- --sdk "$ANDROID_SDK_ROOT" --serial emulator-5582 --language rust --installed-sdk --config Debug --work build-android/rust-window-Debug
+```
+
+Repeat with `--config Release` and a separate work directory. The command builds
+and relocates the graphical C SDK, builds a Rust static library against its
+installed crates and links a small NativeActivity entry adapter. Native graphics
+ABI probes run on the selected emulator before linking. The Rust fixture checks
+wrong-thread rejection, window creation, a red framebuffer pixel, process ticks,
+exactly-once process cleanup, window closure and verified APK removal.
+
+On Android, the window owner thread is the NativeActivity app thread. It is not
+the Java UI thread or an arbitrary Rust worker. The installed helper compares
+against the app thread before a window is created. Desktop thread rules remain
+the same. This fixture does not deliver a general CLI Android game exporter.
+Rust APK assets, input, audio, lifecycle and failure-path acceptance remain open;
+the verifier rejects options for those unverified Rust APK modes. C/Lua fixture
+coverage does not establish Rust behavior. Linux graphical Rust CI acceptance
+remains pending until the new job passes.

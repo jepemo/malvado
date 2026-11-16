@@ -46,7 +46,7 @@ def diagnostics(log, work, prefix, linker, target, env, config):
                                  '-p', 'malvado-sys', '--target', target, '--features', feature],
                                 env=env, cwd=ROOT, capture_output=True, text=True, timeout=120)
         log.write(result.stdout + result.stderr); log.flush()
-        expected = f'Rust Android {feature} is not yet supported'
+        expected = 'Malvado_FOUND to FALSE'
         if result.returncode == 0 or expected not in result.stdout + result.stderr:
             raise RuntimeError(f'Expected explicit unsupported-feature rejection: {feature}')
         print(f'PASS: Android Rust {config}: unavailable {feature}', flush=True)

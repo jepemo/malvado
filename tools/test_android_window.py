@@ -212,7 +212,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', type=Path, required=True)
     parser.add_argument('--serial', required=True)
-    parser.add_argument('--language', choices=('c', 'lua'), default='c')
+    parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
     parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume'))
@@ -221,6 +221,8 @@ def main():
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
+    if args.language == 'rust' and (not args.installed_sdk or args.audio or args.lifecycle or args.failure != 'none' or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup only')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected Lua failures')
     if args.lifecycle and args.failure != 'none':
@@ -272,6 +274,9 @@ def main():
                       f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
                       f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
+        if args.language == 'rust':
+            from android_rust_apk import build as build_rust
+            build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(android_manifest(package))
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
@@ -305,6 +310,8 @@ def main():
             if args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua')
             wait_marker(log, adb, token + ' ' + expectation)
+            if args.language == 'rust':
+                wait_marker(log, adb, token + ' Rust scheduler and cleanup passed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')
             facts.update(audio=args.audio, lifecycle_evidence=lifecycle_evidence, lifecycle=args.lifecycle, language=args.language, entry=args.entry, failure=args.failure, configuration=args.config, installed_sdk=args.installed_sdk, acceptance=expectation, package=package)

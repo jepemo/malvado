@@ -51,6 +51,7 @@ jobs:
           mise run test-android-rust -- --assets --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --work "build-android/rust-window-$config"
           for config in "$ACCEPTANCE_CONFIG"; do
             for entry in explicit declarative; do
               for failure in none process missing-image; do
@@ -114,6 +115,9 @@ jobs:
             build-android/*-results.json
             build-android/toolchain.json
             build-android/linux-sdk/malvado-archives.json
+            build-android/rust-window-*/*.log
+            build-android/rust-window-*/results.json
+            build-android/rust-window-*/*.png
             build-android/window-*/*.log
             build-android/window-*/results.json
             build-android/window-*/*.png

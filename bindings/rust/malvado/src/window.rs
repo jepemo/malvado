@@ -143,6 +143,15 @@ pub(crate) fn main_thread() -> bool {
     unsafe { gettid() as u32 == std::process::id() }
 }
 
+#[cfg(target_os = "android")]
+pub(crate) fn main_thread() -> bool {
+    unsafe extern "C" {
+        fn mv_rust_android_app_thread() -> std::ffi::c_int;
+    }
+    // SAFETY: the helper compares this thread with the NativeActivity app thread.
+    unsafe { mv_rust_android_app_thread() != 0 }
+}
+
 /// Supported physical keys. Values are checked against the installed C enum.
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
