@@ -336,6 +336,9 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
   add_test(NAME windows_graphics_driver COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_graphics.py)
+  add_test(NAME android_rust_runner COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_rust_runner.py)
+  set_tests_properties(android_rust_runner PROPERTIES TIMEOUT 15)
   add_test(NAME android_boot COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_boot.py)
   set_tests_properties(android_boot PROPERTIES TIMEOUT 15)
