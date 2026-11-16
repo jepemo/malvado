@@ -269,3 +269,16 @@ and rejects a changed PID before sending Back. Result JSON records the initial
 and resumed PID. The native fixture requires actual pause/resume callbacks and
 a red pixel after resume, rather than only a successful `am start` command.
 Host regression tests cover unknown Activity output and process recreation.
+
+All twelve lifecycle cases passed on the pinned x86_64 emulator in
+[run 43852748730](https://github.com/jepemo/malvado/actions/runs/43852748730),
+commit `51d609f`. Separate logs and JSON cover C installed-SDK and both Lua
+entries, Debug/Release, Back and resume. Each resume result records identical
+initial/resumed PIDs. The existing C/Lua APK and headless checks also passed.
+The injected Back key is verified; gesture navigation remains device review.
+This adds no process-death persistence contract or automatic audio-pause claim.
+
+Desktop regression verification passed 207 standard and 207 headless checks.
+Fifteen Android verifier/payload/archive regressions and 674 guide links passed.
+The dedicated local emulator was stopped and no test APK remained installed.
+No Docker images were created.
