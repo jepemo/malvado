@@ -16,6 +16,9 @@
 #ifndef MALVADO_ANDROID_WINDOW_H
 #define MALVADO_ANDROID_WINDOW_H
 
+#include "malvado/platform.h"
+
+int mv_android_key_down(MvKey key);
 void mv_android_window_attach(void);
 void mv_android_window_detach(void);
 int mv_android_window_close_requested(void);

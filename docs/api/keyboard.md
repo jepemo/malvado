@@ -119,3 +119,11 @@ ASan/UBSan checks are also available through `test-rust-graphics-sanitize`;
 Rust itself is not sanitizer-instrumented. The default core and optional asset
 SDK regressions pass, as does the standard C/Lua suite with 163 tests.
 A7.12 is complete; other input devices and the remaining A7.6 families stay open.
+
+On Android, losing focus, pausing the Activity or losing the native surface
+neutralizes held keys and queues release edges in the existing tick snapshot.
+The next foreground does not restore stale held state; it needs fresh key-down
+events. A key-up delivered to another Activity cannot leave a key stuck. Reads
+remain non-consuming. Press and release can coalesce before one logical tick,
+as with other observed key transitions. This rule is shared by C, Lua and Rust;
+it adds no new input operation and does not change the scheduler.

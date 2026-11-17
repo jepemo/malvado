@@ -457,7 +457,11 @@ int
 mv_key_down(MvKey key)
 {
     int code = key_code(key);
+#ifdef __ANDROID__
+    return IsWindowReady() && code != KEY_NULL && mv_android_key_down(key);
+#else
     return IsWindowReady() && code != KEY_NULL && IsKeyDown(code);
+#endif
 }
 
 static void
@@ -470,7 +474,7 @@ capture_keyboard(void)
             /* Own observed held history so supported keys share the same
              * tick transition contract. This also handles the truncated
              * previous-state history in the former raylib 5.5 backend. */
-            mv_keyboard_sample_held((MvKey)key, IsKeyDown(code));
+            mv_keyboard_sample_held((MvKey)key, mv_android_key_down((MvKey)key));
 #else
             mv_keyboard_sample((MvKey)key, IsKeyPressed(code), IsKeyReleased(code));
 #endif
