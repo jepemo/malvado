@@ -22,7 +22,8 @@ focus handling. See [Android audio verification](android.md#android-audio-api-ve
 Android C and both Lua entries also passed physical-key A/Left state and
 transition checks on arm64 and in pinned x86_64 CI, in both profiles and after
 Activity resume. This
-does not establish Unicode/IME input or release while backgrounded. The current
+does not establish Unicode/IME input. Background key-release checks now passed
+for all three languages in both profiles on arm64 and pinned x86_64. The current
 Android backend does not populate the text-input character queue, and Malvado
 does not provide an on-screen keyboard service. See
 [keyboard verification](android.md#android-keyboard-verification).
@@ -202,5 +203,11 @@ The X11 and Java follow-up source `46a45cd` passed all 15 general CI jobs,
 Windows and both Android profiles. Downloaded Android results identify the
 pinned Temurin 21.0.7+6 JDK for all 38 APK cases per profile. The current
 background-key extension passed eight local arm64 cases and native regressions;
-it still needs its own x86_64 CI acceptance. Export/startup/focus gaps remain
+its x86_64 CI acceptance passed on `fc59b77`. Export/startup/focus gaps remain
 in the version checklist.
+
+Background contact cancellation now passes eight local arm64 cases across C,
+both Lua entries and Rust in Debug/Release. It requires language-specific held,
+movement and release markers, the same PID, restored pixels and cleanup. The
+new pointer source still needs x86_64 CI. It does not add multi-touch or physical
+mouse/device acceptance.
