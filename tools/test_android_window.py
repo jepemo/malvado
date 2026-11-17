@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import struct
+import re
 import shutil
 import sys
 import time
@@ -14,6 +15,13 @@ import uuid
 import zipfile
 sys.dont_write_bytecode = True
 from test_android import ROOT, preflight, properties, run
+
+
+def verify_java(output):
+    version = re.search(r'^openjdk version "21\.0\.7"(?:\s|$)', output, re.MULTILINE)
+    build = re.search(r'Temurin-21\.0\.7\+6(?:-LTS|[\s)])', output)
+    if not version or not build:
+        raise RuntimeError('Android APK verification requires Temurin 21.0.7+6; run mise install java')
 
 
 def packaging_tools(sdk, log, facts):
@@ -27,9 +35,11 @@ def packaging_tools(sdk, log, facts):
     platform = properties(sdk / 'platforms/android-34/source.properties')
     if platform.get('AndroidVersion.ApiLevel') != '34' or not (sdk / 'platforms/android-34/android.jar').is_file():
         raise RuntimeError('Android APK verification requires platform API 34')
+    java = run(log, ['java', '-version'], timeout=15).stdout.strip()
+    verify_java(java)
     facts.update(build_tools=version, platform_revision=platform.get('Pkg.Revision'),
                  platform_extension=platform.get('AndroidVersion.ExtensionLevel'),
-                 java=run(log, ['java', '-version'], timeout=15).stdout.strip())
+                 java=java)
     return tools
 
 

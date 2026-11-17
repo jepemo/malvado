@@ -4,6 +4,7 @@
 [tools]
 cmake = "3.31.6"
 python = "3.11.16"
+java = "temurin-21.0.7+6.0.LTS"
 rust = { version = "1.99.1", profile = "minimal", components = ["clippy", "rustfmt"] }
 
 [tasks.configure]

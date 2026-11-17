@@ -110,9 +110,20 @@ class SdkTests(unittest.TestCase):
             root = Path(temporary)
             tools, _ = self.packaging_sdk(root)
             facts = {}
-            with patch.object(window, 'run', return_value=subprocess.CompletedProcess([], 0, 'java baseline')):
+            with patch.object(window, 'run', return_value=subprocess.CompletedProcess([], 0, 'openjdk version "21.0.7" 2025-04-15 LTS\nOpenJDK Runtime Environment Temurin-21.0.7+6 (build 21.0.7+6-LTS)')):
                 self.assertEqual(window.packaging_tools(root, io.StringIO(), facts), tools)
-            self.assertEqual(facts, dict(build_tools='34.0.0', platform_revision='3', platform_extension='7', java='java baseline'))
+            self.assertEqual(facts, dict(build_tools='34.0.0', platform_revision='3', platform_extension='7', java='openjdk version "21.0.7" 2025-04-15 LTS\nOpenJDK Runtime Environment Temurin-21.0.7+6 (build 21.0.7+6-LTS)'))
+
+    def test_java_accepts_pinned_vendor_version_and_build_on_both_newlines(self):
+        output = 'openjdk version "21.0.7" 2025-04-15 LTS\nOpenJDK Runtime Environment Temurin-21.0.7+6 (build 21.0.7+6-LTS)'
+        window.verify_java(output)
+        window.verify_java(output.replace('\n', '\r\n'))
+
+    def test_java_rejects_wrong_patch_build_vendor_or_missing_metadata(self):
+        valid = 'openjdk version "21.0.7" 2025-04-15 LTS\nOpenJDK Runtime Environment Temurin-21.0.7+6 (build 21.0.7+6-LTS)'
+        for output in ('', valid.splitlines()[0], valid.replace('21.0.7', '21.0.8'), valid.replace('+6', '+7'), valid.replace('Temurin', 'OtherJDK')):
+            with self.subTest(output=output), self.assertRaisesRegex(RuntimeError, 'Temurin 21.0.7'):
+                window.verify_java(output)
 
     def test_packaging_rejects_mislabeled_tools_and_wrong_api(self):
         for invalid in ('tools', 'api', 'jar'):

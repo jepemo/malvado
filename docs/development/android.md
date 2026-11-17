@@ -22,7 +22,7 @@ CLI APK/AAB exports and remaining mobile behavior stay open in the
 | Android platform tools | 34.0.5 |
 | Android command-line tools | 12.0, build 11076708 |
 | CMake / Python | Versions pinned in root `mise.toml` |
-| Java used for AVD creation | Temurin 21.0.7 |
+| Java for APK signing | Temurin 21.0.7+6, pinned in `mise.toml` |
 | Profiles | Debug and Release, assertions enabled in verification fixtures |
 
 API 28 is a compilation baseline. These results establish runtime behavior on
@@ -53,7 +53,10 @@ Linux CI uses `build-android/linux-sdk` for the NDK, adb, Build Tools and
 It stops the runner's previous adb server and starts the fixed adb before
 verification. The shared `tools/android_avd.py` command creates fixed AVD metadata directly
 from the selected image. It does not require SDK Manager, avdmanager or Java.
-Java is still required for APK signing and its host version is not pinned.
+Java for APK signing is pinned to Temurin 21.0.7+6 in `mise.toml`.
+Run `mise install java`; use `mise run test-android-window` to select it. The
+verifier rejects a different patch, build or provider before configuration.
+Direct AVD creation does not need Java or macOS system-wide JDK registration.
 
 ## Local commands
 
@@ -191,7 +194,8 @@ its emulator and uploads `android-foundation-COMMIT-PROFILE`. Candidate review
 requires both profiles; a failed Debug job cannot cancel Release evidence.
 
 Linux CI uses checksum-pinned NDK, adb, APK tools, platform, emulator and image
-archives. Host Java and command-line AVD management remain prerequisites.
+archives. The shared direct-AVD command needs no command-line AVD manager;
+APK signing uses the pinned Java toolchain.
 Their reproducibility review and the Windows toolchain remain A8.1 work.
 The exact-commit run linked above passed 156 native checks, one installed-SDK
 consumer and 15 contract/parity suites per profile, with no uncommitted files.
