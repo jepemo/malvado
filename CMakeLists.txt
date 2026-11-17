@@ -384,6 +384,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME android_screenshots COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_screenshots.py)
   set_tests_properties(android_screenshots PROPERTIES TIMEOUT 15)
+  add_test(NAME sdk_artifact COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_artifact.py)
+  set_tests_properties(sdk_artifact PROPERTIES TIMEOUT 15)
   add_test(NAME platform_candidate COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_candidate.py)
   set_tests_properties(platform_candidate PROPERTIES TIMEOUT 15)

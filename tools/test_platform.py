@@ -103,6 +103,7 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work", type=Path, default=ROOT / "build-platform")
+    parser.add_argument("--package", action="store_true", help="Package Release and test consumers against the extracted archive")
     parser.add_argument("--rust", action="store_true", help="Test Rust core and assets against relocated SDKs")
     parser.add_argument("--cli", action="store_true", help="Verify Windows CLI and produce fresh-runner players")
     parser.add_argument("--graphics", action="store_true", help="Test graphics with a display and paced silent audio")
@@ -155,6 +156,19 @@ def main():
             run(log, "cmake", "--install", str(build), "--config", config,
                 "--prefix", str(staged))
             staged.rename(prefix)
+            if args.package and config == "Release":
+                from sdk_artifact import relocate
+                packages = work / "sdk-package"
+                if packages.exists():
+                    shutil.rmtree(packages)
+                run(log, "cmake", f"-DBUILD={build}", f"-DOUTPUT={packages}",
+                    "-DCONFIG=Release", "-P", str(ROOT / "tools/cmake/package-sdk.cmake"))
+                archives = list(packages.glob("*.tar.gz"))
+                if len(archives) != 1:
+                    raise RuntimeError("Expected one SDK archive")
+                shutil.rmtree(prefix)
+                facts = relocate(archives[0], prefix)
+                log.write(f"Archive relocation passed: {facts}\n")
             if args.rust:
                 verify_rust_sdk(log, work, prefix, config, args.graphics)
             if args.cli:

@@ -21,7 +21,7 @@ jobs:
             args: --rust
             work: build-platform
           - kind: graphics
-            args: --rust --graphics --cli --work build-platform-graphics
+            args: --rust --graphics --cli --package --work build-platform-graphics
             work: build-platform-graphics
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -54,6 +54,15 @@ jobs:
           path: build-platform-graphics/players
           if-no-files-found: error
           retention-days: 3
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: matrix.kind == 'graphics'
+        with:
+          name: sdk-windows-${{ github.sha }}
+          path: |
+            build-platform-graphics/sdk-package/*.tar.gz
+            build-platform-graphics/sdk-package/*.sha256
+          if-no-files-found: error
+          retention-days: 14
   players:
     name: Windows players on a fresh runner
     needs: headless

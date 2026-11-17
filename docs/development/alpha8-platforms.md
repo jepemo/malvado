@@ -276,3 +276,19 @@ both Lua entries and Rust in Debug/Release. It requires language-specific held,
 movement and release markers, the same PID, restored pixels and cleanup. The
 new pointer source still needs x86_64 CI. It does not add multi-touch or physical
 mouse/device acceptance.
+
+## Windows SDK candidate archive
+
+The graphical Windows verifier uses `--package` to create one Release SDK
+archive and SHA-256 file in `build-platform-graphics/sdk-package`. It extracts
+the archive to the SDK path with spaces before installed Rust consumers and
+C/Lua/Rust CLI checks. The archive uses the existing SDK format and notices;
+it contains no test Mesa driver. The Windows workflow uploads it as
+`sdk-windows-COMMIT_SHA` after all authoring checks pass. Fresh exported players
+must still pass in the separate Windows job before candidate acceptance.
+
+Use `mise run test-platform -- --package --rust` for a headless native check.
+Add the existing Windows `--graphics --cli` options for the graphical SDK.
+`--package` verifies the digest, metadata and safe extraction paths before
+using the relocated archive. It preserves an existing extraction destination.
+Windows archive execution remains subject to hosted native CI acceptance.
