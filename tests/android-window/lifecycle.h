@@ -25,6 +25,29 @@ static int touch_moved;
 static int touch_down, touch_released, touch_first_x, touch_max_x;
 #include "keyboard.h"
 
+static int lifecycle_generation;
+
+static void
+lifecycle_begin(void)
+{
+    if (ACCEPTANCE_LIFECYCLE != 8) return;
+    assert(!lifecycle_app && !IsWindowReady() && !IsAudioDeviceReady());
+    assert(++lifecycle_generation <= 2);
+    lifecycle_previous = NULL;
+    lifecycle_pauses = lifecycle_resumes = lifecycle_pending = lifecycle_ready = 0;
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle entry %d", ACCEPTANCE_TOKEN, lifecycle_generation);
+}
+
+static void
+lifecycle_cleaned(void)
+{
+    if (ACCEPTANCE_LIFECYCLE != 8) return;
+    assert(lifecycle_app && !IsWindowReady() && !IsAudioDeviceReady());
+    if (lifecycle_generation == 1) assert(lifecycle_app->destroyRequested);
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle cleaned %d", ACCEPTANCE_TOKEN, lifecycle_generation);
+    lifecycle_app = NULL;
+}
+
 static void
 lifecycle_command(struct android_app *app, int32_t command)
 {
@@ -48,7 +71,10 @@ lifecycle_frame(int visible)
     }
     if (visible && !lifecycle_ready) {
         lifecycle_ready = 1;
-        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle ready", ACCEPTANCE_TOKEN);
+        if (ACCEPTANCE_LIFECYCLE == 8)
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle ready %d", ACCEPTANCE_TOKEN, lifecycle_generation);
+        else
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle ready", ACCEPTANCE_TOKEN);
     }
     if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
         int x, y;

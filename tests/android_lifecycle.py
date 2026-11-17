@@ -13,6 +13,32 @@ import test_android_window as verifier
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_recreation_requires_same_process_before_final_back(self):
+        for pid in ('123', '456'):
+            with self.subTest(pid=pid):
+                commands = []
+                pids = iter(('123', pid))
+                def run(log, arguments, **kwargs):
+                    commands.append(arguments)
+                    return subprocess.CompletedProcess(arguments, 0, next(pids) if 'pidof' in arguments else '')
+                with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker') as marker, patch.object(verifier, 'capture_screen'):
+                    if pid == '123':
+                        result = verifier.recreate_actions(io.StringIO(), ['adb'], 'package', 'token', Path('work'))
+                        self.assertEqual(result['activity_generations'], 2)
+                        self.assertEqual(marker.call_args.args[-1], 'token lifecycle cleaned 2')
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, 'process changed'):
+                            verifier.recreate_actions(io.StringIO(), ['adb'], 'package', 'token', Path('work'))
+                self.assertEqual(any(command[-2:] == ['keyevent', '4'] for command in commands), pid == '123')
+
+    def test_recreation_cannot_accept_first_generation_cleanup_as_final(self):
+        def marker(log, adb, message):
+            if message.endswith('cleaned 2'):
+                raise RuntimeError('second generation did not clean up')
+        with patch.object(verifier, 'run', return_value=subprocess.CompletedProcess([], 0, '123')), patch.object(verifier, 'wait_marker', side_effect=marker), patch.object(verifier, 'capture_screen'):
+            with self.assertRaisesRegex(RuntimeError, 'second generation'):
+                verifier.recreate_actions(io.StringIO(), ['adb'], 'package', 'token', Path('work'))
+
     def test_background_requires_known_resumed_activity_fields(self):
         package = 'dev.malvado.test'
         self.assertFalse(verifier.activity_is_background('', package))

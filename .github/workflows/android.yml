@@ -55,14 +55,14 @@ jobs:
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --failure startup-destroy --work "$work"
           cp "$work/window.log" "$work/startup-destroy.log"
           cp "$work/results.json" "$work/startup-destroy-results.json"
-          for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background; do
+          for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background recreate; do
             extra=()
             if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi
             work="build-android/rust-window-$config"
             mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --work "$work" "${extra[@]}"
             cp "$work/window.log" "$work/$mode.log"
             cp "$work/results.json" "$work/$mode-results.json"
-            for image in before resumed released keyboard resumed-a resumed-left; do
+            for image in before resumed released keyboard resumed-a resumed-left recreated; do
               if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$mode-$image.png"; fi
             done
           done
@@ -94,12 +94,12 @@ jobs:
             done
           done
           for config in "$ACCEPTANCE_CONFIG"; do
-            for lifecycle in back resume touch keyboard keyboard-resume keyboard-background touch-background; do
+            for lifecycle in back resume touch keyboard keyboard-resume keyboard-background touch-background recreate; do
               work="build-android/c-lifecycle-$config"
               mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
               cp "$work/window.log" "$work/$lifecycle.log"
               cp "$work/results.json" "$work/$lifecycle-results.json"
-              for image in before resumed released keyboard resumed-a resumed-left; do
+              for image in before resumed released keyboard resumed-a resumed-left recreated; do
                 if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$lifecycle-$image.png"; fi
               done
               for entry in explicit declarative; do
@@ -107,7 +107,7 @@ jobs:
                 mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language lua --entry "$entry" --lifecycle "$lifecycle" --config "$config" --work "$work"
                 cp "$work/window.log" "$work/$entry-$lifecycle.log"
                 cp "$work/results.json" "$work/$entry-$lifecycle-results.json"
-                for image in before resumed released keyboard resumed-a resumed-left; do
+                for image in before resumed released keyboard resumed-a resumed-left recreated; do
                   if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/$entry-$lifecycle-$image.png"; fi
                 done
               done

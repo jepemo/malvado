@@ -301,9 +301,31 @@ def failure_evidence(log, adb, work, package=None):
     log.flush()
 
 
-def android_manifest(package, startup_destroy=False):
+def recreate_actions(log, adb, package, token, work):
+    wait_marker(log, adb, token + ' lifecycle ready 1')
+    before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if not before.isdigit():
+        raise RuntimeError('Expected one live process before Activity recreation')
+    capture_screen(log, adb, work / 'before.png')
+    run(log, adb + ['shell', 'am', 'broadcast', '--receiver-foreground', '-a',
+                   'dev.malvado.test.RECREATE', '-p', package], timeout=30)
+    wait_marker(log, adb, token + ' lifecycle cleaned 1')
+    wait_marker(log, adb, token + ' lifecycle ready 2')
+    after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if before != after:
+        raise RuntimeError('Acceptance process changed during Activity recreation')
+    capture_screen(log, adb, work / 'recreated.png')
+    run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
+    wait_marker(log, adb, token + ' lifecycle cleaned 2')
+    return dict(initial_pid=before, recreated_pid=after, activity_generations=2,
+                first_generation_cleaned=True, final_generation_cleaned=True)
+
+
+def android_manifest(package, startup_destroy=False, recreate=False):
     activity = "dev.malvado.test.CancelActivity" if startup_destroy else "android.app.NativeActivity"
-    has_code = "true" if startup_destroy else "false"
+    if recreate:
+        activity = "dev.malvado.test.RecreateActivity"
+    has_code = "true" if startup_destroy or recreate else "false"
     return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
 <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
 <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
@@ -314,16 +336,18 @@ def android_manifest(package, startup_destroy=False):
 </activity></application></manifest>'''
 
 
-def cancellation_dex(log, sdk, tools, work):
-    """Finish onCreate before the first Surface lifecycle callback can run."""
+def cancellation_dex(log, sdk, tools, work, activity='CancelActivity'):
+    """Compile the selected test Activity and its named receiver classes."""
     classes, dex = work / 'classes', work / 'dex'
-    classes.mkdir(exist_ok=True)
+    if classes.exists():
+        shutil.rmtree(classes)
+    classes.mkdir()
     dex.mkdir(exist_ok=True)
     android = sdk / 'platforms/android-34/android.jar'
     run(log, ['javac', '-source', '8', '-target', '8', '-classpath', android,
-              '-d', classes, ROOT / 'tests/android-window/CancelActivity.java'])
+              '-d', classes, ROOT / ('tests/android-window/' + activity + '.java')])
     run(log, [tools / 'd8', '--lib', android, '--min-api', '28', '--output', dex,
-              classes / 'dev/malvado/test/CancelActivity.class'])
+              *sorted((classes / 'dev/malvado/test').glob(activity + '*.class'))])
     return dex / 'classes.dex'
 
 
@@ -334,13 +358,13 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image', 'startup-destroy'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background') or args.entry != 'explicit'):
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate') or args.entry != 'explicit'):
         parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and normal/resumed audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
@@ -358,7 +382,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png', 'recreated.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -367,7 +391,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2, 'startup-destroy': 3}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -397,8 +421,8 @@ def main():
             from android_rust_apk import build as build_rust
             build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure, args.audio)
         manifest = work / 'AndroidManifest.xml'
-        manifest.write_text(android_manifest(package, failure == 3))
-        dex = cancellation_dex(log, sdk, tools, work) if failure == 3 else None
+        manifest.write_text(android_manifest(package, failure == 3, lifecycle == 8))
+        dex = cancellation_dex(log, sdk, tools, work, 'RecreateActivity' if lifecycle == 8 else 'CancelActivity') if failure == 3 or lifecycle == 8 else None
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
@@ -433,10 +457,12 @@ def main():
             run(log, adb + ['install', '--no-incremental', str(apk)], timeout=90)
             settle_installation(log, adb)
             facts['package_broadcasts_idle'] = True
-            activity = 'dev.malvado.test.CancelActivity' if failure == 3 else 'android.app.NativeActivity'
+            activity = 'dev.malvado.test.CancelActivity' if failure == 3 else ('dev.malvado.test.RecreateActivity' if lifecycle == 8 else 'android.app.NativeActivity')
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/' + activity], timeout=45)
             lifecycle_evidence = None
-            if args.lifecycle:
+            if args.lifecycle == 'recreate':
+                lifecycle_evidence = recreate_actions(log, adb, package, token, work)
+            elif args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua', rust=args.language == 'rust')
             wait_marker(log, adb, token + ' ' + expectation)
             if args.language == 'rust' and failure != 3:

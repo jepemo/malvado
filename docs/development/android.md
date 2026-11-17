@@ -787,3 +787,25 @@ and both runtime archive inputs. Debug also passed the native Rust probe path
 that previously failed during directory preparation. The same source passed
 native Windows and general macOS/Linux CI. Runtime overlay relaunches and the
 remaining version scope still need their own acceptance.
+
+## Live Activity recreation
+
+Use `--lifecycle recreate` with C, either Lua entry or Rust. This mode uses a
+test-only NativeActivity receiver. After the first framebuffer is verified, the
+host requests `Activity.recreate()`. The old runtime must release its resources
+before the new instance renders. Require the same PID, numbered cleanup and
+ready markers for both generations, then Back cleanup and verified uninstall.
+Before/recreated PNGs and per-case results remain in the work directory.
+
+```sh
+mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5582 \
+  --installed-sdk --lifecycle recreate
+```
+
+Both profiles passed C, both Lua entries and Rust on API 34 arm64. The adapter
+queries the Activity's actual initial focus because Android can retain focus
+without another focus-gained callback during recreation. It restores backend
+focus before the event wait. JNI ownership and error paths have host regressions.
+No third-party source or game scheduler changed. These checks do not establish
+resource-overlay updates, process-death recovery, audible output or audio-focus
+policy. The new recreation cases still need pinned x86_64 CI acceptance.

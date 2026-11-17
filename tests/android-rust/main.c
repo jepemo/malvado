@@ -105,6 +105,7 @@ main(int argc, char **argv)
     (void)argc;
     (void)argv;
     acceptance_log("Rust entry");
+    lifecycle_begin();
     stage_assets();
     malvado_rust_entry();
     if (IsWindowReady() || (ACCEPTANCE_AUDIO && IsAudioDeviceReady())) abort();
@@ -115,6 +116,7 @@ main(int argc, char **argv)
         acceptance_log("startup cancellation passed");
         return 0;
     }
+    lifecycle_cleaned();
     acceptance_log(ACCEPTANCE_FAILURE ? "Rust failure cleanup passed" : "window pixels and shutdown passed");
     return 0;
 }

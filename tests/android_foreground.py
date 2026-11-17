@@ -35,12 +35,42 @@ class ForegroundTests(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as directory, patch.object(verifier, 'run') as run:
             work = Path(directory)
+            class_file = work / 'classes/dev/malvado/test/CancelActivity.class'
+            def compile_class(log, command, **kwargs):
+                if command[0] == 'javac':
+                    class_file.parent.mkdir(parents=True)
+                    class_file.touch()
+            run.side_effect = compile_class
             result = verifier.cancellation_dex(io.StringIO(), Path('sdk'), Path('tools'), work)
             commands = [call.args[1] for call in run.call_args_list]
             self.assertEqual(result, work / 'dex/classes.dex')
             self.assertIn(Path('sdk/platforms/android-34/android.jar'), commands[0])
             self.assertEqual(commands[1][0], Path('tools/d8'))
             self.assertEqual(commands[1][-1], work / 'classes/dev/malvado/test/CancelActivity.class')
+
+    def test_recreation_manifest_and_dex_include_receiver_class(self):
+        import tempfile
+        ns = '{http://schemas.android.com/apk/res/android}'
+        root = ET.fromstring(verifier.android_manifest('test.game', recreate=True))
+        self.assertEqual(root.find('application').get(ns + 'hasCode'), 'true')
+        self.assertEqual(root.find('application/activity').get(ns + 'name'), 'dev.malvado.test.RecreateActivity')
+        with tempfile.TemporaryDirectory() as directory, patch.object(verifier, 'run') as run:
+            work = Path(directory)
+            classes = work / 'classes/dev/malvado/test'
+            classes.mkdir(parents=True)
+            (classes / 'RecreateActivity$1.class').touch()
+            def compile_classes(log, command, **kwargs):
+                if command[0] == 'javac':
+                    classes.mkdir(parents=True)
+                    for name in ('RecreateActivity.class', 'RecreateActivity$Receiver.class'):
+                        (classes / name).touch()
+            run.side_effect = compile_classes
+            verifier.cancellation_dex(io.StringIO(), Path('sdk'), Path('tools'), work, 'RecreateActivity')
+            command = run.call_args_list[-1].args[1]
+            self.assertIn(classes / 'RecreateActivity.class', command)
+            self.assertIn(classes / 'RecreateActivity$Receiver.class', command)
+            self.assertNotIn(classes / 'RecreateActivity$1.class', command)
+            self.assertNotIn(classes / 'CancelActivity.class', command)
 
     def test_wakeup_is_not_a_power_toggle(self):
         with patch.object(verifier, 'run') as run:

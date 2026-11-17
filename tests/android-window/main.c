@@ -30,6 +30,7 @@ main(int argc, char **argv)
     (void)argc;
     (void)argv;
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s C entry", ACCEPTANCE_TOKEN);
+    lifecycle_begin();
     if (ACCEPTANCE_FAILURE == 3) {
         assert(!mv_window_open(320, 240, "Cancelled startup"));
         struct android_app *app = GetAndroidApp();
@@ -76,6 +77,7 @@ main(int argc, char **argv)
     lifecycle_finish();
     audio_finish();
     mv_window_close();
+    lifecycle_cleaned();
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s window pixels and shutdown passed", ACCEPTANCE_TOKEN);
     return 0;
 }

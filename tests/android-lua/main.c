@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 extern struct android_app *GetAndroidApp(void);
 static int verified;
@@ -36,6 +37,22 @@ static unsigned lua_keyboard_seen, lua_keyboard_held;
 static unsigned keyboard_ticks, keyboard_frame_ticks;
 static int keyboard_stall, keyboard_catchup;
 #include "lifecycle.h"
+
+/* raylib wraps fopen through its live APK manager. After window destruction,
+ * use ordinary sandbox descriptors for the fixture cleanup evidence. */
+static FILE *
+read_private(struct android_app *app, const char *name)
+{
+    size_t size = strlen(app->activity->internalDataPath) + strlen(name) + 2;
+    char *path = malloc(size);
+    assert(path);
+    snprintf(path, size, "%s/%s", app->activity->internalDataPath, name);
+    int descriptor = open(path, O_RDONLY);
+    FILE *file = descriptor >= 0 ? fdopen(descriptor, "rb") : NULL;
+    if (descriptor >= 0 && !file) close(descriptor);
+    free(path);
+    return file;
+}
 
 static void
 check_tick(void *user)
@@ -156,10 +173,17 @@ main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
+    lifecycle_begin();
+    verified = 0;
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s Lua entry", ACCEPTANCE_TOKEN);
     struct android_app *app = GetAndroidApp();
     assert(app && app->activity);
     assert(chdir(app->activity->internalDataPath) == 0);
+    if (ACCEPTANCE_LIFECYCLE == 8) {
+        /* Each runtime must produce its own exactly-once cleanup evidence. */
+        remove("closed.txt");
+        remove("audio.txt");
+    }
     const char *required[] = {"main.lua", "behavior.lua", "atlas.json", "message.bin"};
     for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i)
         assert(copy_asset(app->activity->assetManager, required[i]));
@@ -195,7 +219,7 @@ main(int argc, char **argv)
         assert(malvado_debug_context() == NULL);
         assert(access("closed.txt", F_OK) != 0);
         assert(fflush(stderr) == 0);
-        FILE *errors = fopen("stderr.txt", "rb");
+        FILE *errors = read_private(app, "stderr.txt");
         char text[8192] = {0};
         assert(errors && fread(text, 1, sizeof(text) - 1, errors) > 0);
         assert(fclose(errors) == 0 && strstr(text, "could not open window"));
@@ -207,24 +231,24 @@ main(int argc, char **argv)
     if (keyboard_mode()) assert(lua_keyboard_seen == 3 && keyboard_stall && keyboard_catchup);
     assert(!IsAudioDeviceReady());
     if (ACCEPTANCE_AUDIO) {
-        FILE *audio = fopen("audio.txt", "rb");
+        FILE *audio = read_private(app, "audio.txt");
         assert(audio && fgetc(audio) == '1' && fgetc(audio) == EOF);
         assert(fclose(audio) == 0);
         __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s audio API passed", ACCEPTANCE_TOKEN);
     }
     assert(!IsWindowReady() && malvado_debug_context() == NULL);
     assert(ACCEPTANCE_FAILURE == 2 || verified);
-    FILE *closed = fopen("closed.txt", "rb");
+    FILE *closed = read_private(app, "closed.txt");
     assert(closed && fgetc(closed) == '1' && fgetc(closed) == EOF);
     assert(fclose(closed) == 0);
     if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
-        FILE *touch = fopen("touch.txt", "rb");
+        FILE *touch = read_private(app, "touch.txt");
         assert(touch && fgetc(touch) == '1' && fgetc(touch) == EOF);
         assert(fclose(touch) == 0);
     }
     if (ACCEPTANCE_FAILURE) {
         assert(fflush(stderr) == 0);
-        FILE *errors = fopen("stderr.txt", "rb");
+        FILE *errors = read_private(app, "stderr.txt");
         assert(errors);
         char text[8192] = {0};
         assert(fread(text, 1, sizeof(text) - 1, errors) > 0);
@@ -237,6 +261,7 @@ main(int argc, char **argv)
     const unsigned char expected[] = {0, 13, 10, 255};
     assert(length == sizeof(expected) && !memcmp(bytes, expected, length));
     mv_asset_source_destroy(snapshot);
+    lifecycle_cleaned();
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua assets and shutdown passed", ACCEPTANCE_TOKEN);
     return 0;
 }
