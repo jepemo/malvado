@@ -589,6 +589,16 @@ wrapper and Cargo's target runner to the same executable. The verification
 script sets these values, including paths with spaces. General cross compilation
 outside Android arm64/x86_64 remains unavailable.
 
+The transport retries directory creation for at most 30 seconds when Android
+reports exactly `fork failed: Out of memory` before the shell command can run.
+Each attempt uses the remaining deadline. It records retries on stderr and
+keeps ABI probe stdout unchanged. It does not retry permission/offline errors,
+uploads, target program execution or failed tests. A target failure retains its
+original status and output, and the owned directory is removed. Host regressions
+cover recovery, deadline exhaustion, unrelated errors and program memory errors.
+A live emulator check injected one preparation failure, then ran a native
+scheduler test and verified successful directory cleanup.
+
 ## Rust NativeActivity startup
 
 The installed graphical SDK also has a bounded Rust APK fixture:

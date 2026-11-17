@@ -7,9 +7,30 @@ from pathlib import Path
 import sys
 import subprocess
 import uuid
+import time
 
 sys.dont_write_bytecode = True
 from test_android import run, shell
+
+
+def create_remote(prefix, log, remote):
+    # Android can reject shell creation under transient fork memory pressure.
+    # Retry only directory preparation. Never replay a test or ABI probe.
+    deadline = time.monotonic() + 30
+    while (remaining := deadline - time.monotonic()) > 0:
+        try:
+            shell(prefix, log, ['mkdir', '-p', remote], timeout=min(10, remaining))
+            return
+        except RuntimeError as error:
+            if 'Android command transport failed: error: fork failed: Out of memory' not in str(error):
+                raise
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            log.write('Retrying Android directory preparation after fork memory pressure\n')
+            log.flush()
+            time.sleep(min(1, remaining))
+    raise RuntimeError('Android directory preparation exceeded its 30-second fork-memory deadline')
 
 
 def execute(adb, serial, program, arguments, log, *, inputs=None):
@@ -18,7 +39,7 @@ def execute(adb, serial, program, arguments, log, *, inputs=None):
     program = Path(program).resolve(strict=True)
     prefix = [str(adb), '-s', serial]
     remote = '/data/local/tmp/malvado-rust-' + uuid.uuid4().hex
-    shell(prefix, log, ['mkdir', '-p', remote])
+    create_remote(prefix, log, remote)
     try:
         run(log, prefix + ['push', program, remote + '/program'], timeout=30)
         environment = ['TMPDIR=' + remote]
