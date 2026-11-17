@@ -23,4 +23,5 @@ int malvado_rust_dependency(char *path, size_t size);
 int malvado_native_project(void);
 int malvado_native_build(void);
 int malvado_native_run(void);
+int malvado_android_export(int argc, char **argv);
 #endif

@@ -55,6 +55,46 @@ If a folder contains both `main.lua` and a C project, `run` and `export` select 
 
 Define the remaining paths, project discovery, errors, packaging, and the relationship between the client, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. The commands and options in the target experience below are proposals unless described above.
 
+## Android debug APK export (Lua)
+
+An installed graphical SDK on macOS or Linux can export a Lua project as a
+runnable Android arm64 debug APK. The current project must contain `main.lua`.
+Both explicit and declarative entry forms use the same player.
+
+```sh
+malvado export --target android-arm64 --format apk \
+  --runtime-sdk /absolute/path/android-runtime \
+  --android-sdk "$ANDROID_SDK_ROOT" \
+  --output ../dist/game.apk --id org.example.mygame
+```
+
+Build the target runtime once with the [Android runtime commands](../development/android-runtime.md).
+Its SDK version must match the host client. The exporter validates Android SDK
+metadata and the arm64 ELF library before packaging. It requires Python 3,
+Build Tools 34.0.0, platform 34 and Java/keytool on PATH. The verified baseline
+uses the root mise-pinned Temurin JDK. No compiler, Cargo, Gradle or store
+credentials are used during export.
+
+The output is one new `.apk` file. Publication is exclusive and does not replace
+an existing file. Failed builds remove their owned temporary files. Export skips
+hidden entries and folders named `build` or `dist`. Other regular project files,
+including nested binary assets and Lua modules, are included. Links and special
+files are rejected. `licenses` and `malvado-files.txt` are reserved root names.
+Paths cannot contain backslashes, CR/LF/NUL or exceed 1023 UTF-8 bytes. All included
+Lua files pass the ordinary CLI syntax check. Dependency notices are packaged.
+
+The optional application ID defaults to `org.malvado.game`. It needs at least two
+dot-separated components; each starts with an ASCII letter and then contains
+ASCII letters, digits or underscores. The initial manifest uses version code 1,
+landscape orientation, minimum API 28 and target API 34. A fresh temporary debug
+key signs each export. Uninstall an older build before installing another build
+with that ID. This is a development APK, not a production signing workflow.
+
+C/Rust export, other Android ABIs, configurable manifests, release APK and AAB
+are unavailable. `--release` and `--format aab` are rejected. Windows Android
+authoring is unavailable. General Android export acceptance remains open until
+these remaining version deliverables are implemented and verified.
+
 ## Target experience
 
 ```sh

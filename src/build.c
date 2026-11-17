@@ -150,6 +150,31 @@ run_process(char *const args[])
     return run_process_with_sdk(args, NULL);
 }
 
+int
+malvado_android_export(int argc, char **argv)
+{
+#ifdef _WIN32
+    (void)argc;
+    (void)argv;
+    fprintf(stderr, "Android export authoring requires macOS or Linux\n");
+    return 1;
+#else
+    char sdk[4096], script[8192];
+    if (!malvado_sdk_root(sdk, sizeof(sdk))) return 1;
+    if (snprintf(script, sizeof(script), "%s/%s", sdk, MALVADO_ANDROID_EXPORT_REL) >= (int)sizeof(script)) return 1;
+    char **arguments = calloc((size_t)argc + 4, sizeof(*arguments));
+    if (!arguments) return 1;
+    arguments[0] = "python3";
+    arguments[1] = script;
+    arguments[2] = "--engine-version";
+    arguments[3] = MALVADO_VERSION_STRING;
+    for (int i = 2; i < argc; ++i) arguments[i + 2] = argv[i];
+    int result = run_process_with_sdk(arguments, NULL);
+    free(arguments);
+    return result;
+#endif
+}
+
 /* Select the host explicitly so Cargo configuration cannot silently redirect
  * exports to a different target or leave a stale default-target executable. */
 static int
@@ -303,6 +328,7 @@ malvado_native_run(void)
 #else
 #include <stdio.h>
 #include "build.h"
+int malvado_android_export(int argc, char **argv) { (void)argc; (void)argv; fprintf(stderr, "Android export requires an installed graphical SDK\n"); return 1; }
 int malvado_rust_dependency(char *path, size_t size) { (void)path; (void)size; return 0; }
 int malvado_rust_binary(char *path, size_t size) { (void)path; (void)size; return 0; }
 int malvado_rust_build(int check) { (void)check; fprintf(stderr, "Rust builds require a graphical SDK\n"); return 1; }

@@ -38,3 +38,19 @@ restoration, C/Rust payloads or release signing.
 
 See the [CLI specification](../specs/cli.md) for host export commands and
 current limits.
+
+Verify the installed host CLI and the component-only target runtime with an
+explicit API 34 arm64 emulator:
+
+```sh
+mise run test-android-export -- \
+  --cli /absolute/path/host-sdk/bin/malvado \
+  --runtime-sdk "$PWD/android-runtime" --android-sdk "$ANDROID_SDK_ROOT" \
+  --serial emulator-5582 --work build-android-export
+```
+
+The verifier exports and executes both Lua entries and a process-error game.
+It checks nested binary assets, atlas/PNG loading, actual screenshot pixels,
+notices, exact error diagnostics, session cleanup and uninstall. It retains
+logs, screenshots and a result report. Missing capabilities remain listed in
+the version checklist; this command does not certify release APK or AAB.

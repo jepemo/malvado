@@ -316,3 +316,17 @@ entries and Rust in Debug/Release. It requires process disappearance and new-PID
 rendering/cleanup, with before/restarted screenshots. It does not establish
 low-memory restoration or saved-game recovery. Pinned x86_64 execution remains
 a separate CI acceptance check.
+
+
+## Initial Lua Android debug export
+
+The installed graphical CLI on macOS/Linux now delivers `export --target
+android-arm64 --format apk` with an explicit target runtime prefix and Android
+SDK. The reusable `AndroidRuntime` component contains the production Lua player
+and notices. It packages ordinary modules and binary assets, with both Lua
+entries, private session cleanup and process-error diagnostics. Component-only
+runtime installation and real installed-CLI exports passed on macOS arm64 with
+an API 34 arm64 emulator. Linux authoring and hosted export acceptance still
+need execution; Windows Android authoring is unavailable. This first path has
+fixed development manifest defaults and temporary debug signing. C/Rust,
+release APK/AAB and other Android export targets remain unavailable.

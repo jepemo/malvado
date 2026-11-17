@@ -170,3 +170,7 @@ run = "python3 tools/test_android_window.py"
 [tasks.test-android-rust]
 description = "Verify headless Rust against installed Android SDKs on an explicit emulator"
 run = "python3 tools/test_android_rust.py"
+
+[tasks.test-android-export]
+description = "Verify real installed-CLI Lua debug APK exports on an arm64 emulator"
+run = "python3 tools/test_android_export.py"

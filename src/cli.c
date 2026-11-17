@@ -56,6 +56,7 @@ print_help(FILE *output)
             "  run [--headless] [PATH]  Run a game\n"
             "  check [PATH]         Check Lua syntax or a C/Rust project\n"
             "  export [PATH]        Export a game for this host\n"
+            "  export --target android-arm64 --format apk --runtime-sdk SDK --android-sdk SDK --output FILE.apk\n"
             "  export --app [--id ID] [PATH]  Export a macOS app\n"
 #ifdef MALVADO_BUILD_ASSETS
             "  fpg-export [--transparent-zero] INPUT OUTPUT  Export FPG to PNG and JSON\n"
@@ -519,6 +520,14 @@ main(int argc, char **argv)
         return language == 2 ? malvado_rust_build(0) : malvado_native_build();
     }
     if (argc >= 2 && strcmp(argv[1], "export") == 0) {
+        if (argc >= 3 && !strcmp(argv[2], "--target")) {
+            if (project_language() != 0) {
+                fprintf(stderr, "Android APK export currently requires a Lua project\n");
+                return 1;
+            }
+            if (check_project(".", 1) != 0) return 1;
+            return malvado_android_export(argc, argv);
+        }
         int app = argc >= 3 && strcmp(argv[2], "--app") == 0;
         const char *bundle_id = NULL, *destination = NULL;
         for (int i = app ? 3 : 2; i < argc; ++i) {
