@@ -384,7 +384,11 @@ new_project(const char *path, int language)
         "project(game C)\n"
         "set(CMAKE_C_STANDARD 11)\n"
         "find_package(Malvado CONFIG REQUIRED COMPONENTS graphics)\n"
-        "add_executable(game main.c)\n"
+        "if(ANDROID)\n"
+        "  malvado_add_android_game(game main.c)\n"
+        "else()\n"
+        "  add_executable(game main.c)\n"
+        "endif()\n"
         "target_link_libraries(game PRIVATE Malvado::graphics)\n";
     static const char rust_game[] =
         "use malvado::{Game, Error, SpawnOptions};\n"
@@ -521,11 +525,13 @@ main(int argc, char **argv)
     }
     if (argc >= 2 && strcmp(argv[1], "export") == 0) {
         if (argc >= 3 && !strcmp(argv[2], "--target")) {
-            if (project_language() != 0) {
-                fprintf(stderr, "Android APK export currently requires a Lua project\n");
+            int language = project_language();
+            if (language < 0) return 2;
+            if (language == 2) {
+                fprintf(stderr, "Android APK export for Rust is not available\n");
                 return 1;
             }
-            if (check_project(".", 1) != 0) return 1;
+            if (language == 0 && check_project(".", 1) != 0) return 1;
             return malvado_android_export(argc, argv);
         }
         int app = argc >= 3 && strcmp(argv[2], "--app") == 0;

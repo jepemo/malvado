@@ -333,3 +333,16 @@ and can produce unsigned output or use explicit external signing credentials.
 Both modes passed local arm64 execution, assets/pixels, process errors, cleanup
 and uninstall; release checks also verify non-debuggable state. C/Rust, AAB and
 other Android export targets remain unavailable.
+
+
+## Production C Android export
+
+Ordinary C projects now use the installed SDK's `malvado_add_android_game`
+helper and the shared Lua/C session runner. The target SDK builds without Lua.
+The installed CLI compiles C projects with pinned NDK r27c and packages arm64
+debug/release APKs with normal assets, notices and signing controls. Native C
+project and target-SDK paths with spaces, scheduler/state/texture cleanup,
+normal/error execution and rejected invalid builds passed locally on macOS
+arm64/API 34 arm64. Release uses a full Release SDK. Extra shared dependencies
+are rejected, not omitted. Hosted/Linux authoring and Rust/AAB export remain
+separate gates.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export a Lua project as an Android arm64 APK using a matching target SDK runtime."""
+"""Export a C or Lua project as an Android arm64 APK using a matching target SDK."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 import os
@@ -12,7 +12,7 @@ import zipfile
 from xml.sax.saxutils import quoteattr
 
 
-def project_files(project):
+def project_files(project, language='lua'):
     result = []
     def visit(folder, prefix=''):
         for path in sorted(folder.iterdir()):
@@ -28,24 +28,35 @@ def project_files(project):
             if path.is_dir():
                 visit(path, name + '/')
             elif path.is_file():
-                result.append((path, name))
+                if language != 'c' or (path.suffix not in ('.c', '.h') and path.name != 'CMakeLists.txt'):
+                    result.append((path, name))
             else:
                 raise ValueError('Project special files are not supported: ' + name)
     visit(project)
-    if not any(name == 'main.lua' for _, name in result):
+    if language == 'c' and not (project / 'CMakeLists.txt').is_file():
+        raise ValueError('Android C exports require CMakeLists.txt with a game target')
+    if language == 'lua' and not any(name == 'main.lua' for _, name in result):
         raise ValueError('Android Lua exports require main.lua')
     return result
 
 
-def validate_runtime(runtime, version, release=False):
+def validate_sdk(runtime, version):
     info = dict(line.split('=', 1) for line in (runtime / 'share/malvado/malvado-sdk-info.txt').read_text().splitlines())
     if info.get('system') != 'android' or info.get('version') != version or info.get('architecture') not in ('aarch64', 'arm64', 'arm64-v8a'):
         raise ValueError('Android runtime SDK version/system mismatch')
-    library = runtime / 'libexec/malvado/android/arm64-v8a/libgame.so'
+
+
+def validate_library(library):
     with library.open('rb') as stream:
         header = stream.read(20)
     if len(header) != 20 or header[:7] != b'\x7fELF\x02\x01\x01' or header[16:18] != b'\x03\x00' or header[18:20] != b'\xb7\x00':
         raise ValueError('Android runtime must be an arm64 ELF library')
+    return library
+
+
+def validate_runtime(runtime, version, release=False):
+    validate_sdk(runtime, version)
+    library = validate_library(runtime / 'libexec/malvado/android/arm64-v8a/libgame.so')
     if release:
         metadata = runtime / 'share/malvado/android-runtime.txt'
         if not metadata.is_file():
@@ -58,6 +69,40 @@ def validate_runtime(runtime, version, release=False):
 
 def run(arguments):
     subprocess.run([str(arg) for arg in arguments], check=True, timeout=120)
+
+
+def build_c_game(project, runtime, sdk, work, release, ndk=None):
+    ndk = Path(ndk).resolve() if ndk else sdk / 'ndk/27.2.12479018'
+    properties = ndk / 'source.properties'
+    if not properties.is_file() or not re.search(r'^Pkg.Revision\s*=\s*27\.2\.12479018\s*$', properties.read_text(), re.MULTILINE):
+        raise ValueError('C Android export requires NDK r27c (27.2.12479018)')
+    if not (runtime / 'lib/cmake/Malvado/MalvadoConfig.cmake').is_file():
+        raise ValueError('C export requires a full installed Android graphical SDK')
+    if release and not (runtime / 'lib/cmake/Malvado/MalvadoGraphicsTargets-release.cmake').is_file():
+        raise ValueError('Release C export requires a full Android SDK installed in Release')
+    if not shutil.which('cmake'):
+        raise ValueError('C export requires CMake on PATH')
+    build = work / 'native'
+    run(['cmake', '-S', project, '-B', build,
+         '-DCMAKE_TOOLCHAIN_FILE=' + str(ndk / 'build/cmake/android.toolchain.cmake'),
+         '-DANDROID_ABI=arm64-v8a', '-DANDROID_PLATFORM=android-28',
+         '-DCMAKE_BUILD_TYPE=' + ('Release' if release else 'Debug'),
+         '-DMalvado_DIR=' + str(runtime / 'lib/cmake/Malvado'),
+         '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + str(build / 'output'),
+         '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(build / 'output')])
+    run(['cmake', '--build', build, '--target', 'game', '--parallel', '8'])
+    library = validate_library(build / 'output/libgame.so')
+    inspectors = list((ndk / 'toolchains/llvm/prebuilt').glob('*/bin/llvm-readelf'))
+    if len(inspectors) != 1:
+        raise ValueError('Pinned NDK LLVM dependency inspector is missing')
+    inspected = subprocess.run([str(inspectors[0]), '--dynamic', str(library)], check=True,
+                               capture_output=True, text=True, timeout=30)
+    needed = set(re.findall(r'\(NEEDED\).*\[([^]]+)\]', inspected.stdout))
+    platform_libraries = {'libc.so', 'libm.so', 'libdl.so', 'liblog.so', 'libandroid.so',
+                          'libEGL.so', 'libGLESv2.so', 'libOpenSLES.so'}
+    if needed - platform_libraries:
+        raise ValueError('C export has unsupported shared dependencies: ' + ', '.join(sorted(needed - platform_libraries)))
+    return library
 
 
 def manifest_xml(package, version_code=1, version_name='debug', title='Malvado game', orientation='landscape', min_api=28, release=False):
@@ -101,17 +146,24 @@ def signing_configuration(project, keystore=None, key_alias=None, store_password
     return keystore, key_alias, store_password_env, key_password_env
 
 
-def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, **configuration):
+def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, ndk=None, **configuration):
     if release:
         configuration.setdefault('version_name', 'release')
     manifest_text = manifest_xml(package, release=release, **configuration)
     signing = signing_configuration(project, keystore, key_alias, store_password_env, key_password_env)
     if output.suffix != '.apk' or output.exists() or output.is_symlink():
         raise ValueError('Output must be a new .apk file')
-    files = project_files(project)
-    library = validate_runtime(runtime, version, release=release)
+    language = 'lua' if (project / 'main.lua').is_file() else 'c'
+    files = project_files(project, language)
+    if language == 'lua':
+        library = validate_runtime(runtime, version, release=release)
+    else:
+        validate_sdk(runtime, version)
     notices = runtime / 'share/licenses/malvado'
-    for name in ('LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'):
+    names = ['LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'] if language == 'lua' else ['LICENSE', 'raylib-LICENSE']
+    if language == 'c' and (notices / 'cJSON-LICENSE').is_file():
+        names.append('cJSON-LICENSE')
+    for name in names:
         path = notices / name
         if not path.is_file():
             raise ValueError('Android runtime license is missing: ' + name)
@@ -139,6 +191,8 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.malvado-apk-', dir=output.parent) as folder:
         work = Path(folder)
+        if language == 'c':
+            library = build_c_game(project, runtime, sdk, work, release, ndk)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(manifest_text, encoding='utf-8')
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
@@ -177,6 +231,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', choices=('android-arm64',), required=True)
     parser.add_argument('--format', choices=('apk',), required=True)
+    parser.add_argument('--ndk', type=Path)
     parser.add_argument('--runtime-sdk', type=Path, required=True)
     parser.add_argument('--android-sdk', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
@@ -194,7 +249,7 @@ def main():
     parser.add_argument('--engine-version', required=True)
     args = parser.parse_args()
     try:
-        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
+        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, ndk=args.ndk, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, str(error) + '\n')
 

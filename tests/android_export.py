@@ -25,6 +25,52 @@ class ExportTests(unittest.TestCase):
         self.project.mkdir()
         (self.project / 'main.lua').write_text('return {}')
 
+    def test_c_asset_selection_excludes_source_and_build_configuration(self):
+        (self.project/'main.lua').unlink()
+        (self.project/'CMakeLists.txt').write_text('project(game C)')
+        (self.project/'main.c').write_text('int main(void) {return 0;}')
+        (self.project/'private.h').write_text('/* source */')
+        (self.project/'data.bin').write_bytes(b'\0\xff')
+        self.assertEqual([name for _, name in exporter.project_files(self.project, 'c')], ['data.bin'])
+
+    def test_c_build_requires_pinned_ndk_full_sdk_and_release_configuration(self):
+        runtime = self.root/'target'
+        sdk = self.root/'sdk'
+        work = self.root/'build'
+        with self.assertRaisesRegex(ValueError, 'NDK r27c'):
+            exporter.build_c_game(self.project, runtime, sdk, work, False)
+        properties = sdk/'ndk/27.2.12479018/source.properties'
+        properties.parent.mkdir(parents=True)
+        properties.write_text('Pkg.Revision = 27.2.12479018\n')
+        with self.assertRaisesRegex(ValueError, 'full installed'):
+            exporter.build_c_game(self.project, runtime, sdk, work, False)
+        config = runtime/'lib/cmake/Malvado/MalvadoConfig.cmake'
+        config.parent.mkdir(parents=True)
+        config.touch()
+        with self.assertRaisesRegex(ValueError, 'installed in Release'):
+            exporter.build_c_game(self.project, runtime, sdk, work, True)
+        (config.parent/'MalvadoGraphicsTargets-release.cmake').touch()
+        def run(args):
+            if '--build' in args:
+                output = work/'native/output/libgame.so'
+                output.parent.mkdir(parents=True, exist_ok=True)
+                header = bytearray(20)
+                header[:7] = b'\x7fELF\x02\x01\x01'
+                header[16:18] = b'\x03\x00'
+                header[18:20] = b'\xb7\x00'
+                output.write_bytes(header)
+        inspector = sdk/'ndk/27.2.12479018/toolchains/llvm/prebuilt/host/bin/llvm-readelf'
+        inspector.parent.mkdir(parents=True)
+        inspector.touch()
+        with patch.object(exporter, 'run', side_effect=run) as commands, patch.object(exporter.shutil, 'which', return_value='/cmake'), patch.object(exporter.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '(NEEDED) Shared library: [libc.so]')):
+            self.assertTrue(exporter.build_c_game(self.project, runtime, sdk, work, True).is_file())
+        self.assertIn('-DCMAKE_BUILD_TYPE=Release', commands.call_args_list[0].args[0])
+        self.assertIn('--target', commands.call_args.args[0])
+        with patch.object(exporter, 'run', side_effect=run), patch.object(exporter.shutil, 'which', return_value='/cmake'), patch.object(exporter.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '(NEEDED) Shared library: [libcustom.so]')):
+            with self.assertRaisesRegex(ValueError, 'unsupported shared dependencies'):
+                exporter.build_c_game(self.project, runtime, sdk, work, False)
+
+
     def test_manifest_configuration_and_xml_escaping(self):
         xml = exporter.manifest_xml('org.example.game', version_code=42, version_name='2 & "next"', title='Juego <uno>', orientation='portrait', min_api=30)
         root = ET.fromstring(xml)

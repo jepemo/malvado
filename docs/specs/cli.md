@@ -125,7 +125,11 @@ Explicit signing also needs Java and apksigner; automatic debug-key creation
 needs keytool. Signing a file does not publish it to a store. Release verification
 uses disposable test credentials and does not establish production key custody.
 
-C/Rust export, other Android ABIs and AAB remain unavailable. `--format aab` is
+C projects now use the same command with a full Android target SDK. New
+`--c` projects contain the required CMake branch; see [C Android games](../development/android-c-games.md).
+C export additionally requires CMake and NDK r27c. It supports both debug and
+release APKs, source exclusion, the same manifest options and explicit signing.
+Rust export, other Android ABIs and AAB remain unavailable. `--format aab` is
 rejected. Windows Android authoring is unavailable. General Android export
 acceptance remains open until these remaining version deliverables are
 implemented and verified.
