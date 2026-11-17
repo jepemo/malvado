@@ -677,6 +677,12 @@ A move cannot revive cancelled state; a fresh down is needed. This verifies one
 primary contact through existing mouse queries. Multi-touch, physical mouse
 hardware and process-death recovery remain outside this acceptance check.
 
+Both profiles passed this check on clean `7c3a049` in
+[Android CI run 44047602484](https://github.com/jepemo/malvado/actions/runs/44047602484).
+Downloaded artifacts contain 46 distinct successful APK packages and 86 valid
+PNG headers per profile. All four background-contact language/entry results
+confirm release while backgrounded and the same PID after foreground.
+
 ## Destruction before the first native surface
 
 The Android window adapter waits for a pending native window before it calls
@@ -703,6 +709,6 @@ other profile. The test-only Java Activity calls `finish()` in `onCreate`, befor
 Android can create the first surface. The native checks require DESTROY with no
 current or pending window, no graphics or audio device, and a language-specific
 failed-open result. Lua also requires its runtime context to be released and its
-process cleanup marker to remain absent. Each case retains its token, logs and result JSON,
-and verifies APK removal. Screenshots cannot establish this path because it has
+process cleanup marker to remain absent. Each case retains its token, logs and
+result JSON, and verifies APK removal. Screenshots cannot establish this path because it has
 no application surface. Both CI profiles include all four language/entry cases.
