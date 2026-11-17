@@ -778,3 +778,12 @@ failed-open result. Lua also requires its runtime context to be released and its
 process cleanup marker to remain absent. Each case retains its token, logs and
 result JSON, and verifies APK removal. Screenshots cannot establish this path because it has
 no application surface. Both CI profiles include all four language/entry cases.
+
+Both cancelled-startup profiles passed on clean `d8a01fd` in
+[Android CI run 44051919472](https://github.com/jepemo/malvado/actions/runs/44051919472).
+Downloaded artifacts verify 50 distinct APKs, 86 valid PNG headers and all four
+language/entry cancellations per profile. Every APK result retains all four SDK
+and both runtime archive inputs. Debug also passed the native Rust probe path
+that previously failed during directory preparation. The same source passed
+native Windows and general macOS/Linux CI. Runtime overlay relaunches and the
+remaining version scope still need their own acceptance.
