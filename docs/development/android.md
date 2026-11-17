@@ -809,3 +809,14 @@ focus before the event wait. JNI ownership and error paths have host regressions
 No third-party source or game scheduler changed. These checks do not establish
 resource-overlay updates, process-death recovery, audible output or audio-focus
 policy. The new recreation cases still need pinned x86_64 CI acceptance.
+
+### C process-error cleanup
+
+Use `--installed-sdk --failure process` with `test-android-window` to verify
+C process failure inside an APK. The callback creates a process-owned GPU
+texture and returns `MV_STEP_ERROR`. The fixture requires `MV_PROCESS_ERROR`,
+zero live processes, and exactly one texture release and process destructor.
+Context destruction must not repeat either cleanup. The test then closes the
+window, checks graphics/audio device state and verifies APK removal.
+Both Debug and Release run in the Android CI matrix. This checks native API
+state and cleanup; it does not establish physical-device or audible behavior.

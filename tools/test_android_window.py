@@ -372,8 +372,8 @@ def main():
         parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
         parser.error('Lua APK verification currently uses the source runtime')
-    if args.language == 'c' and args.failure not in ('none', 'startup-destroy'):
-        parser.error('C APK verification supports only none/startup-destroy failures')
+    if args.language == 'c' and args.failure == 'missing-image':
+        parser.error('C missing-image verification is not yet available')
     if args.language == 'c' and args.entry != 'explicit':
         parser.error('--entry requires --language lua')
     default_work = ROOT / ('build-android-lua-window-test' if args.language == 'lua'
@@ -408,7 +408,7 @@ def main():
             staged.rename(installed)
             external = work / 'external C project'
             external.mkdir(exist_ok=True)
-            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h', 'keyboard.h', 'audio.h'):
+            for name in ('CMakeLists.txt', 'main.c', 'lifecycle.h', 'keyboard.h', 'audio.h', 'failure.h'):
                 shutil.copyfile(ROOT / 'tests/android-window' / name, external / name)
             build = external / 'build'
             run(log, ['cmake', '-S', external, '-B', build,
@@ -447,6 +447,8 @@ def main():
                        else 'window pixels and shutdown passed')
         if args.language == 'rust' and args.failure != 'none':
             expectation = 'Rust failure cleanup passed'
+        if args.language == 'c' and failure == 1:
+            expectation = 'C failure cleanup passed'
         if failure == 3:
             expectation = 'startup cancellation passed'
         completed = False
@@ -473,6 +475,10 @@ def main():
                     diagnostic = 'Rust missing-image error observed' if args.failure == 'missing-image' else 'Rust process error observed'
                     wait_marker(log, adb, token + ' ' + diagnostic)
                     wait_marker(log, adb, token + ' Rust failure resources closed')
+            if args.language == 'c' and failure == 1:
+                diagnostic = 'C process error observed'
+                wait_marker(log, adb, token + ' ' + diagnostic)
+                wait_marker(log, adb, token + ' C failure resources closed')
             if args.audio:
                 wait_marker(log, adb, token + ' audio API passed')
                 if args.language == 'rust':
