@@ -123,7 +123,9 @@ The verifier also installs each SDK and moves it to a path with spaces.
 The Windows workflow runs on pushes, pull requests, manual requests and weekly.
 It uploads command and CTest logs even when a step fails. The existing Linux and
 macOS workflow remains required. Candidate acceptance must also check Windows;
-the existing SDK candidate collector does not yet include Windows packages.
+the CI-only SDK candidate collector contains macOS/Linux packages. The manual
+Platform candidate workflow adds the verified Windows archive from its selected
+Windows run.
 
 Windows GUI, input and audible output are not established by headless tests.
 The initial [Android foundation](android.md) records its NDK, emulator and commands.

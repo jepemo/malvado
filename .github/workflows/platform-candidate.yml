@@ -26,7 +26,7 @@ jobs:
   verify:
     name: Require all supported-platform results
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Verify the exact candidate revision
@@ -42,9 +42,26 @@ jobs:
             --repository "$CANDIDATE_REPOSITORY" --ci "$CI_RUN" \
             --windows "$WINDOWS_RUN" --android "$ANDROID_RUN" \
             --output platform-candidate.json
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.ci }}
+          name: sdk-candidate-${{ inputs.sha }}
+          path: incoming/desktop
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.windows }}
+          name: sdk-windows-${{ inputs.sha }}
+          path: incoming/windows
+      - name: Collect verified SDK archives
+        run: |
+          python3 tools/collect_platform_sdk.py --desktop incoming/desktop \
+            --windows incoming/windows --report platform-candidate.json \
+            --output platform-candidate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: platform-candidate-${{ inputs.sha }}
-          path: platform-candidate.json
+          path: platform-candidate/*
           if-no-files-found: error
           retention-days: 14

@@ -127,8 +127,8 @@ Run the manual **Platform candidate** workflow after CI, Windows and Android
 foundation finish on the same commit. Supply the full commit SHA and the three
 run IDs. The workflow checks repository, workflow path, branch event, revision,
 run conclusion and every job in the selected run attempt. Missing, skipped or
-unfinished jobs fail the gate. It uploads a JSON report only after all three
-platform workflows pass. A rerun requires a new gate execution.
+unfinished jobs fail the gate. It collects desktop SDK archives and uploads a JSON report only after all
+three platform workflows pass. A rerun requires a new gate execution.
 
 Use the same validator locally with authenticated GitHub CLI access:
 
@@ -138,8 +138,24 @@ python3 tools/platform_candidate.py --sha FULL_COMMIT_SHA \
   --output platform-candidate.json
 ```
 
+After the gate passes, the workflow downloads the macOS/Linux SDK candidate
+from the selected CI run and the Windows SDK from the selected Windows run.
+The collector requires exactly macOS arm64, Linux x86_64 and Windows AMD64,
+one common SDK version, valid checksums and matching archive metadata. It
+uploads all three archives, checksums and a report with source run IDs and
+archive digests. Expired or missing artifacts fail collection. Existing output
+folders are preserved; failed copies remove only the new output folder.
+
+Run the same collection locally after downloading those artifacts:
+
+```sh
+python3 tools/collect_platform_sdk.py --desktop incoming/desktop \
+  --windows incoming/windows --report platform-candidate.json \
+  --output platform-candidate
+```
+
 This report records platform test evidence. It does not publish a release,
-create a tag, collect Windows SDK archives or certify unfinished Android exports.
-The existing SDK candidate archive contains macOS/Linux packages only. A8.8
+create a tag or certify unfinished Android exports. The CI-only SDK candidate
+still contains macOS/Linux packages; the Platform candidate adds Windows. A8.8
 still requires the full capability, artifact and license review. Repository
 branch protection must be configured separately if this gate is to block merges.

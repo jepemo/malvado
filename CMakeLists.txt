@@ -387,6 +387,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME sdk_artifact COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_artifact.py)
   set_tests_properties(sdk_artifact PROPERTIES TIMEOUT 15)
+  add_test(NAME collect_platform_sdk COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/collect_platform_sdk.py)
+  set_tests_properties(collect_platform_sdk PROPERTIES TIMEOUT 15)
   add_test(NAME platform_candidate COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_candidate.py)
   set_tests_properties(platform_candidate PROPERTIES TIMEOUT 15)
