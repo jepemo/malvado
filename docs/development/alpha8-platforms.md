@@ -293,7 +293,12 @@ Use `mise run test-platform -- --package --rust` for a headless native check.
 Add the existing Windows `--graphics --cli` options for the graphical SDK.
 `--package` verifies the digest, metadata and safe extraction paths before
 using the relocated archive. It preserves an existing extraction destination.
-Windows archive execution remains subject to hosted native CI acceptance.
+Windows archive production and extracted-SDK consumers passed hosted native CI
+on `74144c2` in [run 44091871730](https://github.com/jepemo/malvado/actions/runs/44091871730).
+The three-platform candidate gate also passed in
+[run 44094687054](https://github.com/jepemo/malvado/actions/runs/44094687054).
+Downloaded archives match all report digests, target/version metadata and source
+run IDs. New candidate revisions must repeat this gate.
 
 ## Runtime resource-overlay verification
 
