@@ -51,3 +51,61 @@ assets, process-owned image cleanup, a returned process error and a contained
 panic. Rust host tests also call the C entry for success, error and panic and
 verify exactly-once drop behavior. This is production entry support, not a
 claim of full alpha.8 acceptance on every host.
+
+## Installed CLI export
+
+New `malvado new --lang rust PATH` projects include the library target and bridge.
+Existing projects can add the two small changes above. Use one staticlib target
+in the package at the project root, with a direct non-optional `malvado` SDK
+dependency. This ensures the existing ABI-checking build script runs. The
+exporter asks Cargo for that target;
+it does not copy or rewrite your game sources.
+
+Rust's existing SDK verifier executes native ABI probes on the target. Export
+therefore requires an executable probe runner through `--probe-runner PATH` or
+`MALVADO_ANDROID_RUNNER`. Keep the runner outside the project assets. Missing
+runners are errors, not skipped checks. The
+runner must print probe stdout and return its exit status. For the supplied
+repository ADB runner, create a small executable wrapper:
+
+```sh
+#!/bin/sh
+exec python3 /absolute/path/malvado/tools/android_rust_runner.py "$@"
+```
+
+Set `MALVADO_ANDROID_ADB` to the Android SDK's absolute `platform-tools/adb` path
+and `MALVADO_ANDROID_SERIAL` to the selected emulator serial, such as
+`emulator-5582`. The ADB runner uses bounded commands and an owned remote probe
+directory, retains diagnostics and removes that directory after each probe.
+It is an authoring verifier; no probe runner is included in the APK.
+
+From the project directory:
+
+```sh
+malvado export --target android-arm64 --format apk \
+  --runtime-sdk /absolute/path/full-android-sdk \
+  --android-sdk "$ANDROID_SDK_ROOT" --probe-runner /absolute/path/probe-runner \
+  --output ../dist/game.apk --id org.example.rustgame
+```
+
+The host needs Cargo, CMake, NDK r27c and the installed Rust target
+`aarch64-linux-android`. The SDK version must match the host client. Add
+`--release` and a full Release SDK for a release APK. Use the existing external
+keystore/password-environment options for signing, or leave release output
+unsigned. The same manifest flags apply. No compiler or Cargo is needed by the
+installed game.
+
+Cargo outputs and the C runner link stay in owned export staging. Cargo can
+create or update the project's ordinary lockfile. Rust/C source files, Cargo
+manifests/lockfiles and `target` folders are excluded from APK assets. Normal
+nested files and notices remain included. Missing staticlib/entry symbols,
+compiler/link failures, ABI rejection and unsupported shared dependencies fail
+without publishing an APK. This first path does not promise arbitrary Cargo
+workspaces, other Android export ABIs or AAB generation.
+
+Use `mise run test-android-rust-export` with `--cli`, `--runtime-sdk`,
+`--android-sdk`, `--serial` and `--work` for bounded installed-CLI verification.
+For `--release`, also supply a disposable external keystore, alias and password
+environment variable as in the C verifier. This tests normal execution, a
+process error, a contained panic and a rejected compiler error, with actual
+pixels, native assets, exactly-once drop markers, session cleanup and uninstall.

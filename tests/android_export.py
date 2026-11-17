@@ -4,6 +4,7 @@
 from pathlib import Path
 import sys
 import os
+import json
 import tempfile
 import unittest
 import shutil
@@ -24,6 +25,36 @@ class ExportTests(unittest.TestCase):
         self.project = self.root / 'game with spaces'
         self.project.mkdir()
         (self.project / 'main.lua').write_text('return {}')
+
+    def test_rust_asset_selection_excludes_sources_manifests_and_target(self):
+        (self.project/'main.lua').unlink()
+        for name in ('Cargo.toml', 'Cargo.lock', 'main.rs', 'android.rs'):
+            (self.project/name).write_text('source')
+        (self.project/'target').mkdir()
+        (self.project/'target/libgame.a').write_bytes(b'archive')
+        (self.project/'value.bin').write_bytes(b'asset')
+        self.assertEqual([name for _, name in exporter.project_files(self.project, 'rust')], ['value.bin'])
+
+    def test_rust_missing_probe_runner_is_not_a_skipped_abi_check(self):
+        with patch.dict(os.environ, {}, clear=True), patch.object(exporter.subprocess, 'run') as commands:
+            with self.assertRaisesRegex(ValueError, 'target ABI verification'):
+                exporter.build_rust_game(self.project, self.root, self.root, self.root/'work', False)
+        commands.assert_not_called()
+        runner = self.project/'runner'
+        runner.touch()
+        with patch.object(exporter.os, 'access', return_value=True), patch.object(exporter.subprocess, 'run') as commands:
+            with self.assertRaisesRegex(ValueError, 'outside the project'):
+                exporter.build_rust_game(self.project, self.root, self.root, self.root/'work', False, probe_runner=runner)
+        commands.assert_not_called()
+
+    def test_rust_export_requires_one_staticlib_in_the_root_package(self):
+        runner = self.root/'runner'
+        runner.touch()
+        for packages in ([], [dict(manifest_path=str(self.project/'Cargo.toml'), targets=[dict(crate_types=['bin'])])], [dict(manifest_path=str(self.project/'Cargo.toml'), targets=[dict(crate_types=['staticlib'], name='game')], dependencies=[])]):
+            catalog = json.dumps(dict(packages=packages))
+            with self.subTest(packages=packages), patch.object(exporter.shutil, 'which', return_value='/cargo'), patch.object(exporter.os, 'access', return_value=True), patch.object(exporter.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, catalog)):
+                with self.assertRaises(ValueError):
+                    exporter.build_rust_game(self.project, self.root, self.root, self.root/'work', False, probe_runner=runner)
 
     def test_c_asset_selection_excludes_source_and_build_configuration(self):
         (self.project/'main.lua').unlink()

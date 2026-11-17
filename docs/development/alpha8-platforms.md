@@ -346,3 +346,15 @@ normal/error execution and rejected invalid builds passed locally on macOS
 arm64/API 34 arm64. Release uses a full Release SDK. Extra shared dependencies
 are rejected, not omitted. Hosted/Linux authoring and Rust/AAB export remain
 separate gates.
+
+
+## Production Rust Android export
+
+The Rust SDK now provides `android_entry!` and the Android CMake bridge for a
+normal staticlib game. Installed-CLI arm64 debug/release export retains actual
+target ABI probes, links the same C/Lua session runner and excludes authoring
+sources/outputs. Normal games, returned process errors and contained unwinding
+panics passed on macOS/API 34 arm64 with image lifetime, pixels, assets, cleanup
+and uninstall evidence. Release is non-debuggable and uses explicit signing.
+Host Rust Debug/Release workspace, installed consumers, diagnostics, clippy and
+formatting pass. Other export ABIs, AAB and final hosted acceptance remain open.

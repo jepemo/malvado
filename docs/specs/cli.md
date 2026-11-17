@@ -129,7 +129,10 @@ C projects now use the same command with a full Android target SDK. New
 `--c` projects contain the required CMake branch; see [C Android games](../development/android-c-games.md).
 C export additionally requires CMake and NDK r27c. It supports both debug and
 release APKs, source exclusion, the same manifest options and explicit signing.
-Rust export, other Android ABIs and AAB remain unavailable. `--format aab` is
+Rust projects now support the same debug/release APK path with a staticlib
+bridge and a target ABI probe runner. New Rust projects include the bridge;
+see [Rust Android games](../development/android-rust-games.md). Existing ABI
+checks remain mandatory. Other Android export ABIs and AAB remain unavailable. `--format aab` is
 rejected. Windows Android authoring is unavailable. General Android export
 acceptance remains open until these remaining version deliverables are
 implemented and verified.

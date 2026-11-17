@@ -2,6 +2,7 @@
 """Export a C or Lua project as an Android arm64 APK using a matching target SDK."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -16,7 +17,7 @@ def project_files(project, language='lua'):
     result = []
     def visit(folder, prefix=''):
         for path in sorted(folder.iterdir()):
-            if path.name.startswith('.') or path.name in ('build', 'dist'):
+            if path.name.startswith('.') or path.name in ('build', 'dist') or (language == 'rust' and path.name == 'target'):
                 continue
             name = prefix + path.name
             if path.is_symlink():
@@ -28,11 +29,13 @@ def project_files(project, language='lua'):
             if path.is_dir():
                 visit(path, name + '/')
             elif path.is_file():
-                if language != 'c' or (path.suffix not in ('.c', '.h') and path.name != 'CMakeLists.txt'):
+                if language == 'lua' or (language == 'c' and path.suffix not in ('.c', '.h') and path.name != 'CMakeLists.txt') or (language == 'rust' and path.suffix not in ('.rs', '.c', '.h') and path.name not in ('Cargo.toml', 'Cargo.lock', 'CMakeLists.txt')):
                     result.append((path, name))
             else:
                 raise ValueError('Project special files are not supported: ' + name)
     visit(project)
+    if language == 'rust' and not (project / 'Cargo.toml').is_file():
+        raise ValueError('Android Rust exports require Cargo.toml with a staticlib target')
     if language == 'c' and not (project / 'CMakeLists.txt').is_file():
         raise ValueError('Android C exports require CMakeLists.txt with a game target')
     if language == 'lua' and not any(name == 'main.lua' for _, name in result):
@@ -91,7 +94,11 @@ def build_c_game(project, runtime, sdk, work, release, ndk=None):
          '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + str(build / 'output'),
          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(build / 'output')])
     run(['cmake', '--build', build, '--target', 'game', '--parallel', '8'])
-    library = validate_library(build / 'output/libgame.so')
+    return validate_native_dependencies(build / 'output/libgame.so', ndk)
+
+
+def validate_native_dependencies(library, ndk):
+    library = validate_library(library)
     inspectors = list((ndk / 'toolchains/llvm/prebuilt').glob('*/bin/llvm-readelf'))
     if len(inspectors) != 1:
         raise ValueError('Pinned NDK LLVM dependency inspector is missing')
@@ -103,6 +110,52 @@ def build_c_game(project, runtime, sdk, work, release, ndk=None):
     if needed - platform_libraries:
         raise ValueError('C export has unsupported shared dependencies: ' + ', '.join(sorted(needed - platform_libraries)))
     return library
+
+
+def build_rust_game(project, runtime, sdk, work, release, ndk=None, probe_runner=None):
+    ndk = Path(ndk).resolve() if ndk else sdk / 'ndk/27.2.12479018'
+    runner = probe_runner or os.environ.get('MALVADO_ANDROID_RUNNER')
+    if not runner or not Path(runner).is_file() or not os.access(runner, os.X_OK):
+        raise ValueError('Rust export requires an executable --probe-runner for target ABI verification')
+    if Path(runner).resolve().is_relative_to(project.resolve()):
+        raise ValueError('Rust probe runner must be outside the project assets')
+    for tool in ('cargo', 'cmake'):
+        if not shutil.which(tool):
+            raise ValueError('Rust export requires Cargo and CMake on PATH')
+    metadata = subprocess.run(['cargo', 'metadata', '--format-version', '1', '--no-deps',
+                               '--manifest-path', str(project / 'Cargo.toml')], check=True,
+                              capture_output=True, text=True, timeout=120)
+    catalog = json.loads(metadata.stdout)
+    packages = [package for package in catalog['packages'] if Path(package['manifest_path']).resolve() == (project / 'Cargo.toml').resolve()]
+    if len(packages) != 1:
+        raise ValueError('Rust export requires one package at the project root')
+    targets = [target for target in packages[0]['targets'] if 'staticlib' in target['crate_types']]
+    if len(targets) != 1:
+        raise ValueError('Rust export requires exactly one staticlib target with android_entry!')
+    if not any(dependency.get('name') == 'malvado' and not dependency.get('optional', False) and dependency.get('target') is None for dependency in packages[0].get('dependencies', [])):
+        raise ValueError('Rust export requires a direct non-optional malvado SDK dependency for ABI checks')
+    linkers = list((ndk / 'toolchains/llvm/prebuilt').glob('*/bin/aarch64-linux-android28-clang'))
+    if len(linkers) != 1:
+        raise ValueError('Rust export requires NDK r27c arm64 linker')
+    env = dict(os.environ, MALVADO_SDK_PREFIX=str(runtime), MALVADO_ANDROID_NDK=str(ndk),
+               MALVADO_ANDROID_RUNNER=str(Path(runner).resolve()),
+               CARGO_TARGET_DIR=str(work / 'cargo'),
+               CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=str(linkers[0]), RUSTUP_AUTO_INSTALL='0')
+    command = ['cargo', 'build', '--manifest-path', str(project / 'Cargo.toml'), '--lib', '--package', packages[0]['name'], '--target', 'aarch64-linux-android']
+    if release:
+        command.append('--release')
+    subprocess.run(command, env=env, check=True, timeout=300)
+    archive = work / 'cargo/aarch64-linux-android' / ('release' if release else 'debug') / ('lib'+targets[0]['name'].replace('-', '_')+'.a')
+    if not archive.is_file():
+        raise ValueError('Cargo did not produce the expected Android static library')
+    bridge = work / 'bridge'
+    bridge.mkdir()
+    # JSON quoted strings also quote ordinary CMake paths without shell parsing.
+    for value in (str(runtime), str(archive)):
+        if any(c in value for c in (';', '$', '\n', '\r', '"', '\\')):
+            raise ValueError('Unsupported character in Rust Android build path')
+    (bridge / 'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(game C)\nfind_package(Malvado CONFIG REQUIRED COMPONENTS graphics)\nmalvado_add_android_rust_game(game '+json.dumps(str(archive))+')\n')
+    return build_c_game(bridge, runtime, sdk, work, release, ndk)
 
 
 def manifest_xml(package, version_code=1, version_name='debug', title='Malvado game', orientation='landscape', min_api=28, release=False):
@@ -146,14 +199,14 @@ def signing_configuration(project, keystore=None, key_alias=None, store_password
     return keystore, key_alias, store_password_env, key_password_env
 
 
-def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, ndk=None, **configuration):
+def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, ndk=None, probe_runner=None, **configuration):
     if release:
         configuration.setdefault('version_name', 'release')
     manifest_text = manifest_xml(package, release=release, **configuration)
     signing = signing_configuration(project, keystore, key_alias, store_password_env, key_password_env)
     if output.suffix != '.apk' or output.exists() or output.is_symlink():
         raise ValueError('Output must be a new .apk file')
-    language = 'lua' if (project / 'main.lua').is_file() else 'c'
+    language = 'lua' if (project / 'main.lua').is_file() else ('rust' if (project / 'Cargo.toml').is_file() else 'c')
     files = project_files(project, language)
     if language == 'lua':
         library = validate_runtime(runtime, version, release=release)
@@ -161,7 +214,7 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
         validate_sdk(runtime, version)
     notices = runtime / 'share/licenses/malvado'
     names = ['LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'] if language == 'lua' else ['LICENSE', 'raylib-LICENSE']
-    if language == 'c' and (notices / 'cJSON-LICENSE').is_file():
+    if language != 'lua' and (notices / 'cJSON-LICENSE').is_file():
         names.append('cJSON-LICENSE')
     for name in names:
         path = notices / name
@@ -191,6 +244,8 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.malvado-apk-', dir=output.parent) as folder:
         work = Path(folder)
+        if language == 'rust':
+            library = build_rust_game(project, runtime, sdk, work, release, ndk, probe_runner)
         if language == 'c':
             library = build_c_game(project, runtime, sdk, work, release, ndk)
         manifest = work / 'AndroidManifest.xml'
@@ -231,6 +286,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', choices=('android-arm64',), required=True)
     parser.add_argument('--format', choices=('apk',), required=True)
+    parser.add_argument('--probe-runner', type=Path)
     parser.add_argument('--ndk', type=Path)
     parser.add_argument('--runtime-sdk', type=Path, required=True)
     parser.add_argument('--android-sdk', type=Path, required=True)
@@ -249,7 +305,7 @@ def main():
     parser.add_argument('--engine-version', required=True)
     args = parser.parse_args()
     try:
-        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, ndk=args.ndk, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
+        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, probe_runner=args.probe_runner, ndk=args.ndk, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, str(error) + '\n')
 

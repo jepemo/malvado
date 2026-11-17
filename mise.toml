@@ -178,3 +178,7 @@ run = "python3 tools/test_android_export.py"
 [tasks.test-android-c-export]
 description = "Verify real installed-CLI C APK exports on an arm64 emulator"
 run = "python3 tools/test_android_c_export.py"
+
+[tasks.test-android-rust-export]
+description = "Verify real installed-CLI Rust APK exports on an arm64 emulator"
+run = "python3 tools/test_android_rust_export.py"

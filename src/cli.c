@@ -344,7 +344,7 @@ rust_manifest(void)
     }
     escaped[used] = '\0';
     const char format[] = "[package]\nname = \"game\"\nversion = \"0.1.0\"\nedition = \"2024\"\n"
-        "\n[[bin]]\nname = \"game\"\npath = \"main.rs\"\n\n[dependencies]\nmalvado = { path = \"%s\", features = [\"graphics\"] }\n";
+        "\n[[bin]]\nname = \"game\"\npath = \"main.rs\"\n\n[lib]\nname = \"game\"\npath = \"android.rs\"\ncrate-type = [\"staticlib\"]\n\n[dependencies]\nmalvado = { path = \"%s\", features = [\"graphics\"] }\n";
     size_t size = sizeof(format) + used;
     char *manifest = malloc(size);
     if (manifest) snprintf(manifest, size, format, escaped);
@@ -428,7 +428,13 @@ new_project(const char *path, int language)
         return 1;
     }
     if (language == 2) {
+        if (!write_project_file(path, "android.rs", "#![cfg(target_os = \"android\")]\ninclude!(\"main.rs\");\nmalvado::android_entry!(main);\n")) {
+            free(manifest);
+            remove_project(path);
+            return 1;
+        }
         if (!write_project_file(path, "main.rs", rust_game)) {
+            remove_project_file(path, "android.rs");
             free(manifest);
             remove_project(path);
             return 1;
@@ -437,6 +443,7 @@ new_project(const char *path, int language)
         free(manifest);
         if (!ok) {
             remove_project_file(path, "main.rs");
+            remove_project_file(path, "android.rs");
             remove_project(path);
             return 1;
         }
@@ -527,10 +534,6 @@ main(int argc, char **argv)
         if (argc >= 3 && !strcmp(argv[2], "--target")) {
             int language = project_language();
             if (language < 0) return 2;
-            if (language == 2) {
-                fprintf(stderr, "Android APK export for Rust is not available\n");
-                return 1;
-            }
             if (language == 0 && check_project(".", 1) != 0) return 1;
             return malvado_android_export(argc, argv);
         }
