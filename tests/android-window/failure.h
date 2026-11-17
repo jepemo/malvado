@@ -44,8 +44,14 @@ failure_step(MvContext *ctx, MvProcessId id, void *data)
     assert(image);
     assert(mv_process_ref_create(ctx, id, &owner) == MV_OK);
     assert(mv_resource_create(ctx, &owner, image, failure_image_destroy, &resource) == MV_OK);
-    assert(ACCEPTANCE_FAILURE == 1);
-    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s C process error observed", ACCEPTANCE_TOKEN);
+    if (ACCEPTANCE_FAILURE == 2) {
+        /* A second load failure must still release the already owned texture. */
+        assert(!mv_image_load("missing-acceptance-image.png"));
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s C missing-image error observed", ACCEPTANCE_TOKEN);
+    } else {
+        assert(ACCEPTANCE_FAILURE == 1);
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s C process error observed", ACCEPTANCE_TOKEN);
+    }
     return MV_STEP_ERROR;
 }
 

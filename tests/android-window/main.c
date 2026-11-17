@@ -42,7 +42,7 @@ main(int argc, char **argv)
     }
     if (!mv_window_open(320, 240, "Malvado Android")) return 1;
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s window opened", ACCEPTANCE_TOKEN);
-    if (ACCEPTANCE_FAILURE == 1) {
+    if (ACCEPTANCE_FAILURE == 1 || ACCEPTANCE_FAILURE == 2) {
         failure_run();
         return 0;
     }

@@ -820,3 +820,12 @@ Context destruction must not repeat either cleanup. The test then closes the
 window, checks graphics/audio device state and verifies APK removal.
 Both Debug and Release run in the Android CI matrix. This checks native API
 state and cleanup; it does not establish physical-device or audible behavior.
+
+### C missing-image cleanup
+
+Use `--installed-sdk --failure missing-image` to test a failed image load with
+a live process-owned texture. The absent APK image must return `NULL`. The
+callback then returns `MV_STEP_ERROR` through the same scheduler error path.
+Require a distinct missing-image marker as well as the cleanup assertions
+above. A generic startup failure cannot satisfy this check. Debug and Release
+CI retain independent per-failure results and verify APK removal.

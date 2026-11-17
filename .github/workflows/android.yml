@@ -55,10 +55,12 @@ jobs:
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --failure startup-destroy --work "$work"
           cp "$work/window.log" "$work/startup-destroy.log"
           cp "$work/results.json" "$work/startup-destroy-results.json"
-          work="build-android/c-lifecycle-$config"
-          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --failure process --work "$work"
-          cp "$work/window.log" "$work/process-error.log"
-          cp "$work/results.json" "$work/process-error-results.json"
+          for failure in process missing-image; do
+            work="build-android/c-lifecycle-$config"
+            mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --failure "$failure" --work "$work"
+            cp "$work/window.log" "$work/$failure-error.log"
+            cp "$work/results.json" "$work/$failure-error-results.json"
+          done
           for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background recreate; do
             extra=()
             if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi

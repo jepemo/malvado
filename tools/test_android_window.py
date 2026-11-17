@@ -372,8 +372,6 @@ def main():
         parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
         parser.error('Lua APK verification currently uses the source runtime')
-    if args.language == 'c' and args.failure == 'missing-image':
-        parser.error('C missing-image verification is not yet available')
     if args.language == 'c' and args.entry != 'explicit':
         parser.error('--entry requires --language lua')
     default_work = ROOT / ('build-android-lua-window-test' if args.language == 'lua'
@@ -447,7 +445,7 @@ def main():
                        else 'window pixels and shutdown passed')
         if args.language == 'rust' and args.failure != 'none':
             expectation = 'Rust failure cleanup passed'
-        if args.language == 'c' and failure == 1:
+        if args.language == 'c' and failure in (1, 2):
             expectation = 'C failure cleanup passed'
         if failure == 3:
             expectation = 'startup cancellation passed'
@@ -475,8 +473,8 @@ def main():
                     diagnostic = 'Rust missing-image error observed' if args.failure == 'missing-image' else 'Rust process error observed'
                     wait_marker(log, adb, token + ' ' + diagnostic)
                     wait_marker(log, adb, token + ' Rust failure resources closed')
-            if args.language == 'c' and failure == 1:
-                diagnostic = 'C process error observed'
+            if args.language == 'c' and failure in (1, 2):
+                diagnostic = 'C missing-image error observed' if failure == 2 else 'C process error observed'
                 wait_marker(log, adb, token + ' ' + diagnostic)
                 wait_marker(log, adb, token + ' C failure resources closed')
             if args.audio:
