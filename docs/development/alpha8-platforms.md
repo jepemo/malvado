@@ -197,3 +197,10 @@ and explicit audio pause continuity. Downloaded evidence contains 38 distinct
 APK packages and 58 PNG headers per profile across C/Lua/Rust. Windows passed
 on that revision. General Linux installed SDK consumers exposed the missing
 X11 link dependency fixed separately; the new exact candidate still needs CI.
+
+The X11 and Java follow-up source `46a45cd` passed all 15 general CI jobs,
+Windows and both Android profiles. Downloaded Android results identify the
+pinned Temurin 21.0.7+6 JDK for all 38 APK cases per profile. The current
+background-key extension passed eight local arm64 cases and native regressions;
+it still needs its own x86_64 CI acceptance. Export/startup/focus gaps remain
+in the version checklist.
