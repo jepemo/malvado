@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install checksum-pinned Linux Android SDK inputs in a new owned directory."""
+"""Install checksum-pinned Android SDK inputs for Linux or macOS in a new owned directory."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 import json
@@ -24,7 +24,21 @@ PACKAGES = (
 )
 
 
-def prepare(output):
+MACOS_PACKAGES = (
+    ("android-ndk-r27c-darwin.zip", "8c5685457c58a88527367d46d3f14e8c727d962c39f85344cff0c0768a73c3b7",
+     "android-ndk-r27c", "ndk/27.2.12479018", "build/cmake/android.toolchain.cmake", True),
+    ("platform-tools_r37.0.1-darwin.zip", "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
+     "platform-tools", "platform-tools", "adb", False),
+    ("build-tools_r34-macosx.zip", "76bf668fe037b1a69197e298ddae5633d4d7f0f41af7ed17e537c80c1ed8a6f3",
+     "android-14", "build-tools/34.0.0", "aapt", False),
+    PACKAGES[3],
+)
+
+
+def prepare(output, host="linux"):
+    if host not in ("linux", "macos"):
+        raise ValueError("Android SDK archive host must be linux or macos")
+    packages = PACKAGES if host == "linux" else MACOS_PACKAGES
     if output.exists() or output.is_symlink():
         raise ValueError("Android SDK destination already exists")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -33,7 +47,7 @@ def prepare(output):
         stage = temporary / "sdk"
         stage.mkdir()
         provenance = []
-        for index, (name, digest, source, destination, required, links) in enumerate(PACKAGES):
+        for index, (name, digest, source, destination, required, links) in enumerate(packages):
             archive = temporary / f"{index}.zip"
             with urllib.request.urlopen("https://dl.google.com/android/repository/" + name, timeout=60) as response:
                 with archive.open("wb") as stream:
@@ -63,5 +77,6 @@ def prepare(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--host", choices=("linux", "macos"), default="linux")
     args = parser.parse_args()
-    prepare(args.output.absolute())
+    prepare(args.output.absolute(), args.host)

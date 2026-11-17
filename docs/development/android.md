@@ -77,6 +77,19 @@ accepted. This SDK executes on Linux x86_64. Extracting it on another host does
 not establish cross-host tool support. Google archive licenses remain in each
 package. Java remains a host prerequisite for APK signing.
 
+For macOS Apple Silicon, install the matching SDK archives:
+
+```sh
+python3 tools/android_sdk.py --host macos --output build-android/macos-sdk
+```
+
+This selects the Darwin NDK, adb and Build Tools archives. The platform archive
+is shared with Linux. The default host stays `linux` for existing CI commands;
+`--host` selects archive contents and does not change the running host. The
+macOS SDK retains the same exclusive destination, checksum, extraction and
+cleanup rules. It records all four archive names and SHA-256 values in
+`malvado-archives.json`. Use the mise-selected Java for APK signing.
+
 Create a dedicated AVD directory with the same command used by CI:
 
 ```sh

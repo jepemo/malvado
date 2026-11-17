@@ -93,6 +93,26 @@ class SdkTests(unittest.TestCase):
                     self.install(output, self.package())
             self.assertEqual([p.name for p in root.iterdir()], ['keep'])
 
+    def test_macos_archive_selection_and_provenance(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'macOS SDK'
+            data = self.package()
+            package = ('macos.zip', hashlib.sha256(data).hexdigest(), 'ndk', 'ndk/version', 'toolchain.cmake', False)
+            with patch.object(android_sdk, 'MACOS_PACKAGES', [package]), patch.object(android_sdk.urllib.request, 'urlopen', return_value=io.BytesIO(data)) as download:
+                android_sdk.prepare(output, 'macos')
+            self.assertTrue((output / 'ndk/version/toolchain.cmake').is_file())
+            self.assertEqual(json.loads((output / 'malvado-archives.json').read_text())[0]['archive'], 'macos.zip')
+            self.assertEqual(download.call_args.args[0], 'https://dl.google.com/android/repository/macos.zip')
+
+    def test_unknown_archive_host_fails_before_download_or_directory_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'new parent/sdk'
+            with patch.object(android_sdk.urllib.request, 'urlopen') as download:
+                with self.assertRaisesRegex(ValueError, 'host'):
+                    android_sdk.prepare(output, 'windows')
+                download.assert_not_called()
+            self.assertFalse(output.parent.exists())
+
     def packaging_sdk(self, root):
         tools = root / 'build-tools/34.0.0'
         tools.mkdir(parents=True)
