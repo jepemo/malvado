@@ -20,7 +20,14 @@
 #endif
 #include <assert.h>
 static struct android_app app;
-static int inputs, commands;
+static int inputs, commands, last_command;
+static int focused;
+int
+mv_android_activity_has_focus(struct android_app *a)
+{
+    assert(a == &app);
+    return focused;
+}
 static int available = 1;
 static int script[8], script_count, script_index, processed;
 struct android_app *
@@ -40,7 +47,7 @@ static void
 command(struct android_app *a, int32_t code)
 {
     (void)a;
-    (void)code;
+    last_command = code;
     commands++;
 }
 static int32_t
@@ -204,5 +211,16 @@ main(void)
         assert(!mv_android_key_down(MV_KEY_A) && !mv_android_window_close_requested());
     }
     assert(inputs && commands);
+    int before = commands;
+    focused = 1;
+    mv_android_window_attach();
+    assert(commands == before + 1 && last_command == APP_CMD_GAINED_FOCUS);
+    assert(!mv_android_key_down(MV_KEY_A) && !mv_android_mouse_down(MV_MOUSE_LEFT));
+    mv_android_window_detach();
+    assert(app.onAppCmd == command && app.onInputEvent == input);
+    focused = 0;
+    mv_android_window_attach();
+    assert(commands == before + 1);
+    mv_android_window_detach();
     assert(pthread_mutex_destroy(&app.mutex) == 0);
 }

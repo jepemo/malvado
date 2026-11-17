@@ -31,8 +31,34 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *m) { LeaveCriticalSectio
 #else
 #include <pthread.h>
 #endif
+/* Only the JNI calls used by the focus adapter are needed in host tests. */
+typedef int jint;
+typedef unsigned char jboolean;
+typedef void *jobject;
+typedef jobject jclass;
+typedef void *jmethodID;
+struct JNINativeInterface;
+struct JNIInvokeInterface;
+typedef const struct JNINativeInterface *JNIEnv;
+typedef const struct JNIInvokeInterface *JavaVM;
+struct JNINativeInterface {
+    jboolean (*ExceptionCheck)(JNIEnv *);
+    jclass (*GetObjectClass)(JNIEnv *, jobject);
+    jmethodID (*GetMethodID)(JNIEnv *, jclass, const char *, const char *);
+    jboolean (*CallBooleanMethod)(JNIEnv *, jobject, jmethodID, ...);
+    void (*DeleteLocalRef)(JNIEnv *, jobject);
+    void (*ExceptionClear)(JNIEnv *);
+};
+struct JNIInvokeInterface {
+    jint (*GetEnv)(JavaVM *, void **, jint);
+    jint (*AttachCurrentThread)(JavaVM *, JNIEnv **, void *);
+    jint (*DetachCurrentThread)(JavaVM *);
+};
+enum { JNI_OK=0, JNI_ERR=-1, JNI_EDETACHED=-2, JNI_VERSION_1_6=0x00010006, JNI_TRUE=1 };
+typedef struct { JavaVM *vm; jobject clazz; } ANativeActivity;
 typedef struct { int type, code, action, source, buttons; } AInputEvent;
 struct android_app {
+    ANativeActivity *activity;
     pthread_mutex_t mutex;
     void *window, *pendingWindow;
     int destroyRequested;
@@ -48,7 +74,7 @@ enum { AINPUT_EVENT_TYPE_MOTION=2, AINPUT_SOURCE_CLASS_POINTER=2,
  AKEYCODE_ESCAPE=111, AKEYCODE_SPACE=62, AKEYCODE_DPAD_LEFT=21, AKEYCODE_DPAD_RIGHT=22,
  AKEYCODE_DPAD_UP=19, AKEYCODE_DPAD_DOWN=20, AKEYCODE_ENTER=66, AKEYCODE_TAB=61, AKEYCODE_DEL=67,
  APP_CMD_DESTROY=15, APP_CMD_INIT_WINDOW=1, ALOOPER_POLL_ERROR=-4,
- APP_CMD_PAUSE=13, APP_CMD_LOST_FOCUS=7, APP_CMD_TERM_WINDOW=2 };
+ APP_CMD_GAINED_FOCUS=6, APP_CMD_PAUSE=13, APP_CMD_LOST_FOCUS=7, APP_CMD_TERM_WINDOW=2 };
 static inline int AInputEvent_getType(AInputEvent *e) { return e->type; }
 static inline int AKeyEvent_getKeyCode(AInputEvent *e) { return e->code; }
 static inline int AKeyEvent_getAction(AInputEvent *e) { return e->action; }

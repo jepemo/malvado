@@ -18,6 +18,8 @@
 
 #include "malvado/platform.h"
 
+struct android_app;
+int mv_android_activity_has_focus(struct android_app *app);
 int mv_android_window_wait_surface(void);
 int mv_android_mouse_down(MvMouseButton button);
 int mv_android_key_down(MvKey key);

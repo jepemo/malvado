@@ -135,6 +135,10 @@ mv_android_window_attach(void)
     window_app->onInputEvent = window_input;
     previous_command = window_app->onAppCmd;
     window_app->onAppCmd = window_command;
+    /* A recreated Activity can retain its focused Window without another
+     * GAINED_FOCUS event. Initialize raylib from the actual Java focus state. */
+    if (previous_command && mv_android_activity_has_focus(window_app))
+        previous_command(window_app, APP_CMD_GAINED_FOCUS);
 }
 
 void
