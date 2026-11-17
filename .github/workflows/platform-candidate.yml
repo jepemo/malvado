@@ -1,0 +1,50 @@
+# Malvado 2; SPDX-License-Identifier: Apache-2.0
+name: Platform candidate
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full candidate commit SHA
+        required: true
+        type: string
+      ci:
+        description: Successful CI run ID for this SHA
+        required: true
+        type: string
+      windows:
+        description: Successful Windows run ID for this SHA
+        required: true
+        type: string
+      android:
+        description: Successful Android foundation run ID for this SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    name: Require all supported-platform results
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify the exact candidate revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.sha }}
+          CI_RUN: ${{ inputs.ci }}
+          WINDOWS_RUN: ${{ inputs.windows }}
+          ANDROID_RUN: ${{ inputs.android }}
+          CANDIDATE_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 tools/platform_candidate.py --sha "$CANDIDATE_SHA" \
+            --repository "$CANDIDATE_REPOSITORY" --ci "$CI_RUN" \
+            --windows "$WINDOWS_RUN" --android "$ANDROID_RUN" \
+            --output platform-candidate.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: platform-candidate-${{ inputs.sha }}
+          path: platform-candidate.json
+          if-no-files-found: error
+          retention-days: 14

@@ -120,3 +120,26 @@ Primary-contact cases also exercise the existing C/Lua mouse API on Android.
 Lifecycle cases retain native PNGs before interaction and after resume/release.
 Distinct filenames preserve each case's evidence when native build caches are
 reused. Screenshot and payload regressions also run without an emulator.
+
+## Supported-platform candidate gate
+
+Run the manual **Platform candidate** workflow after CI, Windows and Android
+foundation finish on the same commit. Supply the full commit SHA and the three
+run IDs. The workflow checks repository, workflow path, branch event, revision,
+run conclusion and every job in the selected run attempt. Missing, skipped or
+unfinished jobs fail the gate. It uploads a JSON report only after all three
+platform workflows pass. A rerun requires a new gate execution.
+
+Use the same validator locally with authenticated GitHub CLI access:
+
+```sh
+python3 tools/platform_candidate.py --sha FULL_COMMIT_SHA \
+  --ci CI_RUN_ID --windows WINDOWS_RUN_ID --android ANDROID_RUN_ID \
+  --output platform-candidate.json
+```
+
+This report records platform test evidence. It does not publish a release,
+create a tag, collect Windows SDK archives or certify unfinished Android exports.
+The existing SDK candidate archive contains macOS/Linux packages only. A8.8
+still requires the full capability, artifact and license review. Repository
+branch protection must be configured separately if this gate is to block merges.
