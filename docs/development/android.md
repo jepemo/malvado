@@ -829,3 +829,21 @@ callback then returns `MV_STEP_ERROR` through the same scheduler error path.
 Require a distinct missing-image marker as well as the cleanup assertions
 above. A generic startup failure cannot satisfy this check. Debug and Release
 CI retain independent per-failure results and verify APK removal.
+
+### Runtime resource-overlay relaunch
+
+Use `--lifecycle overlay` with `test-android-window` to apply a real resource
+update while the game is running. The fixture builds a separate runtime
+resource-overlay APK. It targets only the unique acceptance package and changes
+one explicitly overlayable application-label string. No system overlay changes.
+Build Tools 34 `aapt2` compiles both resource tables. Both APKs use the fixture's
+test-only signing key.
+
+The host requires the overlay to be disabled before activation and enabled
+afterwards. It does not send the manual recreation broadcast. Android must
+clean the first native Activity and render the second in the same process.
+The fixture verifies the native framebuffer, retains before/recreated PNGs,
+closes the second generation with Back and verifies removal of both APKs.
+The overlay is also removed on failure; game removal runs even if overlay
+cleanup fails. This does not test arbitrary overlays, process-death recovery,
+physical devices or audible output.

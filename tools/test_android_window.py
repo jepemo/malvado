@@ -301,14 +301,24 @@ def failure_evidence(log, adb, work, package=None):
     log.flush()
 
 
-def recreate_actions(log, adb, package, token, work):
+def recreate_actions(log, adb, package, token, work, overlay=None):
     wait_marker(log, adb, token + ' lifecycle ready 1')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
     if not before.isdigit():
         raise RuntimeError('Expected one live process before Activity recreation')
     capture_screen(log, adb, work / 'before.png')
-    run(log, adb + ['shell', 'am', 'broadcast', '--receiver-foreground', '-a',
-                   'dev.malvado.test.RECREATE', '-p', package], timeout=30)
+    if overlay:
+        from android_overlay import is_enabled
+        state = run(log, adb + ['shell', 'cmd', 'overlay', 'list', '--user', '0'], timeout=10).stdout
+        if not is_enabled(state, overlay, False):
+            raise RuntimeError('Expected the owned overlay to be disabled before activation')
+        run(log, adb + ['shell', 'cmd', 'overlay', 'enable', '--user', '0', overlay], timeout=30)
+        state = run(log, adb + ['shell', 'cmd', 'overlay', 'list', '--user', '0'], timeout=10).stdout
+        if not is_enabled(state, overlay, True):
+            raise RuntimeError('Owned resource overlay did not activate')
+    else:
+        run(log, adb + ['shell', 'am', 'broadcast', '--receiver-foreground', '-a',
+                       'dev.malvado.test.RECREATE', '-p', package], timeout=30)
     wait_marker(log, adb, token + ' lifecycle cleaned 1')
     wait_marker(log, adb, token + ' lifecycle ready 2')
     after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
@@ -318,18 +328,20 @@ def recreate_actions(log, adb, package, token, work):
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
     wait_marker(log, adb, token + ' lifecycle cleaned 2')
     return dict(initial_pid=before, recreated_pid=after, activity_generations=2,
-                first_generation_cleaned=True, final_generation_cleaned=True)
+                first_generation_cleaned=True, final_generation_cleaned=True,
+                resource_overlay=overlay)
 
 
-def android_manifest(package, startup_destroy=False, recreate=False):
+def android_manifest(package, startup_destroy=False, recreate=False, overlay=False):
     activity = "dev.malvado.test.CancelActivity" if startup_destroy else "android.app.NativeActivity"
     if recreate:
         activity = "dev.malvado.test.RecreateActivity"
+    label = "@string/app_name" if overlay else "Malvado acceptance"
     has_code = "true" if startup_destroy or recreate else "false"
     return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
 <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
 <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-<application android:hasCode="{has_code}" android:debuggable="true" android:label="Malvado acceptance">
+<application android:hasCode="{has_code}" android:debuggable="true" android:label="{label}">
 <activity android:name="{activity}" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
 <meta-data android:name="android.app.lib_name" android:value="game"/>
 <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
@@ -358,13 +370,13 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image', 'startup-destroy'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate') or args.entry != 'explicit'):
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay') or args.entry != 'explicit'):
         parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and normal/resumed audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
@@ -389,7 +401,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8, 'overlay': 8}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2, 'startup-destroy': 3}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -419,10 +431,14 @@ def main():
             from android_rust_apk import build as build_rust
             build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure, args.audio)
         manifest = work / 'AndroidManifest.xml'
-        manifest.write_text(android_manifest(package, failure == 3, lifecycle == 8))
+        manifest.write_text(android_manifest(package, failure == 3, lifecycle == 8, args.lifecycle == 'overlay'))
         dex = cancellation_dex(log, sdk, tools, work, 'RecreateActivity' if lifecycle == 8 else 'CancelActivity') if failure == 3 or lifecycle == 8 else None
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
-        run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
+        if args.lifecycle == 'overlay':
+            from android_overlay import link, resources
+            link(log, run, tools, sdk, manifest, resources(work), unsigned)
+        else:
+            run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
             if dex:
@@ -449,6 +465,10 @@ def main():
             expectation = 'C failure cleanup passed'
         if failure == 3:
             expectation = 'startup cancellation passed'
+        overlay = None
+        if args.lifecycle == 'overlay':
+            from android_overlay import build as build_overlay
+            overlay, overlay_apk = build_overlay(log, run, tools, sdk, work, package, key)
         completed = False
         try:
             prepare_foreground(log, adb)
@@ -456,12 +476,15 @@ def main():
             # a separate transport capability, outside this runtime matrix.
             run(log, adb + ['install', '--no-incremental', str(apk)], timeout=90)
             settle_installation(log, adb)
+            if overlay:
+                run(log, adb + ['install', '--no-incremental', str(overlay_apk)], timeout=90)
+                settle_installation(log, adb)
             facts['package_broadcasts_idle'] = True
             activity = 'dev.malvado.test.CancelActivity' if failure == 3 else ('dev.malvado.test.RecreateActivity' if lifecycle == 8 else 'android.app.NativeActivity')
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/' + activity], timeout=45)
             lifecycle_evidence = None
-            if args.lifecycle == 'recreate':
-                lifecycle_evidence = recreate_actions(log, adb, package, token, work)
+            if args.lifecycle in ('recreate', 'overlay'):
+                lifecycle_evidence = recreate_actions(log, adb, package, token, work, overlay=overlay)
             elif args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua', rust=args.language == 'rust')
             wait_marker(log, adb, token + ' ' + expectation)
@@ -489,10 +512,17 @@ def main():
                 if args.language == 'lua':
                     run(log, adb + ['shell', 'run-as', package, 'cat', 'files/stderr.txt'], timeout=15, check=False)
                 run(log, adb + ['logcat', '-b', 'crash', '-d', '-t', '100'], timeout=15, check=False)
-            run(log, adb + ['uninstall', package], timeout=30, check=False)
-            remaining = run(log, adb + ['shell', 'pm', 'list', 'packages', package], timeout=15).stdout
-            if 'package:' + package in remaining:
-                raise RuntimeError('Acceptance APK was not removed')
+            try:
+                if overlay:
+                    run(log, adb + ['uninstall', overlay], timeout=30, check=False)
+                    remaining_overlay = run(log, adb + ['shell', 'pm', 'list', 'packages', overlay], timeout=15).stdout
+                    if 'package:' + overlay in remaining_overlay:
+                        raise RuntimeError('Acceptance overlay APK was not removed')
+            finally:
+                run(log, adb + ['uninstall', package], timeout=30, check=False)
+                remaining = run(log, adb + ['shell', 'pm', 'list', 'packages', package], timeout=15).stdout
+                if 'package:' + package in remaining:
+                    raise RuntimeError('Acceptance APK was not removed')
         (work / 'results.json').write_text(json.dumps(facts, indent=2) + '\n')
     print(f'PASS: {args.language} {args.entry} {args.failure}: {expectation}')
 
