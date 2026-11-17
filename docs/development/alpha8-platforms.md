@@ -185,3 +185,8 @@ C `check` configures/builds/links without running the game, including rejection
 of invalid C. Rust SDK probes use short owned temporary directories on Windows
 to avoid MSBuild's nested compiler-identification path limit, with the required
 helper archive retained under Cargo output before cleanup.
+
+Graphical Linux SDK consumers require X11 in addition to OpenGL and threads.
+Raylib 6.2 uses Xlib directly for clipboard image handling. The installed CMake
+package discovers `X11::X11`; Rust links `X11`. Core-only and Android SDKs do not
+require X11. The `libx11-dev` authoring prerequisite already exists in CI.

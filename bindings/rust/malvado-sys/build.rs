@@ -399,7 +399,7 @@ fn main() {
                 println!("cargo:rustc-link-lib={library}");
             }
         } else {
-            for library in ["GL", "dl", "pthread"] {
+            for library in ["GL", "dl", "pthread", "X11"] {
                 println!("cargo:rustc-link-lib={library}");
             }
         }
