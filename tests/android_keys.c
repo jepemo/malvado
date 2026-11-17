@@ -44,9 +44,47 @@ command(struct android_app *a, int32_t code)
 static int32_t
 event(int code, int action)
 {
-    AInputEvent e = {AINPUT_EVENT_TYPE_KEY, code, action};
+    AInputEvent e = {AINPUT_EVENT_TYPE_KEY, code, action, 0, 0};
     return app.onInputEvent(&app, &e);
 }
+static void
+motion(int action, int source, int buttons)
+{
+    AInputEvent e = {AINPUT_EVENT_TYPE_MOTION, 0, action, source, buttons};
+    assert(app.onInputEvent(&app, &e) == 7);
+}
+
+static void
+check_pointer(void)
+{
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
+    assert(mv_android_mouse_down(MV_MOUSE_LEFT));
+    app.onAppCmd(&app, APP_CMD_PAUSE);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(2, AINPUT_SOURCE_CLASS_POINTER, 1);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
+    assert(mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_CANCEL, AINPUT_SOURCE_CLASS_POINTER, 0);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 2 | 4);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    assert(mv_android_mouse_down(MV_MOUSE_MIDDLE) && mv_android_mouse_down(MV_MOUSE_RIGHT));
+    motion(AMOTION_EVENT_ACTION_BUTTON_RELEASE, AINPUT_SOURCE_CLASS_POINTER, 4);
+    assert(mv_android_mouse_down(MV_MOUSE_MIDDLE) && !mv_android_mouse_down(MV_MOUSE_RIGHT));
+    motion(AMOTION_EVENT_ACTION_UP, AINPUT_SOURCE_CLASS_POINTER, 0);
+    assert(!mv_android_mouse_down(MV_MOUSE_MIDDLE));
+    motion(AMOTION_EVENT_ACTION_DOWN, 0, 1);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    assert(!mv_android_mouse_down((MvMouseButton)99));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 1);
+    app.onAppCmd(&app, APP_CMD_LOST_FOCUS);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 1);
+    app.onAppCmd(&app, APP_CMD_TERM_WINDOW);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+}
+
 int
 main(void)
 {
@@ -55,6 +93,7 @@ main(void)
     for (int reopen = 0; reopen < 2; ++reopen) {
         mv_keyboard_open();
         mv_android_window_attach();
+        check_pointer();
         const int native[] = {AKEYCODE_A, AKEYCODE_DPAD_LEFT, AKEYCODE_0, AKEYCODE_Z, AKEYCODE_DEL};
         const MvKey keys[] = {MV_KEY_A, MV_KEY_LEFT, MV_KEY_0, MV_KEY_Z, MV_KEY_BACKSPACE};
         for (unsigned i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i) {

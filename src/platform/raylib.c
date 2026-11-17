@@ -509,7 +509,12 @@ mv_mouse_down(MvMouseButton button)
     case MV_MOUSE_RIGHT: code = MOUSE_BUTTON_RIGHT; break;
     default: return 0;
     }
+#ifdef __ANDROID__
+    (void)code;
+    return mv_android_mouse_down(button);
+#else
     return IsMouseButtonDown(code);
+#endif
 }
 
 int

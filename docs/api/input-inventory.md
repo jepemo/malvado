@@ -52,3 +52,9 @@ is added. The emulator check holds one contact, moves it horizontally, observes
 release and then exits through Back. It checks C and both Lua entry forms.
 This does not establish multi-touch, gesture recognition or very short taps
 between samples. See [Android verification](../development/android.md).
+
+Android pointer buttons become neutral when the Activity pauses, loses focus
+or loses its native surface. Native cancel/up events also clear the primary
+contact. A move after foreground does not revive a cancelled contact; a fresh
+down event is required. Position queries use the existing window-validity rules. This
+uses the existing C/Lua/Rust mouse queries and does not add multi-touch support.
