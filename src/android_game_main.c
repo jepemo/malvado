@@ -13,6 +13,9 @@
  * See LICENSE for details.
  */
 
+#ifdef MALVADO_ANDROID_NATIVE_GAME
+#undef main
+#endif
 #define _XOPEN_SOURCE 700
 #include <android/asset_manager.h>
 #include <android/log.h>
@@ -25,7 +28,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef MALVADO_ANDROID_NATIVE_GAME
+extern int malvado_game_main(void);
+#else
 #include "runner/runtime.h"
+#endif
 
 extern struct android_app *GetAndroidApp(void);
 
@@ -126,8 +133,12 @@ run_game(void)
         close(file);
         return 1;
     }
+#ifdef MALVADO_ANDROID_NATIVE_GAME
+    int result = malvado_game_main();
+#else
     char *arguments[] = {"game", "main.lua"};
     int result = malvado_run(2, arguments);
+#endif
     fflush(stderr);
     if (dup2(saved, STDERR_FILENO) < 0) result = 1;
     close(saved);

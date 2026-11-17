@@ -89,6 +89,9 @@ install(DIRECTORY bindings/rust/ DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/ru
   PATTERN target EXCLUDE)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/rust)
 install(FILES "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt" DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado)
+if(ANDROID)
+  install(FILES src/android_game_main.c src/android_game_entry.h DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/android)
+endif()
 
 add_executable(example-c-control examples/c/control/main.c)
 target_link_libraries(example-c-control PRIVATE malvado_core)
