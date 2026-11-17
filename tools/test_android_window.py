@@ -72,10 +72,10 @@ def add_audio_assets(archive, lua=False, rust=False):
         archive.write(ROOT / 'tests/android-lua/audio.lua', 'assets/audio.lua')
 
 
-def wait_marker(log, adb, marker, timeout=30):
+def wait_marker(log, adb, marker, timeout=30, pid=None):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        output = run(log, adb + ['logcat', '-d', '-s', 'MalvadoAcceptance:I', '*:S'], timeout=10).stdout
+        output = run(log, adb + ['logcat', '-d', *(['--pid=' + pid] if pid else []), '-s', 'MalvadoAcceptance:I', '*:S'], timeout=10).stdout
         if marker in output:
             return
         time.sleep(0.5)
@@ -301,6 +301,30 @@ def failure_evidence(log, adb, work, package=None):
     log.flush()
 
 
+def restart_actions(log, adb, package, token, work, expectation):
+    wait_marker(log, adb, token + ' lifecycle ready')
+    before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if not before.isascii() or not before.isdigit():
+        raise RuntimeError('Expected one live process before forced stop')
+    capture_screen(log, adb, work / 'before.png')
+    # A forced death cannot run game destructors. Require a fresh process and
+    # fresh native evidence; retain the old logs for failure diagnosis.
+    run(log, adb + ['shell', 'am', 'force-stop', package], timeout=15)
+    remaining = run(log, adb + ['shell', 'pidof', package], timeout=10, check=False).stdout.strip()
+    if remaining:
+        raise RuntimeError('Acceptance process survived forced stop')
+    run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
+    after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if not after.isascii() or not after.isdigit() or after == before:
+        raise RuntimeError('Expected a new process after forced stop')
+    wait_marker(log, adb, token + ' lifecycle ready', pid=after)
+    capture_screen(log, adb, work / 'restarted.png')
+    run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
+    wait_marker(log, adb, token + ' ' + expectation, pid=after)
+    return dict(initial_pid=before, restarted_pid=after, forced_stop=True,
+                fresh_process_ready=True, final_process_cleaned=True)
+
+
 def recreate_actions(log, adb, package, token, work, overlay=None):
     wait_marker(log, adb, token + ' lifecycle ready 1')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
@@ -370,14 +394,14 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image', 'startup-destroy'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay', 'restart'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay') or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and normal/resumed audio')
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay', 'restart') or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and supports startup/pixels/cleanup, Back/resume, recreation/overlay/restart, contact/keyboard, expected-error cleanup and normal/resumed audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
     if args.lifecycle and args.failure != 'none':
@@ -392,7 +416,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png', 'recreated.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png', 'recreated.png', 'restarted.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -401,7 +425,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8, 'overlay': 8}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8, 'overlay': 8, 'restart': 1}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2, 'startup-destroy': 3}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -483,7 +507,9 @@ def main():
             activity = 'dev.malvado.test.CancelActivity' if failure == 3 else ('dev.malvado.test.RecreateActivity' if lifecycle == 8 else 'android.app.NativeActivity')
             run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/' + activity], timeout=45)
             lifecycle_evidence = None
-            if args.lifecycle in ('recreate', 'overlay'):
+            if args.lifecycle == 'restart':
+                lifecycle_evidence = restart_actions(log, adb, package, token, work, expectation)
+            elif args.lifecycle in ('recreate', 'overlay'):
                 lifecycle_evidence = recreate_actions(log, adb, package, token, work, overlay=overlay)
             elif args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua', rust=args.language == 'rust')

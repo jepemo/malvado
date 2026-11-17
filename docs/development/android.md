@@ -856,3 +856,25 @@ same-process, two-generation cleanup evidence. Lua/Rust also checked packaged
 assets and their runtime/scheduler cleanup after relaunch. Both x86_64 CI
 profiles include these cases and retain separate overlay evidence; hosted
 acceptance remains open. The 223 host headless checks pass.
+
+### Forced process stop and cold restart
+
+Use `--lifecycle restart` to stop a live game with `am force-stop`, then launch
+the installed APK again. The host first requires native framebuffer readiness
+and records the old PID and screenshot. It requires process disappearance after
+the stop, a different live PID after launch, and new framebuffer evidence from
+that PID. Logcat queries for restart readiness and final cleanup use `--pid`;
+stale markers from the killed process cannot establish success. Logs are kept.
+
+The second process must render, close with Back and pass ordinary language
+resource/scheduler cleanup. Both screenshots and both PIDs remain in the result
+artifacts. Uninstall is required even after a failed restart. A forced stop
+cannot run game destructors, so this check makes no first-process destructor
+claim. It does not establish low-memory Activity restoration or saved-game
+state recovery. The Android fixtures still use test-only packaging and signing.
+
+Cold-restart checks passed C, both Lua entries and Rust in Debug/Release on
+API 34 arm64. Eight unique APK results retain sixteen screenshots, old/new
+PIDs and final cleanup evidence. The four host restart regressions and all
+224 headless checks pass. Both x86_64 CI profiles include the mode and retain
+separate evidence; hosted acceptance remains open.

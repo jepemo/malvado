@@ -309,3 +309,10 @@ both generations and both packages. This is separate from manual recreation.
 Both x86_64 CI profiles include the mode; their hosted acceptance remains open.
 Only the acceptance application's overlayable label changes. System overlays,
 arbitrary resource updates and process-death recovery are not established.
+
+
+Forced-stop cold restart is also verified on API 34 arm64 for C, both Lua
+entries and Rust in Debug/Release. It requires process disappearance and new-PID
+rendering/cleanup, with before/restarted screenshots. It does not establish
+low-memory restoration or saved-game recovery. Pinned x86_64 execution remains
+a separate CI acceptance check.

@@ -393,6 +393,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME platform_candidate COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_candidate.py)
   set_tests_properties(platform_candidate PROPERTIES TIMEOUT 15)
+  add_test(NAME android_restart COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_restart.py)
+  set_tests_properties(android_restart PROPERTIES TIMEOUT 15)
   add_test(NAME android_overlay COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_overlay.py)
   set_tests_properties(android_overlay PROPERTIES TIMEOUT 15)
