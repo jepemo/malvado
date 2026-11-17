@@ -79,7 +79,7 @@ lifecycle_frame(int visible)
         UnloadImage(image);
         if (red) {
             lifecycle_pending = 0;
-            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle resumed", ACCEPTANCE_TOKEN);
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle resumed %d", ACCEPTANCE_TOKEN, lifecycle_resumes);
         }
     }
 }
@@ -91,7 +91,7 @@ lifecycle_finish(void)
     assert(lifecycle_ready);
     if (ACCEPTANCE_LIFECYCLE == 3) assert(touch_down && touch_released);
     if (keyboard_mode()) assert(keyboard_complete);
-    if (ACCEPTANCE_LIFECYCLE == 2 || ACCEPTANCE_LIFECYCLE == 5)
+    if (ACCEPTANCE_LIFECYCLE == 2 || ACCEPTANCE_LIFECYCLE == 5 || ACCEPTANCE_LIFECYCLE == 6)
         assert(lifecycle_pauses && lifecycle_resumes && !lifecycle_pending);
     assert(lifecycle_app && lifecycle_app->onAppCmd == lifecycle_command);
     lifecycle_app->onAppCmd = lifecycle_previous;

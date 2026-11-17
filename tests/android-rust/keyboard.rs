@@ -6,6 +6,7 @@ pub struct Keyboard {
     down: bool,
     pressed: bool,
     released: bool,
+    announced: bool,
     pub complete: bool,
 }
 fn log(message: &std::ffi::CStr) {
@@ -49,6 +50,14 @@ impl Keyboard {
         self.down |= observed.0;
         self.pressed |= observed.1;
         self.released |= observed.2;
+        if self.down && self.pressed && !self.announced {
+            self.announced = true;
+            log(if self.index == 0 {
+                c"rust keyboard a held"
+            } else {
+                c"rust keyboard left held"
+            });
+        }
         if self.down && self.pressed && self.released && !observed.0 {
             log(if self.index == 0 {
                 c"rust keyboard a released"
@@ -56,6 +65,7 @@ impl Keyboard {
                 c"rust keyboard left released"
             });
             self.index += 1;
+            self.announced = false;
             self.down = false;
             self.pressed = false;
             self.released = false;

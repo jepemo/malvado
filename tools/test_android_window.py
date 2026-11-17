@@ -119,6 +119,44 @@ def capture_screen(log, adb, destination):
         temporary.unlink(missing_ok=True)
 
 
+def background_key(log, adb, package, token, keycode, name, pid, screenshots, *, cycle=1, lua=False, rust=False):
+    # Shift is required by Android's two-key keycombination command. Malvado's
+    # supported key query still observes the physical A/Left key independently.
+    command = adb + ['shell', 'input', 'keyboard', 'keycombination', '-t', '4000', keycode, '59']
+    log.write(f'\n>>> {command!r}\n'); log.flush()
+    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as injected:
+        try:
+            wait_marker(log, adb, token + ' keyboard ' + name + ' held')
+            if lua: wait_marker(log, adb, token + ' lua keyboard ' + name + ' held')
+            if rust: wait_marker(log, adb, token + ' rust keyboard ' + name + ' held')
+            if injected.poll() is not None:
+                raise RuntimeError('Key injection ended before background transition')
+            run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                state = run(log, adb + ['shell', 'dumpsys', 'activity', 'activities'], timeout=10).stdout
+                if activity_is_background(state, package): break
+                time.sleep(0.1)
+            else:
+                raise RuntimeError('Acceptance Activity did not enter background with a held key')
+            if injected.poll() is not None:
+                raise RuntimeError('Key release was not bounded by confirmed background state')
+            output, _ = injected.communicate(timeout=10)
+            log.write(output.decode(errors='replace')); log.flush()
+            if injected.returncode:
+                raise RuntimeError('Background key injection failed')
+        finally:
+            if injected.poll() is None:
+                injected.kill()
+                injected.communicate(timeout=5)
+    run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=30)
+    after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if pid != after: raise RuntimeError('Acceptance process was recreated during held-key background transition')
+    wait_marker(log, adb, token + ' lifecycle resumed ' + str(cycle))
+    if screenshots: capture_screen(log, adb, screenshots / ('resumed-' + name + '.png'))
+    return after
+
+
 def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=False, rust=False):
     wait_marker(log, adb, token + ' lifecycle ready')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
@@ -126,7 +164,7 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         raise RuntimeError('Acceptance process is missing')
     dimensions = capture_screen(log, adb, screenshots / 'before.png') if screenshots else None
     resume = mode in ('resume', 'keyboard-resume')
-    keyboard = mode in ('keyboard', 'keyboard-resume')
+    keyboard = mode in ('keyboard', 'keyboard-resume', 'keyboard-background')
     if resume:
         run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
         deadline = time.monotonic() + 10
@@ -158,8 +196,11 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
             wait_marker(log, adb, token + ' lua touch released')
         capture_screen(log, adb, screenshots / 'released.png')
     if keyboard:
-        for keycode, name in (('29', 'a'), ('21', 'left')):
-            run(log, adb + ['shell', 'input', 'keyboard', 'keyevent', '--longpress', keycode], timeout=10)
+        for cycle, (keycode, name) in enumerate((('29', 'a'), ('21', 'left')), 1):
+            if mode == 'keyboard-background':
+                after = background_key(log, adb, package, token, keycode, name, before, screenshots, cycle=cycle, lua=lua, rust=rust)
+            else:
+                run(log, adb + ['shell', 'input', 'keyboard', 'keyevent', '--longpress', keycode], timeout=10)
             wait_marker(log, adb, token + ' keyboard ' + name + ' released')
             if rust:
                 wait_marker(log, adb, token + ' rust keyboard ' + name + ' released')
@@ -174,8 +215,9 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         if screenshots:
             capture_screen(log, adb, screenshots / 'keyboard.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
-    return {'initial_pid': before, 'resumed_pid': after if resume else None,
-            'background_foreground': resume,
+    return {'initial_pid': before, 'resumed_pid': after if resume or mode == 'keyboard-background' else None,
+            'background_foreground': resume or mode == 'keyboard-background',
+            'release_while_backgrounded': mode == 'keyboard-background',
             'keyboard_keycodes': [29, 21] if keyboard else None,
             'screen_dimensions': dimensions,
             'touch_gesture': {'start': [width // 2, height // 2],
@@ -239,13 +281,13 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume') or args.entry != 'explicit'):
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background') or args.entry != 'explicit'):
         parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and normal/resumed audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
@@ -263,7 +305,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -272,7 +314,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
@@ -310,7 +352,7 @@ def main():
             if args.language == 'rust':
                 add_rust_assets(archive, args.failure)
             if args.language == 'lua':
-                add_lua_assets(archive, args.entry, args.failure, keyboard=args.lifecycle in ('keyboard', 'keyboard-resume'))
+                add_lua_assets(archive, args.entry, args.failure, keyboard=args.lifecycle in ('keyboard', 'keyboard-resume', 'keyboard-background'))
             if args.audio:
                 add_audio_assets(archive, lua=args.language == 'lua')
         run(log, [tools / 'zipalign', '-f', '4', unsigned, aligned])

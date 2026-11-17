@@ -86,7 +86,7 @@ pub extern "C" fn malvado_rust_entry() {
             audio.tick();
         }
         window.input_tick();
-        if mode == 4 || mode == 5 {
+        if mode == 4 || mode == 5 || mode == 6 {
             keyboard.tick(&window);
         }
         if mode == 3 {
@@ -133,7 +133,7 @@ pub extern "C" fn malvado_rust_entry() {
     if mode != 0 {
         assert!(window.should_close());
     }
-    if mode == 4 || mode == 5 {
+    if mode == 4 || mode == 5 || mode == 6 {
         assert!(keyboard.complete);
     }
     if mode == 3 {

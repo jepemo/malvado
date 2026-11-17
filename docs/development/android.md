@@ -643,3 +643,20 @@ file to take priority over a packaged asset with the same name. The Rust binary
 snapshot fixture uses that rule to test removal of its actual source file.
 This backend resolution rule does not deliver CLI APK/AAB exports or replace
 the general packaged-game acceptance gate.
+
+## Keyboard release while backgrounded
+
+Use `--lifecycle keyboard-background` with the shared APK verifier. It checks
+A and Left for C, both Lua entries and Rust. Android's bounded key-combination
+command holds the tested key with Left Shift for four seconds. The host waits
+for native and language-specific held markers, confirms Home/background while
+the injection is still active, waits for key-up, then returns to the app.
+Each return must preserve the PID and produce its own numbered resumed-pixel
+marker. Release and neutral-tick confirmation must precede Back and cleanup.
+Before, per-key resumed and final keyboard screenshots remain in the work folder.
+
+The adapter queues releases on focus loss; it does not wait for a key-up that
+Android can deliver to another Activity. A release may be observed before the
+Activity is fully paused. Reads stay non-consuming and future presses work.
+This covers physical A/Left state and does not add text/IME, multi-touch,
+process-death recovery or an audio-focus policy.

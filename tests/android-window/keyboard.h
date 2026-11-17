@@ -17,12 +17,13 @@
 #define MALVADO_TEST_ANDROID_KEYBOARD_H
 
 static unsigned keyboard_index;
+static int keyboard_announced;
 static int keyboard_down, keyboard_pressed, keyboard_released, keyboard_complete;
 
 static int
 keyboard_mode(void)
 {
-    return ACCEPTANCE_LIFECYCLE == 4 || ACCEPTANCE_LIFECYCLE == 5;
+    return ACCEPTANCE_LIFECYCLE == 4 || ACCEPTANCE_LIFECYCLE == 5 || ACCEPTANCE_LIFECYCLE == 6;
 }
 
 static void
@@ -44,11 +45,16 @@ keyboard_frame(void)
     keyboard_down |= down;
     keyboard_pressed |= pressed;
     keyboard_released |= released;
+    if (keyboard_down && keyboard_pressed && !keyboard_announced) {
+        keyboard_announced = 1;
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s keyboard %s held",
+                            ACCEPTANCE_TOKEN, keyboard_index == 0 ? "a" : "left");
+    }
     if (keyboard_down && keyboard_pressed && keyboard_released && !down) {
         __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s keyboard %s released",
                             ACCEPTANCE_TOKEN, keyboard_index == 0 ? "a" : "left");
         keyboard_index++;
-        keyboard_down = keyboard_pressed = keyboard_released = 0;
+        keyboard_down = keyboard_pressed = keyboard_released = keyboard_announced = 0;
     }
 }
 #endif

@@ -32,7 +32,7 @@
 extern struct android_app *GetAndroidApp(void);
 static int verified;
 static int lua_touch_seen;
-static unsigned lua_keyboard_seen;
+static unsigned lua_keyboard_seen, lua_keyboard_held;
 static unsigned keyboard_ticks, keyboard_frame_ticks;
 static int keyboard_stall, keyboard_catchup;
 #include "lifecycle.h"
@@ -82,6 +82,20 @@ check_frame(void *user)
         if (!keyboard_stall && mv_key_down(MV_KEY_LEFT)) {
             keyboard_stall = 1;
             mv_platform_wait(0.1);
+        }
+    }
+    if (keyboard_mode() && lua_keyboard_held < 2) {
+        FILE *file = fopen("keyboard-held.txt", "rb");
+        if (file) {
+            char state[3] = {0};
+            size_t count = fread(state, 1, sizeof(state), file);
+            assert(count <= 2 && memcmp(state, "12", count) == 0);
+            assert(fclose(file) == 0);
+            while (lua_keyboard_held < count) {
+                __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua keyboard %s held",
+                                    ACCEPTANCE_TOKEN, lua_keyboard_held == 0 ? "a" : "left");
+                lua_keyboard_held++;
+            }
         }
     }
     if (keyboard_mode() && lua_keyboard_seen < 3) {

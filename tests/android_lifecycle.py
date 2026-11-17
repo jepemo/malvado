@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import test_android_window as verifier
@@ -73,6 +73,39 @@ class LifecycleTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Rust release not observed'):
                 verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token', 'touch', Path('owned'), rust=True)
         self.assertFalse(any(command[-2:] == ['keyevent', '4'] for command in commands))
+
+    def injection(self, polls):
+        process = MagicMock()
+        process.poll.side_effect = polls
+        process.returncode = 0
+        process.communicate.return_value = (b'', None)
+        process.__enter__.return_value = process
+        return process
+
+    def test_background_key_requires_a_new_numbered_resume_and_same_pid(self):
+        process = self.injection([None, None, 0])
+        def run(log, args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, '123' if 'pidof' in args else 'mResumedActivity: launcher')
+        with patch.object(verifier.subprocess, 'Popen', return_value=process), patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker') as marker, patch.object(verifier, 'capture_screen'):
+            self.assertEqual(verifier.background_key(io.StringIO(), ['adb'], 'package', 'token', '21', 'left', '123', Path('owned'), cycle=2, rust=True), '123')
+        self.assertIn('token lifecycle resumed 2', [call.args[2] for call in marker.call_args_list])
+        self.assertIn('token rust keyboard left held', [call.args[2] for call in marker.call_args_list])
+        process.kill.assert_not_called()
+
+    def test_background_key_does_not_accept_injection_that_already_finished(self):
+        process = self.injection([0, 0])
+        with patch.object(verifier.subprocess, 'Popen', return_value=process), patch.object(verifier, 'run') as run, patch.object(verifier, 'wait_marker'):
+            with self.assertRaisesRegex(RuntimeError, 'ended before background'):
+                verifier.background_key(io.StringIO(), ['adb'], 'package', 'token', '29', 'a', '123', None)
+        run.assert_not_called()
+
+    def test_missing_held_marker_stops_the_owned_injection(self):
+        process = self.injection([None])
+        with patch.object(verifier.subprocess, 'Popen', return_value=process), patch.object(verifier, 'wait_marker', side_effect=RuntimeError('missing held')):
+            with self.assertRaisesRegex(RuntimeError, 'missing held'):
+                verifier.background_key(io.StringIO(), ['adb'], 'package', 'token', '29', 'a', '123', None)
+        process.kill.assert_called_once()
+        process.communicate.assert_called_once_with(timeout=5)
 
 
 if __name__ == '__main__':
