@@ -55,7 +55,7 @@ If a folder contains both `main.lua` and a C project, `run` and `export` select 
 
 Define the remaining paths, project discovery, errors, packaging, and the relationship between the client, runner, and optional GUI before implementation. A single command for the user does not require one executable for every component. The commands and options in the target experience below are proposals unless described above.
 
-## Android debug APK export (Lua)
+## Android APK export (Lua)
 
 An installed graphical SDK on macOS or Linux can export a Lua project as a
 runnable Android arm64 debug APK. The current project must contain `main.lua`.
@@ -71,7 +71,8 @@ malvado export --target android-arm64 --format apk \
 Build the target runtime once with the [Android runtime commands](../development/android-runtime.md).
 Its SDK version must match the host client. The exporter validates Android SDK
 metadata and the arm64 ELF library before packaging. It requires Python 3,
-Build Tools 34.0.0, platform 34 and Java/keytool on PATH. The verified baseline
+Build Tools 34.0.0 and platform 34. Default debug signing also requires
+Java/keytool on PATH. The verified baseline
 uses the root mise-pinned Temurin JDK. No compiler, Cargo, Gradle or store
 credentials are used during export.
 
@@ -90,14 +91,44 @@ landscape orientation, minimum API 28 and target API 34. Configure it with
 `--version-code` (1–2100000000), `--version-name` and `--title` (1–128 characters,
 no controls), `--orientation landscape|portrait|sensor` and `--min-api` (28–34).
 Text is XML-escaped. Invalid values fail before tool execution or output-folder
-creation. Target API remains pinned to 34. A fresh temporary debug
-key signs each export. Uninstall an older build before installing another build
+creation. Target API remains pinned to 34. By default, a fresh temporary debug
+key signs each debug export. Uninstall an older build before installing another build
 with that ID. This is a development APK, not a production signing workflow.
 
-C/Rust export, other Android ABIs, release APK and AAB
-are unavailable. `--release` and `--format aab` are rejected. Windows Android
-authoring is unavailable. General Android export acceptance remains open until
-these remaining version deliverables are implemented and verified.
+For a release APK, install an `AndroidRuntime` component built with
+`-DCMAKE_BUILD_TYPE=Release`, then add `--release`. The exporter validates the
+installed runtime profile and sets `android:debuggable="false"`. Without signing
+options, it produces an aligned **unsigned** APK. Sign that file before installing
+it, or provide an explicit keystore during export:
+
+```sh
+malvado export --target android-arm64 --format apk --release \
+  --runtime-sdk /absolute/path/release-runtime \
+  --android-sdk "$ANDROID_SDK_ROOT" --output ../dist/game-release.apk \
+  --id org.example.mygame --version-code 2 --version-name 0.2.0 \
+  --keystore /absolute/path/keys/game.p12 --key-alias game \
+  --store-password-env GAME_STORE_PASSWORD
+```
+
+Set the named password variable in your environment before running the command.
+Use `--key-password-env NAME` if the key needs a separate password. Values are
+passed to apksigner by environment reference, not as command-line passwords.
+Signing options require an existing keystore **outside the project**, a key alias
+and a nonempty store-password variable. Both named password variables must be
+nonempty when supplied. The exporter does not create, change or
+copy that keystore. It verifies the signed APK before exclusive publication.
+Debug exports can use the same signing options to keep a stable development key.
+The default version name is `release` in release mode and `debug` otherwise.
+
+Unsigned release generation needs aapt and zipalign, without Java or keytool.
+Explicit signing also needs Java and apksigner; automatic debug-key creation
+needs keytool. Signing a file does not publish it to a store. Release verification
+uses disposable test credentials and does not establish production key custody.
+
+C/Rust export, other Android ABIs and AAB remain unavailable. `--format aab` is
+rejected. Windows Android authoring is unavailable. General Android export
+acceptance remains open until these remaining version deliverables are
+implemented and verified.
 
 ## Target experience
 

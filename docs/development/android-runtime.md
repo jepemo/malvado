@@ -34,7 +34,7 @@ The player owns the process working directory during execution. Files written
 inside the temporary game directory are temporary too; this is not a saved-game
 storage API. A forced process death can leave that directory until app data is
 removed. This first runtime package does not promise persistent saves, state
-restoration, C/Rust payloads or release signing.
+restoration or C/Rust payloads.
 
 See the [CLI specification](../specs/cli.md) for host export commands and
 current limits.
@@ -53,4 +53,19 @@ The verifier exports and executes both Lua entries and a process-error game.
 It checks nested binary assets, atlas/PNG loading, actual screenshot pixels,
 notices, exact error diagnostics, session cleanup and uninstall. It retains
 logs, screenshots and a result report. Missing capabilities remain listed in
-the version checklist; this command does not certify release APK or AAB.
+the version checklist; this command does not certify AAB or production signing.
+
+
+For release verification, build and install the same component with
+`-DCMAKE_BUILD_TYPE=Release` to a separate prefix. The component now installs
+`share/malvado/android-runtime.txt` with the language, build profile and ABI.
+Release export rejects a missing or non-Release profile; rebuild and reinstall
+older runtime prefixes before using it.
+
+Add `--release` to `test-android-export` and point `--runtime-sdk` at that Release
+prefix. The verifier creates a disposable keystore outside each game project
+and removes it even on failure. It verifies unsigned APKs separately, then signs,
+installs and runs both Lua entries and a process-error game. Compiled versions,
+assets, pixels, non-debuggable state, runtime cleanup markers and uninstall are
+required. Release APKs reject `run-as`; their session cleanup is checked through
+the runtime's actual cleanup result. Debug checks also inspect private storage.

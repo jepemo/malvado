@@ -171,7 +171,9 @@ main(int argc, char **argv)
         __android_log_print(ANDROID_LOG_ERROR, "MalvadoGame", "Cannot prepare packaged game assets");
     }
     if (chdir(app->activity->internalDataPath) != 0) result = 1;
-    if (nftw(directory, remove_entry, 16, FTW_DEPTH | FTW_PHYS) != 0) result = 1;
+    int cleaned = nftw(directory, remove_entry, 16, FTW_DEPTH | FTW_PHYS) == 0;
+    if (!cleaned) result = 1;
+    __android_log_print(ANDROID_LOG_INFO, "MalvadoGame", "game session cleanup %s", cleaned ? "passed" : "failed");
     __android_log_print(ANDROID_LOG_INFO, "MalvadoGame", "game exited with status %d", result);
     return result;
 }

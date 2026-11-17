@@ -208,6 +208,10 @@ if(MALVADO_BUILD_LUA)
     set_target_properties(malvado-android-game PROPERTIES OUTPUT_NAME game)
     install(TARGETS malvado-android-game LIBRARY DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/malvado/android/${ANDROID_ABI} COMPONENT AndroidRuntime)
     install(FILES "${CMAKE_BINARY_DIR}/malvado-sdk-info.txt" DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado COMPONENT AndroidRuntime)
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/android-runtime-$<CONFIG>.txt"
+      CONTENT "language=lua\nconfiguration=$<CONFIG>\nabi=${ANDROID_ABI}\n")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/android-runtime-$<CONFIG>.txt"
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado RENAME android-runtime.txt COMPONENT AndroidRuntime)
     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado COMPONENT AndroidRuntime)
     install(FILES ${lua_SOURCE_DIR}/doc/readme.html DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME Lua-readme.html COMPONENT AndroidRuntime)
     install(FILES ${raylib_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME raylib-LICENSE COMPONENT AndroidRuntime)

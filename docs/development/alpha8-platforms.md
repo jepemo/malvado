@@ -327,6 +327,9 @@ and notices. It packages ordinary modules and binary assets, with both Lua
 entries, private session cleanup and process-error diagnostics. Component-only
 runtime installation and real installed-CLI exports passed on macOS arm64 with
 an API 34 arm64 emulator. Linux authoring and hosted export acceptance still
-need execution; Windows Android authoring is unavailable. This first path has
-fixed development manifest defaults and temporary debug signing. C/Rust,
-release APK/AAB and other Android export targets remain unavailable.
+need execution; Windows Android authoring is unavailable. The CLI now supports configurable manifest flags and both debug and release
+APK generation. Release requires a Release-profile runtime, disables debugging
+and can produce unsigned output or use explicit external signing credentials.
+Both modes passed local arm64 execution, assets/pixels, process errors, cleanup
+and uninstall; release checks also verify non-debuggable state. C/Rust, AAB and
+other Android export targets remain unavailable.

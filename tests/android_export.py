@@ -97,11 +97,19 @@ class ExportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'mismatch'):
                 exporter.validate_runtime(runtime, 'test')
         metadata.write_text('version=test\nsystem=android\narchitecture=aarch64\n')
+        with self.assertRaisesRegex(ValueError, 'profile metadata'):
+            exporter.validate_runtime(runtime, 'test', release=True)
+        profile = runtime / 'share/malvado/android-runtime.txt'
+        profile.write_text('language=lua\nconfiguration=Debug\nabi=arm64-v8a\n')
+        with self.assertRaisesRegex(ValueError, 'built in Release'):
+            exporter.validate_runtime(runtime, 'test', release=True)
+        profile.write_text('language=lua\nconfiguration=Release\nabi=arm64-v8a\n')
+        self.assertEqual(exporter.validate_runtime(runtime, 'test', release=True), library)
         library.write_bytes(b'not a runtime')
         with self.assertRaisesRegex(ValueError, 'ELF'):
             exporter.validate_runtime(runtime, 'test')
 
-    def test_failed_signing_cleans_staging_without_publishing(self):
+    def package_inputs(self):
         runtime = self.root / 'runtime'
         library = runtime / 'libgame.so'
         runtime.mkdir()
@@ -117,6 +125,10 @@ class ExportTests(unittest.TestCase):
             path.touch()
         (sdk / 'build-tools/34.0.0/source.properties').write_text('Pkg.Revision=34.0.0\n')
         (sdk / 'platforms/android-34/source.properties').write_text('AndroidVersion.ApiLevel=34\n')
+        return runtime, sdk, library
+
+    def test_failed_signing_cleans_staging_without_publishing(self):
+        runtime, sdk, library = self.package_inputs()
         def run(args):
             if str(args[0]).endswith('/aapt'):
                 with zipfile.ZipFile(args[-1], 'w'): pass
@@ -136,6 +148,52 @@ class ExportTests(unittest.TestCase):
                 exporter.export(self.project, runtime, sdk, output, 'org.game', 'test')
         run.assert_not_called()
 
+
+    def test_signing_rejects_project_keys_and_incomplete_credentials(self):
+        key = self.root / 'external.p12'
+        key.write_bytes(b'key')
+        inside = self.project / 'private.p12'
+        inside.write_bytes(b'private')
+        cases = (dict(key_alias='game'), dict(key_alias=''), dict(store_password_env=''), dict(keystore=inside, key_alias='game', store_password_env='PASSWORD'),
+                 dict(keystore=key), dict(keystore=key, key_alias='game'),
+                 dict(keystore=key, key_alias='game', store_password_env='NOT_SET'),
+                 dict(keystore=key, key_alias='game', store_password_env='bad-name'))
+        for values in cases:
+            with self.subTest(values=values), patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
+                exporter.signing_configuration(self.project, **values)
+
+    def test_signed_and_unsigned_release_publication_and_password_arguments(self):
+        runtime, sdk, library = self.package_inputs()
+        key = self.root / 'external.p12'
+        key.write_bytes(b'private-key')
+        calls = []
+        def run(args):
+            calls.append([str(value) for value in args])
+            if str(args[0]).endswith('/aapt'):
+                with zipfile.ZipFile(args[-1], 'w'): pass
+            elif str(args[0]).endswith('/zipalign') and args[1] != '-c':
+                shutil.copyfile(args[-2], args[-1])
+            elif 'sign' in args:
+                index = args.index('--out')
+                shutil.copyfile(args[-1], args[index+1])
+        with patch.object(exporter, 'validate_runtime', return_value=library), patch.object(exporter.shutil, 'which', return_value='/tool'), patch.object(exporter, 'run', side_effect=run), patch.dict(os.environ, {'STORE_SECRET': 'never-show-this', 'KEY_SECRET': 'neither-this'}):
+            signer = sdk / 'build-tools/34.0.0/apksigner'
+            signer.unlink()
+            with patch.object(exporter.shutil, 'which', return_value=None):
+                exporter.export(self.project, runtime, sdk, self.root/'unsigned.apk', 'org.game', 'test', release=True)
+            signer.touch()
+            self.assertFalse(any('sign' in call or 'keytool' in call for call in calls))
+            exporter.export(self.project, runtime, sdk, self.root/'signed.apk', 'org.game', 'test', release=True, keystore=key, key_alias='game', store_password_env='STORE_SECRET', key_password_env='KEY_SECRET')
+        self.assertTrue((self.root/'unsigned.apk').is_file())
+        self.assertTrue((self.root/'signed.apk').is_file())
+        self.assertFalse(list(self.root.glob('.malvado-apk-*')))
+        self.assertIn('env:STORE_SECRET', str(calls))
+        self.assertIn('env:KEY_SECRET', str(calls))
+        self.assertNotIn('never-show-this', str(calls))
+        self.assertNotIn('neither-this', str(calls))
+        namespace = '{http://schemas.android.com/apk/res/android}'
+        root = ET.fromstring(exporter.manifest_xml('org.game', release=True))
+        self.assertEqual(root.find('application').get(namespace+'debuggable'), 'false')
 
     def test_existing_output_and_invalid_id_do_not_run_tools(self):
         output = self.root / 'game.apk'
