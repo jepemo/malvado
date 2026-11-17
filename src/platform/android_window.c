@@ -94,6 +94,35 @@ window_input(struct android_app *app, AInputEvent *event)
     return handled;
 }
 
+/* Wait without allocating graphics resources. The Java window callback sets
+ * pendingWindow under this mutex before writing INIT_WINDOW to the command
+ * pipe. Leave that command unread for raylib's own initialization callback. */
+int
+mv_android_window_wait_surface(void)
+{
+    struct android_app *app = GetAndroidApp();
+    if (!app) return 0;
+    for (;;) {
+        if (app->destroyRequested) return 0;
+        pthread_mutex_lock(&app->mutex);
+        int ready = app->window != NULL || app->pendingWindow != NULL;
+        pthread_mutex_unlock(&app->mutex);
+        if (ready) return 1;
+        struct android_poll_source *source = NULL;
+        int events;
+        int result = ALooper_pollOnce(-1, NULL, &events, (void **)&source);
+        if (result == ALOOPER_POLL_ERROR) return 0;
+        /* A window may have arrived while poll was blocked. Do not consume
+         * its command, even if earlier non-window commands are also queued. */
+        if (app->destroyRequested) return 0;
+        pthread_mutex_lock(&app->mutex);
+        ready = app->pendingWindow != NULL;
+        pthread_mutex_unlock(&app->mutex);
+        if (!ready && result >= 0 && source && source->process)
+            source->process(app, source);
+    }
+}
+
 void
 mv_android_window_attach(void)
 {

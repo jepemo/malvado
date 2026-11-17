@@ -18,6 +18,7 @@
 
 #include "malvado/platform.h"
 
+int mv_android_window_wait_surface(void);
 int mv_android_mouse_down(MvMouseButton button);
 int mv_android_key_down(MvKey key);
 void mv_android_window_attach(void);

@@ -371,6 +371,9 @@ int mv_window_open(int width, int height, const char *title)
     if (width <= 0 || height <= 0 || !title || IsWindowReady()) return 0;
     text_head = 0;
     text_count = 0;
+#ifdef __ANDROID__
+    if (!mv_android_window_wait_surface()) return 0;
+#endif
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
     mv_keyboard_open();

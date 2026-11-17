@@ -16,8 +16,26 @@
 #define MALVADO_TEST_ANDROID_GLUE_H
 #include <stdint.h>
 #include <stddef.h>
+#ifdef _WIN32
+#include <windows.h>
+typedef CRITICAL_SECTION pthread_mutex_t;
+static inline int pthread_mutex_init(pthread_mutex_t *m, const void *attr)
+{
+    (void)attr;
+    InitializeCriticalSection(m);
+    return 0;
+}
+static inline int pthread_mutex_destroy(pthread_mutex_t *m) { DeleteCriticalSection(m); return 0; }
+static inline int pthread_mutex_lock(pthread_mutex_t *m) { EnterCriticalSection(m); return 0; }
+static inline int pthread_mutex_unlock(pthread_mutex_t *m) { LeaveCriticalSection(m); return 0; }
+#else
+#include <pthread.h>
+#endif
 typedef struct { int type, code, action, source, buttons; } AInputEvent;
 struct android_app {
+    pthread_mutex_t mutex;
+    void *window, *pendingWindow;
+    int destroyRequested;
     int32_t (*onInputEvent)(struct android_app *, AInputEvent *);
     void (*onAppCmd)(struct android_app *, int32_t);
 };
@@ -29,6 +47,7 @@ enum { AINPUT_EVENT_TYPE_MOTION=2, AINPUT_SOURCE_CLASS_POINTER=2,
  AKEYCODE_0=7, AKEYCODE_9=16, AKEYCODE_A=29, AKEYCODE_Z=54, AKEYCODE_BACK=4,
  AKEYCODE_ESCAPE=111, AKEYCODE_SPACE=62, AKEYCODE_DPAD_LEFT=21, AKEYCODE_DPAD_RIGHT=22,
  AKEYCODE_DPAD_UP=19, AKEYCODE_DPAD_DOWN=20, AKEYCODE_ENTER=66, AKEYCODE_TAB=61, AKEYCODE_DEL=67,
+ APP_CMD_DESTROY=15, APP_CMD_INIT_WINDOW=1, ALOOPER_POLL_ERROR=-4,
  APP_CMD_PAUSE=13, APP_CMD_LOST_FOCUS=7, APP_CMD_TERM_WINDOW=2 };
 static inline int AInputEvent_getType(AInputEvent *e) { return e->type; }
 static inline int AKeyEvent_getKeyCode(AInputEvent *e) { return e->code; }
@@ -36,4 +55,6 @@ static inline int AKeyEvent_getAction(AInputEvent *e) { return e->action; }
 static inline int AInputEvent_getSource(AInputEvent *e) { return e->source; }
 static inline int AMotionEvent_getAction(AInputEvent *e) { return e->action; }
 static inline int AMotionEvent_getButtonState(AInputEvent *e) { return e->buttons; }
+struct android_poll_source { void (*process)(struct android_app *, struct android_poll_source *); };
+int ALooper_pollOnce(int timeout, int *fd, int *events, void **data);
 #endif

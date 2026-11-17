@@ -138,7 +138,9 @@ typedef struct {
     float scale, rotation;
 } MvImageTransform;
 
-/* The raylib adapter owns one window and is used on the main thread. */
+/* The raylib adapter owns one window and is used on the main thread.
+ * Return 0 if opening fails. Android waits for its first native surface;
+ * Activity destruction before that surface returns 0 without opening a window. */
 int mv_window_open(int width, int height, const char *title);
 /* Set the window title. Return 0 for NULL or when no window is open. */
 int mv_window_set_title(const char *title);

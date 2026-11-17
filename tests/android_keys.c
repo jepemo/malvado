@@ -21,10 +21,12 @@
 #include <assert.h>
 static struct android_app app;
 static int inputs, commands;
+static int available = 1;
+static int script[8], script_count, script_index, processed;
 struct android_app *
 GetAndroidApp(void)
 {
-    return &app;
+    return available ? &app : NULL;
 }
 static int32_t
 input(struct android_app *a, AInputEvent *e)
@@ -85,9 +87,74 @@ check_pointer(void)
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
 }
 
+static void
+poll_command(struct android_app *a, struct android_poll_source *source)
+{
+    (void)source;
+    processed++;
+    if (script[script_index - 1] == APP_CMD_DESTROY) a->destroyRequested = 1;
+    if (a->onAppCmd) a->onAppCmd(a, script[script_index - 1]);
+}
+
+int
+ALooper_pollOnce(int timeout, int *fd, int *events, void **data)
+{
+    (void)fd;
+    (void)events;
+    assert(timeout == -1);
+    static struct android_poll_source source = {poll_command};
+    if (script_index == script_count) return ALOOPER_POLL_ERROR;
+    int cmd = script[script_index++];
+    if (cmd == APP_CMD_INIT_WINDOW) app.pendingWindow = (void *)1;
+    *data = cmd >= 0 ? &source : NULL;
+    return cmd >= 0 ? 1 : cmd;
+}
+
+static void
+check_startup(void)
+{
+    app.onAppCmd = command;
+    available = 0;
+    assert(!mv_android_window_wait_surface());
+    available = 1;
+    app.destroyRequested = 1;
+    app.pendingWindow = (void *)1;
+    assert(!mv_android_window_wait_surface());
+    app.destroyRequested = 0;
+    app.pendingWindow = NULL;
+    script[0] = APP_CMD_PAUSE;
+    script[1] = APP_CMD_DESTROY;
+    script_count = 2;
+    script_index = processed = 0;
+    assert(!mv_android_window_wait_surface());
+    assert(processed == 2 && commands == 2 && app.destroyRequested);
+    app.destroyRequested = 0;
+    script[0] = -1; /* A looper wake is not an initialization failure. */
+    script[1] = APP_CMD_PAUSE;
+    script[2] = APP_CMD_INIT_WINDOW;
+    script_count = 3;
+    script_index = processed = 0;
+    assert(mv_android_window_wait_surface());
+    assert(processed == 1 && app.window == NULL && app.pendingWindow);
+    assert(script_index == 3); /* INIT remains unprocessed for raylib. */
+    assert(mv_android_window_wait_surface());
+    assert(script_index == 3);
+    app.pendingWindow = NULL;
+    app.window = (void *)1;
+    assert(mv_android_window_wait_surface());
+    app.window = NULL;
+    script_count = script_index = 0;
+    assert(!mv_android_window_wait_surface());
+    assert(commands == 3 && app.onAppCmd == command);
+    commands = 0;
+    app.onAppCmd = NULL;
+}
+
 int
 main(void)
 {
+    assert(pthread_mutex_init(&app.mutex, NULL) == 0);
+    check_startup();
     app.onInputEvent = input;
     app.onAppCmd = command;
     for (int reopen = 0; reopen < 2; ++reopen) {
@@ -137,4 +204,5 @@ main(void)
         assert(!mv_android_key_down(MV_KEY_A) && !mv_android_window_close_requested());
     }
     assert(inputs && commands);
+    assert(pthread_mutex_destroy(&app.mutex) == 0);
 }
