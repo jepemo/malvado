@@ -44,7 +44,7 @@ def packaging_tools(sdk, log, facts):
 
 
 def add_lua_assets(archive, entry, failure, *, keyboard=False):
-    if entry not in ('explicit', 'declarative') or failure not in ('none', 'process', 'missing-image'):
+    if entry not in ('explicit', 'declarative') or failure not in ('none', 'process', 'missing-image', 'startup-destroy'):
         raise ValueError('Unsupported Lua APK fixture mode')
     fixture = ROOT / 'tests/android-lua'
     archive.write(fixture / (entry + '.lua'), 'assets/main.lua')
@@ -58,7 +58,7 @@ def add_lua_assets(archive, entry, failure, *, keyboard=False):
 
 
 def add_rust_assets(archive, failure='none'):
-    if failure not in ('none', 'process', 'missing-image'):
+    if failure not in ('none', 'process', 'missing-image', 'startup-destroy'):
         raise ValueError('Unsupported Rust APK failure mode')
     archive.writestr('assets/message.bin', bytes([0, 13, 10, 255]))
     for name in (('atlas.json',) if failure == 'missing-image' else ('atlas.json', 'red.png')):
@@ -301,15 +301,30 @@ def failure_evidence(log, adb, work, package=None):
     log.flush()
 
 
-def android_manifest(package):
+def android_manifest(package, startup_destroy=False):
+    activity = "dev.malvado.test.CancelActivity" if startup_destroy else "android.app.NativeActivity"
+    has_code = "true" if startup_destroy else "false"
     return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="test">
 <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
 <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-<application android:hasCode="false" android:debuggable="true" android:label="Malvado acceptance">
-<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
+<application android:hasCode="{has_code}" android:debuggable="true" android:label="Malvado acceptance">
+<activity android:name="{activity}" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
 <meta-data android:name="android.app.lib_name" android:value="game"/>
 <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
 </activity></application></manifest>'''
+
+
+def cancellation_dex(log, sdk, tools, work):
+    """Finish onCreate before the first Surface lifecycle callback can run."""
+    classes, dex = work / 'classes', work / 'dex'
+    classes.mkdir(exist_ok=True)
+    dex.mkdir(exist_ok=True)
+    android = sdk / 'platforms/android-34/android.jar'
+    run(log, ['javac', '-source', '8', '-target', '8', '-classpath', android,
+              '-d', classes, ROOT / 'tests/android-window/CancelActivity.java'])
+    run(log, [tools / 'd8', '--lib', android, '--min-api', '28', '--output', dex,
+              classes / 'dev/malvado/test/CancelActivity.class'])
+    return dex / 'classes.dex'
 
 
 def main():
@@ -318,7 +333,7 @@ def main():
     parser.add_argument('--serial', required=True)
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
-    parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
+    parser.add_argument('--failure', choices=('none', 'process', 'missing-image', 'startup-destroy'), default='none')
     parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
@@ -333,8 +348,8 @@ def main():
         parser.error('--lifecycle cannot be combined with expected failures')
     if args.language == 'lua' and args.installed_sdk:
         parser.error('Lua APK verification currently uses the source runtime')
-    if args.language == 'c' and args.failure != 'none':
-        parser.error('--failure requires --language lua')
+    if args.language == 'c' and args.failure not in ('none', 'startup-destroy'):
+        parser.error('C APK verification supports only none/startup-destroy failures')
     if args.language == 'c' and args.entry != 'explicit':
         parser.error('--entry requires --language lua')
     default_work = ROOT / ('build-android-lua-window-test' if args.language == 'lua'
@@ -353,7 +368,7 @@ def main():
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
         lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7}[args.lifecycle]
-        failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
+        failure = {'none': 0, 'process': 1, 'missing-image': 2, 'startup-destroy': 3}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                   f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
@@ -376,17 +391,20 @@ def main():
                       f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
                       f'-DANDROID_ABI={abi}', '-DANDROID_PLATFORM=android-28',
                       f'-DCMAKE_BUILD_TYPE={args.config}', f'-DACCEPTANCE_TOKEN={token}',
-                      f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
+                      f'-DMALVADO_TEST_SDK={installed}', f'-DACCEPTANCE_FAILURE={failure}', f'-DACCEPTANCE_LIFECYCLE={lifecycle}', f'-DACCEPTANCE_AUDIO={int(args.audio)}'])
             run(log, ['cmake', '--build', build, '--target', 'game', '--parallel', '2'])
         if args.language == 'rust':
             from android_rust_apk import build as build_rust
             build = build_rust(log, work, installed, ndk, adb, args.serial, abi, args.config, token, lifecycle, failure, args.audio)
         manifest = work / 'AndroidManifest.xml'
-        manifest.write_text(android_manifest(package))
+        manifest.write_text(android_manifest(package, failure == 3))
+        dex = cancellation_dex(log, sdk, tools, work) if failure == 3 else None
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run(log, [tools / 'aapt', 'package', '-f', '-M', manifest, '-I', sdk / 'platforms/android-34/android.jar', '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(build / 'libgame.so', f'lib/{abi}/libgame.so')
+            if dex:
+                archive.write(dex, 'classes.dex')
             if args.language == 'rust':
                 add_rust_assets(archive, args.failure)
             if args.language == 'lua':
@@ -405,6 +423,8 @@ def main():
                        else 'window pixels and shutdown passed')
         if args.language == 'rust' and args.failure != 'none':
             expectation = 'Rust failure cleanup passed'
+        if failure == 3:
+            expectation = 'startup cancellation passed'
         completed = False
         try:
             prepare_foreground(log, adb)
@@ -413,12 +433,13 @@ def main():
             run(log, adb + ['install', '--no-incremental', str(apk)], timeout=90)
             settle_installation(log, adb)
             facts['package_broadcasts_idle'] = True
-            run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=45)
+            activity = 'dev.malvado.test.CancelActivity' if failure == 3 else 'android.app.NativeActivity'
+            run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/' + activity], timeout=45)
             lifecycle_evidence = None
             if args.lifecycle:
                 lifecycle_evidence = lifecycle_actions(log, adb, package, token, args.lifecycle, work, lua=args.language == 'lua', rust=args.language == 'rust')
             wait_marker(log, adb, token + ' ' + expectation)
-            if args.language == 'rust':
+            if args.language == 'rust' and failure != 3:
                 wait_marker(log, adb, token + ' Rust scheduler and cleanup passed')
                 if args.failure == 'none':
                     wait_marker(log, adb, token + ' Rust APK assets passed')

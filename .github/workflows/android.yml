@@ -51,6 +51,10 @@ jobs:
           mise run test-android-rust -- --assets --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android -- --sdk "$acceptance_sdk" --serial emulator-5580 --config "$config"
           mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --work "build-android/window-$config"
+          work="build-android/c-lifecycle-$config"
+          mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --config "$config" --failure startup-destroy --work "$work"
+          cp "$work/window.log" "$work/startup-destroy.log"
+          cp "$work/results.json" "$work/startup-destroy-results.json"
           for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background; do
             extra=()
             if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi
@@ -73,7 +77,7 @@ jobs:
               if [ -f "$work/$image.png" ]; then cp "$work/$image.png" "$work/audio-$mode-$image.png"; fi
             done
           done
-          for failure in process missing-image; do
+          for failure in process missing-image startup-destroy; do
             work="build-android/rust-window-$config"
             mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language rust --installed-sdk --config "$config" --failure "$failure" --work "$work"
             cp "$work/window.log" "$work/$failure-error.log"
@@ -81,7 +85,7 @@ jobs:
           done
           for config in "$ACCEPTANCE_CONFIG"; do
             for entry in explicit declarative; do
-              for failure in none process missing-image; do
+              for failure in none process missing-image startup-destroy; do
                 work="build-android/lua-$config"
                 mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --language lua --entry "$entry" --failure "$failure" --config "$config" --work "$work"
                 cp "$work/window.log" "$work/$entry-$failure.log"

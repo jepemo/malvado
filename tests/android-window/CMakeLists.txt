@@ -29,3 +29,5 @@ target_compile_definitions(game PRIVATE ACCEPTANCE_LIFECYCLE=${ACCEPTANCE_LIFECY
 target_include_directories(game PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
 
 target_compile_definitions(game PRIVATE ACCEPTANCE_AUDIO=${ACCEPTANCE_AUDIO})
+
+target_compile_definitions(game PRIVATE ACCEPTANCE_FAILURE=${ACCEPTANCE_FAILURE})

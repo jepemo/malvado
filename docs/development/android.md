@@ -431,16 +431,16 @@ documented by [Android](https://developer.android.com/guide/topics/resources/run
 The packaged manifest is dumped with aapt before installation. A host regression
 requires all four size flags. Startup evidence showed an Activity relaunch and
 `APP_CMD_DESTROY` before `APP_CMD_INIT_WINDOW`; raylib 5.5 waits for a window in
-that state. General cancellation before the first surface remains a runtime
-limitation; this manifest change does not add process-death recovery.
+that state. The pre-surface guard below now handles initial cancellation. This historical
+manifest acceptance does not establish process-death recovery.
 The observed local relaunch event used
 [`CONFIG_ASSETS_PATHS`](https://developer.android.com/reference/android/R.attr#configChanges)
 (`0x80000000`),
 not a size flag. Cold-start verification now waits for
 `am wait-for-broadcast-idle` after APK installation and requires its positive
 completion message. This separates the baseline from in-flight package-added
-resource updates. Runtime overlay changes and destruction during initial window
-creation remain unverified; waiting for broadcasts does not fix that runtime path.
+resource updates. Runtime overlay relaunches remain unverified; waiting for broadcasts does not
+fix that runtime path. Initial destruction is verified separately below.
 Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
 evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
 
@@ -456,8 +456,8 @@ All twelve cases also passed on the pinned x86_64 emulator on `a7f850e` in
 Both independent profile jobs passed their complete 28-case APK matrices and
 headless suites. Artifact review confirmed all 56 APK results, positive package
 broadcast-idle evidence, compiled size-change flags, eight Lua catch-up markers
-and 92 PNG headers. Initial-window cancellation and runtime overlay changes
-remain A8.4 work; this passing baseline does not establish recovery from them.
+and 92 PNG headers. This baseline did not establish initial-window cancellation or runtime overlay
+recovery. Initial cancellation is covered separately below.
 
 ## Android audio API verification
 
@@ -676,3 +676,33 @@ The adapter neutralizes buttons on cancel, pause, focus loss and surface loss.
 A move cannot revive cancelled state; a fresh down is needed. This verifies one
 primary contact through existing mouse queries. Multi-touch, physical mouse
 hardware and process-death recovery remain outside this acceptance check.
+
+## Destruction before the first native surface
+
+The Android window adapter waits for a pending native window before it calls
+raylib initialization. It processes earlier NativeActivity events with the
+existing callbacks and leaves INIT_WINDOW for raylib. If DESTROY arrives first,
+`mv_window_open` returns 0 without allocating a graphics context. Lua reports
+`could not open window` and closes its runtime. Rust returns `Error::Platform`.
+This uses the existing native event loop and game scheduler. It does not change
+third-party source or implement runtime resource-overlay recovery.
+
+Run the bounded cancellation fixture with the pinned Java toolchain:
+
+```sh
+mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 \
+  --installed-sdk --failure startup-destroy
+mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 \
+  --language lua --entry declarative --failure startup-destroy
+mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5580 \
+  --language rust --installed-sdk --failure startup-destroy
+```
+
+Use `--entry explicit` for the other Lua entry and `--config Release` for the
+other profile. The test-only Java Activity calls `finish()` in `onCreate`, before
+Android can create the first surface. The native checks require DESTROY with no
+current or pending window, no graphics or audio device, and a language-specific
+failed-open result. Lua also requires its runtime context to be released and its
+process cleanup marker to remain absent. Each case retains its token, logs and result JSON,
+and verifies APK removal. Screenshots cannot establish this path because it has
+no application surface. Both CI profiles include all four language/entry cases.

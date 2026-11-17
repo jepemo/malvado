@@ -36,11 +36,15 @@ pub extern "C" fn malvado_rust_entry() {
     })
     .join()
     .unwrap();
+    // SAFETY: this reads immutable fixture configuration on the app thread.
+    let failure = unsafe { acceptance_failure() };
+    if failure == 3 {
+        assert!(matches!(Window::open(320, 240, "Cancelled startup"), Err(Error::Platform(_))));
+        return;
+    }
     let window = Rc::new(Window::open(320, 240, "Malvado Android Rust").unwrap());
     let weak = Rc::downgrade(&window);
     let (snapshot, image) = assets::load(window.clone());
-    // SAFETY: this reads immutable fixture configuration on the app thread.
-    let failure = unsafe { acceptance_failure() };
     if failure != 0 {
         failures::run(window, snapshot, image, failure);
         return;

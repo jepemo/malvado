@@ -189,6 +189,20 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(NULL, NULL);
     if (keyboard_mode()) malvado_debug_set_hook(NULL, NULL);
     assert(result == (ACCEPTANCE_FAILURE ? 1 : 0));
+    if (ACCEPTANCE_FAILURE == 3) {
+        assert(app->destroyRequested && !app->window && !app->pendingWindow);
+        assert(!verified && !IsWindowReady() && !IsAudioDeviceReady());
+        assert(malvado_debug_context() == NULL);
+        assert(access("closed.txt", F_OK) != 0);
+        assert(fflush(stderr) == 0);
+        FILE *errors = fopen("stderr.txt", "rb");
+        char text[8192] = {0};
+        assert(errors && fread(text, 1, sizeof(text) - 1, errors) > 0);
+        assert(fclose(errors) == 0 && strstr(text, "could not open window"));
+        mv_asset_source_destroy(snapshot);
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s startup cancellation passed", ACCEPTANCE_TOKEN);
+        return 0;
+    }
     lifecycle_finish();
     if (keyboard_mode()) assert(lua_keyboard_seen == 3 && keyboard_stall && keyboard_catchup);
     assert(!IsAudioDeviceReady());

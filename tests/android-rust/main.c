@@ -108,6 +108,13 @@ main(int argc, char **argv)
     stage_assets();
     malvado_rust_entry();
     if (IsWindowReady() || (ACCEPTANCE_AUDIO && IsAudioDeviceReady())) abort();
+    if (ACCEPTANCE_FAILURE == 3) {
+        struct android_app *app = GetAndroidApp();
+        assert(app && app->destroyRequested && !app->window && !app->pendingWindow);
+        assert(!IsAudioDeviceReady());
+        acceptance_log("startup cancellation passed");
+        return 0;
+    }
     acceptance_log(ACCEPTANCE_FAILURE ? "Rust failure cleanup passed" : "window pixels and shutdown passed");
     return 0;
 }

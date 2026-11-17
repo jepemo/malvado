@@ -21,6 +21,27 @@ class ForegroundTests(unittest.TestCase):
         self.assertTrue({'orientation', 'screenSize', 'screenLayout', 'smallestScreenSize'}.issubset(flags))
         self.assertIn('keyboardHidden', flags)
 
+    def test_startup_cancel_activity_has_java_code_and_native_entry(self):
+        root = ET.fromstring(verifier.android_manifest('test.game', True))
+        ns = '{http://schemas.android.com/apk/res/android}'
+        application = root.find('application')
+        activity = application.find('activity')
+        self.assertEqual(application.get(ns + 'hasCode'), 'true')
+        self.assertEqual(activity.get(ns + 'name'), 'dev.malvado.test.CancelActivity')
+        self.assertEqual(activity.find('meta-data').get(ns + 'value'), 'game')
+        self.assertEqual(ET.fromstring(verifier.android_manifest('test.game')).find('application').get(ns + 'hasCode'), 'false')
+
+    def test_startup_cancel_dex_uses_selected_sdk_and_owns_output(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory, patch.object(verifier, 'run') as run:
+            work = Path(directory)
+            result = verifier.cancellation_dex(io.StringIO(), Path('sdk'), Path('tools'), work)
+            commands = [call.args[1] for call in run.call_args_list]
+            self.assertEqual(result, work / 'dex/classes.dex')
+            self.assertIn(Path('sdk/platforms/android-34/android.jar'), commands[0])
+            self.assertEqual(commands[1][0], Path('tools/d8'))
+            self.assertEqual(commands[1][-1], work / 'classes/dev/malvado/test/CancelActivity.class')
+
     def test_wakeup_is_not_a_power_toggle(self):
         with patch.object(verifier, 'run') as run:
             verifier.prepare_foreground(io.StringIO(), ['adb', '-s', 'emulator-test'])

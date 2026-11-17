@@ -30,6 +30,14 @@ main(int argc, char **argv)
     (void)argc;
     (void)argv;
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s C entry", ACCEPTANCE_TOKEN);
+    if (ACCEPTANCE_FAILURE == 3) {
+        assert(!mv_window_open(320, 240, "Cancelled startup"));
+        struct android_app *app = GetAndroidApp();
+        assert(app && app->destroyRequested && !app->window && !app->pendingWindow);
+        assert(!IsWindowReady() && !IsAudioDeviceReady());
+        __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s startup cancellation passed", ACCEPTANCE_TOKEN);
+        return 0;
+    }
     if (!mv_window_open(320, 240, "Malvado Android")) return 1;
     __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s window opened", ACCEPTANCE_TOKEN);
     int width, height;
