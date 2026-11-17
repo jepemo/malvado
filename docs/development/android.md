@@ -3,8 +3,8 @@
 Android support is in progress for alpha.8. The delivered verification paths
 include headless C/Lua/Rust core and assets, C/Lua NativeActivity graphics, and
 local Rust NativeActivity startup/pixels/cleanup. These are verification paths,
-not an Android CLI authoring host or a general APK exporter. Linux graphical
-Rust acceptance, remaining Rust APK behavior, general packaged-game integration,
+not an Android CLI authoring host or a general APK exporter. Pinned x86_64 Rust
+fixtures also pass CI. General packaged-game integration,
 CLI APK/AAB exports and remaining mobile behavior stay open in the
 [version plan](../versions/2.0.0-alpha.8.md).
 

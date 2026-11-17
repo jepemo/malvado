@@ -8,8 +8,8 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 
 | Host / target | Current verification | Remaining work |
 | --- | --- | --- |
-| macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
-| Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
+| macOS 15 arm64 / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
+| Ubuntu 24.04 x86_64 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
 | macOS arm64 / Android arm64 API 34 | Headless C/Lua/Rust core and assets, Rust NativeActivity window/assets/errors/cleanup and Back/resume/keyboard/contact/audio, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
 | Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua/Rust core/assets, C/Rust graphical SDK fixtures and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
@@ -34,7 +34,7 @@ does not provide an on-screen keyboard service. See
 | --- | --- | --- |
 | Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
 | Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
-| Android arm64 / x86_64 API 34 | Relocated C SDK trees, headless C/Lua executables, locally verified Rust core/assets executables and C/Lua NativeActivity fixture APKs | macOS arm64 or Linux x86_64 verification hosts only. Rust headless core/assets SDK/probes pass locally on arm64; x86_64 CI acceptance passed on `885a9f4`. Rust NativeActivity startup/pixels/cleanup is verified locally; Linux graphics acceptance, remaining input/lifecycle/audio-focus checks remain open. No general game APK exporter or AAB export yet. Fixture APKs use test signing, including Release builds. |
+| Android arm64 / x86_64 API 34 | Relocated C/Rust SDK trees, headless C/Lua/Rust executables and C/Lua/Rust NativeActivity fixture APKs | macOS arm64 or Ubuntu 24.04 x86_64 verification hosts only. C/Rust fixtures consume installed SDKs; Lua fixtures build the source runtime. Both profiles passed graphics/assets/error/input/audio/lifecycle fixtures on arm64 and pinned x86_64. Remaining mobile behavior and general game APK/AAB exports stay open. Fixture APKs use test signing, including Release builds. |
 
 An installed Android C SDK consumer is an external CMake project. A Lua fixture
 APK currently builds the source runtime; it does not establish an installed Lua
@@ -55,8 +55,29 @@ headless C/Lua SDK/parity verification and normal/cancelled C/Lua/Rust fixture
 APKs with recorded archive provenance. See the
 [pinned macOS commands](android.md#local-commands). The earlier lifecycle and
 audio results retain their own baseline; the new pin check does not complete
-mobile behavior or general APK exports. Windows toolchain selection and the
-full support-matrix acceptance remain open in A8.1.
+mobile behavior or general APK exports. Windows toolchain selection and the delivered-capability matrix review passed
+A8.1 on `25bd953`. Production Android packaging remains A8.5 work.
+
+## Reproducible command scope
+
+The delivered matrix covers native macOS arm64, Ubuntu x86_64 and Windows x64
+C/Lua/Rust authoring, plus macOS-arm64/Android-arm64 and Linux-x86_64/Android-x86_64
+verification. Android runtime is API 34 with minimum native build API 28.
+CMake, Python, Rust and signing Java are fixed in `mise.toml`; Windows compiler
+selection is below. Android SDK/emulator/image names and SHA-256 values are in
+`tools/android_sdk.py` and `tools/android_archives.py`; use the shared
+[local and CI commands](android.md#local-commands). The AVD fixes two cores,
+2048 MiB and a 1080 by 1920 display with SwiftShader.
+
+SDK archives use `.tar.gz`; Android verification also delivers relocated SDK
+trees and ELF executables. Desktop exports are folders, with `.exe` players on
+Windows and optional `.app` bundles on macOS. Android fixture APKs are test
+artifacts. General APK/AAB generation and its production packaging dependencies
+remain A8.5 work. No Android CLI host, Windows-to-Android authoring, other Android
+API levels, 32-bit target, Windows GNU/ARM64 or general cross-host desktop build
+is established by this matrix. Hardware and audible checks remain beta work.
+Hosted OS images are recorded baselines; version checks and archive hashes do
+not promise a hermetic OS or byte-identical signed packages.
 
 ## Native Windows baseline
 
@@ -85,7 +106,12 @@ produce an installation error instead of a silent fallback to another compiler.
 Install the listed VS build, C++ workload/toolset and Windows SDK before retrying.
 This does not install tools or claim a hermetic Windows image. The hosted runner
 can change; a removed pinned version requires a deliberate baseline review.
-Native CI acceptance of the new selection guard remains a separate version gate.
+Native selection acceptance passed on clean `25bd953` in
+[Windows run 44054785505](https://github.com/jepemo/malvado/actions/runs/44054785505).
+Both uploaded toolchain JSON files match every pin. Both SDK kinds/profiles also
+passed Rust selector-change rejection/recovery, and fresh exported players ran.
+The same source passed [general CI](https://github.com/jepemo/malvado/actions/runs/44054785682)
+and [Android CI](https://github.com/jepemo/malvado/actions/runs/44054785787).
 
 Run `mise run test-platform` locally or in CI. It builds Debug and Release
 headless SDKs with bundled Lua and atlas services. The CTest suite tests core
