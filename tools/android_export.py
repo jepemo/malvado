@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from xml.sax.saxutils import quoteattr
 
 
 def project_files(project):
@@ -52,9 +53,30 @@ def run(arguments):
     subprocess.run([str(arg) for arg in arguments], check=True, timeout=120)
 
 
-def export(project, runtime, sdk, output, package, version):
+def manifest_xml(package, version_code=1, version_name='debug', title='Malvado game', orientation='landscape', min_api=28):
     if not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+', package):
         raise ValueError('Invalid Android application ID')
+    if type(version_code) is not int or not 1 <= version_code <= 2100000000:
+        raise ValueError('Android version code must be between 1 and 2100000000')
+    if type(min_api) is not int or not 28 <= min_api <= 34:
+        raise ValueError('Android minimum API must be between 28 and 34')
+    if orientation not in ('landscape', 'portrait', 'sensor'):
+        raise ValueError('Unsupported Android orientation')
+    for value in (version_name, title):
+        if not value or len(value) > 128 or any(ord(c) < 32 or ord(c) == 127 or 0xd800 <= ord(c) <= 0xdfff or ord(c) in (0xfffe, 0xffff) for c in value):
+            raise ValueError('Android title/version name must contain 1–128 valid XML characters without controls')
+    return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="{version_code}" android:versionName={quoteattr(version_name)}>
+<uses-sdk android:minSdkVersion="{min_api}" android:targetSdkVersion="34"/>
+<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+<application android:hasCode="false" android:debuggable="true" android:label={quoteattr(title)}>
+<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="{orientation}" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
+<meta-data android:name="android.app.lib_name" android:value="game"/>
+<intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+</activity></application></manifest>'''
+
+
+def export(project, runtime, sdk, output, package, version, **configuration):
+    manifest_text = manifest_xml(package, **configuration)
     if output.suffix != '.apk' or output.exists() or output.is_symlink():
         raise ValueError('Output must be a new .apk file')
     files = project_files(project)
@@ -83,14 +105,7 @@ def export(project, runtime, sdk, output, package, version):
     with tempfile.TemporaryDirectory(prefix='.malvado-apk-', dir=output.parent) as folder:
         work = Path(folder)
         manifest = work / 'AndroidManifest.xml'
-        manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="1" android:versionName="debug">
-<uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
-<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-<application android:hasCode="false" android:debuggable="true" android:label="Malvado game">
-<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
-<meta-data android:name="android.app.lib_name" android:value="game"/>
-<intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
-</activity></application></manifest>''')
+        manifest.write_text(manifest_text, encoding='utf-8')
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run([tools / 'aapt', 'package', '-f', '-M', manifest, '-I', platform, '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
@@ -115,10 +130,15 @@ def main():
     parser.add_argument('--android-sdk', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--id', default='org.malvado.game')
+    parser.add_argument('--version-code', type=int, default=1)
+    parser.add_argument('--version-name', default='debug')
+    parser.add_argument('--title', default='Malvado game')
+    parser.add_argument('--orientation', choices=('landscape', 'portrait', 'sensor'), default='landscape')
+    parser.add_argument('--min-api', type=int, default=28)
     parser.add_argument('--engine-version', required=True)
     args = parser.parse_args()
     try:
-        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version)
+        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, version_name=args.version_name, title=args.title, orientation=args.orientation, min_api=args.min_api)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, str(error) + '\n')
 

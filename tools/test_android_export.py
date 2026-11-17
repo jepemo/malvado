@@ -100,12 +100,16 @@ return function() task() end
             (project/'main.lua').write_text(entry)
             package='dev.malvado.exported.p'+uuid.uuid4().hex
             apk=project.parent/(package+'.apk')
-            output=command([cli,'export','--target','android-arm64','--format','apk','--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package],cwd=project)
+            output=command([cli,'export','--target','android-arm64','--format','apk','--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package,'--version-code','42','--version-name','2 & next','--title','Juego <uno> & dos','--orientation','portrait','--min-api','30'],cwd=project)
             (args.work/(mode+'-export.log')).write_bytes(output.stdout+output.stderr)
             with zipfile.ZipFile(apk) as archive:
                 assert archive.read('assets/assets/value.bin')==b'\0\r\n\xff'
                 assert 'assets/licenses/Lua-readme.html' in archive.namelist()
                 assert 'assets/licenses/raylib-LICENSE' in archive.namelist()
+            metadata=command([args.android_sdk.resolve()/'build-tools/34.0.0/aapt','dump','badging',apk]).stdout
+            assert b"versionCode='42'" in metadata and b"versionName='2 & next'" in metadata
+            assert b"sdkVersion:'30'" in metadata
+            (args.work/(mode+'-manifest.log')).write_bytes(metadata)
             try:
                 command(adb+['install','--no-incremental',apk])
                 command(adb+['shell','am','wait-for-broadcast-idle'])

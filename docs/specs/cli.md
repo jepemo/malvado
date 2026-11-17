@@ -85,12 +85,16 @@ Lua files pass the ordinary CLI syntax check. Dependency notices are packaged.
 
 The optional application ID defaults to `org.malvado.game`. It needs at least two
 dot-separated components; each starts with an ASCII letter and then contains
-ASCII letters, digits or underscores. The initial manifest uses version code 1,
-landscape orientation, minimum API 28 and target API 34. A fresh temporary debug
+ASCII letters, digits or underscores. The manifest defaults to version code 1,
+landscape orientation, minimum API 28 and target API 34. Configure it with
+`--version-code` (1–2100000000), `--version-name` and `--title` (1–128 characters,
+no controls), `--orientation landscape|portrait|sensor` and `--min-api` (28–34).
+Text is XML-escaped. Invalid values fail before tool execution or output-folder
+creation. Target API remains pinned to 34. A fresh temporary debug
 key signs each export. Uninstall an older build before installing another build
 with that ID. This is a development APK, not a production signing workflow.
 
-C/Rust export, other Android ABIs, configurable manifests, release APK and AAB
+C/Rust export, other Android ABIs, release APK and AAB
 are unavailable. `--release` and `--format aab` are rejected. Windows Android
 authoring is unavailable. General Android export acceptance remains open until
 these remaining version deliverables are implemented and verified.

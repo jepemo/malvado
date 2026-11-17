@@ -9,6 +9,7 @@ import unittest
 import shutil
 import subprocess
 import zipfile
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
@@ -23,6 +24,28 @@ class ExportTests(unittest.TestCase):
         self.project = self.root / 'game with spaces'
         self.project.mkdir()
         (self.project / 'main.lua').write_text('return {}')
+
+    def test_manifest_configuration_and_xml_escaping(self):
+        xml = exporter.manifest_xml('org.example.game', version_code=42, version_name='2 & "next"', title='Juego <uno>', orientation='portrait', min_api=30)
+        root = ET.fromstring(xml)
+        namespace = '{http://schemas.android.com/apk/res/android}'
+        self.assertEqual(root.get(namespace+'versionCode'), '42')
+        self.assertEqual(root.get(namespace+'versionName'), '2 & "next"')
+        self.assertEqual(root.find('application').get(namespace+'label'), 'Juego <uno>')
+        self.assertEqual(root.find('.//activity').get(namespace+'screenOrientation'), 'portrait')
+        self.assertEqual(root.find('uses-sdk').get(namespace+'minSdkVersion'), '30')
+
+    def test_invalid_manifest_inputs_fail_before_tools_or_output(self):
+        for configuration in (dict(version_code=0), dict(version_code=2100000001), dict(version_code=True),
+                              dict(min_api=27), dict(min_api=35), dict(orientation='sideways'),
+                              dict(title=''), dict(title='x'*129), dict(title='bad\nline'),
+                              dict(version_name='bad\x00value')):
+            output = self.root / 'never' / 'game.apk'
+            with self.subTest(configuration=configuration), patch.object(exporter, 'run') as run:
+                with self.assertRaises(ValueError):
+                    exporter.export(self.project, self.root, self.root, output, 'org.game', 'test', **configuration)
+                run.assert_not_called()
+            self.assertFalse(output.parent.exists())
 
     def test_nested_binary_assets_and_source_selection(self):
         (self.project / 'assets').mkdir()
