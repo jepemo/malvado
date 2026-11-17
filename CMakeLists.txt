@@ -266,7 +266,7 @@ if(MALVADO_BUILD_LUA)
     target_sources(malvado-native-game PRIVATE src/windows_process.c)
   endif()
   target_compile_definitions(malvado PRIVATE MALVADO_ANDROID_EXPORT_REL="${CMAKE_INSTALL_DATADIR}/malvado/tools/android_export.py")
-  install(FILES tools/android_export.py DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/tools)
+  install(FILES tools/android_export.py tools/android_bundle.py DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/tools)
   install(TARGETS malvado RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   install(TARGETS malvado-game malvado-native-game RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/malvado)
   install(FILES ${lua_SOURCE_DIR}/doc/readme.html DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME Lua-readme.html)
@@ -417,6 +417,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME platform_candidate COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_candidate.py)
   set_tests_properties(platform_candidate PROPERTIES TIMEOUT 15)
+  add_test(NAME android_bundle COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_bundle.py)
+  set_tests_properties(android_bundle PROPERTIES TIMEOUT 15)
   add_test(NAME android_export COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/android_export.py)
   set_tests_properties(android_export PROPERTIES TIMEOUT 15)

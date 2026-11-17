@@ -199,13 +199,24 @@ def signing_configuration(project, keystore=None, key_alias=None, store_password
     return keystore, key_alias, store_password_env, key_password_env
 
 
-def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, ndk=None, probe_runner=None, **configuration):
+def export(project, runtime, sdk, output, package, version, *, release=False, keystore=None, key_alias=None, store_password_env=None, key_password_env=None, ndk=None, probe_runner=None, output_format='apk', bundle_tools=None, **configuration):
     if release:
         configuration.setdefault('version_name', 'release')
     manifest_text = manifest_xml(package, release=release, **configuration)
     signing = signing_configuration(project, keystore, key_alias, store_password_env, key_password_env)
-    if output.suffix != '.apk' or output.exists() or output.is_symlink():
-        raise ValueError('Output must be a new .apk file')
+    if output_format not in ('apk', 'aab'):
+        raise ValueError('Unsupported Android export format')
+    if output.suffix != '.'+output_format or output.exists() or output.is_symlink():
+        raise ValueError('Output must be a new .'+output_format+' file')
+    if output_format == 'aab':
+        if not release:
+            raise ValueError('AAB export requires --release')
+        if signing:
+            raise ValueError('AAB signing is not available')
+        if bundle_tools is None:
+            raise ValueError('AAB export requires --bundle-tools')
+        from android_bundle import validate_tools
+        validate_tools(Path(bundle_tools))
     language = 'lua' if (project / 'main.lua').is_file() else ('rust' if (project / 'Cargo.toml').is_file() else 'c')
     files = project_files(project, language)
     if language == 'lua':
@@ -223,8 +234,8 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
         files.append((path, 'licenses/' + name))
     tools = sdk / 'build-tools/34.0.0'
     platform = sdk / 'platforms/android-34/android.jar'
-    required_tools = [tools / 'aapt', tools / 'zipalign', platform]
-    if not release or signing:
+    required_tools = [platform] if output_format == 'aab' else [tools / 'aapt', tools / 'zipalign', platform]
+    if output_format == 'apk' and (not release or signing):
         required_tools.append(tools / 'apksigner')
     for tool in required_tools:
         if not tool.is_file():
@@ -235,7 +246,7 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
                     for key, value in [line.split('=', 1)])
     if properties(tools / 'source.properties').get('Pkg.Revision') != '34.0.0' or properties(sdk / 'platforms/android-34/source.properties').get('AndroidVersion.ApiLevel') != '34':
         raise ValueError('Android SDK version metadata does not match Build Tools 34.0.0 / API 34')
-    host_tools = ['java'] if not release or signing else []
+    host_tools = ['java'] if output_format == 'aab' or not release or signing else []
     if not release and signing is None:
         host_tools.append('keytool')
     for tool in host_tools:
@@ -250,6 +261,12 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
             library = build_c_game(project, runtime, sdk, work, release, ndk)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(manifest_text, encoding='utf-8')
+        if output_format == 'aab':
+            from android_bundle import build as build_bundle
+            artifact = build_bundle(run, Path(bundle_tools), sdk, work, manifest, library, files)
+            os.link(artifact, output)
+            print('Exported unsigned release AAB: ' + str(output))
+            return
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run([tools / 'aapt', 'package', '-f', '-M', manifest, '-I', platform, '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
@@ -285,7 +302,8 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', choices=('android-arm64',), required=True)
-    parser.add_argument('--format', choices=('apk',), required=True)
+    parser.add_argument('--format', choices=('apk', 'aab'), required=True)
+    parser.add_argument('--bundle-tools', type=Path)
     parser.add_argument('--probe-runner', type=Path)
     parser.add_argument('--ndk', type=Path)
     parser.add_argument('--runtime-sdk', type=Path, required=True)
@@ -305,7 +323,7 @@ def main():
     parser.add_argument('--engine-version', required=True)
     args = parser.parse_args()
     try:
-        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, version_code=args.version_code, probe_runner=args.probe_runner, ndk=args.ndk, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
+        export(Path.cwd(), args.runtime_sdk.resolve(), args.android_sdk.resolve(), args.output.absolute(), args.id, args.engine_version, output_format=args.format, bundle_tools=args.bundle_tools.resolve() if args.bundle_tools else None, version_code=args.version_code, probe_runner=args.probe_runner, ndk=args.ndk, release=args.release, keystore=args.keystore, key_alias=args.key_alias, store_password_env=args.store_password_env, key_password_env=args.key_password_env, version_name=args.version_name if args.version_name is not None else ('release' if args.release else 'debug'), title=args.title, orientation=args.orientation, min_api=args.min_api)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, str(error) + '\n')
 
