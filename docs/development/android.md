@@ -495,8 +495,9 @@ The observed local relaunch event used
 not a size flag. Cold-start verification now waits for
 `am wait-for-broadcast-idle` after APK installation and requires its positive
 completion message. This separates the baseline from in-flight package-added
-resource updates. Runtime overlay relaunches remain unverified; waiting for broadcasts does not
-fix that runtime path. Initial destruction is verified separately below.
+resource updates. Waiting for broadcasts does not verify runtime relaunch
+recovery. The separate live resource-overlay checks below cover that path.
+Initial destruction is verified separately below.
 Results record keycodes 29/21 and capture a PNG after release, plus before/resumed
 evidence where applicable. CI retains distinct logs, JSON and PNGs for each case.
 
@@ -785,8 +786,8 @@ Downloaded artifacts verify 50 distinct APKs, 86 valid PNG headers and all four
 language/entry cancellations per profile. Every APK result retains all four SDK
 and both runtime archive inputs. Debug also passed the native Rust probe path
 that previously failed during directory preparation. The same source passed
-native Windows and general macOS/Linux CI. Runtime overlay relaunches and the
-remaining version scope still need their own acceptance.
+native Windows and general macOS/Linux CI. This historical source did not
+include the live resource-overlay checks described below.
 
 ## Live Activity recreation
 
@@ -847,3 +848,11 @@ closes the second generation with Back and verifies removal of both APKs.
 The overlay is also removed on failure; game removal runs even if overlay
 cleanup fails. This does not test arbitrary overlays, process-death recovery,
 physical devices or audible output.
+
+
+Resource-overlay relaunch passed C, both Lua entries and Rust in Debug/Release
+on API 34 arm64. Eight unique game/overlay pairs retained sixteen PNGs and
+same-process, two-generation cleanup evidence. Lua/Rust also checked packaged
+assets and their runtime/scheduler cleanup after relaunch. Both x86_64 CI
+profiles include these cases and retain separate overlay evidence; hosted
+acceptance remains open. The 223 host headless checks pass.

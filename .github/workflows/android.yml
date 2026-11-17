@@ -61,7 +61,7 @@ jobs:
             cp "$work/window.log" "$work/$failure-error.log"
             cp "$work/results.json" "$work/$failure-error-results.json"
           done
-          for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background recreate; do
+          for mode in none back resume touch keyboard keyboard-resume keyboard-background touch-background recreate overlay; do
             extra=()
             if [ "$mode" != none ]; then extra=(--lifecycle "$mode"); fi
             work="build-android/rust-window-$config"
@@ -100,7 +100,7 @@ jobs:
             done
           done
           for config in "$ACCEPTANCE_CONFIG"; do
-            for lifecycle in back resume touch keyboard keyboard-resume keyboard-background touch-background recreate; do
+            for lifecycle in back resume touch keyboard keyboard-resume keyboard-background touch-background recreate overlay; do
               work="build-android/c-lifecycle-$config"
               mise run test-android-window -- --sdk "$acceptance_sdk" --serial emulator-5580 --installed-sdk --lifecycle "$lifecycle" --config "$config" --work "$work"
               cp "$work/window.log" "$work/$lifecycle.log"

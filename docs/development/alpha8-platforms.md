@@ -294,3 +294,13 @@ Add the existing Windows `--graphics --cli` options for the graphical SDK.
 `--package` verifies the digest, metadata and safe extraction paths before
 using the relocated archive. It preserves an existing extraction destination.
 Windows archive execution remains subject to hosted native CI acceptance.
+
+## Runtime resource-overlay verification
+
+The arm64 Android fixture now verifies real resource updates through an owned
+runtime resource-overlay APK. C, both Lua entries and Rust pass Debug/Release
+with automatic Activity relaunch, unchanged PID, restored pixels and cleanup of
+both generations and both packages. This is separate from manual recreation.
+Both x86_64 CI profiles include the mode; their hosted acceptance remains open.
+Only the acceptance application's overlayable label changes. System overlays,
+arbitrary resource updates and process-death recovery are not established.
