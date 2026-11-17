@@ -89,7 +89,7 @@ pub extern "C" fn malvado_rust_entry() {
         if mode == 4 || mode == 5 || mode == 6 {
             keyboard.tick(&window);
         }
-        if mode == 3 {
+        if mode == 3 || mode == 7 {
             touch.tick(&window);
         }
         game.tick().unwrap();
@@ -136,7 +136,7 @@ pub extern "C" fn malvado_rust_entry() {
     if mode == 4 || mode == 5 || mode == 6 {
         assert!(keyboard.complete);
     }
-    if mode == 3 {
+    if mode == 3 || mode == 7 {
         assert!(touch.complete);
     }
     // SAFETY: validate and restore only this fixture's lifecycle observer.

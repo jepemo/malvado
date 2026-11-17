@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run bounded C/Lua NativeActivity APK checks with the existing backend."""
+"""Build and run bounded C/Lua/Rust NativeActivity APK checks with the shared backend."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 from pathlib import Path
@@ -157,6 +157,40 @@ def background_key(log, adb, package, token, keycode, name, pid, screenshots, *,
     return after
 
 
+def background_touch(log, adb, package, token, pid, dimensions, *, lua=False, rust=False):
+    if dimensions is None: raise RuntimeError('Background touch verification needs screenshot dimensions')
+    width, height = dimensions
+    start = [str(width // 2), str(height // 2)]
+    end = [str(width * 6 // 10), str(height // 2)]
+    released = False
+    try:
+        run(log, adb + ['shell', 'input', 'touchscreen', 'motionevent', 'DOWN', *start], timeout=10)
+        for prefix in ('', *(['lua '] if lua else []), *(['rust '] if rust else [])):
+            wait_marker(log, adb, token + ' ' + prefix + 'touch held')
+        run(log, adb + ['shell', 'input', 'touchscreen', 'motionevent', 'MOVE', *end], timeout=10)
+        for prefix in ('', *(['lua '] if lua else []), *(['rust '] if rust else [])):
+            wait_marker(log, adb, token + ' ' + prefix + 'touch moved')
+        run(log, adb + ['shell', 'input', 'keyevent', '3'], timeout=10)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            state = run(log, adb + ['shell', 'dumpsys', 'activity', 'activities'], timeout=10).stdout
+            if activity_is_background(state, package): break
+            time.sleep(0.1)
+        else: raise RuntimeError('Acceptance Activity did not background with an active touch')
+        run(log, adb + ['shell', 'input', 'touchscreen', 'motionevent', 'UP', *end], timeout=10)
+        released = True
+    finally:
+        if not released:
+            try: run(log, adb + ['shell', 'input', 'touchscreen', 'motionevent', 'UP', *end], timeout=10, check=False)
+            except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+                log.write(f'Cannot release owned test contact: {error}\n'); log.flush()
+    run(log, adb + ['shell', 'am', 'start', '-W', '-n', package + '/android.app.NativeActivity'], timeout=30)
+    after = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
+    if pid != after: raise RuntimeError('Acceptance process was recreated during contact background transition')
+    wait_marker(log, adb, token + ' lifecycle resumed 1')
+    return after
+
+
 def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=False, rust=False):
     wait_marker(log, adb, token + ' lifecycle ready')
     before = run(log, adb + ['shell', 'pidof', package], timeout=10).stdout.strip()
@@ -183,11 +217,15 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         wait_marker(log, adb, token + ' lifecycle resumed')
         if screenshots:
             capture_screen(log, adb, screenshots / 'resumed.png')
-    if mode == 'touch':
+    if mode in ('touch', 'touch-background'):
         if dimensions is None:
             raise RuntimeError('Touch verification needs screenshot dimensions')
         width, height = dimensions
-        run(log, adb + ['shell', 'input', 'touchscreen', 'swipe', str(width // 2), str(height // 2),
+        if mode == 'touch-background':
+            after = background_touch(log, adb, package, token, before, dimensions, lua=lua, rust=rust)
+            capture_screen(log, adb, screenshots / 'resumed.png')
+        else:
+            run(log, adb + ['shell', 'input', 'touchscreen', 'swipe', str(width // 2), str(height // 2),
                         str(width * 6 // 10), str(height // 2), '1500'], timeout=10)
         wait_marker(log, adb, token + ' touch released')
         if rust:
@@ -215,14 +253,14 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
         if screenshots:
             capture_screen(log, adb, screenshots / 'keyboard.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
-    return {'initial_pid': before, 'resumed_pid': after if resume or mode == 'keyboard-background' else None,
-            'background_foreground': resume or mode == 'keyboard-background',
-            'release_while_backgrounded': mode == 'keyboard-background',
+    return {'initial_pid': before, 'resumed_pid': after if resume or mode in ('keyboard-background', 'touch-background') else None,
+            'background_foreground': resume or mode in ('keyboard-background', 'touch-background'),
+            'release_while_backgrounded': mode in ('keyboard-background', 'touch-background'),
             'keyboard_keycodes': [29, 21] if keyboard else None,
             'screen_dimensions': dimensions,
             'touch_gesture': {'start': [width // 2, height // 2],
-                              'end': [width * 6 // 10, height // 2], 'duration_ms': 1500}
-                             if mode == 'touch' else None}
+                              'end': [width * 6 // 10, height // 2], 'duration_ms': 1500 if mode == 'touch' else None}
+                             if mode in ('touch', 'touch-background') else None}
 
 
 def prepare_foreground(log, adb):
@@ -281,13 +319,13 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background') or args.entry != 'explicit'):
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background') or args.entry != 'explicit'):
         parser.error('Rust APK verification requires --installed-sdk and currently supports startup/pixels/cleanup, Back, resume, contact, keyboard, expected-error cleanup and normal/resumed audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
@@ -314,7 +352,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',

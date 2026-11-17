@@ -164,7 +164,7 @@ description = "Test native headless C/Lua on an explicitly selected Android API 
 run = "python3 tools/test_android.py"
 
 [tasks.test-android-window]
-description = "Verify C/Lua APK graphics, input and audio contracts on an Android emulator"
+description = "Verify C/Lua/Rust APK graphics, input and audio contracts on an Android emulator"
 run = "python3 tools/test_android_window.py"
 
 [tasks.test-android-rust]

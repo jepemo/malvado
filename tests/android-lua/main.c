@@ -31,7 +31,7 @@
 
 extern struct android_app *GetAndroidApp(void);
 static int verified;
-static int lua_touch_seen;
+static int lua_touch_seen, lua_touch_held, lua_touch_moved;
 static unsigned lua_keyboard_seen, lua_keyboard_held;
 static unsigned keyboard_ticks, keyboard_frame_ticks;
 static int keyboard_stall, keyboard_catchup;
@@ -113,7 +113,21 @@ check_frame(void *user)
             }
         }
     }
-    if (ACCEPTANCE_LIFECYCLE == 3 && touch_released && !lua_touch_seen) {
+    if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
+        const char *names[] = {"touch-held.txt", "touch-moved.txt"};
+        int *seen[] = {&lua_touch_held, &lua_touch_moved};
+        for (unsigned i = 0; i < 2; ++i) {
+            FILE *file = !*seen[i] ? fopen(names[i], "rb") : NULL;
+            if (file) {
+                assert(fgetc(file) == '1' && fgetc(file) == EOF);
+                assert(fclose(file) == 0);
+                *seen[i] = 1;
+                __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lua touch %s",
+                                    ACCEPTANCE_TOKEN, i == 0 ? "held" : "moved");
+            }
+        }
+    }
+    if ((ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) && touch_released && !lua_touch_seen) {
         FILE *touch = fopen("touch.txt", "rb");
         if (touch) {
             assert(fgetc(touch) == '1' && fgetc(touch) == EOF);
@@ -160,7 +174,7 @@ main(int argc, char **argv)
     assert(snapshot);
     if (ACCEPTANCE_FAILURE == 1) assert(setenv("MALVADO_APK_FAIL", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE) assert(setenv("MALVADO_APK_LIFECYCLE", "1", 1) == 0);
-    if (ACCEPTANCE_LIFECYCLE == 3) assert(setenv("MALVADO_APK_TOUCH", "1", 1) == 0);
+    if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) assert(setenv("MALVADO_APK_TOUCH", "1", 1) == 0);
     if (keyboard_mode()) {
         assert(copy_asset(app->activity->assetManager, "keyboard.lua"));
         assert(setenv("MALVADO_APK_KEYBOARD", "1", 1) == 0);
@@ -189,7 +203,7 @@ main(int argc, char **argv)
     FILE *closed = fopen("closed.txt", "rb");
     assert(closed && fgetc(closed) == '1' && fgetc(closed) == EOF);
     assert(fclose(closed) == 0);
-    if (ACCEPTANCE_LIFECYCLE == 3) {
+    if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
         FILE *touch = fopen("touch.txt", "rb");
         assert(touch && fgetc(touch) == '1' && fgetc(touch) == EOF);
         assert(fclose(touch) == 0);

@@ -3,6 +3,7 @@ use malvado::window::{MouseButton, Window};
 #[derive(Default)]
 pub struct Touch {
     down: bool,
+    moved: bool,
     first_x: i32,
     max_x: i32,
     pub complete: bool,
@@ -10,6 +11,7 @@ pub struct Touch {
 impl Touch {
     pub fn tick(&mut self, window: &Window) {
         if self.complete {
+            assert!(!window.mouse_down(MouseButton::Left));
             return;
         }
         if window.mouse_down(MouseButton::Left) {
@@ -23,8 +25,19 @@ impl Touch {
                 self.first_x = x;
                 self.max_x = x;
                 self.down = true;
+                // SAFETY: fixture logging retains no pointer.
+                unsafe {
+                    super::acceptance_log(c"rust touch held".as_ptr());
+                }
             }
             self.max_x = self.max_x.max(x);
+            if self.max_x > self.first_x + 4 && !self.moved {
+                self.moved = true;
+                // SAFETY: fixture logging retains no pointer.
+                unsafe {
+                    super::acceptance_log(c"rust touch moved".as_ptr());
+                }
+            }
         } else if self.down {
             assert!(self.max_x > self.first_x + 4);
             self.complete = true;

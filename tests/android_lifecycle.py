@@ -107,6 +107,39 @@ class LifecycleTests(unittest.TestCase):
         process.kill.assert_called_once()
         process.communicate.assert_called_once_with(timeout=5)
 
+    def test_background_touch_does_not_run_keyboard_injection(self):
+        commands = []
+        def run(log, args, **kwargs):
+            commands.append(args)
+            return subprocess.CompletedProcess(args, 0, '123')
+        with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker') as marker, patch.object(verifier, 'capture_screen', return_value=(1920,1080)), patch.object(verifier, 'background_touch', return_value='123') as touch:
+            facts = verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token', 'touch-background', Path('owned'), rust=True)
+        touch.assert_called_once()
+        self.assertTrue(facts['background_foreground'] and facts['release_while_backgrounded'])
+        self.assertIsNone(facts['touch_gesture']['duration_ms'])
+        self.assertFalse(any('keyboard' in value.args[2] for value in marker.call_args_list))
+        self.assertEqual(commands[-1][-2:], ['keyevent', '4'])
+
+    def test_background_touch_failure_releases_the_owned_contact(self):
+        commands = []
+        def run(log, args, **kwargs):
+            commands.append(args)
+            return subprocess.CompletedProcess(args, 0, '')
+        with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker', side_effect=RuntimeError('missing held')):
+            with self.assertRaisesRegex(RuntimeError, 'missing held'):
+                verifier.background_touch(io.StringIO(), ['adb'], 'package', 'token', '123', (1920,1080))
+        self.assertEqual(commands[0][-3:], ['DOWN', '960', '540'])
+        self.assertEqual(commands[-1][-3:], ['UP', '1152', '540'])
+        self.assertFalse(any('start' in args for args in commands))
+
+    def test_background_touch_rejects_process_recreation(self):
+        def run(log, args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, '456' if 'pidof' in args else 'mResumedActivity: launcher')
+        with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker') as marker:
+            with self.assertRaisesRegex(RuntimeError, 'recreated'):
+                verifier.background_touch(io.StringIO(), ['adb'], 'package', 'token', '123', (1920,1080))
+        self.assertFalse(any('lifecycle resumed' in call.args[2] for call in marker.call_args_list))
+
 
 if __name__ == '__main__':
     unittest.main()

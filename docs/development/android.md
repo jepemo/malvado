@@ -660,3 +660,19 @@ Android can deliver to another Activity. A release may be observed before the
 Activity is fully paused. Reads stay non-consuming and future presses work.
 This covers physical A/Left state and does not add text/IME, multi-touch,
 process-death recovery or an audio-focus policy.
+
+## Contact cancellation while backgrounded
+
+Use `--lifecycle touch-background` with C, either Lua entry or Rust. The host
+injects a contact at the screen center, waits for each language to confirm it,
+moves it horizontally and waits for movement confirmation. It then requires
+confirmed background state before sending `UP`. On foreground, the PID must
+match and a numbered restored-pixel marker must precede the resumed screenshot.
+Each language must confirm release and remain neutral until Back cleanup.
+Before/resumed/released PNGs and result metadata remain in the work directory.
+
+The verifier always attempts to release its own injected contact on failure.
+The adapter neutralizes buttons on cancel, pause, focus loss and surface loss.
+A move cannot revive cancelled state; a fresh down is needed. This verifies one
+primary contact through existing mouse queries. Multi-touch, physical mouse
+hardware and process-death recovery remain outside this acceptance check.

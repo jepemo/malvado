@@ -21,6 +21,7 @@ extern struct android_app *GetAndroidApp(void);
 static struct android_app *lifecycle_app;
 static void (*lifecycle_previous)(struct android_app *, int32_t);
 static int lifecycle_pauses, lifecycle_resumes, lifecycle_pending, lifecycle_ready;
+static int touch_moved;
 static int touch_down, touch_released, touch_first_x, touch_max_x;
 #include "keyboard.h"
 
@@ -49,8 +50,9 @@ lifecycle_frame(int visible)
         lifecycle_ready = 1;
         __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s lifecycle ready", ACCEPTANCE_TOKEN);
     }
-    if (ACCEPTANCE_LIFECYCLE == 3) {
+    if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
         int x, y;
+        if (touch_released) assert(!mv_mouse_down(MV_MOUSE_LEFT));
         if (mv_mouse_down(MV_MOUSE_LEFT)) {
             assert(mv_mouse_position(&x, &y));
             assert(!mv_mouse_down(MV_MOUSE_MIDDLE) && !mv_mouse_down(MV_MOUSE_RIGHT));
@@ -58,8 +60,13 @@ lifecycle_frame(int visible)
                 assert(abs(x - 160) <= 16 && abs(y - 120) <= 16);
                 touch_first_x = touch_max_x = x;
                 touch_down = 1;
+                __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s touch held", ACCEPTANCE_TOKEN);
             }
             if (x > touch_max_x) touch_max_x = x;
+            if (touch_max_x > touch_first_x + 4 && !touch_moved) {
+                touch_moved = 1;
+                __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance", "%s touch moved", ACCEPTANCE_TOKEN);
+            }
         } else if (touch_down && !touch_released) {
             assert(touch_max_x > touch_first_x + 4);
             touch_released = 1;
@@ -89,9 +96,9 @@ lifecycle_finish(void)
 {
     if (!ACCEPTANCE_LIFECYCLE) return;
     assert(lifecycle_ready);
-    if (ACCEPTANCE_LIFECYCLE == 3) assert(touch_down && touch_released);
+    if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) assert(touch_down && touch_released);
     if (keyboard_mode()) assert(keyboard_complete);
-    if (ACCEPTANCE_LIFECYCLE == 2 || ACCEPTANCE_LIFECYCLE == 5 || ACCEPTANCE_LIFECYCLE == 6)
+    if (ACCEPTANCE_LIFECYCLE == 2 || ACCEPTANCE_LIFECYCLE == 5 || ACCEPTANCE_LIFECYCLE == 6 || ACCEPTANCE_LIFECYCLE == 7)
         assert(lifecycle_pauses && lifecycle_resumes && !lifecycle_pending);
     assert(lifecycle_app && lifecycle_app->onAppCmd == lifecycle_command);
     lifecycle_app->onAppCmd = lifecycle_previous;
