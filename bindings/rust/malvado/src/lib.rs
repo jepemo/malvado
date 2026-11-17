@@ -30,6 +30,7 @@
 //! while game.process_count() != 0 { game.tick()?; }
 //! # Ok::<(), Error>(())
 //! ```
+pub mod android;
 pub mod animation;
 #[cfg(feature = "assets")]
 pub mod asset;
