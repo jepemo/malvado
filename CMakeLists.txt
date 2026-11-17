@@ -345,6 +345,9 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_docs.py)
   add_test(NAME documentation_links_test COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/docs_links.py)
+  add_test(NAME windows_toolchain COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_toolchain.py)
+  set_tests_properties(windows_toolchain PROPERTIES TIMEOUT 15)
   add_test(NAME windows_graphics_driver COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_graphics.py)
   add_test(NAME android_rust_package COMMAND ${Python3_EXECUTABLE}

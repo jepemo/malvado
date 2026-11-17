@@ -60,11 +60,32 @@ full support-matrix acceptance remain open in A8.1.
 
 ## Native Windows baseline
 
-Use the Visual Studio 2022 C++ desktop workload and Windows SDK on x64.
-CMake uses its Visual Studio generator and `--config` for each build. CMake,
-Python and Rust versions come from the root `mise.toml`. The `windows-2022`
-runner image can update MSVC and the Windows SDK. Each run records the exact
-installed versions; this is not a hermetic compiler image.
+Use the Visual Studio 2022 C++ desktop workload on x64 with these exact inputs:
+
+| Component | Required version |
+| --- | --- |
+| Visual Studio installation build | `17.14.37906.3` |
+| MSVC toolset directory | `14.44.35207` |
+| C compiler | `19.44.35230.0` |
+| Windows SDK | `10.0.26100.0` |
+| CMake / Python / Rust | Root `mise.toml` |
+
+`mise run test-platform` selects the matching complete VS instance with
+vswhere. It selects the x64 host/compiler, toolset and SDK through CMake's
+standard generator environment. Child CMake, installed SDK, CLI and Cargo
+commands inherit that selection. The preflight checks the actual CMake compiler,
+SDK and VS build, then builds and runs an x64 C probe in Debug and Release.
+It writes `windows-toolchain.log` and `windows-toolchain.json` in the work
+folder; CI uploads both. A failed preflight removes stale success metadata and
+its own short temporary probe directory.
+
+Use a new `--work` directory when replacing a previous unpinned test tree.
+Cached generator selections cannot bypass the requested pins. Missing versions
+produce an installation error instead of a silent fallback to another compiler.
+Install the listed VS build, C++ workload/toolset and Windows SDK before retrying.
+This does not install tools or claim a hermetic Windows image. The hosted runner
+can change; a removed pinned version requires a deliberate baseline review.
+Native CI acceptance of the new selection guard remains a separate version gate.
 
 Run `mise run test-platform` locally or in CI. It builds Debug and Release
 headless SDKs with bundled Lua and atlas services. The CTest suite tests core

@@ -108,6 +108,11 @@ def main():
         parser.error("--cli requires native Windows and --graphics")
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    windows_environment = None
+    if os.name == "nt":
+        from windows_toolchain import prepare as prepare_toolchain
+        windows_environment = prepare_toolchain(work)
+        os.environ.update(windows_environment)
     if args.graphics and os.name == "nt":
         from windows_graphics import prepare
         os.environ["MALVADO_MESA_DIR"] = str(prepare(work / "mesa"))
@@ -125,6 +130,9 @@ def main():
                 "-DCMAKE_INSTALL_LIBDIR=lib",
                 # Existing C fixtures use assert() to execute operations.
                 "-DCMAKE_C_FLAGS_RELEASE=" + ("/O2 /UNDEBUG" if os.name == "nt" else "-O3 -UNDEBUG"))
+            if windows_environment is not None:
+                from windows_toolchain import validate_cache
+                validate_cache(build, windows_environment)
             run(log, "cmake", "--build", str(build), "--config", config, "--parallel")
             run(log, "ctest", "--test-dir", str(build), "-C", config,
                 "--output-on-failure", "--timeout", "60", "-E", "^visual_")

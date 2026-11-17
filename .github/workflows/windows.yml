@@ -41,6 +41,7 @@ jobs:
           name: windows-${{ matrix.kind }}-${{ github.sha }}
           path: |
             ${{ matrix.work }}/*.log
+            ${{ matrix.work }}/windows-toolchain.json
             ${{ matrix.work }}/**/atlas-pivot-crlf.json
             ${{ matrix.work }}/**/Testing/Temporary/*.log
           if-no-files-found: warn
