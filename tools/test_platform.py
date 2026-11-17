@@ -79,6 +79,9 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
         command.append("--release")
     run(log, *command, *graphics_runner(graphics), env=env)
 
+    from test_rust_toolchain import verify as verify_toolchain_refresh
+    verify_toolchain_refresh(log, game / "Cargo.toml", env, release=config == "Release")
+
     # These checks need neither Unix archive tools nor a replacement compiler.
     for prefix_value, expected in ((None, "set MALVADO_SDK_PREFIX"),
                                    (str(work / "missing sdk"), "MALVADO_SDK_PREFIX does not exist")):

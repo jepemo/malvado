@@ -125,6 +125,9 @@ def external_consumer(prefix):
         '    Ok(())\n}\n')
     env = dict(os.environ, MALVADO_SDK_PREFIX=str(prefix))
     run("cargo", "run", "--offline", env=env, cwd=game)
+    from test_rust_toolchain import verify as verify_toolchain_refresh
+    with (WORK / "toolchain-refresh.log").open("w") as log:
+        verify_toolchain_refresh(log, game / "Cargo.toml", env)
 
 
 def main():

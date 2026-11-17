@@ -23,6 +23,15 @@ native Malvado SDK. Rust games compile to native executables. Players do not
 need Cargo or rustc. Runtime libraries, assets and notices must still accompany
 an exported game according to its target's distribution contract.
 
+Cargo rechecks the native SDK when `CMAKE_GENERATOR`,
+`CMAKE_GENERATOR_PLATFORM`, `CMAKE_GENERATOR_TOOLSET` or
+`CMAKE_GENERATOR_INSTANCE` changes. An invalid selection must fail native probe
+configuration even after a successful build. Restore the valid selection to
+rebuild the probe; the generated probe cache is not reused across changes.
+CMake applies its platform/toolset/instance environment defaults only when
+`CMAKE_GENERATOR` is explicit. The shared Windows platform verifier sets all
+four selectors. No gameplay API or native ABI changes are required.
+
 CLI project creation, build/check/run and exports are delivered for matching
 native macOS/Linux and Windows x64 MSVC SDKs. Windows headless/graphical SDKs,
 CLI authoring and fresh exported players are verified in the recorded baseline.

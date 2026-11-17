@@ -118,6 +118,15 @@ Native Windows verification passed on `c49545c` in
 Both configurations passed headless and graphical Rust tests, installed crate
 consumers and SDK diagnostics. Windows CLI and exports passed the A8.3 verification described below.
 
+Native Rust SDK verification also checks Cargo cache refresh. After a successful
+installed consumer check, change the CMake platform, toolset and instance one
+at a time to invalid selections. Each must fail. Restoring the selected
+toolchain must pass again. The shared platform command runs these checks in
+both profiles; `mise run test-rust` also covers the installed core consumer.
+The tests select an explicit generator so CMake applies the other environment
+defaults. ABI validation must run again instead of accepting a stale Cargo
+result. Unrelated compiler failures do not satisfy the expected rejection.
+
 The Rust verifier also builds and runs an offline consumer from the installed
 crate sources in a project path with spaces. The consumer checks process
 execution and cleanup. Both configurations must reject missing and nonexistent
