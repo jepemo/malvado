@@ -11,8 +11,8 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| macOS arm64 / Android arm64 API 34 | Headless C/Lua/Rust core and assets, local Rust NativeActivity window/pixels/cleanup and Back/resume/keyboard/contact, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Rust graphical Linux acceptance, remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
-| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua/Rust core/assets, C graphical SDK and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Rust graphical Linux acceptance, remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
+| macOS arm64 / Android arm64 API 34 | Headless C/Lua/Rust core and assets, Rust NativeActivity window/assets/errors/cleanup and Back/resume/keyboard/contact/audio, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua/Rust core/assets, C/Rust graphical SDK fixtures and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity
@@ -190,3 +190,10 @@ Graphical Linux SDK consumers require X11 in addition to OpenGL and threads.
 Raylib 6.2 uses Xlib directly for clipboard image handling. The installed CMake
 package discovers `X11::X11`; Rust links `X11`. Core-only and Android SDKs do not
 require X11. The `libx11-dev` authoring prerequisite already exists in CI.
+
+The full Android Rust fixture matrix also passed in pinned x86_64 CI on
+`9c96692`, including assets, expected failures, Back/resume, contact, keyboard
+and explicit audio pause continuity. Downloaded evidence contains 38 distinct
+APK packages and 58 PNG headers per profile across C/Lua/Rust. Windows passed
+on that revision. General Linux installed SDK consumers exposed the missing
+X11 link dependency fixed separately; the new exact candidate still needs CI.

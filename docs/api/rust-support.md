@@ -32,8 +32,8 @@ Rust NativeActivity window/pixel/scheduler cleanup has a local fixture;
 Back, same-process pause/resume, A/Left keyboard snapshots and primary contact
 also have local arm64 fixtures. Packaged binary/PNG/atlas reads, image ownership, process errors and missing-PNG
 cleanup also have local arm64 checks. Packaged sound/stream API state and explicit pause continuity also have local
-arm64 checks. Linux CI acceptance and remaining input/lifecycle/audio-focus
-behavior stay open. General APK exports, other cross targets and Windows GNU/ARM64 are
+arm64 checks. These Android fixtures also passed pinned x86_64 CI on `9c96692`. Remaining
+input/lifecycle/audio-focus behavior and the full candidate gate stay open. General APK exports, other cross targets and Windows GNU/ARM64 are
 not delivered. See the
 [Android Rust commands](../development/android.md#rust-headless-verification). Software
 rendering and silent audio CI do not establish physical device behavior. See
