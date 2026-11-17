@@ -63,7 +63,10 @@ def prepare(work):
         raise RuntimeError("Windows toolchain verification requires native Windows")
     (work / "windows-toolchain.json").unlink(missing_ok=True)
     environment = dict(os.environ)
-    programs = Path(environment["ProgramFiles(x86)"])
+    programs_path = environment.get("PROGRAMFILES(X86)") or environment.get("ProgramFiles(x86)")
+    if not programs_path:
+        raise RuntimeError("Windows ProgramFiles(x86) is unavailable; cannot locate Visual Studio Installer")
+    programs = Path(programs_path)
     vswhere = programs / "Microsoft Visual Studio/Installer/vswhere.exe"
     with (work / "windows-toolchain.log").open("w", encoding="utf-8") as log:
         discovery = subprocess.run([str(vswhere), "-products", "*", "-version", "[17.0,18.0)",

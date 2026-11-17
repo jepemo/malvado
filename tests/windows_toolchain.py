@@ -72,7 +72,7 @@ class ToolchainTests(unittest.TestCase):
 
     def prepare_fixture(self, root, *, fail=False, missing_sdk=False):
         instance = self.instance(root)
-        environment = {'ProgramFiles(x86)': str(root), 'KEEP': 'original'}
+        environment = {'PROGRAMFILES(X86)': str(root), 'KEEP': 'original'}
         if not missing_sdk:
             for name in (f'Include/{toolchain.SDK}/um/Windows.h', f'Include/{toolchain.SDK}/ucrt/stdlib.h', f'Lib/{toolchain.SDK}/um/x64/kernel32.lib'):
                 path = root / 'Windows Kits/10' / name
@@ -108,7 +108,7 @@ class ToolchainTests(unittest.TestCase):
                 self.assertEqual(kwargs['env'], selected)
                 self.assertLessEqual(kwargs['timeout'], 90)
             self.assertFalse(builds[0].exists())
-            self.assertEqual(environment, {'ProgramFiles(x86)': str(root), 'KEEP': 'original'})
+            self.assertEqual(environment, {'PROGRAMFILES(X86)': str(root), 'KEEP': 'original'})
 
     def test_preflight_failure_retains_log_without_publishing_success(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -122,6 +122,16 @@ class ToolchainTests(unittest.TestCase):
             self.assertFalse((root / 'windows-toolchain.json').exists())
             self.assertFalse(builds[0].exists())
             self.assertEqual(len(calls), 2)
+
+    def test_missing_program_files_environment_stops_before_discovery(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'windows-toolchain.json').write_text('stale success')
+            with patch.object(toolchain, 'os', SimpleNamespace(name='nt', environ={})), patch.object(toolchain.subprocess, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'ProgramFiles'):
+                    toolchain.prepare(root)
+                run.assert_not_called()
+            self.assertFalse((root / 'windows-toolchain.json').exists())
 
     def test_missing_sdk_stops_before_any_compiler_runs(self):
         with tempfile.TemporaryDirectory() as temporary:
