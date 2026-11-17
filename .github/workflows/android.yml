@@ -146,6 +146,7 @@ jobs:
             build-android/*-results.json
             build-android/toolchain.json
             build-android/linux-sdk/malvado-archives.json
+            build-android/pinned/malvado-emulator-archives.json
             build-android/rust-window-*/*.log
             build-android/rust-window-*/*results.json
             build-android/rust-window-*/*.png

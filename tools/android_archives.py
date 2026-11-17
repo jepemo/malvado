@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Prepare checksum-pinned Linux Android emulator inputs in an owned directory."""
+"""Prepare checksum-pinned Linux/macOS Android emulator inputs in an owned directory."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 import hashlib
+import json
 import os
 import posixpath
 from pathlib import Path, PurePosixPath
@@ -15,6 +16,12 @@ import zipfile
 ARCHIVES = (
     ("emulator-linux_x64-16740729.zip", "cbc7c3cfb83220b8a0f9c513fdab557712e74d339ec19ddffa43f23350ae9bdd"),
     ("sys-img/google_apis/x86_64-34_r14.zip", "783a40134baf4f3012d4464fbe1571b1612a0dbd2e7a44d14bd8328923443833"),
+)
+
+
+MACOS_ARCHIVES = (
+    ("emulator-darwin_aarch64-16740729.zip", "9e50ac521c38949d412f69250c0df9a4afa684d5be54ab4b80fc0205a73f5054"),
+    ("sys-img/google_apis/arm64-v8a-34_r14.zip", "bd1c323cbdd3c9dd55dde54588b298d172fd126fe16e127a7bd7aeab6897890a"),
 )
 
 
@@ -76,23 +83,30 @@ def extract(archive, output, expected, *, file_symlinks=False):
             destination.symlink_to(posixpath.relpath(target, str(PurePosixPath(name).parent)))
 
 
-def prepare(output):
-    if output.exists():
+def prepare(output, host="linux"):
+    if host not in ("linux", "macos"):
+        raise ValueError("Android emulator archive host must be linux or macos")
+    archives = ARCHIVES if host == "linux" else MACOS_ARCHIVES
+    abi = "x86_64" if host == "linux" else "arm64-v8a"
+    if output.exists() or output.is_symlink():
         raise ValueError("Android archive destination already exists")
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="android-archives-", dir=output.parent) as temporary:
         stage = Path(temporary) / "sdk"
         stage.mkdir()
-        for index, (name, digest) in enumerate(ARCHIVES):
+        for index, (name, digest) in enumerate(archives):
             archive = Path(temporary) / f"{index}.zip"
             with urllib.request.urlopen("https://dl.google.com/android/repository/" + name, timeout=60) as source:
                 with archive.open("wb") as destination:
                     shutil.copyfileobj(source, destination)
             extract(archive, stage, digest)
             archive.unlink()
-        for required in ("emulator/emulator", "x86_64/system.img", "x86_64/source.properties"):
+        for required in ("emulator/emulator", f"{abi}/system.img", f"{abi}/source.properties"):
             if not (stage / required).is_file():
                 raise ValueError(f"Incomplete Android archives: {required}")
+        provenance = dict(host=host, abi=abi,
+                          archives=[dict(archive=name, sha256=digest) for name, digest in archives])
+        (stage / "malvado-emulator-archives.json").write_text(json.dumps(provenance, indent=2) + "\n")
         # Keep the destination exclusive, including if another producer races us.
         output.mkdir()
         try:
@@ -106,5 +120,6 @@ def prepare(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--host", choices=("linux", "macos"), default="linux")
     args = parser.parse_args()
-    prepare(args.output.resolve())
+    prepare(args.output.absolute(), args.host)

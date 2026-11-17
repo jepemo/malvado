@@ -78,6 +78,9 @@ def preflight(sdk, serial, log):
     provenance = sdk / "malvado-archives.json"
     if provenance.is_file():
         facts["sdk_archive_inputs"] = json.loads(provenance.read_text())
+    emulator_provenance = (sdk / "emulator").resolve().parent / "malvado-emulator-archives.json"
+    if emulator_provenance.is_file():
+        facts["emulator_archive_inputs"] = json.loads(emulator_provenance.read_text())
     return ndk, prefix, abi, facts
 
 

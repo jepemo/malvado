@@ -90,6 +90,49 @@ macOS SDK retains the same exclusive destination, checksum, extraction and
 cleanup rules. It records all four archive names and SHA-256 values in
 `malvado-archives.json`. Use the mise-selected Java for APK signing.
 
+For the pinned macOS Apple Silicon emulator and API 34 arm64 image, use:
+
+```sh
+python3 tools/android_archives.py --host macos --output build-android/macos-runtime
+export ANDROID_HOME="$PWD/build-android/macos-sdk"
+ln -s "$PWD/build-android/macos-runtime/emulator" "$ANDROID_HOME/emulator"
+mkdir -p "$ANDROID_HOME/system-images/android-34/google_apis"
+ln -s "$PWD/build-android/macos-runtime/arm64-v8a" \
+  "$ANDROID_HOME/system-images/android-34/google_apis/arm64-v8a"
+python3 tools/android_avd.py --output build-android/macos-avd \
+  --image build-android/macos-runtime/arm64-v8a
+ANDROID_SDK_ROOT="$ANDROID_HOME" ANDROID_AVD_HOME="$PWD/build-android/macos-avd" \
+  "$ANDROID_HOME/emulator/emulator" -avd malvado-alpha8 -port 5584 \
+  -no-window -no-audio -no-boot-anim -no-snapshot \
+  -gpu swiftshader_indirect -cores 2 -memory 2048
+```
+
+Keep the emulator running and use another terminal for the shared verification
+commands. Set `ANDROID_HOME` there to the same absolute SDK path:
+
+```sh
+python3 tools/android_boot.py --adb "$ANDROID_HOME/platform-tools/adb" --serial emulator-5584
+mise run test-android -- --sdk "$ANDROID_HOME" --serial emulator-5584
+mise run test-android-window -- --sdk "$ANDROID_HOME" --serial emulator-5584 --installed-sdk
+"$ANDROID_HOME/platform-tools/adb" -s emulator-5584 emu kill
+```
+
+The pinned runtime is emulator 37.2.13 build 16740729 and Google APIs arm64 API
+34 image revision 14. This is a new reproducible baseline; the revision 8 image
+in the historical table above is no longer served by SDK Manager. The archive
+installer records host, ABI, names and SHA-256 values in
+`macos-runtime/malvado-emulator-archives.json`. Verification follows the emulator
+link to include that provenance in its toolchain and APK results. Existing Linux
+commands keep their x86_64 archives and now record the same runtime provenance.
+
+The pinned macOS baseline passed Debug and Release target verification: 156
+native C/Lua checks, installed C SDK consumers and 15 startup/parity suites per
+profile. Sixteen distinct APKs passed normal and cancelled startup for C, both
+Lua entries and Rust, with assets, scheduler/shutdown checks and verified APK
+removal. Every result retains both SDK and runtime archive provenance. These
+checks establish this focused baseline; the historical lifecycle/audio evidence
+above does not establish all mobile behavior on the new image automatically.
+
 Create a dedicated AVD directory with the same command used by CI:
 
 ```sh
@@ -100,7 +143,7 @@ Set `ANDROID_AVD_HOME` to that absolute output path when starting the emulator.
 The command accepts API 34 Google APIs arm64-v8a and x86_64 images, requires
 system/userdata/ramdisk files and refuses an existing output directory. It fixes
 1080×1920 pixels, density 420, two cores and 2048 MiB. It does not download or
-verify image archives; use the checksum-verified installer above for Linux CI.
+verify image archives; use the checksum-verified installer above for either host.
 The historical commands below remain an alternative for host-managed images.
 
 Install [Android command-line tools](https://developer.android.com/tools) and

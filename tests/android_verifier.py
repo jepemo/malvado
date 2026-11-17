@@ -2,6 +2,7 @@
 """Host-independent regressions for Android verification boundaries."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import io
+import json
 from pathlib import Path
 import shlex
 import subprocess
@@ -21,6 +22,27 @@ class AndroidVerifierTests(unittest.TestCase):
             path = Path(temporary) / "source.properties"
             path.write_text("# Package\nPkg.Revision = 27.2.12479018\nPkg.Desc=Android NDK\n")
             self.assertEqual(verifier.properties(path)["Pkg.Revision"], verifier.NDK_VERSION)
+
+    def test_preflight_records_runtime_archive_provenance(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            sdk = Path(temporary)
+            for name, text in ((f'ndk/{verifier.NDK_VERSION}/source.properties', f'Pkg.Revision={verifier.NDK_VERSION}'),
+                               ('platform-tools/source.properties', 'Pkg.Revision=37.0.1'),
+                               ('emulator/source.properties', 'Pkg.Revision=37.2.13')):
+                path = sdk / name
+                path.parent.mkdir(parents=True)
+                path.write_text(text)
+            provenance = dict(host='macos', abi='arm64-v8a', archives=[dict(archive='pinned.zip', sha256='1' * 64)])
+            (sdk / 'malvado-emulator-archives.json').write_text(json.dumps(provenance))
+            properties = {'ro.kernel.qemu': '1', 'ro.product.cpu.abi': 'arm64-v8a',
+                          'ro.build.version.sdk': '34', 'sys.boot_completed': '1'}
+            def run(log, arguments, **kwargs):
+                value = properties.get(arguments[-1], 'fixture')
+                return subprocess.CompletedProcess(arguments, 0, value)
+            with patch.object(verifier.platform, 'system', return_value='Darwin'), patch.object(verifier, 'run', side_effect=run):
+                _, _, abi, facts = verifier.preflight(sdk, 'emulator-5584', io.StringIO())
+            self.assertEqual(abi, 'arm64-v8a')
+            self.assertEqual(facts['emulator_archive_inputs'], provenance)
 
     def test_remote_shell_quotes_paths_and_arguments(self):
         arguments = ["/game with spaces/run", "", "a'b", "$(touch forbidden)", "semi;colon"]

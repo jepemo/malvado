@@ -2,6 +2,8 @@
 """Test Android archive integrity and extraction boundaries without downloads."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import hashlib
+import io
+import json
 import os
 from pathlib import Path
 import stat
@@ -91,6 +93,64 @@ class ArchiveTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     android_archives.extract(archive, root / 'sdk', hashlib.sha256(archive.read_bytes()).hexdigest(), file_symlinks=True)
                 self.assertFalse((root / 'sdk').exists())
+
+    def test_macos_archive_layout_integrity_and_provenance(self):
+        for valid in (True, False):
+            with self.subTest(valid=valid), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                data = io.BytesIO()
+                with zipfile.ZipFile(data, 'w') as bundle:
+                    for name in ('emulator/emulator', 'emulator/source.properties',
+                                 ('arm64-v8a' if valid else 'x86_64') + '/system.img',
+                                 ('arm64-v8a' if valid else 'x86_64') + '/source.properties'):
+                        bundle.writestr(name, 'fixture')
+                raw = data.getvalue()
+                archives = [('macos.zip', hashlib.sha256(raw).hexdigest())]
+                with patch.object(android_archives, 'MACOS_ARCHIVES', archives), patch.object(android_archives.urllib.request, 'urlopen', return_value=io.BytesIO(raw)):
+                    if valid:
+                        android_archives.prepare(root / 'runtime', 'macos')
+                        provenance = json.loads((root / 'runtime/malvado-emulator-archives.json').read_text())
+                        self.assertEqual(provenance, dict(host='macos', abi='arm64-v8a', archives=[dict(archive=archives[0][0], sha256=archives[0][1])]))
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'Incomplete'):
+                            android_archives.prepare(root / 'runtime', 'macos')
+                        self.assertEqual(list(root.iterdir()), [])
+
+    def test_default_linux_archives_keep_x86_64_and_record_provenance(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'runtime'
+            data = io.BytesIO()
+            with zipfile.ZipFile(data, 'w') as bundle:
+                for name in ('emulator/emulator', 'x86_64/system.img', 'x86_64/source.properties'):
+                    bundle.writestr(name, 'fixture')
+            raw = data.getvalue()
+            archives = [('linux.zip', hashlib.sha256(raw).hexdigest())]
+            with patch.object(android_archives, 'ARCHIVES', archives), patch.object(android_archives.urllib.request, 'urlopen', return_value=io.BytesIO(raw)):
+                android_archives.prepare(output)
+            provenance = json.loads((output / 'malvado-emulator-archives.json').read_text())
+            self.assertEqual(provenance['host'], 'linux')
+            self.assertEqual(provenance['abi'], 'x86_64')
+            self.assertEqual(provenance['archives'][0]['archive'], 'linux.zip')
+
+    def test_invalid_host_fails_before_download_and_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'new parent/runtime'
+            with patch.object(android_archives.urllib.request, 'urlopen') as download:
+                with self.assertRaisesRegex(ValueError, 'host'):
+                    android_archives.prepare(output, 'windows')
+                download.assert_not_called()
+            self.assertFalse(output.parent.exists())
+
+    @unittest.skipIf(os.name == 'nt', 'Creating symlinks needs Windows privileges')
+    def test_broken_destination_link_is_preserved(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'runtime'
+            output.symlink_to('missing')
+            with patch.object(android_archives.urllib.request, 'urlopen') as download:
+                with self.assertRaisesRegex(ValueError, 'already exists'):
+                    android_archives.prepare(output, 'macos')
+                download.assert_not_called()
+            self.assertTrue(output.is_symlink())
 
     def test_existing_destination_is_preserved(self):
         with tempfile.TemporaryDirectory() as temporary:

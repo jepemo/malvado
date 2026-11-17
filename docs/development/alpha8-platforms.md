@@ -49,6 +49,15 @@ flags are in the sections below and [Android verification](android.md).
 Future artifact formats in the CLI specification remain planned until their
 version checklist and executable acceptance checks are complete.
 
+The macOS Apple Silicon Android inputs now have fixed archive commands for the
+SDK, emulator 37.2.13 and API 34 arm64 image revision 14. Both profiles passed
+headless C/Lua SDK/parity verification and normal/cancelled C/Lua/Rust fixture
+APKs with recorded archive provenance. See the
+[pinned macOS commands](android.md#local-commands). The earlier lifecycle and
+audio results retain their own baseline; the new pin check does not complete
+mobile behavior or general APK exports. Windows toolchain selection and the
+full support-matrix acceptance remain open in A8.1.
+
 ## Native Windows baseline
 
 Use the Visual Studio 2022 C++ desktop workload and Windows SDK on x64.
