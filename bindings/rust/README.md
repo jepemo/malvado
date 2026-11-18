@@ -80,7 +80,7 @@ SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation 
 
 The installed CLI supports native Rust folder exports, macOS app bundles and Android arm64 APKs and AABs.
 The Rust crates are distributed with the SDK. The current
-native engine and crate identifiers are `2.0.0-alpha.8`; development toward 2.0
+native engine and crate identifiers are `2.0.0-beta.1`; development toward 2.0
 continues under the [version plan](../../docs/versions/README.md). This identifier
 alone does not certify platform support or Rust API stability.
 

@@ -7,7 +7,7 @@ license.workspace = true
 description = "Safe owner-thread processes for the Malvado native scheduler"
 
 [dependencies]
-malvado-sys = { path = "../malvado-sys", version = "=2.0.0-alpha.8" }
+malvado-sys = { path = "../malvado-sys", version = "=2.0.0-beta.1" }
 
 [features]
 default = []
