@@ -14,7 +14,7 @@ Start with [Get started](getting-started.md) to build Malvado and run your first
 - [Audio](https://github.com/jepemo/malvado/blob/master/docs/api/audio.md)
 - [Examples](https://github.com/jepemo/malvado/blob/master/docs/examples/README.md)
 
-These links follow the development branch. Features can change before release.
+Use the documentation that matches your SDK version.
 
 The [previous documentation](https://jepemo.github.io/malvado/legacy/) is also available after deployment.
 

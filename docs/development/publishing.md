@@ -44,4 +44,26 @@ The [format guide](../specs/assets.md) will publish the FPG matrix by variant, i
 
 Keep the root README short, with a quick start, site links, and actual platform support. `docs/versions/` records proposals and acceptance. The changelog records deliveries. Publish `/dev/` and `/2.0/` when the site exists. Do not copy every document manually for each patch.
 
+### Prepare a candidate documentation artifact
+
+Run **Publish documentation** with both the version and the full commit SHA.
+It builds the committed MkDocs sources and uploads
+`docs-<version>-<sha>`. The artifact contains `<version>/` and a
+`candidate.json` record. Links from the site to repository files and examples
+use the candidate SHA. The getting-started page gives the same SHA for source
+builds. The candidate job does not deploy to Pages. The default workflow still
+publishes the existing site and preserves its `legacy/` subtree.
+
+To build the same artifact locally, install the pinned requirements in a
+virtual environment. Use Python 3.11 or later with tar extraction filters.
+Substitute the reviewed revision and use a new output directory.
+
+```sh
+python -m pip install -r docs/requirements.txt
+python docs/tools/prepare_versioned_site.py 2.0.0-beta.1 FULL_COMMIT_SHA build/candidate-docs
+```
+
+Check the HTML under `build/candidate-docs/2.0.0-beta.1/` and keep
+`candidate.json` with the release evidence.
+
 Use GitHub Issues for deliverables, with links to contracts and examples; use milestones for alphas and beta, and an optional Project for status. Issues do not replace the versioned specification. Releases include SDKs/runtimes per target, checksums, license notices, and links to that version's documentation. The current work does not create issues, tags, releases, or external publications.
