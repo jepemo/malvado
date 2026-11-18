@@ -13,7 +13,7 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
 | macOS arm64 / Android arm64 API 34 | Headless core/assets, graphical fixtures, and C/Lua/Rust production APKs and AAB-derived APKs in Debug/Release as applicable. Exported physical-key text passed in both APK profiles. | Mobile keyboard and audio-focus behavior, physical-device and audible checks |
 | Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless core/assets and C/Lua/Rust graphical fixtures in Debug/Release. Includes input, explicit audio pause, recreation, overlay relaunch and cold restart. | Physical-key text on the hosted emulator and final candidate acceptance |
-| Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted production-package jobs build C/Lua APKs and AABs in the applicable profiles. | First hosted package results, Rust authoring with executable ABI probes, and arm64 execution from the hosted build |
+| Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted production-package jobs passed C/Lua APK and AAB packaging in the applicable profiles. | Hosted APK execution and Rust authoring with translated executable ABI probes |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity

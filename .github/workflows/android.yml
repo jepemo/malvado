@@ -173,7 +173,7 @@ jobs:
   production-packages:
     name: Linux Android arm64 packages (${{ matrix.config }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -181,17 +181,35 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-      - name: Install authoring dependencies
+      - name: Install authoring and emulator dependencies
         run: |
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
-      - name: Verify production packages with a fresh installed CLI and target SDKs
+      - name: Export and run arm64 packages on the pinned emulator
         env:
+          ANDROID_AVD_HOME: ${{ runner.temp }}/malvado-alpha8-avd
           ACCEPTANCE_CONFIG: ${{ matrix.config }}
         run: |
           mkdir build-android
           python3 tools/android_sdk.py --output build-android/linux-sdk
-          bash tools/verify-android-exports.sh build-android/linux-sdk "$ACCEPTANCE_CONFIG" build-android/production \
+          python3 tools/android_archives.py --output build-android/pinned
+          acceptance_sdk="$PWD/build-android/linux-sdk"
+          ln -s "$PWD/build-android/pinned/emulator" "$acceptance_sdk/emulator"
+          mkdir -p "$acceptance_sdk/system-images/android-34/google_apis"
+          ln -s "$PWD/build-android/pinned/x86_64" "$acceptance_sdk/system-images/android-34/google_apis/x86_64"
+          "$ANDROID_HOME/platform-tools/adb" kill-server
+          "$acceptance_sdk/platform-tools/adb" start-server
+          python3 tools/android_avd.py --output "$ANDROID_AVD_HOME" --image build-android/pinned/x86_64
+          "$acceptance_sdk/emulator/emulator" -avd malvado-alpha8 -port 5580 \
+            -no-window -no-audio -no-boot-anim -no-snapshot \
+            -gpu swiftshader_indirect -cores 2 -memory 2048 > build-android/production-emulator.log 2>&1 &
+          emulator_pid=$!
+          trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
+          python3 tools/android_boot.py --adb "$acceptance_sdk/platform-tools/adb" --serial emulator-5580
+          rustup target add aarch64-linux-android
+          bash tools/verify-android-exports.sh "$acceptance_sdk" "$ACCEPTANCE_CONFIG" build-android/production emulator-5580 \
             2>&1 | tee build-android/production.log
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -199,11 +217,18 @@ jobs:
           name: android-production-${{ github.sha }}-${{ matrix.config }}
           path: |
             build-android/production.log
+            build-android/production-emulator.log
+            build-android/pinned/malvado-emulator-archives.json
             build-android/linux-sdk/malvado-archives.json
             build-android/production/bundle-tools/provenance.json
             build-android/production/c-*/results.json
             build-android/production/c-*/*.log
+            build-android/production/c-*/*.png
             build-android/production/lua-*/results.json
             build-android/production/lua-*/*.log
+            build-android/production/lua-*/*.png
+            build-android/production/rust-*/results.json
+            build-android/production/rust-*/*.log
+            build-android/production/rust-*/*.png
           if-no-files-found: warn
           retention-days: 14

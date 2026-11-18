@@ -124,9 +124,13 @@ reused. Screenshot and payload regressions also run without an emulator.
 ## Android production packages
 
 The Android workflow also builds a fresh installed CLI and arm64 target SDKs
-on Ubuntu 24.04. Debug verifies C and both Lua entry forms as APKs. Release
-verifies APKs and AABs, including APKs derived from the bundles. The job uses
-disposable keys and retains export logs, manifest dumps and tool provenance.
+on Ubuntu 24.04. Debug verifies C, both Lua entry forms and Rust as APKs. Release
+verifies APKs and AABs, including APKs derived from the bundles. The job runs
+the arm64 packages through native translation on the pinned x86_64 emulator.
+It requires `arm64-v8a` support for apps and translated executables for the
+Rust ABI probes. It retains runtime logs,
+screenshots, manifest dumps and tool provenance. Signing uses disposable
+keys.
 
 Run the same command on a configured authoring host with the pinned SDK:
 
@@ -135,10 +139,11 @@ mise exec -- bash tools/verify-android-exports.sh "$ANDROID_SDK_ROOT" Debug buil
 mise exec -- bash tools/verify-android-exports.sh "$ANDROID_SDK_ROOT" Release build-android/production-release
 ```
 
-Each command needs a new work directory. Add an explicit API 34 arm64 emulator
-serial as the last argument to also verify installation, runtime behavior and
-uninstall. This mode adds Rust and requires the installed
-`aarch64-linux-android` Rust target for the executable ABI probes.
+Each command needs a new work directory. Add an explicit API 34 emulator serial
+as the last argument to verify installation, runtime behavior and uninstall.
+Emulator execution also verifies Rust and requires the `aarch64-linux-android`
+Rust target for the executable ABI probes. With no
+serial, the command verifies C and Lua package contents on the authoring host.
 
 ## Supported-platform candidate gate
 
