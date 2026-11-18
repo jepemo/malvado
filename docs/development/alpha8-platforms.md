@@ -1,19 +1,20 @@
 # Alpha.8 platform verification
 
-Alpha.8 is in progress. A configured CI job is not proof of platform support.
-Use the logs from the exact candidate revision to establish support.
+Alpha.8 passed verification on `2a20b7a`. See the
+[accepted candidate](../versions/2.0.0-alpha.8.md#accepted-candidate) for
+the workflow results and SDK artifact review.
 Malvado 2.0 supports C, Lua and experimental Rust. The experimental label applies
 to the maintained Rust gameplay API, not the C core. It does not widen the
 platform claims below; see the [Rust support policy](../api/rust-support.md).
 
-| Host / target | Current verification | Remaining work |
+| Host / target | Current verification | Follow-up |
 | --- | --- | --- |
 | macOS 15 arm64 / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 x86_64 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
 | macOS arm64 / Android arm64 API 34 | Headless core/assets, graphical fixtures, and C/Lua/Rust production APKs and AAB-derived APKs in Debug/Release as applicable. Exported physical-key text passed in both APK profiles. | Physical-device keyboard and audible checks |
-| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless core/assets and C/Lua/Rust graphical fixtures in Debug/Release. Includes input, explicit audio pause, recreation, overlay relaunch and cold restart. | Final candidate acceptance |
-| Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted C/Lua/Rust APKs and AAB-derived APKs ran through native translation in both profiles. Rust ran executable ABI probes. | Verify the new IME cases on the current revision |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless core/assets and C/Lua/Rust graphical fixtures in Debug/Release. Includes input, explicit audio pause, recreation, overlay relaunch and cold restart. | Physical-device checks in beta |
+| Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted C/Lua/Rust APKs and AAB-derived APKs ran through native translation in both profiles. Rust ran executable ABI probes. The IME and audio-focus tests passed in both profiles. | Physical-device keyboard and audible checks |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity
@@ -43,7 +44,7 @@ confirmed IME characters through the same queue. See
 | Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
 | Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
 | Android arm64 / x86_64 API 34 | Relocated C/Rust SDK trees, headless C/Lua/Rust executables and C/Lua/Rust NativeActivity fixture APKs | macOS arm64 or Ubuntu 24.04 x86_64 verification hosts only. C/Rust fixtures consume installed SDKs; Lua fixtures build the source runtime. Both profiles passed graphics/assets/error/input/audio/lifecycle fixtures on arm64 and pinned x86_64. Fixture APKs use test signing, including Release builds. |
-| Android arm64 API 34 | Installed-CLI C/Lua/Rust debug APKs and release APKs/AABs | macOS arm64 production acceptance passed locally. Linux authoring verification is tracked separately. Windows authoring is unavailable. |
+| Android arm64 API 34 | Installed-CLI C/Lua/Rust debug APKs and release APKs/AABs | Verified on macOS arm64 with a native image and on Ubuntu x86_64 with translated execution. Windows Android authoring is unavailable. |
 
 An installed Android C SDK consumer is an external CMake project. A Lua fixture
 APK currently builds the source runtime; it does not establish an installed Lua
@@ -335,8 +336,9 @@ SDK. The reusable `AndroidRuntime` component contains the production Lua player
 and notices. It packages ordinary modules and binary assets, with both Lua
 entries, private session cleanup and process-error diagnostics. Component-only
 runtime installation and real installed-CLI exports passed on macOS arm64 with
-an API 34 arm64 emulator. Linux authoring and hosted export acceptance still
-need execution; Windows Android authoring is unavailable. The CLI now supports configurable manifest flags and both debug and release
+an API 34 arm64 emulator. Ubuntu also passed hosted production exports for
+both Lua entries in both profiles. The CLI supports configurable manifest
+flags and both debug and release
 APK generation. Release requires a Release-profile runtime, disables debugging
 and can produce unsigned output or use explicit external signing credentials.
 Both modes passed local arm64 execution, assets/pixels, process errors, cleanup
@@ -352,7 +354,8 @@ debug/release APKs with normal assets, notices and signing controls. Native C
 project and target-SDK paths with spaces, scheduler/state/texture cleanup,
 normal/error execution and rejected invalid builds passed locally on macOS
 arm64/API 34 arm64. Release uses a full Release SDK. Extra shared dependencies
-are rejected. Hosted/Linux authoring acceptance remains open.
+are rejected. Hosted Ubuntu passed both authoring profiles and ran the arm64
+APKs through the pinned emulator.
 
 
 ## Production Rust Android export
@@ -364,7 +367,8 @@ sources/outputs. Normal games, returned process errors and contained unwinding
 panics passed on macOS/API 34 arm64 with image lifetime, pixels, assets, cleanup
 and uninstall evidence. Release is non-debuggable and uses explicit signing.
 Host Rust Debug/Release workspace, installed consumers, diagnostics, clippy and
-formatting pass. The Rust export ABI is arm64. Hosted acceptance remains open.
+formatting pass. Hosted Ubuntu passed the arm64 export and executable ABI
+probes with Android's native translation.
 
 
 ## Release app bundles
@@ -374,5 +378,6 @@ bundletool 1.18.3 and Maven AAPT2 8.2.2-10154469 build and validate the base
 module. External jarsigner signing is optional and stays separate from APK
 signing and store publication. All three languages passed structural/signature
 checks and universal-APK execution on macOS/API 34 arm64, including assets,
-pixels, errors and cleanup. Linux archives are pinned; actual Linux/hosted and
-candidate acceptance remain open. Other production export ABIs are unavailable.
+pixels, errors and cleanup. The hosted Ubuntu Release job passed the same
+bundle-derived APK tests for all three languages, including IME confirmation.
+The exported ABI is arm64.
