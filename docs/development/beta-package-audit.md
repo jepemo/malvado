@@ -66,11 +66,11 @@ desktop game exports.
 
 ## Open review items
 
-- Confirm and record provenance for the Space Asteroids images included in
-  the source archive. The [demo artwork record](../../examples/demo/README.md#artwork)
-  covers the character sheet and six cat frames. The unused bird sheet and
-  cursor are omitted from source archives. The font fixtures already have
-  [license records](../../tests/fixtures/fonts/README.md) and the Coric
-  fixture has [attribution](../../tests/fixtures/aseprite/coric/README.md).
+- The [demo artwork record](../../examples/demo/README.md#artwork) covers the
+  character sheet and six cat frames. The unused bird sheet and cursor were
+  removed. [Space Asteroids](../../examples/space_asteroids/README.md) uses
+  original art for the ship and asteroid and a primitive for shots. The font
+  fixtures have [license records](../../tests/fixtures/fonts/README.md) and the
+  Coric fixture has [attribution](../../tests/fixtures/aseprite/coric/README.md).
 - Repeat package inspection and player checks on the selected beta.1
   revision. Retain the final artifact checksums and evidence together.

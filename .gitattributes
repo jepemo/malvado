@@ -2,7 +2,3 @@
 # Exact behavior traces have the same bytes on every checkout host.
 /bindings/rust/malvado/tests/fixtures/*.txt text eol=lf
 /tests/fixtures/*.txt text eol=lf
-
-# Legacy files unused by the current demo have no verified release license.
-/examples/demo/assets/bird.png export-ignore
-/examples/demo/cursor.png export-ignore

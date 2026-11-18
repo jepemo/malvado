@@ -23,7 +23,7 @@ end, {defaults = {collider = mv.collision.circle(96)}})
 -- Lasers
 
 local Shot = process(function(self)
-  self.graph = load_asset("examples/space_asteroids/laser.png", {pivot = "center"})
+  self.graph = circle(3)
 
   for _ = 1, 90 do
     self.x = self.x + self.vx

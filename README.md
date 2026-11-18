@@ -12,11 +12,7 @@ The idea is simple: give each character, object, or effect its own behavior, the
 
 **[Documentation](https://jepemo.github.io/malvado/)** · **[Examples](examples/)** · **[Release plan](docs/versions/README.md)** · **[Future roadmap](docs/roadmap/README.md)**
 
-> **Work in progress:** Malvado 2 is in active alpha development. The API and tools may change as the engine evolves.
-
-![Space Asteroids running in Malvado, with a moving spaceship firing at rotating asteroids.](docs/media/space-asteroids.gif)
-
-*[Space Asteroids](examples/space_asteroids/), running in Malvado.*
+> **Work in progress:** Malvado 2 is in beta development. The API and tools may change as the engine evolves.
 
 ## Hello, Malvado!
 
