@@ -60,10 +60,14 @@ def main():
         parser.add_argument('--'+name,required=True,type=Path)
     parser.add_argument('--serial',required=True)
     parser.add_argument('--release',action='store_true')
+    parser.add_argument('--format',choices=('apk','aab'),default='apk')
+    parser.add_argument('--bundle-tools',type=Path)
     parser.add_argument('--keystore',type=Path)
     parser.add_argument('--key-alias')
     parser.add_argument('--store-password-env')
     args=parser.parse_args()
+    if args.format=='aab' and (not args.release or not args.bundle_tools):
+        parser.error('AAB verification requires release and bundle tools')
     if args.release and not all((args.keystore,args.key_alias,args.store_password_env)):
         parser.error('Release verification requires disposable signing credentials')
     args.work.mkdir(parents=True,exist_ok=True)
@@ -97,9 +101,10 @@ def main():
             (project/'assets/value.bin').write_bytes(b'\0\r\n\xff')
             shutil.copyfile(Path(__file__).resolve().parents[1]/'tests/fixtures/red.png',project/'red.png')
             package='dev.malvado.rustexport.p'+uuid.uuid4().hex
-            apk=Path(folder)/'game.apk'
-            arguments=[cli,'export','--target','android-arm64','--format','apk','--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',sdk,'--output',apk,'--id',package,'--probe-runner',runner]
+            apk=Path(folder)/('game.'+args.format)
+            arguments=[cli,'export','--target','android-arm64','--format',args.format,'--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',sdk,'--output',apk,'--id',package,'--probe-runner',runner]
             if args.release: arguments+=['--release','--keystore',args.keystore.resolve(),'--key-alias',args.key_alias,'--store-password-env',args.store_password_env]
+            if args.format=='aab': arguments+=['--bundle-tools',args.bundle_tools.resolve()]
             exported=command(arguments,cwd=project)
             (args.work/(mode+'-build.log')).write_bytes(exported.stdout+exported.stderr)
             if mode=='compile-error':
@@ -109,6 +114,11 @@ def main():
                 records.append(dict(mode=mode,rejected=True))
                 continue
             if exported.returncode: raise RuntimeError(exported.stdout.decode()+exported.stderr.decode())
+            if args.format=='aab':
+                from android_bundle_test import derive_apk
+                published=apk
+                apk=Path(folder)/'game.apk'
+                derive_apk(published,apk,args.bundle_tools.resolve(),args.keystore.resolve(),args.key_alias,args.store_password_env)
             try:
                 checked(adb+['install','--no-incremental',apk])
                 if args.release: assert b'DEBUGGABLE' not in checked(adb+['shell','dumpsys','package',package]).stdout

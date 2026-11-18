@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """Check pinned AAB tooling integrity and base-module assembly."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
-import hashlib
-import io
 from pathlib import Path
 import sys
+import os
 import tempfile
 import unittest
+import subprocess
 from unittest.mock import patch
 import zipfile
 sys.dont_write_bytecode = True
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
 import android_bundle as bundle
 import android_export as exporter
+import android_bundle_test as verifier
 
 
 class BundleTests(unittest.TestCase):
@@ -68,6 +69,39 @@ class BundleTests(unittest.TestCase):
                 self.assertEqual(archive.read('lib/arm64-v8a/libgame.so'),b'ELF')
                 self.assertEqual(archive.read('assets/malvado-files.txt'),b'nested/value.bin\n')
             self.assertIn('validate',calls[-1])
+
+    def test_signing_uses_environment_references_and_rejects_unsigned_success(self):
+        signing=(Path('/external/key.p12'),'alias','STORE_SECRET','KEY_SECRET')
+        calls=[]
+        with patch.object(bundle.subprocess,'run',return_value=subprocess.CompletedProcess([],0,'jar verified.')) as verify:
+            bundle.sign(lambda args:calls.append(args),Path('game.aab'),signing)
+        self.assertIn('-storepass:env',calls[0])
+        self.assertIn('STORE_SECRET',calls[0])
+        self.assertIn('-keypass:env',calls[0])
+        self.assertIn('-strict',verify.call_args.args[0])
+        with patch.object(bundle.subprocess,'run',return_value=subprocess.CompletedProcess([],0,'jar is unsigned.')):
+            with self.assertRaisesRegex(ValueError,'not verified'):
+                bundle.sign(lambda args:None,Path('game.aab'),signing)
+
+    @unittest.skipIf(os.name == 'nt', 'AAB authoring requires Unix file permissions')
+    def test_derived_apk_password_file_is_private_and_removed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            calls=[]
+            def run(args, **kwargs):
+                calls.append(args)
+                if 'build-apks' in args:
+                    password=Path(next(arg.removeprefix('--ks-pass=file:') for arg in args if arg.startswith('--ks-pass=file:')))
+                    self.assertEqual(password.read_text(),'test-secret')
+                    self.assertEqual(password.stat().st_mode & 0o777,0o600)
+                    output=Path(next(arg.removeprefix('--output=') for arg in args if arg.startswith('--output=')))
+                    with zipfile.ZipFile(output,'w') as archive: archive.writestr('universal.apk',b'APK')
+                return subprocess.CompletedProcess(args,0,b'')
+            with patch.object(verifier,'validate_tools',return_value=(root/'bundletool.jar',root/'aapt2')), patch.object(verifier.subprocess,'run',side_effect=run):
+                verifier.derive_apk(root/'game.aab',root/'game.apk',root,root/'key','alias','PASSWORD',environment={'PASSWORD':'test-secret'})
+            self.assertEqual((root/'game.apk').read_bytes(),b'APK')
+            self.assertFalse(list(root.glob('.bundle-apks-*')))
+            self.assertNotIn('test-secret',str(calls))
 
     def test_aab_requires_release_tools_and_matching_output_before_publication(self):
         with tempfile.TemporaryDirectory() as folder:

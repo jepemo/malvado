@@ -211,8 +211,6 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     if output_format == 'aab':
         if not release:
             raise ValueError('AAB export requires --release')
-        if signing:
-            raise ValueError('AAB signing is not available')
         if bundle_tools is None:
             raise ValueError('AAB export requires --bundle-tools')
         from android_bundle import validate_tools
@@ -249,6 +247,8 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     host_tools = ['java'] if output_format == 'aab' or not release or signing else []
     if not release and signing is None:
         host_tools.append('keytool')
+    if output_format == 'aab' and signing:
+        host_tools.append('jarsigner')
     for tool in host_tools:
         if not shutil.which(tool):
             raise ValueError('Required Android export tool is missing: ' + tool)
@@ -264,8 +264,11 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
         if output_format == 'aab':
             from android_bundle import build as build_bundle
             artifact = build_bundle(run, Path(bundle_tools), sdk, work, manifest, library, files)
+            if signing:
+                from android_bundle import sign as sign_bundle
+                sign_bundle(run, artifact, signing)
             os.link(artifact, output)
-            print('Exported unsigned release AAB: ' + str(output))
+            print('Exported ' + ('signed' if signing else 'unsigned') + ' release AAB: ' + str(output))
             return
         unsigned, aligned, apk = [work / name for name in ('unsigned.apk', 'aligned.apk', 'game.apk')]
         run([tools / 'aapt', 'package', '-f', '-M', manifest, '-I', platform, '-F', unsigned])

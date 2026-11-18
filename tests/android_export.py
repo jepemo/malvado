@@ -272,6 +272,15 @@ class ExportTests(unittest.TestCase):
         root = ET.fromstring(exporter.manifest_xml('org.game', release=True))
         self.assertEqual(root.find('application').get(namespace+'debuggable'), 'false')
 
+    def test_aab_build_failure_cleans_staging_without_publication(self):
+        runtime, sdk, library = self.package_inputs()
+        output=self.root/'game.aab'
+        with patch.object(exporter,'validate_runtime',return_value=library), patch.object(exporter.shutil,'which',return_value='/tool'), patch('android_bundle.validate_tools',return_value=(self.root/'jar',self.root/'aapt2')), patch('android_bundle.build',side_effect=ValueError('bundle validation failed')):
+            with self.assertRaisesRegex(ValueError,'bundle validation failed'):
+                exporter.export(self.project,runtime,sdk,output,'org.game','test',release=True,output_format='aab',bundle_tools=self.root)
+        self.assertFalse(output.exists())
+        self.assertFalse(list(self.root.glob('.malvado-apk-*')))
+
     def test_existing_output_and_invalid_id_do_not_run_tools(self):
         output = self.root / 'game.apk'
         output.write_bytes(b'keep')

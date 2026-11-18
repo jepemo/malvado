@@ -101,7 +101,8 @@ manifests/lockfiles and `target` folders are excluded from APK assets. Normal
 nested files and notices remain included. Missing staticlib/entry symbols,
 compiler/link failures, ABI rejection and unsupported shared dependencies fail
 without publishing an APK. This first path does not promise arbitrary Cargo
-workspaces, other Android export ABIs or AAB generation.
+workspaces or other Android export ABIs. Release AAB uses the same build path;
+see [bundle generation and checks](android-bundles.md).
 
 Use `mise run test-android-rust-export` with `--cli`, `--runtime-sdk`,
 `--android-sdk`, `--serial` and `--work` for bounded installed-CLI verification.

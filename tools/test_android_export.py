@@ -59,7 +59,11 @@ def main():
         parser.add_argument('--'+name, required=True, type=Path)
     parser.add_argument('--serial', required=True)
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--format', choices=('apk','aab'), default='apk')
+    parser.add_argument('--bundle-tools', type=Path)
     args = parser.parse_args()
+    if args.format == 'aab' and (not args.release or not args.bundle_tools):
+        parser.error('AAB checks require --release and --bundle-tools')
     args.work.mkdir(parents=True, exist_ok=True)
     (args.work / 'results.json').unlink(missing_ok=True)
     for mode in ('explicit', 'declarative', 'error'):
@@ -111,21 +115,31 @@ def main():
                 if mode=='error': entry='MODE_ERROR=true\n'+entry
                 (project/'main.lua').write_text(entry)
                 package='dev.malvado.exported.p'+uuid.uuid4().hex
-                apk=project.parent/(package+'.apk')
-                arguments=[cli,'export','--target','android-arm64','--format','apk','--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package,'--version-code','42','--version-name','2 & next','--title','Juego <uno> & dos','--orientation','portrait','--min-api','30']
+                apk=project.parent/(package+'.'+args.format)
+                arguments=[cli,'export','--target','android-arm64','--format',args.format,'--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package,'--version-code','42','--version-name','2 & next','--title','Juego <uno> & dos','--orientation','portrait','--min-api','30']
                 if args.release:
-                    unsigned = apk.with_suffix('.unsigned.apk')
+                    if args.format == 'aab': arguments += ['--bundle-tools',args.bundle_tools.resolve()]
+                    unsigned = apk.with_suffix('.unsigned.'+args.format)
                     unsigned_output = command([str(value) if value != apk else str(unsigned) for value in arguments]+['--release'], cwd=project)
-                    verify = subprocess.run([str(args.android_sdk.resolve()/'build-tools/34.0.0/apksigner'), 'verify', str(unsigned)], capture_output=True, timeout=30)
-                    assert verify.returncode != 0, 'Unsigned release unexpectedly contains a signature'
+                    verify = subprocess.run((['jarsigner','-J-Duser.language=en','-verify','-strict',str(unsigned)] if args.format == 'aab' else [str(args.android_sdk.resolve()/'build-tools/34.0.0/apksigner'), 'verify', str(unsigned)]), capture_output=True, timeout=30)
+                    if args.format == 'aab':
+                        assert b'jar is unsigned' in verify.stdout, 'Unsigned AAB unexpectedly has a JAR signature'
+                    else:
+                        assert verify.returncode != 0, 'Unsigned release unexpectedly contains a signature'
                     (args.work/(mode+'-unsigned-export.log')).write_bytes(unsigned_output.stdout+unsigned_output.stderr)
                     unsigned.unlink()
                 output=command(arguments+signing_arguments,cwd=project,env=signing_environment)
                 (args.work/(mode+'-export.log')).write_bytes(output.stdout+output.stderr)
+                published = apk
+                prefix = 'base/' if args.format == 'aab' else ''
                 with zipfile.ZipFile(apk) as archive:
-                    assert archive.read('assets/assets/value.bin')==b'\0\r\n\xff'
-                    assert 'assets/licenses/Lua-readme.html' in archive.namelist()
-                    assert 'assets/licenses/raylib-LICENSE' in archive.namelist()
+                    assert archive.read(prefix+'assets/assets/value.bin')==b'\0\r\n\xff'
+                    assert prefix+'assets/licenses/Lua-readme.html' in archive.namelist()
+                    assert prefix+'assets/licenses/raylib-LICENSE' in archive.namelist()
+                if args.format == 'aab':
+                    from android_bundle_test import derive_apk
+                    apk=project.parent/(package+'.apk')
+                    derive_apk(published,apk,args.bundle_tools.resolve(),key,'test','MALVADO_TEST_STORE_PASSWORD',environment=signing_environment)
                 metadata=command([args.android_sdk.resolve()/'build-tools/34.0.0/aapt','dump','badging',apk]).stdout
                 assert b"versionCode='42'" in metadata and b"versionName='2 & next'" in metadata
                 assert b"sdkVersion:'30'" in metadata
@@ -167,6 +181,7 @@ def main():
                     remaining=command(adb+['shell','pm','list','packages',package]).stdout
                     assert ('package:'+package).encode() not in remaining
                     apk.unlink(missing_ok=True)
+                    published.unlink(missing_ok=True)
         (args.work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
     print('PASS: exported explicit/declarative games, pixels, nested assets, process error and cleanup')
 

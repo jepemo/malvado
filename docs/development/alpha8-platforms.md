@@ -358,3 +358,14 @@ panics passed on macOS/API 34 arm64 with image lifetime, pixels, assets, cleanup
 and uninstall evidence. Release is non-debuggable and uses explicit signing.
 Host Rust Debug/Release workspace, installed consumers, diagnostics, clippy and
 formatting pass. Other export ABIs, AAB and final hosted acceptance remain open.
+
+
+## Release app bundles
+
+The arm64 exporter now delivers AAB for C, Lua and Rust. SHA-256-pinned
+bundletool 1.18.3 and Maven AAPT2 8.2.2-10154469 build and validate the base
+module. External jarsigner signing is optional and stays separate from APK
+signing and store publication. All three languages passed structural/signature
+checks and universal-APK execution on macOS/API 34 arm64, including assets,
+pixels, errors and cleanup. Linux archives are pinned; actual Linux/hosted and
+candidate acceptance remain open. Other production export ABIs are unavailable.

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import platform
 import shutil
+import subprocess
 import tempfile
 import urllib.request
 import zipfile
@@ -27,8 +28,8 @@ def digest(path):
 
 def host_name():
     host = {'Darwin': 'macos', 'Linux': 'linux'}.get(platform.system())
-    if host is None:
-        raise ValueError('AAB authoring requires macOS or Linux')
+    if host is None or (host == 'linux' and platform.machine() not in ('x86_64', 'AMD64')):
+        raise ValueError('AAB authoring requires macOS arm64/x86_64 or Linux x86_64')
     return host
 
 
@@ -88,6 +89,20 @@ def build(run, tools, sdk, work, manifest, library, files):
     run(['java', '-jar', jar, 'build-bundle', '--modules='+str(module), '--output='+str(bundle)])
     run(['java', '-jar', jar, 'validate', '--bundle='+str(bundle)])
     return bundle
+
+
+def sign(run, bundle, signing):
+    key, alias, store_env, key_env = signing
+    arguments = ['jarsigner', '-keystore', key, '-storepass:env', store_env]
+    if key_env:
+        arguments += ['-keypass:env', key_env]
+    run([*arguments, bundle, alias])
+    # Trust only the selected keystore for verification. Strict mode rejects
+    # unsigned entries; explicit trust also permits disposable test certs.
+    verified = subprocess.run(['jarsigner', '-J-Duser.language=en', '-J-Duser.country=US', '-verify', '-strict', '-keystore', str(key),
+                               '-storepass:env', store_env, str(bundle), alias], check=True, capture_output=True, text=True, timeout=120)
+    if 'jar verified.' not in verified.stdout or 'jar is unsigned' in verified.stdout:
+        raise ValueError('AAB JAR signature was not verified')
 
 
 if __name__ == '__main__':

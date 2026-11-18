@@ -87,7 +87,8 @@ are the same as [Lua APK export](../specs/cli.md#android-apk-export-lua).
 The current path supports statically linked SDK/game dependencies and the
 engine's Android system libraries. NDK LLVM inspection rejects other shared
 libraries instead of silently omitting them from the APK. Bundling additional
-shared libraries, C++, Rust and other Android export ABIs remain unavailable.
+shared libraries, C++ and other Android export ABIs remain unavailable. Rust
+has its own [production entry](android-rust-games.md).
 
 Run `mise run test-android-c-export` with `--cli`, `--runtime-sdk`,
 `--android-sdk`, `--serial` and `--work` to verify the complete path on arm64.

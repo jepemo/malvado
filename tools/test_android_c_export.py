@@ -74,10 +74,14 @@ def main():
         parser.add_argument('--'+name, required=True, type=Path)
     parser.add_argument('--serial', required=True)
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--format', choices=('apk','aab'), default='apk')
+    parser.add_argument('--bundle-tools', type=Path)
     parser.add_argument('--keystore', type=Path)
     parser.add_argument('--key-alias')
     parser.add_argument('--store-password-env')
     args = parser.parse_args()
+    if args.format == 'aab' and (not args.release or not args.bundle_tools):
+        parser.error('AAB verification requires release and bundle tools')
     if args.release and not all((args.keystore, args.key_alias, args.store_password_env)):
         parser.error('Release emulator checks require explicit test signing credentials')
     args.work.mkdir(parents=True, exist_ok=True)
@@ -109,12 +113,13 @@ def main():
             (project/'assets/value.bin').write_bytes(b'\0\r\n\xff')
             shutil.copyfile(Path(__file__).resolve().parents[1]/'tests/fixtures/red.png',project/'red.png')
             package = 'dev.malvado.cexport.p'+uuid.uuid4().hex
-            apk = Path(folder)/'game.apk'
-            arguments = [cli,'export','--target','android-arm64','--format','apk','--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package]
+            apk = Path(folder)/('game.'+args.format)
+            arguments = [cli,'export','--target','android-arm64','--format',args.format,'--runtime-sdk',args.runtime_sdk.resolve(),'--android-sdk',args.android_sdk.resolve(),'--output',apk,'--id',package]
             # Native release verification uses an explicit disposable signing key;
             # the APK still disables debugging and links a Release SDK.
             if args.release:
                 arguments += ['--release', '--keystore', args.keystore.resolve(), '--key-alias', args.key_alias, '--store-password-env', args.store_password_env]
+            if args.format == 'aab': arguments += ['--bundle-tools', args.bundle_tools.resolve()]
             exported = command(arguments,cwd=project)
             (args.work/(mode+'-build.log')).write_bytes(exported.stdout+exported.stderr)
             if mode in ('compile-error','bad-entry'):
@@ -125,11 +130,17 @@ def main():
                 results.append(dict(mode=mode,rejected=True))
                 continue
             if exported.returncode: raise RuntimeError(exported.stdout.decode()+exported.stderr.decode())
+            published = apk
+            prefix = 'base/' if args.format == 'aab' else ''
             with zipfile.ZipFile(apk) as archive:
-                assert archive.read('assets/assets/value.bin') == b'\0\r\n\xff'
-                assert 'assets/main.c' not in archive.namelist()
-                assert 'assets/CMakeLists.txt' not in archive.namelist()
-                assert 'assets/licenses/raylib-LICENSE' in archive.namelist()
+                assert archive.read(prefix+'assets/assets/value.bin') == b'\0\r\n\xff'
+                assert prefix+'assets/main.c' not in archive.namelist()
+                assert prefix+'assets/CMakeLists.txt' not in archive.namelist()
+                assert prefix+'assets/licenses/raylib-LICENSE' in archive.namelist()
+            if args.format == 'aab':
+                from android_bundle_test import derive_apk
+                apk = Path(folder)/'game.apk'
+                derive_apk(published,apk,args.bundle_tools.resolve(),args.keystore.resolve(),args.key_alias,args.store_password_env)
             try:
                 checked(adb+['install','--no-incremental',apk])
                 if args.release:

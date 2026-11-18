@@ -56,7 +56,7 @@ print_help(FILE *output)
             "  run [--headless] [PATH]  Run a game\n"
             "  check [PATH]         Check Lua syntax or a C/Rust project\n"
             "  export [PATH]        Export a game for this host\n"
-            "  export --target android-arm64 --format apk --runtime-sdk SDK --android-sdk SDK --output FILE.apk\n"
+            "  export --target android-arm64 --format apk|aab [--release] --runtime-sdk SDK --android-sdk SDK --output FILE.apk\n"
             "  export --app [--id ID] [PATH]  Export a macOS app\n"
 #ifdef MALVADO_BUILD_ASSETS
             "  fpg-export [--transparent-zero] INPUT OUTPUT  Export FPG to PNG and JSON\n"

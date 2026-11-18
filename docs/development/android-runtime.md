@@ -53,7 +53,9 @@ The verifier exports and executes both Lua entries and a process-error game.
 It checks nested binary assets, atlas/PNG loading, actual screenshot pixels,
 notices, exact error diagnostics, session cleanup and uninstall. It retains
 logs, screenshots and a result report. Missing capabilities remain listed in
-the version checklist; this command does not certify AAB or production signing.
+the version checklist; the default command checks APKs. Add the AAB flags described in
+[app bundle checks](android-bundles.md) to verify bundles separately. It does not
+certify production signing.
 
 
 For release verification, build and install the same component with

@@ -132,8 +132,11 @@ release APKs, source exclusion, the same manifest options and explicit signing.
 Rust projects now support the same debug/release APK path with a staticlib
 bridge and a target ABI probe runner. New Rust projects include the bridge;
 see [Rust Android games](../development/android-rust-games.md). Existing ABI
-checks remain mandatory. Other Android export ABIs and AAB remain unavailable. `--format aab` is
-rejected. Windows Android authoring is unavailable. General Android export
+checks remain mandatory. Release AAB generation is now available through `--format aab --release
+--bundle-tools PATH` for C, Lua and Rust. It validates the base module with
+bundletool and uses jarsigner for optional signing. See [AAB tools and
+commands](../development/android-bundles.md). Other Android export ABIs remain
+unavailable. Windows Android authoring is unavailable. General Android export
 acceptance remains open until these remaining version deliverables are
 implemented and verified.
 
