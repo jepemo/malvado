@@ -19,6 +19,9 @@ on:
         description: Successful Android foundation run ID for this SHA
         required: true
         type: string
+      version:
+        description: Optional version for a draft release bundle
+        type: string
 permissions:
   contents: read
   actions: read
@@ -63,5 +66,34 @@ jobs:
         with:
           name: platform-candidate-${{ inputs.sha }}
           path: platform-candidate/*
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        if: inputs.version != ''
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.ci }}
+          name: source-check-${{ inputs.sha }}
+          path: incoming/source
+      - name: Prepare the draft release bundle
+        if: inputs.version != ''
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          git fetch --depth=1 origin "$CANDIDATE_SHA"
+          python3 -m venv "$RUNNER_TEMP/candidate-docs"
+          "$RUNNER_TEMP/candidate-docs/bin/python" -m pip install -r docs/requirements.txt
+          "$RUNNER_TEMP/candidate-docs/bin/python" docs/tools/prepare_versioned_site.py \
+            "$CANDIDATE_VERSION" "$CANDIDATE_SHA" incoming/docs
+          git show "$CANDIDATE_SHA:docs/versions/$CANDIDATE_VERSION-release-notes.md" > incoming/notes.md
+          python3 tools/collect_release_candidate.py --platform platform-candidate \
+            --source incoming/source --docs incoming/docs --notes incoming/notes.md \
+            --version "$CANDIDATE_VERSION" --output release-candidate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: inputs.version != ''
+        with:
+          name: release-candidate-${{ inputs.version }}-${{ inputs.sha }}
+          path: release-candidate/
           if-no-files-found: error
           retention-days: 14

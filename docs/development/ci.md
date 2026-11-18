@@ -190,3 +190,24 @@ create a tag or certify unfinished Android exports. The CI-only SDK candidate
 still contains macOS/Linux packages; the Platform candidate adds Windows. A8.8
 still requires the full capability, artifact and license review. Repository
 branch protection must be configured separately if this gate is to block merges.
+
+### Draft release bundle
+
+Pass the optional version to **Platform candidate** to assemble a draft
+release bundle. Use the same complete CI, Windows and Android runs required
+by the platform gate. The workflow downloads the source archive from the
+selected CI run, builds versioned documentation from the selected commit
+and reads the release notes from that commit. For beta.1, supply
+`2.0.0-beta.1` and use the [beta.1 draft notes](../versions/2.0.0-beta.1-release-notes.md).
+
+The `release-candidate-<version>-<commit>` artifact includes the three
+desktop SDKs, the source archive, the reports, the versioned site and
+`RELEASE-NOTES.md`. The collector checks the source digest, exact SDK versions
+and dependency notices against the source archive. It rejects a failed source
+verification or documentation for another commit. From the extracted bundle
+directory, check every file with `sha256sum -c SHA256SUMS` on Linux or
+`shasum -a 256 -c SHA256SUMS` on macOS.
+
+Use the Android run linked in `platform-candidate.json` for emulator
+evidence. The draft bundle is a CI artifact for review. Manual tests,
+production signing and publication have their own acceptance steps.
