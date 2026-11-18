@@ -5,9 +5,9 @@ Rust owned futures adapt that scheduler; they do not run a second executor.
 Rust's gameplay API is experimental, functional and maintained; this label does
 not apply to the C core. See the [Rust support policy](rust-support.md).
 This feature matrix covers the shared native APIs. macOS/Linux SDK and CLI paths
-are verified. Windows x64 MSVC headless and graphical SDKs are verified; Windows
-CLI/export and fresh exported players are also verified. Android acceptance
-remains alpha.8 work. See the
+are verified. Windows x64 MSVC headless and graphical SDKs, CLI exports and
+fresh exported players are verified. Android arm64 APK and AAB exports are
+verified for C, Lua and Rust on the alpha.8 baseline. See the
 [platform matrix](../development/alpha8-platforms.md). This does not freeze the
 2.x API or ABI.
 

@@ -412,7 +412,7 @@ impl Textures {
         })
     }
     /// FPG uses index-zero transparency. For another policy use new().
-    /// Converted manifests load <id>.png relative to the source path and
+    /// Converted manifests load `<id>.png` relative to the source path and
     /// require exact dimensions. Their PNG alpha is preserved as stored.
     /// Atlas libraries return InvalidArgument.
     pub fn load(

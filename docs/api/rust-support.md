@@ -35,17 +35,13 @@ four selectors. No gameplay API or native ABI changes are required.
 CLI project creation, build/check/run and exports are delivered for matching
 native macOS/Linux and Windows x64 MSVC SDKs. Windows headless/graphical SDKs,
 CLI authoring and fresh exported players are verified in the recorded baseline.
-Android headless core and asset cross compilation is verified on arm64 API 34
-locally and x86_64 in CI. It requires NDK r27c and target-side ABI probes. Android
-Rust NativeActivity window/pixel/scheduler cleanup has a local fixture;
-Back, same-process pause/resume, A/Left keyboard snapshots and primary contact
-also have local arm64 fixtures. Packaged binary/PNG/atlas reads, image ownership, process errors and missing-PNG
-cleanup also have local arm64 checks. Packaged sound/stream API state and explicit pause continuity also have local
-arm64 checks. These Android fixtures also passed pinned x86_64 CI on `9c96692`. Remaining
-input/lifecycle/audio-focus behavior and the full candidate gate stay open. General APK exports, other cross targets and Windows GNU/ARM64 are
-not delivered. See the
-[Android Rust commands](../development/android.md#rust-headless-verification). Software
-rendering and silent audio CI do not establish physical device behavior. See
+The installed CLI exports Rust games as Android arm64 debug APKs and release
+APKs or AABs from supported macOS and Linux hosts. These builds use NDK r27c
+and target-side ABI probes. The alpha.8 baseline ran APKs and APKs derived
+from AABs on API 34, including Activity lifecycle, input, audio focus and IME
+checks. The x86_64 emulator fixture path is for verification. The delivered
+export target is arm64. See the [Android Rust commands](../development/android-rust-games.md).
+Physical device behavior and audible output remain beta checks. See
 [platform verification](../development/alpha8-platforms.md) for evidence and
 limits, and the [language matrix](language-parity.md) for feature differences.
 

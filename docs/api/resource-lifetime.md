@@ -1,10 +1,15 @@
 # Resource lifetime contract
 
-This is the alpha.5 target for resource lifetime. The [alpha.5 checklist](../versions/2.0.0-alpha.5.md) tracks the remaining implementation and tests. The rules below do not claim that every current binding implements them yet.
+These rules apply to the delivered C, Lua and Rust resource APIs. The
+[API snapshot](beta.1-snapshot.md) links the language-specific contracts.
 
 ## Ownership and sharing
 
-A resource created during a process callback belongs to that process. A resource created outside a process belongs to the game context. Creation failure leaves ownership with the caller and does not create a live resource. Process ownership does not change when a process is reparented or ends. Cleanup releases the owner's reference once. The resource stays alive until all independent references and pending work release it.
+A managed resource uses the owner selected by the creation API. Lua selects the
+running process or the game context. C and Rust expose explicit owner choices.
+Reparenting a process keeps its resource ownership. Cleanup releases the
+owner's reference once. The resource stays alive until all independent
+references and pending work release it.
 
 In Lua, assigning a resource to a table, process field, or another variable shares the same object. It does not copy the resource or transfer its owner. Each reachable wrapper holds a reference independently of the owner. The Lua API does not currently provide an explicit resource release or ownership transfer operation. Drop Lua references to allow collection; do not depend on when collection runs. A queued draw, persistent text object, or active playback holds the references it needs. These references are released when the work is removed or finishes.
 
@@ -39,8 +44,8 @@ contract for owned Rust values. `Game::resource` selects context ownership;
 shared data and release one native reference on Drop. They can outlive their
 owner and context; transfer requires a live same-context owner or context.
 See the [Rust process guide](rust-processes.md#native-resource-ownership).
-These generic resources do not extend graphics or audio device lifetime;
-those platform wrappers remain alpha.7 A7.6 work.
+The generic resource manager retains the value it owns. Safe Rust images and
+fonts retain their window, and sounds and music retain their audio device.
 
 ## Native typed adoption
 

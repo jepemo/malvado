@@ -109,8 +109,8 @@ colliders or contextual process movement. `malvado/examples/world.rs` is a
 bounded headless example.
 
 The [camera and animation guide](../../docs/api/rust-camera-animation.md) covers
-native camera values and explicit fixed-tick playback without a graphics
-backend. Automatic process camera selection and graph animation remain pending.
+registered cameras, process selection and fixed-tick playback. The
+[drawing guide](../../docs/api/rust-drawing.md) shows how to render processes.
 
 Enable the optional `assets` feature for [native atlas metadata](../../docs/api/rust-atlas.md).
 The installed C SDK must include assets. Verify it with `mise run test-rust-assets`.

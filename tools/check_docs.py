@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check repository file links and Markdown anchors in current alpha.7 guides."""
+"""Check repository file links and Markdown anchors in current guides."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
 from functools import lru_cache
@@ -73,7 +73,7 @@ def check_documents(paths, root):
 def documents():
     paths = [ROOT / "README.md", ROOT / "bindings/rust/README.md",
              ROOT / "docs/specs/cli.md", ROOT / "docs/specs/rust-processes.md",
-             ROOT / "docs/versions/README.md"]
+             ROOT / "docs/versions/README.md", ROOT / "docs/versions/2.0.0-beta.1.md"]
     for directory in ("api", "site", "development", "architecture"):
         paths.extend((ROOT / "docs" / directory).glob("*.md"))
     paths.extend((ROOT / "docs/versions").glob("2.0.0-alpha.7*.md"))

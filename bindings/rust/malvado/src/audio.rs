@@ -14,7 +14,7 @@ use std::{
 static AUDIO_OWNED: AtomicBool = AtomicBool::new(false);
 
 /// One audio device, independent of the window and process scheduler.
-/// Keep an Rc<Audio> in the host and call update regularly. Sounds keep the
+/// Keep an `Rc<Audio>` in the host and call update regularly. Sounds keep the
 /// service live; the final service owner stops outstanding playback and closes.
 /// Do not open or close the native device through another host while owned.
 pub struct Audio {
