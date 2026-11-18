@@ -252,8 +252,18 @@ def lifecycle_actions(log, adb, package, token, mode, screenshots=None, lua=Fals
             wait_marker(log, adb, token + ' lua keyboard catch-up passed')
         if screenshots:
             capture_screen(log, adb, screenshots / 'keyboard.png')
+    if mode == 'text':
+        if not before.isascii() or not before.isdigit():
+            raise RuntimeError('Expected one acceptance process for text injection')
+        run(log, adb + ['shell', 'input', 'keyboard', 'text', 'aZ0'], timeout=10)
+        language = 'lua' if lua else 'rust' if rust else 'c'
+        wait_marker(log, adb, f'{token} {language} text input passed', pid=before)
+        if screenshots:
+            capture_screen(log, adb, screenshots / 'text.png')
     run(log, adb + ['shell', 'input', 'keyevent', '4'], timeout=10)
-    return {'initial_pid': before, 'resumed_pid': after if resume or mode in ('keyboard-background', 'touch-background') else None,
+    return {'initial_pid': before,
+            'physical_text': 'aZ0' if mode == 'text' else None,
+            'resumed_pid': after if resume or mode in ('keyboard-background', 'touch-background') else None,
             'background_foreground': resume or mode in ('keyboard-background', 'touch-background'),
             'release_while_backgrounded': mode in ('keyboard-background', 'touch-background'),
             'keyboard_keycodes': [29, 21] if keyboard else None,
@@ -394,14 +404,16 @@ def main():
     parser.add_argument('--language', choices=('c', 'lua', 'rust'), default='c')
     parser.add_argument('--entry', choices=('explicit', 'declarative'), default='explicit')
     parser.add_argument('--failure', choices=('none', 'process', 'missing-image', 'startup-destroy'), default='none')
-    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay', 'restart'))
+    parser.add_argument('--lifecycle', choices=('back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay', 'restart', 'text'))
     parser.add_argument('--audio', action='store_true')
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     parser.add_argument('--installed-sdk', action='store_true')
     parser.add_argument('--work', type=Path)
     args = parser.parse_args()
-    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.lifecycle not in (None, 'back', 'resume', 'touch', 'keyboard', 'keyboard-resume', 'keyboard-background', 'touch-background', 'recreate', 'overlay', 'restart') or args.entry != 'explicit'):
-        parser.error('Rust APK verification requires --installed-sdk and supports startup/pixels/cleanup, Back/resume, recreation/overlay/restart, contact/keyboard, expected-error cleanup and normal/resumed audio')
+    if args.language == 'rust' and (not args.installed_sdk or (args.audio and args.lifecycle not in (None, 'resume')) or args.entry != 'explicit'):
+        parser.error('Rust APK verification requires --installed-sdk and supports startup/pixels/cleanup, Back/resume, recreation/overlay/restart, contact/keyboard/text, expected-error cleanup and normal/resumed audio')
+    if args.audio and args.lifecycle == 'text':
+        parser.error('--lifecycle text cannot be combined with --audio')
     if args.audio and args.failure != 'none':
         parser.error('--audio cannot be combined with expected failures')
     if args.lifecycle and args.failure != 'none':
@@ -416,7 +428,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     sdk = args.sdk.resolve()
     (work / 'results.json').unlink(missing_ok=True)
-    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png', 'recreated.png', 'restarted.png'):
+    for screenshot in ('before.png', 'resumed.png', 'released.png', 'keyboard.png', 'failure.png', 'resumed-a.png', 'resumed-left.png', 'recreated.png', 'restarted.png', 'text.png'):
         (work / screenshot).unlink(missing_ok=True)
     token = uuid.uuid4().hex
     package = 'dev.malvado.acceptance.p' + token
@@ -425,7 +437,7 @@ def main():
         tools = packaging_tools(sdk, log, facts)
         build = work / 'native'
         fixture = ROOT / ('tests/android-lua' if args.language == 'lua' else 'tests/android-window')
-        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8, 'overlay': 8, 'restart': 1}[args.lifecycle]
+        lifecycle = {None: 0, 'back': 1, 'resume': 2, 'touch': 3, 'keyboard': 4, 'keyboard-resume': 5, 'keyboard-background': 6, 'touch-background': 7, 'recreate': 8, 'overlay': 8, 'restart': 1, 'text': 9}[args.lifecycle]
         failure = {'none': 0, 'process': 1, 'missing-image': 2, 'startup-destroy': 3}[args.failure]
         run(log, ['cmake', '-S', fixture, '-B', build,
                   f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',

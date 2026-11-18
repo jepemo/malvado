@@ -13,6 +13,25 @@ import test_android_window as verifier
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_text_requires_language_marker_before_back(self):
+        for language in ('c', 'lua', 'rust'):
+            with self.subTest(language=language):
+                events = []
+                def run(log, args, **kwargs):
+                    events.append(args)
+                    return subprocess.CompletedProcess(args, 0, '123' if 'pidof' in args else '')
+                def wait(log, adb, marker, **kwargs):
+                    events.append((marker, kwargs.get('pid')))
+                with patch.object(verifier, 'run', side_effect=run), patch.object(verifier, 'wait_marker', side_effect=wait):
+                    result = verifier.lifecycle_actions(io.StringIO(), ['adb'], 'package', 'token',
+                                                        'text', lua=language == 'lua', rust=language == 'rust')
+                self.assertEqual(events[-3:], [
+                    ['adb', 'shell', 'input', 'keyboard', 'text', 'aZ0'],
+                    (f'token {language} text input passed', '123'),
+                    ['adb', 'shell', 'input', 'keyevent', '4'],
+                ])
+                self.assertEqual(result['physical_text'], 'aZ0')
+
     def test_recreation_requires_same_process_before_final_back(self):
         for pid in ('123', '456'):
             with self.subTest(pid=pid):

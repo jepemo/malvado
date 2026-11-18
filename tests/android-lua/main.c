@@ -37,6 +37,7 @@ static unsigned lua_keyboard_seen, lua_keyboard_held;
 static unsigned keyboard_ticks, keyboard_frame_ticks;
 static int keyboard_stall, keyboard_catchup;
 #include "lifecycle.h"
+static int lua_text_seen;
 
 /* raylib wraps fopen through its live APK manager. After window destruction,
  * use ordinary sandbox descriptors for the fixture cleanup evidence. */
@@ -88,6 +89,17 @@ check_frame(void *user)
      * Startup frames can precede the first process draw command. Require the
      * expected pixel before termination, without assuming a render count. */
     lifecycle_frame(verified);
+    if (ACCEPTANCE_LIFECYCLE == 9 && !lua_text_seen) {
+        FILE *file = fopen("text-input.txt", "rb");
+        if (file) {
+            char text[4] = {0};
+            assert(fread(text, 1, sizeof(text), file) == 3 && strcmp(text, "aZ0") == 0);
+            assert(fclose(file) == 0);
+            lua_text_seen = 1;
+            __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance",
+                                "%s lua text input passed", ACCEPTANCE_TOKEN);
+        }
+    }
     if (keyboard_mode()) {
         if (keyboard_stall && !keyboard_catchup && keyboard_ticks - keyboard_frame_ticks > 1) {
             keyboard_catchup = 1;
@@ -198,6 +210,7 @@ main(int argc, char **argv)
     assert(snapshot);
     if (ACCEPTANCE_FAILURE == 1) assert(setenv("MALVADO_APK_FAIL", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE) assert(setenv("MALVADO_APK_LIFECYCLE", "1", 1) == 0);
+    if (ACCEPTANCE_LIFECYCLE == 9) assert(setenv("MALVADO_APK_TEXT", "1", 1) == 0);
     if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) assert(setenv("MALVADO_APK_TOUCH", "1", 1) == 0);
     if (keyboard_mode()) {
         assert(copy_asset(app->activity->assetManager, "keyboard.lua"));
@@ -228,6 +241,7 @@ main(int argc, char **argv)
         return 0;
     }
     lifecycle_finish();
+    if (ACCEPTANCE_LIFECYCLE == 9) assert(lua_text_seen);
     if (keyboard_mode()) assert(lua_keyboard_seen == 3 && keyboard_stall && keyboard_catchup);
     assert(!IsAudioDeviceReady());
     if (ACCEPTANCE_AUDIO) {

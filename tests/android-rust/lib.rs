@@ -82,6 +82,7 @@ pub extern "C" fn malvado_rust_entry() {
     let mut keyboard = keyboard::Keyboard::default();
     let mut touch = touch::Touch::default();
     let mut verified = false;
+    let mut expected_text = "aZ0".chars();
     for index in 0..if mode == 0 { 90 } else { 3600 } {
         if window.should_close() {
             break;
@@ -95,6 +96,15 @@ pub extern "C" fn malvado_rust_entry() {
         }
         if mode == 3 || mode == 7 {
             touch.tick(&window);
+        }
+        if mode == 9 {
+            while let Some(character) = window.text_input_next() {
+                assert_eq!(expected_text.next(), Some(character));
+                if expected_text.as_str().is_empty() {
+                    // SAFETY: the fixture logs this static string synchronously.
+                    unsafe { acceptance_log(c"rust text input passed".as_ptr()) };
+                }
+            }
         }
         game.tick().unwrap();
         let frame = window
@@ -134,6 +144,9 @@ pub extern "C" fn malvado_rust_entry() {
         drop(frame);
     }
     assert!(verified);
+    if mode == 9 {
+        assert!(expected_text.as_str().is_empty());
+    }
     if mode != 0 {
         assert!(window.should_close());
     }

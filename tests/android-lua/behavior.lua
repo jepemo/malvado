@@ -19,6 +19,8 @@ local task = mv.process(function()
   local keyboard
   if os.getenv("MALVADO_APK_KEYBOARD") then keyboard = require("keyboard")() end
   local first_x, maximum_x, released, moved
+  local text_mode = os.getenv("MALVADO_APK_TEXT")
+  local text = ""
   local remaining = 60
   while os.getenv("MALVADO_APK_LIFECYCLE") or remaining > 0 do
     remaining = remaining - 1
@@ -47,6 +49,19 @@ local task = mv.process(function()
         assert(file:write("1"))
         assert(file:close())
         released = true
+      end
+    end
+    if text_mode then
+      while true do
+        local character = mv.text_input_next()
+        if not character then break end
+        text = text .. character
+        assert(text == ("aZ0"):sub(1, #text))
+        if text == "aZ0" then
+          local marker = assert(io.open("text-input.txt", "wb"))
+          assert(marker:write(text))
+          assert(marker:close())
+        end
       end
     end
     if audio then audio.frame() end

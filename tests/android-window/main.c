@@ -50,10 +50,23 @@ main(int argc, char **argv)
     assert(mv_window_size(&width, &height) && width > 0 && height > 0);
     audio_begin();
     int verified = 0;
+    const char expected_text[] = "aZ0";
+    size_t text_length = 0;
     for (int frame = 0; frame < (ACCEPTANCE_LIFECYCLE ? 3600 : 180) && !mv_window_should_close(); ++frame) {
         if (keyboard_mode()) {
             mv_input_tick();
             keyboard_frame();
+        }
+        if (ACCEPTANCE_LIFECYCLE == 9) {
+            uint32_t codepoint;
+            while (mv_text_input_next(&codepoint)) {
+                assert(text_length < sizeof(expected_text) - 1);
+                assert(codepoint == (uint32_t)expected_text[text_length++]);
+                if (text_length == sizeof(expected_text) - 1) {
+                    __android_log_print(ANDROID_LOG_INFO, "MalvadoAcceptance",
+                                        "%s c text input passed", ACCEPTANCE_TOKEN);
+                }
+            }
         }
         mv_window_begin((MvColor){20, 40, 80, 255});
         assert(mv_window_draw_box(width / 4, height / 4, width / 2, height / 2, 1, (MvColor){255, 0, 0, 255}));
@@ -78,6 +91,7 @@ main(int argc, char **argv)
         mv_window_end();
     }
     assert(verified);
+    if (ACCEPTANCE_LIFECYCLE == 9) assert(text_length == sizeof(expected_text) - 1);
     if (ACCEPTANCE_LIFECYCLE) assert(mv_window_should_close());
     lifecycle_finish();
     audio_finish();

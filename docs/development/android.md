@@ -912,3 +912,11 @@ are retained in `build-android/text-{c,lua,rust}-{Debug,Release}`. Release packa
 were non-debuggable. The host standard suite passed all 227 checks. This is
 emulator key-event evidence, not a physical keyboard or IME acceptance result.
 Pinned x86_64 CI and exact-candidate acceptance remain open.
+
+### Physical text in emulator fixtures
+
+Pass `--lifecycle text` to `mise run test-android-window --` to inject
+`aZ0` as keyboard events. Use the same option for C, both Lua entries and
+Rust. The host checks the original process's language marker, captures a
+screenshot and uses Back for normal shutdown. Both Android CI profiles run
+this mode on the pinned x86_64 image. The eight local arm64 cases passed.
