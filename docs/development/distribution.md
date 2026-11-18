@@ -6,6 +6,29 @@ An initial local SDK archive can be built with `mise run package-sdk`. It writes
 
 On a push or manual CI run, the `sdk-candidate` artifact is available only after all CI jobs pass. It contains the tested macOS and Linux archives and their checksums. Its name includes the source commit. GitHub retains it for 14 days. This is a development candidate, not a release. The remaining platform and release checks in the version checklist still apply.
 
+## Source archive
+
+From a Git checkout, use Python 3.11 or later and Git 2.38 or later to package
+the selected commit. Use a new output directory for each run.
+
+```sh
+python3 tools/package_source.py HEAD build/source-package
+```
+
+The command writes one platform-independent `malvado-source-<commit>.tar.gz`
+and a SHA-256 checksum. The archive contains the tracked tree, including public
+C headers, the core, assets, platform code, bindings, CLI, build files, tests,
+examples and license notices. The top-level `SOURCE-REVISION` file records the
+full commit ID. Uncommitted changes and local build outputs stay outside the
+archive. Building the extracted tree does not require a Git checkout.
+
+The core-only configuration with Lua, raylib and assets disabled needs no
+dependency downloads. A fresh default build needs network access for Lua
+5.4.8 from lua.org and cJSON 1.7.19 and raylib 6.2 from GitHub. CMake checks the
+SHA-256 pins in [CMakeLists.txt](../../CMakeLists.txt). The optional GUI
+prototype uses additional pinned downloads from GitHub. Platform and export
+toolchains are installed separately. See the [platform matrix](alpha8-platforms.md).
+
 ## Proposed decision
 
 The main Malvado 2 channel will be a **downloadable SDK per platform**. The development SDK includes C libraries and headers, the `malvado` client, and the Lua runtime. The client creates minimal C and Lua projects. The GUI will have a separate desktop download or optional SDK package. Exported Lua games include the runtime and Lua. C games include their native runtime without requiring Lua. Players do not need to install Lua or LuaRocks.
