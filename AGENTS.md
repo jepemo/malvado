@@ -142,6 +142,11 @@ Use the relevant existing commands:
 
 Choose tests based on the affected components. Run broader tests when a change affects shared behavior.
 
+Run `mise run clean-builds` after you finish each local test batch, commit, or push,
+including after failures. Collect any logs you need before running it. The task
+removes ignored `build/` and `build-*/` directories at the project root and
+`docs/website/build/`.
+
 - Test observable behavior, not only successful compilation.
 - Include invalid inputs, failure paths, and boundary conditions when relevant.
 - Test resource ownership, cleanup, and process lifetime when affected.

@@ -21,6 +21,10 @@ description = "Build and run the standard tests"
 depends = ["build"]
 run = "ctest --test-dir build -C Debug --output-on-failure"
 
+[tasks.clean-builds]
+description = "Remove ignored build directories from the project root and website"
+run = "git clean -fdX -- ':(top,glob)build/' ':(top,glob)build-*/' ':(top,glob)docs/website/build/'"
+
 [tasks.hello]
 description = "Build and run the Lua hello example (requires a display)"
 depends = ["build"]
