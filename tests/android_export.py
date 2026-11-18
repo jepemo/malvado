@@ -207,9 +207,9 @@ class ExportTests(unittest.TestCase):
     def test_failed_signing_cleans_staging_without_publishing(self):
         runtime, sdk, library = self.package_inputs()
         def run(args):
-            if str(args[0]).endswith('/aapt'):
+            if Path(args[0]).name == 'aapt':
                 with zipfile.ZipFile(args[-1], 'w'): pass
-            elif str(args[0]).endswith('/zipalign'):
+            elif Path(args[0]).name == 'zipalign':
                 shutil.copyfile(args[-2], args[-1])
             else:
                 raise subprocess.CalledProcessError(1, args)
@@ -246,9 +246,9 @@ class ExportTests(unittest.TestCase):
         calls = []
         def run(args):
             calls.append([str(value) for value in args])
-            if str(args[0]).endswith('/aapt'):
+            if Path(args[0]).name == 'aapt':
                 with zipfile.ZipFile(args[-1], 'w'): pass
-            elif str(args[0]).endswith('/zipalign') and args[1] != '-c':
+            elif Path(args[0]).name == 'zipalign' and args[1] != '-c':
                 shutil.copyfile(args[-2], args[-1])
             elif 'sign' in args:
                 index = args.index('--out')
