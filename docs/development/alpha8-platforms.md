@@ -11,8 +11,9 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS 15 arm64 / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 x86_64 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| macOS arm64 / Android arm64 API 34 | Headless C/Lua/Rust core and assets, Rust NativeActivity window/assets/errors/cleanup and Back/resume/keyboard/contact/audio, C graphical SDK and both Lua APK entries/assets, Back/resume, primary contact, audio API state/ownership and explicit pause continuity in Debug and Release | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
-| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless C/Lua/Rust core/assets, C/Rust graphical SDK fixtures and Lua APK, Back/resume, primary contact and audio API/explicit-pause cases with screenshots passed in CI | Remaining input/lifecycle/audio-focus, general packaged-game integration, CLI APK/AAB and remaining input/audio-focus behavior |
+| macOS arm64 / Android arm64 API 34 | Headless core/assets, graphical fixtures, and C/Lua/Rust production APKs and AAB-derived APKs in Debug/Release as applicable. Exported physical-key text passed in both APK profiles. | Mobile keyboard and audio-focus behavior, physical-device and audible checks |
+| Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless core/assets and C/Lua/Rust graphical fixtures in Debug/Release. Includes input, explicit audio pause, recreation, overlay relaunch and cold restart. | Physical-key text on the hosted emulator and final candidate acceptance |
+| Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted production-package jobs build C/Lua APKs and AABs in the applicable profiles. | First hosted package results, Rust authoring with executable ABI probes, and arm64 execution from the hosted build |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity
@@ -37,7 +38,8 @@ is still open. See
 | --- | --- | --- |
 | Native macOS / Linux | Installed C/Lua/Rust SDK and SDK archives; exported game folders; macOS also supports `.app` bundles | Native host builds. Rust development requires Cargo/rustc; exported players do not. Cross compilation is not established by native CI. |
 | Windows x64 MSVC | Installed C/Lua/Rust SDK and SDK archives; exported game folders with `.exe` players | Native VS 2022 x64 authoring. No Windows `--app`, GNU/ARM64 support or Unix managed SDK installer. Players require a WGL provider and release CRT. |
-| Android arm64 / x86_64 API 34 | Relocated C/Rust SDK trees, headless C/Lua/Rust executables and C/Lua/Rust NativeActivity fixture APKs | macOS arm64 or Ubuntu 24.04 x86_64 verification hosts only. C/Rust fixtures consume installed SDKs; Lua fixtures build the source runtime. Both profiles passed graphics/assets/error/input/audio/lifecycle fixtures on arm64 and pinned x86_64. Remaining mobile behavior and general game APK/AAB exports stay open. Fixture APKs use test signing, including Release builds. |
+| Android arm64 / x86_64 API 34 | Relocated C/Rust SDK trees, headless C/Lua/Rust executables and C/Lua/Rust NativeActivity fixture APKs | macOS arm64 or Ubuntu 24.04 x86_64 verification hosts only. C/Rust fixtures consume installed SDKs; Lua fixtures build the source runtime. Both profiles passed graphics/assets/error/input/audio/lifecycle fixtures on arm64 and pinned x86_64. Fixture APKs use test signing, including Release builds. |
+| Android arm64 API 34 | Installed-CLI C/Lua/Rust debug APKs and release APKs/AABs | macOS arm64 production acceptance passed locally. Linux authoring verification is tracked separately. Windows authoring is unavailable. |
 
 An installed Android C SDK consumer is an external CMake project. A Lua fixture
 APK currently builds the source runtime; it does not establish an installed Lua
@@ -59,7 +61,7 @@ APKs with recorded archive provenance. See the
 [pinned macOS commands](android.md#local-commands). The earlier lifecycle and
 audio results retain their own baseline; the new pin check does not complete
 mobile behavior or general APK exports. Windows toolchain selection and the delivered-capability matrix review passed
-A8.1 on `25bd953`. Production Android packaging remains A8.5 work.
+A8.1 on `25bd953`. A8.5 subsequently delivered the arm64 exporter.
 
 ## Reproducible command scope
 
@@ -75,8 +77,8 @@ selection is below. Android SDK/emulator/image names and SHA-256 values are in
 SDK archives use `.tar.gz`; Android verification also delivers relocated SDK
 trees and ELF executables. Desktop exports are folders, with `.exe` players on
 Windows and optional `.app` bundles on macOS. Android fixture APKs are test
-artifacts. General APK/AAB generation and its production packaging dependencies
-remain A8.5 work. No Android CLI host, Windows-to-Android authoring, other Android
+artifacts. The installed CLI exports arm64 game APKs and AABs. See the
+[production verification command](ci.md#android-production-packages). No Android CLI host, Windows-to-Android authoring, other Android
 API levels, 32-bit target, Windows GNU/ARM64 or general cross-host desktop build
 is established by this matrix. Hardware and audible checks remain beta work.
 Hosted OS images are recorded baselines; version checks and archive hashes do
@@ -309,7 +311,8 @@ The arm64 Android fixture now verifies real resource updates through an owned
 runtime resource-overlay APK. C, both Lua entries and Rust pass Debug/Release
 with automatic Activity relaunch, unchanged PID, restored pixels and cleanup of
 both generations and both packages. This is separate from manual recreation.
-Both x86_64 CI profiles include the mode; their hosted acceptance remains open.
+Both x86_64 CI profiles passed on `1ae9cfd` in
+[Android run 44259508667](https://github.com/jepemo/malvado/actions/runs/44259508667).
 Only the acceptance application's overlayable label changes. System overlays,
 arbitrary resource updates and process-death recovery are not established.
 
@@ -317,8 +320,7 @@ arbitrary resource updates and process-death recovery are not established.
 Forced-stop cold restart is also verified on API 34 arm64 for C, both Lua
 entries and Rust in Debug/Release. It requires process disappearance and new-PID
 rendering/cleanup, with before/restarted screenshots. It does not establish
-low-memory restoration or saved-game recovery. Pinned x86_64 execution remains
-a separate CI acceptance check.
+low-memory restoration or saved-game recovery. Both pinned x86_64 profiles passed in the same run.
 
 
 ## Initial Lua Android debug export
@@ -334,8 +336,7 @@ need execution; Windows Android authoring is unavailable. The CLI now supports c
 APK generation. Release requires a Release-profile runtime, disables debugging
 and can produce unsigned output or use explicit external signing credentials.
 Both modes passed local arm64 execution, assets/pixels, process errors, cleanup
-and uninstall; release checks also verify non-debuggable state. C/Rust, AAB and
-other Android export targets remain unavailable.
+and uninstall. Release checks also verify non-debuggable state.
 
 
 ## Production C Android export
@@ -347,8 +348,7 @@ debug/release APKs with normal assets, notices and signing controls. Native C
 project and target-SDK paths with spaces, scheduler/state/texture cleanup,
 normal/error execution and rejected invalid builds passed locally on macOS
 arm64/API 34 arm64. Release uses a full Release SDK. Extra shared dependencies
-are rejected, not omitted. Hosted/Linux authoring and Rust/AAB export remain
-separate gates.
+are rejected. Hosted/Linux authoring acceptance remains open.
 
 
 ## Production Rust Android export
@@ -360,7 +360,7 @@ sources/outputs. Normal games, returned process errors and contained unwinding
 panics passed on macOS/API 34 arm64 with image lifetime, pixels, assets, cleanup
 and uninstall evidence. Release is non-debuggable and uses explicit signing.
 Host Rust Debug/Release workspace, installed consumers, diagnostics, clippy and
-formatting pass. Other export ABIs, AAB and final hosted acceptance remain open.
+formatting pass. The Rust export ABI is arm64. Hosted acceptance remains open.
 
 
 ## Release app bundles
