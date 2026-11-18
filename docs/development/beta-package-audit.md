@@ -50,16 +50,16 @@ AABs. This is player execution on the emulator. The downloaded evidence
 contains reports and logs. Review the final APK and AAB bytes, notices and
 checksums when assembling the beta.1 candidate.
 
+## Dependency notices
+
+The alpha.8 SDKs include the standalone raylib license. For example, the
+macOS archive also exports `qoi_decode`, and the pinned `qoi.h` has a
+separate MIT notice. Beta.1 adds the [raylib and NDK dependency notices](licensing.md#dependencies-and-references)
+to graphical SDKs and game exports. The desktop SDK and Android package
+checks require the new notice file.
+
 ## Open review items
 
-- Identify the notices for the versions of the libraries that raylib 6.2
-  compiles into the SDK and players. The SDK notice directory includes the
-  standalone raylib license. The pinned build also contains dependencies
-  with their own notice text. For example, the macOS archive exports
-  `qoi_decode` and the pinned `qoi.h` carries a separate MIT notice.
-  Check the desktop and Android outputs against the actual linked code.
-  Use the pinned source and the
-  [raylib dependency inventory](https://github.com/raysan5/raylib/wiki/raylib-dependencies).
 - Confirm and record provenance for the historical demo and Space Asteroids
   images included in the source archive. The font fixtures already have
   [license records](../../tests/fixtures/fonts/README.md) and the Coric

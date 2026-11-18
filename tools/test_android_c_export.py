@@ -242,6 +242,8 @@ def main():
                 assert prefix+'assets/main.c' not in archive.namelist()
                 assert prefix+'assets/CMakeLists.txt' not in archive.namelist()
                 assert prefix+'assets/licenses/raylib-LICENSE' in archive.namelist()
+                notice = args.runtime_sdk/'share/licenses/malvado/raylib-NOTICES.txt'
+                assert archive.read(prefix+'assets/licenses/raylib-NOTICES.txt') == notice.read_bytes()
             if args.format == 'aab':
                 from android_bundle_test import derive_apk
                 apk = Path(folder)/'game.apk'

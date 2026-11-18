@@ -193,6 +193,8 @@ def main():
                     assert archive.read(prefix+'assets/assets/value.bin')==b'\0\r\n\xff'
                     assert prefix+'assets/licenses/Lua-readme.html' in archive.namelist()
                     assert prefix+'assets/licenses/raylib-LICENSE' in archive.namelist()
+                    notice = args.runtime_sdk/'share/licenses/malvado/raylib-NOTICES.txt'
+                    assert archive.read(prefix+'assets/licenses/raylib-NOTICES.txt') == notice.read_bytes()
                 if args.format == 'aab':
                     from android_bundle_test import derive_apk
                     apk=project.parent/(package+'.apk')

@@ -127,7 +127,7 @@ def author_game(cli, sdk, work, players, host, language, source, filename, label
     output = players / f"{label} exported game"
     run(cli, "export", output, cwd=project)
     assert output.is_dir()
-    for name in ("LICENSE", "Lua-readme.html", "raylib-LICENSE", "cJSON-LICENSE"):
+    for name in ("LICENSE", "Lua-readme.html", "raylib-LICENSE", "raylib-NOTICES.txt", "cJSON-LICENSE"):
         assert (output / "licenses" / name).is_file(), name
     for asset in ("value.txt", "pixels.bin"):
         assert (output / "assets" / asset).read_bytes() == (project / "assets" / asset).read_bytes()

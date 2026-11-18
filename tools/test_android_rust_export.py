@@ -12,6 +12,7 @@ import sys
 import tempfile
 import time
 import uuid
+import zipfile
 from test_android_export import center_pixel
 from android_export import GAME_ACTIVITY
 
@@ -145,6 +146,10 @@ def main():
                 records.append(dict(mode=mode,rejected=True))
                 continue
             if exported.returncode: raise RuntimeError(exported.stdout.decode()+exported.stderr.decode())
+            prefix = 'base/' if args.format == 'aab' else ''
+            notice = args.runtime_sdk/'share/licenses/malvado/raylib-NOTICES.txt'
+            with zipfile.ZipFile(apk) as archive:
+                assert archive.read(prefix+'assets/licenses/raylib-NOTICES.txt') == notice.read_bytes()
             if args.format=='aab':
                 from android_bundle_test import derive_apk
                 published=apk

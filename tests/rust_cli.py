@@ -180,7 +180,7 @@ def exports(cli, work, game):
         assert not (output / name).exists(), name
     assert not list(output.rglob("*.rs")) or all(p.is_dir() for p in output.rglob("*.rs"))
     assert (output / "src").is_dir() and not list((output / "src").iterdir())
-    for notice in ("LICENSE", "Lua-readme.html", "raylib-LICENSE"):
+    for notice in ("LICENSE", "Lua-readme.html", "raylib-LICENSE", "raylib-NOTICES.txt"):
         assert (output / "licenses" / notice).is_file(), notice
     inspect = ["otool", "-L"] if os.uname().sysname == "Darwin" else ["ldd"]
     dependencies = subprocess.check_output([*inspect, str(output / "game-bin")], text=True)

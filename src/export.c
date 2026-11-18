@@ -242,7 +242,7 @@ malvado_export_status(void)
     char *launcher = join_path(executable, MALVADO_LAUNCHER_REL);
     char *native_launcher = join_path(executable, MALVADO_NATIVE_LAUNCHER_REL);
     char *notices = join_path(executable, MALVADO_NOTICES_REL);
-    const char *required[] = {"LICENSE", "Lua-readme.html", "raylib-LICENSE",
+    const char *required[] = {"LICENSE", "Lua-readme.html", "raylib-LICENSE", "raylib-NOTICES.txt",
 #ifdef MALVADO_HAS_ASSET_NOTICES
         "cJSON-LICENSE",
 #endif

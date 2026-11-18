@@ -240,8 +240,10 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     else:
         validate_sdk(runtime, version)
     notices = runtime / 'share/licenses/malvado'
-    names = ['LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'] if language == 'lua' else ['LICENSE', 'raylib-LICENSE']
-    if language != 'lua' and (notices / 'cJSON-LICENSE').is_file():
+    names = ['LICENSE', 'raylib-LICENSE', 'raylib-NOTICES.txt']
+    if language == 'lua':
+        names.extend(['Lua-readme.html', 'cJSON-LICENSE'])
+    elif (notices / 'cJSON-LICENSE').is_file():
         names.append('cJSON-LICENSE')
     for name in names:
         path = notices / name

@@ -72,6 +72,7 @@ def verify_builds(source, work):
         'LICENSE': source / 'LICENSE',
         'cJSON-LICENSE': full / '_deps' / 'cjson-src' / 'LICENSE',
         'raylib-LICENSE': full / '_deps' / 'raylib-src' / 'LICENSE',
+        'raylib-NOTICES.txt': source / 'licenses' / 'raylib-NOTICES.txt',
         'Lua-readme.html': full / '_deps' / 'lua-src' / 'doc' / 'readme.html',
     }
     for name, original in originals.items():

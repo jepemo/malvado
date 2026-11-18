@@ -195,7 +195,7 @@ class ExportTests(unittest.TestCase):
         library.write_bytes(b'runtime')
         notices = runtime / 'share/licenses/malvado'
         notices.mkdir(parents=True)
-        for name in ('LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'):
+        for name in ('LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'raylib-NOTICES.txt', 'cJSON-LICENSE'):
             (notices / name).write_text('notice')
         sdk = self.root / 'sdk'
         for name in ('build-tools/34.0.0/aapt', 'build-tools/34.0.0/zipalign', 'build-tools/34.0.0/apksigner', 'build-tools/34.0.0/d8', 'platforms/android-34/android.jar'):
@@ -244,6 +244,17 @@ class ExportTests(unittest.TestCase):
         for values in cases:
             with self.subTest(values=values), patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
                 exporter.signing_configuration(self.project, **values)
+
+    def test_missing_raylib_notices_reject_export_before_tools(self):
+        runtime, sdk, library = self.package_inputs()
+        (runtime / 'share/licenses/malvado/raylib-NOTICES.txt').unlink()
+        output = self.root / 'missing-notice.apk'
+        with patch.object(exporter, 'validate_runtime', return_value=library), \
+                patch.object(exporter, 'run') as run:
+            with self.assertRaisesRegex(ValueError, 'raylib-NOTICES.txt'):
+                exporter.export(self.project, runtime, sdk, output, 'org.game', 'test')
+            run.assert_not_called()
+        self.assertFalse(output.exists())
 
     def test_signed_and_unsigned_release_publication_and_password_arguments(self):
         runtime, sdk, library = self.package_inputs()

@@ -10,4 +10,10 @@ The old Lua/LÖVE engine had GPL-3.0-or-later notices while its 1.0 rockspec dec
 
 Lua and cJSON downloaded during the build retain their MIT licenses. cJSON is copyright Dave Gamble and cJSON contributors; its license is installed with the assets library. Raylib and its dependencies retain their own licenses. The BennuGD files in `docs/api/upstream/` are reference material and retain their original notices. Do not add Apache headers to external files or remove their notices. Distributions of the runtime, SDK, and games must include the notices and license texts required by the dependencies they contain.
 
+Graphical SDKs include [raylib-NOTICES.txt](../../licenses/raylib-NOTICES.txt)
+alongside the raylib license. It records the notices from the pinned raylib
+6.2 sources and the Android NDK r27c app glue. The desktop and Android
+exporters require the file and copy it into game packages. Review this file
+when changing the raylib pin, backend, enabled format loaders or Android NDK.
+
 Before each release, review the origin and license of all assets, historical examples, and new dependencies. Distributions and any future 2.0 rockspec must state the scope of Apache 2.0 and include the applicable third-party notices.
