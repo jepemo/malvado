@@ -72,7 +72,7 @@ def install(output, host=None):
         raise
 
 
-def build(run, tools, sdk, work, manifest, library, files):
+def build(run, tools, sdk, work, manifest, library, files, dex):
     jar, aapt2 = validate_tools(tools)
     compiled = work/'protobuf.zip'
     run([aapt2, 'link', '--proto-format', '--manifest', manifest, '-I', sdk/'platforms/android-34/android.jar', '-o', compiled])
@@ -82,6 +82,7 @@ def build(run, tools, sdk, work, manifest, library, files):
         if 'resources.pb' in resources.namelist():
             target.writestr('resources.pb', resources.read('resources.pb'))
         target.write(library, 'lib/arm64-v8a/libgame.so')
+        target.write(dex, 'dex/classes.dex')
         for path, name in files:
             target.write(path, 'assets/'+name)
         target.writestr('assets/malvado-files.txt', ''.join(name+'\n' for _, name in files))

@@ -110,6 +110,8 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(root.get(namespace+'versionName'), '2 & "next"')
         self.assertEqual(root.find('application').get(namespace+'label'), 'Juego <uno>')
         self.assertEqual(root.find('.//activity').get(namespace+'screenOrientation'), 'portrait')
+        self.assertEqual(root.find('.//activity').get(namespace+'name'), exporter.GAME_ACTIVITY)
+        self.assertEqual(root.find('application').get(namespace+'hasCode'), 'true')
         self.assertEqual(root.find('uses-sdk').get(namespace+'minSdkVersion'), '30')
 
     def test_invalid_manifest_inputs_fail_before_tools_or_output(self):
@@ -196,7 +198,7 @@ class ExportTests(unittest.TestCase):
         for name in ('LICENSE', 'Lua-readme.html', 'raylib-LICENSE', 'cJSON-LICENSE'):
             (notices / name).write_text('notice')
         sdk = self.root / 'sdk'
-        for name in ('build-tools/34.0.0/aapt', 'build-tools/34.0.0/zipalign', 'build-tools/34.0.0/apksigner', 'platforms/android-34/android.jar'):
+        for name in ('build-tools/34.0.0/aapt', 'build-tools/34.0.0/zipalign', 'build-tools/34.0.0/apksigner', 'build-tools/34.0.0/d8', 'platforms/android-34/android.jar'):
             path = sdk / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
@@ -207,7 +209,11 @@ class ExportTests(unittest.TestCase):
     def test_failed_signing_cleans_staging_without_publishing(self):
         runtime, sdk, library = self.package_inputs()
         def run(args):
-            if Path(args[0]).name == 'aapt':
+            if args[0] == 'javac':
+                return
+            if Path(args[0]).name == 'd8':
+                Path(args[args.index('--output')+1], 'classes.dex').write_bytes(b'DEX')
+            elif Path(args[0]).name == 'aapt':
                 with zipfile.ZipFile(args[-1], 'w'): pass
             elif Path(args[0]).name == 'zipalign':
                 shutil.copyfile(args[-2], args[-1])
@@ -246,7 +252,11 @@ class ExportTests(unittest.TestCase):
         calls = []
         def run(args):
             calls.append([str(value) for value in args])
-            if Path(args[0]).name == 'aapt':
+            if args[0] == 'javac':
+                return
+            if Path(args[0]).name == 'd8':
+                Path(args[args.index('--output')+1], 'classes.dex').write_bytes(b'DEX')
+            elif Path(args[0]).name == 'aapt':
                 with zipfile.ZipFile(args[-1], 'w'): pass
             elif Path(args[0]).name == 'zipalign' and args[1] != '-c':
                 shutil.copyfile(args[-2], args[-1])
@@ -256,13 +266,15 @@ class ExportTests(unittest.TestCase):
         with patch.object(exporter, 'validate_runtime', return_value=library), patch.object(exporter.shutil, 'which', return_value='/tool'), patch.object(exporter, 'run', side_effect=run), patch.dict(os.environ, {'STORE_SECRET': 'never-show-this', 'KEY_SECRET': 'neither-this'}):
             signer = sdk / 'build-tools/34.0.0/apksigner'
             signer.unlink()
-            with patch.object(exporter.shutil, 'which', return_value=None):
-                exporter.export(self.project, runtime, sdk, self.root/'unsigned.apk', 'org.game', 'test', release=True)
+            exporter.export(self.project, runtime, sdk, self.root/'unsigned.apk', 'org.game', 'test', release=True)
             signer.touch()
             self.assertFalse(any('sign' in call or 'keytool' in call for call in calls))
             exporter.export(self.project, runtime, sdk, self.root/'signed.apk', 'org.game', 'test', release=True, keystore=key, key_alias='game', store_password_env='STORE_SECRET', key_password_env='KEY_SECRET')
         self.assertTrue((self.root/'unsigned.apk').is_file())
         self.assertTrue((self.root/'signed.apk').is_file())
+        for name in ('unsigned', 'signed'):
+            with zipfile.ZipFile(self.root / (name + '.apk')) as archive:
+                self.assertEqual(archive.read('classes.dex'), b'DEX')
         self.assertFalse(list(self.root.glob('.malvado-apk-*')))
         self.assertIn('env:STORE_SECRET', str(calls))
         self.assertIn('env:KEY_SECRET', str(calls))
@@ -275,7 +287,7 @@ class ExportTests(unittest.TestCase):
     def test_aab_build_failure_cleans_staging_without_publication(self):
         runtime, sdk, library = self.package_inputs()
         output=self.root/'game.aab'
-        with patch.object(exporter,'validate_runtime',return_value=library), patch.object(exporter.shutil,'which',return_value='/tool'), patch('android_bundle.validate_tools',return_value=(self.root/'jar',self.root/'aapt2')), patch('android_bundle.build',side_effect=ValueError('bundle validation failed')):
+        with patch.object(exporter,'validate_runtime',return_value=library), patch.object(exporter.shutil,'which',return_value='/tool'), patch('android_bundle.validate_tools',return_value=(self.root/'jar',self.root/'aapt2')), patch.object(exporter, 'activity_dex', return_value=self.root/'classes.dex'), patch('android_bundle.build',side_effect=ValueError('bundle validation failed')):
             with self.assertRaisesRegex(ValueError,'bundle validation failed'):
                 exporter.export(self.project,runtime,sdk,output,'org.game','test',release=True,output_format='aab',bundle_tools=self.root)
         self.assertFalse(output.exists())

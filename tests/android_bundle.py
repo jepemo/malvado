@@ -54,6 +54,7 @@ class BundleTests(unittest.TestCase):
             work=Path(folder)
             library=work/'libgame.so'; library.write_bytes(b'ELF')
             data=work/'asset'; data.write_bytes(b'\0\xff')
+            dex=work/'classes.dex'; dex.write_bytes(b'DEX')
             calls=[]
             def run(args):
                 calls.append(args)
@@ -62,9 +63,10 @@ class BundleTests(unittest.TestCase):
                         archive.writestr('AndroidManifest.xml',b'protobuf')
                         archive.writestr('resources.pb',b'table')
             with patch.object(bundle,'validate_tools',return_value=(work/'bundletool.jar',work/'aapt2')):
-                bundle.build(run,work,work,work,work/'manifest',library,[(data,'nested/value.bin')])
+                bundle.build(run,work,work,work,work/'manifest',library,[(data,'nested/value.bin')],dex)
             with zipfile.ZipFile(work/'base.zip') as archive:
                 self.assertEqual(archive.read('manifest/AndroidManifest.xml'),b'protobuf')
+                self.assertEqual(archive.read('dex/classes.dex'),b'DEX')
                 self.assertEqual(archive.read('assets/nested/value.bin'),b'\0\xff')
                 self.assertEqual(archive.read('lib/arm64-v8a/libgame.so'),b'ELF')
                 self.assertEqual(archive.read('assets/malvado-files.txt'),b'nested/value.bin\n')

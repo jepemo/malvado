@@ -2,6 +2,7 @@
 """Run real installed-CLI Lua APK exports on an explicit arm64 emulator."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
+from android_export import GAME_ACTIVITY
 import os
 import json
 from pathlib import Path
@@ -183,7 +184,7 @@ def main():
                 try:
                     command(adb+['install','--no-incremental',apk])
                     command(adb+['shell','am','wait-for-broadcast-idle'])
-                    command(adb+['shell','am','start','-W','-n',package+'/android.app.NativeActivity'])
+                    command(adb+['shell','am','start','-W','-n',package+'/'+GAME_ACTIVITY])
                     pid=command(adb+['shell','pidof',package]).stdout.decode().strip()
                     assert pid.isascii() and pid.isdigit()
                     deadline=time.monotonic()+30

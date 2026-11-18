@@ -158,6 +158,8 @@ def build_rust_game(project, runtime, sdk, work, release, ndk=None, probe_runner
     return build_c_game(bridge, runtime, sdk, work, release, ndk)
 
 
+GAME_ACTIVITY = "dev.malvado.player.GameActivity"
+
 def manifest_xml(package, version_code=1, version_name='debug', title='Malvado game', orientation='landscape', min_api=28, release=False):
     if not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+', package):
         raise ValueError('Invalid Android application ID')
@@ -173,11 +175,23 @@ def manifest_xml(package, version_code=1, version_name='debug', title='Malvado g
     return f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}" android:versionCode="{version_code}" android:versionName={quoteattr(version_name)}>
 <uses-sdk android:minSdkVersion="{min_api}" android:targetSdkVersion="34"/>
 <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-<application android:hasCode="false" android:debuggable="{str(not release).lower()}" android:label={quoteattr(title)}>
-<activity android:name="android.app.NativeActivity" android:exported="true" android:screenOrientation="{orientation}" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
+<application android:hasCode="true" android:debuggable="{str(not release).lower()}" android:label={quoteattr(title)}>
+<activity android:name="{GAME_ACTIVITY}" android:exported="true" android:screenOrientation="{orientation}" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize">
 <meta-data android:name="android.app.lib_name" android:value="game"/>
 <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
 </activity></application></manifest>'''
+
+
+def activity_dex(tools, platform, work):
+    classes = work / 'classes'
+    classes.mkdir()
+    source = Path(__file__).resolve().with_name('GameActivity.java')
+    if not source.is_file():
+        source = Path(__file__).resolve().parents[1] / 'src/android/GameActivity.java'
+    run(['javac', '--release', '8', '-classpath', platform, '-d', classes, source])
+    run([tools / 'd8', '--lib', platform, '--min-api', '28', '--output', work,
+         *sorted(classes.rglob('*.class'))])
+    return work / 'classes.dex'
 
 
 def signing_configuration(project, keystore=None, key_alias=None, store_password_env=None, key_password_env=None):
@@ -233,18 +247,19 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
     tools = sdk / 'build-tools/34.0.0'
     platform = sdk / 'platforms/android-34/android.jar'
     required_tools = [platform] if output_format == 'aab' else [tools / 'aapt', tools / 'zipalign', platform]
+    required_tools.append(tools / 'd8')
     if output_format == 'apk' and (not release or signing):
         required_tools.append(tools / 'apksigner')
     for tool in required_tools:
         if not tool.is_file():
-            raise ValueError('Android SDK requires Build Tools 34.0.0 and platform 34')
+            raise ValueError('Android SDK requires Build Tools 34.0.0 (including D8) and platform 34')
     def properties(path):
         return dict((key.strip(), value.strip()) for line in path.read_text().splitlines()
                     if '=' in line and not line.lstrip().startswith('#')
                     for key, value in [line.split('=', 1)])
     if properties(tools / 'source.properties').get('Pkg.Revision') != '34.0.0' or properties(sdk / 'platforms/android-34/source.properties').get('AndroidVersion.ApiLevel') != '34':
         raise ValueError('Android SDK version metadata does not match Build Tools 34.0.0 / API 34')
-    host_tools = ['java'] if output_format == 'aab' or not release or signing else []
+    host_tools = ['java', 'javac']
     if not release and signing is None:
         host_tools.append('keytool')
     if output_format == 'aab' and signing:
@@ -261,9 +276,10 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
             library = build_c_game(project, runtime, sdk, work, release, ndk)
         manifest = work / 'AndroidManifest.xml'
         manifest.write_text(manifest_text, encoding='utf-8')
+        dex = activity_dex(tools, platform, work)
         if output_format == 'aab':
             from android_bundle import build as build_bundle
-            artifact = build_bundle(run, Path(bundle_tools), sdk, work, manifest, library, files)
+            artifact = build_bundle(run, Path(bundle_tools), sdk, work, manifest, library, files, dex)
             if signing:
                 from android_bundle import sign as sign_bundle
                 sign_bundle(run, artifact, signing)
@@ -274,6 +290,7 @@ def export(project, runtime, sdk, output, package, version, *, release=False, ke
         run([tools / 'aapt', 'package', '-f', '-M', manifest, '-I', platform, '-F', unsigned])
         with zipfile.ZipFile(unsigned, 'a') as archive:
             archive.write(library, 'lib/arm64-v8a/libgame.so')
+            archive.write(dex, 'classes.dex')
             for path, name in files:
                 archive.write(path, 'assets/' + name)
             archive.writestr('assets/malvado-files.txt', ''.join(name + '\n' for _, name in files))

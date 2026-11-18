@@ -2,6 +2,7 @@
 """Build/export ordinary installed-SDK C projects and execute their APKs."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 import argparse
+from android_export import GAME_ACTIVITY
 import zipfile
 import json
 from pathlib import Path
@@ -178,7 +179,7 @@ def main():
                 if args.release:
                     assert b'DEBUGGABLE' not in checked(adb+['shell','dumpsys','package',package]).stdout
                 checked(adb+['shell','am','wait-for-broadcast-idle'])
-                checked(adb+['shell','am','start','-W','-n',package+'/android.app.NativeActivity'])
+                checked(adb+['shell','am','start','-W','-n',package+'/'+GAME_ACTIVITY])
                 pid = checked(adb+['shell','pidof',package]).stdout.decode().strip()
                 assert pid.isascii() and pid.isdigit()
                 deadline=time.monotonic()+30

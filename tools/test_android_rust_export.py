@@ -13,6 +13,7 @@ import tempfile
 import time
 import uuid
 from test_android_export import center_pixel
+from android_export import GAME_ACTIVITY
 
 GAME = r'''
 use malvado::{Game, Error, SpawnOptions, image::Image, window::{Window, Color}};
@@ -131,7 +132,7 @@ def main():
                 checked(adb+['install','--no-incremental',apk])
                 if args.release: assert b'DEBUGGABLE' not in checked(adb+['shell','dumpsys','package',package]).stdout
                 checked(adb+['shell','am','wait-for-broadcast-idle'])
-                checked(adb+['shell','am','start','-W','-n',package+'/android.app.NativeActivity'])
+                checked(adb+['shell','am','start','-W','-n',package+'/'+GAME_ACTIVITY])
                 pid=checked(adb+['shell','pidof',package]).stdout.decode().strip()
                 assert pid.isascii() and pid.isdigit()
                 deadline=time.monotonic()+30
