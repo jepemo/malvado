@@ -1,6 +1,9 @@
-# C and Lua API documentation
+# C, Lua and Rust API documentation
 
-Status: the initial MkDocs site is published. Full references remain planned. Research date: 2026-10-29. C, Lua and Rust are first-class and need references, runnable examples, and getting-started guides. Document the [C core and official Lua binding](../architecture/c-first.md) with the same behavior and their language-specific differences.
+The [getting-started guide](../site/getting-started.md) covers C, Lua and Rust
+projects. The [gameplay guide](../site/api.md) links the source contracts,
+examples and reference pages for the delivered API. The
+[beta.1 snapshot](../api/beta.1-snapshot.md) records the reviewed baseline.
 
 The delivered API in all three languages needs usable documentation before 2.0. A full catalog, new API families and site redesign remain future roadmap proposals. See the [roadmap](../planning/roadmap.md).
 
@@ -43,7 +46,10 @@ docs/site/guides/                 shared tutorials and recipes
 docs/site/migration/              migration and compatibility
 ```
 
-`docs/site/` contains the public site sources. The site output is in `build/site/`. This prevents MkDocs from copying `docs/api/upstream/` and large catalogs. Plans, historical sources, and analysis stay in their existing `docs/` folders and can be linked on GitHub. The reference directories do not exist yet. The first getting-started page is `docs/site/getting-started.md`.
+`docs/site/` contains the public site sources. The site output is in
+`build/site/`. Plans, historical sources, and analysis stay in their
+existing folders. The public gameplay guide links to the maintained contracts
+in `docs/api/` on GitHub.
 
 ## Source of truth by language
 

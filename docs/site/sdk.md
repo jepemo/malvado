@@ -131,7 +131,10 @@ malvado export
 ./dist/game/game
 ```
 
-The exported folder contains the game and its license notices. Copy the full folder to the target computer. The export is for the current host; cross-platform export is not available yet. The destination must not already exist. Use `malvado export ../another-folder` to choose a different destination.
+The exported folder contains the game and its license notices. Copy the full
+folder to a matching target computer. Native desktop exports use the current
+host SDK. The destination must be new. Use
+`malvado export ../another-folder` to choose a different destination.
 
 For C and Rust, export builds the `game` target and includes its executable.
 Players do not need the SDK or authoring tools. Source files and build outputs
@@ -157,3 +160,26 @@ To share a macOS app, select the `.app` in Finder and choose **Compress**. Send 
 Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/master/docs/specs/cli.md).
 
 Use `malvado --help` to list commands and `malvado doctor` to see the capabilities of your SDK. Graphics and system dependencies still need validation on more target machines.
+
+## Export for Android
+
+Use a graphical macOS arm64 or Linux x86_64 host SDK and a matching Android
+arm64 target SDK. Prepare the Android tools and target SDK for
+[C](https://github.com/jepemo/malvado/blob/master/docs/development/android-c-games.md),
+[Lua](https://github.com/jepemo/malvado/blob/master/docs/development/android-runtime.md)
+or [Rust](https://github.com/jepemo/malvado/blob/master/docs/development/android-rust-games.md).
+Then run this command in the project directory:
+
+```sh
+malvado export --target android-arm64 --format apk \
+  --runtime-sdk /absolute/path/to/malvado-android-prefix \
+  --android-sdk "$ANDROID_SDK_ROOT" --output ../my-game.apk
+```
+
+Set `--runtime-sdk` to the installed Malvado Android prefix. Set
+`--android-sdk` to the Android tools directory. Install the debug APK on
+the supported emulator with `adb install ../my-game.apk`.
+For a release APK or AAB, use a Release target SDK and follow the
+[release bundle and signing guide](https://github.com/jepemo/malvado/blob/master/docs/development/android-bundles.md).
+See the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md)
+for supported hosts, toolchains and verification limits.

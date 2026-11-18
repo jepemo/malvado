@@ -137,9 +137,10 @@ checks remain mandatory. Release AAB generation is now available through `--form
 --bundle-tools PATH` for C, Lua and Rust. It validates the base module with
 bundletool and uses jarsigner for optional signing. See [AAB tools and
 commands](../development/android-bundles.md). Other Android export ABIs remain
-unavailable. Windows Android authoring is unavailable. General Android export
-acceptance remains open until these remaining version deliverables are
-implemented and verified.
+unavailable. Windows Android authoring is unavailable. The
+[alpha.8 acceptance record](../versions/2.0.0-alpha.8.md#accepted-candidate)
+covers C, both Lua entry forms and Rust production packages. Physical device
+and clean-host checks remain in [beta.1](../versions/2.0.0-beta.1.md).
 
 ## Target experience
 

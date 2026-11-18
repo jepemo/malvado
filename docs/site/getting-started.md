@@ -2,7 +2,8 @@
 
 Build Malvado and run the Hello World example. It opens a window and shows a greeting.
 
-Malvado 2 is in development. Its API and tools can change.
+Use C, Lua or experimental Rust. If you already have a matching development
+SDK, go to [Create a project](#create-a-project).
 
 ## Prepare your computer
 
@@ -29,8 +30,34 @@ mise run hello
 
 Press **Escape** or close the window to exit. The example needs a display. You can read its [source and instructions](https://github.com/jepemo/malvado/tree/master/examples/helloworld).
 
+## Create a project
+
+Install a matching SDK and make `malvado` available in your terminal. See
+[SDK and projects](sdk.md) for macOS, Linux and Windows installation.
+Run the command for your language from a directory where you keep projects.
+
+| Language | Command | Tools for building the game |
+| --- | --- | --- |
+| Lua | `malvado new my-game` | The SDK includes the Lua runner. |
+| C | `malvado new --c my-game` | CMake and a C compiler. |
+| Rust | `malvado new --lang rust my-game` | Cargo, rustc, CMake and a C compiler. |
+
+```sh
+cd my-game
+malvado check
+malvado run
+```
+
+The starter opens a window. Close it with Escape or the window's close control.
+Edit `main.lua`, `main.c` or `main.rs` to change the greeting. C and Rust
+projects can use `malvado build` to compile before running. See the
+[gameplay API guides](api.md) for the scheduler, resources and language-specific
+entry points.
+
 ## Try more examples
 
 Run `mise tasks` to see the available commands. Use `mise run test-headless` to test Lua without a graphics backend. Use `mise run test-c` to test the C core without Lua or raylib.
 
-Try the [demo](https://github.com/jepemo/malvado/tree/master/examples/demo), [Space Asteroids](https://github.com/jepemo/malvado/tree/master/examples/space_asteroids), or the [C process example](https://github.com/jepemo/malvado/tree/master/examples/c/processes). Each example has its own instructions.
+Try the [C and Lua process example](https://github.com/jepemo/malvado/blob/master/examples/c/processes/README.md)
+or the [Rust process guide](https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md).
+Each shows a finite process that yields to the scheduler.

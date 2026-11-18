@@ -7,3 +7,4 @@ nav:
   - Home: index.md
   - Get started: getting-started.md
   - SDK and projects: sdk.md
+  - Gameplay API guides: api.md
