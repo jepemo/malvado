@@ -20,7 +20,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.6](2.0.0-alpha.6.md) — **complete**: simple Lua 2D APIs, unified assets, automatic animation, contextual world calls, and cameras. Candidate `d48729f` passed all required CI jobs; no source tag or published release.
 - [x] [Alpha.7](2.0.0-alpha.7.md) — **complete**: native C/Lua/Rust integration, installed Rust CLI/player exports, executable guide checks and verified SDK candidates. Published prerelease: [`v2.0.0-alpha.7`](https://github.com/jepemo/malvado/releases/tag/v2.0.0-alpha.7), from `6c56838` with all 15 CI jobs passing.
 - [x] [Alpha.8](2.0.0-alpha.8.md) — **complete**: Windows/Android support and automated platform, CLI and package verification. Candidate `2a20b7a` passed all required workflows.
-- [ ] [Beta.1](2.0.0-beta.1.md) — **planned**: candidate contracts, documentation, minimal aligned examples, manual device/user-flow checks and release preparation.
+- [ ] [Beta.1](2.0.0-beta.1.md) — **in progress**: candidate contracts, documentation, minimal aligned examples, manual device/user-flow checks and release preparation.
 - [ ] [2.0.0](2.0.0.md) — **planned**: distribute the existing engine with completed C/Lua/Rust integration and verified platform paths.
 
 ## Scope decision

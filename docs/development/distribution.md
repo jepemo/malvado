@@ -29,6 +29,24 @@ SHA-256 pins in [CMakeLists.txt](../../CMakeLists.txt). The optional GUI
 prototype uses additional pinned downloads from GitHub. Platform and export
 toolchains are installed separately. See the [platform matrix](alpha8-platforms.md).
 
+Verify the archive against the full commit ID and keep the report with the
+archive and checksum. Use a host with CMake, a C compiler and the desktop
+graphics build dependencies.
+
+```sh
+revision=$(git rev-parse HEAD)
+python3 tools/verify_source.py "build/source-package/malvado-source-$revision.tar.gz" \
+  "$revision" --report build/source-package/verification.json
+```
+
+The verifier extracts the archive to a clean directory. It builds and tests
+the dependency-free core, then builds and installs the default desktop SDK.
+The installed SDK test compiles and runs external C consumers against the
+public API. The verifier also checks the installed Malvado, Lua, cJSON and
+raylib notices against their source files. The CI job **Verify source archive**
+uses the same commands on Ubuntu and retains the archive, checksum, command
+log and verification report in `source-check-<commit>`.
+
 ## Proposed decision
 
 The main Malvado 2 channel will be a **downloadable SDK per platform**. The development SDK includes C libraries and headers, the `malvado` client, and the Lua runtime. The client creates minimal C and Lua projects. The GUI will have a separate desktop download or optional SDK package. Exported Lua games include the runtime and Lua. C games include their native runtime without requiring Lua. Players do not need to install Lua or LuaRocks.

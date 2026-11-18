@@ -206,10 +206,34 @@ jobs:
         run: |
           python -m pip install -r docs/requirements.txt
           python -m mkdocs build --strict -f docs/mkdocs.yml
+  source-archive:
+    name: Verify source archive
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Linux graphics dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      - name: Package and verify the checked-out revision
+        shell: bash
+        run: |
+          python3 tests/source_archive.py
+          mkdir source-evidence
+          revision=$(git rev-parse HEAD)
+          archive=$(python3 tools/package_source.py "$revision" source-evidence/package)
+          python3 tools/verify_source.py "$archive" "$revision" \
+            --report source-evidence/verification.json |& tee source-evidence/verification.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: source-check-${{ github.sha }}
+          path: source-evidence/
+          if-no-files-found: error
+          retention-days: 14
   sdk-candidate:
     name: Collect tested SDK candidates
     if: github.event_name != 'pull_request'
-    needs: [rust-sdk, sdk-package, sdk-consumer, build, c-core, c-assets, sanitizers, visual, docs]
+    needs: [rust-sdk, sdk-package, sdk-consumer, build, c-core, c-assets, sanitizers, visual, docs, source-archive]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
