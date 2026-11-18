@@ -57,12 +57,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('cli', 'runtime-sdk', 'android-sdk', 'work'):
         parser.add_argument('--'+name, required=True, type=Path)
-    parser.add_argument('--serial', required=True)
+    runner = parser.add_mutually_exclusive_group(required=True)
+    runner.add_argument('--serial')
+    runner.add_argument('--package-only', action='store_true',
+                        help='Verify production packages on the authoring host without an emulator')
     parser.add_argument('--release', action='store_true')
     parser.add_argument('--text-input', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
     parser.add_argument('--bundle-tools', type=Path)
     args = parser.parse_args()
+    if args.package_only and args.text_input:
+        parser.error('Text input verification requires an emulator serial')
     if args.format == 'aab' and (not args.release or not args.bundle_tools):
         parser.error('AAB checks require --release and --bundle-tools')
     args.work.mkdir(parents=True, exist_ok=True)
@@ -74,8 +79,17 @@ def main():
     adb = [str(args.android_sdk.resolve()/'platform-tools/adb'), '-s', args.serial]
     def command(values, **kwargs):
         return subprocess.run([str(value) for value in values], check=True, capture_output=True, timeout=120, **kwargs)
-    command(adb+['shell','input','keyevent','224'])
-    command(adb+['shell','wm','dismiss-keyguard'])
+
+    def export(values, log, **kwargs):
+        try:
+            result = command(values, **kwargs)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            log.write_bytes((error.stdout or b'') + (error.stderr or b''))
+            raise
+        log.write_bytes(result.stdout + result.stderr)
+    if not args.package_only:
+        command(adb+['shell','input','keyevent','224'])
+        command(adb+['shell','wm','dismiss-keyguard'])
     with tempfile.TemporaryDirectory(prefix='malvado-test-signing-', dir=args.work.resolve()) as key_folder:
         signing_arguments = []
         signing_environment = dict(os.environ)
@@ -136,16 +150,16 @@ def main():
                 if args.release:
                     if args.format == 'aab': arguments += ['--bundle-tools',args.bundle_tools.resolve()]
                     unsigned = apk.with_suffix('.unsigned.'+args.format)
-                    unsigned_output = command([str(value) if value != apk else str(unsigned) for value in arguments]+['--release'], cwd=project)
+                    unsigned_arguments = [unsigned if value == apk else value for value in arguments] + ['--release']
+                    export(unsigned_arguments, args.work/(mode+'-unsigned-export.log'), cwd=project)
                     verify = subprocess.run((['jarsigner','-J-Duser.language=en','-verify','-strict',str(unsigned)] if args.format == 'aab' else [str(args.android_sdk.resolve()/'build-tools/34.0.0/apksigner'), 'verify', str(unsigned)]), capture_output=True, timeout=30)
                     if args.format == 'aab':
                         assert b'jar is unsigned' in verify.stdout, 'Unsigned AAB unexpectedly has a JAR signature'
                     else:
                         assert verify.returncode != 0, 'Unsigned release unexpectedly contains a signature'
-                    (args.work/(mode+'-unsigned-export.log')).write_bytes(unsigned_output.stdout+unsigned_output.stderr)
                     unsigned.unlink()
-                output=command(arguments+signing_arguments,cwd=project,env=signing_environment)
-                (args.work/(mode+'-export.log')).write_bytes(output.stdout+output.stderr)
+                export(arguments+signing_arguments, args.work/(mode+'-export.log'),
+                       cwd=project, env=signing_environment)
                 published = apk
                 prefix = 'base/' if args.format == 'aab' else ''
                 with zipfile.ZipFile(apk) as archive:
@@ -160,6 +174,12 @@ def main():
                 assert b"versionCode='42'" in metadata and b"versionName='2 & next'" in metadata
                 assert b"sdkVersion:'30'" in metadata
                 (args.work/(mode+'-manifest.log')).write_bytes(metadata)
+                if args.package_only:
+                    assert (f"package: name='{package}'").encode() in metadata
+                    assert (b'application-debuggable' in metadata) != args.release
+                    results.append(dict(mode=mode, package=package, verified_package=True,
+                                        format=args.format, release=args.release))
+                    continue
                 try:
                     command(adb+['install','--no-incremental',apk])
                     command(adb+['shell','am','wait-for-broadcast-idle'])
@@ -202,6 +222,9 @@ def main():
                     apk.unlink(missing_ok=True)
                     published.unlink(missing_ok=True)
         (args.work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    if args.package_only:
+        print('PASS: verified production Lua packages on the authoring host')
+        return
     if args.text_input:
         print('PASS: exported explicit/declarative Lua physical-key text, pixels and cleanup')
         return

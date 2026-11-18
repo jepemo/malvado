@@ -88,7 +88,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('cli', 'runtime-sdk', 'android-sdk', 'work'):
         parser.add_argument('--'+name, required=True, type=Path)
-    parser.add_argument('--serial', required=True)
+    runner = parser.add_mutually_exclusive_group(required=True)
+    runner.add_argument('--serial')
+    runner.add_argument('--package-only', action='store_true',
+                        help='Verify production packages on the authoring host without an emulator')
     parser.add_argument('--release', action='store_true')
     parser.add_argument('--text-input', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
@@ -97,6 +100,8 @@ def main():
     parser.add_argument('--key-alias')
     parser.add_argument('--store-password-env')
     args = parser.parse_args()
+    if args.package_only and args.text_input:
+        parser.error('Text input verification requires an emulator serial')
     if args.format == 'aab' and (not args.release or not args.bundle_tools):
         parser.error('AAB verification requires release and bundle tools')
     if args.release and not all((args.keystore, args.key_alias, args.store_password_env)):
@@ -112,8 +117,9 @@ def main():
         if result.returncode:
             raise RuntimeError(result.stdout.decode(errors='replace')+result.stderr.decode(errors='replace'))
         return result
-    checked(adb+['shell','input','keyevent','224'])
-    checked(adb+['shell','wm','dismiss-keyguard'])
+    if not args.package_only:
+        checked(adb+['shell','input','keyevent','224'])
+        checked(adb+['shell','wm','dismiss-keyguard'])
     results = []
     for mode in (('normal',) if args.text_input else ('normal', 'process-error', 'compile-error', 'bad-entry')):
         with tempfile.TemporaryDirectory(prefix='C game with spaces ', dir=args.work.resolve()) as folder:
@@ -158,6 +164,15 @@ def main():
                 from android_bundle_test import derive_apk
                 apk = Path(folder)/'game.apk'
                 derive_apk(published,apk,args.bundle_tools.resolve(),args.keystore.resolve(),args.key_alias,args.store_password_env)
+            if args.package_only:
+                metadata = checked([args.android_sdk.resolve()/'build-tools/34.0.0/aapt',
+                                    'dump', 'badging', apk]).stdout
+                (args.work/(mode+'-manifest.log')).write_bytes(metadata)
+                assert (f"package: name='{package}'").encode() in metadata
+                assert (b'application-debuggable' in metadata) != args.release
+                results.append(dict(mode=mode, package=package, verified_package=True,
+                                    format=args.format, release=args.release))
+                continue
             try:
                 checked(adb+['install','--no-incremental',apk])
                 if args.release:
@@ -190,6 +205,9 @@ def main():
                 checked(adb+['uninstall',package])
                 assert ('package:'+package).encode() not in checked(adb+['shell','pm','list','packages',package]).stdout
     (args.work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    if args.package_only:
+        print('PASS: verified production C packages on the authoring host')
+        return
     if args.text_input:
         print('PASS: exported C physical-key text, pixels and cleanup')
         return

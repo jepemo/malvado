@@ -170,3 +170,40 @@ jobs:
             build-android/c-audio-*/*.png
           if-no-files-found: warn
           retention-days: 14
+  production-packages:
+    name: Linux Android arm64 packages (${{ matrix.config }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Install authoring dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      - name: Verify production packages with a fresh installed CLI and target SDKs
+        env:
+          ACCEPTANCE_CONFIG: ${{ matrix.config }}
+        run: |
+          mkdir build-android
+          python3 tools/android_sdk.py --output build-android/linux-sdk
+          bash tools/verify-android-exports.sh build-android/linux-sdk "$ACCEPTANCE_CONFIG" build-android/production \
+            2>&1 | tee build-android/production.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: android-production-${{ github.sha }}-${{ matrix.config }}
+          path: |
+            build-android/production.log
+            build-android/linux-sdk/malvado-archives.json
+            build-android/production/bundle-tools/provenance.json
+            build-android/production/c-*/results.json
+            build-android/production/c-*/*.log
+            build-android/production/lua-*/results.json
+            build-android/production/lua-*/*.log
+          if-no-files-found: warn
+          retention-days: 14

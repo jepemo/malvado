@@ -121,6 +121,25 @@ Lifecycle cases retain native PNGs before interaction and after resume/release.
 Distinct filenames preserve each case's evidence when native build caches are
 reused. Screenshot and payload regressions also run without an emulator.
 
+## Android production packages
+
+The Android workflow also builds a fresh installed CLI and arm64 target SDKs
+on Ubuntu 24.04. Debug verifies C and both Lua entry forms as APKs. Release
+verifies APKs and AABs, including APKs derived from the bundles. The job uses
+disposable keys and retains export logs, manifest dumps and tool provenance.
+
+Run the same command on a configured authoring host with the pinned SDK:
+
+```sh
+mise exec -- bash tools/verify-android-exports.sh "$ANDROID_SDK_ROOT" Debug build-android/production-debug
+mise exec -- bash tools/verify-android-exports.sh "$ANDROID_SDK_ROOT" Release build-android/production-release
+```
+
+Each command needs a new work directory. Add an explicit API 34 arm64 emulator
+serial as the last argument to also verify installation, runtime behavior and
+uninstall. This mode adds Rust and requires the installed
+`aarch64-linux-android` Rust target for the executable ABI probes.
+
 ## Supported-platform candidate gate
 
 Run the manual **Platform candidate** workflow after CI, Windows and Android
