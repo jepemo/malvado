@@ -23,9 +23,12 @@ Android C and both Lua entries also passed physical-key A/Left state and
 transition checks on arm64 and in pinned x86_64 CI, in both profiles and after
 Activity resume. This
 does not establish Unicode/IME input. Background key-release checks now passed
-for all three languages in both profiles on arm64 and pinned x86_64. The current
-Android backend does not populate the text-input character queue, and Malvado
-does not provide an on-screen keyboard service. See
+for all three languages in both profiles on arm64 and pinned x86_64. Android
+now fills the shared text queue from physical-key events through the device's
+`KeyCharacterMap`. Host tests cover Unicode scalars and JNI errors; local
+exported APK tests cover mixed-case ASCII. IME composition and an on-screen
+keyboard service remain unavailable. Pinned x86_64 acceptance of text capture
+is still open. See
 [keyboard verification](android.md#android-keyboard-verification).
 
 ## Delivered artifacts and unavailable paths

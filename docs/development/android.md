@@ -895,3 +895,20 @@ values and JNI failure paths. An exported installed-SDK C APK also passed
 mixed-case `aZ0` input on API 34 arm64. IME composition, dead-key composition,
 on-screen keyboard control and physical-device acceptance remain unavailable
 or outside this alpha's emulator evidence.
+
+Add `--text-input` to `mise run test-android-c-export`,
+`mise run test-android-export` or `mise run test-android-rust-export` with the
+same installed CLI/SDK, Android SDK, serial and work arguments as the export
+checks above. This selects the bounded typing case instead of the export-error
+matrix. It waits for red pixels, injects `aZ0` through Android and requires the
+language's ordered text-completion marker, successful game exit, session cleanup
+and uninstall. Rust also requires exactly-once process-resource destruction.
+Release uses the existing Release SDK and disposable external signing-key flags.
+Lua checks both explicit and declarative entries.
+
+The full local text matrix passed on API 34 arm64: C, both Lua entries and Rust
+in Debug and Release (eight APKs). Result JSON, runtime logs and red-pixel PNGs
+are retained in `build-android/text-{c,lua,rust}-{Debug,Release}`. Release packages
+were non-debuggable. The host standard suite passed all 227 checks. This is
+emulator key-event evidence, not a physical keyboard or IME acceptance result.
+Pinned x86_64 CI and exact-candidate acceptance remain open.

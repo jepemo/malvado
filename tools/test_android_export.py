@@ -59,6 +59,7 @@ def main():
         parser.add_argument('--'+name, required=True, type=Path)
     parser.add_argument('--serial', required=True)
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--text-input', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
     parser.add_argument('--bundle-tools', type=Path)
     args = parser.parse_args()
@@ -85,7 +86,7 @@ def main():
             signing_environment['MALVADO_TEST_STORE_PASSWORD'] = 'android'
             signing_arguments = ['--release', '--keystore', key, '--key-alias', 'test', '--store-password-env', 'MALVADO_TEST_STORE_PASSWORD', '--key-password-env', 'MALVADO_TEST_STORE_PASSWORD']
         results=[]
-        for mode in ('explicit','declarative','error'):
+        for mode in (('explicit','declarative') if args.text_input else ('explicit','declarative','error')):
             with tempfile.TemporaryDirectory(prefix='game with spaces ',dir=args.work.resolve()) as folder:
                 project=Path(folder)
                 (project/'assets').mkdir()
@@ -103,16 +104,31 @@ def main():
      local w,h = mv.image_size(image)
      assert(w == 8 and h == 8)
      if MODE_ERROR then error('expected exported process error') end
-     for i=1,360 do
+     local text = ''
+     for i=1,(MODE_TEXT and 900 or 360) do
+      if MODE_TEXT then
+       while true do
+        local character = mv.text_input_next()
+        if not character then break end
+        text = text .. character
+       end
+       assert(('aZ0'):sub(1,#text) == text)
+       if text == 'aZ0' then
+        io.stderr:write('exported Lua text input passed\\n')
+        return
+       end
+      end
       mv.set_color(255,0,0)
       mv.draw_box(0,0,320,240)
       mv.frame()
      end
+     assert(not MODE_TEXT, 'text input timeout')
     end)
     return function() task() end
     ''')
                 entry="return {width=320,height=240,init=require('behavior')}" if mode=='declarative' else "require('malvado').start(require('behavior'),{width=320,height=240})"
                 if mode=='error': entry='MODE_ERROR=true\n'+entry
+                if args.text_input: entry='MODE_TEXT=true\n'+entry
                 (project/'main.lua').write_text(entry)
                 package='dev.malvado.exported.p'+uuid.uuid4().hex
                 apk=project.parent/(package+'.'+args.format)
@@ -162,10 +178,13 @@ def main():
                             if pixel[0]>240 and pixel[1]<15 and pixel[2]<15:
                                 (args.work/(mode+'.png')).write_bytes(png)
                                 red=True
+                                if args.text_input:
+                                    command(adb+['shell','input','text','aZ0'])
                         time.sleep(.2)
                     else: raise RuntimeError('Exported game did not complete: '+logs.decode())
                     assert red, 'Exported game did not render red pixels'
                     assert b'game session cleanup passed' in logs
+                    if args.text_input: assert b'exported Lua text input passed' in logs
                     if mode == 'error': assert b'expected exported process error' in logs
                     if args.release:
                         state=command(adb+['shell','dumpsys','package',package]).stdout
@@ -175,7 +194,7 @@ def main():
                         files=command(adb+['shell','run-as',package,'ls','files']).stdout
                         assert b'malvado-game-' not in files
                     (args.work/(mode+'-runtime.log')).write_bytes(logs)
-                    results.append(dict(mode=mode,package=package,pid=pid,exit=1 if mode=='error' else 0,pixels=mode!='error',cleaned=True,release=args.release))
+                    results.append(dict(mode=mode,package=package,pid=pid,exit=1 if mode=='error' else 0,pixels=mode!='error',cleaned=True,release=args.release,text_input=args.text_input))
                 finally:
                     command(adb+['uninstall',package])
                     remaining=command(adb+['shell','pm','list','packages',package]).stdout
@@ -183,6 +202,9 @@ def main():
                     apk.unlink(missing_ok=True)
                     published.unlink(missing_ok=True)
         (args.work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    if args.text_input:
+        print('PASS: exported explicit/declarative Lua physical-key text, pixels and cleanup')
+        return
     print('PASS: exported explicit/declarative games, pixels, nested assets, process error and cleanup')
 
 

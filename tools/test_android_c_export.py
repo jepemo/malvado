@@ -18,7 +18,7 @@ GAME = r'''
 #include <stdio.h>
 #include <string.h>
 
-typedef struct { int frames, destroyed; MvImage *image; } State;
+typedef struct { int frames, destroyed, characters; MvImage *image; } State;
 static void destroy(void *data) {
     State *state = data;
     mv_image_destroy(state->image);
@@ -32,7 +32,19 @@ static MvStepResult step(MvContext *ctx, MvProcessId id, void *data) {
     return MV_STEP_ERROR;
 #endif
     if (!mv_window_draw_box(0, 0, 320, 240, 1, (MvColor){255,0,0,255})) return MV_STEP_ERROR;
+#ifdef EXPECT_TEXT
+    uint32_t codepoint;
+    while (mv_text_input_next(&codepoint)) {
+        if (state->characters >= 3 || codepoint != (uint32_t)"aZ0"[state->characters++]) return MV_STEP_ERROR;
+    }
+    if (state->characters == 3) {
+        fputs("exported C text input passed\n", stderr);
+        return MV_STEP_DONE;
+    }
+    return ++state->frames == 900 ? MV_STEP_ERROR : MV_STEP_YIELD;
+#else
     return ++state->frames == 360 ? MV_STEP_DONE : MV_STEP_YIELD;
+#endif
 }
 int main(void) {
     const char *error = NULL;
@@ -62,7 +74,11 @@ int main(void) {
 #ifdef EXPECT_ERROR
     return result == MV_PROCESS_ERROR ? 1 : 7;
 #else
+#ifdef EXPECT_TEXT
+    return result == MV_OK && state.characters == 3 ? 0 : 8;
+#else
     return result == MV_OK && state.frames == 360 ? 0 : 8;
+#endif
 #endif
 }
 '''
@@ -74,6 +90,7 @@ def main():
         parser.add_argument('--'+name, required=True, type=Path)
     parser.add_argument('--serial', required=True)
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--text-input', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
     parser.add_argument('--bundle-tools', type=Path)
     parser.add_argument('--keystore', type=Path)
@@ -98,13 +115,13 @@ def main():
     checked(adb+['shell','input','keyevent','224'])
     checked(adb+['shell','wm','dismiss-keyguard'])
     results = []
-    for mode in ('normal', 'process-error', 'compile-error', 'bad-entry'):
+    for mode in (('normal',) if args.text_input else ('normal', 'process-error', 'compile-error', 'bad-entry')):
         with tempfile.TemporaryDirectory(prefix='C game with spaces ', dir=args.work.resolve()) as folder:
             project = Path(folder)/'project'
             checked([cli,'new','--c',project])
             cmake = project/'CMakeLists.txt'
             cmake.write_text(cmake.read_text().replace('COMPONENTS graphics)', 'COMPONENTS graphics assets)')+'\ntarget_link_libraries(game PRIVATE Malvado::assets)\n')
-            source = GAME
+            source = ('#define EXPECT_TEXT\n' if args.text_input else '')+GAME
             if mode == 'process-error': source = '#define EXPECT_ERROR\n'+source
             if mode == 'compile-error': source = '#error expected exported compile error\n'
             if mode == 'bad-entry': source = 'int main(int argc, char **argv) {return argc;}\n'
@@ -161,16 +178,21 @@ def main():
                         if pixel[0]>240 and pixel[1]<15 and pixel[2]<15:
                             (args.work/(mode+'.png')).write_bytes(png)
                             red=True
+                            if args.text_input: checked(adb+['shell','input','text','aZ0'])
                     time.sleep(.2)
                 else: raise RuntimeError('Exported C game timed out: '+logs.decode())
                 assert red and b'game session cleanup passed' in logs
+                if args.text_input: assert b'exported C text input passed' in logs
                 if mode=='process-error': assert b'expected exported C process error' in logs
                 (args.work/(mode+'-runtime.log')).write_bytes(logs)
-                results.append(dict(mode=mode,package=package,pid=pid,cleaned=True))
+                results.append(dict(mode=mode,package=package,pid=pid,cleaned=True,release=args.release,text_input=args.text_input))
             finally:
                 checked(adb+['uninstall',package])
                 assert ('package:'+package).encode() not in checked(adb+['shell','pm','list','packages',package]).stdout
     (args.work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    if args.text_input:
+        print('PASS: exported C physical-key text, pixels and cleanup')
+        return
     print('PASS: real C project export, scheduler, assets/pixels, process error, cleanup and rejected invalid builds')
 
 
