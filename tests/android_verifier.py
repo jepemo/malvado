@@ -9,14 +9,30 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import test_android as verifier
+import test_android_ime as ime
 
 
 class AndroidVerifierTests(unittest.TestCase):
+    def test_ime_waits_for_exact_component(self):
+        component = 'test.package/test.InputMethod'
+        command = Mock(side_effect=[component + 'Other', component])
+        with patch.object(ime.time, 'sleep') as sleep:
+            ime.wait_for_ime(command, component)
+        self.assertEqual(command.call_count, 2)
+        command.assert_called_with(['ime', 'list', '-a', '-s'])
+        sleep.assert_called_once()
+
+    def test_missing_ime_has_bounded_failure(self):
+        component = 'test.package/test.InputMethod'
+        with patch.object(ime.time, 'monotonic', side_effect=[0, 1, 16]), \
+                patch.object(ime.time, 'sleep'), self.assertRaisesRegex(RuntimeError, component):
+            ime.wait_for_ime(Mock(return_value=''), component)
+
     def test_ndk_properties_allow_official_spacing(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "source.properties"

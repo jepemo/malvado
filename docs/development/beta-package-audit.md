@@ -58,6 +58,12 @@ separate MIT notice. Beta.1 adds the [raylib and NDK dependency notices](licensi
 to graphical SDKs and game exports. The desktop SDK and Android package
 checks require the new notice file.
 
+On macOS arm64, the beta.1 installed SDK test verified that the desktop
+export fails when the notice file is removed. Debug Android packages in C,
+both Lua entry forms and Rust contained byte-identical copies and ran on
+the local arm64 API 34 emulator. The Rust CLI tests verified notices in
+desktop game exports.
+
 ## Open review items
 
 - Confirm and record provenance for the historical demo and Space Asteroids

@@ -13,6 +13,17 @@ import zipfile
 from android_export import java_dex
 
 
+def wait_for_ime(command, component):
+    # Package broadcasts can finish before InputMethodManager refreshes its list.
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        available = command(['ime', 'list', '-a', '-s']).splitlines()
+        if component in available:
+            return
+        time.sleep(.2)
+    raise RuntimeError(f'Android did not register the test IME: {component}')
+
+
 def keyboard_sequence(command, adb, work, mode, pid):
     def wait(shown):
         deadline = time.monotonic() + 15
@@ -91,8 +102,11 @@ def main():
     adb = [args.android_sdk.resolve()/'platform-tools/adb', '-s', args.serial]
 
     def command(arguments, *, check=True):
-        return subprocess.run([str(value) for value in adb + ['shell'] + arguments],
-                              check=check, capture_output=True, text=True, timeout=30).stdout.strip()
+        result = subprocess.run([str(value) for value in adb + ['shell'] + arguments],
+                                capture_output=True, text=True, timeout=30)
+        if check and result.returncode:
+            raise RuntimeError(f'adb shell {shlex.join(arguments)} failed: {result.stderr.strip()}')
+        return result.stdout.strip()
 
     default = command(['settings', 'get', 'secure', 'default_input_method'])
     hard_keyboard = command(['settings', 'get', 'secure', 'show_ime_with_hard_keyboard'])
@@ -104,6 +118,7 @@ def main():
         subprocess.run([*map(str, adb), 'install', '--no-incremental', str(apk)], check=True, timeout=60)
         try:
             command(['am', 'wait-for-broadcast-idle'])
+            wait_for_ime(command, component)
             command(['ime', 'enable', component])
             command(['ime', 'set', component])
             assert command(['settings', 'get', 'secure', 'default_input_method']) == component
