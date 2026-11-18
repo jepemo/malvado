@@ -71,8 +71,10 @@ raylib 5.5's incomplete navigation-key history and keeps the same tick contract
 with raylib 6.2. Pending changes still coalesce until
 the next logical tick; repeated queries never consume an edge. Window reset also
 resets the held-key history. This is physical-key state, not text composition.
-The current Android backend does not populate the Unicode character queue and
-Malvado does not yet provide an on-screen keyboard service. See
+Android key-down events also fill the shared text queue through the device's
+`KeyCharacterMap`, including modifier state and key repeats. Control characters,
+DEL and dead-key composition markers are not queued. JNI failures produce no
+character. IME composition and an on-screen keyboard service are not available. See
 [Android verification](../development/android.md) for emulator checks and limits.
 
 Deterministic C tests cover frames without ticks, repeated reads, multiple

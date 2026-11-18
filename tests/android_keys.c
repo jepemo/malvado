@@ -28,6 +28,18 @@ mv_android_activity_has_focus(struct android_app *a)
     assert(a == &app);
     return focused;
 }
+static int text_samples, text_queries;
+uint32_t mv_android_key_codepoint(struct android_app *a, int device, int key, int meta)
+{
+    assert(a == &app && device == -1 && meta == 0);
+    text_queries++;
+    return key == AKEYCODE_A ? 'a' : 0;
+}
+void mv_text_input_sample(uint32_t codepoint)
+{
+    assert(codepoint == 'a');
+    text_samples++;
+}
 static int available = 1;
 static int script[8], script_count, script_index, processed;
 struct android_app *
@@ -191,8 +203,13 @@ main(void)
             mv_input_tick();
             assert(mv_key_released(keys[i]) && !mv_android_key_down(keys[i]));
         }
-        event(AKEYCODE_A, 0);
-        event(AKEYCODE_A, 1);
+        int before_text = text_samples;
+        int before_queries = text_queries;
+        event(AKEYCODE_A, AKEY_EVENT_ACTION_DOWN);
+        event(AKEYCODE_A, AKEY_EVENT_ACTION_DOWN);
+        assert(text_samples == before_text + 2 && text_queries == before_queries + 2);
+        event(AKEYCODE_A, AKEY_EVENT_ACTION_UP);
+        assert(text_samples == before_text + 2 && text_queries == before_queries + 2);
         mv_input_tick();
         assert(mv_key_pressed(MV_KEY_A) && mv_key_released(MV_KEY_A));
         assert(event(-99, 0) == 7);
@@ -210,7 +227,7 @@ main(void)
         assert(app.onInputEvent == input && app.onAppCmd == command);
         assert(!mv_android_key_down(MV_KEY_A) && !mv_android_window_close_requested());
     }
-    assert(inputs && commands);
+    assert(inputs && commands && text_queries && text_samples);
     int before = commands;
     focused = 1;
     mv_android_window_attach();

@@ -63,3 +63,9 @@ Local macOS passes the same installed SDK, Unicode, neutral controller and
 sanitizer checks. Local standard and headless C/Lua suites pass 163 tests each;
 the default core-only Rust SDK regression also passes. Connected-controller
 state is outside the recorded runner evidence, as stated above.
+
+On Android, physical key-down events fill the same native text queue through
+`KeyCharacterMap`. Modifier state and key repeats apply. Control characters,
+DEL and dead-key markers are discarded. IME composition and an on-screen
+keyboard service are not available. The host-side JNI regression covers Unicode
+scalars and failures; exported APK checks cover mixed-case ASCII typing.

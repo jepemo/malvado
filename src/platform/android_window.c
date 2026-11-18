@@ -67,6 +67,11 @@ window_input(struct android_app *app, AInputEvent *event)
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
         int key = key_from_android(AKeyEvent_getKeyCode(event));
         int action = AKeyEvent_getAction(event);
+        if (action == AKEY_EVENT_ACTION_DOWN) {
+            uint32_t codepoint = mv_android_key_codepoint(app, AInputEvent_getDeviceId(event),
+                                                        AKeyEvent_getKeyCode(event), AKeyEvent_getMetaState(event));
+            if (codepoint) mv_text_input_sample(codepoint);
+        }
         if (key >= 0 && (action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_UP)) {
             held[key] = action == AKEY_EVENT_ACTION_DOWN;
             mv_keyboard_sample_held((MvKey)key, held[key]);

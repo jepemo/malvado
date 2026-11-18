@@ -48,6 +48,10 @@ struct JNINativeInterface {
     jboolean (*CallBooleanMethod)(JNIEnv *, jobject, jmethodID, ...);
     void (*DeleteLocalRef)(JNIEnv *, jobject);
     void (*ExceptionClear)(JNIEnv *);
+    jclass (*FindClass)(JNIEnv *, const char *);
+    jmethodID (*GetStaticMethodID)(JNIEnv *, jclass, const char *, const char *);
+    jobject (*CallStaticObjectMethod)(JNIEnv *, jclass, jmethodID, ...);
+    jint (*CallIntMethod)(JNIEnv *, jobject, jmethodID, ...);
 };
 struct JNIInvokeInterface {
     jint (*GetEnv)(JavaVM *, void **, jint);
@@ -75,6 +79,8 @@ enum { AINPUT_EVENT_TYPE_MOTION=2, AINPUT_SOURCE_CLASS_POINTER=2,
  AKEYCODE_DPAD_UP=19, AKEYCODE_DPAD_DOWN=20, AKEYCODE_ENTER=66, AKEYCODE_TAB=61, AKEYCODE_DEL=67,
  APP_CMD_DESTROY=15, APP_CMD_INIT_WINDOW=1, ALOOPER_POLL_ERROR=-4,
  APP_CMD_GAINED_FOCUS=6, APP_CMD_PAUSE=13, APP_CMD_LOST_FOCUS=7, APP_CMD_TERM_WINDOW=2 };
+static inline int AInputEvent_getDeviceId(AInputEvent *e) { (void)e; return -1; }
+static inline int AKeyEvent_getMetaState(AInputEvent *e) { (void)e; return 0; }
 static inline int AInputEvent_getType(AInputEvent *e) { return e->type; }
 static inline int AKeyEvent_getKeyCode(AInputEvent *e) { return e->code; }
 static inline int AKeyEvent_getAction(AInputEvent *e) { return e->action; }

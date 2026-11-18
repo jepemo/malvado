@@ -503,8 +503,9 @@ evidence where applicable. CI retains distinct logs, JSON and PNGs for each case
 
 The arm64 API 34 emulator passed all twelve entry/profile/mode cases. These
 checks do not establish a physical keyboard, key release while backgrounded,
-Unicode typing or IME composition. raylib 5.5 Android does not fill its character
-queue, and no on-screen keyboard service is delivered. Malvado derives observed
+Unicode typing or IME composition. At that baseline, raylib 5.5 Android did not
+fill its character queue. The physical-key text extension below now fills
+Malvado's shared queue. No on-screen keyboard service is delivered. Malvado derives observed
 key edges from held state to avoid raylib's incomplete navigation-key history;
 this keeps the existing [tick snapshot contract](../api/keyboard.md).
 
@@ -878,3 +879,19 @@ API 34 arm64. Eight unique APK results retain sixteen screenshots, old/new
 PIDs and final cleanup evidence. The four host restart regressions and all
 224 headless checks pass. Both x86_64 CI profiles include the mode and retain
 separate evidence; hosted acceptance remains open.
+
+## Physical-key text input
+
+Android key-down events now use the device's `KeyCharacterMap` and modifier
+state to fill the existing Unicode text queue. C `mv_text_input_next`, Lua
+`mv.text_input_next` and Rust `Window::text_input_next` share this behavior.
+Key repeats enqueue characters; key-up does not. Controls, DEL, invalid scalars
+and Android dead-key composition markers are discarded. JNI failures enqueue
+nothing and release owned local references and thread attachments. Existing
+JNI exceptions remain owned by their caller.
+
+Host regressions cover printable ASCII, accented and non-BMP scalars, rejected
+values and JNI failure paths. An exported installed-SDK C APK also passed
+mixed-case `aZ0` input on API 34 arm64. IME composition, dead-key composition,
+on-screen keyboard control and physical-device acceptance remain unavailable
+or outside this alpha's emulator evidence.
