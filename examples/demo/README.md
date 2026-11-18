@@ -14,3 +14,14 @@ Build Malvado and run this command from the repository root:
 ```
 
 The demo requires a display or virtual display. The [original demo](https://github.com/jepemo/malvado/blob/4670d8a/examples/demo/main.lua) used LÖVE and global functions.
+
+## Artwork
+
+- `assets/hero_spritesheet.png` is the unmodified **2D Hero** by **tokka**.
+  This copy uses the [CC BY 3.0 license](https://creativecommons.org/licenses/by/3.0/).
+  The PNG matches the [original OpenGameArt download](https://lpc.opengameart.org/content/2d-hero) byte for byte.
+- `assets/cat/c1.png` through `c6.png` are the six walk frames from
+  `catwalkx4.gif`, by **Shepardskin**, under
+  [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+  The Malvado copies are individual PNGs with extra background padding.
+  The sprite pixels match the [original OpenGameArt download](https://lpc.opengameart.org/content/cat-sprites).

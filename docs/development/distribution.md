@@ -16,11 +16,12 @@ python3 tools/package_source.py HEAD build/source-package
 ```
 
 The command writes one platform-independent `malvado-source-<commit>.tar.gz`
-and a SHA-256 checksum. The archive contains the tracked tree, including public
+and a SHA-256 checksum. The archive contains the tracked source tree, including public
 C headers, the core, assets, platform code, bindings, CLI, build files, tests,
 examples and license notices. The top-level `SOURCE-REVISION` file records the
 full commit ID. Uncommitted changes and local build outputs stay outside the
-archive. Building the extracted tree does not require a Git checkout.
+archive. The Git export attributes omit two unused legacy demo images with
+unverified licenses. Building the extracted tree does not require a Git checkout.
 
 The core-only configuration with Lua, raylib and assets disabled needs no
 dependency downloads. A fresh default build needs network access for Lua
