@@ -4,18 +4,15 @@ from pathlib import Path
 import time
 import uuid
 import zipfile
+from android_export import java_dex
 
 
 def companion(checked, sdk, work):
     package = 'dev.malvado.focus.p' + uuid.uuid4().hex
     android = sdk / 'platforms/android-34/android.jar'
     tools = sdk / 'build-tools/34.0.0'
-    classes = work / 'classes'
-    classes.mkdir()
     source = Path(__file__).resolve().parents[1] / 'tests/android-window/FocusReceiver.java'
-    checked(['javac', '--release', '8', '-classpath', android, '-d', classes, source])
-    checked([tools/'d8', '--lib', android, '--min-api', '28', '--output', work,
-             *sorted(classes.rglob('*.class'))])
+    dex = java_dex(checked, tools, android, work, source)
     manifest = work / 'AndroidManifest.xml'
     manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{package}">
 <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
@@ -24,7 +21,7 @@ def companion(checked, sdk, work):
     apk = work / 'focus.apk'
     checked([tools/'aapt', 'package', '-M', manifest, '-I', android, '-F', apk])
     with zipfile.ZipFile(apk, 'a') as archive:
-        archive.write(work/'classes.dex', 'classes.dex')
+        archive.write(dex, 'classes.dex')
     key = work / 'focus-test.p12'
     checked(['keytool', '-genkeypair', '-keystore', key, '-storepass', 'android',
              '-alias', 'focus', '-keyalg', 'RSA', '-validity', '30', '-dname', 'CN=Malvado focus test'])

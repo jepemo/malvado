@@ -74,7 +74,7 @@ resets the held-key history. This is physical-key state, not text composition.
 Android key-down events also fill the shared text queue through the device's
 `KeyCharacterMap`, including modifier state and key repeats. Control characters,
 DEL and dead-key composition markers are not queued. JNI failures produce no
-character. IME composition and an on-screen keyboard service are not available. See
+character. See
 [Android verification](../development/android.md) for emulator checks and limits.
 
 Deterministic C tests cover frames without ticks, repeated reads, multiple
@@ -129,3 +129,31 @@ events. A key-up delivered to another Activity cannot leave a key stuck. Reads
 remain non-consuming. Press and release can coalesce before one logical tick,
 as with other observed key transitions. This rule is shared by C, Lua and Rust;
 it adds no new input operation and does not change the scheduler.
+
+
+## Android on-screen keyboard
+
+An exported Android game controls when the on-screen keyboard appears. Request
+it when the player selects a text field. Hide it when the player finishes.
+
+| Language | Show | Hide |
+| --- | --- | --- |
+| C | `mv_text_input_set_keyboard(1)` | `mv_text_input_set_keyboard(0)` |
+| Lua | `mv.text_input_set_keyboard(true)` | `mv.text_input_set_keyboard(false)` |
+| Rust | `window.set_text_input_keyboard(true)` | `window.set_text_input_keyboard(false)` |
+
+A successful call submits a request to Android. Android decides whether an
+input method can display the keyboard. Call from the live window owner thread.
+Other platforms and Android hosts without the exported Activity return false.
+C also returns zero for arguments other than zero and one.
+
+Read confirmed characters through the existing Unicode queue. Android keeps
+composition in the editor until the input method confirms it. Closing the
+keyboard through this API, backgrounding the Activity or closing the window
+discards unfinished composition. Returning from the background leaves the
+keyboard closed until the game requests it again. Showing the keyboard never
+clears queued characters.
+
+This is an append-only entry mode. Games own the displayed string. Edits to
+previously confirmed text, selection and word replacement have no operation in
+this mode. Outside text entry, physical keys continue to use the existing input APIs.

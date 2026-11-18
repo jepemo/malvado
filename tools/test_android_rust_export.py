@@ -35,11 +35,13 @@ fn main() -> Result<(), Error> {
         let _guard = guard;
         let _image = p.resource(image)?;
         if MODE == 1 { eprintln!("expected exported Rust process error"); return Err(Error::Process); }
-        for _ in 0..(if MODE == 3 { 900 } else { 360 }) { p.frame().await; }
+        for _ in 0..(if MODE >= 3 { 1200 } else { 360 }) { p.frame().await; }
         Ok(())
     })?;
     let mut result = Ok(());
     let mut text = String::new();
+    let mut editor_opened = false;
+    let mut hidden_frames = 0;
     while game.process_count() != 0 {
         window.input_tick();
         if MODE == 3 {
@@ -47,11 +49,29 @@ fn main() -> Result<(), Error> {
             assert!("aZ0".starts_with(&text));
             if text == "aZ0" { eprintln!("exported Rust text input passed"); break; }
         }
+        if MODE == 4 {
+            while let Some(character) = window.text_input_next() {
+                if !editor_opened {
+                    assert_eq!(character, 'k');
+                    assert!(window.set_text_input_keyboard(true));
+                    editor_opened = true;
+                } else {
+                    text.push(character);
+                    assert!("é😀".starts_with(&text));
+                    if text == "é😀" { assert!(window.set_text_input_keyboard(false)); }
+                }
+            }
+            if text == "é😀" {
+                hidden_frames += 1;
+                if hidden_frames == 100 { eprintln!("exported Rust IME passed"); break; }
+            }
+        }
         result = game.tick();
         if result.is_err() { break; }
         let _frame = window.frame(Color {r:255,g:0,b:0,a:255})?;
     }
     if MODE == 3 { assert_eq!(text,"aZ0"); }
+    else if MODE == 4 { assert_eq!(hidden_frames, 100); }
     else { assert_eq!(game.process_count(),0); assert_eq!(drops.get(),1); }
     drop(game);
     assert_eq!(drops.get(),1);
@@ -68,7 +88,9 @@ def main():
         parser.add_argument('--'+name,required=True,type=Path)
     parser.add_argument('--serial',required=True)
     parser.add_argument('--release',action='store_true')
-    parser.add_argument('--text-input',action='store_true')
+    behavior=parser.add_mutually_exclusive_group()
+    behavior.add_argument('--text-input',action='store_true')
+    behavior.add_argument('--ime',action='store_true')
     parser.add_argument('--format',choices=('apk','aab'),default='apk')
     parser.add_argument('--bundle-tools',type=Path)
     parser.add_argument('--keystore',type=Path)
@@ -97,13 +119,13 @@ def main():
     checked(adb+['shell','input','keyevent','224'])
     checked(adb+['shell','wm','dismiss-keyguard'])
     records=[]
-    for mode in (('normal',) if args.text_input else ('normal','process-error','panic','compile-error')):
+    for mode in (('normal',) if args.text_input or args.ime else ('normal','process-error','panic','compile-error')):
         with tempfile.TemporaryDirectory(prefix='Rust game with spaces ',dir=args.work.resolve()) as folder:
             project=Path(folder)/'project'
             checked([cli,'new','--lang','rust',project])
             manifest=project/'Cargo.toml'
             manifest.write_text(manifest.read_text().replace('["graphics"]','["graphics", "assets"]'))
-            code='const MODE: u8 = '+str(3 if args.text_input else {'normal':0,'process-error':1,'panic':2,'compile-error':0}[mode])+';\n'+GAME
+            code='const MODE: u8 = '+str(4 if args.ime else 3 if args.text_input else {'normal':0,'process-error':1,'panic':2,'compile-error':0}[mode])+';\n'+GAME
             if mode=='compile-error': code='compile_error!("expected exported Rust compile error");\n'
             (project/'main.rs').write_text(code)
             (project/'assets').mkdir()
@@ -147,22 +169,30 @@ def main():
                         if pixel[0]>240 and pixel[1]<15 and pixel[2]<15:
                             (args.work/(mode+'.png')).write_bytes(png)
                             red=True
+                            if args.ime:
+                                from test_android_ime import keyboard_sequence
+                                keyboard_sequence(checked, adb, args.work, mode, pid)
+                                deadline = time.monotonic()+15
                             if args.text_input: checked(adb+['shell','input','text','aZ0'])
                     time.sleep(.2)
                 else: raise RuntimeError('Rust exported game timed out: '+logs.decode())
                 assert red and b'game session cleanup passed' in logs
                 assert logs.count(b'Rust exported resource released')==1
                 if args.text_input: assert b'exported Rust text input passed' in logs
+                if args.ime: assert b'exported Rust IME passed' in logs
                 if mode=='process-error': assert b'expected exported Rust process error' in logs
                 if mode=='panic': assert b'expected exported Rust panic' in logs
                 (args.work/(mode+'-runtime.log')).write_bytes(logs)
-                records.append(dict(mode=mode,package=package,pid=pid,cleaned=True,release=args.release,text_input=args.text_input))
+                records.append(dict(mode=mode,package=package,pid=pid,cleaned=True,release=args.release,text_input=args.text_input,ime=args.ime))
             finally:
                 checked(adb+['uninstall',package])
                 assert ('package:'+package).encode() not in checked(adb+['shell','pm','list','packages',package]).stdout
     (args.work/'results.json').write_text(json.dumps(records,indent=2)+'\n')
     if args.text_input:
         print('PASS: exported Rust physical-key text, pixels and cleanup')
+        return
+    if args.ime:
+        print('PASS: exported Rust opens and closes the IME and receives committed Unicode')
         return
     print('PASS: Rust APK scheduler/assets/pixels, process error, contained panic, cleanup and invalid build')
 

@@ -35,5 +35,8 @@ local process = mv.process(function()
         assert(not pcall(mv.mouse_button, name))
     end
     assert(mv.text_input_next() == nil)
+    assert(mv.text_input_set_keyboard(true) == false)
+    assert(mv.input.text_input_set_keyboard(false) == false)
+    assert(not pcall(mv.text_input_set_keyboard, 1))
 end)
 mv.start(function() process() end)

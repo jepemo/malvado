@@ -63,11 +63,13 @@ def main():
     runner.add_argument('--package-only', action='store_true',
                         help='Verify production packages on the authoring host without an emulator')
     parser.add_argument('--release', action='store_true')
-    parser.add_argument('--text-input', action='store_true')
+    behavior = parser.add_mutually_exclusive_group()
+    behavior.add_argument('--text-input', action='store_true')
+    behavior.add_argument('--ime', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
     parser.add_argument('--bundle-tools', type=Path)
     args = parser.parse_args()
-    if args.package_only and args.text_input:
+    if args.package_only and (args.text_input or args.ime):
         parser.error('Text input verification requires an emulator serial')
     if args.format == 'aab' and (not args.release or not args.bundle_tools):
         parser.error('AAB checks require --release and --bundle-tools')
@@ -101,7 +103,7 @@ def main():
             signing_environment['MALVADO_TEST_STORE_PASSWORD'] = 'android'
             signing_arguments = ['--release', '--keystore', key, '--key-alias', 'test', '--store-password-env', 'MALVADO_TEST_STORE_PASSWORD', '--key-password-env', 'MALVADO_TEST_STORE_PASSWORD']
         results=[]
-        for mode in (('explicit','declarative') if args.text_input else ('explicit','declarative','error')):
+        for mode in (('explicit','declarative') if args.text_input or args.ime else ('explicit','declarative','error')):
             with tempfile.TemporaryDirectory(prefix='game with spaces ',dir=args.work.resolve()) as folder:
                 project=Path(folder)
                 (project/'assets').mkdir()
@@ -120,7 +122,30 @@ def main():
      assert(w == 8 and h == 8)
      if MODE_ERROR then error('expected exported process error') end
      local text = ''
-     for i=1,(MODE_TEXT and 900 or 360) do
+     local editor_opened = false
+     local hidden_frames = 0
+     for i=1,((MODE_IME or MODE_TEXT) and 1200 or 360) do
+      if MODE_IME then
+       while true do
+        local character = mv.text_input_next()
+        if not character then break end
+        if not editor_opened then
+         assert(character == 'k' and mv.text_input_set_keyboard(true))
+         editor_opened = true
+        else
+         text = text .. character
+         assert(('é😀'):sub(1,#text) == text)
+         if text == 'é😀' then assert(mv.input.text_input_set_keyboard(false)) end
+        end
+       end
+       if text == 'é😀' then
+        hidden_frames = hidden_frames + 1
+        if hidden_frames == 100 then
+         io.stderr:write('exported Lua IME passed\\n')
+         return
+        end
+       end
+      end
       if MODE_TEXT then
        while true do
         local character = mv.text_input_next()
@@ -137,13 +162,14 @@ def main():
       mv.draw_box(0,0,320,240)
       mv.frame()
      end
-     assert(not MODE_TEXT, 'text input timeout')
+     assert(not MODE_TEXT and not MODE_IME, 'text input timeout')
     end)
     return function() task() end
     ''')
                 entry="return {width=320,height=240,init=require('behavior')}" if mode=='declarative' else "require('malvado').start(require('behavior'),{width=320,height=240})"
                 if mode=='error': entry='MODE_ERROR=true\n'+entry
                 if args.text_input: entry='MODE_TEXT=true\n'+entry
+                if args.ime: entry='MODE_IME=true\n'+entry
                 (project/'main.lua').write_text(entry)
                 package='dev.malvado.exported.p'+uuid.uuid4().hex
                 apk=project.parent/(package+'.'+args.format)
@@ -199,6 +225,10 @@ def main():
                             if pixel[0]>240 and pixel[1]<15 and pixel[2]<15:
                                 (args.work/(mode+'.png')).write_bytes(png)
                                 red=True
+                                if args.ime:
+                                    from test_android_ime import keyboard_sequence
+                                    keyboard_sequence(command, adb, args.work, mode, pid)
+                                    deadline = time.monotonic()+15
                                 if args.text_input:
                                     command(adb+['shell','input','text','aZ0'])
                         time.sleep(.2)
@@ -206,6 +236,7 @@ def main():
                     assert red, 'Exported game did not render red pixels'
                     assert b'game session cleanup passed' in logs
                     if args.text_input: assert b'exported Lua text input passed' in logs
+                    if args.ime: assert b'exported Lua IME passed' in logs
                     if mode == 'error': assert b'expected exported process error' in logs
                     if args.release:
                         state=command(adb+['shell','dumpsys','package',package]).stdout
@@ -215,7 +246,7 @@ def main():
                         files=command(adb+['shell','run-as',package,'ls','files']).stdout
                         assert b'malvado-game-' not in files
                     (args.work/(mode+'-runtime.log')).write_bytes(logs)
-                    results.append(dict(mode=mode,package=package,pid=pid,exit=1 if mode=='error' else 0,pixels=mode!='error',cleaned=True,release=args.release,text_input=args.text_input))
+                    results.append(dict(mode=mode,package=package,pid=pid,exit=1 if mode=='error' else 0,pixels=mode!='error',cleaned=True,release=args.release,text_input=args.text_input, ime=args.ime))
                 finally:
                     command(adb+['uninstall',package])
                     remaining=command(adb+['shell','pm','list','packages',package]).stdout
@@ -228,6 +259,9 @@ def main():
         return
     if args.text_input:
         print('PASS: exported explicit/declarative Lua physical-key text, pixels and cleanup')
+        return
+    if args.ime:
+        print('PASS: both exported Lua entries open and close the IME and receive committed Unicode')
         return
     print('PASS: exported explicit/declarative games, pixels, nested assets, process error and cleanup')
 

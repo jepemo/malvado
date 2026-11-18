@@ -26,6 +26,9 @@ GAME = r'''
 typedef struct {
     int frames, destroyed, characters;
     MvImage *image;
+#ifdef EXPECT_IME
+    int editor_opened, hidden_frames;
+#endif
 #ifdef EXPECT_AUDIO_FOCUS
     MvSound *paused;
     int focus_stage;
@@ -70,6 +73,23 @@ static MvStepResult step(MvContext *ctx, MvProcessId id, void *data) {
         }
     }
     return ++state->frames == 1800 ? MV_STEP_ERROR : MV_STEP_YIELD;
+#elif defined(EXPECT_IME)
+    uint32_t codepoint;
+    const uint32_t expected[] = {0xe9, 0x1f600};
+    while (mv_text_input_next(&codepoint)) {
+        if (!state->editor_opened) {
+            if (codepoint != 'k' || !mv_text_input_set_keyboard(1)) return MV_STEP_ERROR;
+            state->editor_opened = 1;
+            continue;
+        }
+        if (state->characters >= 2 || codepoint != expected[state->characters++]) return MV_STEP_ERROR;
+        if (state->characters == 2 && !mv_text_input_set_keyboard(0)) return MV_STEP_ERROR;
+    }
+    if (state->characters == 2 && ++state->hidden_frames == 100) {
+        fputs("exported C IME passed\n", stderr);
+        return MV_STEP_DONE;
+    }
+    return ++state->frames == 1200 ? MV_STEP_ERROR : MV_STEP_YIELD;
 #elif defined(EXPECT_TEXT)
     uint32_t codepoint;
     while (mv_text_input_next(&codepoint)) {
@@ -126,6 +146,8 @@ int main(void) {
 #else
 #if defined(EXPECT_AUDIO_FOCUS)
     return result == MV_OK && !IsAudioDeviceReady() ? 0 : 8;
+#elif defined(EXPECT_IME)
+    return result == MV_OK && state.hidden_frames == 100 ? 0 : 8;
 #elif defined(EXPECT_TEXT)
     return result == MV_OK && state.characters == 3 ? 0 : 8;
 #else
@@ -148,13 +170,14 @@ def main():
     behavior = parser.add_mutually_exclusive_group()
     behavior.add_argument('--text-input', action='store_true')
     behavior.add_argument('--audio-focus', action='store_true')
+    behavior.add_argument('--ime', action='store_true')
     parser.add_argument('--format', choices=('apk','aab'), default='apk')
     parser.add_argument('--bundle-tools', type=Path)
     parser.add_argument('--keystore', type=Path)
     parser.add_argument('--key-alias')
     parser.add_argument('--store-password-env')
     args = parser.parse_args()
-    if args.package_only and (args.text_input or args.audio_focus):
+    if args.package_only and (args.text_input or args.audio_focus or args.ime):
         parser.error('Runtime behavior verification requires an emulator serial')
     if args.format == 'aab' and (not args.release or not args.bundle_tools):
         parser.error('AAB verification requires release and bundle tools')
@@ -175,13 +198,14 @@ def main():
         checked(adb+['shell','input','keyevent','224'])
         checked(adb+['shell','wm','dismiss-keyguard'])
     results = []
-    for mode in (('normal',) if args.text_input or args.audio_focus else ('normal', 'process-error', 'compile-error', 'bad-entry')):
+    for mode in (('normal',) if args.text_input or args.audio_focus or args.ime else ('normal', 'process-error', 'compile-error', 'bad-entry')):
         with tempfile.TemporaryDirectory(prefix='C game with spaces ', dir=args.work.resolve()) as folder:
             project = Path(folder)/'project'
             checked([cli,'new','--c',project])
             cmake = project/'CMakeLists.txt'
             cmake.write_text(cmake.read_text().replace('COMPONENTS graphics)', 'COMPONENTS graphics assets)')+'\ntarget_link_libraries(game PRIVATE Malvado::assets)\n')
             source = ('#define EXPECT_TEXT\n' if args.text_input else '')+GAME
+            if args.ime: source = '#define EXPECT_IME\n'+source
             if args.audio_focus:
                 source = '#define EXPECT_AUDIO_FOCUS\n'+source
                 fixtures = Path(__file__).resolve().parents[1]/'tests/fixtures'
@@ -259,6 +283,10 @@ def main():
                             (args.work/(mode+'.png')).write_bytes(png)
                             red=True
                             if args.text_input: checked(adb+['shell','input','text','aZ0'])
+                            if args.ime:
+                                from test_android_ime import keyboard_sequence
+                                keyboard_sequence(checked, adb, args.work, mode, pid)
+                                deadline = time.monotonic()+15
                             if args.audio_focus:
                                 exercise(checked, adb, package, pid, competitor, args.work, GAME_ACTIVITY)
                                 deadline = time.monotonic()+15
@@ -266,9 +294,10 @@ def main():
                 else: raise RuntimeError('Exported C game timed out: '+logs.decode())
                 assert red and b'game session cleanup passed' in logs
                 if args.text_input: assert b'exported C text input passed' in logs
+                if args.ime: assert b'exported C IME passed' in logs
                 if mode=='process-error': assert b'expected exported C process error' in logs
                 (args.work/(mode+'-runtime.log')).write_bytes(logs)
-                results.append(dict(mode=mode,package=package,pid=pid,cleaned=True,release=args.release,text_input=args.text_input, audio_focus=args.audio_focus))
+                results.append(dict(mode=mode,package=package,pid=pid,cleaned=True,release=args.release,text_input=args.text_input, audio_focus=args.audio_focus, ime=args.ime))
             except (AssertionError, RuntimeError, subprocess.SubprocessError):
                 diagnostics = command(adb + ['logcat', '-d', '-t', '300', '-s',
                                              'MalvadoGame:I', 'AndroidRuntime:E', 'raylib:D', '*:S'])
@@ -285,6 +314,9 @@ def main():
         return
     if args.text_input:
         print('PASS: exported C physical-key text, pixels and cleanup')
+        return
+    if args.ime:
+        print('PASS: exported C opens and closes the IME and receives committed Unicode')
         return
     if args.audio_focus:
         print('PASS: exported game audio focus, pause state, pixels and cleanup')

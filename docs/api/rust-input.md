@@ -66,6 +66,7 @@ state is outside the recorded runner evidence, as stated above.
 
 On Android, physical key-down events fill the same native text queue through
 `KeyCharacterMap`. Modifier state and key repeats apply. Control characters,
-DEL and dead-key markers are discarded. IME composition and an on-screen
-keyboard service are not available. The host-side JNI regression covers Unicode
+DEL and dead-key markers are discarded. Exported Android games can request
+the [on-screen keyboard](keyboard.md#android-on-screen-keyboard) with
+`window.set_text_input_keyboard(true)` and hide it with the same method. The host-side JNI regression covers Unicode
 scalars and failures; exported APK checks cover mixed-case ASCII typing.

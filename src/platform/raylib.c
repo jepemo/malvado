@@ -26,6 +26,7 @@
 #include "raylib.h"
 #ifdef __ANDROID__
 #include "android_window.h"
+#include <pthread.h>
 #endif
 #include "rlgl.h"
 #include <math.h>
@@ -67,6 +68,22 @@ struct MvFont {
 enum { TEXT_QUEUE_CAPACITY = 256 };
 static uint32_t text_queue[TEXT_QUEUE_CAPACITY];
 static size_t text_head, text_count;
+#ifdef __ANDROID__
+static pthread_mutex_t text_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+static void
+text_input_clear(void)
+{
+#ifdef __ANDROID__
+    pthread_mutex_lock(&text_mutex);
+#endif
+    text_head = 0;
+    text_count = 0;
+#ifdef __ANDROID__
+    pthread_mutex_unlock(&text_mutex);
+#endif
+}
 static int drawing_active, clip_active, scroll_active;
 static MvCameraViewport current_clip;
 static float current_scroll_x, current_scroll_y;
@@ -376,8 +393,7 @@ mv_music_set_volume(MvMusic *music, float volume)
 int mv_window_open(int width, int height, const char *title)
 {
     if (width <= 0 || height <= 0 || !title || IsWindowReady()) return 0;
-    text_head = 0;
-    text_count = 0;
+    text_input_clear();
 #ifdef __ANDROID__
     if (!mv_android_window_wait_surface()) return 0;
 #endif
@@ -418,6 +434,7 @@ mv_window_size(int *width, int *height)
 void mv_window_close(void)
 {
 #ifdef __ANDROID__
+    (void)mv_android_keyboard_request(0);
     mv_android_window_detach();
 #endif
     if (IsWindowReady()) CloseWindow();
@@ -425,8 +442,7 @@ void mv_window_close(void)
     drawing_active = 0;
     clip_active = 0;
     scroll_active = 0;
-    text_head = 0;
-    text_count = 0;
+    text_input_clear();
 }
 int mv_window_should_close(void)
 {
@@ -528,26 +544,77 @@ mv_mouse_down(MvMouseButton button)
 }
 
 int
-mv_text_input_next(uint32_t *codepoint)
+mv_text_input_set_keyboard(int visible)
 {
-    if (!codepoint || !IsWindowReady() || text_count == 0)
-        return 0;
-    *codepoint = text_queue[text_head];
-    text_head = (text_head + 1) % TEXT_QUEUE_CAPACITY;
-    --text_count;
-    return 1;
+#ifdef __ANDROID__
+    return (visible == 0 || visible == 1) && IsWindowReady() &&
+           mv_android_keyboard_request(visible);
+#else
+    (void)visible;
+    return 0;
+#endif
 }
 
-void
-mv_text_input_sample(uint32_t codepoint)
+int
+mv_text_input_next(uint32_t *codepoint)
 {
-    if (!IsWindowReady() || codepoint == 0 || codepoint > 0x10ffff ||
+    if (!codepoint || !IsWindowReady()) return 0;
+#ifdef __ANDROID__
+    pthread_mutex_lock(&text_mutex);
+#endif
+    int available = text_count != 0;
+    if (available) {
+        *codepoint = text_queue[text_head];
+        text_head = (text_head + 1) % TEXT_QUEUE_CAPACITY;
+        --text_count;
+    }
+#ifdef __ANDROID__
+    pthread_mutex_unlock(&text_mutex);
+#endif
+    return available;
+}
+
+static void
+text_input_append(uint32_t codepoint)
+{
+    if (codepoint == 0 || codepoint > 0x10ffff ||
         (codepoint >= 0xd800 && codepoint <= 0xdfff) || text_count == TEXT_QUEUE_CAPACITY)
         return;
     size_t end = (text_head + text_count) % TEXT_QUEUE_CAPACITY;
     text_queue[end] = codepoint;
     ++text_count;
 }
+
+void
+mv_text_input_sample(uint32_t codepoint)
+{
+    if (!IsWindowReady()) return;
+#ifdef __ANDROID__
+    pthread_mutex_lock(&text_mutex);
+#endif
+    text_input_append(codepoint);
+#ifdef __ANDROID__
+    pthread_mutex_unlock(&text_mutex);
+#endif
+}
+
+#ifdef __ANDROID__
+void
+mv_text_input_commit_utf16(const uint16_t *text, size_t length)
+{
+    pthread_mutex_lock(&text_mutex);
+    for (size_t i = 0; i < length && text_count < TEXT_QUEUE_CAPACITY; ++i) {
+        uint32_t codepoint = text[i];
+        if (codepoint >= 0xd800 && codepoint <= 0xdbff && i + 1 < length &&
+            text[i + 1] >= 0xdc00 && text[i + 1] <= 0xdfff) {
+            codepoint = 0x10000 + ((codepoint - 0xd800) << 10) + (text[++i] - 0xdc00);
+        }
+        if (codepoint >= 32 && (codepoint < 127 || codepoint > 159))
+            text_input_append(codepoint);
+    }
+    pthread_mutex_unlock(&text_mutex);
+}
+#endif
 
 static void
 capture_text_input(void)

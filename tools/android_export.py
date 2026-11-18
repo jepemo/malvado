@@ -183,13 +183,17 @@ def manifest_xml(package, version_code=1, version_name='debug', title='Malvado g
 
 
 def activity_dex(tools, platform, work):
-    classes = work / 'classes'
-    classes.mkdir()
     source = Path(__file__).resolve().with_name('GameActivity.java')
     if not source.is_file():
         source = Path(__file__).resolve().parents[1] / 'src/android/GameActivity.java'
-    run(['javac', '--release', '8', '-classpath', platform, '-d', classes, source])
-    run([tools / 'd8', '--lib', platform, '--min-api', '28', '--output', work,
+    return java_dex(run, tools, platform, work, source)
+
+
+def java_dex(command, tools, platform, work, source):
+    classes = work / 'classes'
+    classes.mkdir()
+    command(['javac', '--release', '8', '-classpath', platform, '-d', classes, source])
+    command([tools / 'd8', '--lib', platform, '--min-api', '28', '--output', work,
          *sorted(classes.rglob('*.class'))])
     return work / 'classes.dex'
 

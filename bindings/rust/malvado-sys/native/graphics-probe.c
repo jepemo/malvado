@@ -53,6 +53,7 @@ _Static_assert(_Generic(&mv_mouse_down, int (*)(MvMouseButton): 1, default: 0), 
 _Static_assert(_Generic(&mv_pad_connected, int (*)(int): 1, default: 0), "mv_pad_connected signature");
 _Static_assert(_Generic(&mv_pad_button_down, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_down signature");
 _Static_assert(_Generic(&mv_pad_axis, float (*)(int, MvPadAxis): 1, default: 0), "mv_pad_axis signature");
+_Static_assert(_Generic(&mv_text_input_set_keyboard, int (*)(int): 1, default: 0), "mv_text_input_set_keyboard signature");
 _Static_assert(_Generic(&mv_text_input_next, int (*)(uint32_t *): 1, default: 0), "mv_text_input_next signature");
 _Static_assert(_Generic(&mv_audio_open, int (*)(void): 1, default: 0), "mv_audio_open signature");
 _Static_assert(_Generic(&mv_audio_close, void (*)(void): 1, default: 0), "mv_audio_close signature");
@@ -85,6 +86,7 @@ _Static_assert(_Generic(&mv_draw_state_color, int (*)(MvDrawState *, int64_t, in
 _Static_assert(_Generic(&mv_draw_state_background, int (*)(MvDrawState *, int64_t, int64_t, int64_t): 1, default: 0), "mv_draw_state_background signature");
 int main(void)
 {
+    if (mv_text_input_set_keyboard(0)) return 1;
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
     printf("%zu ", offsetof(MvColor, r));
     printf("%zu ", offsetof(MvColor, g));

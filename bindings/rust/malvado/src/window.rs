@@ -289,6 +289,13 @@ impl Window {
         // SAFETY: supported typed axis; C handles missing devices/axes and clamps.
         unsafe { ffi::mv_pad_axis(slot.into(), axis as i32) }
     }
+    /// Request the Android on-screen keyboard. True means the request was submitted.
+    /// Returns false when the Activity has no editor bridge or on other platforms.
+    pub fn set_text_input_keyboard(&self, visible: bool) -> bool {
+        // SAFETY: a live Window belongs to the current thread.
+        unsafe { ffi::mv_text_input_set_keyboard(i32::from(visible)) != 0 }
+    }
+
     /// Pop one Unicode scalar from the shared native queue. This consumes input;
     /// keyboard and button held-state queries do not consume anything.
     pub fn text_input_next(&self) -> Option<char> {

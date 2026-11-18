@@ -236,5 +236,8 @@ jobs:
             build-android/production/rust-*/results.json
             build-android/production/rust-*/*.log
             build-android/production/rust-*/*.png
+            build-android/production/ime/*/results.json
+            build-android/production/ime/*/*.log
+            build-android/production/ime/*/*.png
           if-no-files-found: warn
           retention-days: 14

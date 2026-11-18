@@ -340,6 +340,7 @@ unsafe extern "C" {
     pub fn mv_pad_button_down(slot: c_int, button: MvPadButton) -> c_int;
     pub fn mv_pad_axis(slot: c_int, axis: MvPadAxis) -> f32;
     pub fn mv_text_input_next(codepoint: *mut u32) -> c_int;
+    pub fn mv_text_input_set_keyboard(visible: c_int) -> c_int;
 }
 
 pub type MvMouseButton = c_int;

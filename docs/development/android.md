@@ -892,9 +892,9 @@ JNI exceptions remain owned by their caller.
 
 Host regressions cover printable ASCII, accented and non-BMP scalars, rejected
 values and JNI failure paths. An exported installed-SDK C APK also passed
-mixed-case `aZ0` input on API 34 arm64. IME composition, dead-key composition,
-on-screen keyboard control and physical-device acceptance remain unavailable
-or outside this alpha's emulator evidence.
+mixed-case `aZ0` input on API 34 arm64. This baseline covered physical-key events.
+The later [on-screen keyboard verification](#on-screen-keyboard-and-committed-text)
+covers IME input.
 
 Add `--text-input` to `mise run test-android-c-export`,
 `mise run test-android-export` or `mise run test-android-rust-export` with the
@@ -920,3 +920,17 @@ Pass `--lifecycle text` to `mise run test-android-window --` to inject
 Rust. The host checks the original process's language marker, captures a
 screenshot and uses Back for normal shutdown. Both Android CI profiles run
 this mode on the pinned x86_64 image. The eight local arm64 cases passed.
+
+
+### On-screen keyboard and committed text
+
+Run the production commands in [Android production packages](ci.md#android-production-packages)
+with a dedicated API 34 emulator serial. The verifier installs a test input
+method for this run. It checks that C, both Lua entry forms and Rust explicitly
+open and close the keyboard. The game receives an accented letter and a
+supplementary-plane character after confirmation. Temporary composition
+stays out of the queue. Result JSON, logs and screenshots record each case.
+The verifier restores the emulator's prior input method and keyboard setting.
+
+See the [on-screen keyboard contract](../api/keyboard.md#android-on-screen-keyboard)
+for supported behavior.

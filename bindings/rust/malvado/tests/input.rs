@@ -35,6 +35,9 @@ fn neutral_and_unicode() {
     for _ in 0..2 {
         let window = Window::open(160, 120, "Rust native input").unwrap();
         assert_eq!(window.text_input_next(), None);
+        if !cfg!(target_os = "android") {
+            assert!(!window.set_text_input_keyboard(true));
+        }
         for slot in [0, 1, 2, 3, 4, 255] {
             if !window.pad_connected(slot) {
                 for button in buttons {

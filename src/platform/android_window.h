@@ -24,6 +24,7 @@ void mv_android_audio_attach(void);
 void mv_android_audio_detach(void);
 int mv_android_activity_has_focus(struct android_app *app);
 int mv_android_window_wait_surface(void);
+int mv_android_keyboard_request(int visible);
 int mv_android_mouse_down(MvMouseButton button);
 int mv_android_key_down(MvKey key);
 void mv_android_window_attach(void);

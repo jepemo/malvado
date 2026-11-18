@@ -168,6 +168,9 @@ main(void)
     assert(!mv_mouse_position(&x, NULL) && x == 23);
     assert(!mv_mouse_position(&x, &y) && x == 0 && y == 0);
     uint32_t codepoint = 123;
+    assert(!mv_text_input_set_keyboard(-1));
+    assert(!mv_text_input_set_keyboard(1));
+    assert(!mv_text_input_set_keyboard(0));
     assert(!mv_text_input_next(NULL));
     assert(!mv_text_input_next(&codepoint) && codepoint == 123);
     assert(!mv_sound_load("tests/fixtures/silence.wav"));

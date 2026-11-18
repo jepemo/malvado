@@ -187,6 +187,10 @@ int mv_pad_axis_from_name(const char *name, MvPadAxis *axis);
  * Return 0 without changing *codepoint if the queue is empty or the pointer
  * is NULL. The queue holds 256 characters and drops new characters when full. */
 int mv_text_input_next(uint32_t *codepoint);
+/* Request the Android on-screen keyboard on the live window owner thread.
+ * Pass 1 to show it or 0 to hide it. Return 1 if the request was submitted
+ * to the Android Activity, or 0 for invalid input, an unavailable host, or no window. */
+int mv_text_input_set_keyboard(int visible);
 /* Encode one Unicode scalar into up to four bytes. Return the byte count, or
  * 0 for an invalid scalar or NULL output. The bytes are not NUL-terminated. */
 size_t mv_utf8_encode(uint32_t codepoint, char output[4]);

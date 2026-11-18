@@ -39,6 +39,7 @@ object methods and process fields are not included in this namespace table.
 | `mv.input.pad_button` | Check a held controller button | [input](input-inventory.md) |
 | `mv.input.pad_axis` | Read a controller axis | [input](input-inventory.md) |
 | `mv.input.text_input_next` | Read one typed character | [input](input-inventory.md) |
+| `mv.input.text_input_set_keyboard` | Request the Android on-screen keyboard | [keyboard](keyboard.md#android-on-screen-keyboard) |
 | `mv.graphics.circle` | Create a circle graphic | [drawing](drawing.md) and [images](images.md) |
 | `mv.graphics.rect` | Create a rectangle graphic | [drawing](drawing.md) and [images](images.md) |
 | `mv.graphics.region` | Create a drawing region | [drawing](drawing.md) and [images](images.md) |

@@ -56,6 +56,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `pad_button` | `mv.pad_button` |
 | `pad_axis` | `mv.pad_axis` |
 | `text_input_next` | `mv.text_input_next` |
+| `text_input_set_keyboard` | `mv.text_input_set_keyboard` |
 | `load_sound` | `mv.load_sound` |
 | `clone_sound` | `mv.clone_sound` |
 | `play_sound` | `mv.play_sound` |

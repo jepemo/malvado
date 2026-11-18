@@ -55,6 +55,7 @@ int mv_pad_button_down(int slot, MvPadButton button) { (void)slot; (void)button;
 float mv_pad_axis(int slot, MvPadAxis axis) { (void)slot; (void)axis; return 0; }
 void mv_text_input_sample(uint32_t codepoint) { (void)codepoint; }
 int mv_text_input_next(uint32_t *codepoint) { (void)codepoint; return 0; }
+int mv_text_input_set_keyboard(int visible) { (void)visible; return 0; }
 int mv_audio_open(void) { return 0; }
 void mv_audio_close(void) {}
 MvSound *mv_sound_load(const char *path) { (void)path; return NULL; }

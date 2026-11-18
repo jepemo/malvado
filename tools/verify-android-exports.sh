@@ -100,4 +100,10 @@ done
 if [[ -n "$serial" ]]; then
     python3 "$source/tools/test_android_c_export.py" "${common[@]}" "${profile[@]}" "${signing[@]}" \
         --runtime-sdk "$work/native sdk" --work "$work/c-audio-focus" --audio-focus
+    ime_format=()
+    if [[ "$config" == Release ]]; then
+        ime_format=(--format aab --bundle-tools "$work/bundle-tools")
+    fi
+    python3 "$source/tools/test_android_ime.py" "${common[@]}" "${profile[@]}" "${signing[@]}" "${ime_format[@]}" \
+        --lua-sdk "$work/lua runtime" --native-sdk "$work/native sdk" --work "$work/ime"
 fi

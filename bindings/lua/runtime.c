@@ -2167,6 +2167,14 @@ pad_axis(lua_State *L)
 }
 
 static int
+text_input_set_keyboard(lua_State *L)
+{
+    luaL_checktype(L, 1, LUA_TBOOLEAN);
+    lua_pushboolean(L, !engine.headless && mv_text_input_set_keyboard(lua_toboolean(L, 1)));
+    return 1;
+}
+
+static int
 text_input_next(lua_State *L)
 {
     uint32_t codepoint;
@@ -4663,6 +4671,7 @@ static const char *const global_names[] = {
     "pad_button",
     "pad_axis",
     "text_input_next",
+    "text_input_set_keyboard",
     "load_sound",
     "clone_sound",
     "play_sound",
@@ -5767,6 +5776,7 @@ open_module(lua_State *L)
         {"pad_button", pad_button},
         {"pad_axis", pad_axis},
         {"text_input_next", text_input_next},
+        {"text_input_set_keyboard", text_input_set_keyboard},
         {"load_sound", load_sound},
         {"clone_sound", clone_sound},
         {"play_sound", play_sound},
@@ -6093,7 +6103,7 @@ open_module(lua_State *L)
     static const char *const input_functions[] = {
         "key_down", "key_pressed", "key_released", "mouse_position", "mouse_button",
         "pad_connected", "pad_button",
-        "pad_axis", "text_input_next"
+        "pad_axis", "text_input_next", "text_input_set_keyboard"
     };
     for (size_t i = 0; i < sizeof(input_functions) / sizeof(input_functions[0]); ++i) {
         lua_getfield(L, -2, input_functions[i]);
