@@ -145,6 +145,10 @@ Emulator execution also verifies Rust and requires the `aarch64-linux-android`
 Rust target for the executable ABI probes. With no
 serial, the command verifies C and Lua package contents on the authoring host.
 
+Pull requests run a Debug installed-C-SDK emulator smoke test and the Debug
+production export cases. Pushes, scheduled runs and manual dispatches run the
+full Debug and Release matrices. The candidate gate requires branch runs.
+
 ## Supported-platform candidate gate
 
 Run the manual **Platform candidate** workflow after CI, Windows and Android
