@@ -58,6 +58,6 @@ entry points.
 
 Run `mise tasks` to see the available commands. Use `mise run test-headless` to test Lua without a graphics backend. Use `mise run test-c` to test the C core without Lua or raylib.
 
-Try the [C and Lua process example](https://github.com/jepemo/malvado/blob/master/examples/c/processes/README.md)
-or the [Rust process guide](https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md).
-Each shows a finite process that yields to the scheduler.
+Try the [first three lessons](https://github.com/jepemo/malvado/blob/master/examples/features/README.md)
+to start a game, run two processes and draw a PNG. Each lesson has C, Lua and
+Rust versions with the same behavior.

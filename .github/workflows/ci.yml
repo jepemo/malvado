@@ -177,14 +177,17 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Install Linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth xdotool clang lld
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth xdotool imagemagick clang lld
       - name: Test rendering
         run: |
-          Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+          Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp -noreset &
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
           mise run test-visual
+          sdk=$(mktemp -d "$RUNNER_TEMP/malvado-examples-sdk.XXXXXX")
+          cmake --install build-visual --config Debug --prefix "$sdk"
+          python3 tools/test_beta_examples.py --sdk "$sdk" --pixels
           mise run test-rust-graphics
           mise run test-rust-graphics-sanitize
           mise run test-g0

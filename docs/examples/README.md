@@ -3,8 +3,8 @@
 Status: adopted alignment policy. The full collection and migration are an
 [unassigned future proposal](../roadmap/examples.md), moved from alpha.7 A7.8.
 Beta requires only a small verified getting-started set for the first 2.0
-release. The directory layout below is a migration target, not the current tree.
-No current example gains three-language parity merely through this scope change.
+release. See the [first three lessons](../../examples/features/README.md).
+The wider directory migration remains future work.
 
 ## What belongs in the collection
 

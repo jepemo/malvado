@@ -77,6 +77,7 @@ def documents():
     for directory in ("api", "site", "development", "architecture"):
         paths.extend((ROOT / "docs" / directory).glob("*.md"))
     paths.extend((ROOT / "docs/versions").glob("2.0.0-alpha.7*.md"))
+    paths.extend((ROOT / "examples/features").rglob("README.md"))
     return sorted(set(paths))
 
 
