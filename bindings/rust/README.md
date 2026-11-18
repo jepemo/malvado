@@ -68,7 +68,9 @@ archives and supported host dependencies separately.
 Cargo's `links` key prevents duplicate sys packages for the same native engine.
 
 The host C compiler must match the Rust target. The executable probe detects
-wrong native architectures through link or execution errors. Cross compilation and Android are not supported. Native Windows x64 MSVC
+wrong native architectures through link or execution errors. For the supported
+Android arm64 export path and its target probe, see
+[Android Rust games](../../docs/development/android-rust-games.md). Native Windows x64 MSVC
 core and assets validation is available through `mise run test-platform -- --rust`;
 Use `mise run test-platform -- --graphics --rust --work build-platform-graphics`
 to verify the graphical SDK separately. Windows x64 MSVC CLI builds and folder
@@ -76,9 +78,9 @@ exports are verified; see the [platform matrix](../../docs/development/alpha8-pl
 which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 
-The installed CLI supports native Rust folder exports and macOS app bundles.
-No crates.io package or cross-compilation support is implied. The current
-native engine and crate identifiers are `2.0.0-alpha.7`; development toward 2.0
+The installed CLI supports native Rust folder exports, macOS app bundles and Android arm64 APKs and AABs.
+The Rust crates are distributed with the SDK. The current
+native engine and crate identifiers are `2.0.0-alpha.8`; development toward 2.0
 continues under the [version plan](../../docs/versions/README.md). This identifier
 alone does not certify platform support or Rust API stability.
 
