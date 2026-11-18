@@ -121,7 +121,7 @@ if(MALVADO_BUILD_RAYLIB)
   endif()
   add_library(malvado_platform_raylib STATIC src/platform/raylib.c src/platform/image.c src/platform/input.c src/platform/time.c src/platform/fade.c src/platform/draw_state.c src/platform/text.c src/platform/managed.c)
   if(ANDROID)
-    target_sources(malvado_platform_raylib PRIVATE src/platform/android_window.c src/platform/android_focus.c src/platform/android_text.c)
+    target_sources(malvado_platform_raylib PRIVATE src/platform/android_window.c src/platform/android_focus.c src/platform/android_text.c src/platform/android_audio.c)
     target_include_directories(malvado_platform_raylib PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
   endif()
   target_include_directories(malvado_platform_raylib PUBLIC

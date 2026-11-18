@@ -20,6 +20,8 @@
 
 struct android_app;
 uint32_t mv_android_key_codepoint(struct android_app *app, int device, int key, int meta);
+void mv_android_audio_attach(void);
+void mv_android_audio_detach(void);
 int mv_android_activity_has_focus(struct android_app *app);
 int mv_android_window_wait_surface(void);
 int mv_android_mouse_down(MvMouseButton button);

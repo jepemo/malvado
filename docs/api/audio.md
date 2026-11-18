@@ -66,6 +66,15 @@ In C, `mv_music_load(path, loop)` returns an owned stream or `NULL`. Open the au
 
 Audio uses one process-wide device. Destroy every sound and stream before closing it.
 
+Exported Android games request audio focus while their Activity is resumed
+and the device is open. Focus loss mutes the mixer. Transient gain restores its
+previous output level. Home releases the focus request, and returning to the
+game requests focus again. A permanent loss keeps output muted until a new
+request. Focus changes preserve each sound and stream's game-controlled
+pause state. Playback positions can advance while output is muted.
+Closing the audio device releases focus. These checks measure mixer state
+and Android focus ownership. Audible behavior is verified on physical devices.
+
 For a local device check, build the visual tests and run `MALVADO_REAL_AUDIO=1 ./build-visual/audio-visual-test tests/audio_visual.lua` from the repository root. The test uses silent WAV and OGG fixtures. It checks that both loops are still playing after 0.75 seconds; it does not check audible output.
 
 See [shared audio maintenance](audio-maintenance.md) for native pause state, runner timing and playback roots.

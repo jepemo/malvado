@@ -129,7 +129,8 @@ verifies APKs and AABs, including APKs derived from the bundles. The job runs
 the arm64 packages through native translation on the pinned x86_64 emulator.
 It requires `arm64-v8a` support for apps and translated executables for the
 Rust ABI probes. It retains runtime logs,
-screenshots, manifest dumps and tool provenance. Signing uses disposable
+screenshots, manifest dumps and tool provenance. A second test APK verifies
+transient and permanent Android audio-focus loss in the exported C game. Signing uses disposable
 keys.
 
 Run the same command on a configured authoring host with the pinned SDK:

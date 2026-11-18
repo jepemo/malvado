@@ -120,8 +120,9 @@ copy that keystore. It verifies the signed APK before exclusive publication.
 Debug exports can use the same signing options to keep a stable development key.
 The default version name is `release` in release mode and `debug` otherwise.
 
-Unsigned release generation needs aapt and zipalign, without Java or keytool.
-Explicit signing also needs Java and apksigner; automatic debug-key creation
+Every export needs the JDK and D8 to compile the shared Android Activity.
+APK generation also needs aapt and zipalign. Explicit APK signing needs
+apksigner. Automatic debug-key creation
 needs keytool. Signing a file does not publish it to a store. Release verification
 uses disposable test credentials and does not establish production key custody.
 

@@ -96,3 +96,8 @@ for format in "${formats[@]}"; do
             --format "$format" --runtime-sdk "$work/native sdk" --work "$work/rust-$format"
     fi
 done
+
+if [[ -n "$serial" ]]; then
+    python3 "$source/tools/test_android_c_export.py" "${common[@]}" "${profile[@]}" "${signing[@]}" \
+        --runtime-sdk "$work/native sdk" --work "$work/c-audio-focus" --audio-focus
+fi

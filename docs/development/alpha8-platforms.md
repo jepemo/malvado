@@ -11,14 +11,17 @@ platform claims below; see the [Rust support policy](../api/rust-support.md).
 | macOS 15 arm64 / native | C/Lua/Rust and graphics in existing CI | Keep checks passing |
 | Ubuntu 24.04 x86_64 / native | C/Lua/Rust, graphics and clean exports in existing CI | Keep checks passing |
 | Windows Server 2022 / x64 MSVC | Verified headless and Mesa graphics C/Lua/Rust SDKs in Debug and Release | Verified CLI/export and fresh players; hardware review in beta |
-| macOS arm64 / Android arm64 API 34 | Headless core/assets, graphical fixtures, and C/Lua/Rust production APKs and AAB-derived APKs in Debug/Release as applicable. Exported physical-key text passed in both APK profiles. | Mobile keyboard and audio-focus behavior, physical-device and audible checks |
+| macOS arm64 / Android arm64 API 34 | Headless core/assets, graphical fixtures, and C/Lua/Rust production APKs and AAB-derived APKs in Debug/Release as applicable. Exported physical-key text passed in both APK profiles. | Mobile keyboard, physical-device and audible checks |
 | Ubuntu 24.04 x86_64 / Android x86_64 API 34 | Headless core/assets and C/Lua/Rust graphical fixtures in Debug/Release. Includes input, explicit audio pause, recreation, overlay relaunch and cold restart. | Physical-key text on the hosted emulator and final candidate acceptance |
 | Ubuntu 24.04 x86_64 / Android arm64 API 34 | Hosted C/Lua/Rust APKs and AAB-derived APKs ran through native translation in both profiles. Rust ran executable ABI probes. | Verify the current revision |
 
 Android audio verification uses silent packaged WAV/OGG media. It checks API
 state, resource lifetime and explicit game-requested pause across Activity
-transitions. It does not establish audible output, latency or automatic audio
-focus handling. See [Android audio verification](android.md#android-audio-api-verification).
+transitions. The packaged Activity also requests and releases Android audio
+focus and gates mixer output. The exported C focus fixture uses a second
+package to take focus. Audible output and latency remain physical-device
+checks. See [Android audio verification](android.md#android-audio-api-verification)
+and the [audio contract](../api/audio.md).
 
 Android C and both Lua entries also passed physical-key A/Left state and
 transition checks on arm64 and in pinned x86_64 CI, in both profiles and after
@@ -28,8 +31,7 @@ for all three languages in both profiles on arm64 and pinned x86_64. Android
 now fills the shared text queue from physical-key events through the device's
 `KeyCharacterMap`. Host tests cover Unicode scalars and JNI errors; local
 exported APK tests cover mixed-case ASCII. IME composition and an on-screen
-keyboard service remain unavailable. Pinned x86_64 acceptance of text capture
-is still open. See
+keyboard service remain unavailable. The pinned x86_64 fixture matrix also passed text capture in both profiles. See
 [keyboard verification](android.md#android-keyboard-verification).
 
 ## Delivered artifacts and unavailable paths

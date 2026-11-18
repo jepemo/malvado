@@ -10,9 +10,18 @@ from unittest.mock import patch, MagicMock
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import test_android_window as verifier
+from android_audio_focus_test import focus_owned
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_focus_stack_excludes_historical_requests(self):
+        header = b'Audio Focus stack entries (last is top of stack):\n'
+        history = b'\n\nrequestAudioFocus() callingPack=dev.game'
+        self.assertFalse(focus_owned(header + history, 'dev.game'))
+        self.assertTrue(focus_owned(header + b'callingPack=dev.game' + history, 'dev.game'))
+        with self.assertRaisesRegex(RuntimeError, 'stack was missing'):
+            focus_owned(history, 'dev.game')
+
     def test_text_requires_language_marker_before_back(self):
         for language in ('c', 'lua', 'rust'):
             with self.subTest(language=language):

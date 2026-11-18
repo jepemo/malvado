@@ -117,14 +117,21 @@ mv_audio_open(void)
     if (IsAudioDeviceReady())
         return 1;
     InitAudioDevice();
-    return IsAudioDeviceReady();
+    int opened = IsAudioDeviceReady();
+#ifdef __ANDROID__
+    if (opened) mv_android_audio_attach();
+#endif
+    return opened;
 }
 
 void
 mv_audio_close(void)
 {
-    if (IsAudioDeviceReady())
-        CloseAudioDevice();
+    if (!IsAudioDeviceReady()) return;
+#ifdef __ANDROID__
+    mv_android_audio_detach();
+#endif
+    CloseAudioDevice();
 }
 
 MvSound *
