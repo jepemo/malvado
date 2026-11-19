@@ -457,7 +457,21 @@ malvado_export(const char *output, int native, int app, const char *bundle_id)
     free(native_game); free(game); free(license_dir); free(plist); free(payload); free(contents);
     free(launcher); free(notices);
     if (ok && chmod(stage, 0755) != 0) { perror(stage); ok = 0; }
-    if (ok && publish_stage(stage, output) != 0) { perror(output); ok = 0; }
+    if (ok && publish_stage(stage, output) != 0) {
+#ifndef _WIN32
+        int error = errno;
+        if (error == EINVAL || error == ENOTSUP || error == EOPNOTSUPP || error == ENOSYS) {
+            fprintf(stderr, "Cannot publish export to %s: exclusive rename is unavailable.\n"
+                            "Export to a local filesystem, then copy the completed folder.\n",
+                    output);
+        } else {
+            perror(output);
+        }
+#else
+        perror(output);
+#endif
+        ok = 0;
+    }
     if (!ok) {
         if (remove_stage(stage) != 0)
             fprintf(stderr, "Cannot remove incomplete export: %s\n", stage);

@@ -137,6 +137,10 @@ folder to a matching target computer. Native desktop exports use the current
 host SDK. The destination must be new. Use
 `malvado export ../another-folder` to choose a different destination.
 
+On macOS and Linux, the destination filesystem must support exclusive
+rename. If a shared mount does not support it, export to a local
+filesystem and copy the completed folder to the mount.
+
 For C and Rust, export builds the `game` target and includes its executable.
 Players do not need the SDK or authoring tools. Source files and build outputs
 are excluded. A Rust game's extra dependency runtimes and notices must be
