@@ -91,6 +91,9 @@ def shell(prefix, log, arguments, *, cwd=None, environment=(), timeout=60, check
     if cwd:
         command = "cd " + shlex.quote(cwd) + " || exit 126; " + command
     marker = "MALVADO_ANDROID_EXIT_" + uuid.uuid4().hex
+    # Join the streams on the device. Adb can drain stderr after the stdout
+    # marker even when the test writes its diagnostics before it exits.
+    command += " 2>&1"
     command += f'; result=$?; printf "\\n{marker}:%s\\n" "$result"; exit "$result"'
     result = run(log, prefix + ["shell", command], timeout=timeout, check=False)
     ending = f"\n{marker}:{result.returncode}\n"

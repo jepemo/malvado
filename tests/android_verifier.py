@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -69,7 +70,21 @@ class AndroidVerifierTests(unittest.TestCase):
                            environment=["VALUE=space and $dollar"])
         command = run.call_args.args[1]
         self.assertEqual(command[:4], ["adb", "-s", "emulator-5580", "shell"])
-        self.assertEqual(shlex.split(command[4].split("; result=$?;", 1)[0]), ["env", "VALUE=space and $dollar", *arguments])
+        self.assertEqual(shlex.split(command[4].split("; result=$?;", 1)[0]),
+                         ["env", "VALUE=space and $dollar", *arguments, "2>&1"])
+
+    @unittest.skipUnless(shutil.which("sh"), "requires a POSIX shell")
+    def test_remote_diagnostics_arrive_before_exit_marker(self):
+        def drain_stdout_first(log, arguments, **kwargs):
+            result = subprocess.run(["sh", "-c", arguments[-1]], text=True, capture_output=True)
+            return subprocess.CompletedProcess(arguments, result.returncode, result.stdout + result.stderr)
+
+        with patch.object(verifier, "run", side_effect=drain_stdout_first):
+            result = verifier.shell(["adb"], io.StringIO(),
+                                    ["sh", "-c", "echo runner; echo nested runner rejected >&2; exit 2"],
+                                    check=False)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "runner\nnested runner rejected\n")
 
     def test_transport_failure_cannot_satisfy_expected_program_failure(self):
         with patch.object(verifier, "run") as run:
