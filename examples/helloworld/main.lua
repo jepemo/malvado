@@ -3,17 +3,13 @@
 
 require("malvado").import_globals()
 
-local HelloWorld = process(function(self)
-  local font = font(60, 0, 0, 0)
-  write(font, self.x, self.y, self.text)
-
-  while not key("escape") do
+local HelloWorld = process(function()
+  while not key(KEY_ESCAPE) do
+    draw_text("Hello World", 40, 40, 48)
     frame()
   end
 end)
 
 start(function()
-  set_title("Hello world")
-  clear_screen(250, 250, 250)
-  HelloWorld { x = 400, y = 300, text = "Hello World" }
-end)
+  HelloWorld()
+end, {title = "Hello world"})

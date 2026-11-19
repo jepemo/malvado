@@ -1,24 +1,15 @@
 # Malvado
 
-**Small scripts. Living worlds.**
+Malvado is an open-source engine for making 2D games in C, Lua and experimental
+Rust. Inspired by DIV Games Studio, it lets you give each character, object or
+effect its own process. Malvado 2.0 is currently in beta.
 
-Malvado is an open-source game engine for making 2D games with **C, Lua or experimental Rust**. Inspired by **DIV Games Studio**, it brings process-based game development to a lightweight engine built with C and raylib.
-
-Rust's gameplay SDK is functional and tested, but its public API is experimental
-in Malvado 2.0. Future 2.x releases may require code changes. The C core and shared
-scheduler keep their documented contracts. See the [Rust support policy](docs/api/rust-support.md).
-
-The idea is simple: give each character, object, or effect its own behavior, then let those little pieces create something bigger together.
-
-**[Documentation](https://jepemo.github.io/malvado/)** · **[Examples](examples/)** · **[Release plan](docs/versions/README.md)** · **[Future roadmap](docs/roadmap/README.md)**
-
-> **Work in progress:** Malvado 2 is in beta development. The API and tools may change as the engine evolves.
+[Documentation](https://jepemo.github.io/malvado/) · [Downloads](https://github.com/jepemo/malvado/releases)
 
 ## Hello, Malvado!
 
-**Give it a shape. Give it a behavior. Let it run.**
-
-In Malvado, a *process* is an independent piece of your game. It has its own state and can keep running from one frame to the next.
+This Lua example draws a circle that you can move with **Left** and **Right**.
+Press **Escape** to exit.
 
 ```lua
 require("malvado").import_globals()
@@ -26,9 +17,9 @@ require("malvado").import_globals()
 local Player = process(function(self)
   self.graph = circle(16, {color = {80, 190, 255}})
 
-  while not key("escape") do
-    if key("left") then self.x = self.x - 3 end
-    if key("right") then self.x = self.x + 3 end
+  while not key(KEY_ESCAPE) do
+    if key(KEY_LEFT) then self.x = self.x - 3 end
+    if key(KEY_RIGHT) then self.x = self.x + 3 end
     frame()
   end
 end)
@@ -39,13 +30,13 @@ start(function()
 end)
 ```
 
-`process()` defines a behavior. `Player { ... }` creates an instance with its own state. `self.graph` gives it a visible shape, and `frame()` lets other processes run before continuing.
+`Player { ... }` creates a process with its own position. `frame()` lets
+other processes run before the player continues.
 
-Move with **Left** and **Right**. Press **Escape** to exit.
+## Run the examples
 
-## Give it a try
-
-You'll need [Git](https://git-scm.com/), [mise](https://mise.jdx.dev/), and a C compiler. On Linux, you also need the X11 and OpenGL development packages listed in the [CI configuration](.github/workflows/ci.yml).
+You need Git, mise and a C compiler to run the Hello World example. On Linux,
+install the X11 and OpenGL development packages listed in the documentation.
 
 ```sh
 git clone https://github.com/jepemo/malvado.git
@@ -53,41 +44,5 @@ cd malvado
 mise install
 mise run hello
 ```
-
-The first build downloads pinned dependencies. The example opens a window; press **Escape** to close it.
-
-Want to start your own project? Install the development SDK locally:
-
-```sh
-mise run install
-export PATH="$HOME/.local/share/malvado-dev/bin:$PATH"
-malvado new my-game
-cd my-game
-malvado run
-```
-
-See the [SDK guide](docs/site/sdk.md) for more details, including C projects and exporting games on the current host.
-
-## Explore
-
-Malvado already includes:
-
-- **Processes with personality.** Give each instance its own state, timing, and lifecycle.
-- **A native core.** The scheduler and engine live in C, with a public C API that does not require Lua.
-- **Lua for quick ideas.** Write game behavior with small scripts and a bundled Lua runtime.
-- **The essentials for 2D.** Graphics, sprites, text, input, and runnable examples.
-- **Tools to get started.** Create, run, and export projects using the `malvado` command on supported development hosts.
-
-Try the [Space Asteroids example](examples/space_asteroids/), browse the [other examples](examples/), or read the [documentation](https://jepemo.github.io/malvado/).
-
-## What's next?
-
-The current focus is completing C/Lua/Rust integration and CLI workflows, then validating the existing engine on supported platforms for 2.0. Future API families, graphics modes and editor work are proposals in the [future roadmap](docs/roadmap/README.md).
-
-Follow the [version plan](docs/versions/README.md) to see what's implemented and what's still planned.
-
-## Come build with us
-
-Malvado is a personal open-source project, and curiosity is welcome. If you try it, find a bug, have an idea, or want to contribute, [open an issue](https://github.com/jepemo/malvado/issues).
 
 Licensed under [Apache 2.0](LICENSE).

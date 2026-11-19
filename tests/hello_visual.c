@@ -31,14 +31,16 @@ check_frame(void *user)
     HelloCheck *check = user;
     Image image = LoadImageFromScreen();
     assert(image.data);
-    int top = 300 * image.height / GetScreenHeight();
-    int left = 400 * image.width / GetScreenWidth();
-    int bottom = top + 60 * image.height / GetScreenHeight();
+    int top = 40 * image.height / GetScreenHeight();
+    int left = 40 * image.width / GetScreenWidth();
+    int bottom = top + 48 * image.height / GetScreenHeight();
     int right = left + 340 * image.width / GetScreenWidth();
+    Color background = GetImageColor(image, 0, 0);
+    assert(background.r < 80 && background.g < 80 && background.b < 80);
     for (int y = top; y < bottom && y < image.height; ++y) {
         for (int x = left; x < right && x < image.width; ++x) {
             Color color = GetImageColor(image, x, y);
-            if (color.r < 80 && color.g < 80 && color.b < 80)
+            if (color.r > 200 && color.g > 200 && color.b > 200)
                 check->seen = 1;
         }
     }
