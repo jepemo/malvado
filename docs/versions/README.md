@@ -22,6 +22,7 @@ Some later versions depend on decisions that do not exist yet. Their lists are p
 - [x] [Alpha.8](2.0.0-alpha.8.md) — **complete**: Windows/Android support and automated platform, CLI and package verification. Candidate `2a20b7a` passed all required workflows.
 - [ ] [Beta.1](2.0.0-beta.1.md) — **in progress**: candidate contracts, documentation, minimal aligned examples, manual device/user-flow checks and release preparation.
 - [ ] [2.0.0](2.0.0.md) — **planned**: distribute the existing engine with completed C/Lua/Rust integration and verified platform paths.
+- [ ] [2.1.0](2.1.0.md) — **planned**: stabilize Windows x64 and Android arm64 using community reports, manual checks and automated regression tests.
 
 ## Scope decision
 

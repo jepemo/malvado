@@ -36,6 +36,7 @@ The Docker Desktop bind mount rejected the exporter's exclusive rename.
 Publishing to the container's local filesystem and copying completed
 exports to the mount worked.
 
-The [beta.1 checklist](../versions/2.0.0-beta.1.md) keeps the manual Windows
-authoring walkthrough, clean-system checks and physical input and audio
-checks open. The Linux run used a virtual display and an emulated CPU.
+The Linux run used a virtual display and an emulated CPU. The
+[beta.1 checklist](../versions/2.0.0-beta.1.md) tracks clean-system and
+physical input and audio checks for macOS and Linux. The manual Windows
+authoring walkthrough moves to [2.1.0](../versions/2.1.0.md).

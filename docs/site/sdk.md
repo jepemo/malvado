@@ -35,6 +35,7 @@ a working OpenGL 3.3/WGL provider and the Microsoft release CRT, but no Cargo,
 rustc or compiler. Software-rendered CI and fresh-player checks are recorded in
 the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md).
 Windows app bundles, cross exports and Unicode project/SDK paths are not claimed.
+Windows x64 platform support is beta in Malvado 2.0.
 
 ## Build and install the SDK
 
@@ -162,6 +163,8 @@ Exported games skip hidden files, and directories named `build` or `dist`. They 
 Use `malvado --help` to list commands and `malvado doctor` to see the capabilities of your SDK. Graphics and system dependencies still need validation on more target machines.
 
 ## Export for Android
+
+Android arm64 platform support is beta in Malvado 2.0.
 
 Use a graphical macOS arm64 or Linux x86_64 host SDK and a matching Android
 arm64 target SDK. Prepare the Android tools and target SDK for
