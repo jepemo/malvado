@@ -15,6 +15,22 @@ from the accepted alpha.8 revision `2a20b7ae9b8cc03a21a92bd2aee29e185789f6f1`.
 | Check, build, run and export | All three projects passed `check`, and C and Rust passed `build`. The three runs produced the same process trace. Folder and `.app` export succeeded for each language. The app bundles preserved the dependency notice. |
 | Uninstall the managed SDK | The prefix was removed. The project files stayed intact. All six exported players produced the same trace with the SDK absent and authoring tools off PATH. |
 
+### Interactive playback
+
+On macOS 26.6.2 (25G83) arm64, the C, Lua and Rust starter games were
+exported as app bundles with a local SDK built from
+`0301d5defd1f5ffe4b37621a8992b9a48c157efd`. The SDK was moved away from
+the original prefix before launch. Each game opened, displayed
+“Hello, Malvado!” and exited with Escape.
+
+The exported Lua demo opened the sprites page when clicked and rendered
+the character and cat. Escape returned to the menu. Down and Return opened
+the keyboard page, which displayed the typed character. The exported audio
+demo showed the loop state changing on and off with Space.
+
+These checks used the development Mac. A clean macOS system, physical
+controllers and hotplug, and audible sound and music remain unverified.
+
 ## Linux x86_64
 
 The command-line walkthrough passed in an Ubuntu 24.04.5 LTS x86_64 authoring
