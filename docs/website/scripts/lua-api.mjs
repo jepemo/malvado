@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { repoLink } from './site-context.mjs';
+import content from './lua-api-content.mjs';
 
 // Generate the Lua API reference from the repository inventories:
 // docs/api/lua-namespaces.md and docs/api/lua-globals.md.
@@ -209,6 +210,7 @@ for (const group of groups) {
 }
 
 // Every flat function in the inventory must land in a page.
+const allEntries = groups.flatMap((group) => group.entries.map((entry) => ({ ...entry, group: group.id })));
 const placed = new Set(groups.flatMap((group) => group.entries.flatMap((entry) => entry.flat)));
 for (const global of globals) {
   if (global.name.startsWith('KEY_') || global.name.startsWith('SIGNAL_'))
@@ -280,16 +282,47 @@ ${table}`));
     const namespaceForm = namespaceFunctions.some((fn) => fn.ns === group.ns && fn.name === entry.name)
       ? ` or \`mv.${group.ns}.${entry.name}\``
       : '';
-    const call = entry.flat.length
-      ? `Call as \`${entry.flat[0]}\`${namespaceForm} after \`import_globals()\`.`
-      : `Call as \`${entry.title}\`.`;
-    const sentence = entry.summary.endsWith('.') ? entry.summary : `${entry.summary}.`;
-    await writeFile(new URL(`${entry.slug}.md`, dir), front(entry.title, entry.summary,
-      `${sentence}
+    const detail = content[`${group.id}/${entry.slug}`];
+    if (!detail) {
+      const call = entry.flat.length
+        ? `Call as \`${entry.flat[0]}\`${namespaceForm} after \`import_globals()\`.`
+        : `Call as \`${entry.title}\`.`;
+      const sentence = entry.summary.endsWith('.') ? entry.summary : `${entry.summary}.`;
+      await writeFile(new URL(`${entry.slug}.md`, dir), front(entry.title, entry.summary,
+        `${sentence}
 
 ${call}
 
 See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arguments, errors and examples.`));
+      continue;
+    }
+    const parts = [detail.description];
+    if (entry.flat.length && namespaceForm)
+      parts.push(`Available as \`${entry.flat[0]}\` after \`import_globals()\`${namespaceForm}.`);
+    parts.push('');
+    if (detail.params.length) {
+      parts.push('**Parameters**', '');
+      parts.push(...detail.params.map(([name, text]) => `- \`${name}\` — ${text}`));
+    } else {
+      parts.push('Takes no arguments.');
+    }
+    parts.push('');
+    if (detail.example)
+      parts.push('```lua', detail.example, '```', '');
+    const related = (detail.related ?? [])
+      .map((name) => {
+        const target = allEntries.find((item) => item.slug === name && item.group === group.id) ??
+          allEntries.find((item) => item.slug === name);
+        if (!target)
+          return null;
+        const path = target.group === group.id ? `../${target.slug}/` : `../../${target.group}/${target.slug}/`;
+        return `[\`${target.title}\`](${path})`;
+      })
+      .filter(Boolean);
+    if (related.length)
+      parts.push(`Related: ${related.join(', ')}.`, '');
+    parts.push(`See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for more examples and limits.`);
+    await writeFile(new URL(`${entry.slug}.md`, dir), front(entry.title, entry.summary, parts.join('\n')));
   }
 }
 
