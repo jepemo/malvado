@@ -1,9 +1,12 @@
 # Malvado website
 
-Astro and Starlight build the public Malvado 2 site. Edit the guides in
-[`docs/site/`](../site/getting-started.md) and the runnable examples in
-[`examples/`](../../examples/README.md). Astro copies them into its content
-collection before builds and local development.
+Astro and Starlight build the public Malvado 2 site. The site content comes
+from the repository: `scripts/sync-content.mjs` copies the guides from
+[`docs/site/`](../site/getting-started.md), the aligned process example from
+[`examples/features/processes/`](../../../examples/features/processes/README.md),
+and the concept guides from [`docs/api/`](../api/README.md) into the Astro
+content collection before builds and local development. Edit those sources;
+the copied files are generated.
 
 From the repository root, run these commands with mise installed.
 
