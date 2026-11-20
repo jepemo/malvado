@@ -20,7 +20,7 @@ mise exec -- npm ci
 mise exec -- npm run dev
 ```
 
-Open `http://localhost:4321/malvado/`. Use `mise exec -- npm run build`
+Open `http://localhost:4321/`. Use `mise exec -- npm run build`
 to build the static site in `dist/`. Use `mise exec -- npm run preview`
 to check that build locally, including search.
 

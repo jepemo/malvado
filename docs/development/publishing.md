@@ -2,7 +2,9 @@
 
 Astro builds the Malvado 2 website from the guides in `docs/site/`.
 GitHub Pages deploys it from `master` at
-[`/malvado/`](https://jepemo.github.io/malvado/).
+[`malvado.dev`](https://malvado.dev/). The `docs/website/public/CNAME` file
+sets the custom domain. Versioned snapshots use the same host with a
+`/<version>/` path prefix.
 
 See the [website instructions](../website/README.md) for local development.
 Run `mise run test-docs` to check repository links and heading anchors.

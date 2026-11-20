@@ -3,8 +3,8 @@ import starlight from '@astrojs/starlight';
 import { repoLink, repository, version } from './scripts/site-context.mjs';
 
 export default defineConfig({
-  site: 'https://jepemo.github.io',
-  base: version ? `/malvado/${version}` : '/malvado',
+  site: 'https://malvado.dev',
+  base: version ? `/${version}` : '/',
   integrations: [starlight({
     title: version ? `Malvado ${version}` : 'Malvado',
     description: 'Guides for the Malvado game engine.',
