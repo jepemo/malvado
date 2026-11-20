@@ -15,7 +15,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'docs' / 'tools' / 'prepare_versioned_site.py'
 VERSION = '2.0.0-beta.1'
-PAGES = 'https://jepemo.github.io'
+PAGES = 'https://malvado.dev'
 ROUTES = ('', 'api/', 'getting-started/', 'sdk/', 'docs/', 'docs/samples/')
 
 
@@ -58,7 +58,7 @@ class VersionedDocsTests(unittest.TestCase):
         for page_url, page in pages.items():
             for href in page.links:
                 destination = urlsplit(urljoin(page_url, href))
-                if destination.netloc != 'jepemo.github.io':
+                if destination.netloc != 'malvado.dev':
                     continue
                 with self.subTest(source=page_url, link=href):
                     self.assertTrue(destination.path.startswith(prefix), destination.path)
@@ -71,7 +71,7 @@ class VersionedDocsTests(unittest.TestCase):
                         self.assertIn(unquote(destination.fragment), pages[target_url].anchors)
 
     def test_public_site_preserves_live_routes(self):
-        self.check_site(ROOT / 'docs' / 'website' / 'dist', '/malvado/')
+        self.check_site(ROOT / 'docs' / 'website' / 'dist', '/')
 
     def test_candidate_has_versioned_urls_and_locked_source_links(self):
         revision = subprocess.check_output(
@@ -85,7 +85,7 @@ class VersionedDocsTests(unittest.TestCase):
                 'version': VERSION, 'revision': revision, 'path': f'{VERSION}/',
             })
             site = output / VERSION
-            self.check_site(site, f'/malvado/{VERSION}/')
+            self.check_site(site, f'/{VERSION}/')
             for page in ROUTES:
                 html = (site / page / 'index.html').read_text()
                 self.assertIn(f'https://github.com/jepemo/malvado/blob/{revision}/', html)

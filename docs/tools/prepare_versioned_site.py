@@ -27,7 +27,14 @@ def prepare(version, revision, output):
     snapshot = subprocess.check_output([
         'git', '-C', str(ROOT), 'archive', revision, '--',
         'docs/site/getting-started.md', 'docs/site/sdk.md', 'docs/site/api.md',
+        'docs/api',
         'examples/c/processes/main.c', 'examples/c/processes/main.lua',
+        'examples/helloworld/main.lua',
+        'examples/move/main.lua',
+        'examples/features/processes/lua/main.lua',
+        'examples/features/image/lua/main.lua',
+        'examples/features/image/c/main.c',
+        'examples/features/image/rust/main.rs',
         f'docs/versions/{version}.md',
     ])
     with tempfile.TemporaryDirectory(prefix='malvado-docs-') as temporary:
