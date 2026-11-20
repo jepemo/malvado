@@ -1,6 +1,8 @@
 # Distribution: runtime, tools, and LuaRocks
 
-Status: in progress. No 2.0 release package has been published. This document distinguishes the distributed products and the work needed to test them.
+The [beta.1 prerelease](../versions/2.0.0-beta.1.md) publishes tested
+desktop SDKs and a source archive. This guide describes the packages and
+how to verify them.
 
 An initial local SDK archive can be built with `mise run package-sdk`. It writes a `.tar.gz` file and a SHA-256 checksum under `build/sdk-package/`. The task builds for the current host and refuses to overwrite an existing archive. It is a development artifact, not a validated release or a game export. Move or remove the previous output before running it again. See [alpha.4](../versions/2.0.0-alpha.4.md) for verification status.
 
@@ -27,7 +29,7 @@ dependency downloads. A fresh default build needs network access for Lua
 5.4.8 from lua.org and cJSON 1.7.19 and raylib 6.2 from GitHub. CMake checks the
 SHA-256 pins in [CMakeLists.txt](../../CMakeLists.txt). The optional GUI
 prototype uses additional pinned downloads from GitHub. Platform and export
-toolchains are installed separately. See the [platform matrix](alpha8-platforms.md).
+toolchains are installed separately. See the [platform matrix](platforms.md).
 
 Verify the archive against the full commit ID and keep the report with the
 archive and checksum. Use a host with CMake, a C compiler and the desktop
@@ -70,7 +72,7 @@ The historical 1.0 rockspec described the Lua/LÖVE engine and referred to files
 
 Separate rock names such as `malvado` and `malvado-cli` are proposals. Check availability and compatibility policy before publication. A Lua library rock does not necessarily install the full SDK, exporters, or GUI. An offline or target-specific SDK must list its binaries and dependencies in a manifest.
 
-## Pending technical decision for a 2.0 rock
+## Optional external Lua module
 
 An external module must link to the ABI of the interpreter that loads it and be tested with the supported Lua version. The initial proposal is Lua 5.4. Do not assume 5.1/LuaJIT compatibility or load a second independent Lua copy in the same module. The standalone runner links the Lua built for distribution. A C game links the core without Lua. The native game and binding must share the C core. Separate host/module registration from the executable; do not maintain two implementations of engine rules.
 
@@ -86,4 +88,5 @@ SDK and game package checks must use the [current process and startup contracts]
 
 Runtime and CLI use the proposed coordinated versions. GUI has its own version and compatibility matrix. Release artifacts record OS, architecture, runtime/Lua/raylib versions, hashes, and notices. When a rock exists, generate its rockspec from a pinned tag and run `luarocks lint` and `luarocks make` in temporary trees on each supported platform. Test the source artifact (`luarocks pack`). If binary rocks are published, test them by platform and Lua ABI. Publish to LuaRocks only after these tests and license resolution, as part of the release process. Upload requires an account and credentials and is separate from CI candidate generation.
 
-No 2.0 rockspec or LuaRocks installation targets are implemented. The initial CLI is under development; the GUI remains planned. The [CI plan](ci.md) and [roadmap](../versions/README.md) record these dependencies.
+The SDK and CLI are the current distribution channel. The external Lua module
+and rockspec remain [future proposals](../roadmap/README.md).

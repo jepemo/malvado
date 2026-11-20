@@ -83,44 +83,11 @@ music.stop()?;
 # Ok::<(), Error>(())
 ```
 
-## Verification
+## Audio tests
 
-`mise run test-rust-graphics` runs the main-thread audio fixture in Debug and
-Release, checks all used installed C signatures, and runs a relocated offline
-consumer. It checks invalid paths and volume, restart, pause/resume/stop,
-independent clone ownership, completion, process resource cleanup, final device
-release and reopen. Automated graphics and sanitizer tasks select the paced
-miniaudio null device
-with `MALVADO_TEST_NULL_AUDIO=ON`. The normal SDK keeps the platform backend.
-Earlier Linux runs used ALSA null PCM, which does not pace playback. The normal
-macOS SDK uses Core Audio. `mise run test-rust-graphics-sanitize` checks native ASan/UBSan paths;
-its existing host leak-detection limits still apply.
-
-The music fixture checks both WAV and OGG, loop continuation beyond three
-fixture lengths, non-looping completion and replay, independent loads,
-pause/update/resume/stop, process owner removal, orphaned stream updates,
-paused/looping shutdown, device retention and reopen. The relocated consumer
-also loads and controls a stream from its own directory.
-
-A private ownership test also checks exact Rc retention counts, paused survival,
-completion/stop release and device teardown without a reference cycle.
-
-Silent fixtures verify API and ownership behavior. These tests do not certify
-physical output, latency, device hotplug, or subjective sound quality.
-
-Audio acceptance: full host CI passes on implementation commit `8b76938`.
-The [Linux graphics job](https://github.com/jepemo/malvado/actions/runs/42984841966/job/130403450713)
-passes Debug/Release, null-device playback, the relocated consumer and native
-ASan/UBSan with leak detection enabled. This includes the WAV cleanup regression
-below. The existing graphics-provider filters are unchanged. Local macOS checks
-also pass; its existing leak-detection limitation remains explicit.
-
-The original Linux sanitizer regression found a raylib 5.5 WAV decoder context
-that survived `UnloadMusicStream`. The adapter previously released that context
-through raylib's allocator. Raylib 6.2 now owns this cleanup, so the adapter uses
-`UnloadMusicStream` for every format and no longer frees the WAV context twice.
-Empty WAV rejection remains covered by C and Rust fixtures. No third-party
-source or leak suppression is changed by this upgrade.
+`mise run test-rust-graphics` uses a paced silent device to check playback
+and resource cleanup. Audible output, latency and device hotplug require
+hardware tests.
 
 The [shared maintenance contract](audio-maintenance.md#rust-service) defines native
 pause queries, refill, binding playback roots and device ownership.

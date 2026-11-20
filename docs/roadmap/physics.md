@@ -41,7 +41,7 @@ See the [collision contract](../api/collision.md),
 [process inventory](../api/process-inventory.md),
 [cleanup rules](../api/process-cleanup.md),
 [resource lifetime](../api/resource-lifetime.md), and
-[multi-language architecture](../architecture/multi-language.md).
+[multi-language architecture](../development/architecture.md).
 Some older design pages still describe completed alpha work as open; consult
 current implementation and version evidence when promoting this proposal.
 

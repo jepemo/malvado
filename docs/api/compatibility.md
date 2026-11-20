@@ -12,7 +12,7 @@ a compatibility freeze. A candidate API review records that release's contracts;
 it does not freeze all future releases. Approved changes need clear reasons,
 updated contracts/tests/docs, migration notes and native ABI/SDK mismatch checks.
 No 1.0 source/API compatibility is required. External format fidelity is a separate
-per-format decision. See the [release direction](../planning/roadmap.md).
+per-format decision. See the [version plan](../versions/README.md).
 
 ## Experimental Rust gameplay API
 
@@ -57,7 +57,7 @@ The [alpha.6 family review](family-review.md) records the pinned inputs, deliver
 
 ## Formats and tools
 
-Classify FPG compatibility by variant and direction. Reading, conversion, and writing are separate capabilities. The [asset decision](../specs/assets.md) preserves IDs, points, and palettes and proposes editable PNG+JSON without removing historical `file/graph` access. The [GUI](../specs/gui.md) presents only importers/exporters that exist in C services shared with the CLI. A viewer does not certify fidelity or support for every variant.
+Classify FPG compatibility by variant and direction. Reading, conversion, and writing are separate capabilities. The [asset decision](../roadmap/asset-formats.md) preserves IDs, points, and palettes and proposes editable PNG+JSON without removing historical `file/graph` access. The [GUI](../roadmap/gui.md) presents only importers/exporters that exist in C services shared with the CLI. A viewer does not certify fidelity or support for every variant.
 
 ## Per-symbol tracking record
 
@@ -70,7 +70,7 @@ The generated catalog uses `status=not_assessed` for all reference entries. Do n
   "status": "planned",
   "lua_name": "malvado.signal",
   "implementation": null,
-  "contract": "lua-contract.md",
+  "contract": "lua-processes.md",
   "example": "signals",
   "conformance_test": null,
   "divergences": ["Review type selector and tree handling"]

@@ -53,7 +53,7 @@ Local macOS verification passed:
 - `mise run test-rust-graphics`: Debug/Release graphics/assets tests, independent
   graphics-only builds, installed consumers, Clippy and optional-component/ABI errors.
 - All 37 current Rust API guide snippets compiled and ran in both profiles.
-- `mise run test-docs`, targeted roadmap/version links and strict MkDocs build.
+- `mise run test-docs`, targeted roadmap/version links and Astro build.
 
 Run graphical verification serially on this host. Concurrent graphical suites
 encountered GLFW monitor-discovery crashes; serial reruns passed. No renderer

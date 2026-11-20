@@ -61,8 +61,8 @@ Absolute image paths pass through. Relative source paths stay relative; `..`
 is preserved. These helpers do not canonicalize, check files or load images.
 The size includes NUL. NULL/empty image references return 0. Invalid or small
 output buffers are unchanged. Output must not overlap source or image storage.
-Windows separator rules apply on Windows; automated Windows acceptance remains
-in alpha.9. Native callers must serialize this service with other cJSON imports.
+Windows separator rules apply on Windows. Native callers must serialize this
+service with other cJSON imports.
 
 Lua guards each source with private GC userdata before later Lua allocations.
 Import errors can release the source without leaking an open file or copied

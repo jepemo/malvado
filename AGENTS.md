@@ -85,6 +85,9 @@ Make user-facing documentation friendly, welcoming, and easy to follow.
 Use the original root `README.md` as a reference for its approachable, example-led style.
 
 Keep documentation and examples consistent with the implemented API. Do not present planned features as available.
+Keep current behavior, guarantees, limits and design decisions in the guide that
+covers them. Use the source for implementation details and Git history for
+completed implementation reports.
 
 ### Example policy
 
@@ -97,7 +100,7 @@ Keep documentation and examples consistent with the implemented API. Do not pres
 - Verify the aligned versions with compilation and bounded execution, shared traces or behavior checks, and automated graphics/input checks when applicable. Tests are not a substitute for runnable teaching examples.
 - Record missing language variants as incomplete work. Do not present an example as aligned until all three versions run with delivered APIs and pass their required checks.
 
-The [example policy and migration plan](docs/examples/README.md) defines the target layout and milestone responsibilities. Existing examples remain at their current paths until their migration updates builds, tests, links, asset resolution, and export behavior together.
+The [example catalog proposal](docs/roadmap/examples.md) describes the target layout and migration. Existing examples remain at their current paths until their migration updates builds, tests, links, asset resolution, and export behavior together.
 
 ## 5. Development workflow
 
@@ -120,7 +123,8 @@ During implementation:
 Use the following project references when relevant:
 
 - [Version plan](docs/versions/README.md)
-- [Architecture and roadmap](docs/planning/roadmap.md)
+- [Architecture](docs/development/architecture.md)
+- [Feature proposals](docs/roadmap/README.md)
 - [C style guide](docs/development/c-style.md)
 - [Development commands](mise.toml)
 

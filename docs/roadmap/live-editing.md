@@ -11,7 +11,7 @@ The native core already provides context/process identities, snapshots,
 properties, lifecycle operations and resource ownership. C, Lua and Rust share
 that scheduler. The runner has owner-thread debug hooks, pause and tick-step
 operations; these are not a general external editing service. Existing GUI
-[instrumentation planning](../specs/gui.md#g2-process-instrumentation) describes
+[instrumentation planning](gui.md#g2-process-instrumentation) describes
 safe points and immutable snapshots. Reuse those contracts where practical.
 
 Native image references, selected graphs, animation clocks and command lists

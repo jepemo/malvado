@@ -1,7 +1,7 @@
 # Gameplay API guides
 
 C callbacks, Lua coroutines and Rust futures use the same process scheduler.
-Use the [API snapshot][snapshot] to find the exact public names, types and
+Use the [API reference][reference] to find the exact public names, types and
 platform requirements.
 
 ## Run and stop processes
@@ -17,6 +17,19 @@ reason after the process ends. Attached children end with their owner. A detache
 child can continue until its own completion or game shutdown. See the
 [process cleanup contract][cleanup] and [runner timing][timing].
 
+## Organize a level
+
+Use one process for the game controller and one for the active level.
+Start the level's enemies and effects from the level process so they end
+with it. Keep the score and other state that lasts across levels in the
+controller. End the current level before starting the next one. A process
+created during a tick starts on the next tick.
+
+The [process tree example][process-tree] shows the lifetime pattern in
+Lua. The controller starts a group with two children, then calls
+`kill_tree` with the group handle. The same pattern can clean
+up a level when the player finishes it or returns to a menu.
+
 ## Choose a reference
 
 | Task | C and Lua reference | Rust reference |
@@ -30,7 +43,7 @@ child can continue until its own completion or game shutdown. See the
 Use the [C headers][c-api] for signatures and status values. Use the
 [Lua flat exports][lua-globals] and [namespace reference][lua-namespaces] for
 module names, constants and methods. Build the Rust API reference locally with
-the [installed SDK command][snapshot].
+the [installed SDK command][rust-reference].
 
 ## Keep resources alive
 
@@ -53,7 +66,8 @@ is arm64 from macOS or Linux. See [SDK and projects](sdk.md#export-for-android)
 and the [platform matrix][targets] for format, toolchain and device limits.
 The [language matrix][languages] describes which features each API provides.
 
-[snapshot]: https://github.com/jepemo/malvado/blob/master/docs/api/beta.1-snapshot.md
+[reference]: https://github.com/jepemo/malvado/blob/master/docs/api/README.md
+[rust-reference]: https://github.com/jepemo/malvado/blob/master/docs/api/README.md#build-the-rust-api-reference
 [c]: https://github.com/jepemo/malvado/blob/master/docs/api/c-contract.md
 [c-api]: https://github.com/jepemo/malvado/blob/master/docs/api/current-c-api.md
 [lua]: https://github.com/jepemo/malvado/blob/master/docs/api/lua-processes.md
@@ -62,6 +76,7 @@ The [language matrix][languages] describes which features each API provides.
 [rust]: https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md
 [cleanup]: https://github.com/jepemo/malvado/blob/master/docs/api/process-cleanup.md
 [timing]: https://github.com/jepemo/malvado/blob/master/docs/api/runner-timing.md
+[process-tree]: https://github.com/jepemo/malvado/tree/master/examples/process-tree
 [platform]: https://github.com/jepemo/malvado/blob/master/docs/api/platform-inventory.md
 [drawing]: https://github.com/jepemo/malvado/blob/master/docs/api/drawing.md
 [keys]: https://github.com/jepemo/malvado/blob/master/docs/api/keyboard.md
@@ -82,5 +97,5 @@ The [language matrix][languages] describes which features each API provides.
 [rust-font]: https://github.com/jepemo/malvado/blob/master/docs/api/rust-font.md
 [rust-collision]: https://github.com/jepemo/malvado/blob/master/docs/api/rust-collision.md
 [rust-audio]: https://github.com/jepemo/malvado/blob/master/docs/api/rust-audio.md
-[targets]: https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md
+[targets]: https://github.com/jepemo/malvado/blob/master/docs/development/platforms.md
 [languages]: https://github.com/jepemo/malvado/blob/master/docs/api/language-parity.md

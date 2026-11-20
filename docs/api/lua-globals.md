@@ -161,7 +161,7 @@ by the normal global import:
 
 - `mv.import_globals`: install the globals listed above, with conflict checks.
 - `mv.legacy_fpg`: load a legacy image sheet or directory. The legacy import
-  exposes it as `fpg`; see the [legacy guide](lua-contract.md#legacy-shim).
+  exposes it as `fpg`; see the [legacy guide](lua-processes.md#legacy-shim).
 
 The other module tables are mapped in the [namespace inventory](lua-namespaces.md).
 `lua_module_inventory` checks module fields against these two inventories; it

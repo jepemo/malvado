@@ -1,27 +1,29 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { repoLink, repository, version } from './scripts/site-context.mjs';
 
 export default defineConfig({
   site: 'https://jepemo.github.io',
-  base: '/malvado',
+  base: version ? `/malvado/${version}` : '/malvado',
   integrations: [starlight({
-    title: 'Malvado',
+    title: version ? `Malvado ${version}` : 'Malvado',
     description: 'Guides for the Malvado game engine.',
     customCss: ['./src/styles/docs.css'],
-    social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/jepemo/malvado' }],
+    social: [{ icon: 'github', label: 'GitHub', href: repository }],
     expressiveCode: { themes: ['github-light', 'github-dark'] },
     sidebar: [
       { label: 'Getting started', items: [
         { label: 'Introduction', slug: 'docs' },
-        { label: 'Build and run', slug: 'docs/getting-started' },
+        { label: 'Get started', slug: 'getting-started' },
+        { label: 'SDK and projects', slug: 'sdk' },
+        { label: 'Gameplay API guides', slug: 'api' },
         { label: 'Lua and C examples', slug: 'docs/samples' },
       ] },
-      { label: 'Current guides on GitHub', collapsed: true, items: [
-        { label: 'Processes', link: 'https://github.com/jepemo/malvado/blob/master/docs/api/lua-processes.md' },
-        { label: 'Graphics and sprites', link: 'https://github.com/jepemo/malvado/blob/master/docs/api/images.md' },
-        { label: 'Collision', link: 'https://github.com/jepemo/malvado/blob/master/docs/api/collision.md' },
-        { label: 'C API', link: 'https://github.com/jepemo/malvado/blob/master/docs/api/c-contract.md' },
-        { label: 'SDK and projects', link: 'https://github.com/jepemo/malvado/blob/master/docs/site/sdk.md' },
+      { label: 'API reference on GitHub', collapsed: true, items: [
+        { label: 'Processes', link: repoLink('docs/api/lua-processes.md') },
+        { label: 'Graphics and sprites', link: repoLink('docs/api/images.md') },
+        { label: 'Collision', link: repoLink('docs/api/collision.md') },
+        { label: 'C API', link: repoLink('docs/api/c-contract.md') },
       ] },
     ],
   })],

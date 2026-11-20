@@ -2,7 +2,7 @@
 
 Enable the `assets` feature and select an installed SDK with native asset support.
 The Rust API uses the same C parser as Lua. It accepts the
-[documented uncompressed BennuGD 8-bit subset](../specs/fpg-8.md), not every DIV
+[documented uncompressed BennuGD 8-bit subset](fpg.md), not every DIV
 FPG variant. Other depths, compressed files and binary writing are unsupported.
 
 ```rust

@@ -200,42 +200,6 @@ changing rate. Invalid rates leave state unchanged. Looping playback wraps;
 non-looping playback holds its last frame. This service does not assign a graph
 or advance automatically when a process runs, sleeps, or freezes.
 
-The Rust tests check boundaries, native frame copying, invalid definitions,
-independent playback, exact tick accumulation, rate errors, loop/end behavior,
-and retention after context shutdown. Compile-fail examples verify playback
-lifetime and owner-thread destruction. Installed-header probes check every
-camera/animation signature and all public record layouts and offsets.
-
-Local verification: `mise run test-rust` passes in Debug and Release, including
-51 workspace tests, 11 doctests, Clippy, format, bounded existing examples,
-SDK rejection fixtures, and an offline external consumer that uses both modules
-from a relocated installed SDK. `mise run test-rust-sanitize` passes with the
-new native operations; Rust itself is not sanitizer-instrumented.
-
-A7.6ad/ae host evidence on macOS: C-only (59 tests), standard/headless
-(175 each), visual (57), Rust Debug/Release, relocated external consumer,
-installed signature checks, Clippy/format and native ASan/UBSan integration
-pass. The runnable Follow example and owner-thread compile failure also pass
-as doctests in both profiles. Native main/explicit camera ownership was outside
-that early evidence. The [integration audit](../versions/2.0.0-alpha.7-integration.md)
-records current family acceptance.
-
-A7.6am macOS evidence: Rust core and graphics Debug/Release suites pass with
-registered-camera tests and relocated installed consumers. The registered-camera
-usage and owner-thread doctests pass in both profiles. Clippy/format and native
-graphical ASan/UBSan pass, including open-camera context cleanup and viewport
-pixels; Rust itself is not instrumented. Native scope/coordinate-boundary pixel
-checks pass after the default full-window batching adjustment. The isolated
-full graphics rerun passed after an earlier keyboard fixture failure. Linux CI
-and other platform services were outside that early evidence. Current family
-acceptance is recorded in the integration audit.
-
-A7.6ao local macOS evidence: Rust core and graphics suites pass in Debug and
-Release, including the new view methods, runnable doctest and installed offline
-consumers. Clippy/format and native graphical ASan/UBSan integration pass. Rust
-itself is not sanitizer-instrumented, and macOS leak detection is disabled.
-Other A7.6 services were outside that local implementation-stage evidence.
-
 ## Process animation clocks
 
 `actor.set_animation_clock(&animation)?` retains the definition in the native

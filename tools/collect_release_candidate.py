@@ -19,6 +19,18 @@ def read_json(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
+def release_notes(path, version):
+    original = path.read_bytes()
+    text = original.decode('utf-8').replace('\r\n', '\n')
+    title = f'# Malvado {version}\n'
+    if text.startswith(title):
+        return original
+    section = re.search(r'^## Release notes\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    if not text.startswith(f'# {version}\n') or not section or not section[1].strip():
+        raise ValueError('Release notes do not match the candidate version or are missing')
+    return f'{title}\n{section[1].strip()}\n'.encode('utf-8')
+
+
 def collect(platform, source, docs, notes, version, output):
     if not re.fullmatch(r'2\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?', version):
         raise ValueError('Invalid candidate version')
@@ -62,8 +74,7 @@ def collect(platform, source, docs, notes, version, output):
     expected_docs = {'version': version, 'revision': revision, 'path': f'{version}/'}
     if read_json(docs / 'candidate.json') != expected_docs or not (docs / version / 'index.html').is_file():
         raise ValueError('Documentation does not match the candidate')
-    if not notes.read_text(encoding='utf-8').startswith(f'# Malvado {version}\n'):
-        raise ValueError('Release notes do not match the candidate version')
+    notes_content = release_notes(notes, version)
 
     output.mkdir()
     try:
@@ -74,7 +85,7 @@ def collect(platform, source, docs, notes, version, output):
         shutil.copyfile(platform / 'platform-candidate.json', output / 'platform-candidate.json')
         shutil.copyfile(source / 'verification.json', output / 'source-verification.json')
         shutil.copytree(docs, output / 'docs')
-        shutil.copyfile(notes, output / 'RELEASE-NOTES.md')
+        (output / 'RELEASE-NOTES.md').write_bytes(notes_content)
         checksums = []
         for file in sorted(output.rglob('*')):
             if file.is_file():

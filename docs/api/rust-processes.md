@@ -107,11 +107,11 @@ a dead owner fail; creation queries can still return its live descendants.
 
 `process.frame().await` waits for the next eligible activation. Native Sleep and
 Freeze suspend execution; Wake resumes it with locals intact. Wakes only mark
-readiness. A future that returns Pending without arranging a wake stays pending
-without busy polling. Waking during poll or from another thread does not poll
-recursively; it takes effect at an eligible native callback. Arbitrary futures
-must obey Rust's wake contract and must not block. No asynchronous I/O runtime
-is installed or promised.
+readiness for the next eligible native callback. Wakers can cross threads.
+The game, process tokens and state stay on their owner thread. A future
+that returns Pending without arranging a wake stays pending. A late wake
+cannot revive a cancelled process. Code must yield control to the game loop.
+Malvado supplies frame waits and leaves asynchronous I/O to the host.
 
 Returning `Ok(())` requests native completion. Returning `Err` or panicking
 requests a native process error, which `game.tick()` reports as
@@ -123,9 +123,7 @@ all remaining processes. Handles do not keep process state alive.
 Unwinding panics in poll, factory, and native cleanup are contained. A destructor
 panic preserves the existing native end reason. An exceptional secondary panic
 payload may be retained to avoid unwinding across C. `panic=abort`, double-panic
-aborts and aborting panic hooks cannot be caught. See the
-[scheduler proof](../versions/2.0.0-alpha.7-scheduler.md) for safety evidence and
-limits. Dedicated graphics and audio wrappers define their platform lifetimes.
+aborts and aborting panic hooks still terminate the program.
 
 ## Native resource ownership
 

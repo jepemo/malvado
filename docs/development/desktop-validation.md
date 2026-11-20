@@ -1,6 +1,8 @@
-# Alpha.4 desktop validation
+# Manual desktop validation
 
-Use this procedure for manual desktop testing in beta. It does not block alpha.4. Record the source commit, SDK archive name, host operating system and version, architecture, and results in the [beta.1 checklist](../versions/2.0.0-beta.1.md).
+Use this procedure for the [2.0.0 desktop checks](../versions/2.0.0.md). Record
+the source commit, SDK archive name, host operating system and version,
+architecture, and results.
 
 Use one macOS computer and one Linux computer. Each SDK must match its host. For the final game check, use a second computer with the same operating system and architecture. That computer must not have the Malvado SDK installed. Both computers need a working graphics session.
 
@@ -52,11 +54,18 @@ cd ..
 
 Each run must open the game window. Close it before the next command. The export must contain `game`, `game-bin`, and a `licenses` directory.
 
-On macOS, create an application bundle in each project with `malvado export --app`. Open each `dist/game.app` in Finder and close the window. Keep the two bundles in separate directories.
+Create a Rust game with `malvado new --lang rust rust-game`. Use the same
+check, build, run and export workflow with the [Rust SDK requirements](../site/sdk.md#create-a-rust-game).
+The export contains the same launcher, native payload and license directory as C.
+
+On macOS, create an application bundle in each project with `malvado export --app`.
+Open each `dist/game.app` in Finder and close the window. Keep the bundles in
+separate directories.
 
 ## Test on the second computer
 
-Copy each complete `dist/game` directory to the second computer. Keep the C and Lua games in separate directories. For each game, open a terminal in its directory and run:
+Copy each complete `dist/game` directory to the second computer. Keep the games
+in separate directories. For each game, open a terminal in its directory and run:
 
 ```sh
 ./game
@@ -73,7 +82,7 @@ This procedure does not establish a minimum operating system version. It does no
 With Docker running, test a Linux x86-64 SDK archive and its adjacent checksum file:
 
 ```sh
-sh tools/verify-linux-candidate.sh /path/to/malvado-sdk-2.0.0-alpha.4-dev-linux-x86_64.tar.gz
+sh tools/verify-linux-candidate.sh /path/to/malvado-sdk-2.0.0-beta.1-linux-x86_64.tar.gz
 ```
 
 The script downloads Ubuntu images and packages. It builds and exports games in one container, then runs the exports in another without the SDK or development tools. It uses a virtual display and software rendering. On another architecture, Docker must support x86-64 emulation. This check does not replace a test on native hardware.

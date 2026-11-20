@@ -80,30 +80,3 @@ all window owners resets input; reopening starts neutral. The default headless
 Game still has no live-window service. Mouse, controller and Unicode text queries are described in the
 [input guide](rust-input.md). See the [language matrix](language-parity.md)
 for the other delivered platform services.
-
-The SDK consumer also checks that a core-only prefix rejects the graphics
-feature and that a changed native color layout fails before graphics calls.
-Reconfiguring the same CMake consumer from one SDK prefix to another resolves
-raylib from the new prefix rather than a cached path.
-
-`mise run test-rust-graphics-sanitize` checks frame cleanup (including unwind),
-window shutdown/reopen, and native keyboard snapshot ownership against an
-ASan/UBSan-instrumented backend. The native libraries are instrumented; Rust
-itself is not. The macOS runtime uses the existing leak-detection limitation
-from the sanitizer task. Linux CI runs the graphical sanitizer check under Xvfb.
-
-Linux LeakSanitizer keeps detection enabled for Malvado allocations. The
-verification-only pixel helper pins loaded DRI/Gallium/LLVM modules so
-exit-time reports keep their module names and global roots. Games never call
-that helper. GLX display-provider modules are not pinned, so close/reopen can
-reset their display state. Native window/context and image cleanup still run
-normally.
-The graphical filter excludes provider-module allocation stacks (`libgallium`,
-DRI and LLVM) and the observed GLX extension-query stack. It does not suppress
-Malvado draw or allocation frames. Core and asset modes do not use the filter.
-A negative fixture verifies that unrelated native allocations still fail.
-
-This limit is based on [GLX query evidence](https://github.com/jepemo/malvado/actions/runs/42829814334/job/129876608971)
-and [unloaded drawing-provider stacks](https://github.com/jepemo/malvado/actions/runs/42833417060/job/129889149968).
-Changing to softpipe did not remove provider allocations, so tests retain the
-default renderer. Provider leak freedom is not claimed by these checks.

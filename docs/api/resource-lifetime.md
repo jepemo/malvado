@@ -1,7 +1,7 @@
 # Resource lifetime contract
 
 These rules apply to the delivered C, Lua and Rust resource APIs. The
-[API snapshot](beta.1-snapshot.md) links the language-specific contracts.
+[API reference](README.md) links the language-specific contracts.
 
 ## Ownership and sharing
 

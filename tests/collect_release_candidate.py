@@ -95,7 +95,25 @@ class DraftCandidateTests(unittest.TestCase):
             self.assertEqual(digest, hashlib.sha256((self.output / name).read_bytes()).hexdigest())
         with self.assertRaises(FileExistsError):
             self.collect()
-        self.assertTrue((self.output / 'RELEASE-NOTES.md').is_file())
+        self.assertEqual((self.output / 'RELEASE-NOTES.md').read_bytes(), self.notes.read_bytes())
+
+    def test_version_page_releases_only_its_release_notes(self):
+        self.notes.write_text(f'# {VERSION}\n\nStatus: planned.\n\n'
+                              '## Release notes\n\n### Changes\n\n- Delivered.\n\n'
+                              '## Checklist\n\n- [ ] Verify release.\n')
+        self.collect()
+        self.assertEqual((self.output / 'RELEASE-NOTES.md').read_text(),
+                         f'# Malvado {VERSION}\n\n### Changes\n\n- Delivered.\n')
+
+    def test_version_page_requires_matching_nonempty_release_notes(self):
+        for heading, section in ((VERSION, '## Checklist\n\nPending.'),
+                                  (VERSION, '## Release notes\n\n## Checklist\n\nPending.'),
+                                  ('2.0.0', '## Release notes\n\n- Delivered.')):
+            with self.subTest(heading=heading, section=section):
+                self.notes.write_text(f'# {heading}\n\n{section}\n')
+                with self.assertRaisesRegex(ValueError, 'Release notes'):
+                    self.collect()
+                self.assertFalse(self.output.exists())
 
     def test_wrong_documentation_or_source_evidence_is_rejected(self):
         self.write_docs('b' * 40)

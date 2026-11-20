@@ -2,9 +2,8 @@
 
 This map records the collision API delivered in C and Lua. The [collision
 contract](collision.md) defines coordinates, edge contact, errors, ownership,
-and supported sweep shapes. The [collision plan](../versions/2.0.0-alpha.6-collision.md)
-records its automated acceptance evidence. This map does not select future
-collision features or certify compatibility with historical APIs.
+and supported sweep shapes. The table maps the delivered operations to
+their automated tests.
 
 | Area | C | Lua | Evidence |
 | --- | --- | --- | --- |

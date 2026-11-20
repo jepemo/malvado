@@ -1,6 +1,7 @@
 # Process cleanup contract
 
-This is the alpha.5 target for C and Lua cleanup. The order test covers the basic Lua ownership cascade. The remaining implementation and error cases stay open in the [alpha.5 checklist](../versions/2.0.0-alpha.5.md).
+The C and Lua cleanup rules were delivered in
+[alpha.5](../versions/2.0.0-alpha.5.md).
 
 ## Termination and order
 

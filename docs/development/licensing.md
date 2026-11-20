@@ -4,7 +4,7 @@ Jeremías Pérez created Malvado and has selected Apache License 2.0 for the Mal
 
 ## Historical Malvado 1 code
 
-The old Lua/LÖVE engine had GPL-3.0-or-later notices while its 1.0 rockspec declared Apache 2.0. The owner has chosen the Apache-2.0 rewrite and removed that engine and rockspec from the current tree. The [historical revision](https://github.com/jepemo/malvado/tree/4670d8a) remains available with its original notices. The old examples remain as migration references; they are not yet Malvado 2 examples. This decision does not revoke the terms of earlier copies or relicense third-party material.
+The old Lua/LÖVE engine had GPL-3.0-or-later notices while its 1.0 rockspec declared Apache 2.0. The owner has chosen the Apache-2.0 rewrite and removed that engine and rockspec from the current tree. The [historical revision](https://github.com/jepemo/malvado/tree/4670d8a) remains available with its original notices. This decision does not revoke the terms of earlier copies or relicense third-party material.
 
 ## Dependencies and references
 

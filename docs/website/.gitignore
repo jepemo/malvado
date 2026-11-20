@@ -3,3 +3,5 @@ dist/
 .astro/
 src/content/docs/docs/getting-started.md
 src/content/docs/docs/samples.md
+src/content/docs/docs/api.md
+src/content/docs/docs/sdk.md

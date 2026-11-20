@@ -58,8 +58,8 @@ object methods and process fields are not included in this namespace table.
 | `mv.camera.move` | Move a camera | [cameras](cameras.md) |
 | `mv.camera.position` | Read a camera position | [cameras](cameras.md) |
 | `mv.world.create` | Create a static collision world | [collision](collision.md) |
-| `mv.fpg.parse` | Parse an FPG file * | [FPG](../specs/fpg-8.md) |
-| `mv.fpg.parse_manifest` | Parse an FPG manifest * | [FPG](../specs/fpg-8.md) |
+| `mv.fpg.parse` | Parse an FPG file * | [FPG](fpg.md) |
+| `mv.fpg.parse_manifest` | Parse an FPG manifest * | [FPG](fpg.md) |
 
 The `lua_namespace_inventory` test compares this table with functions exposed
 by the runtime. It checks both asset-enabled and asset-disabled builds when
@@ -78,8 +78,8 @@ a graphics window.
 | `animation` | `animation:sample` | [animations](animations.md) |
 | `atlas` | `atlas:graph`, `atlas:animation` | [images](images.md) |
 | `world` | `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | [collision](collision.md) |
-| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph`, `fpg:animation` | [FPG](../specs/fpg-8.md) |
-| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point`, `manifest:graph`, `manifest:animation` | [FPG](../specs/fpg-8.md) |
+| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph`, `fpg:animation` | [FPG](fpg.md) |
+| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point`, `manifest:graph`, `manifest:animation` | [FPG](fpg.md) |
 
 `lua_module_inventory` compares these method names with the runtime. It does
 not certify their semantics. Process handles also have `self:recv`; see the

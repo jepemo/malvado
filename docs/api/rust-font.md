@@ -36,14 +36,4 @@ owner termination cannot release a texture that queued text still uses. Native
 font destruction precedes final window release. Forgetting a frame can leak its
 retained resources, as with other forgotten Rust owners.
 
-Debug/Release and relocated SDK consumers verify loading, measurement, invalid
-input, rendered glyphs, Unicode selection versus fallback, process resource
-cleanup before draw completion, clone/drop, and final window shutdown/reopen.
-The native graphical sanitizer task covers this path with its documented driver
-limits. This service does not create persistent text objects or auto-layout.
-
-The native font implementation also passed both profiles and the combined
-asset/graphics sanitizer run in the
-[Linux job on `902cfc5`](https://github.com/jepemo/malvado/actions/runs/42850359460/job/129949030566).
-The available local macOS display passes the same checks. Runner limitations
-and provider-allocation exclusions follow the [window contract](rust-window.md).
+For persistent text, see [Rust context text handles](text.md#rust-context-text-handles).

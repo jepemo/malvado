@@ -182,8 +182,8 @@ Lua uses this operation at its existing end-of-tick update point for main and
 explicit cameras. Lua keeps its target userdata reference to check local invalid
 visual overrides. These overrides still preserve the last valid camera position.
 `camera_set`, `camera_move`, destroy and target replacement keep their current
-stop-following behavior. Main/explicit camera identity and process camera
-selection remain Lua-owned; this service closes target tracking only.
+stop-following behavior. See [camera identities and selection](#context-owned-camera-identities-and-selection)
+for registering cameras and selecting a view.
 
 `c_camera_follow` verifies foreign/NULL/malformed references, failure atomicity,
 viewport/copy behavior, sleep/freeze, explicit kill, attached-child death, natural
@@ -191,11 +191,6 @@ return and exactly-once destruction while a follow reference still exists.
 `alpha7_camera_follow_parity` compares C/Lua follow, frozen, viewport and ended
 phases with one fixed golden trace. Existing headless and visual camera fixtures
 check invalid local coordinates, replacement, shutdown and rendering behavior.
-
-A7.6ad local macOS checks pass: C-only (59 tests), standard/headless
-(175 tests each), and visual (57 tests). The expanded native destruction cases
-and C/Lua parity also pass after the safe-point test correction. Linux CI and
-native main/explicit camera ownership remain outside this local evidence.
 
 ## Context-owned camera identities and selection
 
@@ -248,14 +243,6 @@ spawn rejection without an orphan process. `visual_native_camera_registry`
 checks native main/explicit/screen mutations, viewport clipping and closed-view
 hiding on a frozen Lua process. Existing scope and camera visuals remain required.
 
-A7.6al macOS evidence: C-only (63 tests), standard/headless (182 each) and
-visual (60) pass. The final native primitive pixel test also checks that
-camera/scroll cancellation cannot bypass the existing world-coordinate limit.
-Installed probes verify all new signatures and CameraRef layout. One graphics
-attempt failed in the existing keyboard visual fixture; the isolated fixture
-and complete isolated graphics rerun passed without keyboard changes. Linux CI
-and remaining asset/command services are not certified by this local evidence.
-
 ## Process region and local scroll
 
 Each process stores an optional copied screen-space region and a local scroll.
@@ -300,7 +287,3 @@ userdata identity. `visual_native_process_view` changes and clears native
 region/scroll while a Lua actor is frozen, checks clipping/hiding/restoration,
 and verifies unchanged world coordinates. Existing camera and scope visuals
 also remain required.
-
-A7.6an local macOS checks pass: C-only (64), standard/headless (184 each),
-and visual (61). Installed Rust sys probes check all six native signatures.
-This evidence does not certify Linux CI or the remaining A7.6 services.

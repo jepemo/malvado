@@ -9,5 +9,3 @@ Build Malvado, then run:
 ```
 
 The example requires a display or virtual display.
-
-This version uses the Malvado 2 Lua API. The [original example](https://github.com/jepemo/malvado/blob/4670d8a/examples/helloworld/main.lua) used LÖVE and global functions.

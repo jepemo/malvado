@@ -15,8 +15,6 @@ The directory migration is planned, not complete. Current entry points include:
 - [Lua Space Asteroids game](space_asteroids/README.md).
 - [Current Rust process and world SDK examples](../bindings/rust/README.md).
 
-These older examples have their own language coverage.
-Read the [example policy and migration plan](../docs/examples/README.md) for the
-planned topic-based `features/` and `games/` layout, parity rules, selection
-criteria, and milestone responsibilities. Until a program is migrated, use the
-commands and requirements in its current README.
+Each example's README gives its commands and language coverage. See the
+[catalog proposal](../docs/roadmap/examples.md) for the planned layout and
+migration.

@@ -42,7 +42,7 @@ from AABs on API 34, including Activity lifecycle, input, audio focus and IME
 checks. The x86_64 emulator fixture path is for verification. The delivered
 export target is arm64. See the [Android Rust commands](../development/android-rust-games.md).
 Physical device behavior and audible output remain beta checks. See
-[platform verification](../development/alpha8-platforms.md) for evidence and
+[platform verification](../development/platforms.md) for evidence and
 limits, and the [language matrix](language-parity.md) for feature differences.
 
 ## Current entry point

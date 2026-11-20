@@ -112,13 +112,6 @@ and primitive drawing operation.
 priority independence, frozen/sleeping visibility, rotation/scale, zero-scale
 hiding, clip/scroll scope behavior, clear and invalid frame/context calls.
 
-A7.6af local macOS evidence: C-only (60 tests), standard/headless (177 each)
-and visual (59) pass. Installed SDK probes check every new signature plus
-Color/Graphic size, alignment and offsets; color-header drift is rejected by
-the core probe. Native graphical ASan/UBSan exercises the primitive pass.
-Linux CI and the remaining asset graph/resource integration are not certified
-by these local checks.
-
 ## Rust process graphics
 
 Core-only consumers can create `graphic::Graphic { geometry, color }`, assign
@@ -138,17 +131,8 @@ shared handles, sleep/freeze, clear and dead/closed handles. The graphics pixel
 fixture checks ordering, visibility, clear, invalid-scale hiding and scope
 restoration. Installed core and graphical consumers exercise both boundaries.
 
-The `Graphic` rustdoc example is runnable without a graphics backend. Migration
-of public C/Lua/Rust teaching examples remains A7.8 work. Image, sprite and
-animation process graphs are not available through `Graphic` yet.
-
-A7.6ag local macOS evidence: `test-rust` and `test-rust-graphics` pass in
-Debug/Release, including relocated offline core/graphics consumers, signature
-and layout checks, drift diagnostics, Clippy and formatting. The new core-only
-Graphic doctest passes in both profiles. `test-rust-graphics-sanitize` passes
-with the new graph lifetime and process-pass pixel fixtures. Rust itself is not
-sanitizer-instrumented. Linux CI and the remaining asset graph integration
-remain open.
+`Graphic` represents primitive shapes. Use the [sprite API](rust-atlas.md)
+for image and animation graphs.
 
 ## Local sprite geometry
 

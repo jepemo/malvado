@@ -2,7 +2,7 @@
 
 This inventory records the implemented asset import APIs. It is an input to the
 complete 2.0 inventory. It does not select the remaining API families or certify
-historical compatibility. See the [image contract](images.md) and [FPG contract](../specs/fpg-8.md)
+historical compatibility. See the [image contract](images.md) and [FPG contract](fpg.md)
 for inputs, errors, ownership, examples, and limitations.
 
 | Area | C | Lua | Evidence |
@@ -46,7 +46,7 @@ the public atlas header; it does not certify behavior or structure fields.
 | `MvFpgManifest` | Opaque, caller-owned manifest metadata; it does not load PNGs. Lua exposes a managed headless object. |
 | `MvFpgManifestSprite` | A copied C manifest record. Lua exposes copied metadata. |
 
-The [FPG contract](../specs/fpg-8.md) defines format limits, copying, errors,
+The [FPG contract](fpg.md) defines format limits, copying, errors,
 and borrowed data. `fpg`, `fpg_png`, `fpg_allocation`, and
 `fpg_manifest_allocation` cover the C API; `lua_fpg` and `lua_fpg_export`
 cover headless Lua. The graphical `visual_fpg_image` test covers image creation.

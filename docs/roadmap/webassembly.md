@@ -1,9 +1,8 @@
 # WebAssembly and HTML5 export
 
-Status: feasibility proposal, researched on 2026-11-16. No web target is
-implemented or approved by this page. Version numbers below are tentative
-post-2.0 planning slots, subject to the [promotion rule](README.md#promotion-into-a-release).
-They do not change alpha.8, beta or 2.0 commitments, or assign dates.
+Status: feasibility proposal, researched on 2026-11-16. See
+[selecting work](README.md#promotion-into-a-release) for how this proposal can enter
+a release.
 
 ## Outcome and feasibility
 
@@ -24,9 +23,9 @@ assessment, not a tested port. Rust needs a separate toolchain proof.
 | `src/cli.c`, `src/build.c` and `src/export.c` separate project dispatch, builds and export | Extend these paths with target selection and a web toolchain, without a separate user tool. Current exports target the host. |
 | `bindings/rust/malvado-sys/build.rs` rejects cross-compilation and probes an installed native SDK; the safe adapter uses owned futures | A Rust target needs cross-SDK discovery and validation, not just a Cargo flag. Keep future polling inside the C scheduler. |
 
-See [architecture](../architecture/multi-language.md), [CLI](../specs/cli.md),
+See [architecture](../development/architecture.md), [CLI](../development/cli.md),
 [resource lifetime](../api/resource-lifetime.md) and
-[graphics modes](../specs/graphics-modes.md) for existing boundaries.
+[graphics modes](graphics-modes.md) for existing boundaries.
 
 ## Runtime and platform approach to evaluate
 
@@ -112,15 +111,13 @@ Document WASM MIME types, HTTP(S), loading/error UI and cache consistency. The
 local server needs a bounded document root, clean shutdown and port errors.
 A server backend, service worker and hosting account are not prerequisites.
 
-## Tentative release slots and acceptance gates
+## Implementation phases and acceptance gates
 
-These slots reserve only this proposal's sequence. They do not move other
-proposals or promise that every intervening release will carry web work.
-Before promotion, turn each gate into bounded implementation tasks and pin the
-browser/toolchain matrix. All items remain open until implementation and checks
-exist. Automated browser checks start in W1, not after the export is declared ready.
+These phases describe dependencies. Before implementation, define a bounded
+scope and pin the browser and toolchain matrix. Automated browser checks
+start in W1.
 
-### W1 — proposed 2.1: experimental C web runtime
+### W1 — experimental C web runtime
 
 Depends on completed 2.0 platform validation. Excludes CLI distribution, Lua,
 Rust, persistent saves and future graphics modes.
@@ -139,7 +136,7 @@ Rust, persistent saves and future graphics modes.
 This is an explicitly incomplete language example until C/Lua/Rust alignment
 passes the example policy. No claim of general web export support.
 
-### W2 — proposed 2.2: deployable C/Lua export through the CLI
+### W2 — deployable C/Lua export through the CLI
 
 Depends on W1 and a resolved Lua entry/lifetime design. Does not wait for Rust,
 an editor, scene authoring or Modes 7/8/9.
@@ -160,7 +157,7 @@ an editor, scene authoring or Modes 7/8/9.
   loss and HTTP failures. Document GitHub Pages and itch.io deployment settings.
   The example remains incomplete for Rust until W4; do not label it aligned.
 
-### W3 — proposed 2.3: browser reliability and capability expansion
+### W3 — browser reliability and capability expansion
 
 Depends on W2. Future graphics checks depend on each mode being delivered;
 those modes do not become requirements for completing basic web support.
@@ -179,7 +176,7 @@ those modes do not become requirements for completing basic web support.
   horizon checks; Mode 8 needs sector/portal rendering; Mode 9 needs model,
   material, depth and transparency checks. No desktop parity claim by inference.
 
-### W4 — proposed 2.4 or later: independent Rust web support
+### W4 — independent Rust web support
 
 Depends on W2 and a successful Rust toolchain/ABI proof; it need not block W3.
 If that proof fails, retain an open research item with evidence, rather than
@@ -212,8 +209,8 @@ WASM memory, asset preload copies, Lua GC and GPU limits need measurement on the
 selected browsers, including mobile before claiming mobile support. Do not
 promise native throughput or a fixed universal memory ceiling. WebGL is a
 restricted graphics environment; desktop shader success is insufficient evidence.
-Manual end-user, physical-device and hosted deployment checks belong to the beta
-of each promoted release; they supplement the automated gates above.
+Manual end-user, physical-device and hosted deployment checks supplement the
+automated checks when this proposal is implemented.
 
 Before each phase, record decisions for: frame/entry contracts and shutdown (W1,
 Lua extension W2); WebGL/shader baseline and context loss (W1/W3); SDK distribution
@@ -222,4 +219,4 @@ output layout and save identity/flush semantics (W2/W3); browser/device matrix a
 performance budgets (W1–W3); Rust target, `std`, ABI and panic policy (W4).
 Public API changes require a separate contract review across C, Lua and Rust.
 Offline caching, remote streaming, dynamic WASM modules, threads and WebGPU have
-no assigned slot and remain outside this proposal's acceptance scope.
+no assigned release and remain outside this proposal's acceptance scope.

@@ -18,7 +18,7 @@ start(function()
 end)
 ```
 
-Run the [complete C and Lua examples](../../examples/c/processes/README.md), or try the [parity example](../../examples/c/parity/README.md) to compare their output. This page describes the current process API. See the [alpha migration guide](../development/alpha5-process-migration.md) if your project uses numeric process IDs. For future graphics and other planned functions, see the [proposed Lua API](lua-contract.md).
+Run the [complete C and Lua examples](../../examples/c/processes/README.md), or try the [parity example](../../examples/c/parity/README.md) to compare their output. This page describes the current process API. See the [alpha migration guide](../development/alpha5-process-migration.md) if your project uses numeric process IDs.
 
 `import_globals()` adds the modern Malvado functions to the Lua global environment. It checks all names before it adds any. If a name already has a different value, it raises an error and adds nothing. If an allocation fails during installation, it removes the names added by that call. You can call it again when the installed functions are unchanged. Global names can still be shadowed by local variables; choose distinct local names. To avoid global names, use `local mv = require("malvado")` and call functions as `mv.process`, `mv.frame`, and `mv.start`. Both forms use the same API.
 
@@ -125,7 +125,7 @@ The instance fields override defaults. Each spawn copies the default table graph
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.
 
-The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. `x`, `y`, `angle`, `size`, and `z` control automatic process graphics; `fps` controls cadence. The legacy `frame` also uses the graphic fields described in the [compatibility guide](lua-contract.md#legacy-shim).
+The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. `x`, `y`, `angle`, `size`, and `z` control automatic process graphics; `fps` controls cadence. The legacy `frame` also uses the graphic fields described in the [compatibility guide](#legacy-shim).
 
 A failed spawn leaves no process or scheduler entry from that attempt. It does not change the supplied fields or defaults. Lua prepares the process state before the native spawn. If preparation or native creation fails, it releases the references from that attempt.
 
@@ -221,3 +221,13 @@ in screen space. A camera from `camera_create()` selects an explicit view.
 Camera movement never changes process position or colliders. Use z to order
 HUD content above world content. See [cameras](cameras.md) for projection,
 viewport, validation and lifetime rules.
+
+## Legacy shim
+
+`require("malvado.compat.legacy").import_globals()` installs `process`, `frame`, `font`, `write`, `change_text`, `delete_text`, `key`, `clear_screen`, `set_title`, `get_screen_width`, `get_screen_height`, `load_image`, `time_seconds`, `rand`, `fpg`, `set_color`, `draw_box`, `draw_rect`, `draw_fcircle`, `draw_circle`, `fade_off`, and `fade_on` as globals. Use it only for migration. Repeating the call is safe. If any of those global names already holds a different value, the call raises an error and installs nothing. The normal namespace import does not inject globals. The constructor returns a process handle. Numeric process IDs are not accepted by process operations.
+
+The legacy `frame()` draws the current process's `graph` or `fpg` before it yields. For `graph`, use an image returned by `load_image`. For a spritesheet, use `fpg(path, "image", rows, columns)` and set `self.fpgIndex` to a zero-based frame index. A negative or missing index hides the sheet; larger indices wrap. The image dimensions must divide evenly by the row and column counts. `self.x`, `self.y`, `self.angle`, and `self.size` control position, clockwise degrees, and positive scale. Their defaults are 0, 0, 0, and 1. Individual images use their center as pivot; sheet regions use their top-left corner. `self.z` and `self.fps` use the current draw order and cadence rules. After a legacy frame, `self.width` and `self.height` contain the scaled dimensions for individual and directory images. For a spritesheet or hidden library, both are 0, as in the historical implementation.
+
+On macOS and Linux, `fpg(directory)` or `fpg(directory, "directory")` loads up to 4096 PNG files from the directory. It ignores other file extensions and sorts names by byte value, so the index is repeatable. Directory images use their center as pivot. An empty directory, invalid image, or unavailable directory raises an error. Directory mode is not yet supported on Windows.
+
+This is a subset of the historical API. ZIP `fpg` mode, the general historical `fade` function, collision, and the `love` namespace are not implemented by the shim. The current examples use the modern API. Use the [image guide](images.md) and [drawing guide](drawing.md) for new code.

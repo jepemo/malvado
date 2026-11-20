@@ -10,7 +10,7 @@ This workspace provides `malvado`, the safe owner-thread async process API,
 and `malvado-sys`, the unsafe native boundary. Optional `graphics` and `assets`
 features wrap the delivered native platform and asset services. Start an
 installed project with `malvado new --lang rust my-game`; see the
-[CLI guide](../../docs/specs/cli.md#rust-projects) and
+[CLI guide](../../docs/development/cli.md#rust-projects) and
 [language matrix](../../docs/api/language-parity.md).
 
 Use `Game::new()` as the main Rust entry point. It owns the native context;
@@ -74,7 +74,7 @@ Android arm64 export path and its target probe, see
 core and assets validation is available through `mise run test-platform -- --rust`;
 Use `mise run test-platform -- --graphics --rust --work build-platform-graphics`
 to verify the graphical SDK separately. Windows x64 MSVC CLI builds and folder
-exports are verified; see the [platform matrix](../../docs/development/alpha8-platforms.md). A CMake package
+exports are verified; see the [platform matrix](../../docs/development/platforms.md). A CMake package
 which resolves the core archive outside the selected prefix is rejected.
 SDK prefixes cannot contain newlines, carriage returns, semicolons or quotation marks.
 
@@ -84,7 +84,7 @@ native engine and crate identifiers are `2.0.0-beta.1`; development toward 2.0
 continues under the [version plan](../../docs/versions/README.md). This identifier
 alone does not certify platform support or Rust API stability.
 
-## Scheduler proof checks
+## Scheduler checks
 
 After `mise run test-rust` installs a local native SDK:
 
@@ -94,10 +94,12 @@ mise run test-rust-miri
 mise run test-rust-sanitize
 ```
 
-The optional dated nightly provides Miri without changing the stable root
-toolchain. Miri checks pure future/waker ownership. The sanitizer task requires
-Clang (and lld on Linux) and checks native C callbacks with ASan/UBSan; Rust itself is not sanitizer
-instrumented. See the [proof and limitations](../../docs/versions/2.0.0-alpha.7-scheduler.md).
+Miri uses a separate nightly toolchain to check ownership and wake behavior
+in Rust. The sanitizer task uses Clang and, on Linux, lld. It runs Rust
+integration tests against C code built with AddressSanitizer and
+UndefinedBehaviorSanitizer. The instrumentation covers the C code.
+See the [graphics sanitizer limits](../../docs/development/ci.md#rust-sanitizer-limits)
+when interpreting leak reports.
 
 For safe game processes, start with the [Rust process guide](../../docs/api/rust-processes.md)
 and `malvado/examples/counter.rs`. The unsafe sys crate is not an alternate

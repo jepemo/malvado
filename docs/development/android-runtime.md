@@ -36,7 +36,7 @@ storage API. A forced process death can leave that directory until app data is
 removed. This first runtime package does not promise persistent saves, state
 restoration or C/Rust payloads.
 
-See the [CLI specification](../specs/cli.md) for host export commands and
+See the [CLI specification](cli.md) for host export commands and
 current limits.
 
 Verify the installed host CLI and the component-only target runtime with an

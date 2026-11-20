@@ -54,5 +54,5 @@ exports to the mount worked.
 
 The Linux run used a virtual display and an emulated CPU.
 [2.0.0](../versions/2.0.0.md) tracks the remaining clean-system and physical
-input and audio checks for macOS and Linux. The manual Windows authoring
-walkthrough moves to [2.1.0](../versions/2.1.0.md).
+input and audio checks for macOS and Linux. See the [platform verification
+limits](platforms.md#manual-verification-limits) for Windows and Android.

@@ -29,8 +29,7 @@ reach their lifetime. The result stays visible until Escape.
 
 The example needs a display or virtual display. The [image/pivot contract](../../docs/api/images.md#shared-png-textures-and-automatic-pivots)
 and [collision guide](../../docs/api/collision.md) describe resource lifetime,
-automatic bounds and explicit overrides. The [original example](https://github.com/jepemo/malvado/blob/4670d8a/examples/space_asteroids/main.lua)
-used LÖVE and global functions.
+automatic bounds and explicit overrides.
 
 The ship and asteroid PNGs are original two-color Malvado artwork. They use
 the project [Apache 2.0 license](../../LICENSE).

@@ -33,7 +33,7 @@ Use that executable directly or add its `bin` directory to your PATH. The Unix
 start with `game.exe`; native C/Rust players include `game-bin.exe`. Players need
 a working OpenGL 3.3/WGL provider and the Microsoft release CRT, but no Cargo,
 rustc or compiler. Software-rendered CI and fresh-player checks are recorded in
-the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md).
+the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/platforms.md).
 Windows app bundles, cross exports and Unicode project/SDK paths are not claimed.
 Windows x64 platform support is beta in Malvado 2.0.
 
@@ -162,7 +162,7 @@ To give a game its own macOS identifier, use `malvado export --app --id org.exam
 
 To share a macOS app, select the `.app` in Finder and choose **Compress**. Send the resulting ZIP file. The recipient can extract it and open the app.
 
-Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/master/docs/specs/cli.md).
+Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/master/docs/development/cli.md).
 
 Use `malvado --help` to list commands and `malvado doctor` to see the capabilities of your SDK. Graphics and system dependencies still need validation on more target machines.
 
@@ -188,5 +188,5 @@ Set `--runtime-sdk` to the installed Malvado Android prefix. Set
 the supported emulator with `adb install ../my-game.apk`.
 For a release APK or AAB, use a Release target SDK and follow the
 [release bundle and signing guide](https://github.com/jepemo/malvado/blob/master/docs/development/android-bundles.md).
-See the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/alpha8-platforms.md)
+See the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/platforms.md)
 for supported hosts, toolchains and verification limits.

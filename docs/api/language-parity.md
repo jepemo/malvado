@@ -8,7 +8,7 @@ This feature matrix covers the shared native APIs. macOS/Linux SDK and CLI paths
 are verified. Windows x64 MSVC headless and graphical SDKs, CLI exports and
 fresh exported players are verified. Android arm64 APK and AAB exports are
 verified for C, Lua and Rust on the alpha.8 baseline. See the
-[platform matrix](../development/alpha8-platforms.md). This does not freeze the
+[platform matrix](../development/platforms.md). This does not freeze the
 2.x API or ABI.
 
 | Capability | C | Lua | Rust (experimental) |
@@ -46,4 +46,4 @@ shared user-state conversion are outside this milestone.
 See [C contracts](c-contract.md), [Lua processes](lua-processes.md),
 [Rust processes](rust-processes.md), [resource lifetime](resource-lifetime.md),
 [runner timing](runner-timing.md), [shared rendering](runner-rendering.md),
-[audio maintenance](audio-maintenance.md), and [CLI contracts](../specs/cli.md).
+[audio maintenance](audio-maintenance.md), and [CLI contracts](../development/cli.md).

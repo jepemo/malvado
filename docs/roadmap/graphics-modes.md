@@ -1,6 +1,6 @@
 # Graphics modes 7, 8, and 9
 
-Status: design proposal. These modes are not implemented. The modes are unassigned future proposals after 2.0. See the [roadmap](../planning/roadmap.md). This proposal does not promise compatibility with DIV, Bennu, or the Mode9 DLL.
+Status: [future design proposal](README.md). Compatibility with DIV, Bennu and the Mode9 DLL is outside its scope.
 
 ## Purpose
 
@@ -82,9 +82,9 @@ Modern Mode 7 does not certify historical Mode 7 semantics. Record signatures, u
 
 ## Related future systems
 
-Apply the [roadmap reevaluation rule](../roadmap/README.md#promotion-into-a-release)
-before implementing these sketches. [Effects/material boundaries](../roadmap/visual-effects.md)
-and [spatial attachment targets](../roadmap/spatial-attachments.md) extend Mode 9
+Apply the [roadmap reevaluation rule](README.md#promotion-into-a-release)
+before implementing these sketches. [Effects/material boundaries](visual-effects.md)
+and [spatial attachment targets](spatial-attachments.md) extend Mode 9
 only after its foundations exist. Do not add skeletons or a material framework
 solely to satisfy a first 2D feature. Graph/mesh representation and the explicit
 scene-object sketch above are alternative directions that require reconciliation
@@ -92,7 +92,7 @@ before a public contract is selected.
 
 ## Optional future physics
 
-The [process physics proposal](../roadmap/physics.md#physics-needs-by-visual-mode)
+The [process physics proposal](physics.md#physics-needs-by-visual-mode)
 keeps simulation optional and separate from basic mode collision. Mode 7 can
 use floor-plane 2D gameplay; Mode 8 must define sector heights and traversal
 before claiming volume collision. A 3D presentation can use a 2D gameplay plane.

@@ -54,12 +54,8 @@ after preparation and flushes queued images before the next preparation call.
 
 The runner draws process graphs/commands, then persistent text, then the fade
 overlay. Its background and text preparation remain language adapters over the
-native services. Tests cover native-only process pixels and commands inside Lua,
-classic images, invalid values, depth, cameras/regions/scroll, animation, GC and
-frozen command reset. The command persistence test waits for an early cadence
-phase so slow display runners do not shorten its observation window.
+native services.
 
 Shared graph/command rendering and [audio maintenance](audio-maintenance.md)
-are delivered. C/Rust keep explicit host service calls; Lua owns its runner
-loop. See the [integration audit](../versions/2.0.0-alpha.7-integration.md) for
-family acceptance and the remaining exact-revision CI gate.
+are shared by the bindings. C and Rust call the services in their host
+loop. The Lua runner calls them during execution.

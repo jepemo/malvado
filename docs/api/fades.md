@@ -107,18 +107,3 @@ suite checks the native paths as well. The main-thread `fade_visual` fixture
 checks rendered color and alpha composition, transparent no-op, whole-window
 coverage after scope restoration, rejected scoped calls without state changes,
 frame reset and repeated renders without simulation steps.
-
-## Alpha.7 host acceptance
-
-Implementation commit `8b76938` passes the
-[full macOS/Linux CI](https://github.com/jepemo/malvado/actions/runs/42984841966).
-The [Linux graphics job](https://github.com/jepemo/malvado/actions/runs/42984841966/job/130403450713)
-includes C/Lua visual checks, Rust Debug/Release, the relocated SDK consumer,
-and native ASan/UBSan with leak detection. Existing external graphics-provider
-filters and host limits remain unchanged.
-
-Local checks pass 165 standard tests, 165 headless tests and 52 C-only tests.
-The Lua visual fade and Rust pixel fixture pass in both profiles on macOS.
-The four new fade/audio Rust snippets also compile against the relocated SDK;
-the C fade snippet compiles and runs. This closes A7.6n/o, not the remaining
-shared visual and runner-state contracts in A7.6.

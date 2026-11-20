@@ -350,11 +350,6 @@ paths. `process_world` checks identity, atomic errors, fast/slide movement,
 rotation/scale, no-shape movement and numeric boundaries. `alpha7_world_parity`
 compares the contextual C/Lua trace with the existing golden fixture.
 
-A7.6ab local macOS verification: `mise run test-c` (58 tests),
-`mise run test` and `mise run test-headless` (173 tests each), and
-`mise run test-visual` (57 tests) pass. This is host evidence, not Linux CI
-acceptance or automatic graph selection in C/Rust.
-
 ## Bound process colliders
 
 New native processes select their primitive graph for collision geometry.
@@ -402,11 +397,6 @@ immediate C queries after native replacement and clear, with no Lua update.
 World operations that accept an explicit optional shape retain their existing
 contract: NULL still means free movement, not selected collider geometry.
 
-A7.6ah local macOS evidence: C-only (61 tests), standard/headless (179 each)
-and visual (59) pass. The updated mixed C/Lua host and final golden trace also
-pass in targeted checks. Installed-header probes verify the new bind signature.
-Linux CI and asset graph collider derivation are not certified by these checks.
-
 ## World operations with selected geometry
 
 `mv_process_world_query_selected(ctx, ref, world, &id)` queries the collider
@@ -445,8 +435,3 @@ geometry, sliding, frozen movement, offset preservation, initial overlap,
 invalid geometry/input and destination-overflow atomicity, NULL/foreign/dead
 references and unchanged output buffers. The existing world golden trace now
 runs the selected native path in C and Lua.
-
-A7.6aj macOS evidence: C-only (62 tests), standard/headless (180 each) and
-visual (59) pass. Final selected-world and golden parity checks pass after
-adding absent-graph and output-buffer cases. Installed-header probes check
-both selected signatures. Linux CI and native asset graph ownership remain open.

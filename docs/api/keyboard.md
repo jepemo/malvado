@@ -105,32 +105,6 @@ real keyboard injection script against the C and Rust backends, including held
 state, one press and one release for each tested key. Lua headless validation
 and the audio example action checks remain in the existing native suites.
 
-## Alpha.7 acceptance
-
-The Linux graphics job passed on implementation commit `df0780c`:
-[host evidence](https://github.com/jepemo/malvado/actions/runs/42828851508/job/129873230624).
-It runs the existing automated C/Lua input and audio-action checks, then the
-Rust graphics task in Debug and Release. The task compares the shared five-tick
-trace from all three languages and uses `keys_visual.sh` to verify actual Rust
-backend held state, seven presses, seven releases, and Escape. Repeated reads
-and an extra catch-up tick do not duplicate the injected actions.
-
-Local macOS passes the same installed SDK and shared-trace checks in both
-profiles. Physical backend injection is Linux evidence. Native graphical
-ASan/UBSan checks are also available through `test-rust-graphics-sanitize`;
-Rust itself is not sanitizer-instrumented. The default core and optional asset
-SDK regressions pass, as does the standard C/Lua suite with 163 tests.
-A7.12 is complete; other input devices and the remaining A7.6 families stay open.
-
-On Android, losing focus, pausing the Activity or losing the native surface
-neutralizes held keys and queues release edges in the existing tick snapshot.
-The next foreground does not restore stale held state; it needs fresh key-down
-events. A key-up delivered to another Activity cannot leave a key stuck. Reads
-remain non-consuming. Press and release can coalesce before one logical tick,
-as with other observed key transitions. This rule is shared by C, Lua and Rust;
-it adds no new input operation and does not change the scheduler.
-
-
 ## Android on-screen keyboard
 
 An exported Android game controls when the on-screen keyboard appears. Request

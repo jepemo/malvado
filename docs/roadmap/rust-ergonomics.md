@@ -15,8 +15,8 @@ identities, and native safe points control cancellation and destruction.
 
 An ordinary struct with an owned `async fn run(self, ProcessContext)` already
 expresses sequential behavior across frames. This remains the comparison
-baseline. Preserve it for 2.0. See [Rust processes](../api/rust-processes.md) and
-[the adapter design](../specs/rust-processes.md).
+baseline. See [Rust processes](../api/rust-processes.md) for the delivered
+adapter and its limits.
 
 The goal is to make common game behavior readable with less setup. DIV's useful
 idea is that a game consists of independent processes whose behavior is written

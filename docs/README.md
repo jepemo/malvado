@@ -1,58 +1,17 @@
-# Malvado: next generation
+# Malvado documentation
 
-Migration proposal, revised on 29 October 2026. Status: **the C runtime is under development**; the CLI and GUI are planned.
+Start with [Get started](site/getting-started.md),
+[SDK and projects](site/sdk.md) or the [runnable examples](../examples/README.md).
 
-The Malvado 2 runtime uses C and raylib, with Lua as the main interface, cooperative processes, and planned tools to create and distribute games. Research is based on Malvado commit `24d02aba2b08f805a046aa04dcc2e29243eaa00f`.
+| Directory | Use it to find |
+| --- | --- |
+| [`site/`](site/getting-started.md) | Source for the public guides. |
+| [`website/`](website/README.md) | Astro website and local build commands. |
+| [`api/`](api/README.md) | Current gameplay contracts, language inventories and reference research. |
+| [`development/`](development/README.md) | Engine architecture, CLI reference, platform checks, CI and publishing. |
+| [`roadmap/`](roadmap/README.md) | Proposals to evaluate for future versions. |
+| [`versions/`](versions/README.md) | Released scope, verification and the next planned release. |
 
-## Recommended reading
-
-1. [Roadmap and decisions](planning/roadmap.md).
-2. [C/raylib/Lua runtime and process architecture](architecture/runtime.md) and [C core and official Lua binding](architecture/c-first.md).
-3. [DIV/Fénix/BennuGD research](api/research.md).
-4. [Reference module export inventory](api/inventory.md), [JSON catalog](api/catalog.json), and [source provenance](api/upstream.md).
-5. [Compatibility profiles and remaining work](api/compatibility.md).
-6. [Alpha.6 API migration](development/alpha6-api-migration.md), [C process contract](api/c-contract.md), [current Lua process guide](api/lua-processes.md), [images](api/images.md), [2D cameras](api/cameras.md), [audio](api/audio.md), and [proposed Lua API](api/lua-contract.md).
-7. [Examples and acceptance criteria](examples/README.md).
-8. [malvado-cli and export design](specs/cli.md).
-9. [malvado-gui scope, ImGui, and DIV-inspired tools](specs/gui.md).
-10. [Assets: FPG, PNG/JSON, and ZIP packages](specs/assets.md).
-11. [Proposed versions](versions/README.md).
-12. [Documentation for GitHub](development/publishing.md).
-13. [CI, quality, and releases with GitHub Actions](development/ci.md).
-14. [SDK, tools, and LuaRocks distribution](development/distribution.md).
-15. [C style](development/c-style.md) and [licenses and attribution](development/licensing.md).
-16. [C and Lua API documentation and examples](development/api-documentation.md).
-17. [Process visual order](api/process-visual-order.md), [Drawing defaults](api/draw-state.md), [Graphic geometry](api/graphic-geometry.md), [Fade guide](api/fades.md), [Rust audio guide](api/rust-audio.md), [Rust input guide](api/rust-input.md), [Rust font guide](api/rust-font.md), [Rust drawing guide](api/rust-drawing.md), [Rust window guide](api/rust-window.md), [Rust FPG guide](api/rust-fpg.md), [Rust atlas guide](api/rust-atlas.md), [Rust collision/world guide](api/rust-collision.md), [Rust camera/animation guide](api/rust-camera-animation.md), [Rust lifecycle evidence](versions/2.0.0-alpha.7-lifecycle.md), [Rust processes](api/rust-processes.md), [Rust SDK setup and checks](../bindings/rust/README.md) and [alpha.7 progress](versions/2.0.0-alpha.7.md).
-18. [Held keyboard state and native pressed/released transitions](api/keyboard.md).
-
-The [historical API list](history/legacy-api.md) is for guidance. It is not a verified specification or the new API. Earlier plans remain in [history](history/README.md). Earlier examples depend on LÖVE. The [initial C runtime](versions/2.0.0-alpha.1.md) has its own example.
-
-
-## Documentation layout
-
-- `planning/`: roadmap and delivery decisions.
-- `specs/`: product proposals for assets, CLI, and GUI.
-- `architecture/`: runtime technical design.
-- `api/`: research, proposed contract, catalog, and pinned sources.
-- `versions/`: milestones and implementation status by version.
-- `development/`: CI, releases, and documentation publishing.
-- `examples/`: example plans and acceptance.
-- `history/`: superseded documents kept for reference.
-- `tools/`: documentation generators.
-
-Each document must state whether it describes current behavior or a proposal. Put new documents in the applicable folder and link them from this index.
-
-## Repository layout
-
-The root contains entry points and configuration. `src/` contains the C runtime, `examples/` contains example games, and `tests/` contains tests. The historical Lua/LÖVE engine is available in [Git history](https://github.com/jepemo/malvado/tree/4670d8a). CMake downloads dependency source into the build directory, which Git ignores. Group future modules by responsibility according to the [roadmap](planning/roadmap.md). Do not move code before the separation exists.
-
-## Regenerate the reference
-
-From the repository root, with Python 3.9 or later:
-
-```sh
-python3 docs/tools/fetch_api_sources.py
-python3 docs/tools/catalog_api.py
-```
-
-The first command downloads missing pinned sources and verifies their hashes. It requires network access for downloads but no external packages. The generator runs offline and checks the hashes before regeneration. The reference API and Lua contract are separate documents. A BennuGD signature does not automatically become a valid Lua signature.
+Documentation tools are in `docs/tools/`. See
+[API documentation](development/api-documentation.md) for the catalog and
+guide checks.

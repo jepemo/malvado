@@ -71,12 +71,10 @@ def check_documents(paths, root):
 
 
 def documents():
-    paths = [ROOT / "README.md", ROOT / "bindings/rust/README.md",
-             ROOT / "docs/specs/cli.md", ROOT / "docs/specs/rust-processes.md",
-             ROOT / "docs/versions/README.md", ROOT / "docs/versions/2.0.0-beta.1.md"]
-    for directory in ("api", "site", "development", "architecture"):
+    paths = [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "docs/README.md",
+             ROOT / "bindings/rust/README.md", ROOT / "examples/README.md"]
+    for directory in ("api", "site", "development", "roadmap", "versions"):
         paths.extend((ROOT / "docs" / directory).glob("*.md"))
-    paths.extend((ROOT / "docs/versions").glob("2.0.0-alpha.7*.md"))
     paths.extend((ROOT / "examples/features").rglob("README.md"))
     return sorted(set(paths))
 

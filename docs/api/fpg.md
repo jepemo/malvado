@@ -2,7 +2,7 @@
 
 Status: the backend-independent C reader is implemented; Lua metadata access, RGBA conversion, and image creation are implemented; indexed PNG and metadata JSON encoding are implemented in C; a CLI converter and C and Lua JSON metadata readers are implemented.
 The Rust `assets` SDK also wraps native reading, conversion and manifests; with
-`graphics` it creates owned images. See the [Rust FPG guide](../api/rust-fpg.md).
+`graphics` it creates owned images. See the [Rust FPG guide](rust-fpg.md).
 This subset follows the 8-bit writer and reader in the pinned
 [BennuGD revision](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_fpg.c)
 and its [palette reader](https://github.com/SplinterGU/BennuGD/blob/d49f71891f38db9bbf08c0f6f0002007f564a03c/modules/mod_map/file_pal.c).

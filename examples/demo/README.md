@@ -13,7 +13,7 @@ Build Malvado and run this command from the repository root:
 ./build/malvado run examples/demo/main.lua
 ```
 
-The demo requires a display or virtual display. The [original demo](https://github.com/jepemo/malvado/blob/4670d8a/examples/demo/main.lua) used LÖVE and global functions.
+The demo requires a display or virtual display.
 
 ## Artwork
 

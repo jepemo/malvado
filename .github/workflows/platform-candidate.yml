@@ -75,6 +75,8 @@ jobs:
           run-id: ${{ inputs.ci }}
           name: source-check-${{ inputs.sha }}
           path: incoming/source
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        if: inputs.version != ''
       - name: Prepare the draft release bundle
         if: inputs.version != ''
         env:
@@ -82,11 +84,18 @@ jobs:
           CANDIDATE_VERSION: ${{ inputs.version }}
         run: |
           git fetch --depth=1 origin "$CANDIDATE_SHA"
-          python3 -m venv "$RUNNER_TEMP/candidate-docs"
-          "$RUNNER_TEMP/candidate-docs/bin/python" -m pip install -r docs/requirements.txt
-          "$RUNNER_TEMP/candidate-docs/bin/python" docs/tools/prepare_versioned_site.py \
-            "$CANDIDATE_VERSION" "$CANDIDATE_SHA" incoming/docs
-          git show "$CANDIDATE_SHA:docs/versions/$CANDIDATE_VERSION-release-notes.md" > incoming/notes.md
+          (
+            cd docs/website
+            mise install node
+            mise exec -- python3 ../tools/prepare_versioned_site.py \
+              "$CANDIDATE_VERSION" "$CANDIDATE_SHA" "$GITHUB_WORKSPACE/incoming/docs"
+          )
+          version_page="$CANDIDATE_SHA:docs/versions/$CANDIDATE_VERSION"
+          if git cat-file -e "$version_page-release-notes.md"; then
+            git show "$version_page-release-notes.md" > incoming/notes.md
+          else
+            git show "$version_page.md" > incoming/notes.md
+          fi
           python3 tools/collect_release_candidate.py --platform platform-candidate \
             --source incoming/source --docs incoming/docs --notes incoming/notes.md \
             --version "$CANDIDATE_VERSION" --output release-candidate

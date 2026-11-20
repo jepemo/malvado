@@ -83,7 +83,7 @@ Nested binary files and required notices remain included.
 
 Use a full Release target SDK with `--release`; an SDK containing only Debug
 libraries is rejected. Manifest, unsigned output and external signing options
-are the same as [Lua APK export](../specs/cli.md#android-apk-export-lua).
+are the same as [Lua APK export](cli.md#android-apk-export-lua).
 The current path supports statically linked SDK/game dependencies and the
 engine's Android system libraries. NDK LLVM inspection rejects other shared
 libraries instead of silently omitting them from the APK. Bundling additional

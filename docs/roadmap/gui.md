@@ -60,7 +60,7 @@ The [official docking documentation](https://github.com/ocornut/imgui/wiki/Docki
 
 ## Architecture shared with CLI
 
-Create C services for project/configuration, validation, assets, jobs, and exporters. CLI and GUI consume these services. Build rules, templates, and packaging logic do not belong in a button. Keep `malvado.toml`, lockfile, and metadata as a common contract. Do not create a GUI-only binary project format. See [assets and FPG](assets.md).
+Create C services for project/configuration, validation, assets, jobs, and exporters. CLI and GUI consume these services. Build rules, templates, and packaging logic do not belong in a button. Keep `malvado.toml`, lockfile, and metadata as a common contract. Do not create a GUI-only binary project format. See [assets and FPG](asset-formats.md).
 
 Proposed layout:
 
@@ -112,19 +112,19 @@ The GUI has its own version because it is optional. Its maturity must not imply 
 
 ## Future runtime consumers
 
-The [effects proposal](../roadmap/visual-effects.md) plans parameter inspection,
-shader diagnostics and eventual reload. The [spatial proposal](../roadmap/spatial-attachments.md)
+The [effects proposal](visual-effects.md) plans parameter inspection,
+shader diagnostics and eventual reload. The [spatial proposal](spatial-attachments.md)
 plans point/frame authoring, target selection, offset previews and world-transform
 inspection, later including model nodes/bones. Runtime contracts precede these
 editor capabilities. No editor framework is a prerequisite for their first runtime
-milestones. Apply the [reevaluation rule](../roadmap/README.md#promotion-into-a-release).
+milestones. Apply the [reevaluation rule](README.md#promotion-into-a-release).
 
 
 ## malvado-gui live workflow extension
 
 The editor is called malvado-gui for now. Existing identifiers and G0 prototype
 targets keep that name. The [live editing
-proposal](../roadmap/live-editing.md) is the source for E1–E7: built-in property
+proposal](live-editing.md) is the source for E1–E7: built-in property
 editing, asset reload, flat JSON scenes, reconciliation, selective Lua restart,
 custom property descriptors and optional advanced Rust reload. These future
 units extend the G2 instrumentation direction without assigning GUI or engine

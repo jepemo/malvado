@@ -1,125 +1,40 @@
-# CI, documentation, and versions with GitHub Actions
+# Continuous integration and release candidates
 
-Status: initial workflow implemented and run on GitHub on 2026-10-29. The goal is to detect failures in proposed changes, produce verifiable binaries, and publish documentation and versions when ready. This phase does not create or publish a release.
+| Workflow | Coverage |
+| --- | --- |
+| `ci.yml` | macOS and Linux builds, tests, sanitizers, API inventories, documentation, source archive and installed SDK consumers. |
+| `windows.yml` | Windows x64 MSVC SDKs, graphics, CLI and exported players. |
+| `android.yml` | API 34 emulator fixtures and production APK and AAB export checks. |
+| `platform-candidate.yml` | Exact-revision platform gate, SDK collection and optional draft release bundle. |
+| `pages.yml` | Builds and publishes the documentation site. |
 
-## What runs and when
+Run bounded tests and retain failures as diagnostic artifacts. Record hardware
+and audible checks separately from emulator and software-rendered results.
+Use the [platform matrix](platforms.md) for supported paths and
+[development commands](../../mise.toml) for local tasks.
 
-| Proposed workflow | When | Work | Result |
-| --- | --- | --- | --- |
-| `ci.yml` | PR, push to main branch, manual | Build, CTest, code and documentation checks | Visible checks; logs and diagnostic artifacts on failure |
-| `docs.yml` | PR, push to main branch, manual | Regenerate catalog, check links, build site | PR validation; main can publish Pages after repository configuration |
-| `release.yml` | Manual candidate preparation; `v*` tag after process validation | Build, test, package, hash, prepare release | Platform artifacts and draft release for review |
-| `nightly.yml` | Manual or scheduled when useful | Sanitizers, slow tests, more combinations | Additional diagnostics; does not replace PR CI |
+Select one revision for release. Verify the SDKs, source archive, notices,
+checksums and versioned documentation from that revision. Keep signing and
+publication separate from normal CI. See [distribution](distribution.md)
+and [publishing](publishing.md).
 
-Publishing requires GitHub permissions and Pages configuration. Writing workflows alone does not configure or publish a site. External PRs run without signing or deployment secrets. Use stable check names for branch protection where available.
+## Rust sanitizer limits
 
-`.github/workflows/ci.yml` has a macOS/Linux matrix, catalog verification, sanitizers and static analysis, and a Linux Xvfb graphics test. All seven earlier jobs passed in [GitHub Actions for commit 09215e8](https://github.com/jepemo/malvado/actions/runs/40908427079). Windows is validated in alpha.9. The link does not validate later changes.
-
-## Initial CI: alpha.1
-
-1. **Linux and macOS:** configure CMake with documented versions/toolchains, build, and run `ctest --output-on-failure`. Install raylib system dependencies. Add and validate Windows in alpha.9; it does not block earlier alphas.
-2. **Raylib/Lua:** CMake downloads Lua 5.4.8 and raylib 6.2 into the build directory and verifies SHA-256 hashes. Cache downloads where useful without skipping verification. Limit style checks to project code; exclude `vendor/` and `_deps/`.
-3. **Static checks and style:** enable compiler warnings for `src/`. Add `clang-format --dry-run --Werror` when configuration is applied, then `clang-tidy` on `compile_commands.json` with agreed rules. Add `luacheck` for Lua examples and tests when configured. Document known warnings and exceptions. Do not describe an unconfigured tool as an active check.
-4. **Memory tests:** use ASan/UBSan in a compatible Linux configuration as process tests expand. Record platform limits. Add creation/removal, error, and coroutine cleanup cases.
-5. **Documentation:** download pinned sources with `python3 docs/tools/fetch_api_sources.py`, run `python3 docs/tools/catalog_api.py`, compare generated files with the repository, and fail on differences. Both commands check source hashes. Validate internal links and site build when a generator exists. Also check generated files if they are initially untracked.
-6. **Graphics example:** headless tests do not prove that a window opens. Add bounded graphics smoke tests on suitable runners, such as Linux with a virtual display, and tests on real systems. Record macOS and audio/input acceptance separately when automation is unreliable. Validate Android and Windows in alpha.9.
-
-Recommended initial matrix: Linux x86_64 and macOS arm64; add Windows x86_64 in alpha.9. Use explicit runner/architecture names and pin versions during implementation. Confirm runner availability for this repository. If an architecture is unavailable, leave its check pending or use an appropriate runner; do not label the target validated. Do not run interactive hello indefinitely in CI; add an automatic-exit smoke mode.
-
-## Check quality
-
-- Each job fails on an incorrect build, test, or regeneration. Do not hide required failures with `continue-on-error`. Add timeouts to tests and jobs to detect Lua processes that do not yield.
-- Build and test cleanly. Do not commit build directories or caches. Retain CI diagnostic logs and test results as temporary artifacts with bounded retention.
-- Key caches by OS, architecture, compiler, dependency versions, and hashes. A cache is not proof of reproducibility and does not replace periodic clean builds.
-- Apply format and analysis to project code. Pinned external files retain their format and licenses. Document tool versions and rules, and update them through PRs.
-- Add example, asset, and GUI checks when implemented. For example, generate a CLI project and run its smoke test when a template exists.
-
-## Documentation for both APIs
-
-The [documentation plan](api-documentation.md) requires each PR that changes a public API to update the corresponding C/Lua signatures and records and run related examples. The documentation job will build MkDocs in strict mode and check links and names between the binding and Lua definitions. Implement and pin example extraction and signature checkers before claiming they exist. A site build does not replace example tests.
-
-## Documentation and GitHub Pages
-
-Markdown in `docs/` remains the source. As proposed in [publishing](publishing.md), pin MkDocs and initially use its default theme. PRs regenerate the catalog and build documentation without deploying. After Pages configuration, pushes to the main branch deploy development documentation. When versioning exists, keep stable documentation from tags under `/2.0/` and development under `/dev/`. Define retention before deleting published versions.
-
-[GitHub documents](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) Actions builds and deployments. A Pages job needs `pages: write` and `id-token: write`; grant these only to the deployment job, not PRs. Add Lua/C reference generation when Malvado contracts and tools exist. Do not automatically turn Bennu symbols into the Malvado API.
-
-## Version generation
-
-A release must represent an exact revision and pass CI. Initially, generate candidate artifacts with a manual workflow, review installation, then create a **draft release**. Once reliable, allow a tag such as `v2.0.0-alpha.1` to trigger the same pipeline. Alpha and beta are prereleases. Draft publication, production signing, and store uploads follow the agreed release process.
-
-| Delivery | First planned artifact | Check before claiming support |
-| --- | --- | --- |
-| Desktop runtime | Executable/package for Linux x86_64, Windows x86_64, macOS arm64 | CTest, example start, included dependencies, automated clean-runner test; manual clean-machine test in beta |
-| SDK/CLI | Tool and runtimes for available targets | New project → run → export → run package |
-| Android | Debug APK for tests; signed APK/AAB for release when exporter exists | Install, test lifecycle/touch, validate AAB; signing configuration separate |
-| GUI | Desktop packages with independent version | Project, preview, execution, and export flow; declared runtime compatibility |
-
-Do not create binaries for targets not implemented. A runner alpha binary is not a game exported by `malvado-cli`. For each candidate, record tag/commit, version, platform/architecture, toolchain, dependencies, licenses, SHA-256 checksum, and change notes. The changelog contains delivered changes only. Verify tag and metadata versions before packaging. Do not overwrite an existing release artifact.
-
-macOS distribution may require signing and notarization according to channel. Android signed variants need keys. Keep credentials in secrets/protected environments for authorized release jobs only; ordinary CI does not need keys. First distribute test artifacts without claiming validated installation. Do not promise identical signed binaries. Record inputs and compare reproducible outputs where possible.
-
-## Verify C core and Lua binding
-
-Alpha.2 requires a clean job with Lua and raylib disabled: build and install the C library with the headless backend, compile a C consumer against installed headers, and run it. Confirm that Lua/raylib are not downloaded or linked. Also build the official runner/binding, run existing Lua tests and C/Lua parity and mixed tests, and run sanitizers. Validate C/Lua raylib graphics smoke tests by platform. See [C architecture](../architecture/c-first.md).
-
-## Distribution and LuaRocks
-
-The [distribution plan](distribution.md) defines the SDK, CLI, GUI, and optional rock. A 2.0 rock needs a C module loadable by external Lua, CMake installation, and ABI tests. The bundled-Lua runner is not that module. Do not add a rock publication job until it exists. Then run lint, installation, and clean-tree tests and review licenses before upload.
-
-## Actions permissions and dependencies
-
-For PR CI, use `contents: read` or less and no secrets. Do not run untrusted PR code with write permissions. Publication jobs need separate minimum permissions: `contents: write` for draft releases and Pages permissions only for deployment. Pin external actions to full upstream commit SHAs and review them regularly, as [GitHub recommends](https://docs.github.com/en/actions/reference/security/secure-use). Do not put credentials in logs, artifacts, or examples.
-
-## Adoption order
-
-| Time | Implement | Acceptance gate |
-| --- | --- | --- |
-| Current alpha.1 | `ci.yml`: available desktop builds, headless CTest, timeouts, catalog, compiler warnings | Test PR shows verifiable checks on available runners; document gaps |
-| Alpha.2 | Agreed formatting/analysis; sanitizers and expanded scheduler tests | CI fails on real errors and provides useful logs |
-| Alpha.3 | Bounded graphics smoke tests and asset examples; site build | CI examples exit automatically; no broken internal documentation links |
-| Alpha.4 | macOS/Linux packages, draft candidate, end-to-end CLI tests | Automated fresh-runner tests and correct checksums |
-| Alpha.8 | Android build and APK/AAB validation; add Windows CI and validate runtime, C/Lua, CLI, packages | Automated Windows CI, graphics, and emulator checks where available; release signing separate |
-| Beta/2.0 | Manual user-flow and device review, versioned Pages, tag automation, publication criteria | Reviewed complete candidate; manual clean-host results; docs and artifacts match the same commit |
-| GUI | Desktop build and smoke jobs at G0/G1 | CI covers selected toolkit and separates GUI from runtime |
-
-CI helps decide whether a version is ready. Manual user-flow, physical-device, and graphics experience tests on clean machines belong to beta; they are not alpha exit gates.
-
-
-## Current release direction
-
-The [version index](../versions/README.md) supersedes earlier phase assignments.
-Alpha.7 completes macOS/Linux integration and CLI checks; alpha.8 adds native
-Windows and Android emulator validation for C/Lua/Rust. Prefer existing hosted
-Windows runners and a pinned Linux emulator setup over a new Vagrant requirement.
-Use the same bounded scripts locally and in CI, upload failure evidence, run fast
-checks on PRs and broader matrices periodically/on candidates. Compiler, headless,
-software-rendering and emulator results certify different capabilities; record
-limits. Physical-device and audible tests remain beta work. Future features must
-add relevant supported-platform checks when implemented. Publishing/stores and
-production signing stay separate from ordinary CI and require authorization.
+`mise run test-rust-graphics-sanitize` runs Rust tests against instrumented
+native libraries. Leak detection is disabled on macOS. On Linux, the
+graphics check filters known driver allocation stacks. It still checks
+Malvado allocations and verifies that unrelated leaks are reported.
 
 ## Android foundation job
 
-`android.yml` adds an isolated API 34 x86_64 emulator on Ubuntu 24.04. It runs
+`android.yml` uses an isolated API 34 x86_64 emulator on Ubuntu 24.04. It runs
 `mise run test-android` in Debug and Release with the pinned NDK r27c. The same
 script verifies native C/Lua executables, a relocated installed C SDK consumer,
 Lua errors/cleanup and shared C/Lua traces. It uploads bounded command logs and
-actual tool revisions on failure. See [Android verification](android.md).
-Headless runtime evidence does not establish APK startup, graphics, Rust or
-mobile lifecycle behavior. A8.7 stays open for those checks and complete candidate
-acceptance. The existing macOS/Linux and Windows workflows remain in place.
-
-The Android job also runs C graphical installed-SDK APKs and twelve Lua APK
-entry/profile/failure combinations. It checks framebuffer pixels, fixed-allowlist
-APK asset staging, normal/error cleanup and uninstall. Logs and result JSON are
-retained per case. This does not implement CLI APK/AAB export or validate Rust
-on Android.
-
-Primary-contact cases also exercise the existing C/Lua mouse API on Android.
-Lifecycle cases retain native PNGs before interaction and after resume/release.
-Distinct filenames preserve each case's evidence when native build caches are
-reused. Screenshot and payload regressions also run without an emulator.
+actual tool revisions on failure. The Rust headless job checks installed
+SDK consumers and ABI rejection. Graphical C, Lua and Rust fixtures verify
+startup, framebuffer pixels, input, lifecycle and cleanup. See
+[Android verification](android.md) for the local commands and evidence.
 
 ## Android production packages
 
@@ -185,11 +100,9 @@ python3 tools/collect_platform_sdk.py --desktop incoming/desktop \
   --output platform-candidate
 ```
 
-This report records platform test evidence. It does not publish a release,
-create a tag or certify unfinished Android exports. The CI-only SDK candidate
-still contains macOS/Linux packages; the Platform candidate adds Windows. A8.8
-still requires the full capability, artifact and license review. Repository
-branch protection must be configured separately if this gate is to block merges.
+This report records platform test evidence. Release publication and review
+of notices and artifacts happen separately. The CI-only SDK candidate
+contains macOS and Linux packages. The Platform candidate adds Windows.
 
 ### Draft release bundle
 
@@ -197,8 +110,10 @@ Pass the optional version to **Platform candidate** to assemble a draft
 release bundle. Use the same complete CI, Windows and Android runs required
 by the platform gate. The workflow downloads the source archive from the
 selected CI run, builds versioned documentation from the selected commit
-and reads the release notes from that commit. For beta.1, supply
-`2.0.0-beta.1` and use the [beta.1 draft notes](../versions/2.0.0-beta.1-release-notes.md).
+and reads the `Release notes` section of the version page at that commit.
+For historical revisions, the workflow also accepts a standalone notes
+file. See the [2.0.0 version page](../versions/2.0.0.md#release-notes)
+for the current format.
 
 The `release-candidate-<version>-<commit>` artifact includes the three
 desktop SDKs, the source archive, the reports, the versioned site and

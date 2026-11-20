@@ -40,33 +40,8 @@ All calls stay on the window owner thread. Scope and native ownership rules
 match the keyboard/window service. No new mouse/pad edge, repeat or action-map
 APIs are added.
 
-`test-rust-graphics` checks disconnected/invalid slots, enum ABI, neutral text,
-Unicode including non-BMP scalars, rejected scalars, shared consumption, queue
-capacity and reopen/reset. A private backend sampling seam drives deterministic
-Unicode tests; production event capture uses that same append operation. Linux
-also runs real mouse/button and text injection against Rust with the existing
-C/Lua scripts in Debug/Release. The relocated consumer and native graphical
-sanitizers cover these wrappers. Connected-controller button/axis state is not
-claimed as tested on runners without that device or a controller emulator.
-
-## Alpha.7 host acceptance
-
-Implementation commit `902cfc5` passed the
-[Linux graphics job](https://github.com/jepemo/malvado/actions/runs/42850359460/job/129949030566).
-Both profiles run the existing keyboard, mouse and text scripts against Rust,
-plus C/Lua backend checks and native graphical sanitizers. The Rust executable
-verifies pointer coordinates, all three held mouse buttons and release, and
-queued `aZ9` text from actual backend events. Deterministic native sampling
-covers the remaining Unicode/filter/capacity/reset boundaries.
-
-Local macOS passes the same installed SDK, Unicode, neutral controller and
-sanitizer checks. Local standard and headless C/Lua suites pass 163 tests each;
-the default core-only Rust SDK regression also passes. Connected-controller
-state is outside the recorded runner evidence, as stated above.
-
 On Android, physical key-down events fill the same native text queue through
 `KeyCharacterMap`. Modifier state and key repeats apply. Control characters,
 DEL and dead-key markers are discarded. Exported Android games can request
 the [on-screen keyboard](keyboard.md#android-on-screen-keyboard) with
-`window.set_text_input_keyboard(true)` and hide it with the same method. The host-side JNI regression covers Unicode
-scalars and failures; exported APK checks cover mixed-case ASCII typing.
+`window.set_text_input_keyboard(true)` and hide it with the same method.

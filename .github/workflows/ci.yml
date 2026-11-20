@@ -197,7 +197,7 @@ jobs:
   docs:
     name: Verify API catalog
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
@@ -206,11 +206,14 @@ jobs:
       - name: Check current guide links and anchors
         run: python3 tools/check_docs.py
       - name: Build documentation
+        working-directory: docs/website
         run: |
-          python -m pip install -r docs/requirements.txt
-          python -m mkdocs build --strict -f docs/mkdocs.yml
+          mise install node
+          mise exec -- npm ci --no-audit --no-fund
+          mise exec -- npm run build
       - name: Verify versioned documentation
-        run: python3 tests/versioned_docs.py
+        working-directory: docs/website
+        run: mise exec -- python3 ../../tests/versioned_docs.py
   source-archive:
     name: Verify source archive
     runs-on: ubuntu-24.04

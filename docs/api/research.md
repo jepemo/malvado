@@ -34,7 +34,7 @@ Remaining work:
 5. Classify equivalent, renamed, alternative, and missing functions. Check behavior against implementations and reference examples.
 6. Audit third-party extensions separately. Ads and IAP require their own services and SDKs; raylib does not provide them.
 
-## Cautions about the [historical API list](../history/legacy-api.md)
+## Signature and behavior pitfalls
 
 - `GET_ID` exports an `I` signature. Do not assume that `get_id()` without arguments means “my ID.” It may traverse by type; check the implementation.
 - `SIGNAL` exports `II`. An entry `signal(pid)` does not describe the signal or its effects.

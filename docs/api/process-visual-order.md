@@ -111,12 +111,6 @@ position. `tests/position.rs` checks these rules and failed writes; the external
 installed SDK consumer checks a fractional-coordinate round trip. Both native
 signatures are checked against the installed headers before linking.
 
-Host verification for A7.6x/y: `mise run test-c` (56 tests),
-`mise run test-headless` (170 tests), `mise run test` (170 tests),
-`mise run test-rust` (Debug/Release, Clippy, formatting and relocated consumer),
-and `mise run test-rust-sanitize` all pass on macOS. Linux CI and automatic
-visual integration are not certified by these local checks.
-
 `native_lua_process_position` checks C/Lua round trips, native world-move
 writeback, collider refresh, integer presentation, nil reset and invalid Lua
 overrides. `visual_native_process_position` checks pixels before and after a
@@ -166,12 +160,6 @@ checks rotation, scale, zero-scale hiding and restoration. Rust position tests
 cover these properties, invalid inputs, dead/closed handles and installed
 signature checks. The relocated SDK consumer checks fractional position,
 rotation and scale without source-tree SDK paths.
-
-Host verification for A7.6z/aa on macOS: C-only (57 tests), standard and
-headless (172 tests each), visual (57 tests), Rust Debug/Release with Clippy,
-format checks and the relocated SDK consumer, and native ASan/UBSan Rust
-integration all pass. This is local host evidence; Linux CI acceptance and
-automatic Rust process graph drawing remain open.
 
 Bound primitive colliders now derive native position/angle/scale when queried.
 Property setters still do not rewrite fixed `mv_process_collider_set`

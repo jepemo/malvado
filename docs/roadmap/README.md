@@ -1,20 +1,13 @@
 # Future feature roadmap
 
-Status: proposals for evaluation after the first 2.0 release. No item on this
-page is a release commitment or implemented capability. Web export has tentative
-post-2.0 version slots; other proposals remain unassigned.
-The [version plan](../versions/README.md) owns current release gates.
-
-The first 2.0 release completes and validates the engine already delivered by
-alpha.6 and the C/Lua/Rust alignment in alpha.7. It does not require the complete
-historical DIV/Fénix/BennuGD API, graphics modes, an editor, a new website, a full
-teaching catalog, or minigames. Those candidates are organized here.
+Each proposal describes a possible feature or research topic. Its document
+holds the design, dependencies and verification ideas.
 
 ## Proposal index
 
 | Proposal | Goal | Current state and dependencies |
 | --- | --- | --- |
-| [WebAssembly / HTML5 export](webassembly.md) | Export games to static web hosting through the existing CLI | Tentative 2.1 C proof, 2.2 C/Lua export, 2.3 reliability, 2.4+ independent Rust; depends on 2.0 completion and phase acceptance. |
+| [WebAssembly / HTML5 export](webassembly.md) | Export games to static web hosting through the existing CLI | C runtime proof, then C/Lua export and browser reliability. Rust needs a separate toolchain proof. |
 | [Rust API Ergonomics and DIV-Style Processes](rust-ergonomics.md) | Evaluate concise functions and typed structs over the existing owned-future adapter | Proposal; both frontends remain open, with no syntax, architecture or version commitment. |
 | [API candidate catalog](api-candidates.md) | Review historical calls and select useful modern capabilities | Existing pinned Bennu catalogs; DIV/Fénix coverage gaps are explicit. No blanket implementation selection. |
 | [Visual properties, effects and shaders](visual-effects.md) | Small process effects, reusable shaders, then camera effects | Proposal; requires completed shared process drawing and resource ownership. |
@@ -22,61 +15,21 @@ teaching catalog, or minigames. Those candidates are organized here.
 | [Spatial attachments](spatial-attachments.md) | Explicit relative transforms and named visual points | Proposal; separate from delivered creator/owner genealogy. |
 | [malvado-gui live editing, scenes and reload](live-editing.md) | Inspect/edit processes, reload assets, author/reconcile flat scenes and evaluate code reload | Dependency milestones E1–E7; native state remains authoritative. No version assigned. |
 | [Examples and minigames](examples.md) | Build a useful aligned C/Lua/Rust teaching catalog | Proposal; depends on delivered APIs and installed CLI workflows. |
-| [Modes 7, 8 and 9](../specs/graphics-modes.md) | Perspective floors, sectors and a bounded 3D renderer | Existing design proposal; no fixed release numbers or complete 3D-engine promise. |
-| [Graphical workshop](../specs/gui.md) | Projects, assets, process inspection and export | Existing proposal and experimental G0 tooling; production editor is not delivered. |
-| [Asset extensions](../specs/assets.md#future-asset-review) | Additional Aseprite metadata, formats, FPG writing and runtime archives | Candidates; each format/direction requires a fidelity and ownership review. |
-| [Public website](../website/README.md) | Complete reference navigation and presentation | Preparatory Astro/Starlight work exists; a site migration is not a 2.0 release gate. |
+| [Modes 7, 8 and 9](graphics-modes.md) | Perspective floors, sectors and a bounded 3D renderer | Existing design proposal; no fixed release numbers or complete 3D-engine promise. |
+| [Graphical workshop](gui.md) | Projects, assets, process inspection and export | Existing proposal and experimental G0 tooling; production editor is not delivered. |
+| [Project tools](project-tools.md) | Project metadata, templates and SDK selection | Reuse the existing CLI and define one project workflow before adding commands. |
+| [Asset extensions](asset-formats.md) | Additional Aseprite metadata, formats, FPG writing and runtime archives | Candidates; each format/direction requires a fidelity and ownership review. |
+| [Public website](../website/README.md) | Complete reference navigation and presentation | Preparatory Astro/Starlight work exists; evaluate the migration when this proposal is selected. |
+| [External Lua module and LuaRocks](../development/distribution.md#optional-external-lua-module) | Let projects use Malvado from an existing Lua interpreter | Requires a loadable C binding, Lua ABI checks and a tested rockspec. |
 | LuaJIT evaluation | Measure a possible alternative Lua runtime | Research only; compare scheduler, coroutine cleanup, language/C API, memory, assets, exports and real game workloads before any runtime decision. |
 | iOS feasibility | Evaluate another deployment target | Research only; toolchain, distribution, signing and device evidence are required before scheduling support. |
 
-Use the existing specifications linked above as the single source for their
-feature details. Do not create duplicate per-version copies of proposals.
-
 ## Promotion into a release
 
-> API proposals for future alpha releases are provisional. Before implementing an alpha, reevaluate its API and technical design using the current engine architecture, previous implementation experience, and real game development needs. Prefer a simpler and more consistent design when justified.
+Choose a proposal when it is ready for implementation. Review it against a
+real game use case and the current engine, then decide what to deliver.
+Define the C, Lua and Rust paths and the applicable tests. Create a version
+page in the [version plan](../versions/README.md) once its scope is agreed.
 
-This rule also applies to future 2.x feature milestones. The owner decides when
-to schedule one and when to introduce a compatibility freeze. Breaking changes
-within 2.x remain allowed until that explicit decision. Explain changes, update
-contracts, tests and migration notes, and reject incompatible native SDKs before
-unsafe calls. This policy does not authorize unrelated API changes during a task.
-
-A proposal has a goal, bounded scope, API sketch, dependencies, observable
-acceptance criteria, deferred work and open questions. Sketches describe intent;
-strings such as `self.graph = "player.png"` are not claims about today's resource
-assignment API. C uses idiomatic result/handle/ownership operations; Lua and Rust
-use their own idioms over the same core behavior and scheduler.
-
-Before promotion, select a real game use case, finish the required semantic
-research, and define C/Lua/Rust and platform acceptance. One coherent capability
-with tests, documentation and a small aligned example is a useful delivery unit.
-No proposal requires another process scheduler, a generic ECS, a full editor or
-an unrestricted rendering pipeline.
-
-## Dependency order, without version numbers
-
-1. Finish the current [2.0 release path](../versions/README.md), including platform automation.
-2. Select a small teaching catalog and any genuinely needed API family from the candidate review.
-3. Evaluate basic visual properties and simple relative 2D transforms independently.
-4. Add a small process-effect set and named/animated 2D attachment points after their foundations pass.
-5. Evaluate custom shader parameters and camera render targets as separate capabilities.
-6. When Mode 9 foundations exist, adapt compatible effects and simple model attachment targets.
-7. Evaluate skeletal sockets and shader reload only after their runtime dependencies exist.
-8. Progress malvado-gui independently through live properties, asset reload and flat scenes, then reconciliation; evaluate selective Lua restart and Rust rebuild/restart separately.
-
-Modes 7/8/9, teaching work and these systems can progress independently where
-there is no dependency. This order is a dependency guide, not a delivery queue.
-Minigames follow the selected API capabilities and test their composition; they
-do not force every exploratory API candidate to be implemented first.
-
-Web export follows [W1–W4](webassembly.md#tentative-release-slots-and-acceptance-gates)
-after 2.0. It does not depend on the editor or future graphics modes, and does
-not reorder their proposals. Version slots remain subject to owner scheduling.
-
-[Physics P1–P5](physics.md#future-milestones-without-release-numbers) follows
-the current release path without assigned versions. Basic 2D physics requires
-collision/lifecycle design and backend evidence, not future graphics modes.
-True 3D physics follows mature scene transforms and geometry; authoring follows
-stable runtime contracts. Lifecycle ownership and visual attachments never
-automatically create physical constraints.
+Record and fix reported defects as they arise. Include completed fixes in
+the relevant release.

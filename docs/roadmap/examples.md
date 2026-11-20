@@ -1,8 +1,8 @@
 # Teaching examples and minigames
 
-Status: future proposal, moved from alpha.7 A7.8 by the owner scope decision.
-No version is assigned. See the [example policy](../examples/README.md) for layout
-and alignment rules. The move does not mark the old deliverables complete.
+Status: future proposal. See the [runnable examples](../../examples/README.md)
+for current commands and the [example policy](../../AGENTS.md#example-policy)
+for contribution rules.
 
 ## Goal and scope
 
@@ -16,6 +16,24 @@ Candidate lessons: hello/startup; rectangles/circles; process timing; parent and
 independent bullets; sequential boss behavior; signals and cleanup; resources;
 input; sprites and animation; collision and world movement; camera/region/scroll;
 text and audio. Select a minimal useful sequence before implementation.
+
+## Proposed layout and migration
+
+Group lessons under `examples/features/<topic>/` and minigames under
+`examples/games/<game>/`. Each topic contains `c/`, `lua/` and `rust/`
+entry points, one README and an `assets/` directory when the programs
+share assets. Keep C builds in CMake and Rust builds in Cargo. Use the
+runnable sources for documentation snippets.
+
+Review the existing examples and the public examples inside the Rust binding.
+Move selected programs with their build, test, documentation and export
+commands. Keep library doctests and verification fixtures with their
+components. Decide where benchmark programs belong before moving them.
+
+Check project entry points, working directories and relative asset paths in
+both source and exported games. Verify shared assets and licenses with a
+relocated SDK. Retire replaced sources after their references and checks
+point to the new paths.
 
 ## API sketch
 
@@ -39,8 +57,8 @@ C/Lua/Rust minigame proposal here, not an alpha.7 gate.
 
 ## Deferred work and open questions
 
-A full catalog and polished games are outside the first 2.0 release. Beta still
-needs minimal tested getting-started examples in all three languages. Decide
-which current programs teach well, which remain verification/benchmarks, how
-shared assets resolve in exported projects, and which small game best validates
-composition. Coordinate publication with future site work.
+The [startup, process and image lessons](../../examples/features/README.md)
+are already available in all three languages. Decide which other programs
+teach well, which belong in verification or benchmarks, how shared assets
+resolve in exported projects, and which small game best demonstrates how
+the APIs work together.
