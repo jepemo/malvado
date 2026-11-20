@@ -1,10 +1,8 @@
 # Move
 
-A first interactive scene. Three balls bounce around the screen on their
-own, and one player circle follows the arrow keys. Every moving thing is
-its own process, which shows the process model that Malvado is built on.
-A screen process starts the balls and the player as its children, so they
-all end together when you press Escape.
+A first interactive scene: one process draws an orange circle and moves it
+with the arrow keys. This shows the process model that Malvado is built on,
+in less than twenty lines.
 
 Build Malvado, then run:
 
@@ -14,9 +12,8 @@ Build Malvado, then run:
 
 ## Controls
 
-- Arrow keys: move the orange player circle.
-- Space: hold to move faster.
-- Escape: end every process and close the game.
+- Arrow keys: move the circle.
+- Escape: end the process and close the game.
 
 The example needs a display or a virtual display. It uses no assets.
 

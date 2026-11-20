@@ -11,7 +11,7 @@ process scheduling and image loading.
 The directory migration is planned, not complete. Current entry points include:
 
 - [C processes and its Lua counterpart](c/processes/README.md).
-- [Lua Move scene](move/README.md) with balls and arrow-key input.
+- [Lua Move scene](move/README.md) with an arrow-key circle.
 - [Lua world collision](world-collision/README.md).
 - [Lua Space Asteroids game](space_asteroids/README.md).
 - [Current Rust process and world SDK examples](../bindings/rust/README.md).

@@ -122,21 +122,19 @@ function stripLicenseHeader(code, lang) {
   return code.replace(/^(--[^\n]*\n)+\s*/m, '').trim();
 }
 
-const exampleDir = '../../../examples/features/processes/';
+const exampleDir = '../../../examples/features/image/';
 const lua = stripLicenseHeader(await readFile(new URL(`${exampleDir}lua/main.lua`, import.meta.url), 'utf8'), 'lua');
 const c = stripLicenseHeader(await readFile(new URL(`${exampleDir}c/main.c`, import.meta.url), 'utf8'), 'c');
 const rust = stripLicenseHeader(await readFile(new URL(`${exampleDir}rust/main.rs`, import.meta.url), 'utf8'), 'rust');
 
-await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: See the same process example in the three languages.\n---
+await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: See the same image example in the three languages.\n---
 
-These runnable examples come from the repository. All three run two worker
-processes on the same core scheduler and print the same trace:
+These runnable examples come from the repository. All three open a 160 × 120
+window, load the shared \`tile.png\` asset and draw it at \`(32, 32)\`. They use
+the same core scheduler, and print the image size:
 
 \`\`\`text
-first: 1
-second: 1
-first: 2
-second: 2
+image: 32x32
 \`\`\`
 
 Each repository source starts with its license header; the headers are
@@ -144,13 +142,13 @@ omitted here.
 
 ## Lua
 
-\`\`\`lua title="examples/features/processes/lua/main.lua"
+\`\`\`lua title="examples/features/image/lua/main.lua"
 ${lua}
 \`\`\`
 
 ## C
 
-\`\`\`c title="examples/features/processes/c/main.c"
+\`\`\`c title="examples/features/image/c/main.c"
 ${c}
 \`\`\`
 
@@ -158,11 +156,11 @@ ${c}
 
 Rust gameplay support is experimental in Malvado 2.0.
 
-\`\`\`rust title="examples/features/processes/rust/main.rs"
+\`\`\`rust title="examples/features/image/rust/main.rs"
 ${rust}
 \`\`\`
 
-Run the example with the [lesson instructions](${repoLink('examples/features/processes', 'tree')}). See the [Lua processes](../concepts/lua-processes/), [C process API](../concepts/c-contract/) and [Rust processes](../concepts/rust-processes/) guides for the full process model.
+Copy the shared asset as described in the [lesson instructions](${repoLink('examples/features/image', 'tree')}). See the [Draw a PNG image](../concepts/images/) guide, and the [Lua processes](../concepts/lua-processes/), [C process API](../concepts/c-contract/) and [Rust processes](../concepts/rust-processes/) guides.
 `);
 
 // Concept guides from docs/api.

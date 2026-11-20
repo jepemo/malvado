@@ -2,8 +2,8 @@
 
 Astro and Starlight build the public Malvado 2 site. The site content comes
 from the repository: `scripts/sync-content.mjs` copies the guides from
-[`docs/site/`](../site/getting-started.md), the aligned process example from
-[`examples/features/processes/`](../../../examples/features/processes/README.md),
+[`docs/site/`](../site/getting-started.md), the aligned image example from
+[`examples/features/image/`](../../../examples/features/image/README.md),
 and the concept guides from [`docs/api/`](../api/README.md) into the Astro
 content collection before builds and local development. Edit those sources;
 the copied files are generated.
