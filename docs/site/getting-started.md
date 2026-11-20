@@ -1,40 +1,34 @@
 # Get started
 
-Build Malvado and run the Hello World example. It opens a window and shows a greeting.
+Install the Malvado SDK and run your first game. The installer downloads a
+prebuilt SDK; no compiler or repository checkout is needed. Use C, Lua or
+experimental Rust.
 
-Use C, Lua or experimental Rust. If you already have a matching development
-SDK, go to [Create a project](#create-a-project).
+## Install the SDK
 
-## Prepare your computer
-
-Install [Git](https://git-scm.com/), [mise](https://mise.jdx.dev/getting-started.html), and a C compiler. On Linux, install the X11 and OpenGL development packages listed in the [CI workflow](https://github.com/jepemo/malvado/blob/master/.github/workflows/ci.yml).
-
-Get the source and install the project tools:
+The installer supports macOS arm64 and Linux x86_64:
 
 ```sh
-git clone https://github.com/jepemo/malvado.git
-cd malvado
-mise install
+curl -fsSL https://malvado.dev/install.sh | bash
 ```
 
-The first build needs network access. CMake downloads the pinned Lua, raylib, and cJSON sources and checks their hashes.
+It downloads the release SDK, verifies its SHA-256 checksum and installs it
+under `~/.local/share/malvado`. It then prints the line that adds the `bin`
+directory to your `PATH`. Add that line to your shell configuration to keep
+the `malvado` command.
 
-## Run Hello World
-
-Run the tests, then start the example:
+To read the installer before you run it:
 
 ```sh
-mise run test
-mise run hello
+curl -fsSL https://malvado.dev/install.sh -o install.sh
 ```
 
-Press **Escape** or close the window to exit. The example needs a display. You can read its [source and instructions](https://github.com/jepemo/malvado/tree/master/examples/helloworld).
+On Windows, download the SDK archive from
+[GitHub Releases](https://github.com/jepemo/malvado/releases).
 
-## Create a project
+## Create and run a game
 
-Install a matching SDK and make `malvado` available in your terminal. See
-[SDK and projects](sdk.md) for macOS, Linux and Windows installation.
-Run the command for your language from a directory where you keep projects.
+Run the command for your language from a directory where you keep projects:
 
 | Language | Command | Tools for building the game |
 | --- | --- | --- |
@@ -48,15 +42,44 @@ malvado check
 malvado run
 ```
 
-The starter opens a window. Close it with Escape or the window's close control.
-Edit `main.lua`, `main.c` or `main.rs` to change the greeting. C and Rust
-projects can use `malvado build` to compile before running. See the
-[gameplay API guides](api.md) for the scheduler, resources and language-specific
-entry points.
+The starter opens a window. Close it with **Escape** or the window's close
+control. Edit `main.lua`, `main.c` or `main.rs` to change the greeting. C and
+Rust projects can use `malvado build` to compile before running. See
+[SDK and projects](sdk.md) for the SDK and [gameplay API guides](api.md) for the
+scheduler, resources and language entry points.
+
+## Build from source (contributors)
+
+To build Malvado from source, install [Git](https://git-scm.com/),
+[mise](https://mise.jdx.dev/getting-started.html) and a C compiler. On Linux,
+install the X11 and OpenGL development packages listed in the
+[CI workflow](https://github.com/jepemo/malvado/blob/master/.github/workflows/ci.yml).
+
+Clone the source and install the project tools:
+
+```sh
+git clone https://github.com/jepemo/malvado.git
+cd malvado
+mise install
+```
+
+The first build needs network access. CMake downloads the pinned Lua, raylib and
+cJSON sources and checks their hashes. Run the tests, then start the Hello World
+example:
+
+```sh
+mise run test
+mise run hello
+```
+
+Press **Escape** or close the window to exit. The example needs a display. Read
+its [source and instructions](https://github.com/jepemo/malvado/tree/master/examples/helloworld).
 
 ## Try more examples
 
-Run `mise tasks` to see the available commands. Use `mise run test-headless` to test Lua without a graphics backend. Use `mise run test-c` to test the C core without Lua or raylib.
+Run `mise tasks` to see the available commands. Use `mise run test-headless` to
+test Lua without a graphics backend. Use `mise run test-c` to test the C core
+without Lua or raylib.
 
 Try the [first three lessons](https://github.com/jepemo/malvado/blob/master/examples/features/README.md)
 to start a game, run two processes and draw a PNG. Each lesson has C, Lua and
