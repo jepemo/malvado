@@ -8,6 +8,7 @@ export default defineConfig({
   integrations: [starlight({
     title: version ? `Malvado ${version}` : 'Malvado',
     description: 'Guides for the Malvado game engine.',
+    logo: { src: './src/assets/brand-mark.svg', alt: 'Malvado' },
     customCss: ['./src/styles/docs.css'],
     social: [{ icon: 'github', label: 'GitHub', href: repository }],
     expressiveCode: { themes: ['github-light', 'github-dark'] },

@@ -1,0 +1,86 @@
+---
+import { Code } from 'astro:components';
+
+const { examples, default: defaultId, lang = 'lua' } = Astro.props;
+const current = Math.max(0, examples.findIndex((example) => example.id === defaultId));
+---
+<div class="code-showcase" data-code-showcase>
+  <div class="code-tabs" role="tablist" aria-label="Code examples">
+    {examples.map((example, index) => (
+      <button
+        type="button"
+        role="tab"
+        id={`tab-${example.id}`}
+        aria-controls={`panel-${example.id}`}
+        aria-selected={index === current}
+        tabindex={index === current ? 0 : -1}
+        data-file={example.file}
+      >{example.label}</button>
+    ))}
+  </div>
+  <div class="code-window">
+    <div class="code-title">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="code-file" data-code-file>{examples[current].file}</span>
+      <button type="button" class="code-copy" data-code-copy>Copy</button>
+    </div>
+    {examples.map((example, index) => (
+      <div role="tabpanel" id={`panel-${example.id}`} aria-labelledby={`tab-${example.id}`} hidden={index !== current}>
+        <Code code={example.code} lang={lang} theme="github-dark" />
+      </div>
+    ))}
+  </div>
+</div>
+<script>
+  for (const root of document.querySelectorAll('[data-code-showcase]')) {
+    const tabs = Array.from(root.querySelectorAll('[role="tab"]'));
+    const fileLabel = root.querySelector('[data-code-file]');
+    const copyButton = root.querySelector('[data-code-copy]');
+
+    const select = (tab, focus) => {
+      for (const item of tabs) {
+        const isCurrent = item === tab;
+        item.setAttribute('aria-selected', String(isCurrent));
+        item.tabIndex = isCurrent ? 0 : -1;
+        const panel = root.querySelector('#' + CSS.escape(item.getAttribute('aria-controls')));
+        if (panel) panel.hidden = !isCurrent;
+      }
+      if (fileLabel && tab.dataset.file) fileLabel.textContent = tab.dataset.file;
+      if (focus) tab.focus();
+    };
+
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => select(tab, false));
+      tab.addEventListener('keydown', (event) => {
+        const index = tabs.indexOf(tab);
+        let next = -1;
+        if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = tabs.length - 1;
+        if (next >= 0) {
+          event.preventDefault();
+          select(tabs[next], true);
+        }
+      });
+    }
+
+    if (copyButton) {
+      copyButton.addEventListener('click', async () => {
+        const panel = root.querySelector('[role="tabpanel"]:not([hidden])');
+        const code = panel ? panel.querySelector('code')?.textContent ?? '' : '';
+        try {
+          await navigator.clipboard.writeText(code);
+          copyButton.textContent = 'Copied!';
+        } catch {
+          copyButton.textContent = 'Press Ctrl/⌘ + C';
+        }
+        copyButton.dataset.copied = 'true';
+        setTimeout(() => {
+          copyButton.textContent = 'Copy';
+          delete copyButton.dataset.copied;
+        }, 1600);
+      });
+    }
+  }
+</script>
