@@ -1,0 +1,820 @@
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
+--
+-- Malvado Lua module definition for the Lua Language Server (LuaLS).
+-- This file describes the public API without executing runtime functionality.
+--
+-- Use the namespaced API:
+--   local mv = require("malvado")
+--   mv.write { ... }
+--
+-- Or install the same functions as globals (opt-in):
+--   require("malvado").import_globals()
+--   write { ... }
+
+---@meta
+
+---@alias MvProcessConstructor fun(fields?: table, options?: MvSpawnOptions):MvProcess
+
+---@class MvProcessNamespace
+---@field __call fun(_self: MvProcessNamespace, body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor Define a process. Returns a constructor; calling the constructor spawns the process and returns its handle. The body runs as a coroutine and receives `self`. Use `frame()` to yield until the next tick.
+---@field define fun(body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor
+---@field spawn fun(constructor: MvProcessConstructor, fields?: table, options?: MvSpawnOptions):MvProcess
+---@field find fun(constructor: MvProcessConstructor):MvProcess[]
+---@field children fun(handle: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field descendants fun(handle: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field snapshot fun():MvSnapshot
+---@field frame fun()
+---@field signal fun(handle: MvProcess, signal: MvSignal)
+---@field signal_tree fun(handle: MvProcess, signal: MvSignal, options?: MvTreeOptions)
+---@field set_priority fun(handle: MvProcess, priority: integer)
+---@field get_priority fun(handle: MvProcess):integer
+---@field kill fun(handle: MvProcess)
+---@field alive fun(handle: MvProcess):boolean
+---@field kill_tree fun(handle: MvProcess, options?: MvTreeOptions)
+---@field status fun(handle: MvProcess):MvProcessStatusName|nil
+---@field send fun(handle: MvProcess, message: any)
+---@field collision fun(source: MvProcess, target: MvProcess):MvProcess|nil
+---@field collisions fun(source: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
+---@field SIGNAL_SLEEP "sleep"
+---@field SIGNAL_FREEZE "freeze"
+---@field SIGNAL_WAKEUP "wakeup"
+---@field SIGNAL_KILL "kill"
+
+---@class MvInputNamespace
+---@field key_down fun(name: MvKey):boolean
+---@field key_pressed fun(name: MvKey):boolean
+---@field key_released fun(name: MvKey):boolean
+---@field mouse_position fun():integer, integer
+---@field mouse_button fun(button: MvMouseButton):boolean
+---@field pad_connected fun(slot: integer):boolean
+---@field pad_button fun(slot: integer, name: string):boolean
+---@field pad_axis fun(slot: integer, name: string):number
+---@field text_input_next fun():string|nil
+---@field text_input_set_keyboard fun(enabled: boolean):boolean
+---@field KEY_A "a"
+---@field KEY_B "b"
+---@field KEY_C "c"
+---@field KEY_D "d"
+---@field KEY_E "e"
+---@field KEY_F "f"
+---@field KEY_G "g"
+---@field KEY_H "h"
+---@field KEY_I "i"
+---@field KEY_J "j"
+---@field KEY_K "k"
+---@field KEY_L "l"
+---@field KEY_M "m"
+---@field KEY_N "n"
+---@field KEY_O "o"
+---@field KEY_P "p"
+---@field KEY_Q "q"
+---@field KEY_R "r"
+---@field KEY_S "s"
+---@field KEY_T "t"
+---@field KEY_U "u"
+---@field KEY_V "v"
+---@field KEY_W "w"
+---@field KEY_X "x"
+---@field KEY_Y "y"
+---@field KEY_Z "z"
+---@field KEY_0 "0"
+---@field KEY_1 "1"
+---@field KEY_2 "2"
+---@field KEY_3 "3"
+---@field KEY_4 "4"
+---@field KEY_5 "5"
+---@field KEY_6 "6"
+---@field KEY_7 "7"
+---@field KEY_8 "8"
+---@field KEY_9 "9"
+---@field KEY_ESCAPE "escape"
+---@field KEY_SPACE "space"
+---@field KEY_LEFT "left"
+---@field KEY_RIGHT "right"
+---@field KEY_UP "up"
+---@field KEY_DOWN "down"
+---@field KEY_ENTER "enter"
+---@field KEY_TAB "tab"
+---@field KEY_BACKSPACE "backspace"
+
+---@class MvGraphicsNamespace
+---@field rect fun(width: number, height: number, options?: MvGraphicOptions):MvGraphic
+---@field circle fun(radius: number, options?: MvGraphicOptions):MvGraphic
+---@field region fun(x: integer, y: integer, width: integer, height: integer):MvRegion
+---@field scroll fun(x: number, y: number):MvScroll
+---@field sprite fun(atlas: MvAtlas, id: integer):MvGraphic
+---@field graph fun(library: MvAtlas|MvFpg|MvFpgManifest, id: integer):MvGraphic Select a library sprite as the process graphic.
+---@field animation fun(sequence: string|integer[]|MvAtlas, name_or_options?: string|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
+---@field animation_elapsed fun(handle: MvProcess):number|nil
+
+---@class MvCollisionNamespace
+---@field __call fun(_self: MvCollisionNamespace, target: MvProcessConstructor):MvProcess|nil
+---@field circle fun(radius: number, options?: MvShapeOptions):MvCollisionShape
+---@field rect fun(width: number, height: number, options?: MvShapeOptions):MvCollisionShape
+---@field overlap fun(a: MvCollisionShape, transform_a?: MvCollisionTransform, b: MvCollisionShape, transform_b?: MvCollisionTransform):boolean
+
+---@class MvCameraNamespace
+---@field create fun(x: number, y: number, options?: MvCameraCreateOptions):MvCamera
+---@field set fun(camera: MvCamera, x: number, y: number)
+---@field move fun(camera: MvCamera, dx: number, dy: number)
+---@field position fun(camera: MvCamera):number, number
+---@field follow fun(camera: MvCamera, target: MvProcess)
+
+---@class MvWorldNamespace
+---@field create fun():MvCollisionWorld
+---@field move fun(world: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
+
+---@class MvFpgNamespace
+---@field parse fun(path: string):MvFpg
+---@field parse_manifest fun(path: string):MvFpgManifest
+
+---The `malvado` module.
+---@class malvado
+---@field process MvProcessNamespace
+---@field input MvInputNamespace
+---@field graphics MvGraphicsNamespace
+---@field collision MvCollisionNamespace
+---@field camera MvCameraNamespace
+---@field world MvWorldNamespace
+---@field fpg MvFpgNamespace
+local malvado = {}
+
+---Spawn a process from a constructor with explicit fields and options.
+---@param constructor MvProcessConstructor
+---@param fields? table
+---@param options? MvSpawnOptions
+---@return MvProcess handle
+function malvado.spawn(constructor, fields, options) end
+
+---Find all live processes of one type.
+---@param constructor MvProcessConstructor
+---@return MvProcess[] handles
+function malvado.find(constructor) end
+
+---List direct children of a process.
+---@param handle MvProcess
+---@param options? MvTreeOptions
+---@return MvProcess[] children
+function malvado.children(handle, options) end
+
+---List all descendants of a process.
+---@param handle MvProcess
+---@param options? MvTreeOptions
+---@return MvProcess[] descendants
+function malvado.descendants(handle, options) end
+
+---Inspect every live process.
+---@return MvSnapshot snapshot
+function malvado.snapshot() end
+
+---Yield the current process until the next tick.
+---Must be called inside a process body.
+function malvado.frame() end
+
+---Send a signal: "sleep", "freeze", "wakeup" or "kill".
+---Kill removes the process and its owned texts.
+---@param handle MvProcess
+---@param signal MvSignal
+function malvado.signal(handle, signal) end
+
+---Send a signal to a process tree.
+---@param handle MvProcess
+---@param signal MvSignal
+---@param options? MvTreeOptions
+function malvado.signal_tree(handle, signal, options) end
+
+---Change the scheduling priority of a process.
+---@param handle MvProcess
+---@param priority integer
+function malvado.set_priority(handle, priority) end
+
+---Read the scheduling priority of a process.
+---@param handle MvProcess
+---@return integer priority
+function malvado.get_priority(handle) end
+
+---Kill a process. Owned texts are removed at cleanup.
+---@param handle MvProcess
+function malvado.kill(handle) end
+
+---Check whether a process handle is still alive.
+---@param handle MvProcess
+---@return boolean alive
+function malvado.alive(handle) end
+
+---Kill a process and its whole tree.
+---@param handle MvProcess
+---@param options? MvTreeOptions
+function malvado.kill_tree(handle, options) end
+
+---Read the status of a process: "running", "sleeping" or "frozen".
+---Returns nil when the process is dead.
+---@param handle MvProcess
+---@return MvProcessStatusName|nil status
+function malvado.status(handle) end
+
+---Queue a message for a process. The receiver reads it with `handle:recv()`.
+---@param handle MvProcess
+---@param message any
+function malvado.send(handle, message) end
+
+---Run the game loop. Call once with the entry process.
+---
+---```lua
+---start(function() Player {} end, {width = 640, height = 480})
+---```
+---@param body fun()
+---@param options? MvStartOptions
+function malvado.start(body, options) end
+
+---Create a rectangle process graphic.
+---@param width number
+---@param height number
+---@param options? MvGraphicOptions
+---@return MvGraphic
+function malvado.rect(width, height, options) end
+
+---Create a circle process graphic.
+---@param radius number
+---@param options? MvGraphicOptions
+---@return MvGraphic
+function malvado.circle(radius, options) end
+
+---Create a drawing region descriptor.
+---@param x integer
+---@param y integer
+---@param width integer
+---@param height integer
+---@return MvRegion
+function malvado.region(x, y, width, height) end
+
+---Create a scroll descriptor.
+---@param x number
+---@param y number
+---@return MvScroll
+function malvado.scroll(x, y) end
+
+---Check whether two axis-aligned rectangles overlap.
+---@param ax number
+---@param ay number
+---@param aw number
+---@param ah number
+---@param bx number
+---@param by number
+---@param bw number
+---@param bh number
+---@return boolean overlaps
+function malvado.rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
+
+---Check whether a rectangle contains a point.
+---@param rx number
+---@param ry number
+---@param rw number
+---@param rh number
+---@param px number
+---@param py number
+---@return boolean contains
+function malvado.rect_contains(rx, ry, rw, rh, px, py) end
+
+---Create an explicit camera. Without one, all processes use the main camera.
+---@param x number
+---@param y number
+---@param options? MvCameraCreateOptions
+---@return MvCamera camera
+function malvado.camera_create(x, y, options) end
+
+---Position the main camera: `camera_set(x, y)`.
+---Position an explicit camera: `camera_set(camera, x, y)`.
+---@overload fun(x: number, y: number)
+---@param camera MvCamera
+---@param x number
+---@param y number
+function malvado.camera_set(camera, x, y) end
+
+---Move the main camera: `camera_move(dx, dy)`.
+---Move an explicit camera: `camera_move(camera, dx, dy)`.
+---@overload fun(dx: number, dy: number)
+---@param camera MvCamera
+---@param dx number
+---@param dy number
+function malvado.camera_move(camera, dx, dy) end
+
+---Follow a live process with the main camera: `camera_follow(target)`.
+---@param target MvProcess
+function malvado.camera_follow(target) end
+
+---Read a camera position. Without arguments, reads the main camera.
+---@param camera? MvCamera
+---@return number x
+---@return number y
+function malvado.camera_position(camera) end
+
+---Create a static collision world.
+---@return MvCollisionWorld world
+function malvado.world_create() end
+
+---Move the current process through the world selected by its `world` field
+---and report the collision result.
+---@param dx number
+---@param dy number
+---@return MvMoveResult result
+function malvado.world_move(dx, dy) end
+
+---Load an image, atlas, FPG or Aseprite export from a path.
+---
+---```lua
+---local image = load_asset("assets/logo.png")
+---local atlas = load_asset("assets/sheet.json")
+---```
+---The `format` option selects the loader. With `pivot` the asset must be a PNG
+---image. Without options the format is detected from the file.
+---@overload fun(path: string, options: MvLoadAssetPivotOptions):MvImage
+---@overload fun(path: string, options: {format: "png"}):MvImage
+---@overload fun(path: string, options: {format: "fpg"}):MvFpg
+---@overload fun(path: string, options: {format: "fpg-manifest"}):MvFpgManifest
+---@overload fun(path: string, options: {format: "atlas"|"aseprite"}):MvAtlas
+---@param path string
+---@param options? MvLoadAssetOptions
+---@return MvImage|MvAtlas|MvFpg|MvFpgManifest
+function malvado.load_asset(path, options) end
+
+---Load a PNG image. Requires an open window.
+---@param path string
+---@return MvImage image
+function malvado.load_image(path) end
+
+---Read an image size in pixels.
+---@param image MvImage
+---@return integer width
+---@return integer height
+function malvado.image_size(image) end
+
+---Queue an immediate-mode image draw for the current frame.
+---Must be called inside a process.
+---@param image MvImage
+---@param x integer
+---@param y integer
+function malvado.draw_image(image, x, y) end
+
+---Queue an immediate-mode image region draw with transform for the current frame.
+---Must be called inside a process.
+---@param image MvImage
+---@param x number
+---@param y number
+---@param sx integer Source x in pixels.
+---@param sy integer Source y in pixels.
+---@param sw integer Source width in pixels.
+---@param sh integer Source height in pixels.
+---@param pivot_x number? Default 0.
+---@param pivot_y number? Default 0.
+---@param scale number? Default 1.
+---@param rotation number? Rotation in degrees. Default 0.
+function malvado.draw_image_region(image, x, y, sx, sy, sw, sh, pivot_x, pivot_y, scale, rotation) end
+
+---Load a sprite atlas from an image and its JSON metadata.
+---@param image MvImage
+---@param json string
+---@return MvAtlas atlas
+function malvado.load_atlas(image, json) end
+
+---Load a sprite atlas from an Aseprite JSON export.
+---@param image MvImage
+---@param json string
+---@return MvAtlas atlas
+function malvado.load_aseprite(image, json) end
+
+---Read metadata for one atlas sprite.
+---@param atlas MvAtlas
+---@param id integer
+---@return MvSpriteInfo info
+function malvado.sprite_info(atlas, id) end
+
+---Find the sprite ID for an atlas sprite name. Returns nil when missing.
+---@param atlas MvAtlas
+---@param name string
+---@return integer|nil id
+function malvado.sprite_id(atlas, name) end
+
+---Compute the atlas animation frame for an elapsed time in milliseconds.
+---@param atlas MvAtlas
+---@param name string
+---@param elapsed_ms integer
+---@param loop? boolean Default true.
+---@return integer sprite_id
+function malvado.animation_frame(atlas, name, elapsed_ms, loop) end
+
+---Read the ambient color of an atlas animation. Returns nil when missing.
+---@param atlas MvAtlas
+---@param name string
+---@return integer[]|nil color
+function malvado.animation_color(atlas, name) end
+
+---Read the transparent pivot color of an atlas. Returns nil when missing.
+---@param atlas MvAtlas
+---@return integer[]|nil color
+function malvado.atlas_pivot_color(atlas) end
+
+---Read how often an atlas animation repeats. Returns nil when missing.
+---@param atlas MvAtlas
+---@param name string
+---@return integer|nil repeats
+function malvado.animation_repeats(atlas, name) end
+
+---Queue an immediate-mode atlas sprite draw for the current frame.
+---Must be called inside a process.
+---@param atlas MvAtlas
+---@param id integer
+---@param x number
+---@param y number
+---@param scale? number Default 1.
+---@param rotation? number Rotation in degrees. Default 0.
+function malvado.draw_sprite(atlas, id, x, y, scale, rotation) end
+
+---Select an atlas sprite as the current process graphic.
+---Shorthand for `self.graph = ...`. With one argument, the sprite comes from
+---the current process's `file` field.
+---@overload fun(id: integer):MvGraphic
+---@param library MvAtlas|MvFpg|MvFpgManifest
+---@param id integer
+---@return MvGraphic
+function malvado.graph(library, id) end
+
+---Create an animation descriptor from an atlas animation or a frame list.
+---
+---```lua
+---self.graph = animation(atlas, "walk")
+---self.graph = animation("walk")        -- uses the process's `file` field
+---self.graph = animation({1, 2, 3}, {fps = 12})
+---```
+---@overload fun(library: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(sequence: integer[], options?: MvAnimationOptions):MvAnimation
+---@return MvAnimation
+function malvado.animation(sequence, options) end
+
+---Read the elapsed playback time of the current animation in milliseconds.
+---Returns nil when the process graphic is not an animation.
+---@param handle MvProcess
+---@return number|nil elapsed_ms
+function malvado.animation_elapsed(handle) end
+
+---Load a legacy FPG sheet from a directory or sheet image.
+---@param path string
+---@param kind? "directory"|"image"
+---@param rows? integer Required for "image".
+---@param columns? integer Required for "image".
+---@return userdata legacy_sheet
+function malvado.legacy_fpg(path, kind, rows, columns) end
+
+---Create the built-in font descriptor with a default size.
+---
+---```lua
+---local f = font {size = 50}
+---```
+---@param options MvFontOptions
+---@return MvFont font
+function malvado.font(options) end
+
+---Load a TTF/OTF font file. Requires an open window.
+---
+---```lua
+---local f = load_font {path = "arcade.ttf", size = 24, extra_glyphs = "ΩЖ"}
+---```
+---@param options MvLoadFontOptions
+---@return MvFont font
+function malvado.load_font(options) end
+
+---Create persistent text owned by the current process.
+---
+---The text stays visible until it is deleted with `delete_text` or until its
+---owning process terminates or is killed. Returns a numeric text ID.
+---Per-text `color` and `size` are independent of other texts sharing the font.
+---
+---```lua
+---local title = write {
+---  font = f,
+---  text = "Welcome 2 Malvado!",
+---  x = 400, y = 300,
+---  align = "center",
+---  color = {255, 255, 255, 255},
+---  size = 50,
+---}
+---```
+---@param options MvWriteOptions
+---@return integer id
+function malvado.write(options) end
+
+---Change a persistent text partially. Only provided fields change.
+---The text ID and its process owner stay the same. Invalid input changes nothing.
+---
+---```lua
+---change_text(id, {text = "New message!", color = {255, 0, 0, 180}})
+---```
+---@param id integer
+---@param options MvChangeTextOptions
+function malvado.change_text(id, options) end
+
+---Delete a persistent text immediately. Also removed automatically when its
+---owning process terminates or is killed.
+---@param id integer
+function malvado.delete_text(id) end
+
+---Measure text in pixels without drawing it.
+---
+---Measure arbitrary text with a font: `text_size(f, "Hello!")`.
+---Measure a persistent text with its effective style: `text_size(id)`.
+---Returns width and height. Empty text measures (0, 0). The headless backend
+---cannot measure and returns (0, 0).
+---@overload fun(font: MvFont, text: string):integer, integer
+---@overload fun(id: integer):integer, integer
+function malvado.text_size(font, text) end
+
+---Draw immediate-mode text for the current frame only.
+---No persistent text object is created. Must be called inside a process.
+---
+---```lua
+---draw_text {text = "Hello!", x = 40, y = 40, size = 24}
+---```
+---@param options MvDrawTextOptions
+function malvado.draw_text(options) end
+
+---Set the drawing color for subsequent `draw_box`, `draw_rect`, `draw_circle`
+---and `draw_fcircle` calls.
+---@param color MvColor
+function malvado.set_color(color) end
+
+---Set the background color. The background is always opaque; the color's
+---alpha channel is ignored.
+---@param color MvColor
+function malvado.clear_screen(color) end
+
+---Queue a fade to a color over a number of ticks. Default 16 ticks.
+---
+---```lua
+---fade_to {color = {0, 0, 0, 255}, ticks = 30}
+---```
+---@param options {color: MvColor, ticks?: integer}
+function malvado.fade_to(options) end
+
+---Start a fade to opaque black.
+---@param ticks? integer Default 16.
+function malvado.fade_off(ticks) end
+
+---Start a fade to fully transparent.
+---@param ticks? integer Default 16.
+function malvado.fade_on(ticks) end
+
+---Check whether a fade is running.
+---@return boolean active
+function malvado.fade_active() end
+
+---Read the current fade color.
+---@return MvColor color
+function malvado.fade_color() end
+
+---Queue a filled box draw with the color set by `set_color`.
+---Must be called inside a process.
+---@param x1 integer
+---@param y1 integer
+---@param x2 integer
+---@param y2 integer
+function malvado.draw_box(x1, y1, x2, y2) end
+
+---Queue an outlined rectangle draw with the color set by `set_color`.
+---Must be called inside a process.
+---@param x integer
+---@param y integer
+---@param width integer
+---@param height integer
+function malvado.draw_rect(x, y, width, height) end
+
+---Queue a filled circle draw with the color set by `set_color`.
+---Must be called inside a process.
+---@param x integer
+---@param y integer
+---@param radius integer
+function malvado.draw_fcircle(x, y, radius) end
+
+---Queue an outlined circle draw with the color set by `set_color`.
+---Must be called inside a process.
+---@param x integer
+---@param y integer
+---@param radius integer
+function malvado.draw_circle(x, y, radius) end
+
+---Set the window title.
+---@param title string
+function malvado.set_title(title) end
+
+---Read the window size in pixels. Only available after `start`.
+---@return integer width
+---@return integer height
+function malvado.window_size() end
+
+---Read the monotonic clock in seconds.
+---@return number seconds
+function malvado.time_seconds() end
+
+---Read the screen width in pixels. Only available after `start`.
+---@return integer width
+function malvado.get_screen_width() end
+
+---Read the screen height in pixels. Only available after `start`.
+---@return integer height
+function malvado.get_screen_height() end
+
+---Random integer in [min, max].
+---@param min integer
+---@param max integer
+---@return integer value
+function malvado.rand(min, max) end
+
+---Check whether a key is currently down.
+---@param name MvKey
+---@return boolean down
+function malvado.key(name) end
+
+---Alias of `key`.
+---@param name MvKey
+---@return boolean down
+function malvado.key_down(name) end
+
+---Check whether a key was pressed in the current tick.
+---@param name MvKey
+---@return boolean pressed
+function malvado.key_pressed(name) end
+
+---Check whether a key was released in the current tick.
+---@param name MvKey
+---@return boolean released
+function malvado.key_released(name) end
+
+---Read the mouse position in pixels.
+---@return integer x
+---@return integer y
+function malvado.mouse_position() end
+
+---Check whether a mouse button is currently down.
+---@param button MvMouseButton
+---@return boolean down
+function malvado.mouse_button(button) end
+
+---Check whether a controller is connected in a slot (0..3).
+---@param slot integer
+---@return boolean connected
+function malvado.pad_connected(slot) end
+
+---Check whether a controller button is down.
+---@param slot integer
+---@param name string
+---@return boolean down
+function malvado.pad_button(slot, name) end
+
+---Read a controller axis value.
+---@param slot integer
+---@param name string
+---@return number value
+function malvado.pad_axis(slot, name) end
+
+---Read one typed character. Returns nil when the queue is empty.
+---@return string|nil character
+function malvado.text_input_next() end
+
+---Show or hide the on-screen keyboard (Android).
+---@param enabled boolean
+---@return boolean toggled
+function malvado.text_input_set_keyboard(enabled) end
+
+---Load a WAV sound effect. Requires an open audio device.
+---@param path string
+---@return MvSound sound
+function malvado.load_sound(path) end
+
+---Clone a sound for independent playback.
+---@param sound MvSound
+---@return MvSound clone
+function malvado.clone_sound(sound) end
+
+---Play a sound.
+---@param sound MvSound
+function malvado.play_sound(sound) end
+
+---Stop a sound.
+---@param sound MvSound
+function malvado.stop_sound(sound) end
+
+---Pause a sound.
+---@param sound MvSound
+function malvado.pause_sound(sound) end
+
+---Resume a paused sound.
+---@param sound MvSound
+function malvado.resume_sound(sound) end
+
+---Check whether a sound is playing.
+---@param sound MvSound
+---@return boolean playing
+function malvado.sound_playing(sound) end
+
+---Set the sound volume (0..1).
+---@param sound MvSound
+---@param volume number
+function malvado.sound_volume(sound, volume) end
+
+---Load a music stream.
+---@param path string
+---@param loop? boolean Default false.
+---@return MvMusic music
+function malvado.load_music(path, loop) end
+
+---Check whether music is playing.
+---@param music MvMusic
+---@return boolean playing
+function malvado.music_playing(music) end
+
+---Set the music volume (0..1).
+---@param music MvMusic
+---@param volume number
+function malvado.music_volume(music, volume) end
+
+---Play a music stream.
+---@param music MvMusic
+function malvado.play_music(music) end
+
+---Advance the music stream (manual mode).
+---@param music MvMusic
+function malvado.update_music(music) end
+
+---Stop a music stream.
+---@param music MvMusic
+function malvado.stop_music(music) end
+
+---Pause a music stream.
+---@param music MvMusic
+function malvado.pause_music(music) end
+
+---Resume a paused music stream.
+---@param music MvMusic
+function malvado.resume_music(music) end
+
+---Install every module function as a global. Optional convenience for
+---DIV-style code. Errors when a global already holds a different value.
+---
+---```lua
+---require("malvado").import_globals()
+---write { ... }
+---```
+function malvado.import_globals() end
+
+malvado.KEY_A = "a"
+malvado.KEY_B = "b"
+malvado.KEY_C = "c"
+malvado.KEY_D = "d"
+malvado.KEY_E = "e"
+malvado.KEY_F = "f"
+malvado.KEY_G = "g"
+malvado.KEY_H = "h"
+malvado.KEY_I = "i"
+malvado.KEY_J = "j"
+malvado.KEY_K = "k"
+malvado.KEY_L = "l"
+malvado.KEY_M = "m"
+malvado.KEY_N = "n"
+malvado.KEY_O = "o"
+malvado.KEY_P = "p"
+malvado.KEY_Q = "q"
+malvado.KEY_R = "r"
+malvado.KEY_S = "s"
+malvado.KEY_T = "t"
+malvado.KEY_U = "u"
+malvado.KEY_V = "v"
+malvado.KEY_W = "w"
+malvado.KEY_X = "x"
+malvado.KEY_Y = "y"
+malvado.KEY_Z = "z"
+malvado.KEY_0 = "0"
+malvado.KEY_1 = "1"
+malvado.KEY_2 = "2"
+malvado.KEY_3 = "3"
+malvado.KEY_4 = "4"
+malvado.KEY_5 = "5"
+malvado.KEY_6 = "6"
+malvado.KEY_7 = "7"
+malvado.KEY_8 = "8"
+malvado.KEY_9 = "9"
+malvado.KEY_ESCAPE = "escape"
+malvado.KEY_SPACE = "space"
+malvado.KEY_LEFT = "left"
+malvado.KEY_RIGHT = "right"
+malvado.KEY_UP = "up"
+malvado.KEY_DOWN = "down"
+malvado.KEY_ENTER = "enter"
+malvado.KEY_TAB = "tab"
+malvado.KEY_BACKSPACE = "backspace"
+malvado.SIGNAL_SLEEP = "sleep"
+malvado.SIGNAL_FREEZE = "freeze"
+malvado.SIGNAL_WAKEUP = "wakeup"
+malvado.SIGNAL_KILL = "kill"
+
+return malvado

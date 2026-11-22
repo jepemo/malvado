@@ -43,6 +43,6 @@ local Producer = process(function()
   Drawer({}, {attached = false})
 end)
 return {width = 160, height = 120, init = function()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   Producer()
 end}

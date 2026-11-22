@@ -50,10 +50,26 @@ regular_file(const char *path)
     return lstat(path, &info) == 0 && S_ISREG(info.st_mode);
 }
 
+static int
+directory_exists(const char *path)
+{
+    struct stat info;
+    return stat(path, &info) == 0 && S_ISDIR(info.st_mode);
+}
+
 int
 malvado_native_project(void)
 {
     return regular_file("main.c") && regular_file("CMakeLists.txt");
+}
+
+int
+malvado_lua_types(char *path, size_t size)
+{
+    char sdk[PATH_MAX];
+    if (!malvado_sdk_root(sdk, sizeof(sdk))) return 0;
+    int length = snprintf(path, size, "%s/%s", sdk, MALVADO_TYPES_REL);
+    return length >= 0 && (size_t)length < size && directory_exists(path);
 }
 
 int
@@ -330,6 +346,7 @@ malvado_native_run(void)
 #include "build.h"
 int malvado_android_export(int argc, char **argv) { (void)argc; (void)argv; fprintf(stderr, "Android export requires an installed graphical SDK\n"); return 1; }
 int malvado_rust_dependency(char *path, size_t size) { (void)path; (void)size; return 0; }
+int malvado_lua_types(char *path, size_t size) { (void)path; (void)size; return 0; }
 int malvado_rust_binary(char *path, size_t size) { (void)path; (void)size; return 0; }
 int malvado_rust_build(int check) { (void)check; fprintf(stderr, "Rust builds require a graphical SDK\n"); return 1; }
 int malvado_rust_run(void) { return malvado_rust_build(0); }

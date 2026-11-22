@@ -691,6 +691,19 @@ mv_window_text_width(const char *text, int size)
     return (int)width;
 }
 
+int
+mv_window_text_height(const char *text, int size)
+{
+    if (!text || size < 1 || !IsWindowReady())
+        return 0;
+    int font_size = size < 10 ? 10 : size;
+    float height = MeasureTextEx(GetFontDefault(), text, (float)font_size,
+                                 (float)(font_size / 10)).y;
+    if (!isfinite(height) || height < 0 || (double)height > INT_MAX)
+        return 0;
+    return (int)height;
+}
+
 MvFont *
 mv_font_load(const char *path, int base_size)
 {
@@ -776,6 +789,17 @@ mv_font_text_width(const MvFont *font, const char *text, int size)
     if (!isfinite(width) || width < 0 || (double)width > INT_MAX)
         return 0;
     return (int)ceilf(width);
+}
+
+int
+mv_font_text_height(const MvFont *font, const char *text, int size)
+{
+    if (!font || !text || !IsWindowReady() || size < 1 || size > 1024)
+        return 0;
+    float height = MeasureTextEx(font->font, text, (float)size, size / 10.0f).y;
+    if (!isfinite(height) || height < 0 || (double)height > INT_MAX)
+        return 0;
+    return (int)ceilf(height);
 }
 
 int

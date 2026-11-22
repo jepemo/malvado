@@ -5,7 +5,7 @@ require("malvado").import_globals()
 
 local HelloWorld = process(function()
   while not key(KEY_ESCAPE) do
-    draw_text("Hello World", 40, 40, 48)
+    draw_text {text = "Hello World", x = 40, y = 40, size = 48}
     frame()
   end
 end)

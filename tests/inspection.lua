@@ -6,7 +6,7 @@ local a, b
 local weak = setmetatable({}, {__mode = "v"})
 local worker = mv.process(function(self)
   while true do
-    mv.draw_text("hello", 0, 0, 20)
+    mv.draw_text {text = "hello", x = 0, y = 0, size = 20}
     mv.frame()
   end
 end)

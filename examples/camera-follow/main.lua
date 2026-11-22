@@ -21,13 +21,13 @@ end)
 local HUD = process(function(self)
   self.camera = false
   while not key("escape") do
-    draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end
 end)
 
 start(function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Wall({x = 500, y = 240})
   Player({x = 320, y = 240})
   HUD({z = 10})

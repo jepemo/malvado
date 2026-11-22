@@ -117,8 +117,8 @@ local Game = process(function(self)
   while not key("escape") do
     if score == 20 then result = "You win!" end
 
-    draw_text("Score: " .. score, 20, 20, 24)
-    if result then draw_text(result, 300, 280, 28) end
+    draw_text {text = "Score: " .. score, x = 20, y = 20, size = 24}
+    if result then draw_text {text = result, x = 300, y = 280, size = 28} end
     frame()
   end
 
@@ -132,7 +132,7 @@ return {
   width = W,
   height = H,
   init = function()
-    clear_screen(8, 10, 24)
+    clear_screen {8, 10, 24, 255}
     Game()
   end
 }

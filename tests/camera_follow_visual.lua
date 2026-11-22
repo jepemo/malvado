@@ -24,7 +24,7 @@ local HUD = process(function(self)
   while true do frame() end
 end)
 return {width = 160, height = 120, init = function()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   explicit = camera_create(0, 0, {viewport = region(40, 60, 50, 40)})
   Player({x = 100, y = 90})
   Other({x = 300, y = 100, camera = explicit})

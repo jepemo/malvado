@@ -6,9 +6,9 @@ local draw_text, frame = mv.draw_text, mv.frame
 local ticks, seen = 0, {}
 local interactive = os.getenv("MALVADO_REAL_INPUT") == "1"
 
-mv.draw_text = function(text, ...)
-  seen[text] = true
-  return draw_text(text, ...)
+mv.draw_text = function(options)
+  seen[options.text] = true
+  return draw_text(options)
 end
 if not interactive then
   local keys = {

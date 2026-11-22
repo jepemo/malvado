@@ -20,7 +20,7 @@ local Controller = process(function()
   end
 end)
 return {width = 120, height = 80, init = function()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   local ok, message = pcall(animation, metadata, "bounce")
   assert(not ok and message:find("no visual images", 1, true))
   assert(metadata_definition)

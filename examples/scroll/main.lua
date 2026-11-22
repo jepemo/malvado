@@ -12,7 +12,7 @@ local Scene = process(function(self)
     if key("up") then camera_y = camera_y - 3 end
     if key("down") then camera_y = camera_y + 3 end
     self.scroll = scroll(camera_x, camera_y)
-    set_color(255, 165, 70)
+    set_color {255, 165, 70, 255}
     draw_box(280, 180, 340, 240)
     frame()
   end
@@ -23,16 +23,16 @@ end, {defaults = {
 
 local Overlay = process(function()
   while not key("escape") do
-    set_color(240, 240, 240)
+    set_color {240, 240, 240, 255}
     draw_rect(40, 60, 340, 300)
-    draw_text("Arrow keys: scroll  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Arrow keys: scroll  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end
 end)
 
 local game = {width = 640, height = 480, title = "Process scrolling"}
 function game.init()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Scene({x = 140, y = 130})
   Overlay({z = 1})
 end

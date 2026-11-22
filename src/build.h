@@ -20,6 +20,8 @@ int malvado_rust_build(int check);
 int malvado_rust_run(void);
 int malvado_rust_binary(char *path, size_t size);
 int malvado_rust_dependency(char *path, size_t size);
+/* Absolute path of the installed LuaLS type definitions, or 0 when absent. */
+int malvado_lua_types(char *path, size_t size);
 int malvado_native_project(void);
 int malvado_native_build(void);
 int malvado_native_run(void);

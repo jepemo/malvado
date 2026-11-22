@@ -48,7 +48,7 @@ local Player = process(function(self)
 end)
 
 start(function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Player {x = 160, y = 120}
 end)
 ```

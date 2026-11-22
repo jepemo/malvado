@@ -30,7 +30,7 @@ assert(not pcall(rand, 0.5, 2))
 local ran = false
 local task = process(function()
   assert(not key("escape"))
-  set_color(255, 0, 0)
+  set_color {255, 0, 0, 255}
   draw_box(1, 1, 5, 5)
   frame()
   ran = true

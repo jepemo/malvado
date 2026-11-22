@@ -17,7 +17,7 @@ local Inventory = process(function(self)
     self.scroll = scroll(offset, 0)
     for i = 0, 5 do
       local color = colors[i % #colors + 1]
-      set_color(color[1], color[2], color[3])
+      set_color {color[1], color[2], color[3], 255}
       draw_box(100 + i * 100, 160, 180 + i * 100, 280)
     end
     frame()
@@ -27,15 +27,15 @@ end)
 local Overlay = process(function(self)
   self.camera = false
   while not key("escape") do
-    set_color(255, 255, 255)
+    set_color {255, 255, 255, 255}
     draw_rect(80, 140, 560, 320)
-    draw_text("Left / Right: scroll inventory  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Left / Right: scroll inventory  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end
 end)
 
 return {width = 640, height = 480, title = "Clipped screen-space inventory", init = function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   camera_set(200, 100)
   World({x = 800, y = 500})
   Inventory()

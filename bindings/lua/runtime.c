@@ -1934,18 +1934,89 @@ advance_fade(void)
     (void)mv_fade_queue_step(&engine.fade);
 }
 
+/* Colors use one public representation: {red, green, blue, alpha} with four
+ * integer channels in 0..255. Alpha 0 is fully transparent, 255 fully opaque.
+ * Invalid tables must produce clear errors before any state changes. */
+static MvColor
+check_color(lua_State *L, int index)
+{
+    luaL_checktype(L, index, LUA_TTABLE);
+    index = lua_absindex(L, index);
+    if (lua_rawlen(L, index) != 4)
+        luaL_error(L, "color must be a table with four channels: {red, green, blue, alpha}");
+    MvColor color;
+    unsigned char *channels[4] = {&color.r, &color.g, &color.b, &color.a};
+    for (int i = 0; i < 4; ++i) {
+        lua_rawgeti(L, index, i + 1);
+        int is_integer;
+        lua_Integer value = lua_tointegerx(L, -1, &is_integer);
+        lua_pop(L, 1);
+        if (!is_integer || value < 0 || value > 255)
+            luaL_error(L, "color channel %d must be an integer in 0..255", i + 1);
+        *channels[i] = (unsigned char)value;
+    }
+    return color;
+}
+
+static void
+push_color(lua_State *L, MvColor color)
+{
+    lua_createtable(L, 4, 0);
+    unsigned char channels[4] = {color.r, color.g, color.b, color.a};
+    for (int i = 0; i < 4; ++i) {
+        lua_pushinteger(L, channels[i]);
+        lua_rawseti(L, -2, i + 1);
+    }
+}
+
+/* Options tables accept only documented keys. Report unknown keys clearly. */
+static void
+validate_table_keys(lua_State *L, int index, const char *const *names, size_t count)
+{
+    index = lua_absindex(L, index);
+    luaL_checktype(L, index, LUA_TTABLE);
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        size_t length = 0;
+        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
+        int known = 0;
+        if (name && strlen(name) == length)
+            for (size_t i = 0; i < count; ++i)
+                if (strcmp(name, names[i]) == 0) {
+                    known = 1;
+                    break;
+                }
+        if (!known) {
+            if (!name)
+                luaL_error(L, "option names must be strings");
+            lua_pop(L, 1);
+            luaL_error(L, "unknown option: %s", name);
+        }
+        lua_pop(L, 1);
+    }
+}
+
 static int
 fade_to(lua_State *L)
 {
-    lua_Integer values[5];
-    for (int i = 0; i < 5; ++i) {
-        values[i] = luaL_checkinteger(L, i + 1);
-        lua_Integer limit = i == 4 ? 1000000 : 255;
-        if (values[i] < 0 || values[i] > limit)
-            return luaL_error(L, "invalid fade color or duration");
+    static const char *const keys[] = {"color", "ticks"};
+    luaL_checktype(L, 1, LUA_TTABLE);
+    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "color");
+    MvColor color = check_color(L, -1);
+    lua_pop(L, 1);
+    lua_Integer ticks = 16;
+    raw_option(L, 1, "ticks");
+    if (!lua_isnil(L, -1)) {
+        int is_integer;
+        ticks = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer || ticks < 0 || ticks > 1000000) {
+            lua_pop(L, 1);
+            return luaL_error(L, "fade duration must be an integer in 0..1000000");
+        }
     }
-    return queue_fade(L, (MvColor){values[0], values[1], values[2], values[3]},
-                      (unsigned)values[4]);
+    lua_pop(L, 1);
+    return queue_fade(L, color, (unsigned)ticks);
 }
 
 static int
@@ -1968,24 +2039,17 @@ fade_active(lua_State *L)
 static int
 fade_color(lua_State *L)
 {
-    MvColor color = engine.fade.fade.current;
-    lua_pushinteger(L, color.r);
-    lua_pushinteger(L, color.g);
-    lua_pushinteger(L, color.b);
-    lua_pushinteger(L, color.a);
-    return 4;
+    push_color(L, engine.fade.fade.current);
+    return 1;
 }
 
 static int
 set_color(lua_State *L)
 {
-    lua_Integer values[4] = {0, 0, 0, 255};
+    MvColor color = check_color(L, 1);
     MvDrawState next = engine.draw;
-    for (int i = 0; i < 4; ++i) {
-        values[i] = i == 3 ? luaL_optinteger(L, i + 1, 255) : luaL_checkinteger(L, i + 1);
-        if (!mv_draw_state_color(&next, values[0], values[1], values[2], values[3]))
-            return luaL_error(L, "color must be in 0..255");
-    }
+    if (!mv_draw_state_color(&next, color.r, color.g, color.b, color.a))
+        return luaL_error(L, "color must be in 0..255");
     engine.draw = next;
     return 0;
 }
@@ -2064,11 +2128,12 @@ set_title(lua_State *L)
 static int
 clear_screen(lua_State *L)
 {
-    lua_Integer r = luaL_checkinteger(L, 1);
-    lua_Integer g = luaL_checkinteger(L, 2);
-    lua_Integer b = luaL_checkinteger(L, 3);
-    if (!mv_draw_state_background(&engine.draw, r, g, b))
+    MvColor color = check_color(L, 1);
+    MvDrawState next = engine.draw;
+    /* The background is always opaque; only the RGB channels are used. */
+    if (!mv_draw_state_background(&next, color.r, color.g, color.b))
         return luaL_error(L, "color must be in 0..255");
+    engine.draw = next;
     return 0;
 }
 
@@ -3622,19 +3687,78 @@ load_asset(lua_State *L)
 }
 
 
+/* Font descriptor: a table with a "size" integer in 1..1024 and, for fonts
+ * loaded with load_font, a "resource" userdata that owns the native font. */
+typedef struct {
+    lua_Integer size;
+    MvFont *custom;
+} FontDescriptor;
+
+static FontDescriptor
+check_font_descriptor(lua_State *L, int index)
+{
+    luaL_checktype(L, index, LUA_TTABLE);
+    index = lua_absindex(L, index);
+    FontDescriptor descriptor = {0, NULL};
+    raw_option(L, index, "size");
+    int is_integer;
+    descriptor.size = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer || descriptor.size < 1 || descriptor.size > 1024)
+        luaL_error(L, "font size must be an integer in 1..1024");
+    raw_option(L, index, "resource");
+    if (!lua_isnil(L, -1)) {
+        LuaFont *font = luaL_testudata(L, -1, "malvado.font");
+        if (!font || !font->font) {
+            lua_pop(L, 1);
+            luaL_error(L, "invalid font resource");
+        }
+        descriptor.custom = font->font;
+    }
+    lua_pop(L, 1);
+    return descriptor;
+}
+
+/* draw_text draws immediate-mode text for the current frame only. */
 static int
 text(lua_State *L)
 {
+    static const char *const keys[] = {"text", "x", "y", "size", "color"};
+    luaL_checktype(L, 1, LUA_TTABLE);
+    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    int is_integer;
+    raw_option(L, 1, "text");
     size_t text_length;
-    const char *s = luaL_checklstring(L, 1, &text_length);
+    const char *s = luaL_checklstring(L, -1, &text_length);
     if (strlen(s) != text_length)
         return luaL_error(L, "text contains a zero byte");
-    lua_Integer x = luaL_checkinteger(L, 2);
-    lua_Integer y = luaL_checkinteger(L, 3);
-    lua_Integer size = luaL_optinteger(L, 4, 20);
+    /* Keep the text value rooted on the stack until drawing copies it. */
+    raw_option(L, 1, "x");
+    lua_Integer x = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer) return luaL_error(L, "x must be an integer");
+    raw_option(L, 1, "y");
+    lua_Integer y = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer) return luaL_error(L, "y must be an integer");
+    lua_Integer size = 20;
+    raw_option(L, 1, "size");
+    if (!lua_isnil(L, -1)) {
+        size = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer) {
+            lua_pop(L, 1);
+            return luaL_error(L, "size must be an integer");
+        }
+    }
+    lua_pop(L, 1);
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX ||
         size < INT_MIN || size > INT_MAX)
         return luaL_error(L, "text coordinate or size is outside the supported range");
+    MvColor color = {255, 255, 255, 255};
+    raw_option(L, 1, "color");
+    if (!lua_isnil(L, -1))
+        color = check_color(L, -1);
+    lua_pop(L, 1);
     if (!engine.active)
         return luaL_error(L, "draw_text must be called inside a process");
 
@@ -3643,8 +3767,9 @@ text(lua_State *L)
         return luaL_error(L, "draw_text must be called inside a live process");
     MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
     if (mv_process_draw_text(engine.context, reference, s, (int)x, (int)y,
-            (int)size, (MvColor){255,255,255,255}) != MV_OK)
+            (int)size, color) != MV_OK)
         return luaL_error(L, "cannot append text command");
+    lua_pop(L, 1);
     return 0;
 }
 /* The Lua state owns text objects and fonts until they are deleted or closed. */
@@ -3662,41 +3787,51 @@ font_gc(lua_State *L)
 static int
 load_font(lua_State *L)
 {
+    static const char *const keys[] = {"path", "size", "extra_glyphs"};
+    luaL_checktype(L, 1, LUA_TTABLE);
+    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "path");
     size_t length;
-    const char *path = luaL_checklstring(L, 1, &length);
-    lua_Integer size = luaL_checkinteger(L, 2);
-    if (strlen(path) != length || size < 1 || size > 256)
-        return luaL_error(L, "invalid font path or size");
-    lua_Integer channels[4];
-    for (int i = 0; i < 4; ++i) {
-        channels[i] = luaL_optinteger(L, i + 3, 255);
-        if (channels[i] < 0 || channels[i] > 255)
-            return luaL_error(L, "color must be in 0..255");
-    }
+    const char *path = luaL_checklstring(L, -1, &length);
+    if (strlen(path) != length)
+        return luaL_error(L, "invalid font path");
+    lua_pop(L, 1);
+    raw_option(L, 1, "size");
+    int is_integer;
+    lua_Integer size = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer || size < 1 || size > 1024)
+        return luaL_error(L, "font size must be an integer in 1..1024");
     uint32_t glyphs[1024];
     size_t count = 0;
     for (uint32_t codepoint = 32; codepoint <= 126; ++codepoint)
         glyphs[count++] = codepoint;
     for (uint32_t codepoint = 160; codepoint <= 255; ++codepoint)
         glyphs[count++] = codepoint;
-    if (!lua_isnoneornil(L, 7)) {
+    raw_option(L, 1, "extra_glyphs");
+    if (!lua_isnil(L, -1)) {
         size_t extra_length;
-        const char *extra = luaL_checklstring(L, 7, &extra_length);
+        const char *extra = luaL_checklstring(L, -1, &extra_length);
         for (size_t offset = 0; offset < extra_length;) {
             uint32_t codepoint;
             size_t bytes = mv_utf8_decode(extra + offset, extra_length - offset, &codepoint);
-            if (!bytes || codepoint == 0)
+            if (!bytes || codepoint == 0) {
+                lua_pop(L, 1);
                 return luaL_error(L, "invalid UTF-8 in font glyph list");
+            }
             offset += bytes;
             size_t i = 0;
             while (i < count && glyphs[i] != codepoint) ++i;
             if (i == count) {
-                if (count == sizeof(glyphs) / sizeof(glyphs[0]))
+                if (count == sizeof(glyphs) / sizeof(glyphs[0])) {
+                    lua_pop(L, 1);
                     return luaL_error(L, "too many font glyphs");
+                }
                 glyphs[count++] = codepoint;
             }
         }
     }
+    lua_pop(L, 1);
     if (!engine.window)
         return luaL_error(L, "load_font requires an open window");
     LuaFont *font = lua_newuserdatauv(L, sizeof(*font), 0);
@@ -3709,83 +3844,123 @@ load_font(lua_State *L)
     font->font = NULL;
     font->resource = manage_native_resource(L, native, destroy_managed_font, adopt_font);
     font->font = native;
-    lua_createtable(L, 4, 2);
+    lua_createtable(L, 0, 2);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, "resource");
     lua_pushinteger(L, size);
     lua_setfield(L, -2, "size");
-    for (int i = 0; i < 4; ++i) {
-        lua_pushinteger(L, channels[i]);
-        lua_seti(L, -2, i + 1);
-    }
     return 1;
 }
 
 static int
 font(lua_State *L)
 {
-    lua_Integer size = luaL_checkinteger(L, 1);
-    if (size < 1 || size > 1024)
-        return luaL_error(L, "font size must be in 1..1024");
-    lua_Integer channels[4];
-    for (int i = 0; i < 4; ++i) {
-        channels[i] = luaL_optinteger(L, i + 2, 255);
-        if (channels[i] < 0 || channels[i] > 255)
-            return luaL_error(L, "color must be in 0..255");
-    }
-    lua_newtable(L);
+    static const char *const keys[] = {"size"};
+    luaL_checktype(L, 1, LUA_TTABLE);
+    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "size");
+    int is_integer;
+    lua_Integer size = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer || size < 1 || size > 1024)
+        return luaL_error(L, "font size must be an integer in 1..1024");
+    lua_createtable(L, 0, 1);
     lua_pushinteger(L, size);
     lua_setfield(L, -2, "size");
-    for (int i = 0; i < 4; ++i) {
-        lua_pushinteger(L, channels[i]);
-        lua_seti(L, -2, i + 1);
-    }
     return 1;
 }
 
 static int
 write_text(lua_State *L)
 {
+    static const char *const keys[] = {"font", "text", "x", "y", "align", "color", "size"};
     luaL_checktype(L, 1, LUA_TTABLE);
-    lua_getfield(L, 1, "size");
-    lua_Integer size = luaL_checkinteger(L, -1);
+    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "font");
+    luaL_checktype(L, -1, LUA_TTABLE);
+    FontDescriptor descriptor = check_font_descriptor(L, -1);
     lua_pop(L, 1);
-    if (size < 1 || size > 1024)
-        return luaL_error(L, "invalid font");
-    lua_Integer x = luaL_checkinteger(L, 2);
-    lua_Integer y = luaL_checkinteger(L, 3);
-    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
-        return luaL_error(L, "text coordinate is outside the supported range");
+    raw_option(L, 1, "text");
     size_t text_length;
-    const char *text = luaL_checklstring(L, 4, &text_length);
+    const char *text = luaL_checklstring(L, -1, &text_length);
     if (strlen(text) != text_length)
         return luaL_error(L, "text contains a zero byte");
-    size_t align_length;
-    const char *align = luaL_optlstring(L, 5, "left", &align_length);
-    if (strlen(align) != align_length ||
-        (strcmp(align, "left") && strcmp(align, "center") && strcmp(align, "right")))
-        return luaL_error(L, "alignment must be left, center, or right");
+    /* Keep the text value rooted on the stack until creation copies it. */
+    int is_integer;
+    raw_option(L, 1, "x");
+    lua_Integer x = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer) return luaL_error(L, "x must be an integer");
+    raw_option(L, 1, "y");
+    lua_Integer y = lua_tointegerx(L, -1, &is_integer);
+    lua_pop(L, 1);
+    if (!is_integer) return luaL_error(L, "y must be an integer");
+    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
+        return luaL_error(L, "text coordinate is outside the supported range");
+    lua_Integer alignment = 0;
+    raw_option(L, 1, "align");
+    if (!lua_isnil(L, -1)) {
+        size_t align_length;
+        const char *align = luaL_checklstring(L, -1, &align_length);
+        if (strlen(align) != align_length) {
+            lua_pop(L, 1);
+            return luaL_error(L, "alignment must be left, center, or right");
+        }
+        if (strcmp(align, "left") == 0)
+            alignment = 0;
+        else if (strcmp(align, "center") == 0)
+            alignment = 1;
+        else if (strcmp(align, "right") == 0)
+            alignment = 2;
+        else {
+            lua_pop(L, 1);
+            return luaL_error(L, "alignment must be left, center, or right");
+        }
+    }
+    lua_pop(L, 1);
+    MvColor color = {255, 255, 255, 255};
+    raw_option(L, 1, "color");
+    if (!lua_isnil(L, -1))
+        color = check_color(L, -1);
+    lua_pop(L, 1);
+    /* Without an override, use the font descriptor's default size. */
+    lua_Integer size = descriptor.size;
+    raw_option(L, 1, "size");
+    if (!lua_isnil(L, -1)) {
+        size = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer) {
+            lua_pop(L, 1);
+            return luaL_error(L, "size must be an integer");
+        }
+    }
+    lua_pop(L, 1);
+    if (size < 1 || size > 1024)
+        return luaL_error(L, "font size must be an integer in 1..1024");
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
-    lua_createtable(L, 0, 3);
+    lua_createtable(L, 0, 5);
     MvProcessRef owner;
     if (engine.active && mv_process_ref_create(engine.context,
             (MvProcessId)engine.active_id, &owner) != MV_OK)
         return luaL_error(L, "invalid text owner");
     uint64_t native_id;
-    int alignment = strcmp(align, "center") == 0 ? 1 : strcmp(align, "right") == 0 ? 2 : 0;
     if (mv_text_entry_create(engine.context, engine.active ? &owner : NULL,
-            text, (int)x, (int)y, alignment, &native_id) != MV_OK)
+            text, (int)x, (int)y, (int)alignment, &native_id) != MV_OK)
         return luaL_error(L, "cannot create text");
     lua_pushinteger(L, (lua_Integer)native_id);
     lua_setfield(L, -2, "id");
-    lua_pushvalue(L, 1);
+    raw_option(L, 1, "font");
     lua_setfield(L, -2, "font");
     lua_pushinteger(L, engine.active ? engine.active_id : 0);
     lua_setfield(L, -2, "owner");
+    lua_pushinteger(L, size);
+    lua_setfield(L, -2, "size");
+    /* Styles copy colors so later table mutation cannot change live texts. */
+    push_color(L, color);
+    lua_setfield(L, -2, "color");
     lua_Integer id = (lua_Integer)native_id;
     engine.next_text_id = id;
     lua_seti(L, -2, id);
-    lua_pop(L, 1);
+    lua_pop(L, 2);
     lua_pushinteger(L, id);
     return 1;
 }
@@ -3814,44 +3989,157 @@ delete_text(lua_State *L)
     return 0;
 }
 
+/* Measure text in pixels without drawing it. text_size(font, text) measures
+ * arbitrary text with a font descriptor. text_size(id) measures a persistent
+ * text with its effective size, font and current content. Empty text
+ * measures (0, 0); multiline text splits on '\n' in the native backend. */
+static int
+text_size(lua_State *L)
+{
+    const char *text;
+    FontDescriptor descriptor;
+    if (lua_type(L, 1) == LUA_TNUMBER) {
+        lua_Integer id = luaL_checkinteger(L, 1);
+        lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
+        lua_geti(L, -1, id);
+        if (lua_isnil(L, -1))
+            return luaL_error(L, "unknown text id");
+        int x, y, alignment;
+        if (mv_text_entry_read(engine.context, (uint64_t)id,
+                &text, &x, &y, &alignment) != MV_OK)
+            return luaL_error(L, "unknown text id");
+        lua_getfield(L, -1, "font");
+        descriptor = check_font_descriptor(L, -1);
+        lua_pop(L, 1);
+        lua_getfield(L, -1, "size");
+        int is_integer;
+        descriptor.size = lua_tointegerx(L, -1, &is_integer);
+        lua_pop(L, 3);
+        if (!is_integer || descriptor.size < 1 || descriptor.size > 1024)
+            return luaL_error(L, "invalid text style");
+    } else {
+        descriptor = check_font_descriptor(L, 1);
+        size_t text_length;
+        text = luaL_checklstring(L, 2, &text_length);
+        if (strlen(text) != text_length)
+            return luaL_error(L, "text contains a zero byte");
+    }
+    int width, height;
+    if (descriptor.custom) {
+        width = mv_font_text_width(descriptor.custom, text, (int)descriptor.size);
+        height = mv_font_text_height(descriptor.custom, text, (int)descriptor.size);
+    } else {
+        width = mv_window_text_width(text, (int)descriptor.size);
+        height = mv_window_text_height(text, (int)descriptor.size);
+    }
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    return 2;
+}
+
 static int
 change_text(lua_State *L)
 {
+    static const char *const keys[] = {"text", "x", "y", "align", "size", "color", "font"};
     lua_Integer id = luaL_checkinteger(L, 1);
-    size_t text_length;
-    const char *text = luaL_checklstring(L, 2, &text_length);
-    if (strlen(text) != text_length)
-        return luaL_error(L, "text contains a zero byte");
-    int has_x = !lua_isnoneornil(L, 3);
-    int has_y = !lua_isnoneornil(L, 4);
-    int has_font = !lua_isnoneornil(L, 5);
-    lua_Integer x = has_x ? luaL_checkinteger(L, 3) : 0;
-    lua_Integer y = has_y ? luaL_checkinteger(L, 4) : 0;
+    luaL_checktype(L, 2, LUA_TTABLE);
+    validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
+    /* Validate every option before applying any change. */
+    int has_text = 0, has_x = 0, has_y = 0, has_align = 0;
+    int has_size = 0, has_color = 0, has_font = 0;
+    int is_integer;
+    const char *text = NULL;
+    raw_option(L, 2, "text");
+    if (!lua_isnil(L, -1)) {
+        size_t text_length;
+        text = luaL_checklstring(L, -1, &text_length);
+        if (strlen(text) != text_length)
+            return luaL_error(L, "text contains a zero byte");
+        has_text = 1;
+    }
+    /* The text value stays rooted on the stack until the native update. */
+    int text_slot = lua_gettop(L);
+    lua_Integer x = 0, y = 0;
+    raw_option(L, 2, "x");
+    if (!lua_isnil(L, -1)) {
+        x = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer)
+            return luaL_error(L, "x must be an integer");
+        has_x = 1;
+    }
+    lua_pop(L, 1);
+    raw_option(L, 2, "y");
+    if (!lua_isnil(L, -1)) {
+        y = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer)
+            return luaL_error(L, "y must be an integer");
+        has_y = 1;
+    }
+    lua_pop(L, 1);
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
         return luaL_error(L, "text coordinate is outside the supported range");
-    if (has_font) {
-        luaL_checktype(L, 5, LUA_TTABLE);
-        lua_getfield(L, 5, "size");
-        lua_Integer size = luaL_checkinteger(L, -1);
-        lua_pop(L, 1);
-        if (size < 1 || size > 1024)
-            return luaL_error(L, "invalid font");
+    lua_Integer alignment = 0;
+    raw_option(L, 2, "align");
+    if (!lua_isnil(L, -1)) {
+        size_t align_length;
+        const char *align = luaL_checklstring(L, -1, &align_length);
+        if (strlen(align) != align_length ||
+            (strcmp(align, "left") && strcmp(align, "center") && strcmp(align, "right")))
+            return luaL_error(L, "alignment must be left, center, or right");
+        alignment = strcmp(align, "center") == 0 ? 1 : strcmp(align, "right") == 0 ? 2 : 0;
+        has_align = 1;
     }
+    lua_pop(L, 1);
+    lua_Integer size = 0;
+    raw_option(L, 2, "size");
+    if (!lua_isnil(L, -1)) {
+        size = lua_tointegerx(L, -1, &is_integer);
+        if (!is_integer || size < 1 || size > 1024)
+            return luaL_error(L, "font size must be an integer in 1..1024");
+        has_size = 1;
+    }
+    lua_pop(L, 1);
+    MvColor color = {0, 0, 0, 0};
+    raw_option(L, 2, "color");
+    if (!lua_isnil(L, -1)) {
+        color = check_color(L, -1);
+        has_color = 1;
+    }
+    lua_pop(L, 1);
+    raw_option(L, 2, "font");
+    if (!lua_isnil(L, -1)) {
+        (void)check_font_descriptor(L, -1);
+        /* The descriptor stays rooted on the stack until the entry keeps it. */
+        has_font = 1;
+    }
+    int font_slot = lua_gettop(L);
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     lua_geti(L, -1, id);
     if (lua_isnil(L, -1))
         return luaL_error(L, "unknown text id");
+    int entry_slot = lua_gettop(L);
     const char *previous;
-    int old_x, old_y, alignment;
+    int old_x, old_y, old_alignment;
     if (mv_text_entry_read(engine.context, (uint64_t)id, &previous,
-            &old_x, &old_y, &alignment) != MV_OK)
+            &old_x, &old_y, &old_alignment) != MV_OK)
         return luaL_error(L, "unknown text id");
-    if (mv_text_entry_update(engine.context, (uint64_t)id, text,
-            has_x ? (int)x : old_x, has_y ? (int)y : old_y, alignment) != MV_OK)
+    if (mv_text_entry_update(engine.context, (uint64_t)id,
+            has_text ? text : previous,
+            has_x ? (int)x : old_x, has_y ? (int)y : old_y,
+            has_align ? (int)alignment : old_alignment) != MV_OK)
         return luaL_error(L, "cannot update text");
     if (has_font) {
-        lua_pushvalue(L, 5);
-        lua_setfield(L, -2, "font");
+        lua_pushvalue(L, font_slot);
+        lua_setfield(L, entry_slot, "font");
+    }
+    if (has_size) {
+        lua_pushinteger(L, size);
+        lua_setfield(L, entry_slot, "size");
+    }
+    if (has_color) {
+        /* Styles copy colors so later table mutation cannot change live texts. */
+        push_color(L, color);
+        lua_setfield(L, entry_slot, "color");
     }
     return 0;
 }
@@ -3877,22 +4165,25 @@ render_texts(lua_State *L)
         lua_getfield(L, -1, "resource");
         LuaFont *custom = luaL_testudata(L, -1, "malvado.font");
         MvFont *resource = custom ? custom->font : NULL;
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         lua_getfield(L, -1, "size");
         int size = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
-        MvColor c = {255, 255, 255, 255};
-        unsigned char *channels[] = {&c.r, &c.g, &c.b, &c.a};
-        for (int i = 0; i < 4; ++i) {
-            lua_geti(L, -1, i + 1);
-            *channels[i] = (unsigned char)lua_tointeger(L, -1);
-            lua_pop(L, 1);
+        MvColor color = {255, 255, 255, 255};
+        lua_getfield(L, -1, "color");
+        if (lua_istable(L, -1)) {
+            unsigned char *channels[4] = {&color.r, &color.g, &color.b, &color.a};
+            for (int i = 0; i < 4; ++i) {
+                lua_rawgeti(L, -1, i + 1);
+                *channels[i] = (unsigned char)lua_tointeger(L, -1);
+                lua_pop(L, 1);
+            }
         }
+        lua_pop(L, 2);
         /* The native service reuses unchanged styles without allocation. */
-        MvResult result = mv_text_entry_font(engine.context, (uint64_t)id, resource, size, c);
+        MvResult result = mv_text_entry_font(engine.context, (uint64_t)id, resource, size, color);
         if (result == MV_INVALID_ARGUMENT)
             (void)mv_text_entry_font_clear(engine.context, (uint64_t)id);
-        lua_pop(L, 2);
     }
     lua_pop(L, 1);
     (void)mv_window_draw_texts(engine.context);
@@ -4705,6 +4996,7 @@ static const char *const global_names[] = {
     "write",
     "change_text",
     "delete_text",
+    "text_size",
     "fade_off",
     "fade_on",
     "draw_box",
@@ -5813,6 +6105,7 @@ open_module(lua_State *L)
         {"write", write_text},
         {"change_text", change_text},
         {"delete_text", delete_text},
+        {"text_size", text_size},
         {NULL, NULL}
     };
     for (size_t i = 0; global_names[i]; ++i) {

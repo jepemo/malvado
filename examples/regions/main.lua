@@ -19,16 +19,16 @@ end, {defaults = {region = viewport, graph = rect(60, 60, {
 
 local Overlay = process(function()
   while not key("escape") do
-    set_color(240, 240, 240)
+    set_color {240, 240, 240, 255}
     draw_rect(100, 100, 260, 260)
-    draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end
 end)
 
 local game = {width = 640, height = 480, title = "Process region"}
 function game.init()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Player({x = 80, y = 160})
   Overlay({z = 1})
 end

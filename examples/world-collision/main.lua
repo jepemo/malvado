@@ -18,14 +18,14 @@ local Player = process(function(self)
     if key("down") then dy = 4 end
     world_move(dx, dy)
 
-    set_color(255, 165, 70)
+    set_color {255, 165, 70, 255}
     draw_box(300, 100, 340, 380)
-    draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end
 end, {defaults = {graph = player_graphic}})
 
 start(function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Player({x = 100, y = 200})
 end, {width = 640, height = 480, title = "World collision"})

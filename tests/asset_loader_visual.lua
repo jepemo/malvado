@@ -14,7 +14,7 @@ local function fails(fragment, ...)
   assert(not ok and tostring(message):find(fragment, 1, true), tostring(message))
 end
 return {width = 160, height = 120, init = function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   local image = load_asset("tests/fixtures/red.png")
   local atlas = load_asset("tests/fixtures/atlas.json")
   local aseprite = load_asset("examples/aseprite/sheet.json")

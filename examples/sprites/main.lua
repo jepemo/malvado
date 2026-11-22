@@ -17,7 +17,7 @@ end)
 
 start(function()
   set_title("Sprites")
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   for i = 1, 6 do
     images[i] = load_asset("examples/demo/assets/cat/c" .. i .. ".png")
   end

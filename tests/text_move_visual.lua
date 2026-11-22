@@ -3,18 +3,18 @@
 
 local mv = require("malvado")
 local task = mv.process(function()
-  local live_font = mv.font(24, 255, 0, 0)
-  local text = mv.write(live_font, 10, 10, "Text")
-  assert(not pcall(mv.change_text, text, "wrong", 0x100000000, 10, mv.font(24, 0, 255, 0)))
-  assert(not pcall(mv.change_text, text, "wrong\0text", 20, 20))
-  local centered = mv.write(mv.font(24, 0, 0, 255), 120, 70, "MMMM", "center")
-  local right = mv.write(mv.font(24, 255, 255, 0), 220, 10, "MM", "right")
+  local f = mv.font {size = 24}
+  local text = mv.write {font = f, text = "Text", x = 10, y = 10, color = {255, 0, 0, 255}}
+  assert(not pcall(mv.change_text, text, {text = "wrong", x = 0x100000000}))
+  assert(not pcall(mv.change_text, text, {text = "wrong\0text"}))
+  local centered = mv.write {font = f, text = "MMMM", x = 120, y = 70, align = "center", color = {0, 0, 255, 255}}
+  local right = mv.write {font = f, text = "MM", x = 220, y = 10, align = "right", color = {255, 255, 0, 255}}
   for _ = 1, 15 do mv.frame() end
-  -- Font tables stay live while native drawing owns the synchronized style.
-  live_font[1], live_font[2], live_font[3], live_font.size = 0, 255, 255, 18
+  -- Per-text style updates are visible without recreating fonts.
+  mv.change_text(text, {color = {0, 255, 255, 255}, size = 18})
   collectgarbage("collect")
   for _ = 1, 5 do mv.frame() end
-  mv.change_text(text, "Moved", 100, 40, mv.font(24, 0, 255, 0))
+  mv.change_text(text, {text = "Moved", x = 100, y = 40, color = {0, 255, 0, 255}})
   for _ = 1, 15 do mv.frame() end
   mv.delete_text(text)
   mv.delete_text(centered)

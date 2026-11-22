@@ -40,6 +40,6 @@ local producer = process(function()
   -- the resources alive, including when no child has the original self.file.
 end)
 return {width = 160, height = 120, init = function()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   producer()
 end}

@@ -34,9 +34,9 @@ mv.key = function(name)
   if name == "left" or name == "up" then return ticks == 6 end
   return false
 end
-mv.draw_text = function(text, ...)
-  seen[text] = true
-  return original_text(text, ...)
+mv.draw_text = function(options)
+  seen[options.text] = true
+  return original_text(options)
 end
 mv.frame = function()
   if not interactive and threads[coroutine.running()] == 5 then

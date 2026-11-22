@@ -245,7 +245,7 @@ export default {
   'drawing/draw_box': {
     description: 'Draw a filled rectangle between two corners. Call it inside a process.',
     params: [['x1', 'Left edge.'], ['y1', 'Top edge.'], ['x2', 'Right edge.'], ['y2', 'Bottom edge.']],
-    example: 'set_color(60, 160, 255)\ndraw_box(20, 20, 120, 80)',
+    example: 'set_color {60, 160, 255, 255}\ndraw_box(20, 20, 120, 80)',
     related: ['draw_rect', 'set_color'],
   },
   'drawing/draw_rect': {
@@ -267,21 +267,21 @@ export default {
     related: ['draw_fcircle', 'set_color'],
   },
   'drawing/draw_text': {
-    description: 'Draw text with the built-in font.',
-    params: [['text', 'The string to draw.'], ['x', 'Left edge.'], ['y', 'Top edge.'], ['size?', 'Font size, default 20.']],
-    example: 'draw_text("Hello World", 40, 40, 48)',
+    description: 'Draw immediate-mode text with the built-in font for the current frame only. It creates no persistent text.',
+    params: [['options', 'A table: `text`, `x` and `y` are required; `size` (default 20) and `color` are optional.']],
+    example: 'draw_text {text = "Hello World", x = 40, y = 40, size = 48}',
     related: ['set_color', 'write'],
   },
   'drawing/set_color': {
-    description: 'Set the color that later drawing calls use. Channels are 0 to 255.',
-    params: [['r', 'Red.'], ['g', 'Green.'], ['b', 'Blue.'], ['a?', 'Alpha, default 255.']],
-    example: 'set_color(60, 160, 255)\ndraw_box(20, 20, 120, 80)',
+    description: 'Set the color that later shape drawing calls use.',
+    params: [['color', 'An RGBA table: `{red, green, blue, alpha}`, integers in 0..255.']],
+    example: 'set_color {60, 160, 255, 255}\ndraw_box(20, 20, 120, 80)',
     related: ['clear_screen', 'draw_box'],
   },
   'drawing/clear_screen': {
-    description: 'Set the background color for later frames. Channels are 0 to 255.',
-    params: [['r', 'Red.'], ['g', 'Green.'], ['b', 'Blue.']],
-    example: 'clear_screen(0, 0, 0)',
+    description: 'Set the background color for later frames. The background is always opaque; the alpha channel is ignored.',
+    params: [['color', 'An RGBA table: `{red, green, blue, alpha}`, integers in 0..255.']],
+    example: 'clear_screen {25, 30, 45, 255}',
     related: ['set_color'],
   },
   'drawing/get_screen_width': {
@@ -390,37 +390,40 @@ export default {
   },
 
   'text/font': {
-    description: 'Create a built-in font description for persistent text.',
-    params: [['size', 'A positive size.'], ['r?', 'Red, default 255.'], ['g?', 'Green, default 255.'],
-      ['b?', 'Blue, default 255.'], ['a?', 'Alpha, default 255.']],
-    example: 'local font = font(16, 120, 120, 120)',
+    description: 'Create a built-in font descriptor with a default size. Colors belong to each text, not to the font.',
+    params: [['options', 'A table with `size` (required, 1 to 1024).']],
+    example: 'local f = font {size = 50}',
     related: ['write', 'load_font'],
   },
   'text/load_font': {
     description: 'Load a TTF or OTF font. It needs an open window.',
-    params: [['path', 'A path relative to the working directory.'], ['size', 'A size from 1 to 256.'],
-      ['extra_glyphs?', 'A UTF-8 string of extra characters to load.']],
-    example: 'local font = load_font("font.ttf", 24)',
+    params: [['options', 'A table with `path` (required), `size` (required, 1 to 1024) and an optional `extra_glyphs` UTF-8 string.']],
+    example: 'local f = load_font {path = "arcade.ttf", size = 24, extra_glyphs = "\u03A9"}',
     related: ['font', 'write'],
   },
   'text/write': {
-    description: 'Create persistent text and return its id.',
-    params: [['font', 'A font from `font` or `load_font`.'], ['x', 'Left edge.'], ['y', 'Top edge.'],
-      ['text', 'The string to draw.'], ['align?', '`"left"` (default), `"center"` or `"right"`.']],
-    example: 'local label = write(font, 10, 10, "Score: 0")',
-    related: ['change_text', 'delete_text', 'font'],
+    description: 'Create persistent text owned by the current process and return its numeric id. The text is removed when the owner terminates or is killed.',
+    params: [['options', 'A table: `font`, `text`, `x` and `y` are required; `align`, `color` and `size` are optional.']],
+    example: 'local label = write {font = f, text = "Score: 0", x = 10, y = 10,\n    color = {255, 255, 255, 255}}',
+    related: ['change_text', 'delete_text', 'font', 'text_size'],
   },
   'text/change_text': {
-    description: 'Change persistent text, its position or its font.',
-    params: [['id', 'An id from `write`.'], ['text?', 'New content.'], ['x?', 'New x.'], ['y?', 'New y.'],
-      ['font?', 'A new font.']],
-    example: 'change_text(label, "Score: 10")',
-    related: ['write', 'delete_text'],
+    description: 'Change one persistent text. Only the fields present in the options table change; the id and the owner stay the same.',
+    params: [['id', 'An id from `write`.'], ['options', 'A table with any of `text`, `x`, `y`, `align`, `color`, `size` and `font`.']],
+    example: 'change_text(label, {text = "Score: 10", color = {255, 200, 100, 255}})',
+    related: ['write', 'delete_text', 'text_size'],
   },
   'text/delete_text': {
-    description: 'Remove persistent text.',
+    description: 'Remove persistent text immediately.',
     params: [['id', 'An id from `write`.']],
     example: 'delete_text(label)',
+    related: ['write', 'change_text'],
+  },
+
+  'text/text_size': {
+    description: 'Measure text in pixels without drawing it. With a font and a string it measures new text; with an id it measures persistent text with its effective style. Empty text measures (0, 0).',
+    params: [['font_or_id', 'A font descriptor or an id from `write`.'], ['text?', 'The string to measure when a font is given.']],
+    example: 'local width, height = text_size(f, "Score: 0")',
     related: ['write', 'change_text'],
   },
 
@@ -647,8 +650,8 @@ export default {
   },
   'platform/fade_to': {
     description: 'Queue a fade of the screen to a color.',
-    params: [['r', 'Red.'], ['g', 'Green.'], ['b', 'Blue.'], ['a', 'Alpha.'], ['ticks', 'Duration in ticks.']],
-    example: 'fade_to(0, 0, 0, 255, 30)',
+    params: [['options', 'A table with `color` (an RGBA table) and an optional `ticks` duration (default 16).']],
+    example: 'fade_to {color = {0, 0, 0, 255}, ticks = 30}',
     related: ['fade_off', 'fade_on', 'fade_active'],
   },
   'platform/fade_off': {
@@ -670,9 +673,9 @@ export default {
     related: ['fade_to', 'fade_color'],
   },
   'platform/fade_color': {
-    description: 'Return the current fade color as red, green, blue and alpha.',
+    description: 'Return the current fade color as an RGBA table.',
     params: [],
-    example: 'local r, g, b, a = fade_color()',
+    example: 'local color = fade_color()',
     related: ['fade_active', 'fade_to'],
   },
   'platform/rand': {

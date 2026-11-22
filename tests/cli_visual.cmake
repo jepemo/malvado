@@ -18,7 +18,7 @@ assert(file:read("a") == "asset")
 file:close()
 local mv = require("malvado")
 local game = mv.process(function()
-  for _ = 1, 3 do mv.draw_text("Hello", 10, 10, 20); mv.frame() end
+  for _ = 1, 3 do mv.draw_text {text = "Hello", x = 10, y = 10, size = 20}; mv.frame() end
 end)
 mv.start(function() game() end)
 ]=])

@@ -4,28 +4,28 @@
 local mv = require("malvado")
 local game_text, process_text, deleted
 local owner = mv.process(function()
-  process_text = mv.write(mv.font(16), 0, 0, "owned")
-  deleted = mv.write(mv.font(16), 0, 0, "removed")
+  process_text = mv.write {font = mv.font {size = 16}, text = "owned", x = 0, y = 0}
+  deleted = mv.write {font = mv.font {size = 16}, text = "removed", x = 0, y = 0}
   mv.delete_text(deleted)
 end)
 local killed_text
 local killed = mv.process(function()
-  killed_text = mv.write(mv.font(16), 0, 0, "killed")
+  killed_text = mv.write {font = mv.font {size = 16}, text = "killed", x = 0, y = 0}
   while true do mv.frame() end
 end)
 local observer = mv.process(function()
   mv.frame()
-  assert(not pcall(mv.change_text, process_text, "gone"))
+  assert(not pcall(mv.change_text, process_text, {text = "gone"}))
   assert(not pcall(mv.delete_text, process_text))
   assert(not pcall(mv.delete_text, deleted))
-  mv.change_text(game_text, "still here")
+  mv.change_text(game_text, {text = "still here"})
   mv.kill(killed)
   mv.frame()
-  assert(not pcall(mv.change_text, killed_text, "gone"))
+  assert(not pcall(mv.change_text, killed_text, {text = "gone"}))
   mv.delete_text(game_text)
 end)
 mv.start(function()
-  game_text = mv.write(mv.font(16), 0, 0, "game")
+  game_text = mv.write {font = mv.font {size = 16}, text = "game", x = 0, y = 0}
   owner()
   killed = killed()
   observer()

@@ -3,7 +3,7 @@
 local mv = require("malvado")
 local worker = mv.process(function()
   while true do
-    mv.draw_text("X", 30, 30, 40)
+    mv.draw_text {text = "X", x = 30, y = 30, size = 40}
     mv.frame()
   end
 end)

@@ -49,6 +49,12 @@ cd build/sdk-package
 This creates an archive and its `.sha256` file. The archive name includes the version, operating system, and architecture. The task will not overwrite an existing archive. Move or remove the old files before you run it again. The commands below assume that this directory contains only one SDK archive.
 
 The extracted SDK also records its version and target in `share/malvado/malvado-sdk-info.txt`.
+The SDK includes the Lua Language Server type definitions in
+`share/malvado/types`. `malvado new` writes a `.luarc.json` file into each
+generated Lua project so editors provide autocompletion and type checking for
+the public Lua API. See the
+[Lua Language Server guide](https://github.com/jepemo/malvado/blob/master/docs/api/lua-language-server.md).
+
 
 Check the archive before you extract it. On Linux, run:
 

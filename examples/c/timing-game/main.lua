@@ -9,16 +9,16 @@ local Game = process(function()
             elapsed = elapsed + 1
             if key("space") then stopped = elapsed end
         end
-        draw_text("Press SPACE as close to 5 seconds as you can.", 30, 40, 20)
-        draw_text(string.format("Time: %.2f seconds", elapsed / 60), 30, 100, 28)
+        draw_text {text = "Press SPACE as close to 5 seconds as you can.", x = 30, y = 40, size = 20}
+        draw_text {text = string.format("Time: %.2f seconds", elapsed / 60), x = 30, y = 100, size = 28}
         if stopped then
-            draw_text(string.format("Difference: %.2f seconds. Press ESC to exit.",
-                math.abs(stopped - 300) / 60), 30, 160, 20)
+            draw_text {text = string.format("Difference: %.2f seconds. Press ESC to exit.",
+                math.abs(stopped - 300) / 60), x = 30, y = 160, size = 20}
         end
         frame()
     end
 end)
 start(function()
-    clear_screen(25, 30, 45)
+    clear_screen {25, 30, 45, 255}
     Game()
 end, {width = 640, height = 360, title = "Timing game"})

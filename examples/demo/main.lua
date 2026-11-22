@@ -13,16 +13,16 @@ local function show_page(number)
 end
 
 local function draw_menu()
-  draw_text("Malvado demo", 280, 65, 36)
-  draw_text("Choose with arrows and Enter, or click an option", 130, 120, 20)
+  draw_text {text = "Malvado demo", x = 280, y = 65, size = 36}
+  draw_text {text = "Choose with arrows and Enter, or click an option", x = 130, y = 120, size = 20}
   for i, name in ipairs(names) do
     local marker = i == selected and "> " or "  "
-    draw_text(marker .. name, 300, 150 + i * 70, 32)
+    draw_text {text = marker .. name, x = 300, y = 150 + i * 70, size = 32}
   end
 end
 
 local function draw_page()
-  draw_text(names[page] .. " - Escape: menu", 20, 20, 24)
+  draw_text {text = names[page] .. " - Escape: menu", x = 20, y = 20, size = 24}
   if page == 1 then
     local cat = images.cats[(math.floor(ticks / 4) % 6) + 1]
     draw_image(cat, 100 + (ticks * 2 % 550), 310)
@@ -35,13 +35,13 @@ local function draw_page()
       text = text .. character
       character = text_input_next()
     end
-    draw_text("Type text:", 100, 200, 30)
-    draw_text(text, 100, 250, 30)
+    draw_text {text = "Type text:", x = 100, y = 200, size = 30}
+    draw_text {text = text, x = 100, y = 250, size = 30}
   elseif page == 3 then
-    draw_text("This is animated text", 800 - (ticks * 3 % 1100), 300, 40)
+    draw_text {text = "This is animated text", x = 800 - (ticks * 3 % 1100), y = 300, size = 40}
   elseif page == 4 then
-    draw_text("Press Space to fade the screen", 100, 220, 28)
-    draw_text(fade_active() and "Fade in progress" or "Ready", 100, 280, 24)
+    draw_text {text = "Press Space to fade the screen", x = 100, y = 220, size = 28}
+    draw_text {text = fade_active() and "Fade in progress" or "Ready", x = 100, y = 280, size = 24}
   end
 end
 
@@ -73,9 +73,9 @@ local Demo = process(function()
     end
 
     if page == 1 then
-      clear_screen(100, 60, 100)
+      clear_screen {100, 60, 100, 255}
     else
-      clear_screen(0, 0, 0)
+      clear_screen {0, 0, 0, 255}
     end
     if page == 0 then draw_menu() else draw_page() end
     frame()
@@ -83,8 +83,8 @@ local Demo = process(function()
 end)
 
 start(function()
-  for i = 1, 6 do images.cats[i] = load_asset("examples/demo/assets/cat/c" .. i .. ".png") end
-  images.hero = load_asset("examples/demo/assets/hero_spritesheet.png")
-  clear_screen(0, 0, 0)
+  for i = 1, 6 do images.cats[i] = load_image("examples/demo/assets/cat/c" .. i .. ".png") end
+  images.hero = load_image("examples/demo/assets/hero_spritesheet.png")
+  clear_screen {0, 0, 0, 255}
   Demo()
 end, { width = 800, height = 600, title = "Malvado Demo" })

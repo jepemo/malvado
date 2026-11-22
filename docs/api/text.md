@@ -34,14 +34,41 @@ change the scheduler or introduce automatic process ownership.
 
 ## Lua persistent text
 
-`mv.write`, `mv.change_text` and `mv.delete_text` keep their existing signatures.
-Content, position and alignment use the native owned object. Lua retains the
-font descriptor and the existing creation order. A font replacement changes
-only the selected descriptor; a failed argument check leaves all fields intact.
-Deletion and process cleanup release native content immediately. Later garbage
-collection is harmless. Host text has no process owner and lasts until deletion
-or runtime shutdown. Process text is removed when its owner returns or is killed.
-Sleep and freeze do not remove it. The font table remains live, as before.
+`mv.write(options)` creates persistent text owned by the calling process and
+returns a numeric id. `mv.change_text(id, options)` changes only the fields
+present in its options table. `mv.delete_text(id)` removes the text
+immediately. Content, position and alignment use the native owned object.
+A failed argument check leaves every field intact; validation happens before
+any change. Deletion and process cleanup release native content immediately.
+Later garbage collection is harmless. Host text has no process owner and
+lasts until deletion or runtime shutdown. Process text is removed when its
+owner returns or is killed. Sleep and freeze do not remove it.
+
+### Lua fonts and styles
+
+`mv.font {size = n}` creates a built-in font descriptor. A font carries
+typography and a default size; colors belong to each text. `mv.load_font
+{path = ..., size = ..., extra_glyphs = ...}` loads a TTF/OTF font and keeps
+the same descriptor shape. Each `write` accepts an optional per-text `color`
+and `size` override, so many texts share one font with independent styles.
+The engine copies color tables when a style is assigned, so later mutation of
+the source table does not change live text. Change a style with
+`change_text(id, {color = ..., size = ...})`; one text never changes another.
+
+`mv.text_size(font, text)` measures arbitrary text with a font descriptor.
+`mv.text_size(id)` measures persistent text with its effective style. Both
+return width and height in pixels without drawing. Empty text measures
+(0, 0); multiline text splits on `\n`, measures the widest line and adds one
+line to the height. The headless backend cannot measure and returns (0, 0).
+
+`mv.draw_text(options)` draws immediate-mode text for the current frame only.
+It requires `text`, `x` and `y`; `size` defaults to 20 and `color` defaults to
+opaque white. It creates no persistent text and does not change the drawing
+state used by the primitive functions.
+
+All Lua colors use one representation: an RGBA table `{red, green, blue,
+alpha}` with four integers in 0..255. Alpha 0 is fully transparent, 255 fully
+opaque. Invalid color tables raise a clear error.
 
 ## Rust owned text
 
@@ -83,12 +110,12 @@ The registry does not retain fonts or draw entries.
 
 ## Lua registry integration
 
-Lua `write` now creates an entry in the native context registry. `change_text`
+Lua `write` creates an entry in the native context registry. `change_text`
 and rendering read that entry, so native content or position changes are visible
 to Lua. A native removal makes subsequent Lua changes/deletes fail as unknown
 text IDs. Process cleanup removes native entries and releases Lua font roots;
-GC no longer owns a separate text object. Existing signatures, font table
-identity and rendering order are preserved.
+GC no longer owns a separate text object. Font table identity, the returned
+numeric ids and rendering order are preserved.
 
 The runner synchronizes live Lua font descriptors, then draws the shared native
 registry. Styled entries created only by C are included in creation order.
@@ -166,12 +193,14 @@ frame drawing. The sys SDK checks the installed native signatures.
 
 ## Lua shared text drawing
 
-Lua `write`, `change_text` and `delete_text` keep their signatures. Before drawing,
-the runner synchronizes each live font table's resource, size and color into the
-native entry. Valid table changes remain visible, including changes after a
-process has slept or frozen. A failed allocation leaves the previous style intact.
-Unchanged styles reuse their allocation and font reference. Invalid font sizes
-outside the descriptor's 1..1024 contract suppress that entry's drawing.
+Before drawing, the runner synchronizes each text entry's font resource,
+effective size and copied color into the native entry. `change_text` updates
+the entry fields; entries never share mutable style tables, so changing one
+text cannot change another. Valid changes remain visible, including changes
+after a process has slept or frozen. A failed allocation leaves the previous
+style intact. Unchanged styles reuse their allocation and font reference.
+Invalid font sizes outside the descriptor's 1..1024 contract suppress that
+entry's drawing.
 
 One native pass draws all styled entries in creation order after process graphics
 and before the fade overlay. This includes C-created host entries. Lua no longer

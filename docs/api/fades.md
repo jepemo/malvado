@@ -23,9 +23,9 @@ mv.fade_off(30) -- Fade to opaque black.
 mv.fade_on(30)  -- Queue a return to transparent black.
 ```
 
-`mv.fade_to(r, g, b, a, ticks)` chooses a color. `fade_off` and `fade_on`
-default to 16 ticks. `mv.fade_active()` includes queued work.
-`mv.fade_color()` returns the current four channels. Invalid values or a full
+`mv.fade_to {color = {r, g, b, a}, ticks = n}` chooses a color. `fade_off` and
+`fade_on` default to 16 ticks. `mv.fade_active()` includes queued work.
+`mv.fade_color()` returns the current color as one RGBA table. Invalid values or a full
 queue raise a Lua error. The runner advances after each process tick and draws
 the overlay after process content and persistent text. A new runner starts
 with an empty, transparent queue. Fades also advance in headless mode.

@@ -10,6 +10,7 @@ await mkdir(output, { recursive: true });
 const conceptGroups = [
   ['Processes', [
     ['lua-processes', 'Lua processes'],
+    ['lua-language-server', 'Lua Language Server support'],
     ['c-contract', 'C process API'],
     ['rust-processes', 'Rust processes'],
     ['process-cleanup', 'Process cleanup contract'],

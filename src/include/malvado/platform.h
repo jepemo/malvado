@@ -258,8 +258,10 @@ int mv_window_scroll_begin(float x, float y);
 int mv_window_scroll_end(void);
 void mv_window_draw_text(const char *text, int x, int y, int size, MvColor color);
 /* Return the built-in font width in pixels, or 0 for invalid input, no window,
- * or a width that cannot fit in an int. */
+ * or a width that cannot fit in an int. Multiline text measures the widest
+ * line; the height adds one line per '\n'. Empty text measures 0. */
 int mv_window_text_width(const char *text, int size);
+int mv_window_text_height(const char *text, int size);
 /* Load a TTF/OTF font after opening a window. The caller owns the font and
  * must destroy it before closing the window. The initial glyph set covers
  * printable ASCII and Latin-1. Base size must be in 1..256. */
@@ -275,6 +277,7 @@ MvFont *mv_font_load_codepoints(const char *path, int base_size,
 int mv_font_retain(MvFont *font);
 void mv_font_destroy(MvFont *font);
 int mv_font_text_width(const MvFont *font, const char *text, int size);
+int mv_font_text_height(const MvFont *font, const char *text, int size);
 int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);
 /* Bind copied size (1..1024) and color to a context text entry. NULL font uses
  * the built-in font; otherwise acquire one native font reference. Replacement,

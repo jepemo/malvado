@@ -12,9 +12,9 @@ mv.key = function(key)
   end
   return key == "space" and ticks <= 3
 end
-mv.change_text = function(id, value, ...)
-  if value == "Processes: 3" then count_seen = true end
-  return change_text(id, value, ...)
+mv.change_text = function(id, options, ...)
+  if options.text == "Processes: 3" then count_seen = true end
+  return change_text(id, options, ...)
 end
 mv.draw_image = function(...)
   draws = draws + 1

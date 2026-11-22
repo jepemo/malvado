@@ -31,6 +31,6 @@ local producer = mv.process(function()
   assert(not weak[1] and weak[2])
 end)
 return {width = 128, height = 80, init = function()
-  mv.clear_screen(25, 30, 45)
+  mv.clear_screen {25, 30, 45, 255}
   producer()
 end}

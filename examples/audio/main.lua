@@ -13,9 +13,9 @@ local Demo = process(function()
       if looping then play_music(music) else stop_music(music) end
     end
     if looping then update_music(music) end
-    draw_text("1 / 2: play two independent effects", 30, 40, 22)
-    draw_text("Space: toggle loop  |  Escape: exit", 30, 80, 22)
-    draw_text(looping and "Loop: on" or "Loop: off", 30, 130, 22)
+    draw_text {text = "1 / 2: play two independent effects", x = 30, y = 40, size = 22}
+    draw_text {text = "Space: toggle loop  |  Escape: exit", x = 30, y = 80, size = 22}
+    draw_text {text = looping and "Loop: on" or "Loop: off", x = 30, y = 130, size = 22}
     frame()
   end
   stop_music(music)
@@ -30,6 +30,6 @@ start(function()
   sound_volume(sound, 0.3)
   sound_volume(copy, 0.3)
   music_volume(music, 0.2)
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Demo()
 end, {width = 640, height = 240, title = "Audio demo"})

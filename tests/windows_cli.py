@@ -58,7 +58,7 @@ local count = 0
 local task = mv.process(function()
     for _ = 1, 3 do
         count = count + 1
-        mv.draw_text('Windows Lua export', 1, 1, 10)
+        mv.draw_text {text = 'Windows Lua export', x = 1, y = 1, size = 10}
         mv.frame()
     end
 end)

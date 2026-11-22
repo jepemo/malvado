@@ -12,9 +12,11 @@ on success, or 0 for NULL or invalid input. Failure preserves the whole state.
 Read the fields but use these operations to change them. Nothing is drawn or
 changed in a window by a state update.
 
-Lua keeps one state per runner. `mv.set_color(r, g, b[, a])` uses alpha 255 by
-default. `mv.clear_screen(r, g, b)` selects the opaque background for future
-renders. Invalid input raises a Lua error without changing either default.
+Lua keeps one state per runner. Both functions take one RGBA table:
+`{red, green, blue, alpha}` with four integers in 0..255. `mv.set_color(color)`
+sets the drawing color. `mv.clear_screen(color)` selects the opaque background
+for future renders; the alpha channel is ignored. Invalid input raises a Lua
+error without changing either default.
 Starting a runner resets both defaults. Immediate process commands capture the
 current drawing color when queued; later state updates do not recolor them.
 The existing process scheduler and draw order are unchanged.

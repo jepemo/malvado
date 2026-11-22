@@ -90,6 +90,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `write` | `mv.write` |
 | `change_text` | `mv.change_text` |
 | `delete_text` | `mv.delete_text` |
+| `text_size` | `mv.text_size` |
 | `fade_off` | `mv.fade_off` |
 | `fade_on` | `mv.fade_on` |
 | `draw_box` | `mv.draw_box` |

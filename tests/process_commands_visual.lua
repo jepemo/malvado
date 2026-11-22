@@ -2,13 +2,13 @@
 local mv = require("malvado")
 local Actor = mv.process(function(self)
   while true do
-    mv.set_color(0,255,0)
+    mv.set_color {0, 255, 0, 255}
     mv.draw_box(10,10,30,30)
     local image = mv.load_image("tests/fixtures/red.png")
     mv.draw_image(image,10,10)
     mv.draw_fcircle(12,12,1)
     mv.draw_image_region(image,20,10,0,0,2,2)
-    mv.draw_text("Native",2,40,10)
+    mv.draw_text {text = "Native", x = 2, y = 40, size = 10}
     image = nil
     collectgarbage("collect")
     mv.frame()

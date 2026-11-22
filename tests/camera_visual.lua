@@ -11,13 +11,13 @@ local Actor = process(function(self)
 end)
 local Drawer = process(function()
   while true do
-    set_color(255, 255, 0)
+    set_color {255, 255, 0, 255}
     draw_box(80, 100, 90, 110)
     frame()
   end
 end)
 return {width = 160, height = 120, init = function()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   camera_set(40, 20)
   camera_move(10, 10)
   Actor({x = 70, y = 50, physical = true, graph = rect(10, 10, {color = {255, 0, 0}})})

@@ -1,0 +1,115 @@
+-- Malvado 2; project created by Jeremías Pérez and contributors.
+-- SPDX-License-Identifier: Apache-2.0
+--
+-- Process types for the Lua Language Server (LuaLS).
+
+---@meta
+
+---Signal name accepted by `signal` and `signal_tree`.
+---@alias MvSignal "sleep"|"freeze"|"wakeup"|"kill"
+
+---Process status string.
+---@alias MvProcessStatusName "running"|"sleeping"|"frozen"
+
+---A live process handle. The same value is `self` inside a process body.
+---
+---Built-in fields are listed here. Add your own fields freely:
+---
+---```lua
+---local Enemy = process(function(self)
+---  self.health = 100        -- any custom field
+---  self.x = 40
+---  while true do frame() end
+---end)
+---```
+---
+---To document custom fields for the editor, declare a subclass and cast:
+---
+---```lua
+----@class Enemy : MvProcess
+----@field health integer
+---
+---local Enemy = process(function(self)
+---  ---@cast self Enemy
+---  self.health = 100
+---  ...
+---end)
+---```
+---@class MvProcess
+---@field id integer Read-only unique process ID.
+---@field x number Horizontal position.
+---@field y number Vertical position.
+---@field z number Draw order. Higher values draw later.
+---@field angle number Rotation in degrees.
+---@field size number Scale factor. Default 1.
+---@field fps integer Activation limit in frames per tick (0..60). Default 0 (every tick).
+---@field graph MvGraphic|MvAnimation|MvImage|MvAtlas|MvFpg|MvFpgManifest|nil Selected graphic: result of `rect`, `circle`, `sprite`/`graph`, `animation`, `load_image`, or `load_asset`.
+---@field camera MvCamera|nil|false Camera to draw with. nil: main camera. false: screen space.
+---@field region MvRegion|nil Drawing region descriptor.
+---@field scroll MvScroll|nil Scroll descriptor.
+---@field collider MvCollisionShape|nil|false Collision shape: `collision.rect`/`collision.circle` result, false to disable, nil for automatic.
+---@field children_attached boolean Whether spawned children attach to this process. Default true.
+---@field parent MvProcess|nil Read-only owner process.
+---@field creator_id integer|nil Read-only creator process ID.
+---@field priority integer Read-only scheduling priority.
+---@field status MvProcessStatusName Read-only status.
+---@field reason "returned"|"error"|"killed"|nil Read-only end reason after death.
+---@field delta number Read-only seconds since the previous activation.
+---@field recv fun():any Read one queued message, or nil when the queue is empty.
+---@field [string] any Custom fields: processes accept any extra field.
+
+---Options for `process()` (the second parameter of the definition call).
+---@class MvProcessDefineOptions
+---@field defaults table? Default field values copied into every spawned instance.
+---@field children_attached boolean? Whether spawned children attach. Default true.
+
+---Options for spawning: passed to the constructor returned by `process()`.
+---@class MvSpawnOptions
+---@field attached boolean? Attach the new process to its creator. Default true.
+
+---Options for `start()`.
+---@class MvStartOptions
+---@field width integer? Window width in pixels. Default 800.
+---@field height integer? Window height in pixels. Default 600.
+---@field title string? Window title. Default "Malvado".
+
+---Options for tree queries (`children`, `descendants`, `signal_tree`, `kill_tree`).
+---@class MvTreeOptions
+---@field relation "creation"|"ownership"? Tree relation. Default "creation".
+---@field type fun(self: MvProcess)? Filter by a process constructor.
+
+---Result table of `snapshot()`.
+---@class MvSnapshotProcess
+---@field id integer
+---@field parent integer|nil
+---@field creator_id integer|nil
+---@field attached boolean
+---@field type integer
+---@field priority integer
+---@field status string
+---@field messages integer
+---@field draw_commands integer
+---@field visible boolean
+
+---@class MvSnapshot
+---@field runtime string
+---@field tick integer
+---@field processes MvSnapshotProcess[]
+---@field lineage {id: integer, creator_id: integer|nil, alive: boolean}[]
+
+---Result of `world_move` and `world:move`.
+---@class MvMoveResult
+---@field hit boolean Whether the move hit a world rectangle.
+---@field moved_x number Applied horizontal movement.
+---@field moved_y number Applied vertical movement.
+---@field normal_x number Collision normal x component.
+---@field normal_y number Collision normal y component.
+---@field id integer|nil ID of the hit world rectangle.
+
+---Result of `world:sweep`.
+---@class MvSweepResult
+---@field hit boolean Whether the sweep hit a rectangle.
+---@field id integer|nil ID of the hit rectangle.
+---@field fraction number Fraction of the sweep completed.
+---@field normal_x number Collision normal x component.
+---@field normal_y number Collision normal y component.

@@ -18,9 +18,9 @@ local Circle = process(function(self)
     if key("down") then self.y = self.y + 4 end
     self.x = math.max(20, math.min(620, self.x))
     self.y = math.max(20, math.min(460, self.y))
-    draw_text("Arrow keys: move  |  Escape: exit", 20, 20, 20)
+    draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     if collision(Square) then
-      draw_text("Collision!", 20, 55, 28)
+      draw_text {text = "Collision!", x = 20, y = 55, size = 28}
     end
     frame()
   end
@@ -28,7 +28,7 @@ end, {defaults = {graph = circle(20, {color = {80, 190, 255}})}})
 
 local game = {width = 640, height = 480, title = "Circle collision"}
 function game.init()
-  clear_screen(25, 30, 45)
+  clear_screen {25, 30, 45, 255}
   Square({x = 400, y = 180})
   Circle({x = 120, y = 230})
 end

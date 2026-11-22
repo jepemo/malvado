@@ -66,7 +66,7 @@ local task = mv.process(function()
     end
     if audio then audio.frame() end
     if keyboard then keyboard() end
-    mv.set_color(255, 0, 0)
+    mv.set_color {255, 0, 0, 255}
     mv.draw_box(80, 60, 240, 180)
     mv.frame()
   end

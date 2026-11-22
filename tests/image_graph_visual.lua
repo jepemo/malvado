@@ -170,7 +170,7 @@ local producer = mv.process(function()
   probe = actor({x = 30.5, y = 16.5, collider = mv.collision.rect(1, 1)}, {attached = false})
 end)
 mv.start(function()
-  mv.clear_screen(0, 0, 0)
+  mv.clear_screen {0, 0, 0, 255}
   producer()
   controller()
 end, {width = 64, height = 64, title = "Image graphs"})

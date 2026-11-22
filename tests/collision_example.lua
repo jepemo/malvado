@@ -21,9 +21,9 @@ mv.key = function(name)
   if name == "left" then return ticks >= 75 end
   return false
 end
-mv.draw_text = function(text, ...)
-  if text == "Collision!" then messages[ticks] = true end
-  return original_text(text, ...)
+mv.draw_text = function(options)
+  if options.text == "Collision!" then messages[ticks] = true end
+  return original_text(options)
 end
 mv.frame = function()
   if coroutine.running() == player_thread then

@@ -257,6 +257,7 @@ if(MALVADO_BUILD_LUA)
     target_compile_definitions(malvado PRIVATE MALVADO_EXPORT_GRAPHICS
       MALVADO_LAUNCHER_REL="${MALVADO_LAUNCHER_REL}" MALVADO_NOTICES_REL="${MALVADO_NOTICES_REL}"
       MALVADO_RUST_CRATE_REL="${CMAKE_INSTALL_DATADIR}/malvado/rust/malvado"
+      MALVADO_TYPES_REL="${CMAKE_INSTALL_DATADIR}/malvado/types"
       MALVADO_SDK_ROOT_REL="${MALVADO_SDK_ROOT_REL}" MALVADO_NATIVE_LAUNCHER_REL="${MALVADO_NATIVE_LAUNCHER_REL}")
     set(MALVADO_CAN_EXPORT ON)
   endif()
@@ -271,6 +272,7 @@ if(MALVADO_BUILD_LUA)
   install(FILES tools/android_export.py tools/android_bundle.py src/android/GameActivity.java DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/tools)
   install(TARGETS malvado RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   install(TARGETS malvado-game malvado-native-game RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/malvado)
+  install(DIRECTORY types/lib types/globals DESTINATION ${CMAKE_INSTALL_DATADIR}/malvado/types FILES_MATCHING PATTERN "*.d.lua")
   install(FILES ${lua_SOURCE_DIR}/doc/readme.html DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/malvado RENAME Lua-readme.html)
 endif()
 if(MSVC)
@@ -449,6 +451,9 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME c_api_inventory COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/current_c_api.py --check)
   set_tests_properties(c_api_inventory PROPERTIES TIMEOUT 15)
+  add_test(NAME lua_type_inventory COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/lua_type_inventory.py)
+  set_tests_properties(lua_type_inventory PROPERTIES TIMEOUT 15)
   add_test(NAME process_api_map COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/docs/tools/check_process_api_map.py)
   set_tests_properties(process_api_map PROPERTIES TIMEOUT 15)

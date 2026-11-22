@@ -351,6 +351,45 @@ rust_manifest(void)
     return manifest;
 }
 
+/* LuaLS reads forward slashes on every platform, so no JSON escaping is needed. */
+static void
+json_path(char *destination, size_t size, const char *path)
+{
+    snprintf(destination, size, "%s", path);
+    for (char *p = destination; *p; ++p)
+        if (*p == '\\')
+            *p = '/';
+}
+
+static int
+write_lua_language_config(const char *path)
+{
+    char types[4096];
+    if (!malvado_lua_types(types, sizeof(types)))
+        return 0;
+    char lib[4096], globals[4096];
+    json_path(lib, sizeof(lib), types);
+    json_path(globals, sizeof(globals), types);
+    size_t lib_length = strlen(lib), globals_length = strlen(globals);
+    if (lib_length + 5 >= sizeof(lib) || globals_length + 9 >= sizeof(globals))
+        return 0;
+    memcpy(lib + lib_length, "/lib", 5);
+    memcpy(globals + globals_length, "/globals", 9);
+    char config[16384];
+    int length = snprintf(config, sizeof(config),
+        "{\n"
+        "  \"runtime.version\": \"Lua 5.4\",\n"
+        "  \"workspace.library\": [\n"
+        "    \"%s\",\n"
+        "    \"%s\"\n"
+        "  ],\n"
+        "  \"workspace.checkThirdParty\": false\n"
+        "}\n", lib, globals);
+    if (length < 0 || (size_t)length >= sizeof(config))
+        return 0;
+    return write_project_file(path, ".luarc.json", config);
+}
+
 static int
 new_project(const char *path, int language)
 {
@@ -358,7 +397,7 @@ new_project(const char *path, int language)
         "require(\"malvado\").import_globals()\n\n"
         "local Game = process(function()\n"
         "  while not key(\"escape\") do\n"
-        "    draw_text(\"Hello, Malvado!\", 40, 40, 30)\n"
+        "    draw_text {text = \"Hello, Malvado!\", x = 40, y = 40, size = 30}\n"
         "    frame()\n"
         "  end\n"
         "end)\n\n"
@@ -456,6 +495,8 @@ new_project(const char *path, int language)
         remove_project(path);
         return 1;
     }
+    if (!native && !write_lua_language_config(path))
+        printf("Note: no installed SDK types found; .luarc.json was not created.\n");
     if (native && !write_project_file(path, "CMakeLists.txt", native_cmake)) {
         remove_project_file(path, main_file);
         remove_project(path);

@@ -4,7 +4,7 @@
 require("malvado").import_globals()
 local enemy = process(function(self)
   while true do
-    draw_text("Enemy " .. self.id, 20, 20, 20)
+    draw_text {text = "Enemy " .. self.id, x = 20, y = 20, size = 20}
     frame()
   end
 end)

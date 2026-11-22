@@ -11,7 +11,7 @@ local Actor = process(function(self)
   end
   while true do
     if self.paint then
-      set_color(0, 255, 0)
+      set_color {0, 255, 0, 255}
       draw_box(70, 50, 74, 54)
     end
     frame()
@@ -22,7 +22,7 @@ local Inventory = process(function(self)
   self.region = region(20, 90, 30, 20)
   self.scroll = scroll(20, 0)
   while true do
-    set_color(255, 255, 0)
+    set_color {255, 255, 0, 255}
     draw_box(40, 90, 80, 110)
     frame()
   end
@@ -30,7 +30,7 @@ end)
 local Overlay = process(function(self)
   self.camera = false
   while true do
-    set_color(255, 255, 255)
+    set_color {255, 255, 255, 255}
     draw_box(140, 100, 150, 110)
     frame()
   end
@@ -44,13 +44,13 @@ local Control = process(function()
       blue.x, blue.y = 45, 65
       blue.scroll = nil
     end
-    if tick == 30 then fade_to(0, 255, 255, 128, 0) end
+    if tick == 30 then fade_to {color = {0, 255, 255, 128}, ticks = 0} end
     tick = tick + 1
     frame()
   end
 end)
 return {width = 160, height = 120, init = function()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   camera_set(50, 30)
   Actor({x = 70, y = 50, physical = true, paint = true,
     graph = rect(20, 20, {color = {255, 0, 0}}),
@@ -69,6 +69,6 @@ return {width = 160, height = 120, init = function()
     graph = rect(10, 10, {color = {0, 255, 0}})})
   Inventory({z = 15})
   Overlay({z = 20})
-  write(font(16, 255, 0, 255), 110, 5, "I")
+  write {font = font {size = 16}, color = {255, 0, 255, 255}, text = "I", x = 110, y = 5}
   Control()
 end}

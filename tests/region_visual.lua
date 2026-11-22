@@ -14,7 +14,7 @@ end, {defaults = {graph = red, region = mv.graphics.region(20, 10, 10, 20)}})
 local free = process(function() while true do frame() end end, {defaults = {graph = green}})
 local blue = process(function()
   while true do
-    set_color(0, 0, 255)
+    set_color {0, 0, 255, 255}
     draw_box(0, 35, 10, 50)
     frame()
   end
@@ -23,7 +23,7 @@ local hidden = process(function() while true do frame() end end,
   {defaults = {graph = red, region = mv.graphics.region(100, 100, 5, 5)}})
 local game = {width = 64, height = 64, title = "Regions test"}
 function game.init()
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   square({x = 10, y = 10})
   free({x = 42, y = 10, z = 1})
   blue({z = 2})

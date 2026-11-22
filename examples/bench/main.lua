@@ -15,21 +15,21 @@ local BenchProcess = process(function(self)
 end)
 
 local Benchmark = process(function()
-  local font = font(20)
-  local prompt = write(font, 300, 300, "Hold Space to add processes")
-  local count_text = write(font, 10, 10, "Processes: 0")
-  local time_text = write(font, 430, 10, "Tick interval: 0 ms")
+  local f = font {size = 20}
+  local prompt = write {font = f, text = "Hold Space to add processes", x = 300, y = 300}
+  local count_text = write {font = f, text = "Processes: 0", x = 10, y = 10}
+  local time_text = write {font = f, text = "Tick interval: 0 ms", x = 430, y = 10}
   local count = 0
   local previous = time_seconds()
 
   while not key("escape") do
     local now = time_seconds()
-    change_text(time_text, string.format("Tick interval: %.2f ms", (now - previous) * 1000))
+    change_text(time_text, {text = string.format("Tick interval: %.2f ms", (now - previous) * 1000)})
     previous = now
     if key("space") then
       BenchProcess { x = math.random(50, 750), y = math.random(50, 550) }
       count = count + 1
-      change_text(count_text, "Processes: " .. count)
+      change_text(count_text, {text = "Processes: " .. count})
     end
     frame()
   end
@@ -46,6 +46,6 @@ start(function()
   for i = 0, 8 do
     images[i + 1] = load_image(string.format("examples/bench/assets/colours/%03d.png", i))
   end
-  clear_screen(0, 0, 0)
+  clear_screen {0, 0, 0, 255}
   Benchmark()
 end, { width = 800, height = 600, title = "Benchmark" })
