@@ -38,7 +38,7 @@ Press **Escape** to exit.
 require("malvado").import_globals()
 
 local Player = process(function(self)
-  self.graph = circle(16, {color = {80, 190, 255}})
+  self.graph = circle(16, {color = BLUE})
 
   while not key(KEY_ESCAPE) do
     if key(KEY_LEFT) then self.x = self.x - 3 end
@@ -48,7 +48,7 @@ local Player = process(function(self)
 end)
 
 start(function()
-  clear_screen {25, 30, 45, 255}
+  clear_screen(BLACK)
   Player {x = 160, y = 120}
 end)
 ```
