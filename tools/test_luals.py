@@ -50,8 +50,13 @@ local Player = process(function(self)
   self.camera = view
   self.world = world
   self.region = region {x = 0, y = 0, width = 64, height = 48}
+  self.scroll = scroll(5, 0)
+  camera_follow(self)
   camera_follow(view, self)
   local x, y = camera_position()
+  camera_set(x, y)
+  camera_set(view, x, y)
+  camera_move(1, 0)
   camera_move(view, x, y)
   world_move(1, 0)
   world_move(world, self, 1, 0)
@@ -92,6 +97,10 @@ mv.draw_image {
 mv.draw_sprite {atlas = atlas, id = 42, x = 10.5, y = 10}
 local clip = mv.graphics.region {x = 0, y = 0, width = 64, height = 48}
 local view = mv.camera_create {viewport = clip}
+local x, y = mv.camera_position(view)
+mv.camera_move(view, x, y)
+mv.camera_move(1, 0)
+mv.camera_set(0, 0)
 local world = mv.world_create()
 local shape = mv.collision.circle(5)
 local hit = mv.world_sweep(world, shape, nil, 1, 0)
@@ -143,6 +152,24 @@ def diagnose(output, name):
     return found
 
 
+def diagnose_project(project, prefix, failures):
+    name = "positional-constructors.lua"
+    constructors = [(f"{prefix}camera_create", "0, 0"), (f"{prefix}region", "0, 0, 1, 1")]
+    if prefix:
+        constructors.append(("mv.graphics.region", "0, 0, 1, 1"))
+    (project / name).write_text(
+        'local mv = require("malvado")\nmv.import_globals()\n' +
+        "".join(f"{function}({arguments})\n" for function, arguments in constructors),
+        encoding="utf-8")
+    output = run_luals(project)
+    diagnostics = diagnose(output, name)
+    for line, (function, _) in enumerate(constructors, 3):
+        if not any(number == line and message.startswith("Cannot assign `integer`")
+                   for number, message in diagnostics):
+            failures.append(f"{project.name}: positional {function} was not reported")
+    return output
+
+
 def main():
     if not shutil.which("lua-language-server"):
         print("lua-language-server is not on PATH", file=sys.stderr)
@@ -173,10 +200,8 @@ def main():
         project.mkdir()
         write_luarc(project, with_globals=True)
         (project / "probe.lua").write_text(GLOBAL_PROBE, encoding="utf-8")
-        output = run_luals(project)
+        output = diagnose_project(project, "", failures)
         messages = diagnose(output, "probe.lua")
-        deliberate = [item for item in messages if item[1].startswith("Cannot assign `string`")
-                      or "Undefined global `missing_global_function`" in item[1]]
         if not any(item[1].startswith("Cannot assign `string`") for item in messages):
             failures.append("globals project: align = \"bogus\" was not reported")
         if not any("missing_global_function" in item[1] for item in messages):
@@ -207,7 +232,7 @@ def main():
             'local file = mv.fpg.parse("bytes")\n'
             'file:count()\n',
             encoding="utf-8")
-        output = run_luals(project)
+        output = diagnose_project(project, "mv.", failures)
         obsolete = diagnose(output, "removed-methods.lua")
         for line, method in [(3, "move"), (5, "add_rect"), (7, "count")]:
             if not any(number == line and f"Undefined field `{method}`" in message

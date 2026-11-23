@@ -3,6 +3,9 @@
 `require("malvado").import_globals()` installs the names below. It checks all names before it changes globals. A different existing value causes an error. If installation fails, it removes the names added by that call. Repeating the import with the same values is safe. Normal `require` does not install globals.
 
 See the [namespace inventory](lua-namespaces.md) for functions that are also available through `mv` namespaces.
+Use one options table with `camera_create(options)` and `region(options)`.
+Use two positional offsets with `scroll(x, y)`. See [cameras](cameras.md)
+and [process drawing](drawing.md#clip-a-lua-process-to-a-region).
 
 Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Most process operations and the signal constants are also available in `mv.process`. Use `recv` or `mv.recv` to receive messages. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
 

@@ -187,10 +187,9 @@ clip. It does not change process coordinates or collision queries. See
 
 ## Process scrolling
 
-After importing globals, assign `scroll(x, y)` to `self.scroll` to draw this
-process relative to a world offset. The explicit constructor is
-`mv.graphics.scroll(x, y)`. Other processes and collision positions
-are unchanged. See [scrolling](drawing.md#scroll-a-lua-process).
+After importing globals, assign `scroll(x, y)` to `self.scroll` to subtract
+an absolute offset from this process's graph and immediate drawing. Set
+`self.scroll = nil` to reset the offset. See [scrolling](drawing.md#scroll-a-lua-process).
 
 
 ## Process world context

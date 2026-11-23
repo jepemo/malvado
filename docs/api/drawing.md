@@ -226,21 +226,24 @@ local Actor = mv.process(function(self)
 end, {defaults = {region = viewport, graph = mv.graphics.circle {radius = 20}}})
 ```
 
-`region(options)` takes a table with `x`, `y`, `width`, and `height`.
-Coordinates must be integers in the C `int` range. Dimensions must be positive
-integers up to `INT_MAX`. It creates an
-immutable descriptor without opening a window. Descriptors can be shared in
-process defaults. `self.region` accepts a descriptor or `nil`; `nil` removes the
-clip. Invalid descriptors and invalid assignments raise an error, including
-at process creation. The region stays in window coordinates when the process
-moves or rotates. Parts outside the window are clipped to its bounds, and a
-fully outside region hides that process's drawing.
+`region(options)` takes one table with four required fields. The coordinates
+`x` and `y` must be integers in the C `int` range, which includes negative
+origins. `width` and `height` must be positive integers up to `INT_MAX`.
+Unknown fields raise an error. The returned descriptor is immutable and can
+be shared by multiple processes, including in process defaults. Assign it to
+`self.region` and set `self.region = nil` to clear it. Invalid assignments
+raise an error and preserve the current region.
+
+The region stays in logical screen coordinates when the process moves or
+rotates, the camera moves, or local scroll changes. The effective clip is the
+intersection of the region, window, and selected camera viewport. An empty
+intersection hides that process's drawing.
 
 The region clips the process graph and immediate draw commands, including
 text and images. It does not clip persistent `write` text, other processes,
 or the screen fade. It does not move objects, change draw order, or affect
-collision geometry. Changes take effect at the next render; headless
-simulation does not require a window. Regions stay fixed in window coordinates when scroll is applied.
+collision geometry. Changes take effect at the next render. You can create
+and assign descriptors in headless mode.
 
 ## Window scrolling in C
 
@@ -256,20 +259,20 @@ process positions or collisions.
 
 ## Scroll a Lua process
 
-`graphics.scroll(x, y)` creates an immutable, shareable scroll descriptor.
-Assign it to `self.scroll` or include it in process defaults. It translates the
-process graph and immediate draw commands by `(-x, -y)` on the next render.
+`scroll(x, y)` creates an immutable, shareable descriptor with an absolute
+drawing offset. Assign it to `self.scroll` or include it in process defaults.
+On the next render, the renderer subtracts `x` and `y` from the process graph
+and immediate draw commands.
 Coordinates are finite numbers with magnitude at most `FLT_MAX / 16`; the
-descriptor stores them as C floats. Assign a new descriptor to move the
-view, or `nil` to restore window coordinates. Invalid values raise an error,
+descriptor stores them as C floats. Assign a new descriptor to replace the
+offset, or set `self.scroll = nil` to reset it. Invalid values raise an error,
 including during process creation. Descriptors can be created headlessly.
 
 A process's `region` remains in window coordinates and clips the scrolled
 result. Processes without the descriptor, persistent text, the fade, and
 other processes are unaffected. Scroll does not change process positions,
-collision geometry, scheduling, or `z` order. This initial capability is a
-uniform translation; it does not implement wrapping, parallax, tilemaps, zoom,
-or camera rotation.
+collision geometry, scheduling, or `z` order. See [camera projection](cameras.md)
+for how local scroll and the selected camera combine.
 
 
 ## Combine a process graphic with immediate shapes

@@ -1,5 +1,10 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
+assert(not pcall(mv.camera_create, {x = math.huge}))
+assert(not pcall(mv.camera_create, {viewport = {}}))
+local temporary = mv.camera_create {}
+temporary = nil
+collectgarbage("collect")
 local owned = mv.camera_create {x = 5, y = 6}
 local Actor = mv.process(function(self)
   assert(self.camera == owned)

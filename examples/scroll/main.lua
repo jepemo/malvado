@@ -5,13 +5,13 @@ local mv = require("malvado")
 mv.import_globals()
 
 local Scene = process(function(self)
-  local camera_x, camera_y = 80, 40
+  local scroll_x, scroll_y = 80, 40
   while not key("escape") do
-    if key("left") then camera_x = camera_x - 3 end
-    if key("right") then camera_x = camera_x + 3 end
-    if key("up") then camera_y = camera_y - 3 end
-    if key("down") then camera_y = camera_y + 3 end
-    self.scroll = scroll(camera_x, camera_y)
+    if key("left") then scroll_x = scroll_x - 3 end
+    if key("right") then scroll_x = scroll_x + 3 end
+    if key("up") then scroll_y = scroll_y - 3 end
+    if key("down") then scroll_y = scroll_y + 3 end
+    self.scroll = scroll(scroll_x, scroll_y)
     draw_rect {x = 280, y = 180, width = 60, height = 60, color = {255, 165, 70}}
     frame()
   end

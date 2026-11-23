@@ -32,7 +32,14 @@ static void between_ticks(void *user)
     MvCamera value;
     assert(mv_process_camera_get(ctx, actor, &selected) == MV_OK);
     if (state->stage == 0) {
+        /* The main camera is 1. Invalid constructors must not consume IDs. */
+        assert(selected.id == 3);
+        MvCameraRef collected = selected;
+        collected.id = 2;
+        assert(mv_camera_get(ctx, collected, &value) == MV_NOT_FOUND);
         assert(mv_camera_get(ctx, selected, &value) == MV_OK && value.x == 5 && value.y == 6);
+        assert(value.viewport.x == 0 && value.viewport.y == 0 &&
+               value.viewport.width == 0 && value.viewport.height == 0);
         value.x = 20; value.y = 30;
         assert(mv_camera_put(ctx, selected, value) == MV_OK);
         ++state->stage;

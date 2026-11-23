@@ -230,12 +230,12 @@ function malvado.rect(options) end
 ---@return MvGraphic
 function malvado.circle(options) end
 
----Create a drawing region descriptor.
+---Create a fixed screen-space clip for a process.
 ---@param options MvRegionOptions
 ---@return MvRegion
 function malvado.region(options) end
 
----Create a scroll descriptor.
+---Create an absolute offset that is subtracted from one process's drawing.
 ---@param x number
 ---@param y number
 ---@return MvScroll
@@ -263,7 +263,7 @@ function malvado.rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
 ---@return boolean contains
 function malvado.rect_contains(rx, ry, rw, rh, px, py) end
 
----Create an explicit camera. Without one, all processes use the main camera.
+---Create a managed explicit camera. An empty table selects (0, 0) and the full logical window.
 ---@param options MvCameraCreateOptions
 ---@return MvCamera camera
 function malvado.camera_create(options) end

@@ -51,10 +51,16 @@ local Controller = process(function()
   second.x = 300
   frame()
   position(nil, 151, 122)
-  local camera = camera_create {x = 0, y = 0, viewport = region {x = 10, y = 20, width = 40, height = 30}}
+  local camera = camera_create {viewport = region {x = 10, y = 20, width = 40, height = 30}}
+  position(camera, 0, 0)
   camera_follow(camera, second)
   frame()
   position(camera, 280, 145)
+  assert(not pcall(camera_move, camera, math.huge, 0))
+  position(camera, 280, 145)
+  second.x = 310
+  frame()
+  position(camera, 290, 145)
   local same = camera
   camera_set(camera, 5, 6)
   second.y = 200

@@ -17,18 +17,27 @@ end)
 accept the camera first. Use `camera_position()` for the main camera, or
 `camera_position(camera)` for an explicit camera. Both return x and y.
 
-`camera_create(options)` creates a managed camera. The named coordinates
-`x` and `y` each default to zero, so `camera_create {}` starts at (0, 0).
-Set `viewport` to a `region {x = 0, y = 0, width = 400, height = 300}`
-descriptor to clip to that rectangle. Without a viewport the camera uses the
-full window. Unknown options raise errors.
+`camera_create(options)` takes one table and returns a managed camera.
+The world coordinates `x` and `y` each default to zero. The `viewport`
+defaults to the full logical window. For example, `camera_create {}` creates
+an explicit view at (0, 0). To set only the viewport, pass a region
+in logical screen coordinates.
+
+```lua
+local view = camera_create {
+  viewport = region {x = 0, y = 0, width = 400, height = 300}
+}
+```
+
+Unknown fields, invalid coordinates, and invalid viewport descriptors raise
+an error before a camera is registered.
 
 Call `camera_destroy(camera)` to destroy an explicit camera. Destruction is idempotent;
 operations and new assignments using that camera then raise errors. Existing
 processes associated with it stop drawing until assigned a live camera, nil,
 or false. Physics and process execution continue. The main camera cannot be
-destroyed. Lua retains explicit cameras through process fields and defaults;
-unreferenced cameras need no native resource cleanup.
+destroyed. Lua process fields and defaults retain their camera handles.
+Garbage collection closes an unreferenced Lua-owned camera.
 
 For a fullscreen camera, projection is `world - camera - local_scroll`.
 An explicit viewport adds its screen origin. The viewport clips the result;
@@ -112,8 +121,10 @@ create a second scheduler. Smooth tracking and offset options are deferred.
 
 ## Camera, region and scroll together
 
-A camera transforms its associated world content. A process scroll translates
-only that process's drawing. A region is a fixed screen-space clip. For example,
+A camera transforms its associated world content. `camera_move(10, 0)` moves
+the main camera 10 pixels to the right. `self.scroll = scroll(10, 0)` sets an
+absolute offset that shifts that process's drawing 10 pixels to the left.
+A region is a fixed screen-space clip. For example,
 with camera (100, 50), viewport origin (40, 60), local scroll (5, 5), and a
 world point (120, 65), the projected point is (55, 70).
 

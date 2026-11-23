@@ -8,7 +8,7 @@
 ---Explicit camera returned by `camera_create`.
 ---@class MvCamera
 
----Options for `camera_create`.
+---Options for `camera_create`. Coordinates must be finite with magnitude at most FLT_MAX / 64.
 ---@class MvCameraCreateOptions
 ---@field x? number World x of the camera. Defaults to 0.
 ---@field y? number World y of the camera. Defaults to 0.
@@ -47,17 +47,17 @@
 ---Process graphic returned by `rect` and `circle`.
 ---@class MvGraphic
 
----Region descriptor returned by `region`.
+---Immutable, shareable screen-space clip returned by `region`.
 ---@class MvRegion
 
 ---Options for a screen-space region.
 ---@class MvRegionOptions
----@field x integer Left edge in window pixels.
----@field y integer Top edge in window pixels.
----@field width integer Positive width.
----@field height integer Positive height.
+---@field x integer Left edge in logical screen pixels (INT_MIN through INT_MAX).
+---@field y integer Top edge in logical screen pixels (INT_MIN through INT_MAX).
+---@field width integer Width in logical screen pixels (1 through INT_MAX).
+---@field height integer Height in logical screen pixels (1 through INT_MAX).
 
----Scroll descriptor returned by `scroll`.
+---Immutable drawing offset returned by `scroll`.
 ---@class MvScroll
 
 ---Animation descriptor returned by `animation` (atlas or frame list).
