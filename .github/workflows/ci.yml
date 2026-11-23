@@ -167,6 +167,7 @@ jobs:
           test -n "$version"
           clang --analyze -Werror -Xanalyzer -analyzer-output=text -std=c11 \
             -DMALVADO_EXPORT_GRAPHICS -DMALVADO_RUST_CRATE_REL='"share/malvado/rust/malvado"' \
+            -DMALVADO_TYPES_REL='"share/malvado/types"' \
             -DMALVADO_ANDROID_EXPORT_REL='"share/malvado/tools/android_export.py"' \
             "-DMALVADO_VERSION_STRING=\"$version\"" -Isrc src/build.c
   visual:
