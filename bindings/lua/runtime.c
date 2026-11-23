@@ -300,10 +300,34 @@ check_process_id(lua_State *L, int index)
     return (lua_Integer)id;
 }
 
+/* Context belongs to the scheduled coroutine. A nested user coroutine must
+ * not borrow the active process of its caller. */
+static void
+push_current_process(lua_State *L)
+{
+    if (!engine.active || L != engine.active_thread)
+        luaL_error(L, "operation requires a running process");
+    Process *process = find_process(engine.active_id);
+    if (!process)
+        luaL_error(L, "current process is no longer alive");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
+}
+
+static lua_Integer
+check_optional_process_id(lua_State *L, const char *operation)
+{
+    int arguments = lua_gettop(L);
+    if (arguments == 0)
+        push_current_process(L);
+    else if (arguments != 1)
+        return luaL_error(L, "expected %s() or %s(process)", operation, operation);
+    return check_process_id(L, 1);
+}
+
 static int
 receive_message(lua_State *L)
 {
-    lua_Integer id = check_process_id(L, 1);
+    lua_Integer id = check_optional_process_id(L, "recv");
     MvMessage message;
     MvResult result = mv_process_receive(engine.context, (MvProcessId)id, &message);
     if (result == MV_QUEUE_EMPTY) {
@@ -5591,19 +5615,6 @@ world_process_collision(lua_State *L)
     return 1;
 }
 
-/* Context belongs to the scheduled coroutine. A nested user coroutine must
- * not borrow the active process of its caller. */
-static void
-push_current_process(lua_State *L)
-{
-    if (!engine.active || L != engine.active_thread)
-        luaL_error(L, "operation requires a running process");
-    Process *process = find_process(engine.active_id);
-    if (!process)
-        luaL_error(L, "current process is no longer alive");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
-}
-
 static int
 world_process_move(lua_State *L)
 {
@@ -6087,7 +6098,7 @@ animation_sample(lua_State *L)
 static int
 animation_elapsed(lua_State *L)
 {
-    lua_Integer id = check_process_id(L, 1);
+    lua_Integer id = check_optional_process_id(L, "animation_elapsed");
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");

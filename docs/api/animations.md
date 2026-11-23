@@ -85,10 +85,23 @@ does not change any process. Use `graph(library, id)` for a specific static ID.
 `animation_frame(atlas, name, elapsed_ms, loop?)` returns the sprite ID
 from a named atlas sequence.
 
-`mv.graphics.animation_elapsed(process)`, `mv.animation_elapsed(process)`, and
-the imported `animation_elapsed(process)` return playback milliseconds within
-the sequence (wrapping when it loops), or nil for a static graph. It is an
-advanced inspection/synchronization helper; dead or invalid handles raise errors.
+Inside the scheduled process coroutine, use `animation_elapsed()` to read its
+playback time. Use `animation_elapsed(handle)` to inspect a specific live process,
+including during setup or from another process. The same forms are available as
+`mv.animation_elapsed` and `mv.graphics.animation_elapsed`.
+
+```lua
+local elapsed = animation_elapsed() -- Inside the process body.
+local other_elapsed = animation_elapsed(other_process)
+```
+
+The query returns playback milliseconds within the sequence, wrapping when it
+loops. It returns `nil` when there is no active animation. The query leaves the
+graph and the clock as they were. Calling without an argument from setup code or
+an ordinary Lua coroutine raises an error. The explicit form accepts one live
+process handle from the same runtime. Explicit `nil`, numeric IDs, and extra
+arguments are errors.
+
 The update happens after scheduled process behavior, so a process observes the
 completed previous tick's advance until that tick's update finishes.
 
@@ -152,7 +165,7 @@ the clock. Use `mv_process_animation_clock_clear` to stop it explicitly.
 
 Lua animated process graphs now use the native process clock. Lua no longer
 stores or advances a second elapsed-time record. Rendering and
-`graphics.animation_elapsed(process)` read the same native state. The clock
+`graphics.animation_elapsed` read the same native state. The clock
 advances after scheduler cleanup, so destructor-issued sleep/freeze signals
 apply before playback advances.
 

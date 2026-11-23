@@ -82,6 +82,8 @@ function status(handle) end
 function send(handle, message) end
 
 ---Remove and return the next queued message, or nil when the queue is empty.
+---With no argument, read from the currently scheduled process coroutine.
+---@overload fun():any
 ---@param handle MvProcess
 ---@return any message
 function recv(handle) end
@@ -248,7 +250,6 @@ function sprite_id(atlas, name) end
 ---@return integer sprite_id
 function animation_frame(atlas, name, elapsed_ms, loop) end
 
----Read elapsed playback in milliseconds. Returns nil for a static graph.
 ---Sample a reusable animation descriptor at a time in milliseconds.
 ---This does not change any process playback clock.
 ---@param animation MvAnimation
@@ -256,6 +257,9 @@ function animation_frame(atlas, name, elapsed_ms, loop) end
 ---@return MvGraphic graphic
 function animation_sample(animation, elapsed_ms) end
 
+---Read elapsed playback in milliseconds. Returns nil without an active animation.
+---The no-argument form requires the currently scheduled process coroutine.
+---@overload fun():number|nil
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function animation_elapsed(handle) end

@@ -158,7 +158,29 @@ The scheduler controls process coroutines. `coroutine.resume()` and `coroutine.c
 
 ## Send and receive messages
 
-`mv.send(handle, value)` puts a value in the recipient's FIFO queue. `mv.recv(handle)` removes and returns the next value, or `nil` if the queue is empty. It raises an error for an invalid or dead handle. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.
+`mv.send(handle, value)` puts a value in the recipient's FIFO queue. In the
+scheduled process coroutine, use `mv.recv()` to remove and return the next
+message from its own queue. Neither setup code nor an ordinary Lua coroutine
+has an implicit recipient.
+
+```lua
+local Worker = process(function()
+  while true do
+    local message = recv()
+    if message ~= nil then print(message) end
+    frame()
+  end
+end)
+```
+
+Use `recv(handle)` to read from a specific live process, including during game
+setup or from another process. Both forms return one `nil` for an empty queue
+and return immediately. Pass zero arguments or one live process handle from the
+same runtime. Explicit `nil`, numeric IDs, and extra arguments are errors.
+
+Sending `nil` is an error. A queue holds up to 1,024 messages. Sending to an
+unknown process or a full queue raises an error. Pending messages are released
+when the process ends.
 
 Booleans, integers, numbers, and binary strings can be exchanged with C processes. Strings are copied. Tables and other Lua objects can be sent only to Lua processes; they retain their identity within the VM. See the [C contract](c-contract.md) for message ownership and release rules.
 

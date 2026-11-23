@@ -105,7 +105,7 @@
 ---@field scroll fun(x: number, y: number):MvScroll
 ---@field graph fun(library_or_id: MvAtlas|MvFpg|MvFpgManifest|integer, id?: integer):MvGraphic Select a graphic from a library or the process file.
 ---@field animation fun(library_or_sequence: MvAtlas|MvFpg|MvFpgManifest|string|integer[], sequence_or_options?: string|integer[]|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
----@field animation_elapsed fun(handle: MvProcess):number|nil
+---@field animation_elapsed (fun():number|nil)|(fun(handle: MvProcess):number|nil) The no-argument form requires the scheduled process coroutine.
 
 ---@class MvCollisionNamespace
 ---@field __call fun(_self: MvCollisionNamespace, target: MvProcessConstructor):MvProcess|nil
@@ -201,12 +201,14 @@ function malvado.kill_tree(handle, options) end
 ---@return MvProcessStatusName|nil status
 function malvado.status(handle) end
 
----Queue a message for a process. Read it with `recv(handle)`.
+---Queue a message for a process. The recipient can read it with `recv()`.
 ---@param handle MvProcess
 ---@param message any
 function malvado.send(handle, message) end
 
 ---Remove and return the next queued message, or nil when the queue is empty.
+---With no argument, read from the currently scheduled process coroutine.
+---@overload fun():any
 ---@param handle MvProcess
 ---@return any message
 function malvado.recv(handle) end
@@ -457,8 +459,9 @@ function malvado.animation(sequence, options) end
 ---@return MvGraphic graphic
 function malvado.animation_sample(animation, elapsed_ms) end
 
----Read the elapsed playback time of the current animation in milliseconds.
----Returns nil when the process graphic is not an animation.
+---Read elapsed playback in milliseconds. Returns nil without an active animation.
+---The no-argument form requires the currently scheduled process coroutine.
+---@overload fun():number|nil
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function malvado.animation_elapsed(handle) end

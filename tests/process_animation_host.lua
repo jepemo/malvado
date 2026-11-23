@@ -9,10 +9,12 @@ for line in io.lines("tests/fixtures/process-animation.txt") do
 end
 local Actor = mv.process(function(self)
   for index = 1, #expected - 1 do
-    assert(math.abs(elapsed(self) * 1000 - expected[index]) < 0.001)
+    local time = elapsed()
+    assert(time == elapsed(self))
+    assert(math.abs(time * 1000 - expected[index]) < 0.001)
     mv.frame()
   end
-  assert(elapsed(self) == nil) -- The C host cleared the shared clock.
+  assert(elapsed() == nil) -- The C host cleared the shared clock.
   self.graph = self.graph
   assert(elapsed(self) == 0)
   mv.frame()

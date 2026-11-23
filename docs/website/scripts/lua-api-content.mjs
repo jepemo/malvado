@@ -105,15 +105,15 @@ export default {
     related: ['alive', 'snapshot'],
   },
   'processes/send': {
-    description: 'Put a value in a process message queue. The receiver reads it with `recv(self)`.',
+    description: 'Put a value in a process message queue. The receiver reads it with `recv()`.',
     params: [['handle', 'A process handle.'], ['value', 'The value to send. `nil` is not allowed.']],
     example: 'send(worker, {job = "reload"})',
     related: ['recv'],
   },
   'processes/recv': {
-    description: 'Remove and return the next queued message, or nil if the queue is empty.',
-    params: [['handle', 'A live process handle.']],
-    example: 'local message = recv(self)',
+    description: 'Remove and return the next queued message, or `nil` if the queue is empty. The call returns immediately.',
+    params: [['handle?', 'A live process handle. Omit the argument to read from the currently scheduled process coroutine. `recv(handle)` can also be used during setup.']],
+    example: 'local message = recv() -- Inside a scheduled process.\nlocal other_message = recv(worker) -- Read from a specific process.',
     related: ['send'],
   },
   'processes/collision': {
@@ -228,9 +228,9 @@ export default {
     related: ['graph', 'animation_elapsed'],
   },
   'graphics/animation_elapsed': {
-    description: 'Return the playback milliseconds of a process animation, or `nil` for a static graph.',
-    params: [['process', 'A process handle.']],
-    example: 'local ms = mv.graphics.animation_elapsed(self)',
+    description: 'Read playback time in milliseconds, or `nil` when there is no active animation. The query leaves the clock as it was.',
+    params: [['process?', 'A live process handle. Omit the argument when calling from the scheduled process coroutine to read its playback time.']],
+    example: 'local ms = animation_elapsed() -- Inside a scheduled process.\nlocal other_ms = animation_elapsed(worker)',
     related: ['animation'],
   },
   'graphics/graph': {

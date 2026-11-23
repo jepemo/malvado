@@ -14,7 +14,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Visual angle/scale | `mv_process_angle`, `mv_process_set_angle`, `mv_process_scale`, `mv_process_set_scale` | `self.angle`, `self.size`; shared finite values, local invalid overrides. |
 | Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
-| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv(self)`, `frame`, `self.fps` |
+| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv()` or `recv(handle)`, `frame`, `self.fps` |
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
 
 The table maps the public functions in `malvado.h`, not every future 2.0 API.
@@ -121,6 +121,44 @@ is namespace-only. `lua_global_inventory` and `lua_namespace_inventory` check
 the names and alias identities. The checks concern the delivered API, not the
 unselected future 2.0 inventory. Process collision, cadence, and messaging
 are covered by their separate API reviews.
+
+## Lua process context
+
+An explicit process argument is a handle from the same runtime. Each operation
+has its own liveness rules. In the table below, outside calls include setup with
+valid arguments and any required assets or graphics support.
+
+| Operation | Implicit process | Explicit process and outside calls | Ergonomics, effects, and validation |
+| --- | --- | --- | --- |
+| `frame()` | Scheduled coroutine | No explicit handle or outside call | Yielding the caller is the natural form. It checks thread identity and yieldability. The main path does not separately reject a dead process slot. |
+| `collision(target)` | Scheduled source | The namespace forms `process.collision(source, target)` and `process.collisions(source, target)` accept explicit sources and work outside | The shorthand is useful inside a process. It shares the first-hit query with the explicit form, which supports a different source. A dead target is a miss. The source must be live. |
+| `world_move(dx, dy)` | Scheduled process and its world | `world_move(world, process, dx, dy)` works outside | Both forms are useful. They move the selected live process. The explicit form also chooses the world. |
+| `world_collision(world, process, options?)` | None | Live process handle. Works outside. | A self-query would be shorter. The world and position override still need clear selection rules. The current call leaves the position as it was. |
+| `graph(id)` | Scheduled process supplies `self.file` | No process handle. `graph(library, id)` works outside. | The contextual form is already short. The library form supports setup and reuse. Selection returns a descriptor. |
+| `animation(sequence, options?)` | Scheduled process supplies `self.file` | No process handle. `animation(library, sequence, options?)` works outside. | Both forms are useful. Selection returns a descriptor. Assign the descriptor to a graph to start playback. |
+| `recv()` or `recv(handle)` | Scheduled recipient when omitted | Live handle. The explicit form works outside. | The shorthand fits the usual self-receive. The explicit form selects another queue. Both remove one message on success and validate selection before reading. |
+| `animation_elapsed()` or `animation_elapsed(handle)` | Scheduled process when omitted | Live handle. The explicit form works outside. | The shorthand fits local playback checks. The explicit form inspects another process. Both read the clock without changing playback. |
+| `send(handle, value)` | None | Live recipient. Works outside. | Keep the destination visible. An implicit recipient could enqueue to the wrong process. |
+| `kill(handle)` | None | Explicit target. Works outside. A dead target returns false. | The shortcut for `signal(handle, "kill")` makes termination easy to read. Keep the target visible because attached descendants can also end. |
+| `kill_tree(handle)` | None | Explicit root. Works outside. | The shortcut selects the creation relation. The current wrapper uses only the first argument. An implicit root would hide the scope of termination. |
+| `signal(handle, signal)` | None | Explicit target. Works outside. Non-kill signals need a live target. | A self form would save one argument. The explicit target makes state changes visible. Self-kill on the scheduled thread can yield. |
+| `signal_tree(handle, signal, options?)` | None | Explicit root. Works outside. Ownership needs a live root. Creation can address a retained root. | The root and relation determine which processes change state. Both are important to the caller. |
+| `children(handle, options?)` | None | Explicit root. Works outside. Ownership needs a live root. Creation can address a retained root. | A self form could shorten frequent local queries. The explicit form makes the root clear. |
+| `descendants(handle, options?)` | None | Same root validation as `children`. Works outside. | The same self shorthand could apply. The option still selects which relation to traverse. |
+| `get_priority(handle)` | None | Live handle. Works outside. | A self form could help code that often reads its own priority. The query is read-only. |
+| `set_priority(handle, priority)` | None | Live handle. Works outside. | Keep the target visible. The assignment can change the next tick's schedule. |
+| `status(handle)` | None | Explicit handle. Works outside. Returns `nil` when dead. | A self form has limited use. The explicit form supports inspecting processes that cannot currently run. |
+| `alive(handle)` | None | Explicit handle. Works outside. Returns false when dead. | A scheduled-context form would usually return true. The explicit predicate also covers terminated processes. |
+| Process constructors and `spawn(constructor, ...)` | Current creator or closing process, when present | No process handle. Root creation works outside. | Implicit ancestry keeps spawning short. Attachment can affect child lifetime. This path uses the runner's active or closing ID without checking caller thread identity. |
+| `find(constructor)` and `snapshot()` | None | No process handle. Both work outside. | These inspect the runtime. `find` checks a process constructor. Neither needs a current process. |
+| `camera_follow(target)` and `camera_follow(camera, target)` | None. The first form selects the main camera. | Live target handle. Both work outside. | Both camera choices are useful. Keep the target visible because the camera continues to track it. |
+| Immediate `draw_*` commands | Scheduled process owns the commands | No process handle or outside call | The caller's drawing lifetime is the natural default. The binding checks thread identity and liveness. |
+| `write` and managed asset creation | The active process can own the resource | No process handle. Supported operations can create runtime-owned resources outside. | Automatic ownership ties cleanup to the process. These paths use the active ID and may attribute a nested coroutine's resource to the scheduled caller. |
+
+The contextual forms of collision, world movement, graph selection, animation
+selection, reception, and elapsed playback all check that the calling Lua
+thread is the scheduled coroutine and that the process is live. The flat and
+namespace names above are aliases where the inventories list both names.
 
 ## Lua entry forms
 

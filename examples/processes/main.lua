@@ -2,9 +2,9 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 require("malvado").import_globals()
-local child = process(function(self)
+local child = process(function()
   while true do
-    local message = recv(self)
+    local message = recv()
     if message then print("Message:", message.text) end
     frame()
   end
