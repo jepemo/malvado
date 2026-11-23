@@ -18,7 +18,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 TYPES = ROOT / "types"
 GLOBAL_PROBE = """
-require("malvado").import_globals()
+local mv = require("malvado")
+mv.import_globals()
 
 local f = font {size = 50}
 local title = write {
@@ -36,8 +37,25 @@ delete_text(title)
 set_color {10, 20, 30}
 clear_screen(BLACK)
 fade_to {color = TRANSPARENT, ticks = 30}
+local view = camera_create {}
+local world = world_create()
+world_add_rect(world, {x = 10, y = 10, width = 20, height = 20})
+local library = mv.fpg.parse("bytes")
+local manifest = mv.fpg.parse_manifest(fpg_json(library))
+local graphic = animation_sample(animation(library, {7, 42}), 50)
+local index = fpg_id_at(library, 1)
+local manifest_count_value = manifest_count(manifest)
 local Player = process(function(self)
   self.fps = 30
+  self.camera = view
+  self.world = world
+  self.region = region {x = 0, y = 0, width = 64, height = 48}
+  camera_follow(view, self)
+  local x, y = camera_position()
+  camera_move(view, x, y)
+  world_move(1, 0)
+  world_move(world, self, 1, 0)
+  local message = recv(self)
   self.graph = circle {radius = 20, color = GREEN}
   draw_rect {x = 0, y = 0, width = 4, height = 6, filled = false}
   draw_circle {x = 20, y = 20, radius = 5, color = BLUE}
@@ -72,12 +90,26 @@ mv.draw_image {
   pivot = {x = 1.5, y = 2}, scale = 2, angle = 90,
 }
 mv.draw_sprite {atlas = atlas, id = 42, x = 10.5, y = 10}
+local clip = mv.graphics.region {x = 0, y = 0, width = 64, height = 48}
+local view = mv.camera_create {viewport = clip}
+local world = mv.world_create()
+local shape = mv.collision.circle(5)
+local hit = mv.world_sweep(world, shape, nil, 1, 0)
+local file = mv.fpg.parse("bytes")
+local manifest = mv.fpg.parse_manifest(mv.fpg_json(file))
+local opaque = mv.manifest_transparent_zero(manifest)
 local actor = mv.process(function(self)
   self.file = atlas
+  mv.camera_follow(self)
+  mv.camera_set(view, 20, 40)
+  mv.world_collision(world, self, {x = 2})
+  local message = mv.recv(self)
+  self.graph = mv.animation_sample(mv.animation(atlas, {1, 2}), 50)
   self.graph = mv.graphics.graph(42)
   self.graph = mv.graphics.animation(atlas, {1, 2}, {fps = 8})
 end)
 actor {}
+mv.camera_destroy(view)
 local current = mv.fade_color()
 mv.set_color({current[1], current[2], current[3], current[4]})
 local w, h = mv.text_size(id)
@@ -124,6 +156,16 @@ def main():
         r"`mv\.colors\.(\w+)`", (ROOT / "docs/api/lua-globals.md").read_text()))
     if not palette_fields or palette_fields != global_colors or palette_fields != documented_colors:
         failures.append("palette fields, globals declarations, and global exports differ")
+    public_functions = {
+        name for name in re.findall(r"^\| `([a-z_]+)` \| `mv\.\1`",
+                                   (ROOT / "docs/api/lua-globals.md").read_text(), re.MULTILINE)
+        if name not in {"process", "collision"}
+    }
+    for definitions, prefix in [("lib/malvado.d.lua", r"malvado\."), ("globals/malvado-globals.d.lua", "")]:
+        declared = set(re.findall(rf"^function {prefix}(\w+)\(", (TYPES / definitions).read_text(), re.MULTILINE))
+        missing = sorted(public_functions - declared)
+        if missing:
+            failures.append(f"{definitions} has no declarations for {', '.join(missing)}")
     with tempfile.TemporaryDirectory(prefix="malvado-luals-") as temporary:
         # Project with globals enabled: the import_globals style must be clean
         # except for the deliberate invalid calls at the end.
@@ -156,7 +198,21 @@ def main():
             'local image = mv.load_image("sheet.png")\n'
             'mv.draw_image {image = image, x = 0, y = 0, scale = "large"}\n',
             encoding="utf-8")
+        (project / "removed-methods.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local view = mv.camera_create {}\n'
+            'view:move(1, 2)\n'
+            'local world = mv.world_create()\n'
+            'world:add_rect({x = 0, y = 0, width = 1, height = 1})\n'
+            'local file = mv.fpg.parse("bytes")\n'
+            'file:count()\n',
+            encoding="utf-8")
         output = run_luals(project)
+        obsolete = diagnose(output, "removed-methods.lua")
+        for line, method in [(3, "move"), (5, "add_rect"), (7, "count")]:
+            if not any(number == line and f"Undefined field `{method}`" in message
+                       for number, message in obsolete):
+                failures.append(f"namespaced project: obsolete method {method} was not reported")
         if not any(line == 3 and "Cannot assign `string`" in message
                    for line, message in diagnose(output, "bad-drawing.lua")):
             failures.append("namespaced project: draw_image should reject a string scale")

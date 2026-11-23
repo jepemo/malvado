@@ -4,7 +4,7 @@
 local mv = require("malvado")
 mv.import_globals()
 
-local viewport = region(100, 100, 160, 160)
+local viewport = region {x = 100, y = 100, width = 160, height = 160}
 local Player = process(function(self)
   while not key("escape") do
     if key("left") then self.x = self.x - 3 end

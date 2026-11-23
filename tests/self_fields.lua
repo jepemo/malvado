@@ -13,7 +13,8 @@ local P = mv.process(function(self)
     self.value = 2
     assert(self.value == 2)
     assert(self.delta == 0)
-    for _, field in ipairs({"id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta"}) do
+    assert(self.recv == nil)
+    for _, field in ipairs({"id", "parent", "creator_id", "priority", "status", "reason", "delta"}) do
         assert(not pcall(function() self[field] = 5 end))
     end
     assert(not pcall(rawset, self, "id", 5))
@@ -21,7 +22,7 @@ local P = mv.process(function(self)
     assert(self.priority == 8)
 end)
 mv.start(function()
-    local fields = {"id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta"}
+    local fields = {"id", "parent", "creator_id", "priority", "status", "reason", "delta"}
     for _, name in ipairs(fields) do
         local input = {[name] = false}
         assert(not pcall(P, input))

@@ -20,8 +20,6 @@
 
 ---Sprite atlas loaded with `load_asset`, `load_atlas` or `load_aseprite`.
 ---@class MvAtlas
----@field graph fun(self: MvAtlas, id: integer):MvGraphic
----@field animation fun(self: MvAtlas, sequence: string|integer[], options?: MvAnimationOptions):MvAnimation
 
 ---Source rectangle in image pixels.
 ---@class MvImageSource
@@ -56,42 +54,28 @@
 
 ---FPG library loaded with `load_asset` or `fpg.parse`.
 ---@class MvFpg
----@field count fun(self: MvFpg):integer
----@field id_at fun(self: MvFpg, index: integer):integer|nil
----@field palette fun(self: MvFpg):string
----@field gamma fun(self: MvFpg):string
----@field sprite fun(self: MvFpg, id: integer):MvFpgSprite|nil
----@field point fun(self: MvFpg, id: integer, index: integer):MvFpgPoint|nil
----@field rgba fun(self: MvFpg, id: integer, transparent_zero?: boolean):string
----@field image fun(self: MvFpg, id: integer, transparent_zero?: boolean):MvImage|nil
----@field png fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
----@field json fun(self: MvFpg, transparent_zero?: boolean):string
----@field graph fun(self: MvFpg, id: integer):MvGraphic
----@field animation fun(self: MvFpg, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 
 ---FPG manifest loaded with `load_asset` or `fpg.parse_manifest`.
 ---@class MvFpgManifest
----@field count fun(self: MvFpgManifest):integer
----@field id_at fun(self: MvFpgManifest, index: integer):integer|nil
----@field transparent_zero fun(self: MvFpgManifest):boolean
----@field palette fun(self: MvFpgManifest):string
----@field gamma fun(self: MvFpgManifest):string
----@field sprite fun(self: MvFpgManifest, id: integer):MvFpgSprite|nil
----@field point fun(self: MvFpgManifest, id: integer, index: integer):MvFpgPoint|nil
----@field graph fun(self: MvFpgManifest, id: integer):MvGraphic
----@field animation fun(self: MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 
----Sprite info table returned by `fpg:sprite` and `sprite_info`.
----@class MvFpgSprite
+---Metadata shared by binary FPG and manifest sprite entries.
+---@class MvFpgSpriteMetadata
 ---@field id integer
 ---@field width integer
 ---@field height integer
 ---@field point_count integer
 ---@field name_raw string
 ---@field filename_raw string
----@field pixels string|nil Raw RGBA bytes when available.
 
----Control point returned by `fpg:point`.
+---Sprite returned by `fpg_sprite`.
+---@class MvFpgSprite : MvFpgSpriteMetadata
+---@field pixels string Raw palette indices, one byte per pixel.
+
+---Sprite returned by `manifest_sprite`.
+---@class MvManifestSprite : MvFpgSpriteMetadata
+---@field image string Relative PNG filename.
+
+---Control point returned by `fpg_point` and `manifest_point`.
 ---@class MvFpgPoint
 ---@field x integer
 ---@field y integer

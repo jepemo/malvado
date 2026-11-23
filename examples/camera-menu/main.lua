@@ -8,7 +8,7 @@ end, {defaults = {graph = rect {width = 30, height = 30, color = {180, 80, 220}}
 
 local Inventory = process(function(self)
   self.camera = false
-  self.region = region(80, 140, 480, 180)
+  self.region = region {x = 80, y = 140, width = 480, height = 180}
   local offset = 0
   local colors = {{230, 80, 80}, {80, 210, 120}, {80, 150, 240}}
   while not key("escape") do

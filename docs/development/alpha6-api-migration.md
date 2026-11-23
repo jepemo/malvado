@@ -1,7 +1,7 @@
 # Alpha.6 API migration
 
 Alpha.6 keeps the shared C scheduler and both Lua entry forms. The minimal Lua
-API reduces common calls while explicit namespaces and useful methods remain.
+API reduces common calls while keeping both module and global access.
 C keeps typed values, handles, ownership and explicit operations.
 
 ## Minimal Lua
@@ -32,28 +32,25 @@ For more runnable programs, use [Aseprite](../../examples/aseprite/),
 The [clipped inventory](../../examples/camera-menu/) uses returned `game.init`
 instead of `start`; both forms accept the same globals and process behavior.
 
-## Explicit Lua and methods
+## Explicit Lua
 
 ```lua
 local mv = require("malvado")
 -- In initialization, after a window is available:
 local hero = mv.load_asset("hero.json")
-local world = mv.world.create()
-local still = hero:graph(7)
-local walk = hero:animation("walk")
-local camera = mv.camera.create(0, 0)
-camera:set(100, 50)
+local world = mv.world_create()
+local still = mv.graph(hero, 7)
+local walk = mv.animation(hero, "walk")
+local camera = mv.camera_create {x = 100, y = 50}
 -- Inside game logic, with an existing player:
 player.graph = walk
-world:move(player, 3, 0)
-camera:follow(player)
+mv.world_move(world, player, 3, 0)
+mv.camera_follow(camera, player)
 local hit = mv.process.collision(player, Enemy)
 ```
 
-The same operations are available as `mv.graphics.graph`, `mv.graphics.animation`,
-`mv.world.move` and `mv.camera` functions. The existing explicit namespaces and
-methods remain covered by the [inventories](../api/lua-namespaces.md) and tests.
-Not every operation needs three different names.
+See the [namespace inventory](../api/lua-namespaces.md) for functions
+organized under `mv.graphics`, `mv.process`, `mv.collision` and other tables.
 
 ## Replace common calls
 
@@ -67,8 +64,6 @@ Not every operation needs three different names.
 | Sample a sequence each tick and assign a static sprite | `self.graph = animation("walk")` | [Independent automatic playback](../api/animations.md) |
 | `mv.graphics.rect/circle/region/scroll` | `rect/circle/region/scroll` | Same constructors, validation and defaults |
 | `mv.process.collision(self, Enemy)` | `collision(Enemy)` | Same canonical result and query ordering |
-| `mv.world.create()` | `world_create()` | Same world object |
-| `world:move(self, dx, dy)` | `world_move(dx, dy)` using `self.world` | Same sweep, displacement, normals and obstacle ID |
 | Use a process only to update a view offset | `camera_follow(player)` | Following runs in the existing tick |
 
 Implicit file/world/query calls work only in the actual scheduled process,
@@ -81,6 +76,59 @@ invalid/missing context raise errors. Standard Lua `load` remains unchanged.
 `collision` is a callable process-query namespace. Geometry stays explicit in
 `mv.collision`. Graphs/animations supply automatic colliders; nil restores the
 default and false disables it. Animations use a fixed union of local frame bounds.
+
+## Migrate Lua handle operations
+
+Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Managed
+resource handles are passed to functions rather than manipulated through
+instance methods.
+
+The names on the right are available through `mv` or `import_globals()`. Use
+the same handle for the new call. Object methods and the `mv.camera` and
+`mv.world` aliases were removed.
+
+| Previous call | Current call |
+| --- | --- |
+| `camera_create(x, y, {viewport = clip})` or `mv.camera.create(x, y, {viewport = clip})` | `camera_create {x = x, y = y, viewport = clip}` |
+| `camera:set(x, y)` | `camera_set(camera, x, y)` |
+| `camera:move(dx, dy)` | `camera_move(camera, dx, dy)` |
+| `camera:follow(target)` | `camera_follow(camera, target)` |
+| `camera:position()` | `camera_position(camera)` |
+| `camera:destroy()` | `camera_destroy(camera)` |
+| `mv.camera.set` | `mv.camera_set` |
+| `mv.camera.move` | `mv.camera_move` |
+| `mv.camera.follow` | `mv.camera_follow` |
+| `mv.camera.position` | `mv.camera_position` |
+| `region(x, y, width, height)` | `region {x = x, y = y, width = width, height = height}` |
+| `mv.world.create()` | `world_create()` |
+| `world:add_rect(options)` | `world_add_rect(world, options)` |
+| `world:overlap(shape, transform)` | `world_overlap(world, shape, transform)` |
+| `world:sweep(shape, transform, dx, dy)` | `world_sweep(world, shape, transform, dx, dy)` |
+| `world:collision(player, position)` | `world_collision(world, player, position)` |
+| `world:move(player, dx, dy)` or `mv.world.move(world, player, dx, dy)` | `world_move(world, player, dx, dy)` |
+| `mv.world.move(dx, dy)` | `world_move(dx, dy)` using `self.world` |
+| `self:recv()` | `recv(self)` |
+| `definition:sample(elapsed_ms)` | `animation_sample(definition, elapsed_ms)` |
+| `library:graph(id)` | `graph(library, id)` for atlases, FPG files, and manifests |
+| `atlas:animation(name_or_ids, options)` | `animation(atlas, name_or_ids, options)` |
+| `fpg:animation(ids, options)`, `manifest:animation(ids, options)` | `animation(library, ids, options)` with the same handle |
+| `fpg:count()` | `fpg_count(fpg)` |
+| `fpg:id_at(index)` | `fpg_id_at(fpg, index)` |
+| `fpg:palette()` | `fpg_palette(fpg)` |
+| `fpg:gamma()` | `fpg_gamma(fpg)` |
+| `fpg:sprite(id)` | `fpg_sprite(fpg, id)` |
+| `fpg:point(id, index)` | `fpg_point(fpg, id, index)` |
+| `fpg:rgba(id, transparent_zero)` | `fpg_rgba(fpg, id, transparent_zero)` |
+| `fpg:image(id, transparent_zero)` | `fpg_image(fpg, id, transparent_zero)` |
+| `fpg:png(id, transparent_zero)` | `fpg_png(fpg, id, transparent_zero)` |
+| `fpg:json(transparent_zero)` | `fpg_json(fpg, transparent_zero)` |
+| `manifest:count()` | `manifest_count(manifest)` |
+| `manifest:id_at(index)` | `manifest_id_at(manifest, index)` |
+| `manifest:palette()` | `manifest_palette(manifest)` |
+| `manifest:gamma()` | `manifest_gamma(manifest)` |
+| `manifest:sprite(id)` | `manifest_sprite(manifest, id)` |
+| `manifest:point(id, index)` | `manifest_point(manifest, id, index)` |
+| `manifest:transparent_zero()` | `manifest_transparent_zero(manifest)` |
 
 ## Camera, region and scroll
 

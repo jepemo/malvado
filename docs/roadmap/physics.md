@@ -62,7 +62,7 @@ one collision guide. Existing process queries retain their ordering and results.
 Simulation owns its own broad phase and contacts. Native gameplay queries may
 still use the small collision registry. Synchronize transforms at documented
 boundaries; do not run two response solvers on one process. In particular,
-`world:move` must not silently compete with a dynamic body's integration. P1
+`world_move` must not silently compete with a dynamic body's integration. P1
 must choose rejection or an explicit supported kinematic operation for this case.
 Static collision worlds do not automatically become physics terrain; an explicit
 conversion may copy rectangles, with ownership and later-update rules defined.
@@ -297,7 +297,7 @@ than exposing every backend option.
 - [ ] Design ground queries from contact normals, slope limits and a configurable
   up direction. Choose a kinematic controller or dynamic-body helper explicitly.
   Test stairs, one-way/moving platforms, tunneling and initial penetration for
-  each claimed capability; existing `world:move` remains an independent option.
+  each claimed capability; existing `world_move` remains an independent option.
 - [ ] Add justified convex/compound shapes, continuous collision settings and a
   small joint set. Test endpoint death, joint ownership, force limits and cleanup.
   Collision filtering, sensors and joint behavior must match across languages.

@@ -290,10 +290,20 @@ release_lua_message(void *data)
     free(value);
 }
 
+static lua_Integer
+check_process_id(lua_State *L, int index)
+{
+    LuaSelf *self = luaL_checkudata(L, index, "malvado.process");
+    MvProcessId id;
+    if (mv_process_ref_resolve(engine.context, self->reference, &id) != MV_OK)
+        luaL_error(L, "process handle belongs to another runtime");
+    return (lua_Integer)id;
+}
+
 static int
 receive_message(lua_State *L)
 {
-    lua_Integer id = lua_tointeger(L, lua_upvalueindex(1));
+    lua_Integer id = check_process_id(L, 1);
     MvMessage message;
     MvResult result = mv_process_receive(engine.context, (MvProcessId)id, &message);
     if (result == MV_QUEUE_EMPTY) {
@@ -301,7 +311,7 @@ receive_message(lua_State *L)
         return 1;
     }
     if (result != MV_OK)
-        return luaL_error(L, "unknown process id");
+        return luaL_error(L, "process is no longer alive");
     switch (message.type) {
     case MV_MESSAGE_BOOLEAN: lua_pushboolean(L, message.value.boolean); break;
     case MV_MESSAGE_INTEGER: lua_pushinteger(L, message.value.integer); break;
@@ -319,16 +329,6 @@ receive_message(lua_State *L)
     }
     mv_message_release(&message);
     return 1;
-}
-
-static lua_Integer
-check_process_id(lua_State *L, int index)
-{
-    LuaSelf *self = luaL_checkudata(L, index, "malvado.process");
-    MvProcessId id;
-    if (mv_process_ref_resolve(engine.context, self->reference, &id) != MV_OK)
-        luaL_error(L, "process handle belongs to another runtime");
-    return (lua_Integer)id;
 }
 
 static int
@@ -1139,11 +1139,6 @@ self_index(lua_State *L)
             lua_pushstring(L, names[status]);
         return 1;
     }
-    if (key && strcmp(key, "recv") == 0) {
-        lua_pushinteger(L, self->id);
-        lua_pushcclosure(L, receive_message, 1);
-        return 1;
-    }
     lua_getiuservalue(L, 1, 1);
     lua_pushvalue(L, 2);
     lua_rawget(L, -2);
@@ -1160,7 +1155,7 @@ self_index(lua_State *L)
 }
 
 static const char *const read_only_process_fields[] = {
-    "id", "parent", "creator_id", "priority", "status", "reason", "recv", "delta", NULL
+    "id", "parent", "creator_id", "priority", "status", "reason", "delta", NULL
 };
 
 static int
@@ -4629,18 +4624,19 @@ camera_gc(lua_State *L)
 static int
 camera_create(lua_State *L)
 {
-    double x = luaL_checknumber(L, 1), y = luaL_checknumber(L, 2);
+    static const char *const keys[] = {"x", "y", "viewport"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    double x, y;
+    if (!render_number(L, 1, "x", 0, &x) || !render_number(L, 1, "y", 0, &y))
+        return luaL_error(L, "invalid camera position");
     MvCameraViewport viewport, *view = NULL;
-    if (!lua_isnoneornil(L, 3)) {
-        validate_options(L, 3, "viewport", NULL);
-        raw_option(L, 3, "viewport");
-        if (!lua_isnil(L, -1)) {
-            LuaRegion *region = luaL_checkudata(L, -1, "malvado.region");
-            viewport = (MvCameraViewport){region->x, region->y, region->width, region->height};
-            view = &viewport;
-        }
-        lua_pop(L, 1);
+    raw_option(L, 1, "viewport");
+    if (!lua_isnil(L, -1)) {
+        LuaRegion *region = luaL_checkudata(L, -1, "malvado.region");
+        viewport = (MvCameraViewport){region->x, region->y, region->width, region->height};
+        view = &viewport;
     }
+    lua_pop(L, 1);
     MvCamera value;
     if (!mv_camera_init(&value, x, y, view))
         return luaL_error(L, "invalid camera position or viewport");
@@ -5100,8 +5096,9 @@ static const struct { const char *name; const char *value; } api_constants[] = {
     X(BROWN, 165, 42, 42, 255)
 
 static const char *const global_names[] = {
-    "camera_create", "camera_set", "camera_move", "camera_follow",
-    "collision", "world_create", "world_move",
+    "camera_create", "camera_set", "camera_move", "camera_follow", "camera_position", "camera_destroy",
+    "collision", "world_create", "world_add_rect", "world_overlap", "world_sweep",
+    "world_collision", "world_move",
     "rect", "circle", "region", "scroll",
     "rect_overlaps",
     "rect_contains",
@@ -5121,6 +5118,7 @@ static const char *const global_names[] = {
     "kill_tree",
     "status",
     "send",
+    "recv",
     "start",
     "set_title",
     "window_size",
@@ -5164,6 +5162,24 @@ static const char *const global_names[] = {
     "sprite_info",
     "sprite_id",
     "animation_frame",
+    "animation_sample",
+    "fpg_count",
+    "fpg_id_at",
+    "fpg_palette",
+    "fpg_gamma",
+    "fpg_sprite",
+    "fpg_point",
+    "fpg_rgba",
+    "fpg_image",
+    "fpg_png",
+    "fpg_json",
+    "manifest_count",
+    "manifest_id_at",
+    "manifest_transparent_zero",
+    "manifest_palette",
+    "manifest_gamma",
+    "manifest_sprite",
+    "manifest_point",
     "animation_elapsed",
     "animation_color",
     "atlas_pivot_color",
@@ -5661,6 +5677,8 @@ world_move(lua_State *L)
 {
     int arguments = lua_gettop(L);
     if (arguments == 2) {
+        luaL_checknumber(L, 1);
+        luaL_checknumber(L, 2);
         push_current_process(L);
         lua_insert(L, 1);
         lua_getiuservalue(L, 1, 1);
@@ -5901,13 +5919,14 @@ scroll_create(lua_State *L)
 static int
 region_create(lua_State *L)
 {
-    lua_Integer x = luaL_checkinteger(L, 1), y = luaL_checkinteger(L, 2);
-    lua_Integer width = luaL_checkinteger(L, 3), height = luaL_checkinteger(L, 4);
-    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX ||
-        width <= 0 || width > INT_MAX || height <= 0 || height > INT_MAX)
+    static const char *const keys[] = {"x", "y", "width", "height"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    int x = drawing_integer(L, 1, "x"), y = drawing_integer(L, 1, "y");
+    int width = drawing_integer(L, 1, "width"), height = drawing_integer(L, 1, "height");
+    if (width <= 0 || height <= 0)
         return luaL_error(L, "invalid region rectangle");
     LuaRegion *region = lua_newuserdatauv(L, sizeof(*region), 0);
-    *region = (LuaRegion){(int)x, (int)y, (int)width, (int)height};
+    *region = (LuaRegion){x, y, width, height};
     luaL_setmetatable(L, "malvado.region");
     return 1;
 }
@@ -6244,7 +6263,13 @@ open_module(lua_State *L)
         {"camera_create", camera_create},
         {"camera_set", camera_set},
         {"camera_move", camera_move},
+        {"camera_position", camera_position},
+        {"camera_destroy", camera_destroy},
         {"world_create", world_create},
+        {"world_add_rect", world_add_rect},
+        {"world_overlap", world_overlap},
+        {"world_sweep", world_sweep},
+        {"world_collision", world_process_collision},
         {"world_move", world_move},
         {"rect_overlaps", rect_overlaps},
         {"rect_contains", rect_contains},
@@ -6264,6 +6289,7 @@ open_module(lua_State *L)
         {"kill_tree", kill_tree},
         {"status", process_status},
         {"send", send_message},
+        {"recv", receive_message},
         {"start", start},
         {"set_title", set_title},
         {"window_size", window_size},
@@ -6311,6 +6337,24 @@ open_module(lua_State *L)
         {"sprite_info", sprite_info},
         {"sprite_id", sprite_id},
         {"animation_frame", animation_frame},
+        {"animation_sample", animation_sample},
+        {"fpg_count", fpg_count},
+        {"fpg_id_at", fpg_id_at},
+        {"fpg_palette", fpg_palette},
+        {"fpg_gamma", fpg_gamma},
+        {"fpg_sprite", fpg_sprite},
+        {"fpg_point", fpg_point},
+        {"fpg_rgba", fpg_rgba},
+        {"fpg_image", fpg_image},
+        {"fpg_png", fpg_png},
+        {"fpg_json", fpg_json},
+        {"manifest_count", fpg_manifest_count},
+        {"manifest_id_at", fpg_manifest_id_at},
+        {"manifest_transparent_zero", fpg_manifest_transparent},
+        {"manifest_palette", fpg_manifest_palette},
+        {"manifest_gamma", fpg_manifest_gamma},
+        {"manifest_sprite", fpg_manifest_sprite},
+        {"manifest_point", fpg_manifest_point},
         {"animation_color", animation_color},
         {"atlas_pivot_color", atlas_pivot_color},
         {"animation_repeats", animation_repeats},
@@ -6354,13 +6398,6 @@ open_module(lua_State *L)
     luaL_newmetatable(L, "malvado.camera");
     lua_pushcfunction(L, camera_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    static const luaL_Reg camera_methods[] = {
-        {"set", camera_set}, {"move", camera_move}, {"position", camera_position},
-        {"follow", camera_follow}, {"destroy", camera_destroy}, {NULL, NULL}
-    };
-    luaL_setfuncs(L, camera_methods, 0);
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado camera");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
@@ -6371,18 +6408,6 @@ open_module(lua_State *L)
     luaL_newmetatable(L, "malvado.collision_world");
     lua_pushcfunction(L, world_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    lua_pushcfunction(L, world_add_rect);
-    lua_setfield(L, -2, "add_rect");
-    lua_pushcfunction(L, world_overlap);
-    lua_setfield(L, -2, "overlap");
-    lua_pushcfunction(L, world_sweep);
-    lua_setfield(L, -2, "sweep");
-    lua_pushcfunction(L, world_process_collision);
-    lua_setfield(L, -2, "collision");
-    lua_pushcfunction(L, world_process_move);
-    lua_setfield(L, -2, "move");
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado collision world");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
@@ -6446,51 +6471,24 @@ open_module(lua_State *L)
     luaL_newmetatable(L, "malvado.fpg_manifest");
     lua_pushcfunction(L, fpg_manifest_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    static const luaL_Reg manifest_methods[] = {
-        {"count", fpg_manifest_count}, {"id_at", fpg_manifest_id_at},
-        {"transparent_zero", fpg_manifest_transparent}, {"palette", fpg_manifest_palette},
-        {"gamma", fpg_manifest_gamma}, {"sprite", fpg_manifest_sprite},
-        {"point", fpg_manifest_point}, {"graph", graph_select}, {"animation", animation_select}, {NULL, NULL}
-    };
-    luaL_setfuncs(L, manifest_methods, 0);
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado FPG manifest");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.fpg");
     lua_pushcfunction(L, fpg_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    static const luaL_Reg fpg_methods[] = {
-        {"count", fpg_count}, {"id_at", fpg_id_at}, {"palette", fpg_palette}, {"gamma", fpg_gamma},
-        {"sprite", fpg_sprite}, {"point", fpg_point}, {"rgba", fpg_rgba},
-        {"graph", graph_select}, {"animation", animation_select}, {"image", fpg_image}, {"png", fpg_png}, {"json", fpg_json}, {NULL, NULL}
-    };
-    luaL_setfuncs(L, fpg_methods, 0);
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado FPG");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.animation");
     lua_pushcfunction(L, animation_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    lua_pushcfunction(L, animation_sample);
-    lua_setfield(L, -2, "sample");
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado animation");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.atlas");
     lua_pushcfunction(L, atlas_gc);
     lua_setfield(L, -2, "__gc");
-    lua_newtable(L);
-    lua_pushcfunction(L, graph_select);
-    lua_setfield(L, -2, "graph");
-    lua_pushcfunction(L, animation_select);
-    lua_setfield(L, -2, "animation");
-    lua_setfield(L, -2, "__index");
     lua_pushliteral(L, "malvado atlas");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
@@ -6512,13 +6510,6 @@ open_module(lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);
-    lua_newtable(L);
-    static const luaL_Reg camera_functions[] = {
-        {"create", camera_create}, {"set", camera_set}, {"move", camera_move},
-        {"position", camera_position}, {"follow", camera_follow}, {NULL, NULL}
-    };
-    luaL_setfuncs(L, camera_functions, 0);
-    lua_setfield(L, -2, "camera");
     lua_newtable(L);
     lua_pushinteger(L, MV_COLLISION_CIRCLE);
     lua_pushcclosure(L, graphic_create, 1);
@@ -6556,12 +6547,6 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "parse_manifest");
     lua_setfield(L, -2, "fpg");
 #endif
-    lua_newtable(L);
-    lua_pushcfunction(L, world_create);
-    lua_setfield(L, -2, "create");
-    lua_pushcfunction(L, world_move);
-    lua_setfield(L, -2, "move");
-    lua_setfield(L, -2, "world");
     lua_newtable(L);
     lua_pushinteger(L, MV_COLLISION_CIRCLE);
     lua_pushcclosure(L, collision_shape, 1);

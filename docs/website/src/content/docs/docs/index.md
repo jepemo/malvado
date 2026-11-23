@@ -3,6 +3,10 @@ title: Malvado documentation
 description: Build Malvado and learn to write games with processes.
 ---
 
+Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Managed
+resource handles are passed to functions rather than manipulated through
+instance methods.
+
 - [Get started](../getting-started/) to build Malvado and run Hello World.
 - [SDK and projects](../sdk/) covers Lua, C, and experimental Rust projects.
 - [Gameplay API guides](../api/) gives an overview of the process model and the language APIs.

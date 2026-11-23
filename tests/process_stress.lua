@@ -6,7 +6,7 @@ local closed, received = 0, 0
 local child = mv.process(function(self)
   local resource <close> = setmetatable({}, {__close = function() closed = closed + 1 end})
   while true do
-    local message = self:recv()
+    local message = mv.recv(self)
     if message == nil then break end
     received = received + 1
     assert(message == received)

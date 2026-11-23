@@ -7,15 +7,12 @@
 
 ---Explicit camera returned by `camera_create`.
 ---@class MvCamera
----@field set fun(self: MvCamera, x: number, y: number)
----@field move fun(self: MvCamera, dx: number, dy: number)
----@field position fun(self: MvCamera):number, number
----@field follow fun(self: MvCamera, target: MvProcess)
----@field destroy fun(self: MvCamera)
 
 ---Options for `camera_create`.
 ---@class MvCameraCreateOptions
----@field viewport MvRegion? Region descriptor used as the camera viewport.
+---@field x? number World x of the camera. Defaults to 0.
+---@field y? number World y of the camera. Defaults to 0.
+---@field viewport? MvRegion Screen-space viewport. Defaults to the full window.
 
 ---Collision shape returned by `collision.rect` and `collision.circle`.
 ---@class MvCollisionShape
@@ -34,20 +31,15 @@
 
 ---Static collision world returned by `world_create`.
 ---@class MvCollisionWorld
----@field add_rect fun(self: MvCollisionWorld, rect: MvWorldRect):integer
----@field overlap fun(self: MvCollisionWorld, shape: MvCollisionShape, transform?: MvCollisionTransform):integer|nil
----@field sweep fun(self: MvCollisionWorld, shape: MvCollisionShape, transform: MvCollisionTransform|nil, dx: number, dy: number):MvSweepResult
----@field collision fun(self: MvCollisionWorld, process: MvProcess, options?: MvWorldCollisionOptions):integer|nil
----@field move fun(self: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
 
----Rectangle added with `world:add_rect`.
+---Rectangle added with `world_add_rect`.
 ---@class MvWorldRect
 ---@field x number Left edge. Required.
 ---@field y number Top edge. Required.
 ---@field width number Rectangle width. Required.
 ---@field height number Rectangle height. Required.
 
----Options for `world:collision`.
+---Options for `world_collision`.
 ---@class MvWorldCollisionOptions
 ---@field x number? Horizontal position override.
 ---@field y number? Vertical position override.
@@ -58,12 +50,18 @@
 ---Region descriptor returned by `region`.
 ---@class MvRegion
 
+---Options for a screen-space region.
+---@class MvRegionOptions
+---@field x integer Left edge in window pixels.
+---@field y integer Top edge in window pixels.
+---@field width integer Positive width.
+---@field height integer Positive height.
+
 ---Scroll descriptor returned by `scroll`.
 ---@class MvScroll
 
 ---Animation descriptor returned by `animation` (atlas or frame list).
 ---@class MvAnimation
----@field sample fun(self: MvAnimation, elapsed_ms: number):MvGraphic
 
 ---Options for a reusable rectangle graphic.
 ---@class MvRectOptions

@@ -133,47 +133,52 @@ NULL manifest. A NULL manifest has count zero and NULL palette/gamma pointers.
 With assets enabled, `mv.fpg.parse(bytes)` parses a binary Lua string and
 returns an owned FPG object. It raises an error for invalid or unsupported data.
 The object is released by garbage collection and works without a window. It can be held in Lua variables and process fields, but is not supported in process defaults.
-The methods use the C reader and return independent Lua values:
+Pass the handle to the following functions. Each returns an independent Lua value.
 
-- `fpg:count()` returns the number of sprites. `fpg:id_at(index)` returns the
+- `fpg_count(fpg)` returns the number of sprites. `fpg_id_at(fpg, index)` returns the
   ID in file order, with a one-based index, or `nil` if it is absent.
-- `fpg:sprite(id)` returns a table with `id`, `width`, `height`, `point_count`,
-  binary `name_raw` (32 bytes), `filename_raw` (12 bytes), and `pixels`, or
-  `nil` if the ID is absent. Names are fixed-size bytes, not guaranteed text.
-- `fpg:point(id, index)` returns `{x, y, defined}` for a zero-based point, or
+- `fpg_sprite(fpg, id)` returns a table with `id`, `width`, `height`, `point_count`,
+  binary `name_raw` (32 bytes), `filename_raw` (12 bytes), and `pixels` (one
+  palette index per byte), or `nil` if the ID is absent. Names are fixed-size bytes, not guaranteed text.
+- `fpg_point(fpg, id, index)` returns `{x, y, defined}` for a zero-based point, or
   `nil` for an absent ID or index. Undefined points retain their raw values.
-- `fpg:palette()` returns the 768 original six-bit RGB bytes and `fpg:gamma()`
+- `fpg_palette(fpg)` returns the 768 original six-bit RGB bytes and `fpg_gamma(fpg)`
   returns the 576 original gamma bytes.
-- `fpg:json(transparent_zero)` returns the metadata manifest as a JSON string
+- `fpg_json(fpg, transparent_zero)` returns the metadata manifest as a JSON string
   without a trailing zero byte. The optional flag is a boolean and defaults to
   false. It works without a window. Use the same flag for every sprite PNG.
-- `fpg:png(id, transparent_zero)` returns an indexed PNG byte string, or `nil`
+- `fpg_png(fpg, id, transparent_zero)` returns an indexed PNG byte string, or `nil`
   for an absent ID. The optional flag is a boolean and defaults to false. It
   works without a window and uses the C PNG encoder described above.
-- `fpg:rgba(id, transparent_zero)` returns an RGBA byte string or `nil` for an
+- `fpg_rgba(fpg, id, transparent_zero)` returns an RGBA byte string or `nil` for an
   absent ID. The optional flag is a boolean and defaults to false. Conversion
   has the same channel and transparency behavior as `mv_fpg_copy_rgba`.
 
-`fpg:image(id, transparent_zero)` creates an independent managed image from a
-sprite. The optional boolean defaults to false, as for `rgba`; absent IDs
+`fpg_image(fpg, id, transparent_zero)` creates an independent managed image from a
+sprite. The optional boolean defaults to false, as for `fpg_rgba`; absent IDs
 return `nil`. A valid ID requires an open graphics window. Image creation
 raises an error if conversion or upload fails. The image keeps its pixels
 after the FPG object is collected and can be used with `draw_image`, image
 regions, and `self.graph`. It follows the normal image resource lifetime.
 An automatic graph collider uses image bounds. FPG control point zero is not
-implicitly applied as the image pivot; read it with `fpg:point` and use an
+implicitly applied as the image pivot; read it with `fpg_point` and use an
 explicit image-region pivot when needed.
 
 `mv.fpg.parse_manifest(json)` reads a version 1 JSON manifest using the same
 C reader and limits. It returns a garbage-collected metadata object without
-loading PNG files. `manifest:count()`, `manifest:id_at(index)`,
-`manifest:palette()`, `manifest:gamma()`, and `manifest:point(id, index)` use
-the same index and missing-value conventions as the FPG reader.
-`manifest:transparent_zero()` returns a boolean. `manifest:sprite(id)` returns
-an independent table with `id`, `image`, `width`, `height`, `point_count`,
+loading PNG files. `manifest_count(manifest)`, `manifest_id_at(manifest, index)`,
+`manifest_palette(manifest)`, `manifest_gamma(manifest)`, and
+`manifest_point(manifest, id, index)` use the same index and missing-value
+conventions as the FPG reader. `manifest_transparent_zero(manifest)` returns
+a boolean. `manifest_sprite(manifest, id)` returns an independent table with `id`, `image`, `width`, `height`, `point_count`,
 `name_raw`, and `filename_raw`, or `nil` for an absent ID. The object does not
 provide image pixels; load a PNG separately. It can be held in Lua variables
 and process fields, but not in process defaults.
+
+Use `graph(library, id)` to select a static graphic, or
+`animation(library, {id1, id2}, options)` to select a frame sequence from
+an FPG or a manifest. See [graphics](images.md#select-a-static-graphic) and
+[animations](animations.md).
 
 The `mv.fpg` namespace is separate from the legacy global `fpg` graphics
 helper. The `fpg` object can still be inspected in headless mode, but image

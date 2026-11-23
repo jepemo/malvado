@@ -4,10 +4,10 @@ local mv = require("malvado")
 mv.import_globals()
 local explicit, blue, image
 local world = world_create()
-world:add_rect({x = 67, y = 47, width = 1, height = 1})
+world_add_rect(world, {x = 67, y = 47, width = 1, height = 1})
 local Actor = process(function(self)
   if self.physical then
-    assert(self.x == 70 and self.y == 50 and world:collision(self) == 1)
+    assert(self.x == 70 and self.y == 50 and world_collision(world, self) == 1)
   end
   while true do
     if self.paint then
@@ -22,7 +22,7 @@ local Actor = process(function(self)
 end)
 local Inventory = process(function(self)
   self.camera = false
-  self.region = region(20, 90, 30, 20)
+  self.region = region {x = 20, y = 90, width = 30, height = 20}
   self.scroll = scroll(20, 0)
   while true do
     set_color {255, 255, 0, 255}
@@ -41,7 +41,7 @@ end)
 local Control = process(function()
   local tick = 1
   while true do
-    if tick == 10 then explicit:destroy() end
+    if tick == 10 then camera_destroy(explicit) end
     if tick == 20 then
       blue.camera = false
       blue.x, blue.y = 45, 65
@@ -58,15 +58,15 @@ return {width = 160, height = 120, init = function()
   image = load_image("tests/fixtures/red.png")
   Actor({x = 70, y = 50, physical = true, paint = true,
     graph = rect {width = 20, height = 20, color = {255, 0, 0}},
-    scroll = scroll(10, 5), region = region(5, 10, 10, 10)})
-  explicit = camera_create(100, 50, {viewport = region(40, 60, 50, 40)})
+    scroll = scroll(10, 5), region = region {x = 5, y = 10, width = 10, height = 10}})
+  explicit = camera_create {x = 100, y = 50, viewport = region {x = 40, y = 60, width = 50, height = 40}}
   blue = Actor({x = 110, y = 60, camera = explicit,
     graph = circle {radius = 20, color = {0, 0, 255}},
-    scroll = scroll(5, 5), region = region(45, 65, 20, 20)})
+    scroll = scroll(5, 5), region = region {x = 45, y = 65, width = 20, height = 20}})
   -- Empty viewport/region intersection and wholly off-screen viewport.
-  Actor({x = 110, y = 60, camera = explicit, region = region(0, 0, 10, 10),
+  Actor({x = 110, y = 60, camera = explicit, region = region {x = 0, y = 0, width = 10, height = 10},
     graph = circle {radius = 30, color = {0, 255, 0}}})
-  Actor({x = 0, y = 0, camera = camera_create(0, 0, {viewport = region(-100, -100, 20, 20)}),
+  Actor({x = 0, y = 0, camera = camera_create {x = 0, y = 0, viewport = region {x = -100, y = -100, width = 20, height = 20}},
     graph = rect {width = 1000, height = 1000, color = {0, 255, 0}}})
   Actor({x = 130, y = 50, graph = rect {width = 10, height = 10, color = {255, 0, 0}}})
   Actor({x = 80, y = 20, camera = false, z = 10,

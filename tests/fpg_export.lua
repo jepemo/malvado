@@ -11,8 +11,8 @@ local function write(name, bytes)
   assert(file:write(bytes))
   assert(file:close())
 end
-write("manifest.json", fpg:json(true))
-for index = 1, fpg:count() do
-  local id = fpg:id_at(index)
-  write(id .. ".png", assert(fpg:png(id, true)))
+write("manifest.json", mv.fpg_json(fpg, true))
+for index = 1, mv.fpg_count(fpg) do
+  local id = mv.fpg_id_at(fpg, index)
+  write(id .. ".png", assert(mv.fpg_png(fpg, id, true)))
 end

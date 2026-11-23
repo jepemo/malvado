@@ -81,6 +81,11 @@ function status(handle) end
 ---@param message any
 function send(handle, message) end
 
+---Remove and return the next queued message, or nil when the queue is empty.
+---@param handle MvProcess
+---@return any message
+function recv(handle) end
+
 ---@param body fun()
 ---@param options? MvStartOptions
 function start(body, options) end
@@ -93,12 +98,9 @@ function rect(options) end
 ---@return MvGraphic
 function circle(options) end
 
----@param x integer
----@param y integer
----@param width integer
----@param height integer
+---@param options MvRegionOptions
 ---@return MvRegion
-function region(x, y, width, height) end
+function region(options) end
 
 ---@param x number
 ---@param y number
@@ -125,11 +127,9 @@ function rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
 ---@return boolean contains
 function rect_contains(rx, ry, rw, rh, px, py) end
 
----@param x number
----@param y number
----@param options? MvCameraCreateOptions
+---@param options MvCameraCreateOptions
 ---@return MvCamera camera
-function camera_create(x, y, options) end
+function camera_create(options) end
 
 ---@overload fun(x: number, y: number)
 ---@param camera MvCamera
@@ -143,6 +143,7 @@ function camera_set(camera, x, y) end
 ---@param dy number
 function camera_move(camera, dx, dy) end
 
+---@overload fun(camera: MvCamera, target: MvProcess)
 ---@param target MvProcess
 function camera_follow(target) end
 
@@ -151,9 +152,43 @@ function camera_follow(target) end
 ---@return number y
 function camera_position(camera) end
 
+---Close an explicit camera. Repeated calls for the same camera are safe.
+---@param camera MvCamera
+function camera_destroy(camera) end
+
 ---@return MvCollisionWorld world
 function world_create() end
 
+---Add a rectangle to the world and return its ID.
+---@param world MvCollisionWorld
+---@param rect MvWorldRect
+---@return integer id
+function world_add_rect(world, rect) end
+
+---Return the first overlapping rectangle ID, or nil.
+---@param world MvCollisionWorld
+---@param shape MvCollisionShape
+---@param transform? MvCollisionTransform
+---@return integer|nil id
+function world_overlap(world, shape, transform) end
+
+---Sweep a shape through the world. Use nil for the default transform.
+---@param world MvCollisionWorld
+---@param shape MvCollisionShape
+---@param transform MvCollisionTransform|nil
+---@param dx number
+---@param dy number
+---@return MvSweepResult result
+function world_sweep(world, shape, transform, dx, dy) end
+
+---Test a live process collider at its current or hypothetical position.
+---@param world MvCollisionWorld
+---@param process MvProcess
+---@param options? MvWorldCollisionOptions
+---@return integer|nil id
+function world_collision(world, process, options) end
+
+---@overload fun(world: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
 ---@param dx number
 ---@param dy number
 ---@return MvMoveResult result
@@ -211,9 +246,116 @@ function sprite_id(atlas, name) end
 function animation_frame(atlas, name, elapsed_ms, loop) end
 
 ---Read elapsed playback in milliseconds. Returns nil for a static graph.
+---Sample a reusable animation descriptor at a time in milliseconds.
+---This does not change any process playback clock.
+---@param animation MvAnimation
+---@param elapsed_ms number
+---@return MvGraphic graphic
+function animation_sample(animation, elapsed_ms) end
+
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function animation_elapsed(handle) end
+
+---Return the number of sprites.
+---@param fpg MvFpg
+---@return integer count
+function fpg_count(fpg) end
+
+---Return the sprite ID at a one-based index, or nil.
+---@param fpg MvFpg
+---@param index integer
+---@return integer|nil id
+function fpg_id_at(fpg, index) end
+
+---Return the 768 original six-bit RGB bytes.
+---@param fpg MvFpg
+---@return string palette
+function fpg_palette(fpg) end
+
+---Return the 576 original gamma bytes.
+---@param fpg MvFpg
+---@return string gamma
+function fpg_gamma(fpg) end
+
+---Read a sprite entry, or return nil if it is missing.
+---@param fpg MvFpg
+---@param id integer
+---@return MvFpgSprite|nil sprite
+function fpg_sprite(fpg, id) end
+
+---Read a zero-based control point, or return nil if it is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param index integer
+---@return MvFpgPoint|nil point
+function fpg_point(fpg, id, index) end
+
+---Return RGBA bytes, or nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return string|nil bytes
+function fpg_rgba(fpg, id, transparent_zero) end
+
+---Create an independent image in an open window, or return nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return MvImage|nil image
+function fpg_image(fpg, id, transparent_zero) end
+
+---Encode an indexed PNG, or return nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return string|nil bytes
+function fpg_png(fpg, id, transparent_zero) end
+
+---Encode the sprite metadata as a JSON manifest.
+---@param fpg MvFpg
+---@param transparent_zero? boolean Defaults to false.
+---@return string json
+function fpg_json(fpg, transparent_zero) end
+
+---Return the number of sprites.
+---@param manifest MvFpgManifest
+---@return integer count
+function manifest_count(manifest) end
+
+---Return the sprite ID at a one-based index, or nil.
+---@param manifest MvFpgManifest
+---@param index integer
+---@return integer|nil id
+function manifest_id_at(manifest, index) end
+
+---Return the 768 original six-bit RGB bytes.
+---@param manifest MvFpgManifest
+---@return string palette
+function manifest_palette(manifest) end
+
+---Return the 576 original gamma bytes.
+---@param manifest MvFpgManifest
+---@return string gamma
+function manifest_gamma(manifest) end
+
+---Read a sprite entry, or return nil if it is missing.
+---@param manifest MvFpgManifest
+---@param id integer
+---@return MvManifestSprite|nil sprite
+function manifest_sprite(manifest, id) end
+
+---Read a zero-based control point, or return nil if it is missing.
+---@param manifest MvFpgManifest
+---@param id integer
+---@param index integer
+---@return MvFpgPoint|nil point
+function manifest_point(manifest, id, index) end
+
+---Read the palette index zero transparency flag.
+---@param manifest MvFpgManifest
+---@return boolean transparent_zero
+function manifest_transparent_zero(manifest) end
 
 ---@param atlas MvAtlas
 ---@param name string

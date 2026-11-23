@@ -1,5 +1,9 @@
 # Get started
 
+Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Managed
+resource handles are passed to functions rather than manipulated through
+instance methods.
+
 Install the Malvado SDK and run your first game. The installer downloads a
 prebuilt SDK; no compiler or repository checkout is needed. Use C, Lua or
 experimental Rust.

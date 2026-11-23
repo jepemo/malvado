@@ -12,7 +12,7 @@ local Player = process(function(self)
 end)
 local Other = process(function(self)
   self.graph = circle {radius = 5, color = {0, 0, 255}}
-  explicit:follow(self)
+  camera_follow(explicit, self)
   while true do
     self.x = self.x - 3
     frame()
@@ -25,7 +25,7 @@ local HUD = process(function(self)
 end)
 return {width = 160, height = 120, init = function()
   clear_screen {0, 0, 0, 255}
-  explicit = camera_create(0, 0, {viewport = region(40, 60, 50, 40)})
+  explicit = camera_create {x = 0, y = 0, viewport = region {x = 40, y = 60, width = 50, height = 40}}
   Player({x = 100, y = 90})
   Other({x = 300, y = 100, camera = explicit})
   HUD({x = 140, y = 20, z = 10})

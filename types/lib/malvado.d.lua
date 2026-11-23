@@ -101,7 +101,7 @@
 ---@class MvGraphicsNamespace
 ---@field rect fun(options: MvRectOptions):MvGraphic
 ---@field circle fun(options: MvCircleOptions):MvGraphic
----@field region fun(x: integer, y: integer, width: integer, height: integer):MvRegion
+---@field region fun(options: MvRegionOptions):MvRegion
 ---@field scroll fun(x: number, y: number):MvScroll
 ---@field graph fun(library_or_id: MvAtlas|MvFpg|MvFpgManifest|integer, id?: integer):MvGraphic Select a graphic from a library or the process file.
 ---@field animation fun(library_or_sequence: MvAtlas|MvFpg|MvFpgManifest|string|integer[], sequence_or_options?: string|integer[]|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
@@ -113,20 +113,9 @@
 ---@field rect fun(width: number, height: number, options?: MvShapeOptions):MvCollisionShape
 ---@field overlap fun(a: MvCollisionShape, transform_a?: MvCollisionTransform, b: MvCollisionShape, transform_b?: MvCollisionTransform):boolean
 
----@class MvCameraNamespace
----@field create fun(x: number, y: number, options?: MvCameraCreateOptions):MvCamera
----@field set fun(camera: MvCamera, x: number, y: number)
----@field move fun(camera: MvCamera, dx: number, dy: number)
----@field position fun(camera: MvCamera):number, number
----@field follow fun(camera: MvCamera, target: MvProcess)
-
----@class MvWorldNamespace
----@field create fun():MvCollisionWorld
----@field move fun(world: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
-
 ---@class MvFpgNamespace
----@field parse fun(path: string):MvFpg
----@field parse_manifest fun(path: string):MvFpgManifest
+---@field parse fun(bytes: string):MvFpg
+---@field parse_manifest fun(json: string):MvFpgManifest
 
 ---The `malvado` module.
 ---@class malvado
@@ -135,8 +124,6 @@
 ---@field graphics MvGraphicsNamespace
 ---@field colors MvColorPalette
 ---@field collision MvCollisionNamespace
----@field camera MvCameraNamespace
----@field world MvWorldNamespace
 ---@field fpg MvFpgNamespace
 local malvado = {}
 
@@ -214,10 +201,15 @@ function malvado.kill_tree(handle, options) end
 ---@return MvProcessStatusName|nil status
 function malvado.status(handle) end
 
----Queue a message for a process. The receiver reads it with `handle:recv()`.
+---Queue a message for a process. Read it with `recv(handle)`.
 ---@param handle MvProcess
 ---@param message any
 function malvado.send(handle, message) end
+
+---Remove and return the next queued message, or nil when the queue is empty.
+---@param handle MvProcess
+---@return any message
+function malvado.recv(handle) end
 
 ---Run the game loop. Call once with the entry process.
 ---
@@ -239,12 +231,9 @@ function malvado.rect(options) end
 function malvado.circle(options) end
 
 ---Create a drawing region descriptor.
----@param x integer
----@param y integer
----@param width integer
----@param height integer
+---@param options MvRegionOptions
 ---@return MvRegion
-function malvado.region(x, y, width, height) end
+function malvado.region(options) end
 
 ---Create a scroll descriptor.
 ---@param x number
@@ -275,11 +264,9 @@ function malvado.rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
 function malvado.rect_contains(rx, ry, rw, rh, px, py) end
 
 ---Create an explicit camera. Without one, all processes use the main camera.
----@param x number
----@param y number
----@param options? MvCameraCreateOptions
+---@param options MvCameraCreateOptions
 ---@return MvCamera camera
-function malvado.camera_create(x, y, options) end
+function malvado.camera_create(options) end
 
 ---Position the main camera: `camera_set(x, y)`.
 ---Position an explicit camera: `camera_set(camera, x, y)`.
@@ -297,7 +284,8 @@ function malvado.camera_set(camera, x, y) end
 ---@param dy number
 function malvado.camera_move(camera, dx, dy) end
 
----Follow a live process with the main camera: `camera_follow(target)`.
+---Follow a live process with the main camera, or with an explicit camera.
+---@overload fun(camera: MvCamera, target: MvProcess)
 ---@param target MvProcess
 function malvado.camera_follow(target) end
 
@@ -307,12 +295,46 @@ function malvado.camera_follow(target) end
 ---@return number y
 function malvado.camera_position(camera) end
 
+---Close an explicit camera. Repeated calls for the same camera are safe.
+---@param camera MvCamera
+function malvado.camera_destroy(camera) end
+
 ---Create a static collision world.
 ---@return MvCollisionWorld world
 function malvado.world_create() end
 
+---Add a rectangle to the world and return its ID.
+---@param world MvCollisionWorld
+---@param rect MvWorldRect
+---@return integer id
+function malvado.world_add_rect(world, rect) end
+
+---Return the first overlapping rectangle ID, or nil.
+---@param world MvCollisionWorld
+---@param shape MvCollisionShape
+---@param transform? MvCollisionTransform
+---@return integer|nil id
+function malvado.world_overlap(world, shape, transform) end
+
+---Sweep a shape through the world. Use nil for the default transform.
+---@param world MvCollisionWorld
+---@param shape MvCollisionShape
+---@param transform MvCollisionTransform|nil
+---@param dx number
+---@param dy number
+---@return MvSweepResult result
+function malvado.world_sweep(world, shape, transform, dx, dy) end
+
+---Test a live process collider at its current or hypothetical position.
+---@param world MvCollisionWorld
+---@param process MvProcess
+---@param options? MvWorldCollisionOptions
+---@return integer|nil id
+function malvado.world_collision(world, process, options) end
+
 ---Move the current process through the world selected by its `world` field
 ---and report the collision result.
+---@overload fun(world: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
 ---@param dx number
 ---@param dy number
 ---@return MvMoveResult result
@@ -428,11 +450,118 @@ function malvado.graph(library, id) end
 ---@return MvAnimation
 function malvado.animation(sequence, options) end
 
+---Sample a reusable animation descriptor at a time in milliseconds.
+---This does not change any process playback clock.
+---@param animation MvAnimation
+---@param elapsed_ms number
+---@return MvGraphic graphic
+function malvado.animation_sample(animation, elapsed_ms) end
+
 ---Read the elapsed playback time of the current animation in milliseconds.
 ---Returns nil when the process graphic is not an animation.
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function malvado.animation_elapsed(handle) end
+
+---Return the number of sprites.
+---@param fpg MvFpg
+---@return integer count
+function malvado.fpg_count(fpg) end
+
+---Return the sprite ID at a one-based index, or nil.
+---@param fpg MvFpg
+---@param index integer
+---@return integer|nil id
+function malvado.fpg_id_at(fpg, index) end
+
+---Return the 768 original six-bit RGB bytes.
+---@param fpg MvFpg
+---@return string palette
+function malvado.fpg_palette(fpg) end
+
+---Return the 576 original gamma bytes.
+---@param fpg MvFpg
+---@return string gamma
+function malvado.fpg_gamma(fpg) end
+
+---Read a sprite entry, or return nil if it is missing.
+---@param fpg MvFpg
+---@param id integer
+---@return MvFpgSprite|nil sprite
+function malvado.fpg_sprite(fpg, id) end
+
+---Read a zero-based control point, or return nil if it is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param index integer
+---@return MvFpgPoint|nil point
+function malvado.fpg_point(fpg, id, index) end
+
+---Return RGBA bytes, or nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return string|nil bytes
+function malvado.fpg_rgba(fpg, id, transparent_zero) end
+
+---Create an independent image in an open window, or return nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return MvImage|nil image
+function malvado.fpg_image(fpg, id, transparent_zero) end
+
+---Encode an indexed PNG, or return nil if the sprite is missing.
+---@param fpg MvFpg
+---@param id integer
+---@param transparent_zero? boolean Defaults to false.
+---@return string|nil bytes
+function malvado.fpg_png(fpg, id, transparent_zero) end
+
+---Encode the sprite metadata as a JSON manifest.
+---@param fpg MvFpg
+---@param transparent_zero? boolean Defaults to false.
+---@return string json
+function malvado.fpg_json(fpg, transparent_zero) end
+
+---Return the number of sprites.
+---@param manifest MvFpgManifest
+---@return integer count
+function malvado.manifest_count(manifest) end
+
+---Return the sprite ID at a one-based index, or nil.
+---@param manifest MvFpgManifest
+---@param index integer
+---@return integer|nil id
+function malvado.manifest_id_at(manifest, index) end
+
+---Return the 768 original six-bit RGB bytes.
+---@param manifest MvFpgManifest
+---@return string palette
+function malvado.manifest_palette(manifest) end
+
+---Return the 576 original gamma bytes.
+---@param manifest MvFpgManifest
+---@return string gamma
+function malvado.manifest_gamma(manifest) end
+
+---Read a sprite entry, or return nil if it is missing.
+---@param manifest MvFpgManifest
+---@param id integer
+---@return MvManifestSprite|nil sprite
+function malvado.manifest_sprite(manifest, id) end
+
+---Read a zero-based control point, or return nil if it is missing.
+---@param manifest MvFpgManifest
+---@param id integer
+---@param index integer
+---@return MvFpgPoint|nil point
+function malvado.manifest_point(manifest, id, index) end
+
+---Read the palette index zero transparency flag.
+---@param manifest MvFpgManifest
+---@return boolean transparent_zero
+function malvado.manifest_transparent_zero(manifest) end
 
 ---Load a legacy FPG sheet from a directory or sheet image.
 ---@param path string

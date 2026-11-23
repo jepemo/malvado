@@ -14,10 +14,10 @@ fails("requires an atlas", graph, {}, 42)
 local atlas = load_asset("tests/fixtures/atlas.json")
 local fpg = load_asset("examples/fpg/graphics.fpg")
 local explicit = graph(atlas, 42)
-local method = atlas:graph(42)
-local native_namespace = mv.graphics.graph(atlas, 42)
-assert(explicit == method and explicit == native_namespace)
-assert(fpg:graph(7) == graph(fpg, 7))
+local namespaced = mv.graphics.graph(atlas, 42)
+local module = mv.graph(atlas, 42)
+assert(explicit == namespaced and explicit == module)
+assert(mv.graph(fpg, 7) == graph(fpg, 7))
 assert(not pcall(function() explicit.pivot_x = 0 end))
 fails("unknown", graph, atlas, 999)
 fails("unknown", graph, fpg, 999)
@@ -26,19 +26,19 @@ fails("integer", graph, atlas, 1.5)
 local file = assert(io.open("examples/fpg/graphics.fpg", "rb"))
 local parsed = mv.fpg.parse(file:read("a"))
 file:close()
-assert(parsed:graph(7))
-local manifest = mv.fpg.parse_manifest(fpg:json(true))
-assert(manifest:graph(7) == graph(manifest, 7)) -- Headless geometry does not need PNGs.
-local fallback_json, replacements = fpg:json(true):gsub(
+assert(graph(parsed, 7))
+local manifest = mv.fpg.parse_manifest(fpg_json(fpg, true))
+assert(mv.graph(manifest, 7) == graph(manifest, 7)) -- Headless geometry does not need PNGs.
+local fallback_json, replacements = fpg_json(fpg, true):gsub(
   '{"x":1,"y":0,"defined":true}', '{"x":-1,"y":-1,"defined":false}', 1)
 assert(replacements == 1)
 local fallback = mv.fpg.parse_manifest(fallback_json)
 local world = world_create()
-world:add_rect({x = 8, y = 6, width = 1, height = 1})
+world_add_rect(world, {x = 8, y = 6, width = 1, height = 1})
 local Defaulted = process(function(self)
   assert(self.file == atlas and self.world == world)
   self.graph = graph(42)
-  assert(self.graph == explicit and world:collision(self) == 1)
+  assert(self.graph == explicit and world_collision(world, self) == 1)
   self.graph = nil
 end, {defaults = {file = atlas, world = world}})
 local Actor = process(function() while true do frame() end end)
@@ -49,28 +49,28 @@ local Player = process(function(self)
   self.file = atlas
   fails("no visual image", draw_sprite, {atlas = atlas, id = 42, x = 0, y = 0})
   self.graph = graph(42)
-  assert(self.graph == explicit and world:collision(self) == 1)
+  assert(self.graph == explicit and world_collision(world, self) == 1)
   self.file = fpg
-  assert(world:collision(self) == 1) -- Selection still belongs to atlas.
+  assert(world_collision(world, self) == 1) -- Selection still belongs to atlas.
   self.file = nil
-  assert(world:collision(self) == 1)
-  for _, descriptor in ipairs({explicit, method, native_namespace}) do
+  assert(world_collision(world, self) == 1)
+  for _, descriptor in ipairs({explicit, namespaced, module}) do
     self.graph = descriptor
-    assert(world:collision(self) == 1)
+    assert(world_collision(world, self) == 1)
   end
   self.graph = graph(fpg, 42)
-  assert(world:collision(self) == nil)
+  assert(world_collision(world, self) == nil)
   self.file = fpg
   self.graph = graph(42)
-  assert(world:collision(self) == nil)
-  self.graph = fpg:graph(7)
+  assert(world_collision(world, self) == nil)
+  self.graph = graph(fpg, 7)
   local point_world = world_create()
-  point_world:add_rect({x = 9, y = 10, width = 1, height = 1})
-  assert(point_world:collision(self) == 1) -- Control point 0 is (1,0).
-  self.graph = manifest:graph(7)
-  assert(point_world:collision(self) == 1)
-  self.graph = fallback:graph(7)
-  assert(point_world:collision(self) == nil) -- Undefined point 0 uses top-left.
+  world_add_rect(point_world, {x = 9, y = 10, width = 1, height = 1})
+  assert(world_collision(point_world, self) == 1) -- Control point 0 is (1,0).
+  self.graph = graph(manifest, 7)
+  assert(world_collision(point_world, self) == 1)
+  self.graph = graph(fallback, 7)
+  assert(world_collision(point_world, self) == nil) -- Undefined point 0 uses top-left.
   local shared = graph(atlas, 42)
   local peer = Actor({x = 10, y = 10, file = fpg, graph = shared})
   self.graph = shared
@@ -95,7 +95,7 @@ local Player = process(function(self)
   transient = nil
   self.file = fpg
   collectgarbage("collect")
-  assert(weak[1] and world:collision(self) == 1)
+  assert(weak[1] and world_collision(world, self) == 1)
   self.graph = nil
   collectgarbage("collect")
   collectgarbage("collect")

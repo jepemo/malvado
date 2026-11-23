@@ -252,7 +252,7 @@ the image center. The default is `"top-left"`. See [PNG pivots](#shared-png-text
 Unknown options and format names raise errors. `transparent_zero` is an optional
 boolean only for FPG input, defaulting to true for loaded library graphics.
 Converted FPG PNGs retain the transparency already encoded by the converter.
-Existing `fpg:image(id, transparent_zero)` calls keep their explicit policy.
+Existing `fpg_image(fpg, id, transparent_zero)` calls keep their explicit policy.
 
 Paths are relative to the working directory. Referenced atlas/manifest images
 are relative to their metadata file, or use their explicit absolute path.
@@ -273,7 +273,7 @@ retain pixels and can convert them when a later explicit graph selection needs
 an image.
 
 Returned libraries retain the complete supported native metadata and existing
-lookup methods/functions: IDs, names/raw FPG bytes, palette/gamma, control
+lookup functions: IDs, names/raw FPG bytes, palette/gamma, control
 points, pivots, original/cropped sizes and animation timing. No metadata is
 converted to a reduced Lua table. Lua references retain libraries and their
 images; garbage collection and the existing process resource rules release
@@ -297,9 +297,9 @@ start(function()
 end)
 ```
 
-Use `graph(id)` inside the running process, `graph(library, id)` explicitly,
-or `library:graph(id)`. The explicit namespace is
-`mv.graphics.graph(library, id)`; `mv.graph` is the same function. The selector
+Use `graph(id)` inside the running process, or pass the library explicitly
+with `graph(library, id)`. Both `mv.graph` and `mv.graphics.graph` expose
+the same selector. The selector
 is available with asset support. It accepts atlases (including Aseprite), FPGs
 and converted-FPG manifests. IDs must be positive integers present in the
 library. Invalid IDs/types raise errors. A standalone image is assigned directly

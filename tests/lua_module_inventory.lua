@@ -28,36 +28,48 @@ assert(asset_option == "0" or asset_option == "1")
 local has_assets = asset_option == "1"
 local optional = {animation=true, graph=true, load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
   animation_frame=true, animation_elapsed=true, animation_color=true, atlas_pivot_color=true,
-  animation_repeats=true, draw_sprite=true}
+  animation_repeats=true, draw_sprite=true, animation_sample=true,
+  fpg_count=true, fpg_id_at=true, fpg_palette=true, fpg_gamma=true,
+  fpg_sprite=true, fpg_point=true, fpg_rgba=true, fpg_image=true, fpg_png=true, fpg_json=true,
+  manifest_count=true, manifest_id_at=true, manifest_transparent_zero=true,
+  manifest_palette=true, manifest_gamma=true, manifest_sprite=true, manifest_point=true}
+mv.import_globals()
 for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do
   if has_assets or not optional[name] then
     assert(mv[name] ~= nil, "documented module field is missing: " .. name)
+    assert(_G[name] == mv[name], "global does not match module: " .. name)
   else
-    assert(mv[name] == nil, "unexpected asset field: " .. name)
+    assert(mv[name] == nil and _G[name] == nil, "unexpected asset field: " .. name)
   end
 end
 
-local objects = {world = mv.world.create(), camera = mv.camera.create(0, 0)}
+assert(mv.camera == nil and mv.world == nil)
+local objects = {
+  world = mv.world_create(),
+  camera = mv.camera_create {},
+  graphic = mv.rect {width = 1, height = 1},
+  shape = mv.collision.circle(1),
+  region = mv.region {x = 0, y = 0, width = 1, height = 1},
+  scroll = mv.scroll(1, 0),
+}
 if has_assets then
   objects.atlas = mv.load_asset("tests/fixtures/atlas.json")
   local fpg = mv.fpg.parse(read("tests/fixtures/fpg/bennugd-8.fpg"))
   objects.animation = mv.animation(fpg, {7, 42})
   objects.fpg = fpg
-  objects.manifest = mv.fpg.parse_manifest(fpg:json())
-end
-local documented = {}
-for object, method in namespaces:gmatch("`([%w_]+):([%w_]+)`") do
-  documented[object] = documented[object] or {}
-  assert(not documented[object][method], "duplicate method: " .. object .. ":" .. method)
-  documented[object][method] = true
+  objects.manifest = mv.fpg.parse_manifest(mv.fpg_json(fpg))
 end
 for name, object in pairs(objects) do
-  local methods = debug.getmetatable(object).__index
-  for method, value in pairs(methods) do
-    assert(type(value) == "function" and documented[name] and documented[name][method],
-      "undocumented method: " .. name .. ":" .. method)
-  end
-  for method in pairs(assert(documented[name])) do
-    assert(type(methods[method]) == "function", "missing method: " .. name .. ":" .. method)
-  end
+  assert(type(object) == "userdata", "expected a managed handle: " .. name)
+  assert(debug.getmetatable(object).__index == nil, "unexpected member access: " .. name)
 end
+
+-- Colors expose channels as data. Process handles expose live state and user fields.
+for _, key in ipairs({"r", "g", "b", "a", 1, 2, 3, 4}) do
+  assert(type(mv.colors.RED[key]) == "number")
+end
+local Probe = mv.process(function(self)
+  assert(self.recv == nil)
+  assert(recv(self) == nil)
+end)
+mv.start(function() Probe() end)

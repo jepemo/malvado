@@ -14,13 +14,16 @@ end)
 ```
 
 `camera_set(x, y)` and `camera_move(dx, dy)` use the main camera. Explicit calls
-accept the camera first. Their module fields are aliases in `mv.camera`.
-`camera_create(x, y, options?)` creates a managed camera. The optional `viewport`
-is a `region(x, y, width, height)` descriptor; unknown options raise errors.
+accept the camera first. Use `camera_position()` for the main camera, or
+`camera_position(camera)` for an explicit camera. Both return x and y.
 
-Use the object's `set`, `move` and `position` methods, or
-`mv.camera.position(camera?)` to inspect coordinates (main by default).
-Destroy an explicit camera with its `destroy` method. Destruction is idempotent;
+`camera_create(options)` creates a managed camera. The named coordinates
+`x` and `y` each default to zero, so `camera_create {}` starts at (0, 0).
+Set `viewport` to a `region {x = 0, y = 0, width = 400, height = 300}`
+descriptor to clip to that rectangle. Without a viewport the camera uses the
+full window. Unknown options raise errors.
+
+Call `camera_destroy(camera)` to destroy an explicit camera. Destruction is idempotent;
 operations and new assignments using that camera then raise errors. Existing
 processes associated with it stop drawing until assigned a live camera, nil,
 or false. Physics and process execution continue. The main camera cannot be
@@ -84,7 +87,7 @@ start(function() Player() end)
 ```
 
 `camera_follow(target)` tracks a live process's x/y origin with the main camera.
-Use `camera:follow(target)` or `camera_follow(camera, target)` explicitly.
+Use `camera_follow(camera, target)` to track with an explicit camera.
 Following runs at the end of the existing simulation tick, after process updates
 and removals, and before rendering. It centers the origin within the viewport,
 or within the logical game width/height for a fullscreen camera. It does not
@@ -115,12 +118,12 @@ with camera (100, 50), viewport origin (40, 60), local scroll (5, 5), and a
 world point (120, 65), the projected point is (55, 70).
 
 ```lua
-local area = region(40, 60, 300, 240)
-local view = camera_create(100, 50, {viewport = area})
+local area = region {x = 40, y = 60, width = 300, height = 240}
+local view = camera_create {x = 100, y = 50, viewport = area}
 -- Inside a process:
 self.camera = view
 self.scroll = scroll(5, 5)
-self.region = region(50, 70, 100, 80)
+self.region = region {x = 50, y = 70, width = 100, height = 80}
 ```
 
 The effective clip is the intersection of viewport, process region and window.
@@ -181,7 +184,7 @@ uses the existing camera math. Copied target references are independent values.
 Lua uses this operation at its existing end-of-tick update point for main and
 explicit cameras. Lua keeps its target userdata reference to check local invalid
 visual overrides. These overrides still preserve the last valid camera position.
-`camera_set`, `camera_move`, destroy and target replacement keep their current
+`camera_set`, `camera_move`, `camera_destroy` and target replacement keep their current
 stop-following behavior. See [camera identities and selection](#context-owned-camera-identities-and-selection)
 for registering cameras and selecting a view.
 
@@ -218,7 +221,7 @@ Resolve returns a copied effective camera or `MV_NOT_FOUND` for a closed view.
 A closed selected camera hides the process until reassignment. Camera changes
 do not modify process coordinates, colliders, status or lifetime.
 
-Lua retains `nil`/`false`/camera selection and its existing methods. All camera
+Lua exposes `nil`/`false`/camera selection through `self.camera`. All camera
 positions and selections are now authoritative in C. `self.camera` reads native
 selection and keeps existing userdata identity when available. Lua-created
 camera userdata still closes its native camera on collection. A userdata view
@@ -272,8 +275,8 @@ limits. Both composition helpers return `MV_NOT_FOUND` for a closed selected
 camera and preserve outputs on errors. Descriptor access remains available
 until process death, including when its camera is closed.
 
-Lua keeps `self.region = region_create(...)`, `self.scroll = scroll_create(...)`
-and nil to reset. Reads use native values and retain an existing immutable
+In Lua, assign a `region` or `scroll` descriptor to the corresponding process
+field. Assign nil to reset it. Reads use native values and retain an existing immutable
 userdata when its value matches. Native zero scroll reads as nil unless a
 matching explicit zero-scroll userdata is already stored. Native writes take
 effect on the next draw, including frozen processes. Graphs and process drawing

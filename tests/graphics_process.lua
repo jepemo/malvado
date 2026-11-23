@@ -28,16 +28,16 @@ assert(not pcall(graphics.scroll, 0/0, 0))
 assert(not pcall(function() scroll.x = 4 end))
 local scroll_actor = mv.process(function() while true do mv.frame() end end,
                                 {defaults = {scroll = scroll}})
-local region = graphics.region(-5, 0, 10, 10)
+local region = graphics.region {x = -5, y = 0, width = 10, height = 10}
 assert(not pcall(graphics.region, 0, 0, 0, 1))
 assert(not pcall(graphics.region, 0, 0, 1.5, 1))
 assert(not pcall(graphics.region, math.huge, 0, 1, 1))
 assert(not pcall(function() region.x = 4 end))
 local region_actor = mv.process(function() while true do mv.frame() end end,
                                 {defaults = {region = region}})
-local world = mv.world.create()
-world:add_rect({x = 10, y = 0, width = 10, height = 10})
-world:add_rect({x = 8, y = 0, width = 10, height = 10})
+local world = mv.world_create()
+mv.world_add_rect(world, {x = 10, y = 0, width = 10, height = 10})
+mv.world_add_rect(world, {x = 8, y = 0, width = 10, height = 10})
 local actor = mv.process(function() while true do mv.frame() end end,
                          {defaults = {graph = circle, nested = {count = 0}}})
 local controller = mv.process(function()
@@ -56,7 +56,7 @@ local controller = mv.process(function()
   assert(r.region == region)
   r.graph = circle
   local target = actor({x = 0, y = 0})
-  r.region = graphics.region(100, 100, 1, 1)
+  r.region = graphics.region {x = 100, y = 100, width = 1, height = 1}
   assert(mv.process.collision(r, target) == target)
   mv.kill(target)
   r.region = region
@@ -68,33 +68,33 @@ local controller = mv.process(function()
   local a = actor({x = 9, y = 5})
   local b = actor({x = 0, y = 5})
   assert(a.graph == circle and b.graph == circle and a.nested ~= b.nested)
-  assert(world:collision(a) == 1 and world:collision(b) == nil)
-  assert(not pcall(world.collision, world, {}))
-  assert(world:collision(b, {x = 9}) == 1 and b.x == 0)
-  assert(world:move(b, 100, 0).hit and b.x == 6)
+  assert(mv.world_collision(world, a) == 1 and mv.world_collision(world, b) == nil)
+  assert(not pcall(mv.world_collision, world, {}))
+  assert(mv.world_collision(world, b, {x = 9}) == 1 and b.x == 0)
+  assert(mv.world_move(world, b, 100, 0).hit and b.x == 6)
   b.collider = false
-  assert(world:collision(b) == nil)
+  assert(mv.world_collision(world, b) == nil)
   b.collider = collision.circle(1, {offset_x = 3})
   b.x = 4
-  assert(world:collision(b) == nil)
+  assert(mv.world_collision(world, b) == nil)
   b.x = 7
-  assert(world:collision(b) == 1)
+  assert(mv.world_collision(world, b) == 1)
   b.collider = nil
   b.graph = box
   b.x, b.y = 8, 4
-  assert(world:collision(b) == 1)
+  assert(mv.world_collision(world, b) == 1)
   b.x, b.y, b.angle = 8, 0, 90
-  assert(world:collision(b) == nil)
+  assert(mv.world_collision(world, b) == nil)
   b.x = 11
-  assert(world:collision(b) == 1)
+  assert(mv.world_collision(world, b) == 1)
   b.graph = nil
-  assert(world:collision(b) == nil)
+  assert(mv.world_collision(world, b) == nil)
   mv.signal(a, "sleep")
-  assert(world:collision(a) == 1)
+  assert(mv.world_collision(world, a) == 1)
   mv.signal(a, "freeze")
-  assert(world:collision(a) == 1)
+  assert(mv.world_collision(world, a) == 1)
   mv.kill(a)
-  assert(not pcall(world.collision, world, a))
+  assert(not pcall(mv.world_collision, world, a))
   mv.kill(b)
   local weak = setmetatable({}, {__mode = "v"})
   do

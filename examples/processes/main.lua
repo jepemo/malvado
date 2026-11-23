@@ -4,7 +4,7 @@
 require("malvado").import_globals()
 local child = process(function(self)
   while true do
-    local message = self:recv()
+    local message = recv(self)
     if message then print("Message:", message.text) end
     frame()
   end

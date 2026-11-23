@@ -20,7 +20,7 @@ mv.frame = function()
     ticks = ticks + 1
     assert(inventory.x == 0 and inventory.y == 0 and inventory.camera == false)
     assert(inventory.scroll and inventory.region)
-    local x, y = mv.camera.position()
+    local x, y = mv.camera_position()
     assert(x == 200 and y == 100)
   end
   return original_frame()

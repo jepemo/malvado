@@ -8,7 +8,7 @@ local square = process(function(self)
   frame()
   self.scroll = mv.graphics.scroll(10, 5)
   while true do frame() end
-end, {defaults = {graph = box, region = mv.graphics.region(10, 10, 20, 20),
+end, {defaults = {graph = box, region = mv.graphics.region {x = 10, y = 10, width = 20, height = 20},
                    scroll = mv.graphics.scroll(0, 0)}})
 local hud = process(function()
   while true do
@@ -24,7 +24,7 @@ local blue = process(function()
     frame()
   end
 end, {defaults = {scroll = mv.graphics.scroll(5, 0),
-                   region = mv.graphics.region(0, 40, 10, 10)}})
+                   region = mv.graphics.region {x = 0, y = 40, width = 10, height = 10}}})
 local game = {width = 64, height = 64, title = "Scroll test"}
 function game.init()
   clear_screen {0, 0, 0, 255}

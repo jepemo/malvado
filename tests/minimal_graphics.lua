@@ -37,7 +37,7 @@ invalid(scroll, 0, 0/0)
 local centered = rect {width = 4, height = 4}
 local top_left = rect {width = 4, height = 4, pivot = "top-left", color = {255, 165, 70}}
 local ball = circle {radius = 1, color = {80, 190, 255, 128}}
-local clip = region(100, 100, 1, 1)
+local clip = region {x = 100, y = 100, width = 1, height = 1}
 local offset = scroll(100, -20)
 for _, descriptor in ipairs({centered, top_left, ball, clip, offset}) do
   invalid(function() descriptor.x = 2 end)

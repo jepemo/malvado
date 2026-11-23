@@ -30,11 +30,11 @@ local producer = process(function()
   end)
   Actor({graph = image, x = 10, y = 10}, {attached = false})
   Selected({file = atlas, x = 40, y = 20}, {attached = false})
-  local shared = aseprite:graph(1)
+  local shared = graph(aseprite, 1)
   Actor({graph = shared, x = 60, y = 20}, {attached = false})
   Actor({graph = mv.graphics.graph(fpg, 7), x = 80, y = 20}, {attached = false})
   Actor({graph = graph(manifest, 7), x = 100, y = 20}, {attached = false})
-  Actor({graph = opaque:graph(7), x = 120, y = 20}, {attached = false})
+  Actor({graph = graph(opaque, 7), x = 120, y = 20}, {attached = false})
   Actor({graph = shared, x = 60, y = 50}, {attached = false})
   -- Producer completion releases its native ownership. Child descriptors keep
   -- the resources alive, including when no child has the original self.file.

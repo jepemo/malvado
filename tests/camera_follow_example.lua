@@ -21,7 +21,7 @@ mv.frame = function()
     ticks = ticks + 1
     -- Camera state from the previous completed tick remains independent of
     -- the current process update. The pixel check verifies the new projection.
-    local x, y = mv.camera.position()
+    local x, y = mv.camera_position()
     assert(x == 3 * (ticks - 1) and y == 0)
     assert(player_handle.x == 320 + ticks * 3 and player_handle.y == 240)
     last_x = player_handle.x

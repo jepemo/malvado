@@ -21,9 +21,9 @@ local Actor = mv.process(function(self)
   self.graph = nil; trace("cleared")
   self.graph = rect; trace("reassigned")
   self.x, self.angle, self.size = 0, 0, 1
-  local world = mv.world.create()
-  world:add_rect {x = 10, y = -10, width = 1, height = 20}
-  assert(world:move(self, 100, 0).hit)
+  local world = mv.world_create()
+  mv.world_add_rect(world, {x = 10, y = -10, width = 1, height = 20})
+  assert(mv.world_move(world, self, 100, 0).hit)
   trace("world")
   mv.signal(b, "sleep"); mv.signal(c, "freeze"); trace("inactive")
   c.size = 0; trace("invalid-target")

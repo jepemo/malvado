@@ -9,7 +9,7 @@ for differences between bindings.
 | Language | Entry points and exact exports |
 | --- | --- |
 | C | [Process and context contract](c-contract.md) and [generated function inventory](current-c-api.md). |
-| Lua | [Processes and runner](lua-processes.md), [global functions and constants](lua-globals.md), and [namespaces and methods](lua-namespaces.md). |
+| Lua | [Processes and runner](lua-processes.md), [global functions and constants](lua-globals.md), and [namespace functions](lua-namespaces.md). |
 | Rust | [Processes](rust-processes.md), [SDK setup](../../bindings/rust/README.md), and [support and ABI policy](rust-support.md). |
 
 ## Gameplay contracts

@@ -21,8 +21,8 @@ start(function()
 end)
 ```
 
-Use `animation(name, options?)`, `animation(library, name, options?)`, or
-`library:animation(name, options?)` for native atlas/Aseprite sequences.
+Use `animation(name, options?)` or `animation(library, name, options?)` for
+native atlas/Aseprite sequences.
 The explicit namespace is `mv.graphics.animation`; `mv.animation` is an alias.
 Implicit forms require the actual scheduled process and its `self.file`.
 Explicit forms work without that context. All selectors require asset support.
@@ -79,10 +79,11 @@ for static/manual and explicit namespace alternatives.
 
 ## Explicit sampling
 
-`definition:sample(elapsed_ms)` returns the reusable static frame descriptor at
+`animation_sample(definition, elapsed_ms)` returns the reusable static frame descriptor at
 a finite time in 0..1e12 milliseconds. It uses the definition's loop rule and
 does not change any process. Use `graph(library, id)` for a specific static ID.
-The existing `animation_frame(atlas, name, elapsed_ms, loop?)` sampler remains.
+`animation_frame(atlas, name, elapsed_ms, loop?)` returns the sprite ID
+from a named atlas sequence.
 
 `mv.graphics.animation_elapsed(process)`, `mv.animation_elapsed(process)`, and
 the imported `animation_elapsed(process)` return playback milliseconds within

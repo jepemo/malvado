@@ -8,8 +8,8 @@ or select the complete 2.0 API.
 `mv.process` is also callable to define a process. Process and input constants
 are listed in the global table. Functions marked with * require asset support.
 See the [palette](drawing.md#malvado-palette) for constants under `mv.colors`.
-The `world` and FPG objects have methods documented in their linked guides;
-object methods and process fields are not included in this namespace table.
+Pass managed handles to the procedural functions in the global export table.
+Process fields are documented in the [process guide](lua-processes.md).
 
 | Function | Purpose | Contract and examples |
 | --- | --- | --- |
@@ -51,36 +51,9 @@ object methods and process fields are not included in this namespace table.
 | `mv.collision.circle` | Create a circle shape | [collision](collision.md) |
 | `mv.collision.rect` | Create a rectangle shape | [collision](collision.md) |
 | `mv.collision.overlap` | Test two transformed shapes | [collision](collision.md) |
-| `mv.world.move` | Move a process explicitly or through its current world | [collision](collision.md) |
-| `mv.camera.follow` | Follow a live process | [cameras](cameras.md) |
-| `mv.camera.create` | Create an explicit camera | [cameras](cameras.md) |
-| `mv.camera.set` | Position a camera | [cameras](cameras.md) |
-| `mv.camera.move` | Move a camera | [cameras](cameras.md) |
-| `mv.camera.position` | Read a camera position | [cameras](cameras.md) |
-| `mv.world.create` | Create a static collision world | [collision](collision.md) |
 | `mv.fpg.parse` | Parse an FPG file * | [FPG](fpg.md) |
 | `mv.fpg.parse_manifest` | Parse an FPG manifest * | [FPG](fpg.md) |
 
 The `lua_namespace_inventory` test compares this table with functions exposed
 by the runtime. It checks both asset-enabled and asset-disabled builds when
 those builds run; it does not verify function behavior.
-
-## Object methods
-
-These methods belong to managed objects returned by the namespaces. They are
-not global functions. The linked contracts define arguments, return values,
-errors, and lifetime. FPG methods require asset support; `image` also requires
-a graphics window.
-
-| Object | Methods | Contract |
-| --- | --- | --- |
-| `camera` | `camera:set`, `camera:move`, `camera:position`, `camera:destroy`, `camera:follow` | [cameras](cameras.md) |
-| `animation` | `animation:sample` | [animations](animations.md) |
-| `atlas` | `atlas:graph`, `atlas:animation` | [images](images.md) |
-| `world` | `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` | [collision](collision.md) |
-| `fpg` | `fpg:count`, `fpg:id_at`, `fpg:palette`, `fpg:gamma`, `fpg:sprite`, `fpg:point`, `fpg:rgba`, `fpg:image`, `fpg:png`, `fpg:json`, `fpg:graph`, `fpg:animation` | [FPG](fpg.md) |
-| `manifest` | `manifest:count`, `manifest:id_at`, `manifest:transparent_zero`, `manifest:palette`, `manifest:gamma`, `manifest:sprite`, `manifest:point`, `manifest:graph`, `manifest:animation` | [FPG](fpg.md) |
-
-`lua_module_inventory` compares these method names with the runtime. It does
-not certify their semantics. Process handles also have `self:recv`; see the
-[process guide](lua-processes.md#send-and-receive-messages).

@@ -118,24 +118,23 @@ mv_collision_world_destroy(world);
 
 ### Lua
 
-`mv.world.create()` returns a garbage-collected world. The world owns its
-rectangles. `world:add_rect({x = 100, y = 0, width = 10, height = 80})` adds
+`mv.world_create()` returns a garbage-collected world. The world owns its
+rectangles. `world_add_rect(world, {x = 100, y = 0, width = 10, height = 80})` adds
 one and returns its ID. All four fields are required; unknown or invalid fields
-and allocation failures raise an error. `world:overlap(shape, transform)`
+and allocation failures raise an error. `world_overlap(world, shape, transform)`
 returns the first overlapping ID or `nil`. It uses the same shape descriptors,
-transform defaults, limits, and errors as `collision.overlap`. The `world`
-namespace is not installed by `import_globals()`.
+transform defaults, limits, and errors as `mv.collision.overlap`.
 
 ```lua
 local mv = require("malvado")
-local world = mv.world.create()
-world:add_rect({x = 100, y = 0, width = 10, height = 80})
-local hit = world:overlap(mv.collision.circle(8), {x = 96, y = 40})
+local world = mv.world_create()
+mv.world_add_rect(world, {x = 100, y = 0, width = 10, height = 80})
+local hit = mv.world_overlap(world, mv.collision.circle(8), {x = 96, y = 40})
 ```
 
 ### Process queries in Lua
 
-`world:collision(process, position)` tests a live process with an explicit
+`world_collision(world, process, position)` tests a live process with an explicit
 `collision.circle` or `collision.rect` in its `collider` field. It returns the
 first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
 `angle`, and `size`, including the collider offset. A `false` collider disables
@@ -157,7 +156,7 @@ does not move the process. Unknown fields and invalid numbers raise an error.
 `mv_collision_world_sweep(world, shape, transform, dx, dy, &result)` sweeps a
 circle or rectangle, including an oriented rectangle, along a straight displacement
 against the world's axis-aligned rectangles. Lua provides
-`world:sweep(shape, transform, dx, dy)`. A successful result contains `hit`,
+`world_sweep(world, shape, transform, dx, dy)`. A successful result contains `hit`,
 `fraction`, `normal_x`, `normal_y`, and, for a hit, `id`. Move by the requested
 displacement multiplied by `fraction`; the sweep does not modify the shape or
 a process. Without a hit, the fraction is 1 and the normal is zero. Equal-time
@@ -178,14 +177,14 @@ near-tangent contacts.
 
 ```lua
 local box = mv.collision.rect(2, 2)
-local result = world:sweep(box, {x = 0, y = 40}, 200, 0)
+local result = mv.world_sweep(world, box, {x = 0, y = 40}, 200, 0)
 local allowed_x = 200 * result.fraction
 ```
 
 
 ### Move a process
 
-`world:move(process, dx, dy)` sweeps its explicit circle or rectangle collider,
+`world_move(world, process, dx, dy)` sweeps its explicit circle or rectangle collider,
 then updates `x` and `y` by the permitted displacement. It returns a table with
 `hit`, `moved_x`, `moved_y`, `normal_x`, `normal_y`, and an obstacle `id` on
 impact. A disabled collider or a process without a collider or graphic moves
@@ -203,7 +202,7 @@ cannot find a non-overlapping destination within eight steps, it returns an
 error. Lua reports the actual displacement after this adjustment.
 
 ```lua
-local result = world:move(player, 4, 0)
+local result = world_move(world, player, 4, 0)
 if result.hit then print("Wall", result.id) end
 ```
 
@@ -272,7 +271,7 @@ source collider or transform raises an error, as does an invalid explicitly
 selected live target. When selecting by type, processes with invalid colliders
 or transforms are excluded until corrected. A `false` collider, or no graph
 and no collider, excludes the process. Assignments to `x`, `y`, `angle`,
-`size`, `graph`, and `collider`, and `world:move`, update the native collider
+`size`, `graph`, and `collider`, and `world_move`, update the native collider
 immediately. The first-hit query does not allocate a result table. Both queries
 work without a window.
 
@@ -286,7 +285,7 @@ collider is not supported.
 ```lua
 require("malvado").import_globals()
 local world = world_create()
-world:add_rect({x = 300, y = 100, width = 40, height = 280})
+world_add_rect(world, {x = 300, y = 100, width = 40, height = 280})
 local Player = process(function(self)
   self.world = world
   self.graph = require("malvado").graphics.circle {radius = 16}
@@ -296,18 +295,17 @@ end)
 start(function() Player({x = 100, y = 200}) end)
 ```
 
-`world_create()` is the same function as `mv.world.create()`. A process can
-retain a world in `self.world`, including in its defaults. This association
-does not move it, register it as an obstacle, or make x/y assignments physical.
+A process can retain a world in `self.world`, including in its defaults.
+This association does not move the process, register it as an obstacle, or
+make x/y assignments physical.
 The reference keeps the world alive while the process fields retain it.
 Changing or clearing the field changes only future contextual calls.
 
 `world_move(dx, dy)` resolves the actual running process and its `world` field.
-It delegates to `world:move(self, dx, dy)` and returns the same hit table,
-actual displacement, normal, and optional obstacle ID. The explicit
-`world_move(world, player, dx, dy)` works without a running process and ignores
-any contextual world. `mv.world.move` and `mv.world_move` are the same function.
-The method remains available. All forms use the same native sweep and do not slide.
+The explicit `world_move(world, player, dx, dy)` works without a running
+process and uses the supplied world. Both forms return the hit flag, actual
+displacement, contact normal, and optional obstacle ID. They use the same
+native sweep and do not slide.
 
 `collision(target)` returns the same canonical handle or `nil` as
 `mv.process.collision(self, target)`, with the same creation ordering,
@@ -341,7 +339,7 @@ rules. Failure preserves process position and output. Sleep and freeze do not
 prevent an explicit host move. These calls do not tick, allocate, retain data,
 change angle/scale, or update explicitly registered C collider transforms.
 
-Lua `world:collision` without a hypothetical position and `world:move` use these
+Lua `world_collision` without a hypothetical position and `world_move` use these
 operations for native numeric properties. Lua still selects explicit or
 graph-derived geometry and refreshes its derived collider after movement.
 Hypothetical query positions and local invalid visual overrides retain their
@@ -422,7 +420,7 @@ Failures preserve positions, selection and outputs. Displacement obeys the
 existing finite `DBL_MAX / 16` limit. A valid selected collider can still move
 while the process sleeps or freezes.
 
-Lua `world:collision` at the current position and `world:move` use selected
+Lua `world_collision` at the current position and `world_move` use selected
 geometry after the existing binding validation/synchronization. Hypothetical
 query positions and local invalid/numeric-string overrides keep their existing
 conversion path. Asset shapes remain supplied by the Lua binding; this step

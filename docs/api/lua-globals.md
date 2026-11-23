@@ -4,7 +4,7 @@
 
 See the [namespace inventory](lua-namespaces.md) for functions that are also available through `mv` namespaces.
 
-Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations and signal constants are also available in `mv.process`. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph`/`animation` selectors and atlas functions are present only when asset support is built. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Most process operations and the signal constants are also available in `mv.process`. Use `recv` or `mv.recv` to receive messages. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |
@@ -12,12 +12,18 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `camera_create` | `mv.camera_create` |
 | `camera_set` | `mv.camera_set` |
 | `camera_move` | `mv.camera_move` |
+| `camera_position` | `mv.camera_position` |
+| `camera_destroy` | `mv.camera_destroy` |
 | `collision` | `mv.collision` |
 | `rect` | `mv.rect` |
 | `circle` | `mv.circle` |
 | `region` | `mv.region` |
 | `scroll` | `mv.scroll` |
 | `world_create` | `mv.world_create` |
+| `world_add_rect` | `mv.world_add_rect` |
+| `world_overlap` | `mv.world_overlap` |
+| `world_sweep` | `mv.world_sweep` |
+| `world_collision` | `mv.world_collision` |
 | `world_move` | `mv.world_move` |
 | `rect_overlaps` | `mv.rect_overlaps` |
 | `rect_contains` | `mv.rect_contains` |
@@ -37,6 +43,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `kill_tree` | `mv.kill_tree` |
 | `status` | `mv.status` |
 | `send` | `mv.send` |
+| `recv` | `mv.recv` |
 | `start` | `mv.start` |
 | `set_title` | `mv.set_title` |
 | `window_size` | `mv.window_size` |
@@ -80,11 +87,29 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `sprite_info` | `mv.sprite_info` |
 | `sprite_id` | `mv.sprite_id` |
 | `animation_frame` | `mv.animation_frame` |
+| `animation_sample` | `mv.animation_sample` |
 | `animation_elapsed` | `mv.animation_elapsed` |
 | `animation_color` | `mv.animation_color` |
 | `atlas_pivot_color` | `mv.atlas_pivot_color` |
 | `animation_repeats` | `mv.animation_repeats` |
 | `draw_sprite` | `mv.draw_sprite` |
+| `fpg_count` | `mv.fpg_count` |
+| `fpg_id_at` | `mv.fpg_id_at` |
+| `fpg_palette` | `mv.fpg_palette` |
+| `fpg_gamma` | `mv.fpg_gamma` |
+| `fpg_sprite` | `mv.fpg_sprite` |
+| `fpg_point` | `mv.fpg_point` |
+| `fpg_rgba` | `mv.fpg_rgba` |
+| `fpg_image` | `mv.fpg_image` |
+| `fpg_png` | `mv.fpg_png` |
+| `fpg_json` | `mv.fpg_json` |
+| `manifest_count` | `mv.manifest_count` |
+| `manifest_id_at` | `mv.manifest_id_at` |
+| `manifest_palette` | `mv.manifest_palette` |
+| `manifest_gamma` | `mv.manifest_gamma` |
+| `manifest_sprite` | `mv.manifest_sprite` |
+| `manifest_point` | `mv.manifest_point` |
+| `manifest_transparent_zero` | `mv.manifest_transparent_zero` |
 | `font` | `mv.font` |
 | `load_font` | `mv.load_font` |
 | `write` | `mv.write` |

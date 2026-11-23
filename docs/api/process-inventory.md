@@ -14,7 +14,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Visual angle/scale | `mv_process_angle`, `mv_process_set_angle`, `mv_process_scale`, `mv_process_set_scale` | `self.angle`, `self.size`; shared finite values, local invalid overrides. |
 | Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
-| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `self:recv()`, `frame`, `self.fps` |
+| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv(self)`, `frame`, `self.fps` |
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
 
 The table maps the public functions in `malvado.h`, not every future 2.0 API.
@@ -141,7 +141,7 @@ These entries describe the implemented alpha.6 additions, not the complete 2.0 i
 | Shapes and overlap | `mv_collision_overlap`, `mv_rect_overlaps`, `mv_rect_contains` | `collision.circle`, `collision.rect`, `collision.overlap`, `rect_overlaps`, `rect_contains` |
 | Process colliders and queries | `mv_process_collider_set`, `mv_process_collider_clear`, `mv_process_collider_test`, `mv_process_collider_first`, `mv_process_collider_find` | `self.collider`, automatic `self.graph` collider, `process.collision`, `process.collisions` |
 | Process graphics | Process rendering is provided by the Lua binding; native callers use the drawing API | `graphics.circle`, `graphics.rect`, supported image and sprite graphs |
-| Static world | `mv_collision_world_create`, `mv_collision_world_destroy`, `mv_collision_world_add_rect`, `mv_collision_world_query`, `mv_collision_world_sweep`, `mv_collision_world_move` | `world.create`, `world:add_rect`, `world:overlap`, `world:sweep`, `world:collision`, `world:move` |
+| Static world | `mv_collision_world_create`, `mv_collision_world_destroy`, `mv_collision_world_add_rect`, `mv_collision_world_query`, `mv_collision_world_sweep`, `mv_collision_world_move` | `world_create`, `world_add_rect`, `world_overlap`, `world_sweep`, `world_collision`, `world_move` |
 
 The world owns its static rectangles. Process colliders are copied into their context. Lua graphic descriptors retain their resources. Pixel masks, automatic colliders for legacy FPG sheets, and world shapes other than static rectangles are not supported.
 

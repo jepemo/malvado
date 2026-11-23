@@ -17,7 +17,7 @@ local Scene = process(function(self)
   end
 end, {defaults = {
   graph = rect {width = 80, height = 60, pivot = "top-left", color = {80, 190, 255}},
-  region = region(40, 60, 300, 240)
+  region = region {x = 40, y = 60, width = 300, height = 240}
 }})
 
 local Overlay = process(function()

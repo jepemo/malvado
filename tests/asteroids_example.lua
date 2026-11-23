@@ -7,10 +7,10 @@ local constructors, threads, handles, controls, seen = {}, {}, {}, {}, {}
 local definitions, ticks = 0, 0
 local target, split_checked, shot_checked, loss_checked
 local function assert_radius(actor, radius)
-  local inside, outside = mv.world.create(), mv.world.create()
-  inside:add_rect({x = actor.x + radius - 0.5, y = actor.y - 0.1, width = 0.2, height = 0.2})
-  outside:add_rect({x = actor.x + radius + 0.5, y = actor.y - 0.1, width = 0.2, height = 0.2})
-  assert(inside:collision(actor) == 1 and outside:collision(actor) == nil)
+  local inside, outside = mv.world_create(), mv.world_create()
+  mv.world_add_rect(inside, {x = actor.x + radius - 0.5, y = actor.y - 0.1, width = 0.2, height = 0.2})
+  mv.world_add_rect(outside, {x = actor.x + radius + 0.5, y = actor.y - 0.1, width = 0.2, height = 0.2})
+  assert(mv.world_collision(inside, actor) == 1 and mv.world_collision(outside, actor) == nil)
 end
 mv.process = function(fn, options)
   definitions = definitions + 1

@@ -50,10 +50,10 @@ local controller = proc(function()
   assert(proc.collision(player, first) == nil)
   first.graph = circle
   assert(proc.collision(player, first) == first)
-  local world = mv.world.create()
-  world:add_rect({x = 10, y = -10, width = 1, height = 20})
+  local world = mv.world_create()
+  mv.world_add_rect(world, {x = 10, y = -10, width = 1, height = 20})
   local moved = proc(function() while true do proc.frame() end end)({graph = circle})
-  assert(world:move(moved, 100, 0).hit and moved.x == 8)
+  assert(mv.world_move(world, moved, 100, 0).hit and moved.x == 8)
   assert(proc.collision(moved, player) == nil)
   moved.x = 1
   assert(proc.collision(moved, player) == player)

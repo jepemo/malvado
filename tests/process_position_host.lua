@@ -6,9 +6,9 @@ local actor = mv.process(function(self)
   assert(self.y == 8 and self.angle == 90 and self.size == 2)
   self.angle = 180
   self.size = .5
-  local world = mv.world.create()
-  world:add_rect {x = 20, y = -10, width = 1, height = 40}
-  assert(world:move(self, 100, 0).hit and self.x == 19.5 and self.y == 8)
+  local world = mv.world_create()
+  mv.world_add_rect(world, {x = 20, y = -10, width = 1, height = 40})
+  assert(mv.world_move(world, self, 100, 0).hit and self.x == 19.5 and self.y == 8)
   while self.x ~= -2 do mv.frame() end
   assert(self.y == 5 and self.angle == 270 and self.size == 3)
   self.angle = nil
@@ -27,7 +27,7 @@ local actor = mv.process(function(self)
   for _, value in ipairs({"bad", false, math.huge}) do
     self.x = value
     assert(self.x == value)
-    assert(not pcall(world.move, world, self, 1, 0))
+    assert(not pcall(mv.world_move, world, self, 1, 0))
   end
   self.x = 0 / 0
   assert(self.x ~= self.x)

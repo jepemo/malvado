@@ -6,7 +6,7 @@ mv.import_globals()
 
 local world = world_create()
 local player_graphic = circle {radius = 16, color = {80, 190, 255}}
-world:add_rect({x = 300, y = 100, width = 40, height = 280})
+world_add_rect(world, {x = 300, y = 100, width = 40, height = 280})
 
 local Player = process(function(self)
   self.world = world

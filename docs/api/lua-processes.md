@@ -158,7 +158,7 @@ The scheduler controls process coroutines. `coroutine.resume()` and `coroutine.c
 
 ## Send and receive messages
 
-`mv.send(handle, value)` puts a value in the recipient's FIFO queue. `self:recv()` returns the next value, or `nil` if the queue is empty. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.
+`mv.send(handle, value)` puts a value in the recipient's FIFO queue. `mv.recv(handle)` removes and returns the next value, or `nil` if the queue is empty. It raises an error for an invalid or dead handle. Sending `nil` is not allowed. A queue holds up to 1,024 messages. Sending to an unknown process or a full queue raises an error. Pending messages are released when the process ends.
 
 Booleans, integers, numbers, and binary strings can be exchanged with C processes. Strings are copied. Tables and other Lua objects can be sent only to Lua processes; they retain their identity within the VM. See the [C contract](c-contract.md) for message ownership and release rules.
 
@@ -180,7 +180,7 @@ and error behavior. Images and atlas sprite descriptors can also provide automat
 
 ## Process drawing region
 
-After importing globals, set `self.region` to `region(x, y, width, height)` to
+After importing globals, set `self.region` to `region {x = 40, y = 60, width = 300, height = 240}` to
 clip this process's graph and immediate drawing. Set it to `nil` to remove the
 clip. It does not change process coordinates or collision queries. See
 [window clipping and regions](drawing.md#clip-a-lua-process-to-a-region).
@@ -206,8 +206,7 @@ by `import_globals()`. Explicit calls remain available; see the
 
 `self.file` is an optional library from `load_asset()`. `graph(id)` selects from
 that library inside the process. Assign the result to `self.graph` for automatic
-static drawing. An explicit `graph(library, id)` or `library:graph(id)` does not
-need `self.file`. Changing the file field cannot change an existing descriptor.
+static drawing. An explicit `graph(library, id)` uses the supplied library. Changing the file field cannot change an existing descriptor.
 Images can also be assigned directly. See [static graphics](images.md#select-a-static-graphic)
 for lifetime, pivot and context rules. Assign an `animation()` definition to
 `self.graph` for [automatic playback](animations.md) with independent process
@@ -217,7 +216,7 @@ state and a fixed collider union.
 ## Process camera
 
 `self.camera = nil` uses the main camera; `false` keeps graph/immediate drawing
-in screen space. A camera from `camera_create()` selects an explicit view.
+in screen space. A camera from `camera_create {}` selects an explicit view.
 Camera movement never changes process position or colliders. Use z to order
 HUD content above world content. See [cameras](cameras.md) for projection,
 viewport, validation and lifetime rules.

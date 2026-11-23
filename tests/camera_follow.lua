@@ -2,10 +2,10 @@
 -- SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
 mv.import_globals()
-assert(camera_follow == mv.camera.follow)
+assert(camera_follow == mv.camera_follow)
 local Target = process(function() while true do frame() end end)
 local function position(camera, x, y)
-  local actual_x, actual_y = mv.camera.position(camera)
+  local actual_x, actual_y = mv.camera_position(camera)
   assert(actual_x == x and actual_y == y,
     tostring(actual_x) .. "," .. tostring(actual_y) .. " expected " .. x .. "," .. y)
 end
@@ -51,16 +51,16 @@ local Controller = process(function()
   second.x = 300
   frame()
   position(nil, 151, 122)
-  local camera = camera_create(0, 0, {viewport = region(10, 20, 40, 30)})
-  camera:follow(second)
+  local camera = camera_create {x = 0, y = 0, viewport = region {x = 10, y = 20, width = 40, height = 30}}
+  camera_follow(camera, second)
   frame()
   position(camera, 280, 145)
   local same = camera
-  camera:set(5, 6)
+  camera_set(camera, 5, 6)
   second.y = 200
   frame()
   position(same, 5, 6)
-  camera:follow(first)
+  camera_follow(camera, first)
   frame()
   position(camera, 180, 75)
   camera_follow(first)
@@ -75,14 +75,14 @@ local Controller = process(function()
   local replacement = Target({x = 0, y = 0})
   frame()
   position(nil, 150, 50) -- No accidental follow of a new process.
-  camera:follow(second)
-  camera:destroy()
+  camera_follow(camera, second)
+  camera_destroy(camera)
   second.x = 500
   frame()
-  assert(not pcall(camera.follow, camera, second))
+  assert(not pcall(camera_follow, camera, second))
   -- Weak camera indexing must not keep an unused camera alive.
-  local temporary = camera_create(0, 0)
-  temporary:follow(second)
+  local temporary = camera_create {}
+  camera_follow(temporary, second)
   local weak = setmetatable({temporary}, {__mode = "v"})
   temporary = nil
   collectgarbage("collect")

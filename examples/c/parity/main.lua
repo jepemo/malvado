@@ -6,7 +6,7 @@ local worker = process(function(self)
     local guard <close> = setmetatable({}, {
         __close = function() print("worker: closed") end,
     })
-    assert(self:recv() == "ping")
+    assert(recv(self) == "ping")
     print("worker: ping")
     frame()
 end)

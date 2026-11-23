@@ -10,12 +10,14 @@ end
 fails("running process", collision, {})
 fails("running process", world_move, 1, 0)
 fails("expected world_move", world_move, 1)
+fails("expected world_move", world_move, world_create(), {}, 1)
+fails("number expected", world_move, {}, 0)
 fails("expected collision", collision)
-assert(world_create == mv.world.create and world_move == mv.world.move)
+assert(world_create == mv.world_create and world_move == mv.world_move)
 local weak = setmetatable({}, {__mode = "v"})
 local function make_world(x)
   local world = world_create()
-  world:add_rect({x = x, y = 0, width = 10, height = 20})
+  world_add_rect(world, {x = x, y = 0, width = 10, height = 20})
   if x == 20 then weak[2] = world end
   return world
 end
@@ -62,9 +64,7 @@ local Player = process(function(self)
   assert(hit.normal_x == -1 and hit.normal_y == 0 and self.x == 9)
   self.x = 0
   local explicit = world_move(world, self, 100, 0)
-  self.x = 0
-  local method = world:move(self, 100, 0)
-  for key, value in pairs(hit) do assert(explicit[key] == value and method[key] == value) end
+  for key, value in pairs(hit) do assert(explicit[key] == value) end
   self.x = 0
   self.world = make_world(20)
   assert(world_move(100, 0).moved_x == 19)

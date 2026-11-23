@@ -13,9 +13,9 @@ local shared = { value = 1 }
 local target = mv.process(function(self)
   local cleanup <close> = setmetatable({}, { __close = function() closed = closed + 1 end })
   events[#events + 1] = "target:start"
-  local message = self:recv()
+  local message = recv(self)
   assert(message == shared and message.value == 2)
-  assert(self:recv() == nil)
+  assert(recv(self) == nil)
   mv.frame()
   events[#events + 1] = "target:wake"
   mv.frame()

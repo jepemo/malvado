@@ -17,7 +17,7 @@ const groups = [
     summary: 'Start, control and inspect processes.',
     flat: ['process', 'spawn', 'find', 'children', 'descendants', 'snapshot', 'frame',
       'signal', 'signal_tree', 'set_priority', 'get_priority', 'kill', 'alive',
-      'kill_tree', 'status', 'send'],
+      'kill_tree', 'status', 'send', 'recv'],
     constants: ['SIGNAL_SLEEP', 'SIGNAL_FREEZE', 'SIGNAL_WAKEUP', 'SIGNAL_KILL'],
   },
   {
@@ -50,7 +50,7 @@ const groups = [
   {
     id: 'animations', label: 'Animations', guide: 'animations',
     summary: 'Read atlas metadata and control process animations.',
-    flat: ['animation_frame', 'animation_color', 'atlas_pivot_color', 'animation_repeats'],
+    flat: ['animation_frame', 'animation_sample', 'animation_color', 'atlas_pivot_color', 'animation_repeats'],
   },
   {
     id: 'text', label: 'Text', guide: 'text',
@@ -66,9 +66,9 @@ const groups = [
       'music_volume'],
   },
   {
-    id: 'cameras', label: 'Cameras', ns: 'camera', guide: 'cameras',
+    id: 'cameras', label: 'Cameras', guide: 'cameras',
     summary: 'Create and move 2D cameras.',
-    flat: ['camera_follow', 'camera_create', 'camera_set', 'camera_move'],
+    flat: ['camera_follow', 'camera_create', 'camera_set', 'camera_move', 'camera_position', 'camera_destroy'],
   },
   {
     id: 'collision', label: 'Collision', ns: 'collision', guide: 'collision',
@@ -76,14 +76,16 @@ const groups = [
     flat: ['collision', 'rect_overlaps', 'rect_contains'],
   },
   {
-    id: 'world', label: 'Worlds', ns: 'world', guide: 'collision',
+    id: 'world', label: 'Worlds', guide: 'collision',
     summary: 'Move processes through a static collision world.',
-    flat: ['world_create', 'world_move'],
+    flat: ['world_create', 'world_add_rect', 'world_overlap', 'world_sweep', 'world_collision', 'world_move'],
   },
   {
     id: 'fpg', label: 'FPG', ns: 'fpg', guide: 'docs/api/fpg.md',
-    summary: 'Parse legacy FPG image sheets.',
-    flat: [],
+    summary: 'Parse FPG graphics libraries and read their sprite metadata. Requires asset support.',
+    flat: ['fpg_count', 'fpg_id_at', 'fpg_palette', 'fpg_gamma', 'fpg_sprite', 'fpg_point',
+      'fpg_rgba', 'fpg_image', 'fpg_png', 'fpg_json', 'manifest_count', 'manifest_id_at',
+      'manifest_palette', 'manifest_gamma', 'manifest_sprite', 'manifest_point', 'manifest_transparent_zero'],
   },
   {
     id: 'platform', label: 'Platform', guide: 'runner-timing',
@@ -195,7 +197,7 @@ for (const group of groups) {
       alias.title = global;
       alias.flat.push(global);
     } else {
-      const summary = flatSummaries[global];
+      const summary = flatSummaries[global] ?? content[`${group.id}/${global}`]?.description;
       if (!summary)
         throw new Error(`Missing summary for flat function: ${global}`);
       entries.set(global, { name: global, title: global, summary, flat: [global] });
@@ -280,13 +282,13 @@ ${constants}
 | --- | --- |
 ${table}`));
   for (const entry of group.entries) {
-    const namespaceForm = namespaceFunctions.some((fn) => fn.ns === group.ns && fn.name === entry.name)
+    const namespaceForm = namespaceFunctions.some((fn) => fn.ns === group.ns && fn.name === entry.name && `${fn.ns}.${fn.name}` !== entry.flat[0])
       ? ` or \`mv.${group.ns}.${entry.name}\``
       : '';
     const detail = content[`${group.id}/${entry.slug}`];
     if (!detail) {
       const call = entry.flat.length
-        ? `Call as \`${entry.flat[0]}\`${namespaceForm} after \`import_globals()\`.`
+        ? `Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`
         : `Call as \`${entry.title}\`.`;
       const sentence = entry.summary.endsWith('.') ? entry.summary : `${entry.summary}.`;
       await writeFile(new URL(`${entry.slug}.md`, dir), front(entry.title, entry.summary,
@@ -298,8 +300,8 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       continue;
     }
     const parts = [detail.description];
-    if (entry.flat.length && namespaceForm)
-      parts.push(`Available as \`${entry.flat[0]}\` after \`import_globals()\`${namespaceForm}.`);
+    if (entry.flat.length)
+      parts.push(`Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`);
     parts.push('');
     if (detail.params.length) {
       parts.push('**Parameters**', '');

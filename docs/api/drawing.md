@@ -220,14 +220,15 @@ Create a reusable region in logical window pixels and assign it to a process:
 
 ```lua
 local mv = require("malvado")
-local viewport = mv.graphics.region(20, 20, 160, 100)
+local viewport = mv.region {x = 20, y = 20, width = 160, height = 100}
 local Actor = mv.process(function(self)
     while true do mv.frame() end
 end, {defaults = {region = viewport, graph = mv.graphics.circle {radius = 20}}})
 ```
 
-`graphics.region(x, y, width, height)` accepts integer coordinates in the C
-`int` range and positive integer dimensions up to `INT_MAX`. It creates an
+`region(options)` takes a table with `x`, `y`, `width`, and `height`.
+Coordinates must be integers in the C `int` range. Dimensions must be positive
+integers up to `INT_MAX`. It creates an
 immutable descriptor without opening a window. Descriptors can be shared in
 process defaults. `self.region` accepts a descriptor or `nil`; `nil` removes the
 clip. Invalid descriptors and invalid assignments raise an error, including

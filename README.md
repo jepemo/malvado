@@ -31,6 +31,10 @@ checkout. On Windows, download the SDK archive from the
 
 ## Hello, Malvado!
 
+Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Managed
+resource handles are passed to functions rather than manipulated through
+instance methods.
+
 This Lua example draws a circle that you can move with **Left** and **Right**.
 Press **Escape** to exit.
 
