@@ -65,7 +65,7 @@ const nav = [
           <div class="hero-copy">
             <h1 id="hero-title"><span class="line">A game engine</span> <span class="line">for creative developers<span class="dot">.</span></span></h1>
             <p class="lead">{description}</p>
-            <CodeShowcase examples={examples} default="processes" />
+            <CodeShowcase examples={examples} default="hello" />
             <div class="actions">
               <a class="button primary" href={`${base}getting-started/`}>Get Started <span aria-hidden="true">→</span></a>
               <a class="text-link" href={repository}>View on GitHub <span aria-hidden="true">↗</span></a>
@@ -90,7 +90,6 @@ const nav = [
           ) : (
             <p class="section-note">Malvado 2.0 is in beta and the stable v2.0.0 release is not published yet, so this command installs the verified <strong>{prerelease}</strong> SDK. It requires macOS arm64 or Linux x86_64; on Windows, download the SDK from <a href={`${repository}/releases`}>GitHub Releases</a>. See the <a href={`${base}getting-started/`}>Get started guide</a> for the source build and contributor setup.</p>
           )}
-          <p class="section-note">The installer runs <code>install.sh</code> with your shell. To inspect the script before running it, use <code>curl -fsSL https://malvado.dev/install.sh -o install.sh</code>.</p>
         </div>
       </section>
       <section class="section" aria-labelledby="why-title">
