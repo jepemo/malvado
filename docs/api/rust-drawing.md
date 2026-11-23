@@ -118,9 +118,10 @@ assert_eq!(actor.draw_count()?, 1);
 # Ok::<(), Error>(())
 ```
 
-`draw_box`, `draw_circle`, and `draw_text` use native ordered storage. They work
-without graphics enabled. Geometry and text are copied; embedded NUL text is
-rejected. Native integer bounds and failure behavior apply. `draw_count` reports
+`draw_box`, `draw_circle`, and `draw_text` use native ordered storage and work
+without graphics enabled. The native line command is available to C and Lua.
+The commands copy their geometry and text. Text with an embedded NUL raises an
+error. Native integer bounds and failure behavior apply. `draw_count` reports
 all native commands, including those appended through C. `clear_draw_commands`
 releases the list immediately and is idempotent.
 

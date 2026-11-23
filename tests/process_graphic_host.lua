@@ -1,7 +1,7 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
-local initial = mv.graphics.rect(2, 2)
-local replacement = mv.graphics.rect(4, 2, {pivot = "top-left", color = {0, 255, 0}})
+local initial = mv.graphics.rect {width = 2, height = 2}
+local replacement = mv.graphics.rect {width = 4, height = 2, pivot = "top-left", color = {0, 255, 0}}
 local Actor = mv.process(function(self)
   assert(self.graph == initial)
   local sensor = mv.process(function() while true do mv.frame() end end) {

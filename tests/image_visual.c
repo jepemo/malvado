@@ -22,6 +22,13 @@
 
 static Image reference;
 
+static Color
+pixel(Image screen, int x, int y)
+{
+    return GetImageColor(screen, x * screen.width / GetScreenWidth(),
+                         y * screen.height / GetScreenHeight());
+}
+
 static void
 check_pixels(void)
 {
@@ -38,6 +45,24 @@ check_pixels(void)
     assert(green.r < 10 && green.g > 240 && green.b < 10);
     assert(green_default.r < 10 && green_default.g > 240 && green_default.b < 10);
     assert(outside.r < 10 && outside.g < 10 && outside.b < 10);
+    assert(pixel(screen, 9, 35).b == 255);
+    assert(pixel(screen, 10, 35).b == 0 && pixel(screen, 9, 36).b == 0);
+    Color right = pixel(screen, 24, 50), bottom = pixel(screen, 20, 54);
+    assert(right.r >= 120 && right.r <= 135 && bottom.r == right.r);
+    assert(pixel(screen, 25, 50).r == 0 && pixel(screen, 20, 55).r == 0);
+    assert(pixel(screen, 20, 50).r == 0 && pixel(screen, 12, 45).b == 255);
+    Color center = pixel(screen, 35, 50);
+    assert(center.r == 0 && center.g == 255 && center.b == 255);
+    assert(pixel(screen, 55, 15).r == 0 && pixel(screen, 41, 50).g == 0);
+    int outline_pixels = 0;
+    for (int y = 13; y <= 17; ++y) {
+        for (int x = 58; x <= 59; ++x) {
+            Color edge = pixel(screen, x, y);
+            if (edge.r == 255 && edge.g == 0 && edge.b == 255)
+                ++outline_pixels;
+        }
+    }
+    assert(outline_pixels > 0);
     UnloadImage(screen);
 }
 
@@ -83,6 +108,7 @@ main(int argc, char **argv)
     assert(!mv_image_draw_region(image, (MvImageRegion){0, 0, 9, 8}, transform));
     assert(mv_window_draw_box(2, 30, 8, 6, 1, (MvColor){0, 0, 255, 255}));
     assert(mv_window_draw_box(15, 45, 10, 10, 0, (MvColor){255, 255, 0, 128}));
+    assert(mv_window_draw_box(12, 45, 1, 1, 0, (MvColor){0, 0, 255, 255}));
     assert(mv_window_draw_circle(35, 50, 4, 1, (MvColor){0, 255, 255, 255}));
     assert(mv_window_draw_circle(55, 15, 4, 0, (MvColor){255, 0, 255, 255}));
     assert(!mv_window_draw_box(0, 0, 0, 2, 1, (MvColor){0}));

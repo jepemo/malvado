@@ -67,7 +67,7 @@ local task = mv.process(function()
     if audio then audio.frame() end
     if keyboard then keyboard() end
     mv.set_color {255, 0, 0, 255}
-    mv.draw_box(80, 60, 240, 180)
+    mv.draw_rect {x = 80, y = 60, width = 160, height = 120}
     mv.frame()
   end
   if os.getenv("MALVADO_APK_FAIL") then error("APK_EXPECTED_PROCESS_FAILURE") end

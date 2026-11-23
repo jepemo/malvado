@@ -61,7 +61,7 @@ return width and height in pixels without drawing. Empty text measures
 (0, 0); multiline text splits on `\n`, measures the widest line and adds one
 line to the height. The headless backend cannot measure and returns (0, 0).
 
-`mv.draw_text(options)` draws immediate-mode text for the current frame only.
+`mv.draw_text(options)` queues text until the process next runs.
 It requires `text`, `x` and `y`; `size` defaults to 20 and `color` defaults to
 opaque white. It creates no persistent text and does not change the drawing
 state used by the primitive functions.

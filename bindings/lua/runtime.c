@@ -2101,41 +2101,125 @@ set_color(lua_State *L)
     return 0;
 }
 
-static int
-draw_primitive(lua_State *L)
+static void
+check_single_options(lua_State *L, const char *const *keys, size_t count)
 {
-    int type = (int)lua_tointeger(L, lua_upvalueindex(1));
-    int count = type <= 2 ? 4 : 3;
-    int64_t values[4] = {0};
-    for (int i = 0; i < count; ++i) {
-        lua_Integer value = luaL_checkinteger(L, i + 1);
-        if (value < INT_MIN || value > INT_MAX)
-            return luaL_error(L, "primitive coordinate is outside the supported range");
-        values[i] = (int64_t)value;
+    luaL_checktype(L, 1, LUA_TTABLE);
+    if (lua_gettop(L) != 1)
+        luaL_error(L, "expected one options table");
+    validate_table_keys(L, 1, keys, count);
+}
+
+static int
+drawing_integer(lua_State *L, const char *name)
+{
+    raw_option(L, 1, name);
+    int is_integer;
+    lua_Integer value = lua_tointegerx(L, -1, &is_integer);
+    if (lua_type(L, -1) != LUA_TNUMBER || !is_integer)
+        luaL_error(L, "%s must be an integer", name);
+    lua_pop(L, 1);
+    if (value < INT_MIN || value > INT_MAX)
+        luaL_error(L, "%s is outside the supported integer range", name);
+    return (int)value;
+}
+
+static int
+drawing_filled(lua_State *L)
+{
+    raw_option(L, 1, "filled");
+    int filled = 1;
+    if (!lua_isnil(L, -1)) {
+        if (!lua_isboolean(L, -1))
+            luaL_error(L, "filled must be a boolean");
+        filled = lua_toboolean(L, -1);
     }
-    if (type <= 2) {
-        values[2] -= values[0];
-        values[3] -= values[1];
-        if (values[2] <= 0 || values[2] > INT_MAX || values[3] <= 0 || values[3] > INT_MAX)
-            return luaL_error(L, "invalid rectangle");
-    } else if (values[2] <= 0 || values[0] + values[2] > INT_MAX ||
-               values[0] - values[2] < INT_MIN || values[1] + values[2] > INT_MAX ||
-               values[1] - values[2] < INT_MIN) {
-        return luaL_error(L, "invalid circle");
-    }
+    lua_pop(L, 1);
+    return filled;
+}
+
+static MvColor
+option_color(lua_State *L, MvColor fallback)
+{
+    raw_option(L, 1, "color");
+    MvColor color = lua_isnil(L, -1) ? fallback : check_color(L, -1);
+    lua_pop(L, 1);
+    return color;
+}
+
+static MvProcessRef
+drawing_process(lua_State *L)
+{
     if (!engine.active || L != engine.active_thread)
-        return luaL_error(L, "drawing must be called inside a process");
+        luaL_error(L, "drawing must be called inside a process");
     Process *process = find_process(engine.active_id);
     if (!process)
-        return luaL_error(L, "drawing must be called inside a live process");
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    MvResult result = type <= 2 ?
-        mv_process_draw_box(engine.context, reference, (int)values[0], (int)values[1],
-            (int)values[2], (int)values[3], type == 1, engine.draw.color) :
-        mv_process_draw_circle(engine.context, reference, (int)values[0], (int)values[1],
-            (int)values[2], type == 3, engine.draw.color);
-    if (result != MV_OK) return luaL_error(L, "cannot append primitive command");
+        luaL_error(L, "drawing must be called inside a live process");
+    return (MvProcessRef){engine.runtime_id, (MvProcessId)process->id};
+}
+
+static int
+drawing_result(lua_State *L, MvResult result, const char *geometry_error)
+{
+    if (result == MV_INVALID_ARGUMENT)
+        return luaL_error(L, "%s", geometry_error);
+    if (result != MV_OK)
+        return luaL_error(L, "cannot append primitive command");
     return 0;
+}
+
+static int
+draw_rect(lua_State *L)
+{
+    static const char *const keys[] = {"x", "y", "width", "height", "filled", "color"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    int x = drawing_integer(L, "x");
+    int y = drawing_integer(L, "y");
+    int width = drawing_integer(L, "width");
+    int height = drawing_integer(L, "height");
+    int filled = drawing_filled(L);
+    MvColor color = option_color(L, engine.draw.color);
+    MvResult result = mv_process_draw_box(engine.context, drawing_process(L),
+        x, y, width, height, filled, color);
+    return drawing_result(L, result, "invalid rectangle dimensions or bounds");
+}
+
+static int
+draw_circle(lua_State *L)
+{
+    static const char *const keys[] = {"x", "y", "radius", "filled", "color"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    int x = drawing_integer(L, "x");
+    int y = drawing_integer(L, "y");
+    int radius = drawing_integer(L, "radius");
+    int filled = drawing_filled(L);
+    MvColor color = option_color(L, engine.draw.color);
+    MvResult result = mv_process_draw_circle(engine.context, drawing_process(L),
+        x, y, radius, filled, color);
+    return drawing_result(L, result, "invalid circle radius or bounds");
+}
+
+static int
+draw_line(lua_State *L)
+{
+    static const char *const keys[] = {"x1", "y1", "x2", "y2", "thickness", "color"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    int x1 = drawing_integer(L, "x1");
+    int y1 = drawing_integer(L, "y1");
+    int x2 = drawing_integer(L, "x2");
+    int y2 = drawing_integer(L, "y2");
+    raw_option(L, 1, "thickness");
+    double thickness = 1;
+    if (!lua_isnil(L, -1)) {
+        if (lua_type(L, -1) != LUA_TNUMBER)
+            return luaL_error(L, "thickness must be a number");
+        thickness = lua_tonumber(L, -1);
+    }
+    lua_pop(L, 1);
+    MvColor color = option_color(L, engine.draw.color);
+    MvResult result = mv_process_draw_line(engine.context, drawing_process(L),
+        x1, y1, x2, y2, thickness, color);
+    return drawing_result(L, result, "thickness is outside the supported positive range");
 }
 
 static int
@@ -3766,7 +3850,7 @@ check_font_descriptor(lua_State *L, int index)
     return descriptor;
 }
 
-/* draw_text draws immediate-mode text for the current frame only. */
+/* Immediate text follows the process command lifetime. */
 static int
 text(lua_State *L)
 {
@@ -5065,10 +5149,9 @@ static const char *const global_names[] = {
     "text_size",
     "fade_off",
     "fade_on",
-    "draw_box",
     "draw_rect",
-    "draw_fcircle",
     "draw_circle",
+    "draw_line",
     "rand",
     "play_music",
     "update_music",
@@ -5725,45 +5808,50 @@ call_collision_namespace(lua_State *L)
     return process_collision_first(L);
 }
 
+static double
+graphic_dimension(lua_State *L, const char *name)
+{
+    raw_option(L, 1, name);
+    if (lua_type(L, -1) != LUA_TNUMBER)
+        luaL_error(L, "%s must be a number", name);
+    double value = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return value;
+}
+
 static int
 graphic_create(lua_State *L)
 {
     MvCollisionKind kind = (MvCollisionKind)lua_tointeger(L, lua_upvalueindex(1));
-    LuaGraphic graphic = {.shape = {.kind = kind}, .color = {255, 255, 255, 255}};
-    int options;
+    LuaGraphic graphic = {0};
+    int valid;
     if (kind == MV_COLLISION_CIRCLE) {
-        graphic.shape.radius = luaL_checknumber(L, 1);
-        options = 2;
+        static const char *const keys[] = {"radius", "color"};
+        check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+        double radius = graphic_dimension(L, "radius");
+        valid = mv_graphic_circle(radius, &graphic.shape);
     } else {
-        graphic.shape.width = luaL_checknumber(L, 1);
-        graphic.shape.height = luaL_checknumber(L, 2);
-        options = 3;
-    }
-    int valid = kind == MV_COLLISION_CIRCLE
-        ? mv_graphic_circle(graphic.shape.radius, &graphic.shape)
-        : mv_graphic_rect(graphic.shape.width, graphic.shape.height, 0, &graphic.shape);
-    if (!valid)
-        return luaL_error(L, "invalid graphic dimensions");
-    if (!lua_isnoneornil(L, options)) {
-        validate_options(L, options, "color", "pivot");
-        raw_option(L, options, "pivot");
+        static const char *const keys[] = {"width", "height", "color", "pivot"};
+        check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+        double width = graphic_dimension(L, "width");
+        double height = graphic_dimension(L, "height");
+        raw_option(L, 1, "pivot");
         if (!lua_isnil(L, -1)) {
             size_t length;
-            const char *pivot = luaL_checklstring(L, -1, &length);
-            if (strlen(pivot) != length ||
-                (strcmp(pivot, "center") && (kind != MV_COLLISION_RECT || strcmp(pivot, "top-left"))))
-                return luaL_error(L, "invalid graphic pivot");
-            graphic.top_left = strcmp(pivot, "top-left") == 0;
+            if (lua_type(L, -1) != LUA_TSTRING)
+                return luaL_error(L, "pivot must be a string");
+            const char *pivot = lua_tolstring(L, -1, &length);
+            if (length == sizeof("top-left") - 1 && strcmp(pivot, "top-left") == 0)
+                graphic.top_left = 1;
+            else if (length != sizeof("center") - 1 || strcmp(pivot, "center") != 0)
+                return luaL_error(L, "pivot must be 'center' or 'top-left'");
         }
         lua_pop(L, 1);
-        raw_option(L, options, "color");
-        if (!lua_isnil(L, -1))
-            graphic.color = check_color(L, -1);
-        lua_pop(L, 1);
+        valid = mv_graphic_rect(width, height, graphic.top_left, &graphic.shape);
     }
-    if (graphic.top_left) {
-        (void)mv_graphic_rect(graphic.shape.width, graphic.shape.height, 1, &graphic.shape);
-    }
+    if (!valid)
+        return luaL_error(L, "invalid graphic dimensions");
+    graphic.color = option_color(L, (MvColor){255, 255, 255, 255});
     LuaGraphic *stored = lua_newuserdatauv(L, sizeof(*stored), 0);
     *stored = graphic;
     luaL_setmetatable(L, "malvado.graphic");
@@ -6157,6 +6245,9 @@ open_module(lua_State *L)
         {"music_playing", music_playing},
         {"music_volume", music_volume},
         {"draw_text", text},
+        {"draw_rect", draw_rect},
+        {"draw_circle", draw_circle},
+        {"draw_line", draw_line},
         {"load_asset", load_asset},
         {"load_image", load_image},
         {"image_size", image_size},
@@ -6491,12 +6582,6 @@ open_module(lua_State *L)
     lua_pushboolean(L, 0);
     lua_pushcclosure(L, fade_switch, 1);
     lua_setfield(L, -2, "fade_on");
-    static const char *const primitives[] = {"draw_box", "draw_rect", "draw_fcircle", "draw_circle"};
-    for (size_t i = 0; i < sizeof(primitives) / sizeof(primitives[0]); ++i) {
-        lua_pushinteger(L, (lua_Integer)i + 1);
-        lua_pushcclosure(L, draw_primitive, 1);
-        lua_setfield(L, -2, primitives[i]);
-    }
     lua_getglobal(L, "math");
     lua_getfield(L, -1, "random");
     lua_remove(L, -2);
@@ -6529,8 +6614,8 @@ open_module(lua_State *L)
 static const char *const legacy_names[] = {
     "process", "frame", "font", "write", "change_text", "delete_text",
     "key", "clear_screen", "set_title", "get_screen_width", "get_screen_height",
-    "load_image", "time_seconds", "rand", "fpg", "set_color", "draw_box",
-    "draw_rect", "draw_fcircle", "draw_circle", "fade_off", "fade_on", NULL
+    "load_image", "time_seconds", "rand", "fpg", "set_color", "draw_rect",
+    "draw_circle", "draw_line", "fade_off", "fade_on", NULL
 };
 
 static void

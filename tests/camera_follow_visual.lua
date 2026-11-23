@@ -3,7 +3,7 @@
 require("malvado").import_globals()
 local explicit
 local Player = process(function(self)
-  self.graph = circle(8, {color = {255, 0, 0}})
+  self.graph = circle {radius = 8, color = {255, 0, 0}}
   camera_follow(self)
   while true do
     self.x = self.x + 5
@@ -11,7 +11,7 @@ local Player = process(function(self)
   end
 end)
 local Other = process(function(self)
-  self.graph = circle(5, {color = {0, 0, 255}})
+  self.graph = circle {radius = 5, color = {0, 0, 255}}
   explicit:follow(self)
   while true do
     self.x = self.x - 3
@@ -20,7 +20,7 @@ local Other = process(function(self)
 end)
 local HUD = process(function(self)
   self.camera = false
-  self.graph = rect(10, 10, {color = {0, 255, 0}})
+  self.graph = rect {width = 10, height = 10, color = {0, 255, 0}}
   while true do frame() end
 end)
 return {width = 160, height = 120, init = function()

@@ -12,7 +12,8 @@ local Actor = process(function(self)
   while true do
     if self.paint then
       set_color {0, 255, 0, 255}
-      draw_box(70, 50, 74, 54)
+      draw_rect {x = 70, y = 50, width = 4, height = 4}
+      draw_line {x1 = 60, y1 = 53, x2 = 82, y2 = 53, color = YELLOW}
     end
     frame()
   end
@@ -23,7 +24,7 @@ local Inventory = process(function(self)
   self.scroll = scroll(20, 0)
   while true do
     set_color {255, 255, 0, 255}
-    draw_box(40, 90, 80, 110)
+    draw_rect {x = 40, y = 90, width = 40, height = 20}
     frame()
   end
 end)
@@ -31,7 +32,7 @@ local Overlay = process(function(self)
   self.camera = false
   while true do
     set_color {255, 255, 255, 255}
-    draw_box(140, 100, 150, 110)
+    draw_rect {x = 140, y = 100, width = 10, height = 10}
     frame()
   end
 end)
@@ -53,20 +54,20 @@ return {width = 160, height = 120, init = function()
   clear_screen {0, 0, 0, 255}
   camera_set(50, 30)
   Actor({x = 70, y = 50, physical = true, paint = true,
-    graph = rect(20, 20, {color = {255, 0, 0}}),
+    graph = rect {width = 20, height = 20, color = {255, 0, 0}},
     scroll = scroll(10, 5), region = region(5, 10, 10, 10)})
   explicit = camera_create(100, 50, {viewport = region(40, 60, 50, 40)})
   blue = Actor({x = 110, y = 60, camera = explicit,
-    graph = circle(20, {color = {0, 0, 255}}),
+    graph = circle {radius = 20, color = {0, 0, 255}},
     scroll = scroll(5, 5), region = region(45, 65, 20, 20)})
   -- Empty viewport/region intersection and wholly off-screen viewport.
   Actor({x = 110, y = 60, camera = explicit, region = region(0, 0, 10, 10),
-    graph = circle(30, {color = {0, 255, 0}})})
+    graph = circle {radius = 30, color = {0, 255, 0}}})
   Actor({x = 0, y = 0, camera = camera_create(0, 0, {viewport = region(-100, -100, 20, 20)}),
-    graph = rect(1000, 1000, {color = {0, 255, 0}})})
-  Actor({x = 130, y = 50, graph = rect(10, 10, {color = {255, 0, 0}})})
+    graph = rect {width = 1000, height = 1000, color = {0, 255, 0}}})
+  Actor({x = 130, y = 50, graph = rect {width = 10, height = 10, color = {255, 0, 0}}})
   Actor({x = 80, y = 20, camera = false, z = 10,
-    graph = rect(10, 10, {color = {0, 255, 0}})})
+    graph = rect {width = 10, height = 10, color = {0, 255, 0}}})
   Inventory({z = 15})
   Overlay({z = 20})
   write {font = font {size = 16}, color = {255, 0, 255, 255}, text = "I", x = 110, y = 5}

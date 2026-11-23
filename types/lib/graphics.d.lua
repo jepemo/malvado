@@ -65,10 +65,43 @@
 ---@class MvAnimation
 ---@field sample fun(self: MvAnimation, elapsed_ms: number):MvGraphic
 
----Options for `rect` and `circle`.
----@class MvGraphicOptions
----@field color MvColor Fill color. Default: opaque white.
----@field pivot "center"|"top-left"? Pivot position (`rect` only). Default `"center"`.
+---Options for a reusable rectangle graphic.
+---@class MvRectOptions
+---@field width number Positive width in local pixels. Fractions are allowed.
+---@field height number Positive height in local pixels. Fractions are allowed.
+---@field color? MvColor Fill color. Defaults to opaque white.
+---@field pivot? "center"|"top-left" Origin on the rectangle. Defaults to "center".
+
+---Options for a reusable circle graphic with a center pivot.
+---@class MvCircleOptions
+---@field radius number Positive radius in local pixels. Fractions are allowed.
+---@field color? MvColor Fill color. Defaults to opaque white.
+
+---Options for an immediate rectangle.
+---@class MvDrawRectOptions
+---@field x integer Left edge in world pixels.
+---@field y integer Top edge in world pixels.
+---@field width integer Positive width. The edge at x + width is exclusive.
+---@field height integer Positive height. The edge at y + height is exclusive.
+---@field color? MvColor Command color. Defaults to the current drawing color.
+---@field filled? boolean Use false for an outline. Defaults to true.
+
+---Options for an immediate circle.
+---@class MvDrawCircleOptions
+---@field x integer Center x in world pixels.
+---@field y integer Center y in world pixels.
+---@field radius integer Positive radius in world pixels.
+---@field color? MvColor Command color. Defaults to the current drawing color.
+---@field filled? boolean Use false for an outline. Defaults to true.
+
+---Options for an immediate line.
+---@class MvDrawLineOptions
+---@field x1 integer Start x in world pixels.
+---@field y1 integer Start y in world pixels.
+---@field x2 integer End x in world pixels.
+---@field y2 integer End y in world pixels.
+---@field color? MvColor Command color. Defaults to the current drawing color.
+---@field thickness? number Positive thickness in world pixels. Defaults to 1.
 
 ---Options for `animation` with a frame list.
 ---@class MvAnimationOptions

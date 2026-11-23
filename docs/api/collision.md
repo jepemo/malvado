@@ -289,7 +289,7 @@ local world = world_create()
 world:add_rect({x = 300, y = 100, width = 40, height = 280})
 local Player = process(function(self)
   self.world = world
-  self.graph = require("malvado").graphics.circle(16)
+  self.graph = require("malvado").graphics.circle {radius = 16}
   local result = world_move(4, 0)
   if result.hit then print("Wall", result.id) end
 end)

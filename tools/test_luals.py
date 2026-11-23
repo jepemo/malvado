@@ -38,6 +38,10 @@ clear_screen(BLACK)
 fade_to {color = TRANSPARENT, ticks = 30}
 local Player = process(function(self)
   self.fps = 30
+  self.graph = circle {radius = 20, color = GREEN}
+  draw_rect {x = 0, y = 0, width = 4, height = 6, filled = false}
+  draw_circle {x = 20, y = 20, radius = 5, color = BLUE}
+  draw_line {x1 = 0, y1 = 0, x2 = 4, y2 = 6, thickness = 1.5}
   self.custom = 1
   local v = self.custom
   while true do frame() end
@@ -54,8 +58,9 @@ local f = mv.font {size = 50}
 local id = mv.write {font = f, text = "x", x = 1, y = 2}
 mv.change_text(id, {text = "y", color = {r = 1, g = 2, b = 3, a = 120}})
 mv.set_color(mv.colors.RED)
-mv.circle(2, {color = {r = 2, g = 0, b = 0}})
-mv.graphics.rect(2, 2, {color = mv.colors.PINK})
+mv.circle {radius = 2, color = {r = 2, g = 0, b = 0}}
+mv.graphics.rect {width = 2, height = 2, color = mv.colors.PINK, pivot = "top-left"}
+mv.draw_line {x1 = 0, y1 = 0, x2 = 2, y2 = 2, color = mv.colors.YELLOW}
 local current = mv.fade_color()
 mv.set_color({current[1], current[2], current[3], current[4]})
 local w, h = mv.text_size(id)

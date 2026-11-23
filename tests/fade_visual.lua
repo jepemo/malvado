@@ -7,7 +7,7 @@ local function draw_frames(count)
     mv.set_color {255, 255, 255, 255}
     -- Invalid updates must not partially replace the white command color.
     assert(not pcall(mv.set_color, {0, 0, 256, 255}))
-    mv.draw_box(0, 0, 64, 64)
+    mv.draw_rect {x = 0, y = 0, width = 64, height = 64}
     mv.frame()
   end
 end

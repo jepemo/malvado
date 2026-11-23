@@ -93,10 +93,9 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `text_size` | `mv.text_size` |
 | `fade_off` | `mv.fade_off` |
 | `fade_on` | `mv.fade_on` |
-| `draw_box` | `mv.draw_box` |
 | `draw_rect` | `mv.draw_rect` |
-| `draw_fcircle` | `mv.draw_fcircle` |
 | `draw_circle` | `mv.draw_circle` |
+| `draw_line` | `mv.draw_line` |
 | `rand` | `mv.rand` |
 | `play_music` | `mv.play_music` |
 | `update_music` | `mv.update_music` |

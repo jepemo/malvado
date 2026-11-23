@@ -38,7 +38,7 @@ const groups = [
   {
     id: 'drawing', label: 'Drawing', guide: 'drawing',
     summary: 'Draw shapes and text, and set the drawing state.',
-    flat: ['draw_box', 'draw_rect', 'draw_fcircle', 'draw_circle', 'draw_text',
+    flat: ['draw_rect', 'draw_circle', 'draw_line', 'draw_text',
       'set_color', 'clear_screen', 'get_screen_width', 'get_screen_height'],
   },
   {
@@ -107,10 +107,9 @@ const flatSummaries = {
   process: 'Define a process. Call `process(fn, options)`; `mv.process` also holds the namespace functions.',
   collision: 'Find colliding processes. Call `collision(target)` to query the current process; `mv.collision` also holds the shape constructors.',
   key: 'Check whether a key is held. `key` and `key_down` are the same function.',
-  draw_box: 'Draw a filled rectangle.',
-  draw_rect: 'Draw a rectangle outline.',
-  draw_fcircle: 'Draw a filled circle.',
-  draw_circle: 'Draw a circle outline.',
+  draw_rect: 'Draw a filled or outlined rectangle.',
+  draw_circle: 'Draw a filled or outlined circle.',
+  draw_line: 'Draw a line between two points.',
   draw_text: 'Draw immediate-mode text with the built-in font.',
   set_color: 'Set the color that later drawing calls use.',
   clear_screen: 'Clear the window to a color.',

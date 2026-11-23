@@ -6,9 +6,7 @@ mv.import_globals()
 
 local Square = process(function()
   while not key("escape") do frame() end
-end, {defaults = {graph = rect(100, 100, {
-  pivot = "top-left", color = {255, 165, 70}
-})}})
+end, {defaults = {graph = rect {width = 100, height = 100, pivot = "top-left", color = {255, 165, 70}}}})
 
 local Circle = process(function(self)
   while not key("escape") do
@@ -24,7 +22,7 @@ local Circle = process(function(self)
     end
     frame()
   end
-end, {defaults = {graph = circle(20, {color = {80, 190, 255}})}})
+end, {defaults = {graph = circle {radius = 20, color = {80, 190, 255}}}})
 
 local game = {width = 640, height = 480, title = "Circle collision"}
 function game.init()

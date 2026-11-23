@@ -12,6 +12,6 @@ local Circle = process(function(self)
         if key(KEY_DOWN) then self.y = self.y + 4 end
         frame()
     end
-end, {defaults = {graph = circle(24, {color = {255, 190, 80}})}})
+end, {defaults = {graph = circle {radius = 24, color = {255, 190, 80}}}})
 
 start(function() Circle({x = 400, y = 300}) end, {title = "Move"})

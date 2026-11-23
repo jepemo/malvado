@@ -44,9 +44,12 @@ static void check_frame(void *user)
     Color inventory_clip = pixel(image, 55, 95), hud = pixel(image, 80, 20);
     Color restored = pixel(image, 145, 105);
     if (stage < 3) {
+        Color line = pixel(image, 12, 18), line_clip = pixel(image, 15, 18);
         assert(red.r > 240 && red.g < 10 && red.b < 10);
         assert(immediate.g > 240 && immediate.r < 10);
         assert(clipped.r < 10 && clipped.g < 10 && clipped.b < 10);
+        assert(line.r == 255 && line.g == 255 && line.b == 0);
+        assert(line_clip.r == 0 && line_clip.g == 0 && line_clip.b == 0);
         assert(blue_clip.r < 10 && blue_clip.g < 10 && blue_clip.b < 10);
         if (stage == 1) assert(blue.r < 10 && blue.g < 10 && blue.b < 10);
         else assert(blue.b > 240 && blue.r < 10 && blue.g < 10);

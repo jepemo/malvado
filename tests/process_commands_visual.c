@@ -35,7 +35,7 @@ static Color pixel(int x, int y)
 static void check_frame(void *user)
 {
     Probe *probe = user;
-    if (probe->stage == 3) return;
+    if (probe->stage == 5) return;
     MvContext *ctx = malvado_debug_context();
     MvProcessRef ref;
     assert(mv_process_ref_create(ctx,1,&ref) == MV_OK);
@@ -47,7 +47,17 @@ static void check_frame(void *user)
     if (tick == 0) return;
     Color overlap = pixel(13,16), outside = pixel(28,28);
     if (probe->stage == 0) {
-        assert(count == 5 && overlap.r == 255 && overlap.g == 0 && outside.g == 255);
+        assert(count == 9 && overlap.r == 255 && overlap.g == 0 && outside.g == 255);
+        Color circle = pixel(12,12);
+        assert(circle.r == 0 && circle.g == 255 && circle.b == 0);
+        Color horizontal = pixel(20,18), adjacent = pixel(20,19);
+        Color vertical = pixel(35,17), beside = pixel(36,17);
+        Color diagonal = pixel(47,18), beyond = pixel(47,22), point = pixel(40,30);
+        assert(horizontal.r == 255 && horizontal.g == 255 && horizontal.b == 0);
+        assert(adjacent.r == 0 && adjacent.g == 255);
+        assert(vertical.r == 0 && vertical.g == 255 && beside.g == 0);
+        assert(diagonal.r >= 120 && diagonal.r <= 135 && diagonal.g == 0 && diagonal.b == 0);
+        assert(beyond.r == 0 && point.r == 255 && point.g == 255 && point.b == 255);
         /* A slow display runner can skip several ticks between frames. Append
          * early in the 12-tick cadence period so the duration check below tests
          * persistence, independently of when the first frame was presented. */
@@ -56,22 +66,32 @@ static void check_frame(void *user)
         probe->appended_tick = tick;
         probe->stage = 1;
     } else if (probe->stage == 1) {
-        if (count == 6) {
+        if (count == 10) {
             Color added = pixel(24,24);
             assert(added.r == 255 && added.g == 255);
+            assert(pixel(20,18).r == 255);
             return;
         }
-        assert(count == 5 && tick - probe->appended_tick >= 8);
+        assert(count == 9 && tick - probe->appended_tick >= 8);
         Color reset = pixel(24,24);
         assert(reset.r == 0 && reset.g == 255);
         assert(mv_process_signal(ctx,ref.id,MV_SIGNAL_FREEZE,0) == MV_OK);
-        assert(mv_process_draw_clear(ctx,ref) == MV_OK);
         probe->stage = 2;
+    } else if (probe->stage == 2) {
+        assert(count == 9 && pixel(20,18).r == 255);
+        assert(mv_process_signal(ctx,ref.id,MV_SIGNAL_SLEEP,0) == MV_OK);
+        probe->stage = 3;
+    } else if (probe->stage == 3) {
+        assert(count == 9 && pixel(20,18).r == 0 && outside.b == 0);
+        assert(mv_process_signal(ctx,ref.id,MV_SIGNAL_FREEZE,0) == MV_OK);
+        assert(mv_process_draw_clear(ctx,ref) == MV_OK);
+        probe->stage = 4;
     } else {
         assert(count == 0 && outside.b == 255 && outside.g == 0 && overlap.b == 255);
+        assert(pixel(20,18).r == 0 && pixel(35,17).g == 0);
         int killed;
         assert(mv_process_kill(ctx,ref,&killed) == MV_OK && killed);
-        probe->stage = 3;
+        probe->stage = 5;
     }
 }
 
@@ -83,6 +103,6 @@ int main(int argc, char **argv)
     malvado_debug_set_frame_hook(check_frame,&probe);
     assert(malvado_run(2,args) == 0);
     malvado_debug_set_frame_hook(NULL,NULL);
-    assert(probe.stage == 3);
+    assert(probe.stage == 5);
     return 0;
 }

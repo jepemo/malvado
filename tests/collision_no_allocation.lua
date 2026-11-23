@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 local p = mv.process
-local shape = mv.graphics.circle(2)
+local shape = mv.graphics.circle {radius = 2}
 local Worker = p(function() end, {defaults = {graph = shape}})
 local a, b = Worker(), Worker()
 assert(p.collision(a, Worker) == b)

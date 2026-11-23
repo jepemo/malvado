@@ -15,7 +15,8 @@ legacy.import_globals()
 legacy.import_globals()
 assert(process == mv.process and frame ~= mv.frame and key == mv.key)
 assert(fpg == mv.legacy_fpg)
-assert(draw_box == mv.draw_box and set_color == mv.set_color)
+assert(draw_rect == mv.draw_rect and draw_circle == mv.draw_circle)
+assert(draw_line == mv.draw_line and set_color == mv.set_color)
 assert(fade_off == mv.fade_off and fade_on == mv.fade_on)
 assert(not pcall(frame))
 assert(set_title == mv.set_title and not pcall(set_title, "Headless"))
@@ -31,7 +32,7 @@ local ran = false
 local task = process(function()
   assert(not key("escape"))
   set_color {255, 0, 0, 255}
-  draw_box(1, 1, 5, 5)
+  draw_rect {x = 1, y = 1, width = 4, height = 4}
   frame()
   ran = true
 end)

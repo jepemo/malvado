@@ -3,16 +3,24 @@
 
 local mv = require("malvado")
 local graphics, collision = mv.graphics, mv.collision
-local circle = graphics.circle(2, {color = {80, 190, 255}})
-local box = graphics.rect(4, 2, {pivot = "top-left", color = {255, 165, 70, 200}})
-assert(not pcall(graphics.circle, 0))
-assert(not pcall(graphics.circle, 1e-310))
-assert(not pcall(graphics.rect, 1, math.huge))
-assert(not pcall(graphics.circle, 2, {pivot = "top-left"}))
-assert(not pcall(graphics.rect, 2, 2, {pivot = "other"}))
-assert(not pcall(graphics.circle, 2, {color = {1, 2, 256}}))
-assert(not pcall(graphics.circle, 2, {color = {1, 2}}))
-assert(not pcall(graphics.circle, 2, {extra = 1}))
+assert(mv.circle == graphics.circle and mv.rect == graphics.rect)
+local circle = graphics.circle {radius = 2, color = {80, 190, 255}}
+local box = graphics.rect {width = 4, height = 2, pivot = "top-left", color = {255, 165, 70, 200}}
+assert(graphics.circle {radius = 2.5})
+assert(graphics.rect {width = 3.5, height = 1.25, pivot = "center"})
+for _, invalid in ipairs({0, -1, 1e-310, math.huge, 0/0, "2", false}) do
+  assert(not pcall(graphics.circle, {radius = invalid}))
+  assert(not pcall(graphics.rect, {width = invalid, height = 2}))
+  assert(not pcall(graphics.rect, {width = 2, height = invalid}))
+end
+assert(not pcall(graphics.rect, {width = 2}))
+assert(not pcall(graphics.circle, {}))
+assert(not pcall(graphics.circle, {radius = 2, pivot = "center"}))
+assert(not pcall(graphics.rect, {width = 2, height = 2, pivot = "other"}))
+assert(not pcall(graphics.rect, {width = 2, height = 2, pivot = "center\0"}))
+assert(not pcall(graphics.circle, {radius = 2, color = {1, 2, 256}}))
+assert(not pcall(graphics.circle, {radius = 2, color = {1, 2}}))
+assert(not pcall(graphics.circle, {radius = 2, extra = 1}))
 assert(not pcall(function() circle.radius = 3 end))
 local scroll = graphics.scroll(100, -20)
 assert(not pcall(graphics.scroll, math.huge, 0))
@@ -90,7 +98,7 @@ local controller = mv.process(function()
   mv.kill(b)
   local weak = setmetatable({}, {__mode = "v"})
   do
-    local graphic = graphics.circle(3)
+    local graphic = graphics.circle {radius = 3}
     weak[1] = graphic
     local once = mv.process(function(self) assert(self.graph) end, {defaults = {graph = graphic}})
     once()

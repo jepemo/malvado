@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 mv.import_globals()
-local box = mv.graphics.rect(20, 20, {pivot = "top-left", color = {255, 0, 0}})
+local box = mv.graphics.rect {width = 20, height = 20, pivot = "top-left", color = {255, 0, 0}}
 local square = process(function(self)
   frame()
   self.scroll = mv.graphics.scroll(10, 5)
@@ -13,14 +13,14 @@ end, {defaults = {graph = box, region = mv.graphics.region(10, 10, 20, 20),
 local hud = process(function()
   while true do
     set_color {0, 255, 0, 255}
-    draw_box(45, 10, 50, 15)
+    draw_rect {x = 45, y = 10, width = 5, height = 5}
     frame()
   end
 end)
 local blue = process(function()
   while true do
     set_color {0, 0, 255, 255}
-    draw_box(10, 40, 20, 50)
+    draw_rect {x = 10, y = 40, width = 10, height = 10}
     frame()
   end
 end, {defaults = {scroll = mv.graphics.scroll(5, 0),

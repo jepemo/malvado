@@ -132,6 +132,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_draw_circle`
 - `mv_process_draw_clear`
 - `mv_process_draw_count`
+- `mv_process_draw_line`
 - `mv_process_draw_text`
 - `mv_process_graphic_clear`
 - `mv_process_graphic_get`

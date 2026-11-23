@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local main
 main = mv.process(function(self)
-  self.graph = mv.graphics.circle(5)
+  self.graph = mv.graphics.circle {radius = 5}
   self.x = 0
   mv.frame()
   local native = mv.find(main)[2]

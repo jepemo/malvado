@@ -85,16 +85,13 @@ function send(handle, message) end
 ---@param options? MvStartOptions
 function start(body, options) end
 
----@param width number
----@param height number
----@param options? MvGraphicOptions
+---@param options MvRectOptions
 ---@return MvGraphic
-function rect(width, height, options) end
+function rect(options) end
 
----@param radius number
----@param options? MvGraphicOptions
+---@param options MvCircleOptions
 ---@return MvGraphic
-function circle(radius, options) end
+function circle(options) end
 
 ---@param x integer
 ---@param y integer
@@ -289,7 +286,7 @@ function delete_text(id) end
 ---@overload fun(id: integer):integer, integer
 function text_size(font, text) end
 
----Draw immediate-mode text for the current frame only.
+---Queue immediate text until the process next runs.
 ---@param options MvDrawTextOptions
 function draw_text(options) end
 
@@ -362,27 +359,17 @@ function fade_active() end
 ---@return MvColorRGBA color
 function fade_color() end
 
----@param x1 integer
----@param y1 integer
----@param x2 integer
----@param y2 integer
-function draw_box(x1, y1, x2, y2) end
+---Queue a filled or outlined rectangle until the process next runs.
+---@param options MvDrawRectOptions
+function draw_rect(options) end
 
----@param x integer
----@param y integer
----@param width integer
----@param height integer
-function draw_rect(x, y, width, height) end
+---Queue a filled or outlined circle until the process next runs.
+---@param options MvDrawCircleOptions
+function draw_circle(options) end
 
----@param x integer
----@param y integer
----@param radius integer
-function draw_fcircle(x, y, radius) end
-
----@param x integer
----@param y integer
----@param radius integer
-function draw_circle(x, y, radius) end
+---Queue a line until the process next runs.
+---@param options MvDrawLineOptions
+function draw_line(options) end
 
 ---@param title string
 function set_title(title) end

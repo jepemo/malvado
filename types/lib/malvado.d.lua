@@ -99,8 +99,8 @@
 ---@field KEY_BACKSPACE "backspace"
 
 ---@class MvGraphicsNamespace
----@field rect fun(width: number, height: number, options?: MvGraphicOptions):MvGraphic
----@field circle fun(radius: number, options?: MvGraphicOptions):MvGraphic
+---@field rect fun(options: MvRectOptions):MvGraphic
+---@field circle fun(options: MvCircleOptions):MvGraphic
 ---@field region fun(x: integer, y: integer, width: integer, height: integer):MvRegion
 ---@field scroll fun(x: number, y: number):MvScroll
 ---@field sprite fun(atlas: MvAtlas, id: integer):MvGraphic
@@ -230,17 +230,14 @@ function malvado.send(handle, message) end
 function malvado.start(body, options) end
 
 ---Create a rectangle process graphic.
----@param width number
----@param height number
----@param options? MvGraphicOptions
+---@param options MvRectOptions
 ---@return MvGraphic
-function malvado.rect(width, height, options) end
+function malvado.rect(options) end
 
 ---Create a circle process graphic.
----@param radius number
----@param options? MvGraphicOptions
+---@param options MvCircleOptions
 ---@return MvGraphic
-function malvado.circle(radius, options) end
+function malvado.circle(options) end
 
 ---Create a drawing region descriptor.
 ---@param x integer
@@ -531,7 +528,7 @@ function malvado.delete_text(id) end
 ---@overload fun(id: integer):integer, integer
 function malvado.text_size(font, text) end
 
----Draw immediate-mode text for the current frame only.
+---Queue immediate text until the process next runs.
 ---No persistent text object is created. Must be called inside a process.
 ---
 ---```lua
@@ -540,8 +537,7 @@ function malvado.text_size(font, text) end
 ---@param options MvDrawTextOptions
 function malvado.draw_text(options) end
 
----Set the drawing color for subsequent `draw_box`, `draw_rect`, `draw_circle`
----and `draw_fcircle` calls.
+---Set the shared default color for `draw_rect`, `draw_circle`, and `draw_line`.
 ---@param color MvColor
 function malvado.set_color(color) end
 
@@ -574,35 +570,17 @@ function malvado.fade_active() end
 ---@return MvColorRGBA color
 function malvado.fade_color() end
 
----Queue a filled box draw with the color set by `set_color`.
----Must be called inside a process.
----@param x1 integer
----@param y1 integer
----@param x2 integer
----@param y2 integer
-function malvado.draw_box(x1, y1, x2, y2) end
+---Queue a filled or outlined rectangle until the process next runs.
+---@param options MvDrawRectOptions
+function malvado.draw_rect(options) end
 
----Queue an outlined rectangle draw with the color set by `set_color`.
----Must be called inside a process.
----@param x integer
----@param y integer
----@param width integer
----@param height integer
-function malvado.draw_rect(x, y, width, height) end
+---Queue a filled or outlined circle until the process next runs.
+---@param options MvDrawCircleOptions
+function malvado.draw_circle(options) end
 
----Queue a filled circle draw with the color set by `set_color`.
----Must be called inside a process.
----@param x integer
----@param y integer
----@param radius integer
-function malvado.draw_fcircle(x, y, radius) end
-
----Queue an outlined circle draw with the color set by `set_color`.
----Must be called inside a process.
----@param x integer
----@param y integer
----@param radius integer
-function malvado.draw_circle(x, y, radius) end
+---Queue a line until the process next runs.
+---@param options MvDrawLineOptions
+function malvado.draw_line(options) end
 
 ---Set the window title.
 ---@param title string

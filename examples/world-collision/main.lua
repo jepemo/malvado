@@ -5,7 +5,7 @@ local mv = require("malvado")
 mv.import_globals()
 
 local world = world_create()
-local player_graphic = circle(16, {color = {80, 190, 255}})
+local player_graphic = circle {radius = 16, color = {80, 190, 255}}
 world:add_rect({x = 300, y = 100, width = 40, height = 280})
 
 local Player = process(function(self)
@@ -18,8 +18,7 @@ local Player = process(function(self)
     if key("down") then dy = 4 end
     world_move(dx, dy)
 
-    set_color {255, 165, 70, 255}
-    draw_box(300, 100, 340, 380)
+    draw_rect {x = 300, y = 100, width = 40, height = 280, color = {255, 165, 70}}
     draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end

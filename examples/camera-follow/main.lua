@@ -4,10 +4,10 @@ require("malvado").import_globals()
 
 local Wall = process(function()
   while not key("escape") do frame() end
-end, {defaults = {graph = rect(20, 120, {color = {255, 165, 70}})}})
+end, {defaults = {graph = rect {width = 20, height = 120, color = {255, 165, 70}}}})
 
 local Player = process(function(self)
-  self.graph = circle(16, {color = {80, 190, 255}})
+  self.graph = circle {radius = 16, color = {80, 190, 255}}
   camera_follow(self)
   while not key("escape") do
     if key("left") then self.x = self.x - 3 end

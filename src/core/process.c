@@ -605,6 +605,16 @@ mv_process_draw_circle(MvContext *ctx, MvProcessRef ref, int x, int y,
 }
 
 MvResult
+mv_process_draw_line(MvContext *ctx, MvProcessRef ref, int x1, int y1,
+                     int x2, int y2, double thickness, MvColor color)
+{
+    if (!isfinite(thickness) || thickness < FLT_MIN || thickness > FLT_MAX / 16)
+        return MV_INVALID_ARGUMENT;
+    return malvado_process_draw_owned(ctx, ref, (MvStoredDraw){.kind = MV_STORED_LINE,
+        .x = x1, .y = y1, .x2 = x2, .y2 = y2, .thickness = (float)thickness, .color = color});
+}
+
+MvResult
 mv_process_draw_text(MvContext *ctx, MvProcessRef ref, const char *text,
                      int x, int y, int size, MvColor color)
 {

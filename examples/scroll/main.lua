@@ -12,19 +12,17 @@ local Scene = process(function(self)
     if key("up") then camera_y = camera_y - 3 end
     if key("down") then camera_y = camera_y + 3 end
     self.scroll = scroll(camera_x, camera_y)
-    set_color {255, 165, 70, 255}
-    draw_box(280, 180, 340, 240)
+    draw_rect {x = 280, y = 180, width = 60, height = 60, color = {255, 165, 70}}
     frame()
   end
 end, {defaults = {
-  graph = rect(80, 60, {pivot = "top-left", color = {80, 190, 255}}),
+  graph = rect {width = 80, height = 60, pivot = "top-left", color = {80, 190, 255}},
   region = region(40, 60, 300, 240)
 }})
 
 local Overlay = process(function()
   while not key("escape") do
-    set_color {240, 240, 240, 255}
-    draw_rect(40, 60, 340, 300)
+    draw_rect {x = 40, y = 60, width = 300, height = 240, color = {240, 240, 240}, filled = false}
     draw_text {text = "Arrow keys: scroll  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end

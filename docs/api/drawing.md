@@ -1,37 +1,76 @@
-# Draw rectangles and circles
+# Draw 2D shapes
 
-A process can draw filled or outlined shapes before it calls `mv.frame()`. Coordinates and radii use integer window pixels. The origin is at the top-left corner.
+Use immediate drawing for shapes that a process calculates each time it runs.
+Use a [reusable graphic](#process-graphics) when a shape should follow a
+process's position, rotation, and scale.
 
 ```lua
-local mv = require("malvado")
-local Shape = mv.process(function()
-  while not mv.key("escape") do
-    mv.set_color {60, 160, 255, 255}
-    mv.draw_box(20, 20, 120, 80)
-    mv.set_color {255, 255, 255, 180}
-    mv.draw_circle(180, 50, 30)
-    mv.frame()
+require("malvado").import_globals()
+
+local Overlay = process(function()
+  while not key(KEY_ESCAPE) do
+    draw_rect {x = 20, y = 20, width = 100, height = 60, color = BLUE}
+    draw_circle {x = 180, y = 50, radius = 30, color = WHITE, filled = false}
+    draw_line {x1 = 20, y1 = 90, x2 = 180, y2 = 90, color = YELLOW, thickness = 2}
+    frame()
   end
 end)
-mv.start(function() Shape() end)
+start(function() Overlay() end)
 ```
 
-`set_color(color)` sets the [color](#lua-colors) for later primitive commands.
-The color is shared by processes, so set it before drawing when a particular
-color is needed. A queued command keeps the color it had when it was created.
-The initial color is opaque white.
+Call these functions inside a running process. Each takes one options table
+and returns no values. The module has the same functions as
+`mv.draw_rect(options)`, `mv.draw_circle(options)`, and `mv.draw_line(options)`.
 
-- `mv.draw_box(x1, y1, x2, y2)` draws a filled rectangle. `mv.draw_rect` draws its outline. The second corner must be below and to the right of the first.
-- `mv.draw_fcircle(x, y, radius)` draws a filled circle. `mv.draw_circle` draws its outline. The radius must be positive.
+| Function | Required fields | Optional fields |
+| --- | --- | --- |
+| `draw_rect` | `x` and `y` are the top-left corner. `width` and `height` are positive integers. | `filled` defaults to `true`. `color` defaults to the current drawing color. |
+| `draw_circle` | `x` and `y` are the center. `radius` is a positive integer. | `filled` defaults to `true`. `color` defaults to the current drawing color. |
+| `draw_line` | `x1`, `y1`, `x2`, and `y2` are the endpoints. | `thickness` defaults to 1 world pixel. `color` defaults to the current drawing color. |
 
-Invalid geometry raises an error. Draw commands are valid only inside a running process. They follow the process's `z` order and persist until its next activation. The legacy compatibility import also provides these functions as globals.
+Immediate shapes use integer coordinates in world pixels. The origin is at
+the top left, and y increases downwards. A rectangle covers
+`[x, x + width)` by `[y, y + height)`. At unit scale the last column is
+`x + width - 1` and the last row is `y + height - 1`. Use `filled = false`
+to draw just the perimeter. A rectangle one pixel wide or high has no interior.
+Circles use the native one-pixel outline when `filled = false`.
 
-In C, call `mv_window_draw_box(x, y, width, height, filled, color)` or `mv_window_draw_circle(x, y, radius, filled, color)` between `mv_window_begin` and `mv_window_end`. Pass 1 for filled or 0 for outlined. The functions return 0 for invalid geometry or no window. C drawing follows call order.
+Line thickness can be fractional. The stroke is centered on the segment
+between the endpoint pixel centers. It has flat ends. Equal endpoints draw a
+square centered on that pixel, with sides equal to the thickness.
+
+Coordinates must fit a C `int`. Rectangle far edges and all four circle
+bounds must also fit a C `int`. Thickness must be finite and between
+`FLT_MIN` and `FLT_MAX / 16`, inclusive. Missing required fields, unknown
+options, invalid types and out-of-range values raise a Lua error before the
+command is added.
+
+## Drawing colors and command lifetime
+
+`set_color(color)` sets the default color for later rectangle, circle, and line
+commands. The initial color is opaque white. This setting is shared by
+processes. Pass `color` in the options to override it for one command. The
+command copies its color, and the override leaves the shared default
+unchanged. `draw_text` uses the same explicit color forms and defaults to opaque
+white. See [text](text.md).
+
+A process draws its graph first, followed by its commands in call order.
+Commands use the process's `z`, camera, region, and scroll. They use the
+coordinates you pass to them directly in that view. Each command stays visible
+until the process runs again, even at a lower `fps`. Sleeping processes are
+hidden. Frozen processes stay visible. Commands are released when the process
+ends.
 
 `mv.clear_screen(color)` sets the background for later frames. It validates
 all supplied channels and uses only RGB. The background is always opaque.
 For example, clearing to `TRANSPARENT` fills the window with opaque black.
 Invalid input raises an error and leaves the background unchanged.
+
+In C, call `mv_window_draw_box(x, y, width, height, filled, color)` or
+`mv_window_draw_circle(x, y, radius, filled, color)` between `mv_window_begin`
+and `mv_window_end`. They use the same geometry, with 1 for filled and 0 for
+outlined. The functions return 0 for invalid geometry or no window. These
+direct calls draw in call order.
 
 ## Lua colors
 
@@ -122,7 +161,7 @@ descriptor once and put it in `graph`:
 ```lua
 require("malvado").import_globals()
 local graphics = require("malvado").graphics
-local ball = graphics.circle(20, {color = {80, 190, 255}})
+local ball = graphics.circle {radius = 20, color = {80, 190, 255}}
 local Ball = process(function(self)
   while not key("escape") do
     self.x = self.x + 1
@@ -132,14 +171,14 @@ end, {defaults = {graph = ball}})
 start(function() Ball({x = 100, y = 100}) end)
 ```
 
-`graphics.circle(radius, options)` and `graphics.rect(width, height, options)`
-return immutable descriptors. Dimensions must be finite, positive, and in
-`FLT_MIN..FLT_MAX / 16` so the graphics backend can represent them. Options may
-contain a [color](#lua-colors). The default is opaque white. `pivot` defaults to `"center"` for both
-shapes. Rectangles also accept `"top-left"`. Circles only accept `"center"`.
-Invalid dimensions, colors, pivots, or unknown options raise an error. Lua
-retains the descriptor while it is referenced, including by process defaults.
-Descriptors can be shared between processes without sharing mutable fields.
+`mv.graphics.rect {width = w, height = h, color = color, pivot = pivot}`
+and `mv.graphics.circle {radius = r, color = color}` return immutable,
+shareable descriptors. The dimensions are finite numbers in
+`FLT_MIN..FLT_MAX / 16`. Fractional sizes are allowed. Both shapes default
+to opaque white. A rectangle defaults to a `"center"` pivot and can use
+`"top-left"`. A circle always uses its center. Missing required fields and
+invalid dimensions, color, pivot, or option names raise an error. Lua keeps
+the descriptor alive while any reference exists, including process defaults.
 
 A graph uses the process `x`, `y`, clockwise `angle` in degrees, and uniform
 `size` (default 1). `z` keeps its existing draw-order meaning. The graph is drawn
@@ -154,7 +193,8 @@ image and atlas sprite graphics.
 Without an explicit collider, a supported graphic also supplies its collision
 shape, using the same pivot and transform. See [collision](collision.md).
 `import_globals()` installs `rect`, `circle`, `region`, and `scroll` as the
-same constructors as `mv.graphics`. The geometric collision constructors stay
+same constructors as `mv.graphics`. The flat module fields `mv.rect` and
+`mv.circle` are also available. The geometric collision constructors stay
 in `mv.collision`; calling the imported `collision(target)` queries processes.
 
 In C, the raylib platform provides `mv_window_draw_transformed_rect` and
@@ -183,7 +223,7 @@ local mv = require("malvado")
 local viewport = mv.graphics.region(20, 20, 160, 100)
 local Actor = mv.process(function(self)
     while true do mv.frame() end
-end, {defaults = {region = viewport, graph = mv.graphics.circle(20)}})
+end, {defaults = {region = viewport, graph = mv.graphics.circle {radius = 20}}})
 ```
 
 `graphics.region(x, y, width, height)` accepts integer coordinates in the C
@@ -199,8 +239,7 @@ The region clips the process graph and immediate draw commands, including
 text and images. It does not clip persistent `write` text, other processes,
 or the screen fade. It does not move objects, change draw order, or affect
 collision geometry. Changes take effect at the next render; headless
-simulation does not require a window. Regions are independent of the scroll
-feature, which remains pending.
+simulation does not require a window. Regions stay fixed in window coordinates when scroll is applied.
 
 ## Window scrolling in C
 
@@ -232,47 +271,62 @@ uniform translation; it does not implement wrapping, parallax, tilemaps, zoom,
 or camera rotation.
 
 
-## Minimal graphic constructors
+## Combine a process graphic with immediate shapes
+
+Use the arrow keys to move the ball. The process renders the filled graphic
+automatically and adds an outline and a line each time it runs.
 
 ```lua
 require("malvado").import_globals()
+
 local Player = process(function(self)
-  self.graph = circle(20, {color = {80, 190, 255}})
-  self.region = region(40, 60, 300, 240)
-  self.scroll = scroll(10, 0)
-  while true do frame() end
+  self.graph = circle {radius = 20, color = GREEN}
+
+  while not key(KEY_ESCAPE) do
+    if key(KEY_LEFT) then self.x = self.x - 4 end
+    if key(KEY_RIGHT) then self.x = self.x + 4 end
+    if key(KEY_UP) then self.y = self.y - 4 end
+    if key(KEY_DOWN) then self.y = self.y + 4 end
+
+    draw_circle {x = self.x, y = self.y, radius = 24, color = WHITE, filled = false}
+    draw_line {x1 = self.x, y1 = self.y, x2 = self.x + 35, y2 = self.y,
+      color = YELLOW, thickness = 2}
+    frame()
+  end
 end)
-start(function() Player({x = 100, y = 100}) end)
+
+return {
+  title = "Drawing Demo",
+  width = 800,
+  height = 600,
+  init = function()
+    clear_screen(BLACK)
+    Player {x = 400, y = 300}
+  end
+}
 ```
 
-`rect(width, height, options?)`, `circle(radius, options?)`,
-`region(x, y, width, height)`, and `scroll(x, y)` are available after
-`import_globals()`. The flat module fields (`mv.rect`, `mv.circle`, `mv.region`,
-`mv.scroll`) and existing `mv.graphics` fields contain the same functions.
-They return the same immutable descriptors and use the validation and ownership
-rules above. Shapes default to a center pivot and opaque white; rectangles can
-select `pivot = "top-left"`. Use any [Lua color](#lua-colors). Unknown
-shape options raise an error. No `shape` namespace is required.
+## Migrate positional Lua drawing calls
 
-This increment preserves immediate drawing: `draw_rect` and `draw_box` take
-two corners, and filled/outlined circles keep their existing functions.
-`set_color` affects immediate primitives; it does not change a new descriptor's
-default color. A proposal to change those signatures needs a separate decision.
-An outlined drawing does not change collision geometry into a hollow shape.
-
+- Replace `draw_box(x1, y1, x2, y2)` with `draw_rect {x = x1, y = y1, width = x2 - x1, height = y2 - y1}`.
+- For the former positional `draw_rect`, also specify `filled = false`.
+- Replace `draw_fcircle(x, y, radius)` with `draw_circle {x = x, y = y, radius = radius}`. For the former positional `draw_circle`, also specify `filled = false`.
+- Move graphic dimensions into the options table. For example, `rect(32, 48, {color = RED})` becomes `rect {width = 32, height = 48, color = RED}` and `circle(20)` becomes `circle {radius = 20}`.
 
 ## Native process command collection
 
-C hosts can append `mv_process_draw_box`, `mv_process_draw_circle`, and
-`mv_process_draw_text` without a window. Text and colors are copied. Use
+C hosts can append `mv_process_draw_box`, `mv_process_draw_circle`,
+`mv_process_draw_line`, and `mv_process_draw_text` without a window. The line
+takes two integer endpoints, a double thickness, and a color, with the same
+bounds and rendering behavior as Lua. Text and colors are copied. Use
 `mv_process_draw_image_region` for retained image regions and transforms.
 The `_owned` variant also takes a binding lifetime owner on success. Native
 images are released before the owner. Failure preserves the previous list and
 caller ownership. Release commands before closing the window.
 
 Commands keep append order and use world coordinates. They do not use the
-selected graph's position, angle, scale, or collider. Box corners and circle
-bounds must fit C `int`. Text keeps the immediate built-in renderer behavior:
+selected graph's position, angle, scale, or collider. Rectangle far edges and
+circle bounds must fit C `int`. Text keeps the immediate built-in renderer behavior:
 raylib uses a minimum size of 10 pixels, including for nonpositive values.
 `mv_process_draw_count` reports the list length. `mv_process_draw_clear` releases
 the list. Clear is idempotent. Kill, return, and context cleanup also release it.

@@ -43,7 +43,10 @@ int mv_text_aligned_x(int x, int width, int alignment, int *out);
 
 /* Per-process drawing commands. Append copies values and text in call order.
  * Box dimensions and circle radius must be positive; filled is 0 or 1. Box
- * far corners and circle bounds must fit int. Text is a NUL-terminated string;
+ * exclusive far edges (x + width, y + height) and circle bounds must fit int.
+ * Line endpoints are pixel centers. Thickness is in world pixels and must
+ * be finite and in FLT_MIN..FLT_MAX/16. Equal endpoints draw a centered square.
+ * Text is a NUL-terminated string;
  * size is passed unchanged to the built-in renderer (raylib uses a minimum of
  * 10 pixels, including for nonpositive values).
  * Commands use world coordinates, not the graph's position/rotation/scale.
@@ -58,6 +61,8 @@ MvResult mv_process_draw_box(MvContext *ctx, MvProcessRef process,
     int x, int y, int width, int height, int filled, MvColor color);
 MvResult mv_process_draw_circle(MvContext *ctx, MvProcessRef process,
     int x, int y, int radius, int filled, MvColor color);
+MvResult mv_process_draw_line(MvContext *ctx, MvProcessRef process,
+    int x1, int y1, int x2, int y2, double thickness, MvColor color);
 MvResult mv_process_draw_text(MvContext *ctx, MvProcessRef process,
     const char *text, int x, int y, int size, MvColor color);
 MvResult mv_process_draw_count(MvContext *ctx, MvProcessRef process, size_t *out);

@@ -23,7 +23,7 @@ end, {defaults = {collider = mv.collision.circle(96)}})
 -- Lasers
 
 local Shot = process(function(self)
-  self.graph = circle(3)
+  self.graph = circle {radius = 3}
 
   for _ = 1, 90 do
     self.x = self.x + self.vx
@@ -87,7 +87,7 @@ end, {defaults = {size = 0.1, collider = mv.collision.circle(110, {offset_y = 10
 -- Stars
 
 local Star = process(function(self)
-  self.graph = circle(1)
+  self.graph = circle {radius = 1}
   self.z = -10
   while true do frame() end
 end)

@@ -1,7 +1,7 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
-local red = mv.graphics.rect(20, 20, {color = {255, 0, 0}})
-local green = mv.graphics.rect(20, 20, {color = {0, 255, 0}})
+local red = mv.graphics.rect {width = 20, height = 20, color = {255, 0, 0}}
+local green = mv.graphics.rect {width = 20, height = 20, color = {0, 255, 0}}
 local actor = mv.process(function(self)
   while true do
     -- The native frame hook changes -1; this round trip proves shared storage.

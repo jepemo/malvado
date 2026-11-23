@@ -134,14 +134,12 @@ local worker = mv.process(function(self)
     else
         mv.draw_image_region(image, 50, 40, 4, 0, 4, 8, 2, 4, 2, 90)
     end
-    mv.set_color {0, 0, 255, 255}
-    mv.draw_box(2, 30, 10, 36)
-    mv.set_color {255, 255, 0, 128}
-    mv.draw_rect(15, 45, 25, 55)
-    mv.set_color {0, 255, 255, 255}
-    mv.draw_fcircle(35, 50, 4)
-    mv.set_color {255, 0, 255, 255}
-    mv.draw_circle(55, 15, 4)
+    mv.set_color(mv.colors.BLUE)
+    mv.draw_rect {x = 2, y = 30, width = 8, height = 6}
+    mv.draw_rect {x = 15, y = 45, width = 10, height = 10, filled = false, color = {255, 255, 0, 128}}
+    mv.draw_rect {x = 12, y = 45, width = 1, height = 1, filled = false}
+    mv.draw_circle {x = 35, y = 50, radius = 4, color = {r = 0, g = 255, b = 255}}
+    mv.draw_circle {x = 55, y = 15, radius = 4, filled = false, color = mv.colors.MAGENTA}
     atlas = nil
     shared = nil
     image = nil

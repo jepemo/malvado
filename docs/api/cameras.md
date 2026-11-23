@@ -73,7 +73,7 @@ Do not modify a camera to an invalid value between calls.
 ```lua
 require("malvado").import_globals()
 local Player = process(function(self)
-  self.graph = circle(16)
+  self.graph = circle {radius = 16}
   camera_follow(self)
   while true do
     self.x = self.x + 3

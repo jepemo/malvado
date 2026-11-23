@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 local proc, graphics, collision = mv.process, mv.graphics, mv.collision
-local circle = graphics.circle(2)
+local circle = graphics.circle {radius = 2}
 local Enemy = proc(function() while true do proc.frame() end end,
                    {defaults = {graph = circle}})
 local Other = proc(function() while true do proc.frame() end end)
@@ -68,7 +68,7 @@ local controller = proc(function()
   assert(#hits == 100)
   for i = 1, 100 do assert(hits[i] == many[i]); mv.kill(many[i]) end
   assert(proc.collision(player, Enemy) == nil)
-  local rotated = Other({graph = graphics.rect(4, 2, {pivot = "top-left"}), x = 10, angle = 90})
+  local rotated = Other({graph = graphics.rect {width = 4, height = 2, pivot = "top-left"}, x = 10, angle = 90})
   local sensor = Other({x = 8.5, y = .5, collider = collision.rect(1, 1)})
   assert(proc.collision(rotated, sensor) == sensor)
   rotated.angle = 0

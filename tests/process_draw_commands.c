@@ -18,7 +18,9 @@
 #endif
 #include "../src/core/process.h"
 #include <assert.h>
+#include <float.h>
 #include <limits.h>
+#include <math.h>
 #include <string.h>
 
 static MvStepResult idle(MvContext *ctx, MvProcessId id, void *user)
@@ -37,6 +39,10 @@ static void inspect(const MvStoredDraw *command, void *user)
     } else if (*index == 1) {
         assert(command->kind == MV_STORED_CIRCLE && command->radius == 2 && command->filled == 0);
     } else if (*index == 2) {
+        assert(command->kind == MV_STORED_LINE && command->thickness == 1.5f);
+        assert(command->x == INT_MIN && command->y == 2 && command->x2 == INT_MAX && command->y2 == 3);
+        assert(command->color.a == 127);
+    } else if (*index == 3) {
         assert(command->kind == MV_STORED_TEXT && !strcmp(command->text,"copied"));
         assert(command->size == -1);
     } else assert(command->kind == MV_STORED_CUSTOM);
@@ -56,6 +62,12 @@ int main(void)
     assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 0);
     assert(mv_process_draw_box(ctx,ref,0,0,4,6,1,color) == MV_OK);
     assert(mv_process_draw_circle(ctx,ref,0,0,2,0,color) == MV_OK);
+    assert(mv_process_draw_line(ctx,ref,INT_MIN,2,INT_MAX,3,1.5,
+        (MvColor){1,2,3,127}) == MV_OK);
+    const double invalid[] = {0, -1, NAN, INFINITY, FLT_MIN / 2.0, FLT_MAX};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
+        assert(mv_process_draw_line(ctx,ref,0,0,0,0,invalid[i],color) == MV_INVALID_ARGUMENT);
+    assert(mv_process_draw_line(other,ref,0,0,1,1,1,color) == MV_INVALID_ARGUMENT);
     char text[] = "copied";
     assert(mv_process_draw_text(ctx,ref,text,INT_MIN,INT_MAX,-1,color) == MV_OK);
     text[0] = 'X';
@@ -80,10 +92,10 @@ int main(void)
     assert(mv_process_signal(ctx,id,MV_SIGNAL_FREEZE,0) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     unsigned index = 0;
-    assert(malvado_process_draw_visit(ctx,ref,inspect,&index) == MV_OK && index == 4);
-    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 4);
+    assert(malvado_process_draw_visit(ctx,ref,inspect,&index) == MV_OK && index == 5);
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 5);
     assert(mv_process_graphic_clear(ctx,ref) == MV_OK);
-    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 4);
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 5);
     assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
     assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
     assert(malvado_process_draw_owned(ctx,ref,owned) == MV_OK);
@@ -92,6 +104,7 @@ int main(void)
     count = 99;
     assert(mv_process_draw_count(ctx,ref,&count) == MV_NOT_FOUND && count == 99);
     assert(malvado_process_draw_owned(ctx,ref,owned) == MV_NOT_FOUND && releases == 1);
+    assert(mv_process_draw_line(ctx,ref,0,0,1,1,1,color) == MV_NOT_FOUND);
     assert(mv_process_tick(ctx) == MV_OK && releases == 2);
     assert(mv_process_spawn(ctx,0,0,idle,NULL,NULL,&id) == MV_OK);
     assert(mv_process_ref_create(ctx,id,&ref) == MV_OK);

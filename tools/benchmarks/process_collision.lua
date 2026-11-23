@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local proc = mv.process
 local count = 1000
-local graph = mv.graphics.circle(2)
+local graph = mv.graphics.circle {radius = 2}
 local Enemy = proc(function() while true do proc.frame() end end, {defaults = {graph = graph}})
 local Controller = proc(function(self)
   self.graph = graph

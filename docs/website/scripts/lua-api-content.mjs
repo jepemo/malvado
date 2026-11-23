@@ -192,16 +192,15 @@ export default {
 
   'graphics/rect': {
     description: 'Create an immutable rectangle graphic for `self.graph`.',
-    params: [['width', 'A positive width.'], ['height', 'A positive height.'],
-      ['options?', 'A table with `color` and `pivot` (`"center"` or `"top-left"`).']],
-    example: 'local box = rect(32, 32, {color = {80, 190, 255}})',
-    related: ['circle', 'sprite'],
+    params: [['options', 'Positive `width` and `height` in local pixels. `color` defaults to white. `pivot` defaults to `"center"` and also accepts `"top-left"`.']],
+    example: 'local box = rect {width = 32, height = 32, color = BLUE}',
+    related: ['circle', 'draw_rect'],
   },
   'graphics/circle': {
-    description: 'Create an immutable circle graphic for `self.graph`.',
-    params: [['radius', 'A positive radius.'], ['options?', 'A table with `color`.']],
-    example: 'local ball = circle(20, {color = {255, 190, 80}})',
-    related: ['rect', 'sprite'],
+    description: 'Create an immutable circle graphic with a center pivot for `self.graph`.',
+    params: [['options', 'A positive `radius` in local pixels. `color` defaults to white.']],
+    example: 'self.graph = circle {radius = 20, color = ORANGE}',
+    related: ['rect', 'draw_circle'],
   },
   'graphics/region': {
     description: 'Create a drawing region that clips a process. Assign it to `self.region`.',
@@ -242,32 +241,26 @@ export default {
     related: ['graph', 'animation'],
   },
 
-  'drawing/draw_box': {
-    description: 'Draw a filled rectangle between two corners. Call it inside a process.',
-    params: [['x1', 'Left edge.'], ['y1', 'Top edge.'], ['x2', 'Right edge.'], ['y2', 'Bottom edge.']],
-    example: 'set_color {60, 160, 255, 255}\ndraw_box(20, 20, 120, 80)',
-    related: ['draw_rect', 'set_color'],
-  },
   'drawing/draw_rect': {
-    description: 'Draw a rectangle outline between two corners.',
-    params: [['x1', 'Left edge.'], ['y1', 'Top edge.'], ['x2', 'Right edge.'], ['y2', 'Bottom edge.']],
-    example: 'draw_rect(20, 20, 120, 80)',
-    related: ['draw_box', 'set_color'],
-  },
-  'drawing/draw_fcircle': {
-    description: 'Draw a filled circle.',
-    params: [['x', 'Center x.'], ['y', 'Center y.'], ['radius', 'A positive radius.']],
-    example: 'draw_fcircle(180, 50, 30)',
-    related: ['draw_circle', 'set_color'],
+    description: 'Queue a rectangle in a running process. The bottom and right edges at `x + width` and `y + height` are exclusive.',
+    params: [['options', 'Integer `x` and `y` give the top-left corner. `width` and `height` are positive integers. `filled` defaults to true. `color` defaults to the current drawing color.']],
+    example: 'draw_rect {x = 20, y = 20, width = 100, height = 60, color = BLUE, filled = false}',
+    related: ['draw_circle', 'draw_line', 'set_color'],
   },
   'drawing/draw_circle': {
-    description: 'Draw a circle outline.',
-    params: [['x', 'Center x.'], ['y', 'Center y.'], ['radius', 'A positive radius.']],
-    example: 'draw_circle(180, 50, 30)',
-    related: ['draw_fcircle', 'set_color'],
+    description: 'Queue a circle in a running process.',
+    params: [['options', 'Integer `x` and `y` give the center. `radius` is a positive integer. `filled` defaults to true. `color` defaults to the current drawing color.']],
+    example: 'draw_circle {x = 180, y = 50, radius = 30, color = WHITE}',
+    related: ['draw_rect', 'draw_line', 'set_color'],
+  },
+  'drawing/draw_line': {
+    description: 'Queue a line in a running process. The stroke is centered on the segment.',
+    params: [['options', 'Integer endpoints `x1`, `y1`, `x2`, and `y2` in world pixels. `thickness` is a positive number and defaults to 1. `color` defaults to the current drawing color.']],
+    example: 'draw_line {x1 = 20, y1 = 50, x2 = 120, y2 = 80, color = YELLOW, thickness = 2}',
+    related: ['draw_rect', 'draw_circle', 'set_color'],
   },
   'drawing/draw_text': {
-    description: 'Draw immediate-mode text with the built-in font for the current frame only. It creates no persistent text.',
+    description: 'Queue text with the built-in font until the process next runs.',
     params: [['options', 'A table: `text`, `x` and `y` are required; `size` (default 20) and `color` are optional.']],
     example: 'draw_text {text = "Hello World", x = 40, y = 40, size = 48}',
     related: ['set_color', 'write'],
@@ -275,8 +268,8 @@ export default {
   'drawing/set_color': {
     description: 'Set the color that later shape drawing calls use.',
     params: [['color', 'A palette color or a positional or named RGB(A) table. Channels are integers in 0..255. Alpha defaults to 255.']],
-    example: 'set_color {60, 160, 255, 255}\ndraw_box(20, 20, 120, 80)',
-    related: ['clear_screen', 'draw_box'],
+    example: 'set_color(BLUE)\ndraw_rect {x = 20, y = 20, width = 100, height = 60}',
+    related: ['clear_screen', 'draw_rect', 'draw_line'],
   },
   'drawing/clear_screen': {
     description: 'Set the background color for later frames. The background is always opaque; the alpha channel is ignored.',

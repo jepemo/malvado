@@ -34,9 +34,9 @@ invalid(region, 0, 0, 1.5, 2)
 invalid(region, math.huge, 0, 2, 2)
 invalid(scroll, math.huge, 0)
 invalid(scroll, 0, 0/0)
-local centered = rect(4, 4)
-local top_left = rect(4, 4, {pivot = "top-left", color = {255, 165, 70}})
-local ball = circle(1, {color = {80, 190, 255, 128}})
+local centered = rect {width = 4, height = 4}
+local top_left = rect {width = 4, height = 4, pivot = "top-left", color = {255, 165, 70}}
+local ball = circle {radius = 1, color = {80, 190, 255, 128}}
 local clip = region(100, 100, 1, 1)
 local offset = scroll(100, -20)
 for _, descriptor in ipairs({centered, top_left, ball, clip, offset}) do
@@ -53,13 +53,13 @@ local Controller = process(function(self)
   assert(process.collision(box, other) == nil) -- Touching edge only.
   other.x = 0
   assert(process.collision(box, other) == other)
-  box.graph = mv.graphics.rect(4, 4, {pivot = "top-left"})
+  box.graph = mv.graphics.rect {width = 4, height = 4, pivot = "top-left"}
   assert(process.collision(box, other) == other)
   assert(box.region == clip and box.scroll == offset)
   assert(box.x == 0 and box.y == 0) -- Visual descriptors do not move physics.
   kill(box)
   kill(other)
-  local transient = circle(3)
+  local transient = circle {radius = 3}
   weak[1] = transient
   local once = process(function(instance) assert(instance.graph == weak[1]) end)
   once({graph = transient})

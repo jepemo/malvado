@@ -301,6 +301,8 @@ MvResult mv_text_entry_font_clear(MvContext *ctx, uint64_t id);
  * with no clip/scroll scope; otherwise return 0 without drawing. Headless 0. */
 int mv_window_draw_texts(MvContext *ctx);
 /* Draw a rectangle or circle between begin and end. Filled must be 0 or 1.
+ * A rectangle starts at (x, y) with exclusive far edges at (x + width,
+ * y + height). Both dimensions must be positive and far edges must fit int.
  * Return 0 for invalid geometry, an invalid flag, or no window. */
 int mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor color);
 int mv_window_draw_circle(int x, int y, int radius, int filled, MvColor color);

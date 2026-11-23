@@ -858,6 +858,21 @@ draw_selected_graph(MvGraphic graphic, const MvImageGraphic *image,
 }
 
 static void
+draw_stored_line(const MvStoredDraw *command)
+{
+    Vector2 start = {(float)command->x + 0.5f, (float)command->y + 0.5f};
+    Vector2 end = {(float)command->x2 + 0.5f, (float)command->y2 + 0.5f};
+    Color color = {command->color.r, command->color.g, command->color.b, command->color.a};
+    float thickness = command->thickness;
+    if (start.x == end.x && start.y == end.y) {
+        DrawRectangleRec((Rectangle){start.x - thickness / 2, start.y - thickness / 2,
+            thickness, thickness}, color);
+        return;
+    }
+    DrawLineEx(start, end, thickness, color);
+}
+
+static void
 draw_stored_command(const MvStoredDraw *command, void *user)
 {
     (void)user;
@@ -869,6 +884,9 @@ draw_stored_command(const MvStoredDraw *command, void *user)
     case MV_STORED_CIRCLE:
         (void)mv_window_draw_circle(command->x, command->y, command->radius,
             command->filled, command->color);
+        break;
+    case MV_STORED_LINE:
+        draw_stored_line(command);
         break;
     case MV_STORED_TEXT:
         mv_window_draw_text(command->text, command->x, command->y, command->size, command->color);
@@ -1015,7 +1033,8 @@ mv_window_draw_box(int x, int y, int width, int height, int filled, MvColor colo
         (int64_t)x + width > INT_MAX || (int64_t)y + height > INT_MAX)
         return 0;
     Color c = {color.r, color.g, color.b, color.a};
-    if (filled)
+    /* A one-pixel-wide or one-pixel-high rectangle has no interior. */
+    if (filled || width == 1 || height == 1)
         DrawRectangle(x, y, width, height, c);
     else
         DrawRectangleLines(x, y, width, height, c);

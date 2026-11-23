@@ -69,8 +69,8 @@ local task = mv.process(function()
     mv.draw_text {text = "X", x = 10, y = 10, color = color}
     mv.change_text(id, {color = color})
     mv.delete_text(mv.write {font = font, text = "X", x = 0, y = 0, color = color})
-    assert(mv.rect(2, 2, {color = color}))
-    assert(mv.graphics.circle(2, {color = color}))
+    assert(mv.rect {width = 2, height = 2, color = color})
+    assert(mv.graphics.circle {radius = 2, color = color})
   end
   for _, color in ipairs({
     {255, 0, 0}, {255, 0, 0, 255}, {r = 255, g = 0, b = 0},

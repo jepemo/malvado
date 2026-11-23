@@ -5,7 +5,7 @@ local mv = require("malvado")
 local task = mv.process(function()
   for _ = 1, 20 do
     mv.set_color {255, 0, 0, 255}
-    mv.draw_box(0, 0, 40, 40)
+    mv.draw_rect {x = 0, y = 0, width = 40, height = 40}
     mv.frame()
   end
 end)

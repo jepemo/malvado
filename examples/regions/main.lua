@@ -13,14 +13,11 @@ local Player = process(function(self)
     if key("down") then self.y = self.y + 3 end
     frame()
   end
-end, {defaults = {region = viewport, graph = rect(60, 60, {
-  color = {80, 190, 255}
-})}})
+end, {defaults = {region = viewport, graph = rect {width = 60, height = 60, color = {80, 190, 255}}}})
 
 local Overlay = process(function()
   while not key("escape") do
-    set_color {240, 240, 240, 255}
-    draw_rect(100, 100, 260, 260)
+    draw_rect {x = 100, y = 100, width = 160, height = 160, color = {240, 240, 240}, filled = false}
     draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end

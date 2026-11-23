@@ -14,7 +14,7 @@ Build Malvado and run from the repository root:
 Each rock, shot, ship and star has its own process. `load_asset()` shares the
 live native PNG texture across processes. `pivot = "center"` keeps rotation and
 position centered without changing the default origin used by other examples.
-Shots and stars use the engine's `circle()` primitive.
+Shots and stars use reusable `circle {radius = ...}` graphics.
 
 The geometric colliders use source pixels, with process `size` applied once:
 rocks use radius 96 (28.8 at size 0.3, 14.4 at size 0.15), shots radius 3, and the

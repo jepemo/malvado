@@ -1,8 +1,8 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
 local Idle = mv.process(function() while true do mv.frame() end end)
-local rect = mv.graphics.rect(4, 2)
-local circle = mv.graphics.circle(1)
+local rect = mv.graphics.rect {width = 4, height = 2}
+local circle = mv.graphics.circle {radius = 1}
 local Actor = mv.process(function(self)
   local b = Idle {x = 2, graph = circle}
   local c = Idle {x = 7.75, graph = circle}

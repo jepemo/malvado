@@ -43,10 +43,14 @@ int malvado_process_visual_animation_uses(MvContext *ctx, MvProcessRef ref,
  * they must not allocate Lua objects or call process/context operations. Owned
  * records transfer data only on success; destroy only releases platform data. */
 #include "malvado/graphic.h"
-typedef enum { MV_STORED_BOX, MV_STORED_CIRCLE, MV_STORED_TEXT, MV_STORED_CUSTOM } MvStoredDrawKind;
+typedef enum {
+    MV_STORED_BOX, MV_STORED_CIRCLE, MV_STORED_LINE, MV_STORED_TEXT, MV_STORED_CUSTOM
+} MvStoredDrawKind;
 typedef struct {
     MvStoredDrawKind kind;
     int x, y, width, height, radius, size, filled;
+    int x2, y2;
+    float thickness;
     MvColor color;
     const char *text;
     void *data;

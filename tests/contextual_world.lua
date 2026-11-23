@@ -20,7 +20,7 @@ local function make_world(x)
   return world
 end
 local Enemy = process(function() while true do frame() end end,
-  {defaults = {graph = mv.graphics.circle(1)}})
+  {defaults = {graph = mv.graphics.circle {radius = 1}}})
 local peers = {}
 local Player = process(function(self)
   local first, second = peers[1], peers[2]
@@ -96,7 +96,7 @@ local Player = process(function(self)
   self.world = nil
   collectgarbage("collect")
   assert(weak[2] == nil)
-end, {defaults = {graph = mv.graphics.circle(1)}})
+end, {defaults = {graph = mv.graphics.circle {radius = 1}}})
 local game = {}
 function game.init()
   peers[1], peers[2] = Enemy({x = 0, y = 5}), Enemy({x = 0, y = 5})

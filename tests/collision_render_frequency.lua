@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 local proc = mv.process
-local shape = mv.graphics.circle(2)
+local shape = mv.graphics.circle {radius = 2}
 local Target = proc(function() while true do proc.frame() end end,
   {defaults = {graph = shape}})
 local target

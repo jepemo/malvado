@@ -158,8 +158,7 @@ def main():
         return
        end
       end
-      mv.set_color(255,0,0)
-      mv.draw_box(0,0,320,240)
+      mv.draw_rect {x = 0, y = 0, width = 320, height = 240, color = mv.colors.RED}
       mv.frame()
      end
      assert(not MODE_TEXT and not MODE_IME, 'text input timeout')
