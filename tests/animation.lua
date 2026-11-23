@@ -25,6 +25,7 @@ assert(not pcall(walk.sample, walk, math.huge))
 local custom = animation(library, {7, 42, 7}, {fps = 10, loop = false})
 assert(custom:sample(0) ~= nil and custom:sample(100) ~= nil)
 local elapsed = mv.graphics.animation_elapsed
+assert(elapsed == mv.animation_elapsed and elapsed == animation_elapsed)
 local Actor = process(function(self) while true do frame() end end)
 local Controller = process(function(self)
   assert(not pcall(animation, "bounce")) -- Missing file context.

@@ -25,10 +25,14 @@ local function draw_page()
   draw_text {text = names[page] .. " - Escape: menu", x = 20, y = 20, size = 24}
   if page == 1 then
     local cat = images.cats[(math.floor(ticks / 4) % 6) + 1]
-    draw_image(cat, 100 + (ticks * 2 % 550), 310)
+    draw_image {image = cat, x = 100 + (ticks * 2 % 550), y = 310}
     local index = 7 + (math.floor(ticks / 4) % 7)
     local sx, sy = (index % 8) * 80, math.floor(index / 8) * 94
-    draw_image_region(images.hero, 300, 150, sx, sy, 80, 94, 0, 0, 2, 0)
+    draw_image {
+      image = images.hero, x = 300, y = 150,
+      source = {x = sx, y = sy, width = 80, height = 94},
+      scale = 2
+    }
   elseif page == 2 then
     local character = text_input_next()
     while character do

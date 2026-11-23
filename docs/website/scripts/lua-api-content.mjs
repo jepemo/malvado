@@ -218,7 +218,7 @@ export default {
   'graphics/animation': {
     description: 'Select an animation sequence for `self.graph`. A process plays it on the simulation clock.',
     params: [['name', 'A named sequence in `self.file`, or a list of ids.'],
-      ['options?', 'A table with `fps` and `loop`.']],
+      ['options?', 'The `loop` flag defaults to true. Use `fps` only with a custom list of IDs. Named sequences use atlas frame durations.']],
     example: 'self.file = hero\nself.graph = animation("walk")',
     related: ['graph', 'animation_elapsed'],
   },
@@ -232,13 +232,7 @@ export default {
     description: 'Select one static graphic from a library for `self.graph`, without advancing it. Inside a process it uses `self.file`; call `graph(library, id)` to select from a library explicitly.',
     params: [['id', 'A graphic id in `self.file`, or in the given library.']],
     example: 'self.file = hero\nself.graph = graph(42)',
-    related: ['animation', 'sprite'],
-  },
-  'graphics/sprite': {
-    description: 'Create a fixed atlas sprite graphic for `self.graph`.',
-    params: [['atlas', 'An atlas from `load_atlas` or `load_aseprite`.'], ['id', 'A positive sprite id.']],
-    example: 'local ship = mv.graphics.sprite(atlas, 42)',
-    related: ['graph', 'animation'],
+    related: ['animation', 'draw_sprite'],
   },
 
   'drawing/draw_rect': {
@@ -310,19 +304,10 @@ export default {
     related: ['load_image'],
   },
   'images/draw_image': {
-    description: 'Draw an image at a position. Call it inside a process.',
-    params: [['image', 'An image.'], ['x', 'Left edge.'], ['y', 'Top edge.']],
-    example: 'draw_image(image, 40, 40)',
-    related: ['draw_image_region', 'load_image'],
-  },
-  'images/draw_image_region': {
-    description: 'Draw one region of an image with an optional pivot, scale and rotation.',
-    params: [['image', 'An image.'], ['x', 'Target x.'], ['y', 'Target y.'],
-      ['sx', 'Source x.'], ['sy', 'Source y.'], ['width', 'Source width.'], ['height', 'Source height.'],
-      ['pivot_x?', 'Pivot x, default 0.'], ['pivot_y?', 'Pivot y, default 0.'],
-      ['scale?', 'Scale, default 1.'], ['angle?', 'Clockwise degrees, default 0.']],
-    example: 'draw_image_region(image, 120, 80, 32, 0, 16, 24)',
-    related: ['draw_image', 'draw_sprite'],
+    description: 'Queue a full image or source rectangle in a process. The command stays active until the process next activates.',
+    params: [['options', '`image` is the loaded image. `x` and `y` give the pivot position. `source` defaults to the full image and takes integer `x`, `y`, `width` and `height`. `pivot` defaults to `"top-left"` and accepts `"center"` or a source-relative point. `scale` defaults to 1 and `angle` to 0 clockwise degrees.']],
+    example: 'draw_image {image = image, x = 40, y = 40}',
+    related: ['load_image', 'draw_sprite', 'graph'],
   },
   'images/load_atlas': {
     description: 'Load an atlas from JSON metadata and an image.',
@@ -337,11 +322,10 @@ export default {
     related: ['load_atlas', 'draw_sprite'],
   },
   'images/draw_sprite': {
-    description: 'Draw an atlas sprite. Call it inside a process.',
-    params: [['atlas', 'An atlas.'], ['id', 'A sprite id.'], ['x', 'Target x.'], ['y', 'Target y.'],
-      ['scale?', 'Scale, default 1.'], ['angle?', 'Clockwise degrees, default 0.']],
-    example: 'draw_sprite(atlas, 10, 120, 80)',
-    related: ['draw_image_region', 'sprite_info', 'sprite_id'],
+    description: 'Queue an atlas sprite in a process using its source rectangle, pivot, and trim metadata.',
+    params: [['options', '`atlas` is the loaded atlas. `id` is a positive integer sprite ID. `x` and `y` give the metadata pivot position. `scale` defaults to 1 and `angle` to 0 clockwise degrees.']],
+    example: 'draw_sprite {atlas = atlas, id = 10, x = 120, y = 80}',
+    related: ['draw_image', 'sprite_info', 'sprite_id', 'graph'],
   },
   'images/sprite_info': {
     description: 'Return a table with the metadata of one sprite.',
@@ -360,7 +344,7 @@ export default {
     description: 'Return the sprite id for a named animation at a given time.',
     params: [['atlas', 'An atlas.'], ['name', 'An animation name.'], ['elapsed_ms', 'A non-negative time in milliseconds.'],
       ['loop?', '`true` (default) or `false` to hold the last frame.']],
-    example: 'local id = animation_frame(atlas, "flash", elapsed, true)\ndraw_sprite(atlas, id, x, y)',
+    example: 'local id = animation_frame(atlas, "flash", elapsed, true)\ndraw_sprite {atlas = atlas, id = id, x = x, y = y}',
     related: ['animation_color', 'animation_repeats'],
   },
   'animations/animation_color': {

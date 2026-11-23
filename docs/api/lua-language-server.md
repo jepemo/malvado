@@ -115,3 +115,5 @@ The definitions cover processes and lifecycle, process fields, signals,
 graphics and drawing, sprites and animations, text and fonts, input, audio
 and music, resource loading, the namespaced API and the opt-in globals. The
 implementation is the source of truth; definitions follow the delivered API.
+LuaLS suggests the option fields inside `mv.draw_image { ... }` and
+`mv.draw_sprite { ... }`. The same types apply to the opt-in global functions.

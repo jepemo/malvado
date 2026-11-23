@@ -14,7 +14,7 @@ local has_assets = asset_option == "1"
 assert(has_assets or asset_option == "0")
 assert((mv.fpg ~= nil) == has_assets, "FPG namespace does not match the asset build")
 assert((mv.graphics.graph ~= nil) == has_assets, "graph selector does not match the asset build")
-assert((mv.graphics.sprite ~= nil) == has_assets, "sprite descriptor does not match the asset build")
+assert(mv.graphics.sprite == nil, "obsolete sprite selector is exported")
 for name, value in pairs(mv) do
   if type(value) == "table" then
     assert(known[name], "undocumented module namespace: " .. name)
@@ -25,10 +25,8 @@ for namespace, name in documentation:gmatch("| `mv%.([%w_]+)%.([%w_]+)` |") do
   local key = namespace .. "." .. name
   assert(not documented[key], "duplicate inventory entry: " .. key)
   documented[key] = true
-  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "sprite" or name == "graph" or name == "animation" or name == "animation_elapsed"))
-  if optional and not mv.fpg then
-    assert(namespace == "fpg" or mv.graphics.sprite == nil)
-  else
+  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "graph" or name == "animation" or name == "animation_elapsed"))
+  if not optional or has_assets then
     assert(type(mv[namespace]) == "table" and type(mv[namespace][name]) == "function",
       "documented function is missing: " .. key)
   end

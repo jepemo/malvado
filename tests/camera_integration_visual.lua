@@ -2,7 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
 mv.import_globals()
-local explicit, blue
+local explicit, blue, image
 local world = world_create()
 world:add_rect({x = 67, y = 47, width = 1, height = 1})
 local Actor = process(function(self)
@@ -11,8 +11,10 @@ local Actor = process(function(self)
   end
   while true do
     if self.paint then
-      set_color {0, 255, 0, 255}
-      draw_rect {x = 70, y = 50, width = 4, height = 4}
+      draw_image {
+        image = image, x = 70, y = 50,
+        source = {x = 4, y = 0, width = 4, height = 4}, scale = 2
+      }
       draw_line {x1 = 60, y1 = 53, x2 = 82, y2 = 53, color = YELLOW}
     end
     frame()
@@ -53,6 +55,7 @@ end)
 return {width = 160, height = 120, init = function()
   clear_screen {0, 0, 0, 255}
   camera_set(50, 30)
+  image = load_image("tests/fixtures/red.png")
   Actor({x = 70, y = 50, physical = true, paint = true,
     graph = rect {width = 20, height = 20, color = {255, 0, 0}},
     scroll = scroll(10, 5), region = region(5, 10, 10, 10)})

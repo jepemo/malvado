@@ -47,6 +47,8 @@ static void check_frame(void *user)
         Color line = pixel(image, 12, 18), line_clip = pixel(image, 15, 18);
         assert(red.r > 240 && red.g < 10 && red.b < 10);
         assert(immediate.g > 240 && immediate.r < 10);
+        assert(pixel(image, 14, 16).g == 255 && pixel(image, 15, 16).g == 0);
+        assert(pixel(image, 12, 19).g == 255 && pixel(image, 12, 20).g == 0);
         assert(clipped.r < 10 && clipped.g < 10 && clipped.b < 10);
         assert(line.r == 255 && line.g == 255 && line.b == 0);
         assert(line_clip.r == 0 && line_clip.g == 0 && line_clip.b == 0);

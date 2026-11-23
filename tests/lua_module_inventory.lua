@@ -27,7 +27,7 @@ local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 assert(asset_option == "0" or asset_option == "1")
 local has_assets = asset_option == "1"
 local optional = {animation=true, graph=true, load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
-  animation_frame=true, animation_color=true, atlas_pivot_color=true,
+  animation_frame=true, animation_elapsed=true, animation_color=true, atlas_pivot_color=true,
   animation_repeats=true, draw_sprite=true}
 for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do
   if has_assets or not optional[name] then

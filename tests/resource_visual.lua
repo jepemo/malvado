@@ -16,14 +16,13 @@ local consumer = mv.process(function()
   assert(creator.status == "dead")
   collectgarbage("collect")
   assert(weak[1] and weak[2])
-  mv.draw_image(image, 10, 10)
-  mv.draw_sprite(atlas, 7, 30, 10)
+  mv.draw_sprite {atlas = atlas, id = 7, x = 10, y = 10}
   image, atlas = nil, nil
   collectgarbage("collect")
-  assert(weak[1]) -- The queued drawing retains the image.
+  assert(weak[1] and weak[2]) -- The queued sprite retains its atlas and image.
   mv.frame()
   for _ = 1, 15 do
-    mv.draw_image(weak[1], 10, 10)
+    mv.draw_image {image = weak[1], x = 10, y = 10}
     mv.frame()
   end
   collectgarbage("collect")

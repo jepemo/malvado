@@ -9,14 +9,14 @@ local Red = mv.process(function(self)
   for tick = 1, 40 do
     if tick == 16 then self.z = -1 end
     if tick == 31 then self.z = 0 end
-    mv.draw_image_region(image, 10, 10, 0, 0, 4, 8)
+    mv.draw_image {image = image, x = 10, y = 10, source = {x = 0, y = 0, width = 4, height = 8}}
     mv.frame()
   end
 end)
 local Green = mv.process(function(self)
   assert(self.z == 0)
   for _ = 1, 40 do
-    mv.draw_image_region(image, 10, 10, 4, 0, 4, 8)
+    mv.draw_image {image = image, x = 10, y = 10, source = {x = 4, y = 0, width = 4, height = 8}}
     mv.frame()
   end
 end)

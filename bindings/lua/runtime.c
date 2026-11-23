@@ -61,7 +61,7 @@ typedef struct {
     lua_State *thread;
     int thread_ref;
     int self_ref;
-    int images_ref;
+    int draw_resources_ref;
     lua_Integer parent_id;
     lua_Integer priority;
     ProcessState state;
@@ -1391,7 +1391,7 @@ copy_default(lua_State *L, int source, int copies, unsigned depth)
 typedef struct {
     LuaSelf *self;
     lua_State *thread;
-    int self_ref, thread_ref, images_ref;
+    int self_ref, thread_ref, draw_resources_ref;
 } SpawnDraft;
 
 /* All Lua allocations for a process happen before the native spawn. */
@@ -1416,14 +1416,14 @@ prepare_spawn(lua_State *L)
     lua_rawgeti(L, LUA_REGISTRYINDEX, draft->self_ref);
     lua_xmove(L, draft->thread, 1);
     lua_newtable(L);
-    draft->images_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    draft->draw_resources_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     return 0;
 }
 
 static void
 discard_spawn(lua_State *L, SpawnDraft *draft)
 {
-    luaL_unref(L, LUA_REGISTRYINDEX, draft->images_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, draft->draw_resources_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, draft->thread_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, draft->self_ref);
 }
@@ -1524,7 +1524,7 @@ create_process(lua_State *L)
     MvProcessId parent = attached ? (MvProcessId)creator : 0;
     if (!lua_checkstack(L, 12))
         return luaL_error(L, "cannot prepare process");
-    SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .images_ref = LUA_NOREF};
+    SpawnDraft draft = {.self_ref = LUA_NOREF, .thread_ref = LUA_NOREF, .draw_resources_ref = LUA_NOREF};
     lua_pushcfunction(L, prepare_spawn);
     lua_pushlightuserdata(L, &draft);
     lua_pushvalue(L, fields);
@@ -1592,7 +1592,7 @@ create_process(lua_State *L)
         .thread = draft.thread,
         .thread_ref = draft.thread_ref,
         .self_ref = draft.self_ref,
-        .images_ref = draft.images_ref,
+        .draw_resources_ref = draft.draw_resources_ref,
         .parent_id = (lua_Integer)parent,
         .state = PROCESS_RUNNING,
         .first = 1,
@@ -2111,9 +2111,9 @@ check_single_options(lua_State *L, const char *const *keys, size_t count)
 }
 
 static int
-drawing_integer(lua_State *L, const char *name)
+drawing_integer(lua_State *L, int options, const char *name)
 {
-    raw_option(L, 1, name);
+    raw_option(L, options, name);
     int is_integer;
     lua_Integer value = lua_tointegerx(L, -1, &is_integer);
     if (lua_type(L, -1) != LUA_TNUMBER || !is_integer)
@@ -2147,14 +2147,21 @@ option_color(lua_State *L, MvColor fallback)
     return color;
 }
 
-static MvProcessRef
-drawing_process(lua_State *L)
+static Process *
+active_drawing_process(lua_State *L)
 {
     if (!engine.active || L != engine.active_thread)
         luaL_error(L, "drawing must be called inside a process");
     Process *process = find_process(engine.active_id);
     if (!process)
         luaL_error(L, "drawing must be called inside a live process");
+    return process;
+}
+
+static MvProcessRef
+drawing_process(lua_State *L)
+{
+    Process *process = active_drawing_process(L);
     return (MvProcessRef){engine.runtime_id, (MvProcessId)process->id};
 }
 
@@ -2173,10 +2180,10 @@ draw_rect(lua_State *L)
 {
     static const char *const keys[] = {"x", "y", "width", "height", "filled", "color"};
     check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
-    int x = drawing_integer(L, "x");
-    int y = drawing_integer(L, "y");
-    int width = drawing_integer(L, "width");
-    int height = drawing_integer(L, "height");
+    int x = drawing_integer(L, 1, "x");
+    int y = drawing_integer(L, 1, "y");
+    int width = drawing_integer(L, 1, "width");
+    int height = drawing_integer(L, 1, "height");
     int filled = drawing_filled(L);
     MvColor color = option_color(L, engine.draw.color);
     MvResult result = mv_process_draw_box(engine.context, drawing_process(L),
@@ -2189,9 +2196,9 @@ draw_circle(lua_State *L)
 {
     static const char *const keys[] = {"x", "y", "radius", "filled", "color"};
     check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
-    int x = drawing_integer(L, "x");
-    int y = drawing_integer(L, "y");
-    int radius = drawing_integer(L, "radius");
+    int x = drawing_integer(L, 1, "x");
+    int y = drawing_integer(L, 1, "y");
+    int radius = drawing_integer(L, 1, "radius");
     int filled = drawing_filled(L);
     MvColor color = option_color(L, engine.draw.color);
     MvResult result = mv_process_draw_circle(engine.context, drawing_process(L),
@@ -2204,10 +2211,10 @@ draw_line(lua_State *L)
 {
     static const char *const keys[] = {"x1", "y1", "x2", "y2", "thickness", "color"};
     check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
-    int x1 = drawing_integer(L, "x1");
-    int y1 = drawing_integer(L, "y1");
-    int x2 = drawing_integer(L, "x2");
-    int y2 = drawing_integer(L, "y2");
+    int x1 = drawing_integer(L, 1, "x1");
+    int y1 = drawing_integer(L, 1, "y1");
+    int x2 = drawing_integer(L, 1, "x2");
+    int y2 = drawing_integer(L, 1, "y2");
     raw_option(L, 1, "thickness");
     double thickness = 1;
     if (!lua_isnil(L, -1)) {
@@ -2728,91 +2735,116 @@ image_size(lua_State *L)
     return 2;
 }
 
-/* Preserve Lua image identity while native commands retain texture data.
- * Keep the root table on the stack until transactional native append returns. */
-static void
-root_command_image(lua_State *L, int images_ref)
-{
-    lua_rawgeti(L, LUA_REGISTRYINDEX, images_ref);
-    lua_pushvalue(L, 1);
-    lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
-}
-
+/* Keep the Lua resource alive until the process clears its native commands. */
 static int
-finish_image_command(lua_State *L, MvResult result)
+submit_image_command(lua_State *L, int owner, LuaImage *image,
+                     MvImageRegion region, MvImageTransform transform)
 {
-    if (result != MV_OK) {
+    if (!mv_image_region_valid(image->image, region, transform))
+        return luaL_error(L, "invalid image region or transform");
+    Process *process = active_drawing_process(L);
+    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
+    owner = lua_absindex(L, owner);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, process->draw_resources_ref);
+    lua_Integer slot = (lua_Integer)lua_rawlen(L, -1) + 1;
+    lua_pushvalue(L, owner);
+    lua_rawseti(L, -2, slot);
+    if (mv_process_draw_image_region(engine.context, reference, image->image,
+                                     region, transform) != MV_OK) {
         lua_pushnil(L);
-        lua_rawseti(L, -2, (lua_Integer)lua_rawlen(L, -2));
+        lua_rawseti(L, -2, slot);
         return luaL_error(L, "cannot append image command");
     }
     lua_pop(L, 1);
     return 0;
 }
 
-static int
-draw_image(lua_State *L)
-{
-    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
-    lua_Integer x = luaL_checkinteger(L, 2);
-    lua_Integer y = luaL_checkinteger(L, 3);
-    if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
-        return luaL_error(L, "image coordinate is outside the supported range");
-    if (!engine.active || L != engine.active_thread)
-        return luaL_error(L, "draw_image must be called inside a process");
-    Process *process = find_process(engine.active_id);
-    if (!process)
-        return luaL_error(L, "draw_image must be called inside a live process");
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
-    MvImageTransform transform = {(float)x, (float)y, 0, 0, 1, 0};
-    root_command_image(L, process->images_ref);
-    return finish_image_command(L, mv_process_draw_image_region(engine.context,
-        reference, image->image, region, transform));
-}
-
-static int
-region_integer(lua_State *L, int index)
-{
-    lua_Integer value = luaL_checkinteger(L, index);
-    if (value < 0 || value > INT_MAX)
-        luaL_argerror(L, index, "expected a non-negative integer within range");
-    return (int)value;
-}
-
 static float
-region_number(lua_State *L, int index, lua_Number fallback)
+image_draw_number(lua_State *L, int options, const char *name, int required, float fallback)
 {
-    lua_Number value = index <= 3 ? luaL_checknumber(L, index) : luaL_optnumber(L, index, fallback);
-    if (!isfinite(value) || value < -FLT_MAX || value > FLT_MAX)
-        luaL_argerror(L, index, "expected a finite number within range");
+    raw_option(L, options, name);
+    lua_Number value = fallback;
+    if (required || !lua_isnil(L, -1)) {
+        if (lua_type(L, -1) != LUA_TNUMBER)
+            luaL_error(L, "%s must be a number", name);
+        value = lua_tonumber(L, -1);
+        if (!isfinite(value) || fabs(value) > FLT_MAX)
+            luaL_error(L, "%s must be finite and within the supported range", name);
+    }
+    lua_pop(L, 1);
     return (float)value;
 }
 
-static int
-draw_image_region(lua_State *L)
+static MvImageTransform
+image_draw_transform(lua_State *L)
 {
-    LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     MvImageTransform transform = {
-        region_number(L, 2, 0), region_number(L, 3, 0),
-        region_number(L, 8, 0), region_number(L, 9, 0),
-        region_number(L, 10, 1), region_number(L, 11, 0)
+        .x = image_draw_number(L, 1, "x", 1, 0),
+        .y = image_draw_number(L, 1, "y", 1, 0),
+        .scale = image_draw_number(L, 1, "scale", 0, 1),
+        .rotation = image_draw_number(L, 1, "angle", 0, 0)
     };
-    MvImageRegion region = {
-        region_integer(L, 4), region_integer(L, 5),
-        region_integer(L, 6), region_integer(L, 7)
-    };
-    if (!mv_image_region_valid(image->image, region, transform))
-        return luaL_error(L, "invalid image region or transform");
-    if (!engine.active || L != engine.active_thread)
-        return luaL_error(L, "draw_image_region must be called inside a process");
-    Process *process = find_process(engine.active_id);
-    if (!process)
-        return luaL_error(L, "draw_image_region must be called inside a live process");
-    MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    root_command_image(L, process->images_ref);
-    return finish_image_command(L, mv_process_draw_image_region(engine.context,
-        reference, image->image, region, transform));
+    if (transform.scale <= 0)
+        luaL_error(L, "scale must be positive and within the supported range");
+    return transform;
+}
+
+static MvImageRegion
+image_draw_source(lua_State *L, LuaImage *image)
+{
+    MvImageRegion region = {0, 0, mv_image_width(image->image), mv_image_height(image->image)};
+    raw_option(L, 1, "source");
+    if (!lua_isnil(L, -1)) {
+        static const char *const keys[] = {"x", "y", "width", "height"};
+        int source = lua_gettop(L);
+        if (!lua_istable(L, source))
+            luaL_error(L, "source must be a table");
+        validate_table_keys(L, source, keys, sizeof(keys) / sizeof(keys[0]));
+        region = (MvImageRegion){
+            drawing_integer(L, source, "x"), drawing_integer(L, source, "y"),
+            drawing_integer(L, source, "width"), drawing_integer(L, source, "height")
+        };
+    }
+    lua_pop(L, 1);
+    return region;
+}
+
+static void
+image_draw_pivot(lua_State *L, MvImageRegion region, MvImageTransform *transform)
+{
+    raw_option(L, 1, "pivot");
+    if (lua_istable(L, -1)) {
+        static const char *const keys[] = {"x", "y"};
+        int pivot = lua_gettop(L);
+        validate_table_keys(L, pivot, keys, sizeof(keys) / sizeof(keys[0]));
+        transform->pivot_x = image_draw_number(L, pivot, "x", 1, 0);
+        transform->pivot_y = image_draw_number(L, pivot, "y", 1, 0);
+    } else if (!lua_isnil(L, -1)) {
+        size_t length = 0;
+        const char *pivot = lua_type(L, -1) == LUA_TSTRING ? lua_tolstring(L, -1, &length) : NULL;
+        if (pivot && length == 6 && memcmp(pivot, "center", length) == 0) {
+            transform->pivot_x = region.width / 2.0f;
+            transform->pivot_y = region.height / 2.0f;
+        } else if (!pivot || length != 8 || memcmp(pivot, "top-left", length) != 0) {
+            luaL_error(L, "pivot must be 'top-left', 'center', or a table with x and y");
+        }
+    }
+    lua_pop(L, 1);
+}
+
+static int
+draw_image(lua_State *L)
+{
+    static const char *const keys[] = {"image", "x", "y", "source", "pivot", "scale", "angle"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "image");
+    LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+    if (!image || !image->image)
+        return luaL_error(L, "image must be a live MvImage");
+    MvImageTransform transform = image_draw_transform(L);
+    MvImageRegion region = image_draw_source(L, image);
+    image_draw_pivot(L, region, &transform);
+    return submit_image_command(L, -1, image, region, transform);
 }
 
 #ifndef _WIN32
@@ -3024,19 +3056,15 @@ legacy_frame(lua_State *L)
     lua_setfield(L, 2, "width");
     lua_pushnumber(L, sheet_image ? 0 : region_height * scale);
     lua_setfield(L, 2, "height");
-    lua_replace(L, 1);
-    lua_settop(L, 1);
-    lua_pushnumber(L, x);
-    lua_pushnumber(L, y);
-    lua_pushinteger(L, x_source);
-    lua_pushinteger(L, y_source);
-    lua_pushinteger(L, region_width);
-    lua_pushinteger(L, region_height);
-    lua_pushnumber(L, sheet_image ? 0 : region_width / 2.0);
-    lua_pushnumber(L, sheet_image ? 0 : region_height / 2.0);
-    lua_pushnumber(L, scale);
-    lua_pushnumber(L, angle);
-    draw_image_region(L);
+    if (fabs(x) > FLT_MAX || fabs(y) > FLT_MAX || fabs(angle) > FLT_MAX)
+        return luaL_error(L, "legacy graphic fields are outside the supported range");
+    LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
+    MvImageRegion region = {x_source, y_source, region_width, region_height};
+    MvImageTransform transform = {
+        (float)x, (float)y, sheet_image ? 0 : region_width / 2.0f,
+        sheet_image ? 0 : region_height / 2.0f, (float)scale, (float)angle
+    };
+    submit_image_command(L, -1, image, region, transform);
     lua_settop(L, 0);
     return lua_yield(L, 0);
 }
@@ -3056,7 +3084,7 @@ fpg_parse(lua_State *L)
 {
     size_t length;
     const char *data = luaL_checklstring(L, 1, &length);
-    LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 1);
+    LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 2);
     value->fpg = NULL;
     value->transparent_zero = 1;
     luaL_setmetatable(L, "malvado.fpg");
@@ -3080,7 +3108,7 @@ fpg_manifest_parse(lua_State *L)
 {
     size_t length;
     const char *json = luaL_checklstring(L, 1, &length);
-    LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 2);
+    LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 3);
     value->manifest = NULL;
     luaL_setmetatable(L, "malvado.fpg_manifest");
     const char *error = NULL;
@@ -3381,7 +3409,7 @@ load_atlas_format(lua_State *L, int aseprite)
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     size_t length;
     const char *json = luaL_checklstring(L, 2, &length);
-    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
+    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 3);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     const char *error = NULL;
@@ -3533,25 +3561,25 @@ sprite_info(lua_State *L)
 static int
 draw_sprite(lua_State *L)
 {
-    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
-    lua_Integer id = luaL_checkinteger(L, 2);
-    lua_Number x = luaL_checknumber(L, 3);
-    lua_Number y = luaL_checknumber(L, 4);
-    lua_Number scale = luaL_optnumber(L, 5, 1);
-    lua_Number rotation = luaL_optnumber(L, 6, 0);
+    static const char *const keys[] = {"atlas", "id", "x", "y", "scale", "angle"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, 1, "atlas");
+    int owner = lua_gettop(L);
+    LuaAtlas *atlas = luaL_testudata(L, owner, "malvado.atlas");
+    if (!atlas || !atlas->atlas)
+        return luaL_error(L, "atlas must be a live MvAtlas");
+    int id = drawing_integer(L, 1, "id");
     MvAtlasSprite sprite;
-    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
+    if (id <= 0 || !mv_atlas_find(atlas->atlas, id, &sprite))
         return luaL_error(L, "unknown sprite id");
-    lua_getiuservalue(L, 1, 1);
-    lua_replace(L, 1);
-    lua_settop(L, 1);
-    const lua_Number values[] = {
-        x, y, sprite.region.x, sprite.region.y, sprite.region.width, sprite.region.height,
-        sprite.pivot_x, sprite.pivot_y, scale, rotation
-    };
-    for (int i = 0; i < 10; ++i)
-        lua_pushnumber(L, values[i]);
-    return draw_image_region(L);
+    MvImageTransform transform = image_draw_transform(L);
+    transform.pivot_x = (float)sprite.pivot_x;
+    transform.pivot_y = (float)sprite.pivot_y;
+    lua_getiuservalue(L, owner, 1);
+    LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+    if (!image || !image->image)
+        return luaL_error(L, "atlas has no visual image");
+    return submit_image_command(L, owner, image, sprite.region, transform);
 }
 #endif
 
@@ -3652,7 +3680,7 @@ push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 static int
 load_asset_atlas(lua_State *L, MvAssetSource *source, const char *path, MvAssetMetadata *metadata)
 {
-    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 2);
+    LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 3);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
     int index = lua_gettop(L);
@@ -3678,13 +3706,13 @@ load_asset_library(lua_State *L, MvAssetSource *source, const char *path,
 {
     MvAssetFormat format = metadata->format;
     if (format == MV_ASSET_FPG) {
-        LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 1);
+        LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 2);
         *value = (LuaFpg){0};
         luaL_setmetatable(L, "malvado.fpg");
         value->fpg = metadata->fpg;
         metadata->fpg = NULL;
     } else {
-        LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 2);
+        LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 3);
         *value = (LuaFpgManifest){0};
         luaL_setmetatable(L, "malvado.fpg_manifest");
         value->manifest = metadata->manifest;
@@ -4349,7 +4377,7 @@ cleanup(Process *p)
     lua_State *thread = p->thread;
     int thread_ref = p->thread_ref;
     int self_ref = p->self_ref;
-    int images_ref = p->images_ref;
+    int draw_resources_ref = p->draw_resources_ref;
     lua_Integer id = p->id;
     p->alive = 0;
     lua_Integer previous_closing_id = engine.closing_id;
@@ -4369,7 +4397,7 @@ cleanup(Process *p)
     lua_pop(engine.L, 1);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, thread_ref);
     luaL_unref(engine.L, LUA_REGISTRYINDEX, self_ref);
-    luaL_unref(engine.L, LUA_REGISTRYINDEX, images_ref);
+    luaL_unref(engine.L, LUA_REGISTRYINDEX, draw_resources_ref);
 }
 
 static int
@@ -4400,7 +4428,7 @@ lua_process_step_protected(lua_State *L)
         return 1;
     }
     lua_State *co = process->thread;
-    int images_ref = process->images_ref;
+    int draw_resources_ref = process->draw_resources_ref;
     int first = process->first;
     process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
     process->last_activation_tick = engine.tick_number;
@@ -4409,7 +4437,7 @@ lua_process_step_protected(lua_State *L)
     if (mv_process_draw_clear(engine.context, reference) != MV_OK)
         return luaL_error(L, "cannot clear process commands");
     lua_newtable(L);
-    lua_rawseti(L, LUA_REGISTRYINDEX, images_ref);
+    lua_rawseti(L, LUA_REGISTRYINDEX, draw_resources_ref);
     engine.active = 1;
     engine.active_thread = co;
     engine.active_id = (lua_Integer)id;
@@ -5131,12 +5159,12 @@ static const char *const global_names[] = {
     "load_image",
     "image_size",
     "draw_image",
-    "draw_image_region",
     "load_atlas",
     "load_aseprite",
     "sprite_info",
     "sprite_id",
     "animation_frame",
+    "animation_elapsed",
     "animation_color",
     "atlas_pivot_color",
     "animation_repeats",
@@ -5885,7 +5913,7 @@ region_create(lua_State *L)
 }
 
 #ifdef MALVADO_BUILD_ASSETS
-static int
+static void
 push_sprite_graphic(lua_State *L, MvImageRegion region, int pivot_x, int pivot_y, int image)
 {
     image = lua_absindex(L, image);
@@ -5894,25 +5922,29 @@ push_sprite_graphic(lua_State *L, MvImageRegion region, int pivot_x, int pivot_y
         .sprite = 1, .region = region, .pivot_x = pivot_x, .pivot_y = pivot_y
     };
     if (!mv_graphic_sprite(region.width, region.height, pivot_x, pivot_y, &graphic->shape))
-        return luaL_error(L, "invalid sprite geometry");
+        luaL_error(L, "invalid sprite geometry");
     luaL_setmetatable(L, "malvado.graphic");
     lua_pushvalue(L, 1);
     lua_setiuservalue(L, -2, 1);
     lua_pushvalue(L, image);
     lua_setiuservalue(L, -2, 2);
-    return 1;
 }
 
 static int
-graphic_sprite(lua_State *L)
+graph_cache(lua_State *L, int slot)
 {
-    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
-    lua_Integer id = luaL_checkinteger(L, 2);
-    MvAtlasSprite sprite;
-    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
-        return luaL_error(L, "unknown sprite id");
-    lua_getiuservalue(L, 1, 1);
-    return push_sprite_graphic(L, sprite.region, sprite.pivot_x, sprite.pivot_y, -1);
+    lua_getiuservalue(L, 1, slot);
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_newtable(L);
+        lua_pushliteral(L, "v");
+        lua_setfield(L, -2, "__mode");
+        lua_setmetatable(L, -2);
+        lua_pushvalue(L, -1);
+        lua_setiuservalue(L, 1, slot);
+    }
+    return lua_gettop(L);
 }
 
 static int
@@ -5935,20 +5967,35 @@ graph_select(lua_State *L)
     if (id <= 0 || id > INT_MAX)
         return luaL_error(L, "unknown graph id");
     LuaAtlas *atlas = luaL_testudata(L, 1, "malvado.atlas");
-    if (atlas) {
-        if (engine.window) {
-            lua_getiuservalue(L, 1, 1);
-            LuaImage *image = luaL_testudata(L, -1, "malvado.image");
-            if (!image || !image->image)
-                return luaL_error(L, "asset has no visual images; load_asset requires an open window");
-            lua_pop(L, 1);
-        }
-        return graphic_sprite(L);
-    }
     LuaFpg *fpg = luaL_testudata(L, 1, "malvado.fpg");
     LuaFpgManifest *manifest = luaL_testudata(L, 1, "malvado.fpg_manifest");
-    if (!fpg && !manifest)
+    if (!atlas && !fpg && !manifest)
         return luaL_error(L, "graph requires an atlas, FPG, or loaded FPG manifest");
+
+    int descriptors = graph_cache(L, fpg ? 2 : 3);
+    lua_rawgeti(L, descriptors, id);
+    if (!lua_isnil(L, -1)) {
+        /* A graph selected before window creation may only have geometry. */
+        lua_getiuservalue(L, -1, 2);
+        int usable = !engine.window || !lua_isnil(L, -1);
+        lua_pop(L, 1);
+        if (usable) return 1;
+    }
+    lua_pop(L, 1);
+
+    if (atlas) {
+        lua_getiuservalue(L, 1, 1);
+        LuaImage *image = luaL_testudata(L, -1, "malvado.image");
+        if (engine.window && (!image || !image->image))
+            return luaL_error(L, "asset has no visual images; load_asset requires an open window");
+        MvAtlasSprite sprite;
+        if (!mv_atlas_find(atlas->atlas, (int)id, &sprite))
+            return luaL_error(L, "unknown sprite id");
+        push_sprite_graphic(L, sprite.region, sprite.pivot_x, sprite.pivot_y, -1);
+        lua_pushvalue(L, -1);
+        lua_rawseti(L, descriptors, id);
+        return 1;
+    }
     MvImageRegion region = {0};
     MvFpgPoint pivot = {0};
     if (fpg) {
@@ -5988,7 +6035,10 @@ graph_select(lua_State *L)
         lua_pushvalue(L, -1);
         lua_rawseti(L, cache, id);
     }
-    return push_sprite_graphic(L, region, pivot.x, pivot.y, -1);
+    push_sprite_graphic(L, region, pivot.x, pivot.y, -1);
+    lua_pushvalue(L, -1);
+    lua_rawseti(L, descriptors, id);
+    return 1;
 }
 
 static int
@@ -6252,7 +6302,6 @@ open_module(lua_State *L)
         {"load_image", load_image},
         {"image_size", image_size},
         {"draw_image", draw_image},
-        {"draw_image_region", draw_image_region},
         {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
         {"animation", animation_select},
@@ -6482,13 +6531,13 @@ open_module(lua_State *L)
     lua_pushcfunction(L, scroll_create);
     lua_setfield(L, -2, "scroll");
 #ifdef MALVADO_BUILD_ASSETS
-    lua_pushcfunction(L, graphic_sprite);
-    lua_setfield(L, -2, "sprite");
     lua_pushcfunction(L, graph_select);
     lua_setfield(L, -2, "graph");
     lua_pushcfunction(L, animation_select);
     lua_setfield(L, -2, "animation");
     lua_pushcfunction(L, animation_elapsed);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -4, "animation_elapsed");
     lua_setfield(L, -2, "animation_elapsed");
 #endif
     /* Copy the closures, including their kind upvalues, rather than creating

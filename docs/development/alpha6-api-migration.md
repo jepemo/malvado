@@ -60,6 +60,9 @@ Not every operation needs three different names.
 | Existing code | Minimal call | Contract |
 | --- | --- | --- |
 | Read a file, load its image and call the atlas/Aseprite parser | `load_asset(path, options?)` | [Images and formats](../api/images.md#load-an-asset-by-path) |
+| `draw_image(image, x, y)` | `draw_image {image = image, x = x, y = y}` | The full image uses the top-left pivot by default |
+| `draw_image_region(image, x, y, sx, sy, sw, sh, px, py, scale, rotation)` | `draw_image {image = image, x = x, y = y, source = {x = sx, y = sy, width = sw, height = sh}, pivot = {x = px, y = py}, scale = scale, angle = rotation}` | Use a source-relative pivot or `"center"` |
+| `draw_sprite(atlas, id, x, y, scale, rotation)` | `draw_sprite {atlas = atlas, id = id, x = x, y = y, scale = scale, angle = rotation}` | Uses the sprite's atlas pivot and trim data |
 | `mv.graphics.sprite(atlas, id)` | `graph(atlas, id)` or `graph(id)` using `self.file` | Static selection retains its original source |
 | Sample a sequence each tick and assign a static sprite | `self.graph = animation("walk")` | [Independent automatic playback](../api/animations.md) |
 | `mv.graphics.rect/circle/region/scroll` | `rect/circle/region/scroll` | Same constructors, validation and defaults |

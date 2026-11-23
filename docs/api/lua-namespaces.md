@@ -48,7 +48,6 @@ object methods and process fields are not included in this namespace table.
 | `mv.graphics.animation` | Select automatic animation * | [animations](animations.md) |
 | `mv.graphics.animation_elapsed` | Inspect process playback time * | [animations](animations.md) |
 | `mv.graphics.graph` | Select a static library graphic * | [images](images.md) |
-| `mv.graphics.sprite` | Create an atlas sprite graphic * | [drawing](drawing.md) and [images](images.md) |
 | `mv.collision.circle` | Create a circle shape | [collision](collision.md) |
 | `mv.collision.rect` | Create a rectangle shape | [collision](collision.md) |
 | `mv.collision.overlap` | Test two transformed shapes | [collision](collision.md) |

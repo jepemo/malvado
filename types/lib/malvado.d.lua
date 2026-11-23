@@ -12,7 +12,7 @@
 --   require("malvado").import_globals()
 --   write { ... }
 
----@meta
+---@meta malvado
 
 ---@alias MvProcessConstructor fun(fields?: table, options?: MvSpawnOptions):MvProcess
 
@@ -103,9 +103,8 @@
 ---@field circle fun(options: MvCircleOptions):MvGraphic
 ---@field region fun(x: integer, y: integer, width: integer, height: integer):MvRegion
 ---@field scroll fun(x: number, y: number):MvScroll
----@field sprite fun(atlas: MvAtlas, id: integer):MvGraphic
----@field graph fun(library: MvAtlas|MvFpg|MvFpgManifest, id: integer):MvGraphic Select a library sprite as the process graphic.
----@field animation fun(sequence: string|integer[]|MvAtlas, name_or_options?: string|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
+---@field graph fun(library_or_id: MvAtlas|MvFpg|MvFpgManifest|integer, id?: integer):MvGraphic Select a graphic from a library or the process file.
+---@field animation fun(library_or_sequence: MvAtlas|MvFpg|MvFpgManifest|string|integer[], sequence_or_options?: string|integer[]|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
 ---@field animation_elapsed fun(handle: MvProcess):number|nil
 
 ---@class MvCollisionNamespace
@@ -348,27 +347,10 @@ function malvado.load_image(path) end
 ---@return integer height
 function malvado.image_size(image) end
 
----Queue an immediate-mode image draw for the current frame.
+---Queue an image draw until the process next activates.
 ---Must be called inside a process.
----@param image MvImage
----@param x integer
----@param y integer
-function malvado.draw_image(image, x, y) end
-
----Queue an immediate-mode image region draw with transform for the current frame.
----Must be called inside a process.
----@param image MvImage
----@param x number
----@param y number
----@param sx integer Source x in pixels.
----@param sy integer Source y in pixels.
----@param sw integer Source width in pixels.
----@param sh integer Source height in pixels.
----@param pivot_x number? Default 0.
----@param pivot_y number? Default 0.
----@param scale number? Default 1.
----@param rotation number? Rotation in degrees. Default 0.
-function malvado.draw_image_region(image, x, y, sx, sy, sw, sh, pivot_x, pivot_y, scale, rotation) end
+---@param options MvDrawImageOptions
+function malvado.draw_image(options) end
 
 ---Load a sprite atlas from an image and its JSON metadata.
 ---@param image MvImage
@@ -419,19 +401,13 @@ function malvado.atlas_pivot_color(atlas) end
 ---@return integer|nil repeats
 function malvado.animation_repeats(atlas, name) end
 
----Queue an immediate-mode atlas sprite draw for the current frame.
+---Queue an atlas sprite draw with its metadata pivot until the process next activates.
 ---Must be called inside a process.
----@param atlas MvAtlas
----@param id integer
----@param x number
----@param y number
----@param scale? number Default 1.
----@param rotation? number Rotation in degrees. Default 0.
-function malvado.draw_sprite(atlas, id, x, y, scale, rotation) end
+---@param options MvDrawSpriteOptions
+function malvado.draw_sprite(options) end
 
----Select an atlas sprite as the current process graphic.
----Shorthand for `self.graph = ...`. With one argument, the sprite comes from
----the current process's `file` field.
+---Select a static graphic to assign to `self.graph`. With one argument, the
+---graphic comes from the current process's `file` field.
 ---@overload fun(id: integer):MvGraphic
 ---@param library MvAtlas|MvFpg|MvFpgManifest
 ---@param id integer
@@ -446,6 +422,7 @@ function malvado.graph(library, id) end
 ---self.graph = animation({1, 2, 3}, {fps = 12})
 ---```
 ---@overload fun(library: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@overload fun(name: string, options?: MvAnimationOptions):MvAnimation
 ---@overload fun(sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@return MvAnimation

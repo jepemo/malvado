@@ -6,7 +6,7 @@ local atlas
 local task = mv.process(function()
   for tick = 1, 40 do
     local elapsed = tick < 16 and 0 or 100
-    mv.draw_sprite(atlas, mv.animation_frame(atlas, "flash", elapsed), 10, 10)
+    mv.draw_sprite {atlas = atlas, id = mv.animation_frame(atlas, "flash", elapsed), x = 10, y = 10}
     mv.frame()
   end
 end)

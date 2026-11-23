@@ -8,7 +8,7 @@ local stopping = false
 local BenchProcess = process(function(self)
   local image_index = 1
   while not stopping do
-    draw_image(images[image_index], self.x, self.y)
+    draw_image {image = images[image_index], x = self.x, y = self.y}
     image_index = image_index % #images + 1
     frame()
   end

@@ -16,9 +16,9 @@ mv.change_text = function(id, options, ...)
   if options.text == "Processes: 3" then count_seen = true end
   return change_text(id, options, ...)
 end
-mv.draw_image = function(...)
+mv.draw_image = function(options)
   draws = draws + 1
-  return draw_image(...)
+  return draw_image(options)
 end
 
 dofile("examples/bench/main.lua")

@@ -45,6 +45,8 @@ check_pixels(void)
     assert(green.r < 10 && green.g > 240 && green.b < 10);
     assert(green_default.r < 10 && green_default.g > 240 && green_default.b < 10);
     assert(outside.r < 10 && outside.g < 10 && outside.b < 10);
+    assert(pixel(screen, 4, 19).g == 255 && pixel(screen, 3, 19).g == 0);
+    assert(pixel(screen, 21, 30).g == 255 && pixel(screen, 22, 30).g == 0);
     assert(pixel(screen, 9, 35).b == 255);
     assert(pixel(screen, 10, 35).b == 0 && pixel(screen, 9, 36).b == 0);
     Color right = pixel(screen, 24, 50), bottom = pixel(screen, 20, 54);
@@ -105,6 +107,9 @@ main(int argc, char **argv)
     mv_image_draw(image, 10, 10);
     assert(mv_image_draw_region(image, region, (MvImageTransform){25, 5, 0, 0, 1, 0}));
     assert(mv_image_draw_region(image, region, transform));
+    MvImageRegion odd = {4, 0, 3, 3};
+    assert(mv_image_draw_region(image, odd, (MvImageTransform){8.5f, 23.5f, 1.5f, 1.5f, 3, 0}));
+    assert(mv_image_draw_region(image, odd, (MvImageTransform){23.5f, 23.5f, 0.5f, -0.5f, 3, 90}));
     assert(!mv_image_draw_region(image, (MvImageRegion){0, 0, 9, 8}, transform));
     assert(mv_window_draw_box(2, 30, 8, 6, 1, (MvColor){0, 0, 255, 255}));
     assert(mv_window_draw_box(15, 45, 10, 10, 0, (MvColor){255, 255, 0, 128}));

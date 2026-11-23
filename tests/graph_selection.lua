@@ -16,6 +16,8 @@ local fpg = load_asset("examples/fpg/graphics.fpg")
 local explicit = graph(atlas, 42)
 local method = atlas:graph(42)
 local native_namespace = mv.graphics.graph(atlas, 42)
+assert(explicit == method and explicit == native_namespace)
+assert(fpg:graph(7) == graph(fpg, 7))
 assert(not pcall(function() explicit.pivot_x = 0 end))
 fails("unknown", graph, atlas, 999)
 fails("unknown", graph, fpg, 999)
@@ -26,7 +28,7 @@ local parsed = mv.fpg.parse(file:read("a"))
 file:close()
 assert(parsed:graph(7))
 local manifest = mv.fpg.parse_manifest(fpg:json(true))
-assert(manifest:graph(7)) -- Headless geometry does not need PNGs.
+assert(manifest:graph(7) == graph(manifest, 7)) -- Headless geometry does not need PNGs.
 local fallback_json, replacements = fpg:json(true):gsub(
   '{"x":1,"y":0,"defined":true}', '{"x":-1,"y":-1,"defined":false}', 1)
 assert(replacements == 1)
@@ -36,7 +38,7 @@ world:add_rect({x = 8, y = 6, width = 1, height = 1})
 local Defaulted = process(function(self)
   assert(self.file == atlas and self.world == world)
   self.graph = graph(42)
-  assert(world:collision(self) == 1)
+  assert(self.graph == explicit and world:collision(self) == 1)
   self.graph = nil
 end, {defaults = {file = atlas, world = world}})
 local Actor = process(function() while true do frame() end end)
@@ -45,8 +47,9 @@ local Player = process(function(self)
   self.file = false
   fails("requires an atlas", graph, 42)
   self.file = atlas
+  fails("no visual image", draw_sprite, {atlas = atlas, id = 42, x = 0, y = 0})
   self.graph = graph(42)
-  assert(world:collision(self) == 1)
+  assert(self.graph == explicit and world:collision(self) == 1)
   self.file = fpg
   assert(world:collision(self) == 1) -- Selection still belongs to atlas.
   self.file = nil
@@ -81,9 +84,14 @@ local Player = process(function(self)
   end)
   local ok, message = coroutine.resume(nested)
   assert(ok, message)
+  local descriptor = graph(atlas, 7)
+  local cached = setmetatable({descriptor}, {__mode = "v"})
+  descriptor = nil
+  collectgarbage("collect")
+  assert(cached[1] == nil) -- A live library does not pin unused descriptors.
   local transient = load_asset("tests/fixtures/atlas.json")
-  local weak = setmetatable({transient}, {__mode = "v"})
   self.graph = graph(transient, 42)
+  local weak = setmetatable({transient, self.graph}, {__mode = "v"})
   transient = nil
   self.file = fpg
   collectgarbage("collect")
@@ -91,7 +99,7 @@ local Player = process(function(self)
   self.graph = nil
   collectgarbage("collect")
   collectgarbage("collect")
-  assert(weak[1] == nil)
+  assert(weak[1] == nil and weak[2] == nil)
 end)
 local game = {}
 function game.init()

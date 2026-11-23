@@ -20,7 +20,7 @@ local producer = mv.process(function()
   local weak = setmetatable({library, red}, {__mode = "v"})
   local drawer = mv.process(function()
     while true do
-      mv.draw_image_region(green, 50, 20, 0, 0, 2, 1, 0, 0, 10)
+      mv.draw_image {image = green, x = 50, y = 20, source = {x = 0, y = 0, width = 2, height = 1}, scale = 10}
       mv.frame()
     end
   end)

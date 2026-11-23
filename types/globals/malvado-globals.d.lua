@@ -178,23 +178,10 @@ function load_image(path) end
 ---@return integer height
 function image_size(image) end
 
----@param image MvImage
----@param x integer
----@param y integer
-function draw_image(image, x, y) end
-
----@param image MvImage
----@param x number
----@param y number
----@param sx integer
----@param sy integer
----@param sw integer
----@param sh integer
----@param pivot_x number? Default 0.
----@param pivot_y number? Default 0.
----@param scale number? Default 1.
----@param rotation number? Rotation in degrees. Default 0.
-function draw_image_region(image, x, y, sx, sy, sw, sh, pivot_x, pivot_y, scale, rotation) end
+---Queue an image draw until the process next activates.
+---Must be called inside a process.
+---@param options MvDrawImageOptions
+function draw_image(options) end
 
 ---@param image MvImage
 ---@param json string
@@ -223,6 +210,11 @@ function sprite_id(atlas, name) end
 ---@return integer sprite_id
 function animation_frame(atlas, name, elapsed_ms, loop) end
 
+---Read elapsed playback in milliseconds. Returns nil for a static graph.
+---@param handle MvProcess
+---@return number|nil elapsed_ms
+function animation_elapsed(handle) end
+
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer[]|nil color
@@ -237,13 +229,10 @@ function atlas_pivot_color(atlas) end
 ---@return integer|nil repeats
 function animation_repeats(atlas, name) end
 
----@param atlas MvAtlas
----@param id integer
----@param x number
----@param y number
----@param scale? number Default 1.
----@param rotation? number Rotation in degrees. Default 0.
-function draw_sprite(atlas, id, x, y, scale, rotation) end
+---Queue an atlas sprite draw with its metadata pivot until the process next activates.
+---Must be called inside a process.
+---@param options MvDrawSpriteOptions
+function draw_sprite(options) end
 
 ---@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, id: integer):MvGraphic
 ---@overload fun(id: integer):MvGraphic
@@ -252,6 +241,7 @@ function graph(library, id) end
 
 ---Create an animation descriptor from an atlas animation or a frame list.
 ---@overload fun(library: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@overload fun(name: string, options?: MvAnimationOptions):MvAnimation
 ---@overload fun(sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@return MvAnimation

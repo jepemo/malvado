@@ -6,7 +6,7 @@ local image
 local task = mv.process(function()
   for tick = 1, 8 do
     local x = tick <= 4 and 0 or 4
-    mv.draw_image_region(image, 10, 10, x, 0, 4, 8)
+    mv.draw_image {image = image, x = 10, y = 10, source = {x = x, y = 0, width = 4, height = 8}}
     mv.frame()
   end
 end)

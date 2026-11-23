@@ -3,6 +3,9 @@
 
 local mv = require("malvado")
 assert(not pcall(mv.load_image, "tests/fixtures/red.png"))
+assert(mv.draw_image_region == nil)
+mv.import_globals()
+assert(draw_image_region == nil and draw_image == mv.draw_image)
 local shared
 local producer = mv.process(function() shared = mv.load_image("tests/fixtures/red.png") end)
 local worker = mv.process(function(self)
@@ -16,12 +19,50 @@ local worker = mv.process(function(self)
         end
         error("worker missing from snapshot")
     end
-    local before = draw_count()
-    for _, value in ipairs({0x100000000, -0x100000000, math.maxinteger, math.mininteger}) do
-        assert(not pcall(mv.draw_image, image, value, 0))
-        assert(not pcall(mv.draw_image, image, 0, value))
+    local function rejects(fn, options, ...)
+        local before = draw_count()
+        assert(not pcall(fn, options, ...))
+        assert(draw_count() == before, "invalid draw changed the command count")
     end
-    assert(draw_count() == before)
+    rejects(mv.draw_image, image, 0, 0)
+    rejects(mv.draw_image, {image = image, x = 0, y = 0}, false)
+    rejects(mv.draw_image, {x = 0, y = 0})
+    rejects(mv.draw_image, {image = {}, x = 0, y = 0})
+    rejects(mv.draw_image, {image = image, x = 0})
+    rejects(mv.draw_image, {image = image, y = 0})
+    rejects(mv.draw_image, setmetatable({image = image}, {__index = {x = 0, y = 0}}))
+    local function bad_image_option(key, value)
+        local options = {image = image, x = 0, y = 0}
+        options[key] = value
+        rejects(mv.draw_image, options)
+    end
+    for _, value in ipairs({"0", false, math.huge, -math.huge, 0 / 0, 1e39}) do
+        bad_image_option("x", value)
+        bad_image_option("y", value)
+        bad_image_option("angle", value)
+        bad_image_option("scale", value)
+    end
+    for _, value in ipairs({0, -1, 1e-300, 1e38}) do
+        bad_image_option("scale", value)
+    end
+    for _, value in ipairs({false, "middle", "center\0", {}, {x = 1},
+                             {x = 0, y = 0, z = 0}, {x = 1e39, y = 0},
+                             {x = 0, y = "1"}, {x = 0, y = math.huge}}) do
+        bad_image_option("pivot", value)
+    end
+    for _, value in ipairs({false, {}, {x = -1, y = 0, width = 1, height = 1},
+                             {x = 7, y = 0, width = 2, height = 1},
+                             {x = 0, y = 0, width = 1, height = 0},
+                             {x = 0, y = 0, width = 1, height = -1},
+                             {x = 0, y = 0, width = 1.5, height = 1},
+                             {x = 2^40, y = 0, width = 1, height = 1},
+                             {x = "0", y = 0, width = 1, height = 1},
+                             {x = 0, y = 0, width = 1, height = 1, extra = true}}) do
+        bad_image_option("source", value)
+    end
+    bad_image_option("rotation", 0)
+    bad_image_option("x\0", 0)
+    bad_image_option(1, true)
     local file = assert(io.open("tests/fixtures/atlas.json", "rb"))
     local json = file:read("a")
     file:close()
@@ -116,24 +157,49 @@ local worker = mv.process(function(self)
         assert(mv.animation_frame(bounce, "bounce", 800) == 1)
         assert(mv.animation_frame(bounce, "backbounce", 500) == 1)
         assert(not pcall(mv.load_aseprite, image, "{}"))
-        mv.draw_sprite(ase, 2, -100, -100)
-        assert(not pcall(mv.draw_sprite, atlas, 99, 0, 0))
+        mv.draw_sprite {atlas = ase, id = 2, x = -100, y = -100}
+        assert(draw_sprite == mv.draw_sprite)
+        rejects(mv.draw_sprite, atlas, 7, 0, 0)
+        rejects(mv.draw_sprite, {id = 7, x = 0, y = 0})
+        rejects(mv.draw_sprite, {atlas = atlas, x = 0, y = 0})
+        rejects(mv.draw_sprite, {atlas = image, id = 7, x = 0, y = 0})
+        rejects(mv.draw_sprite, {atlas = atlas, id = 7, x = 0})
+        local function bad_sprite_option(key, value)
+            local options = {atlas = atlas, id = 7, x = 0, y = 0}
+            options[key] = value
+            rejects(mv.draw_sprite, options)
+        end
+        for _, id in ipairs({0, -1, 1.5, 99, 2^40, "7", math.huge}) do
+            bad_sprite_option("id", id)
+        end
+        bad_sprite_option("source", {})
+        bad_sprite_option("pivot", "center")
+        bad_sprite_option("scale", 0)
+        bad_sprite_option("x", 0 / 0)
+        bad_sprite_option("y", "0")
+        bad_sprite_option("angle", math.huge)
     end
     assert(not pcall(mv.load_image, "tests/fixtures/missing.png"))
-    assert(not pcall(mv.draw_image_region, image, 0, 0, 7, 0, 2, 1))
-    assert(not pcall(mv.draw_image_region, image, 0, 0, 0, 0, 1, 1, 0, 0, 0))
-    assert(not pcall(mv.draw_image_region, image, math.huge, 0, 0, 0, 1, 1))
-    assert(not pcall(mv.draw_image_region, image, 0, 0, 2^40, 0, 1, 1))
-    assert(not pcall(mv.draw_image_region, image, 0 / 0, 0, 0, 0, 1, 1))
-    mv.draw_image(image, 10, 10)
-    mv.draw_image_region(image, 25, 5, 4, 0, 4, 8)
+    mv.draw_image {image = image, x = 10, y = 10}
+    local green = {x = 4, y = 0, width = 4, height = 8}
+    mv.draw_image {image = image, x = 25, y = 5, source = green, pivot = "top-left"}
+    local odd = {x = 4, y = 0, width = 3, height = 3}
+    draw_image {image = image, x = 8.5, y = 23.5, source = odd, pivot = "center", scale = 3}
+    draw_image {
+        image = image, x = 23.5, y = 23.5, source = odd, pivot = {x = 0.5, y = -0.5},
+        scale = 3, angle = 90
+    }
     if atlas then
         image = nil
         collectgarbage("collect")
-        mv.draw_sprite(atlas, 42, 50, 40, 2, 90)
+        draw_sprite {atlas = atlas, id = 42, x = 50, y = 40, scale = 2, angle = 90}
     else
-        mv.draw_image_region(image, 50, 40, 4, 0, 4, 8, 2, 4, 2, 90)
+        draw_image {
+            image = image, x = 50, y = 40, source = green, pivot = {x = 2, y = 4},
+            scale = 2, angle = 90
+        }
     end
+    assert(self.graph == nil)
     mv.set_color(mv.colors.BLUE)
     mv.draw_rect {x = 2, y = 30, width = 8, height = 6}
     mv.draw_rect {x = 15, y = 45, width = 10, height = 10, filled = false, color = {255, 255, 0, 128}}
@@ -148,8 +214,8 @@ local worker = mv.process(function(self)
 end)
 mv.start(function()
     local image = mv.load_image("tests/fixtures/red.png")
-    assert(not pcall(mv.draw_image, image, 0, 0))
-    assert(not pcall(mv.draw_image_region, image, 0, 0, 0, 0, 4, 4))
+    local ok, message = pcall(mv.draw_image, {image = image, x = 0, y = 0})
+    assert(not ok and message:find("inside a process", 1, true))
     producer()
     worker()
 end, {width = 64, height = 64, title = "Lua image test"})

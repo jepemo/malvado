@@ -1,6 +1,6 @@
 # Draw a PNG image
 
-You can load a PNG image after you open a window. The image uses its original size. Its position is the top-left corner, in window pixels.
+You can load a PNG image after you open a window. By default, drawing uses the full image at its original size and places its top-left corner at the given position.
 
 ## Lua
 
@@ -12,7 +12,7 @@ local image
 
 local picture = mv.process(function()
     while not mv.key("escape") do
-        mv.draw_image(image, 40, 40)
+        mv.draw_image {image = image, x = 40, y = 40}
         mv.frame()
     end
 end)
@@ -25,10 +25,20 @@ mv.start(function()
 end)
 ```
 
-`draw_image` coordinates must be integers that fit a C `int`. Out-of-range
-values raise an error without adding a draw command.
+After `mv.import_globals()`, use `draw_image { ... }` or `draw_sprite { ... }`
+with the same options as the corresponding `mv` functions.
 
-Paths are relative to the current working directory. `load_image` reports an error if the file is not a valid PNG or there is no window. Images are not available in headless mode. Lua keeps an image alive while a draw command uses it. It releases the image when it is no longer used or when the runner closes.
+Both functions queue immediate drawing commands for the active process. The
+commands follow call order and use that process's camera, scroll and clipping
+region. They persist until the next activation, including across ticks when a
+process runs at a lower FPS. A frozen process still draws its queued commands.
+A sleeping process is hidden. Each command retains its source until the process
+clears the command list or ends. Use `self.graph` to assign a graphic that the
+engine draws automatically every frame.
+
+Paths are relative to the current working directory. `load_image` raises an
+error when it cannot load the PNG or when no window is open. Immediate image and
+sprite drawing requires a window and a loaded image.
 
 Each Lua process has a `self.z` draw order, initially zero. Set it to a finite number to draw that process in front of lower values. Equal values use process creation order, so later processes draw on top. Changes take effect on the next render. This order applies to process draw commands; persistent text is drawn afterward. It does not change scheduler priority. In C, issue drawing calls in the order you want between `mv_window_begin` and `mv_window_end`.
 
@@ -57,14 +67,36 @@ failure. It is not available in headless mode.
 
 ## Draw part of an image
 
-Use a region to draw one sprite from a PNG sheet. The region is a rectangle in source pixels. The position is in window pixels. The pivot is relative to the top-left corner of the region. Scale is uniform. Rotation is clockwise in degrees.
+Use `source` to draw a rectangle from a sprite sheet. The draw position is the
+location of the pivot, in world pixels with the process camera and scroll applied.
 
 ```lua
--- Draw the 16 by 24 region at (32, 0), with its center at (120, 80).
-mv.draw_image_region(image, 120, 80, 32, 0, 16, 24, 8, 12, 2, 90)
+mv.draw_image {
+    image = image, x = 120, y = 80,
+    source = {x = 32, y = 0, width = 16, height = 24},
+    pivot = "center", scale = 2, angle = 90
+}
 ```
 
-The last four arguments are optional: pivot x and y default to zero, scale to one, and rotation to zero. Call this function inside a process before `frame`. It reports an error for an invalid region or transform. The region must be inside the image. Scale must be positive; all transform values must be finite.
+| Option | Value | Default |
+| --- | --- | --- |
+| `image` | Loaded image | Required |
+| `x`, `y` | Finite pivot position | Required |
+| `source` | Rectangle in image pixels | Full image |
+| `pivot` | `"top-left"`, `"center"`, or a point with `x` and `y` | `"top-left"` |
+| `scale` | Positive uniform scale | 1 |
+| `angle` | Clockwise angle in degrees | 0 |
+
+The source rectangle uses non-negative integer `x` and `y`, and positive integer
+`width` and `height`. The entire rectangle must fit inside the image. Pivot points
+are relative to the selected rectangle's top-left corner, in unscaled source
+pixels. `"center"` uses half its width and height, including half pixels for odd
+dimensions. Custom pivot coordinates can be fractional and can lie outside the
+rectangle. Scaling and rotation use the selected pivot.
+
+The transform must fit the native floating-point range, including the scaled
+dimensions and pivot. Missing required fields, unknown fields, and invalid
+values raise an error before any command is queued.
 
 In C, pass an `MvImageRegion` and an `MvImageTransform` to `mv_image_draw_region` between `mv_window_begin` and `mv_window_end`. It returns 1 on success or 0 for invalid arguments. Use `mv_image_region_valid` to check the same arguments without drawing.
 
@@ -103,7 +135,19 @@ file:close()
 local atlas = mv.load_atlas(image, json)
 ```
 
-Inside a process, call `mv.draw_sprite(atlas, 10, 120, 80, 2, 90)` before `frame`. The last two arguments are optional: scale defaults to one and rotation to zero. The atlas keeps its image alive while it is in use. An unknown ID or invalid metadata raises an error.
+Draw a sprite by ID inside a process:
+
+```lua
+mv.draw_sprite {atlas = atlas, id = 10, x = 120, y = 80, scale = 2, angle = 90}
+```
+
+`atlas`, a positive integer `id`, and the pivot position `x` and `y` are
+required. The same transform limits apply as for `draw_image`. Scale defaults
+to 1 and the clockwise angle defaults to 0 degrees. The sprite supplies its own
+source rectangle and pivot. For trimmed frames the metadata positions the
+visible pixels relative to the original canvas. The draw command retains the
+atlas and its image. Unknown IDs, missing images, and invalid options raise
+an error before a command is queued.
 
 For C, include `malvado/atlas.h` and link `malvado_assets`. Pass the JSON bytes and image dimensions to `mv_atlas_parse`. Use `mv_atlas_find` to get a sprite's region and pivot, then draw it with `mv_image_draw_region`. The atlas owns its metadata; destroy it with `mv_atlas_destroy`. The image path from `mv_atlas_image` and the name in a copied `MvAtlasSprite` are borrowed and remain valid until the atlas is destroyed. Load the image yourself. `mv_atlas_count(NULL)` returns zero and `mv_atlas_image(NULL)` returns NULL. `mv_atlas_find` and `mv_atlas_find_name` return 0 for invalid pointers or an unknown sprite and leave the output unchanged. See the runnable [C atlas example](../../examples/c/atlas/README.md). The C parser does not need a window. To build it without Lua or raylib, configure with `-DMALVADO_BUILD_ASSETS=ON` and provide cJSON. The default C-only build keeps this optional library disabled.
 
@@ -130,24 +174,20 @@ In C, `mv_atlas_animation_frame(atlas, name, elapsed_ms, loop, &id)` returns 1 o
 ## Use images and atlas sprites as process graphics
 
 An image returned by `load_image` can be assigned directly to `self.graph`.
-Its position is the top-left corner, as with `draw_image`. Automatic image
+By default its position is the top-left corner. Automatic image
 drawing starts after the process first activates. The process's `x`,
 `y`, `angle`, and `size` transform the image, and its full dimensions provide
 the default rectangular collider. Process defaults may share an image. The
 process holds the image alive while its `graph` refers to it. Images still
 require an open window and cannot be loaded in headless mode.
 
-For an atlas sprite, create a fixed descriptor with
-`mv.graphics.sprite(atlas, id)` and assign it to `self.graph`. It uses the
+Use `graph(atlas, id)` to select a static sprite for `self.graph`. It uses the
 sprite's region and metadata pivot for drawing and its rectangular collider.
-It keeps the atlas and its image alive. An unknown ID raises an error. The
-function is available when atlas support is built. A whole atlas is not a graph.
-For animation, call `animation_frame` and replace `self.graph` with a
-descriptor for the selected ID; the descriptor does not advance on its own.
-Pixel-perfect collision is not supported.
+Use [automatic animation](animations.md) to play a sequence on the simulation
+clock.
 
 ```lua
-local sprite = mv.graphics.sprite(atlas, 42)
+local sprite = mv.graph(atlas, 42)
 local Actor = mv.process(function(self)
     while true do mv.frame() end
 end, {defaults = {graph = sprite}})
@@ -169,7 +209,7 @@ local json = file:read("a")
 file:close()
 local atlas = mv.load_aseprite(image, json)
 local id = mv.animation_frame(atlas, "default", elapsed_ms)
--- Call mv.draw_sprite(atlas, id, x, y) inside a process.
+-- Inside a process: mv.draw_sprite {atlas = atlas, id = id, x = x, y = y}
 ```
 
 The JSON must contain an array of 1–4096 frames, a `meta.image` path, and a `meta.size` object. The declared dimensions must match the loaded PNG. Frame names must be unique, valid UTF-8 strings without ASCII control characters, with at most 127 bytes; image paths must be valid UTF-8 without ASCII control characters, with at most 511 bytes. Name lookup compares UTF-8 bytes exactly and does not normalize Unicode. Each frame must be unrotated. For a trimmed frame, `spriteSourceSize` gives the crop offset and dimensions within `sourceSize`; the crop must fit the original canvas and match the atlas region. For an untrimmed frame the offset must be zero and the dimensions must match. Durations are integer milliseconds from 1 to 3,600,000. Frames receive IDs 1 through N in file order. Without a pivot slice, their origin is the top-left of the original canvas; the atlas uses a negative crop offset as its region pivot so drawing and rotations preserve that origin. Their durations form the `default` animation. The PNG pixels are not changed.
@@ -270,7 +310,8 @@ context or calls outside that coroutine raise errors. Explicit calls work
 without a running process and ignore its contextual file. No shared default
 library is stored globally. Both game entry forms use these same rules.
 
-The result is immutable and reusable. It retains its original library and image.
+The result is immutable and reusable. Lookups for the same library and ID share
+the descriptor while it is in use. It retains its original library and image.
 Changing `self.file` affects later lookups only. Two processes can share one
 descriptor, including when their file fields differ. Clearing/replacing a graph
 releases its references when no other user retains it. A retained process handle
@@ -292,8 +333,8 @@ image during rendering.
 
 Modern selection uses `self.file` and `self.graph`. `self.fpg` and
 `self.fpgIndex` retain meaning only in the explicit legacy compatibility profile.
-The existing `mv.graphics.sprite(atlas, id)` remains available. See [automatic animation](animations.md) for `animation()` playback. The advanced
-`animation_frame` sampler remains available for explicit time/frame selection.
+See [automatic animation](animations.md) for `animation()` playback and explicit
+time-based frame sampling.
 
 ## Shared PNG textures and automatic pivots
 
@@ -324,8 +365,8 @@ options raise errors. The center is exactly half the source dimensions, includin
 half-pixel centers for odd dimensions. Automatic drawing and collider inference
 use the same pivot, rotation and scale. Pivot options belong to the Lua image
 reference; two references to the same texture can use different pivots.
-Explicit `draw_image` coordinates remain top-left; `draw_image_region` uses the
-pivot supplied in its arguments. Other asset formats retain their metadata pivots.
+`draw_image` uses the pivot in its own options and defaults to `"top-left"`.
+`draw_sprite` uses its atlas sprite's metadata pivot.
 
 Automatic PNG colliders still cover the full rectangular source image. Transparency
 or an outlined graphic does not imply pixel-mask collision. For gameplay, set an

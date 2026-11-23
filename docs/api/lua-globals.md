@@ -75,12 +75,12 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `load_image` | `mv.load_image` |
 | `image_size` | `mv.image_size` |
 | `draw_image` | `mv.draw_image` |
-| `draw_image_region` | `mv.draw_image_region` |
 | `load_atlas` | `mv.load_atlas` |
 | `load_aseprite` | `mv.load_aseprite` |
 | `sprite_info` | `mv.sprite_info` |
 | `sprite_id` | `mv.sprite_id` |
 | `animation_frame` | `mv.animation_frame` |
+| `animation_elapsed` | `mv.animation_elapsed` |
 | `animation_color` | `mv.animation_color` |
 | `atlas_pivot_color` | `mv.atlas_pivot_color` |
 | `animation_repeats` | `mv.animation_repeats` |

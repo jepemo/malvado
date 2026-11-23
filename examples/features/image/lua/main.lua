@@ -3,7 +3,7 @@ local mv = require("malvado")
 
 local show = mv.process(function(self)
     for _ = 1, 120 do
-        mv.draw_image(self.image, 32, 32)
+        mv.draw_image {image = self.image, x = 32, y = 32}
         mv.frame()
     end
 end)

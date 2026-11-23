@@ -33,7 +33,7 @@ const groups = [
   {
     id: 'graphics', label: 'Graphics', ns: 'graphics', guide: 'drawing',
     summary: 'Create reusable process graphics, regions and scrolls.',
-    flat: ['rect', 'circle', 'region', 'scroll', 'animation', 'graph'],
+    flat: ['rect', 'circle', 'region', 'scroll', 'animation', 'graph', 'animation_elapsed'],
   },
   {
     id: 'drawing', label: 'Drawing', guide: 'drawing',
@@ -44,7 +44,7 @@ const groups = [
   {
     id: 'images', label: 'Images and sprites', guide: 'images',
     summary: 'Load image and atlas assets and draw them.',
-    flat: ['load_asset', 'load_image', 'image_size', 'draw_image', 'draw_image_region',
+    flat: ['load_asset', 'load_image', 'image_size', 'draw_image',
       'load_atlas', 'load_aseprite', 'draw_sprite', 'sprite_info', 'sprite_id'],
   },
   {
@@ -118,8 +118,7 @@ const flatSummaries = {
   load_asset: 'Load an image or atlas asset by path.',
   load_image: 'Load a PNG image.',
   image_size: 'Read the width and height of an image.',
-  draw_image: 'Draw an image at a position.',
-  draw_image_region: 'Draw one region of an image.',
+  draw_image: 'Queue a full image or source rectangle.',
   load_atlas: 'Load an atlas from metadata.',
   load_aseprite: 'Load an atlas from an Aseprite file.',
   draw_sprite: 'Draw an atlas sprite.',

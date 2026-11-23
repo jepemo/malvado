@@ -35,8 +35,8 @@ local Producer = process(function()
   Actor({graph = centered, x = 30, y = 70, size = 10, angle = 90, hit = 3}, {attached = false})
   local Drawer = process(function()
     while true do
-      draw_image(centered, 90, 80) -- Explicit draw_image keeps its top-left coordinates.
-      draw_image(top_left, 100, 80)
+      draw_image {image = centered, x = 90, y = 80} -- Explicit draw_image keeps its top-left coordinates.
+      draw_image {image = top_left, x = 100, y = 80}
       frame()
     end
   end)

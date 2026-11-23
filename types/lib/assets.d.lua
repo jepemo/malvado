@@ -21,7 +21,38 @@
 ---Sprite atlas loaded with `load_asset`, `load_atlas` or `load_aseprite`.
 ---@class MvAtlas
 ---@field graph fun(self: MvAtlas, id: integer):MvGraphic
----@field animation fun(self: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@field animation fun(self: MvAtlas, sequence: string|integer[], options?: MvAnimationOptions):MvAnimation
+
+---Source rectangle in image pixels.
+---@class MvImageSource
+---@field x integer Non-negative left edge.
+---@field y integer Non-negative top edge.
+---@field width integer Positive width.
+---@field height integer Positive height.
+
+---A point relative to the selected source rectangle.
+---@class MvPoint
+---@field x number
+---@field y number
+
+---@alias MvImagePivot "top-left"|"center"|MvPoint
+
+---@class MvDrawImageOptions
+---@field image MvImage
+---@field x number Horizontal position of the pivot.
+---@field y number Vertical position of the pivot.
+---@field source? MvImageSource Defaults to the full image.
+---@field pivot? MvImagePivot Defaults to "top-left".
+---@field scale? number Positive uniform scale. Defaults to 1.
+---@field angle? number Clockwise degrees. Defaults to 0.
+
+---@class MvDrawSpriteOptions
+---@field atlas MvAtlas
+---@field id integer Positive sprite ID in the atlas.
+---@field x number Horizontal position of the metadata pivot.
+---@field y number Vertical position of the metadata pivot.
+---@field scale? number Positive uniform scale. Defaults to 1.
+---@field angle? number Clockwise degrees. Defaults to 0.
 
 ---FPG library loaded with `load_asset` or `fpg.parse`.
 ---@class MvFpg
@@ -36,7 +67,7 @@
 ---@field png fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
 ---@field json fun(self: MvFpg, transparent_zero?: boolean):string
 ---@field graph fun(self: MvFpg, id: integer):MvGraphic
----@field animation fun(self: MvFpg, sequence: string|integer[], options?: MvAnimationOptions):MvAnimation
+---@field animation fun(self: MvFpg, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 
 ---FPG manifest loaded with `load_asset` or `fpg.parse_manifest`.
 ---@class MvFpgManifest
@@ -48,7 +79,7 @@
 ---@field sprite fun(self: MvFpgManifest, id: integer):MvFpgSprite|nil
 ---@field point fun(self: MvFpgManifest, id: integer, index: integer):MvFpgPoint|nil
 ---@field graph fun(self: MvFpgManifest, id: integer):MvGraphic
----@field animation fun(self: MvFpgManifest, name: string, options?: MvAnimationOptions):MvAnimation
+---@field animation fun(self: MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 
 ---Sprite info table returned by `fpg:sprite` and `sprite_info`.
 ---@class MvFpgSprite

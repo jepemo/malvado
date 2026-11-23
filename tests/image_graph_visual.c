@@ -40,6 +40,8 @@ check_frame(void *user)
     Color cropped = GetImageColor(screen, 7 * screen.width / width, 49 * screen.height / height);
     Color rotated_crop = GetImageColor(screen, 50 * screen.width / width, 60 * screen.height / height);
     Color manual_crop = GetImageColor(screen, 23 * screen.width / width, 49 * screen.height / height);
+    Color rotated_manual_crop = GetImageColor(screen, 26 * screen.width / width, 60 * screen.height / height);
+    Color manual_crop_outside = GetImageColor(screen, 32 * screen.width / width, 60 * screen.height / height);
     Color cropped_outside = GetImageColor(screen, 5 * screen.width / width, 46 * screen.height / height);
     Color legacy = GetImageColor(screen, 31 * screen.width / width, 20 * screen.height / height);
     Color legacy_outside = GetImageColor(screen, 40 * screen.width / width, 20 * screen.height / height);
@@ -49,6 +51,8 @@ check_frame(void *user)
     assert(pivot_outside.g < 10 && pivot_outside.r < 10 && pivot_outside.b < 10);
     assert(rotated_crop.g > 240 && rotated_crop.r < 10 && rotated_crop.b < 10);
     assert(manual_crop.g > 240 && manual_crop.r < 10 && manual_crop.b < 10);
+    assert(rotated_manual_crop.g > 240 && rotated_manual_crop.r < 10 && rotated_manual_crop.b < 10);
+    assert(manual_crop_outside.g < 10 && manual_crop_outside.r < 10 && manual_crop_outside.b < 10);
     assert(cropped.g > 240 && cropped.r < 10 && cropped.b < 10);
     assert(cropped_outside.r < 10 && cropped_outside.g < 10 && cropped_outside.b < 10);
     assert(legacy.r > 240 && legacy.g < 10 && legacy.b < 10);

@@ -43,11 +43,11 @@ return {width = 160, height = 120, init = function()
   local weak = setmetatable({atlas, aseprite, fpg, manifest}, {__mode = "v"})
   local Picture = process(function()
     while true do
-      draw_image(image, 10, 10)
-      draw_sprite(atlas, 42, 40, 20)
-      draw_sprite(aseprite, 1, 60, 20)
-      draw_image(fpg:image(7, true), 80, 20)
-      draw_image(converted, 100, 20)
+      draw_image {image = image, x = 10, y = 10}
+      draw_sprite {atlas = atlas, id = 42, x = 40, y = 20}
+      draw_sprite {atlas = aseprite, id = 1, x = 60, y = 20}
+      draw_image {image = fpg:image(7, true), x = 80, y = 20}
+      draw_image {image = converted, x = 100, y = 20}
       collectgarbage("collect")
       assert(weak[1] and weak[2] and weak[3])
       frame()

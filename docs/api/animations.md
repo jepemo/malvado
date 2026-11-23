@@ -2,6 +2,8 @@
 
 Assign an animation to `self.graph`. Each process plays it independently on the
 existing simulation clock. A static `graph()` stays on the selected graphic.
+Use `draw_sprite { ... }` with a sampled ID when you need to queue an explicit
+draw command. See the [image guide](images.md#use-an-atlas).
 
 ```lua
 require("malvado").import_globals()
@@ -82,7 +84,8 @@ a finite time in 0..1e12 milliseconds. It uses the definition's loop rule and
 does not change any process. Use `graph(library, id)` for a specific static ID.
 The existing `animation_frame(atlas, name, elapsed_ms, loop?)` sampler remains.
 
-`mv.graphics.animation_elapsed(process)` returns playback milliseconds within
+`mv.graphics.animation_elapsed(process)`, `mv.animation_elapsed(process)`, and
+the imported `animation_elapsed(process)` return playback milliseconds within
 the sequence (wrapping when it loops), or nil for a static graph. It is an
 advanced inspection/synchronization helper; dead or invalid handles raise errors.
 The update happens after scheduled process behavior, so a process observes the

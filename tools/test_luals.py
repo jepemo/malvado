@@ -42,6 +42,10 @@ local Player = process(function(self)
   draw_rect {x = 0, y = 0, width = 4, height = 6, filled = false}
   draw_circle {x = 20, y = 20, radius = 5, color = BLUE}
   draw_line {x1 = 0, y1 = 0, x2 = 4, y2 = 6, thickness = 1.5}
+  local image = load_image("sheet.png")
+  local atlas = load_atlas(image, "{}")
+  draw_image {image = image, x = 0.5, y = 0, pivot = "center"}
+  draw_sprite {atlas = atlas, id = 42, x = 10, y = 10, angle = 90}
   self.custom = 1
   local v = self.custom
   while true do frame() end
@@ -61,6 +65,19 @@ mv.set_color(mv.colors.RED)
 mv.circle {radius = 2, color = {r = 2, g = 0, b = 0}}
 mv.graphics.rect {width = 2, height = 2, color = mv.colors.PINK, pivot = "top-left"}
 mv.draw_line {x1 = 0, y1 = 0, x2 = 2, y2 = 2, color = mv.colors.YELLOW}
+local image = mv.load_image("sheet.png")
+local atlas = mv.load_aseprite(image, "{}")
+mv.draw_image {
+  image = image, x = 10, y = 10, source = {x = 1, y = 2, width = 3, height = 4},
+  pivot = {x = 1.5, y = 2}, scale = 2, angle = 90,
+}
+mv.draw_sprite {atlas = atlas, id = 42, x = 10.5, y = 10}
+local actor = mv.process(function(self)
+  self.file = atlas
+  self.graph = mv.graphics.graph(42)
+  self.graph = mv.graphics.animation(atlas, {1, 2}, {fps = 8})
+end)
+actor {}
 local current = mv.fade_color()
 mv.set_color({current[1], current[2], current[3], current[4]})
 local w, h = mv.text_size(id)
@@ -134,7 +151,15 @@ def main():
         write_luarc(project, with_globals=False)
         (project / "probe.lua").write_text(NAMESPACED_PROBE, encoding="utf-8")
         (project / "probe-globals.lua").write_text("write {}\nprint(RED)\n", encoding="utf-8")
+        (project / "bad-drawing.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local image = mv.load_image("sheet.png")\n'
+            'mv.draw_image {image = image, x = 0, y = 0, scale = "large"}\n',
+            encoding="utf-8")
         output = run_luals(project)
+        if not any(line == 3 and "Cannot assign `string`" in message
+                   for line, message in diagnose(output, "bad-drawing.lua")):
+            failures.append("namespaced project: draw_image should reject a string scale")
         if "probe-globals.lua:1:1 [Warning] Undefined global `write`" not in output:
             failures.append("namespaced project: global `write` should be undefined")
         if "Undefined global `RED`" not in output:
