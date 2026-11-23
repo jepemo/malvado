@@ -213,8 +213,10 @@ for (const group of groups) {
 // Every flat function in the inventory must land in a page.
 const allEntries = groups.flatMap((group) => group.entries.map((entry) => ({ ...entry, group: group.id })));
 const placed = new Set(groups.flatMap((group) => group.entries.flatMap((entry) => entry.flat)));
+const palette = globals.filter((entry) => entry.field.startsWith('colors.'));
+groups.find((group) => group.id === 'drawing').constants = palette.map((entry) => entry.name);
 for (const global of globals) {
-  if (global.name.startsWith('KEY_') || global.name.startsWith('SIGNAL_'))
+  if (global.field.startsWith('colors.') || global.name.startsWith('KEY_') || global.name.startsWith('SIGNAL_'))
     continue;
   if (!placed.has(global.name))
     throw new Error(`Global function not grouped in a page: ${global.name}`);
@@ -242,7 +244,7 @@ await writeFile(new URL('index.md', output), front('Lua API',
   'Lua functions and constants, grouped by namespace.',
   `Every function is available from \`require("malvado")\`. After
 \`require("malvado").import_globals()\` the same functions are flat globals, and
-the constants such as \`KEY_ESCAPE\` and \`SIGNAL_KILL\` are installed. This
+constants such as \`KEY_ESCAPE\`, \`SIGNAL_KILL\`, and \`RED\` are installed. This
 reference lists the flat name and the \`mv\` namespace form of each function.
 
 \`\`\`lua

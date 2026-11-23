@@ -155,6 +155,29 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `SIGNAL_WAKEUP` | `mv.SIGNAL_WAKEUP` |
 | `SIGNAL_KILL` | `mv.SIGNAL_KILL` |
 
+## Palette globals
+
+See the [Malvado palette](drawing.md#malvado-palette) for channel values.
+
+| Global | Module field |
+| --- | --- |
+| `BLACK` | `mv.colors.BLACK` |
+| `WHITE` | `mv.colors.WHITE` |
+| `TRANSPARENT` | `mv.colors.TRANSPARENT` |
+| `GRAY` | `mv.colors.GRAY` |
+| `LIGHT_GRAY` | `mv.colors.LIGHT_GRAY` |
+| `DARK_GRAY` | `mv.colors.DARK_GRAY` |
+| `RED` | `mv.colors.RED` |
+| `GREEN` | `mv.colors.GREEN` |
+| `BLUE` | `mv.colors.BLUE` |
+| `YELLOW` | `mv.colors.YELLOW` |
+| `CYAN` | `mv.colors.CYAN` |
+| `MAGENTA` | `mv.colors.MAGENTA` |
+| `ORANGE` | `mv.colors.ORANGE` |
+| `PURPLE` | `mv.colors.PURPLE` |
+| `PINK` | `mv.colors.PINK` |
+| `BROWN` | `mv.colors.BROWN` |
+
 ## Module-only functions
 
 These functions are available from `require("malvado")` and are not installed

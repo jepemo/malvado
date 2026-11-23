@@ -75,7 +75,7 @@ local Demo = process(function()
     if page == 1 then
       clear_screen {100, 60, 100, 255}
     else
-      clear_screen {0, 0, 0, 255}
+      clear_screen(BLACK)
     end
     if page == 0 then draw_menu() else draw_page() end
     frame()
@@ -85,6 +85,6 @@ end)
 start(function()
   for i = 1, 6 do images.cats[i] = load_image("examples/demo/assets/cat/c" .. i .. ".png") end
   images.hero = load_image("examples/demo/assets/hero_spritesheet.png")
-  clear_screen {0, 0, 0, 255}
+  clear_screen(BLACK)
   Demo()
 end, { width = 800, height = 600, title = "Malvado Demo" })

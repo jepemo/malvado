@@ -7,6 +7,7 @@ or select the complete 2.0 API.
 
 `mv.process` is also callable to define a process. Process and input constants
 are listed in the global table. Functions marked with * require asset support.
+See the [palette](drawing.md#malvado-palette) for constants under `mv.colors`.
 The `world` and FPG objects have methods documented in their linked guides;
 object methods and process fields are not included in this namespace table.
 

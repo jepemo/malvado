@@ -21,14 +21,25 @@ typedef struct {
     unsigned char *inserted;
 } ImportState;
 
+static void
+push_export(lua_State *L, int module, int palette, const char *name)
+{
+    lua_pushstring(L, name);
+    lua_rawget(L, module);
+    if (lua_isnil(L, -1) && lua_istable(L, palette)) {
+        lua_pop(L, 1);
+        lua_pushstring(L, name);
+        lua_rawget(L, palette);
+    }
+}
+
 static int
 install_globals(lua_State *L)
 {
     ImportState *state = lua_touserdata(L, 3);
     for (size_t i = 0; state->names[i]; ++i) {
         const char *name = state->names[i];
-        lua_pushstring(L, name);
-        lua_rawget(L, 1);
+        push_export(L, 1, 4, name);
         if (lua_isnil(L, -1)) {
             lua_pop(L, 1);
             continue;
@@ -60,8 +71,7 @@ malvado_import_globals(lua_State *L)
     if (!lua_istable(L, globals)) return luaL_error(L, "global environment is not a table");
     if (!lua_checkstack(L, 8)) return luaL_error(L, "cannot prepare global import");
     for (size_t i = 0; names[i]; ++i) {
-        lua_pushstring(L, names[i]);
-        lua_rawget(L, lua_upvalueindex(1));
+        push_export(L, lua_upvalueindex(1), lua_upvalueindex(3), names[i]);
         if (lua_isnil(L, -1)) {
             lua_pop(L, 1);
             continue;
@@ -81,7 +91,8 @@ malvado_import_globals(lua_State *L)
     lua_pushvalue(L, lua_upvalueindex(1));
     lua_pushvalue(L, globals);
     lua_pushlightuserdata(L, &state);
-    int status = lua_pcall(L, 3, 0, 0);
+    lua_pushvalue(L, lua_upvalueindex(3));
+    int status = lua_pcall(L, 4, 0, 0);
     if (status != LUA_OK) {
         for (size_t i = 0; names[i]; ++i) {
             if (!inserted[i]) continue;

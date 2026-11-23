@@ -23,7 +23,8 @@ mv.fade_off(30) -- Fade to opaque black.
 mv.fade_on(30)  -- Queue a return to transparent black.
 ```
 
-`mv.fade_to {color = {r, g, b, a}, ticks = n}` chooses a color. `fade_off` and
+`mv.fade_to {color = mv.colors.BLUE, ticks = n}` accepts any
+[Lua color](drawing.md#lua-colors). `fade_off` and
 `fade_on` default to 16 ticks. `mv.fade_active()` includes queued work.
 `mv.fade_color()` returns the current color as one RGBA table. Invalid values or a full
 queue raise a Lua error. The runner advances after each process tick and draws

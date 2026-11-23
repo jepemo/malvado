@@ -27,7 +27,7 @@ end)
 local Overlay = process(function(self)
   self.camera = false
   while not key("escape") do
-    set_color {255, 255, 255, 255}
+    set_color(WHITE)
     draw_rect(80, 140, 560, 320)
     draw_text {text = "Left / Right: scroll inventory  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()

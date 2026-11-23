@@ -6,10 +6,6 @@
 
 ---@meta
 
----RGBA color: `{red, green, blue, alpha}`, four integers in 0..255.
----Alpha 0 is fully transparent, alpha 255 is fully opaque.
----@alias MvColor [integer, integer, integer, integer]
-
 ---Built-in horizontal text alignment.
 ---@alias MvTextAlign "left"|"center"|"right"
 

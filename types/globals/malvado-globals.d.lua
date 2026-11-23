@@ -293,6 +293,54 @@ function text_size(font, text) end
 ---@param options MvDrawTextOptions
 function draw_text(options) end
 
+---@type MvPaletteColor
+BLACK = nil
+
+---@type MvPaletteColor
+WHITE = nil
+
+---@type MvPaletteColor
+TRANSPARENT = nil
+
+---@type MvPaletteColor
+GRAY = nil
+
+---@type MvPaletteColor
+LIGHT_GRAY = nil
+
+---@type MvPaletteColor
+DARK_GRAY = nil
+
+---@type MvPaletteColor
+RED = nil
+
+---@type MvPaletteColor
+GREEN = nil
+
+---@type MvPaletteColor
+BLUE = nil
+
+---@type MvPaletteColor
+YELLOW = nil
+
+---@type MvPaletteColor
+CYAN = nil
+
+---@type MvPaletteColor
+MAGENTA = nil
+
+---@type MvPaletteColor
+ORANGE = nil
+
+---@type MvPaletteColor
+PURPLE = nil
+
+---@type MvPaletteColor
+PINK = nil
+
+---@type MvPaletteColor
+BROWN = nil
+
 ---@param color MvColor
 function set_color(color) end
 
@@ -311,7 +359,7 @@ function fade_on(ticks) end
 ---@return boolean active
 function fade_active() end
 
----@return MvColor color
+---@return MvColorRGBA color
 function fade_color() end
 
 ---@param x1 integer

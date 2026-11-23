@@ -134,6 +134,7 @@
 ---@field process MvProcessNamespace
 ---@field input MvInputNamespace
 ---@field graphics MvGraphicsNamespace
+---@field colors MvColorPalette
 ---@field collision MvCollisionNamespace
 ---@field camera MvCameraNamespace
 ---@field world MvWorldNamespace
@@ -570,7 +571,7 @@ function malvado.fade_on(ticks) end
 function malvado.fade_active() end
 
 ---Read the current fade color.
----@return MvColor color
+---@return MvColorRGBA color
 function malvado.fade_color() end
 
 ---Queue a filled box draw with the color set by `set_color`.

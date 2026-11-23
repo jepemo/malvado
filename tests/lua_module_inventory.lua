@@ -10,7 +10,7 @@ local function read(path)
 end
 local globals = read("docs/api/lua-globals.md")
 local namespaces = read("docs/api/lua-namespaces.md")
-local known = {import_globals = true, legacy_fpg = true}
+local known = {import_globals = true, legacy_fpg = true, colors = true}
 assert(globals:find("`mv.import_globals`", 1, true))
 assert(globals:find("`mv.legacy_fpg`", 1, true))
 assert(type(mv.import_globals) == "function" and type(mv.legacy_fpg) == "function")
@@ -18,6 +18,10 @@ for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do known[name] = tru
 for name in namespaces:gmatch("| `mv%.([%w_]+)%.[%w_]+` |") do known[name] = true end
 for name in pairs(mv) do
   assert(known[name], "undocumented module field: " .. name)
+end
+assert(namespaces:find("`mv.colors`", 1, true) and type(mv.colors) == "table")
+for name, field in globals:gmatch("| `([%w_]+)` | `mv%.colors%.([%w_]+)` |") do
+  assert(name == field and mv.colors[field], "missing palette export: " .. name)
 end
 local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 assert(asset_option == "0" or asset_option == "1")

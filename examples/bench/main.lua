@@ -46,6 +46,6 @@ start(function()
   for i = 0, 8 do
     images[i + 1] = load_image(string.format("examples/bench/assets/colours/%03d.png", i))
   end
-  clear_screen {0, 0, 0, 255}
+  clear_screen(BLACK)
   Benchmark()
 end, { width = 800, height = 600, title = "Benchmark" })

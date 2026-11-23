@@ -16,12 +16,10 @@ end)
 mv.start(function() Shape() end)
 ```
 
-`set_color(color)` sets the color for later primitive commands. The color is
-one RGBA table: `{red, green, blue, alpha}`, four integers in 0..255. Alpha 0
-is fully transparent and 255 is fully opaque. The color is shared by
-processes, so set it before drawing when a particular color is needed. A
-queued command keeps the color it had when it was created. The initial color
-is opaque white.
+`set_color(color)` sets the [color](#lua-colors) for later primitive commands.
+The color is shared by processes, so set it before drawing when a particular
+color is needed. A queued command keeps the color it had when it was created.
+The initial color is opaque white.
 
 - `mv.draw_box(x1, y1, x2, y2)` draws a filled rectangle. `mv.draw_rect` draws its outline. The second corner must be below and to the right of the first.
 - `mv.draw_fcircle(x, y, radius)` draws a filled circle. `mv.draw_circle` draws its outline. The radius must be positive.
@@ -30,15 +28,89 @@ Invalid geometry raises an error. Draw commands are valid only inside a running 
 
 In C, call `mv_window_draw_box(x, y, width, height, filled, color)` or `mv_window_draw_circle(x, y, radius, filled, color)` between `mv_window_begin` and `mv_window_end`. Pass 1 for filled or 0 for outlined. The functions return 0 for invalid geometry or no window. C drawing follows call order.
 
-`mv.clear_screen(color)` sets the background for later frames. The color is
-the same RGBA table; the background is always opaque, so the alpha channel is
-ignored. Invalid channels raise an error and leave the background unchanged.
+`mv.clear_screen(color)` sets the background for later frames. It validates
+all supplied channels and uses only RGB. The background is always opaque.
+For example, clearing to `TRANSPARENT` fills the window with opaque black.
+Invalid input raises an error and leaves the background unchanged.
+
+## Lua colors
+
+All Lua color inputs accept a built-in palette color or one of four table forms.
+These four tables specify the same color.
+
+```lua
+local rgb = {255, 0, 0}
+local rgba = {255, 0, 0, 255}
+local named_rgb = {r = 255, g = 0, b = 0}
+local named_rgba = {r = 255, g = 0, b = 0, a = 255}
+```
+
+Red, green, and blue are required. Alpha defaults to 255. Each channel must be
+a Lua integer from 0 to 255. Numeric strings and floating-point values such
+as `255.0` raise an error. Unknown fields, missing RGB channels, and tables
+that mix named and positional keys also raise an error.
+
+Alpha 0 is fully transparent and 255 is fully opaque for shapes, text, and
+fade overlays. The screen background stays opaque.
+
+Custom color tables are mutable. Set a channel before passing the table to
+a drawing function.
+
+```lua
+local BACKGROUND = {r = 18, g = 22, b = 30}
+local SOFT_BLUE = {90, 150, 215}
+local fog = {180, 190, 210, 80}
+fog[4] = 120
+```
+
+### Malvado palette
+
+Use `mv.colors` with the namespaced API.
+
+```lua
+local mv = require("malvado")
+mv.clear_screen(mv.colors.BLACK)
+mv.set_color(mv.colors.RED)
+```
+
+Use the same constants as globals after importing them.
+
+```lua
+require("malvado").import_globals()
+clear_screen(BLACK)
+set_color(RED)
+```
+
+The constants are read-only native values. Read channels with either
+`RED.r` or `RED[1]`. Alpha is available as `RED.a` or `RED[4]`. Assigning
+to a channel raises an error. To make a mutable copy, use
+`{RED.r, RED.g, RED.b, RED.a}`.
+
+| Name | RGBA |
+| --- | --- |
+| `BLACK` | 0, 0, 0, 255 |
+| `WHITE` | 255, 255, 255, 255 |
+| `TRANSPARENT` | 0, 0, 0, 0 |
+| `GRAY` | 128, 128, 128, 255 |
+| `LIGHT_GRAY` | 211, 211, 211, 255 |
+| `DARK_GRAY` | 64, 64, 64, 255 |
+| `RED` | 255, 0, 0, 255 |
+| `GREEN` | 0, 255, 0, 255 |
+| `BLUE` | 0, 0, 255, 255 |
+| `YELLOW` | 255, 255, 0, 255 |
+| `CYAN` | 0, 255, 255, 255 |
+| `MAGENTA` | 255, 0, 255, 255 |
+| `ORANGE` | 255, 165, 0, 255 |
+| `PURPLE` | 128, 0, 128, 255 |
+| `PINK` | 255, 192, 203, 255 |
+| `BROWN` | 165, 42, 42, 255 |
 
 ## Fade the screen
 
 `mv.fade_off(ticks)` fades to opaque black, and `mv.fade_on(ticks)` fades back to transparent. The duration defaults to 16 simulation ticks. Calls are queued, so `mv.fade_off(); mv.fade_on()` runs the two transitions in order. The legacy import also supplies these two names. Its argument is a duration in ticks; it does not reproduce the historical speed argument.
 
-For another color, call `mv.fade_to {color = {r, g, b, a}, ticks = n}`. Channels are integers from 0 to 255; the duration is an integer from 0 to 1,000,000 ticks and defaults to 16. A duration of zero changes the color immediately when the request reaches the front of the queue. Up to 16 requests can wait behind the current transition; adding another raises an error. `mv.fade_active()` is true while a transition or queued request remains. `mv.fade_color()` returns the current color as one RGBA table. The overlay is drawn after processes and persistent text. It advances once per simulation tick and stops when the runner stops.
+For another color, call `mv.fade_to {color = mv.colors.BLUE, ticks = n}`.
+The duration is an integer from 0 to 1,000,000 ticks and defaults to 16. A duration of zero changes the color immediately when the request reaches the front of the queue. Up to 16 requests can wait behind the current transition; adding another raises an error. `mv.fade_active()` is true while a transition or queued request remains. `mv.fade_color()` returns the current color as one RGBA table. The overlay is drawn after processes and persistent text. It advances once per simulation tick and stops when the runner stops.
 
 In C, initialize `MvFade fade = {0}` and call `mv_fade_start(&fade, target, ticks)`. Call `mv_fade_step(&fade)` on each simulation tick and use `fade.current` as the color of a window-sized filled box. `mv_fade_active(&fade)` reports whether the transition is in progress. A start with invalid input returns 0 without changing the state. C callers manage any transition queue themselves.
 
@@ -63,8 +135,7 @@ start(function() Ball({x = 100, y = 100}) end)
 `graphics.circle(radius, options)` and `graphics.rect(width, height, options)`
 return immutable descriptors. Dimensions must be finite, positive, and in
 `FLT_MIN..FLT_MAX / 16` so the graphics backend can represent them. Options may
-contain `color = {r, g, b}` or `{r, g, b, a}`; each channel is an integer in
-0..255. The default is opaque white. `pivot` defaults to `"center"` for both
+contain a [color](#lua-colors). The default is opaque white. `pivot` defaults to `"center"` for both
 shapes. Rectangles also accept `"top-left"`. Circles only accept `"center"`.
 Invalid dimensions, colors, pivots, or unknown options raise an error. Lua
 retains the descriptor while it is referenced, including by process defaults.
@@ -180,7 +251,7 @@ start(function() Player({x = 100, y = 100}) end)
 `mv.scroll`) and existing `mv.graphics` fields contain the same functions.
 They return the same immutable descriptors and use the validation and ownership
 rules above. Shapes default to a center pivot and opaque white; rectangles can
-select `pivot = "top-left"`. RGB and RGBA color tables are supported. Unknown
+select `pivot = "top-left"`. Use any [Lua color](#lua-colors). Unknown
 shape options raise an error. No `shape` namespace is required.
 
 This increment preserves immediate drawing: `draw_rect` and `draw_box` take

@@ -13,7 +13,7 @@ return {
     width = 160,
     height = 120,
     init = function()
-        mv.clear_screen {0, 0, 0, 255}
+        mv.clear_screen(mv.colors.BLACK)
         local image = mv.load_image("tile.png")
         local width, height = mv.image_size(image)
         print(("image: %dx%d"):format(width, height))

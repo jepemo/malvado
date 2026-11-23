@@ -53,6 +53,8 @@ check_frame(void *user)
     Color blue = GetImageColor(image, 90 * image.width / width, 40 * image.height / height);
     Color green = GetImageColor(image, 80 * image.width / width, 40 * image.height / height);
     Color background = GetImageColor(image, 25 * image.width / width, 30 * image.height / height);
+    Color palette = GetImageColor(image, 56 * image.width / width, 96 * image.height / height);
+    Color custom = GetImageColor(image, 66 * image.width / width, 96 * image.height / height);
     Color alpha = GetImageColor(image, 130 * image.width / width, 70 * image.height / height);
     Color outside = GetImageColor(image, 119 * image.width / width, 70 * image.height / height);
     Color white = GetImageColor(image, 35 * image.width / width, 90 * image.height / height);
@@ -64,7 +66,9 @@ check_frame(void *user)
     assert(red.r > 240 && red.g < 10 && red.b < 10);
     assert(blue.b > 240 && blue.r < 10 && blue.g < 10);
     assert(green.g > 240 && green.r < 10 && green.b < 10);
-    assert(background.r < 10 && background.g < 10 && background.b < 10);
+    assert(background.r < 10 && background.g < 10 && background.b < 10 && background.a == 255);
+    assert(palette.r == 255 && palette.g == 0 && palette.b == 0 && palette.a == 255);
+    assert(palette.r == custom.r && palette.g == custom.g && palette.b == custom.b && palette.a == custom.a);
     Color native = GetImageColor(image,147*image.width/width,102*image.height/height);
     Color command = GetImageColor(image,136*image.width/width,102*image.height/height);
     assert(native.r > 240 && native.g < 10 && native.b > 240);

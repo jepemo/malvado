@@ -67,7 +67,7 @@
 
 ---Options for `rect` and `circle`.
 ---@class MvGraphicOptions
----@field color integer[]|{[integer]: integer, [4]?: integer} Fill color as `{r, g, b}` with optional alpha. Default `{255, 255, 255, 255}`.
+---@field color MvColor Fill color. Default: opaque white.
 ---@field pivot "center"|"top-left"? Pivot position (`rect` only). Default `"center"`.
 
 ---Options for `animation` with a frame list.

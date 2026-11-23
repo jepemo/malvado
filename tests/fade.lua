@@ -7,7 +7,7 @@ local task = mv.process(function()
   assert(not pcall(mv.fade_to, {color = {0, 0, 0, 256}, ticks = 2}))
   assert(not pcall(mv.fade_to, {color = {0, 0, 0, 255}, ticks = -1}))
   assert(not pcall(mv.fade_to, {color = {0, 0, 0, 255}, ticks = "soon"}))
-  assert(not pcall(mv.fade_to, {color = {0, 0, 0}, ticks = 2}))
+  assert(not pcall(mv.fade_to, {color = {0, 0}, ticks = 2}))
   mv.fade_off(2)
   mv.fade_on(2)
   local expected = {0, 127, 255, 128, 0}

@@ -1934,28 +1934,75 @@ advance_fade(void)
     (void)mv_fade_queue_step(&engine.fade);
 }
 
-/* Colors use one public representation: {red, green, blue, alpha} with four
- * integer channels in 0..255. Alpha 0 is fully transparent, 255 fully opaque.
- * Invalid tables must produce clear errors before any state changes. */
+/* The same channel keys are used by custom tables and palette values. */
+static int
+color_channel(lua_State *L, int index)
+{
+    if (lua_isinteger(L, index)) {
+        lua_Integer key = lua_tointeger(L, index);
+        return key >= 1 && key <= 4 ? (int)key - 1 : -1;
+    }
+    if (lua_type(L, index) == LUA_TSTRING) {
+        static const char keys[] = "rgba";
+        size_t length;
+        const char *key = lua_tolstring(L, index, &length);
+        const char *match = length == 1 ? memchr(keys, key[0], 4) : NULL;
+        if (match) return (int)(match - keys);
+    }
+    return -1;
+}
+
+static int
+constant_color_index(lua_State *L)
+{
+    const MvColor *color = luaL_checkudata(L, 1, "malvado.color");
+    if (lua_rawlen(L, 1) != sizeof(*color))
+        return luaL_error(L, "invalid palette color");
+    int channel = color_channel(L, 2);
+    if (channel < 0) return 0;
+    unsigned char channels[] = {color->r, color->g, color->b, color->a};
+    lua_pushinteger(L, channels[channel]);
+    return 1;
+}
+
+static int
+constant_color_newindex(lua_State *L)
+{
+    return luaL_error(L, "palette colors are read-only");
+}
+
 static MvColor
 check_color(lua_State *L, int index)
 {
-    luaL_checktype(L, index, LUA_TTABLE);
-    index = lua_absindex(L, index);
-    if (lua_rawlen(L, index) != 4)
-        luaL_error(L, "color must be a table with four channels: {red, green, blue, alpha}");
-    MvColor color;
-    unsigned char *channels[4] = {&color.r, &color.g, &color.b, &color.a};
-    for (int i = 0; i < 4; ++i) {
-        lua_rawgeti(L, index, i + 1);
-        int is_integer;
-        lua_Integer value = lua_tointegerx(L, -1, &is_integer);
-        lua_pop(L, 1);
-        if (!is_integer || value < 0 || value > 255)
-            luaL_error(L, "color channel %d must be an integer in 0..255", i + 1);
-        *channels[i] = (unsigned char)value;
+    if (lua_type(L, index) == LUA_TUSERDATA && lua_rawlen(L, index) == sizeof(MvColor)) {
+        const MvColor *constant = luaL_testudata(L, index, "malvado.color");
+        if (constant) return *constant;
     }
-    return color;
+    if (!lua_istable(L, index))
+        luaL_error(L, "expected a color table or palette color");
+    index = lua_absindex(L, index);
+    unsigned char channels[] = {0, 0, 0, 255};
+    unsigned present = 0;
+    int key_type = LUA_TNONE;
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        int channel = color_channel(L, -2);
+        if (channel < 0)
+            luaL_error(L, "unknown color field");
+        int type = lua_type(L, -2);
+        if (key_type != LUA_TNONE && key_type != type)
+            luaL_error(L, "color cannot mix positional and named fields");
+        key_type = type;
+        lua_Integer value = lua_tointeger(L, -1);
+        if (!lua_isinteger(L, -1) || value < 0 || value > 255)
+            luaL_error(L, "color channel %d must be an integer in 0..255", channel + 1);
+        channels[channel] = (unsigned char)value;
+        present |= 1u << channel;
+        lua_pop(L, 1);
+    }
+    if ((present & 7u) != 7u)
+        luaL_error(L, "color requires red, green, and blue channels");
+    return (MvColor){channels[0], channels[1], channels[2], channels[3]};
 }
 
 static void
@@ -4921,6 +4968,25 @@ static const struct { const char *name; const char *value; } api_constants[] = {
     {"SIGNAL_KILL", "kill"},
 };
 
+/* Each entry defines a Lua palette member and a global export. */
+#define PALETTE_COLOR_LIST(X) \
+    X(BLACK, 0, 0, 0, 255) \
+    X(WHITE, 255, 255, 255, 255) \
+    X(TRANSPARENT, 0, 0, 0, 0) \
+    X(GRAY, 128, 128, 128, 255) \
+    X(LIGHT_GRAY, 211, 211, 211, 255) \
+    X(DARK_GRAY, 64, 64, 64, 255) \
+    X(RED, 255, 0, 0, 255) \
+    X(GREEN, 0, 255, 0, 255) \
+    X(BLUE, 0, 0, 255, 255) \
+    X(YELLOW, 255, 255, 0, 255) \
+    X(CYAN, 0, 255, 255, 255) \
+    X(MAGENTA, 255, 0, 255, 255) \
+    X(ORANGE, 255, 165, 0, 255) \
+    X(PURPLE, 128, 0, 128, 255) \
+    X(PINK, 255, 192, 203, 255) \
+    X(BROWN, 165, 42, 42, 255)
+
 static const char *const global_names[] = {
     "camera_create", "camera_set", "camera_move", "camera_follow",
     "collision", "world_create", "world_move",
@@ -5060,9 +5126,38 @@ static const char *const global_names[] = {
     "SIGNAL_FREEZE",
     "SIGNAL_WAKEUP",
     "SIGNAL_KILL",
+#define PALETTE_NAME(name, r, g, b, a) #name,
+    PALETTE_COLOR_LIST(PALETTE_NAME)
+#undef PALETTE_NAME
     NULL
 };
 
+static void
+push_palette(lua_State *L)
+{
+    static const struct { const char *name; MvColor color; } colors[] = {
+#define PALETTE_ENTRY(name, r, g, b, a) {#name, {r, g, b, a}},
+        PALETTE_COLOR_LIST(PALETTE_ENTRY)
+#undef PALETTE_ENTRY
+    };
+    luaL_newmetatable(L, "malvado.color");
+    lua_pushcfunction(L, constant_color_index);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, constant_color_newindex);
+    lua_setfield(L, -2, "__newindex");
+    lua_pushboolean(L, 0);
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
+
+    lua_createtable(L, 0, (int)(sizeof(colors) / sizeof(colors[0])));
+    for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i) {
+        MvColor *value = lua_newuserdatauv(L, sizeof(*value), 0);
+        *value = colors[i].color;
+        luaL_setmetatable(L, "malvado.color");
+        lua_setfield(L, -2, colors[i].name);
+    }
+}
+#undef PALETTE_COLOR_LIST
 
 static int
 spawn_process(lua_State *L)
@@ -5662,27 +5757,8 @@ graphic_create(lua_State *L)
         }
         lua_pop(L, 1);
         raw_option(L, options, "color");
-        if (!lua_isnil(L, -1)) {
-            luaL_checktype(L, -1, LUA_TTABLE);
-            int color = lua_absindex(L, -1);
-            lua_pushnil(L);
-            while (lua_next(L, color)) {
-                if (!lua_isinteger(L, -2) || lua_tointeger(L, -2) < 1 || lua_tointeger(L, -2) > 4)
-                    return luaL_error(L, "invalid graphic color");
-                lua_pop(L, 1);
-            }
-            unsigned char channels[4] = {255, 255, 255, 255};
-            for (int i = 0; i < 4; ++i) {
-                lua_rawgeti(L, color, i + 1);
-                if (i < 3 || !lua_isnil(L, -1)) {
-                    if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 255)
-                        return luaL_error(L, "invalid graphic color");
-                    channels[i] = (unsigned char)lua_tointeger(L, -1);
-                }
-                lua_pop(L, 1);
-            }
-            graphic.color = (MvColor){channels[0], channels[1], channels[2], channels[3]};
-        }
+        if (!lua_isnil(L, -1))
+            graphic.color = check_color(L, -1);
         lua_pop(L, 1);
     }
     if (graphic.top_left) {
@@ -6442,7 +6518,10 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "get_screen_height");
     lua_pushvalue(L, -1);
     lua_pushlightuserdata(L, (void *)global_names);
-    lua_pushcclosure(L, malvado_import_globals, 2);
+    push_palette(L);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -5, "colors");
+    lua_pushcclosure(L, malvado_import_globals, 3);
     lua_setfield(L, -2, "import_globals");
     return 1;
 }

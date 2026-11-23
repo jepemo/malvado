@@ -66,9 +66,19 @@ It requires `text`, `x` and `y`; `size` defaults to 20 and `color` defaults to
 opaque white. It creates no persistent text and does not change the drawing
 state used by the primitive functions.
 
-All Lua colors use one representation: an RGBA table `{red, green, blue,
-alpha}` with four integers in 0..255. Alpha 0 is fully transparent, 255 fully
-opaque. Invalid color tables raise a clear error.
+The `color` option in `draw_text`, `write`, and `change_text` accepts
+[palette colors and custom color tables](drawing.md#lua-colors).
+
+```lua
+mv.draw_text {text = "Hello!", x = 20, y = 20, color = mv.colors.WHITE}
+local label = mv.write {
+  font = mv.font {size = 40},
+  text = "Hello, Malvado!",
+  x = 20,
+  y = 60,
+  color = {r = 255, g = 200, b = 100}
+}
+```
 
 ## Rust owned text
 

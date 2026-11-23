@@ -274,13 +274,13 @@ export default {
   },
   'drawing/set_color': {
     description: 'Set the color that later shape drawing calls use.',
-    params: [['color', 'An RGBA table: `{red, green, blue, alpha}`, integers in 0..255.']],
+    params: [['color', 'A palette color or a positional or named RGB(A) table. Channels are integers in 0..255. Alpha defaults to 255.']],
     example: 'set_color {60, 160, 255, 255}\ndraw_box(20, 20, 120, 80)',
     related: ['clear_screen', 'draw_box'],
   },
   'drawing/clear_screen': {
     description: 'Set the background color for later frames. The background is always opaque; the alpha channel is ignored.',
-    params: [['color', 'An RGBA table: `{red, green, blue, alpha}`, integers in 0..255.']],
+    params: [['color', 'A palette color or a positional or named RGB(A) table. Channels are integers in 0..255. Alpha defaults to 255.']],
     example: 'clear_screen {25, 30, 45, 255}',
     related: ['set_color'],
   },
@@ -650,8 +650,8 @@ export default {
   },
   'platform/fade_to': {
     description: 'Queue a fade of the screen to a color.',
-    params: [['options', 'A table with `color` (an RGBA table) and an optional `ticks` duration (default 16).']],
-    example: 'fade_to {color = {0, 0, 0, 255}, ticks = 30}',
+    params: [['options', 'A table with a palette color or RGB(A) table in `color`, and an optional `ticks` duration (default 16).']],
+    example: 'fade_to {color = BLACK, ticks = 30}',
     related: ['fade_off', 'fade_on', 'fade_active'],
   },
   'platform/fade_off': {
