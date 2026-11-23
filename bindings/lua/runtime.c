@@ -308,7 +308,8 @@ push_current_process(lua_State *L)
     if (!engine.active || L != engine.active_thread)
         luaL_error(L, "operation requires a running process");
     Process *process = find_process(engine.active_id);
-    if (!process)
+    MvProcessStatus status;
+    if (!process || mv_process_status(engine.context, (MvProcessId)engine.active_id, &status) != MV_OK)
         luaL_error(L, "current process is no longer alive");
     lua_rawgeti(L, LUA_REGISTRYINDEX, process->self_ref);
 }
@@ -628,6 +629,13 @@ kill_tree(lua_State *L)
 static int
 set_priority(lua_State *L)
 {
+    int arguments = lua_gettop(L);
+    if (arguments == 1) {
+        push_current_process(L);
+        lua_insert(L, 1);
+    } else if (arguments != 2) {
+        return luaL_error(L, "expected set_priority(priority) or set_priority(process, priority)");
+    }
     lua_Integer id = check_process_id(L, 1);
     lua_Integer priority = luaL_checkinteger(L, 2);
     if (mv_process_set_priority(engine.context, (MvProcessId)id, priority) != MV_OK)
@@ -650,7 +658,11 @@ get_priority(lua_State *L)
 static int
 kill_process(lua_State *L)
 {
-    lua_settop(L, 1);
+    int arguments = lua_gettop(L);
+    if (arguments == 0)
+        push_current_process(L);
+    else if (arguments != 1)
+        return luaL_error(L, "expected kill() or kill(process)");
     lua_pushliteral(L, "kill");
     return signal_process(L);
 }

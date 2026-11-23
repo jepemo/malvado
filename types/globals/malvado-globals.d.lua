@@ -54,6 +54,8 @@ function signal(handle, signal) end
 ---@param options? MvTreeOptions
 function signal_tree(handle, signal, options) end
 
+---Set an integer priority. The one-argument form requires the scheduled process coroutine.
+---@overload fun(priority: integer)
 ---@param handle MvProcess
 ---@param priority integer
 function set_priority(handle, priority) end
@@ -62,7 +64,11 @@ function set_priority(handle, priority) end
 ---@return integer priority
 function get_priority(handle) end
 
+---Kill a process. With no handle, kill the currently scheduled process from its own coroutine.
+---Self-kill stops the process immediately and does not return to it.
+---@overload fun()
 ---@param handle MvProcess
+---@return boolean killed Whether the target was live.
 function kill(handle) end
 
 ---@param handle MvProcess

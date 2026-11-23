@@ -2,6 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
+mv.import_globals()
 local closed, after, saved, killed_thread = 0, false, nil, nil
 local P = mv.process(function(self)
   saved = self
@@ -50,6 +51,64 @@ ok, value = coroutine.resume(ordinary)
 assert(ok and value == 43 and coroutine.close(ordinary))
 local spare = coroutine.create(function() coroutine.yield() end)
 assert(coroutine.resume(spare) and coroutine.close(spare))
-mv.start(function() P {}; observer {}; root_id = root {} end)
+
+local implicit_handle, queued = nil, setmetatable({}, {__mode = "v"})
+local implicit_closed, owned_text = 0, nil
+local implicit = mv.process(function(self)
+  local nested = coroutine.create(function() mv.kill() end)
+  local resumed, message = coroutine.resume(nested)
+  assert(not resumed and message:find("requires a running process", 1, true))
+  assert(not pcall(kill, nil) and not pcall(kill, self.id))
+  assert(not pcall(kill, self, nil) and self.status == "running")
+  local value = setmetatable({}, {__tostring = function()
+    local killed, failure = pcall(kill)
+    assert(not killed and failure:find("non-yieldable context", 1, true))
+    assert(self.status == "running")
+    return "checked"
+  end})
+  tostring(value)
+
+  mv.draw_rect {x = 0, y = 0, width = 5, height = 5}
+  local draw_count
+  for _, item in ipairs(mv.snapshot().processes) do
+    if item.id == self.id then draw_count = item.draw_commands end
+  end
+  assert(draw_count == 1)
+  owned_text = mv.write {font = mv.font {size = 16}, text = "owned", x = 0, y = 0}
+  local guard <close> = setmetatable({}, {__close = function()
+    implicit_closed = implicit_closed + 1
+  end})
+  xpcall(function()
+    pcall(function()
+      kill()
+      after = true
+    end)
+    after = true
+  end, function() after = true end)
+  after = true
+end)
+local check_cleanup = mv.process(function()
+  mv.frame()
+  assert(implicit_handle.reason == "killed" and not mv.kill(implicit_handle))
+  assert(owned_text and not pcall(mv.change_text, owned_text, {text = "gone"}))
+  for _, item in ipairs(mv.snapshot().processes) do
+    assert(item.id ~= implicit_handle.id)
+  end
+  collectgarbage("collect")
+  collectgarbage("collect")
+  assert(queued[1] == nil, "self-kill must release queued messages")
+end)
+
+mv.start(function()
+  local killed, failure = pcall(mv.kill)
+  assert(not killed and failure:find("requires a running process", 1, true))
+  P {}; observer {}; root_id = root {}
+  implicit_handle = implicit {}
+  local message = {damage = 50}
+  queued[1] = message
+  mv.send(implicit_handle, message)
+  check_cleanup {}
+end)
 assert(closed == 1 and not after and saved.reason == "killed")
+assert(implicit_closed == 1 and implicit_handle.reason == "killed")
 assert(rejected and tree_closed == 1 and not tree_after)

@@ -148,9 +148,53 @@ The same rules apply to handles for native C processes. During Lua shutdown, a f
 
 `mv.status(handle)` returns the current state string, or `nil` for a terminated process. `mv.find(constructor)` returns a new table of live handles for that type, in creation order. It includes sleeping and frozen processes. A C process with the same type ID is also included.
 
-Use `mv.set_priority(handle, value)` and `mv.get_priority(handle)` to change and read integer priorities. The default is 0. Higher priorities run first; ties use creation order. The scheduler fixes the order at the start of a tick. A change during a tick takes effect on the next tick. Invalid handles raise an error.
+Call `mv.set_priority(priority)` to set the current process's integer priority.
+Call `mv.set_priority(handle, priority)` to set the priority of a specific live
+process, including during setup. Read it with `mv.get_priority(handle)` or
+`self.priority`. The default is 0. Higher priorities run first. Ties use creation
+order. The scheduler fixes the order at the start of each tick, so a priority
+change during a tick affects the next tick's order.
 
-`mv.signal(handle, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle)` are shortcuts for the kill signal. `mv.kill(handle)` and `mv.signal(handle, "kill")` return true when they kill a live process and false if that handle is already dead. `mv.process.alive(handle)` checks whether a process is live.
+Call `mv.kill()` to stop the current process immediately. It ends with reason
+`"killed"`. Execution does not continue after the call, even inside `pcall` or
+`xpcall`. The scheduler runs `<close>` callbacks and releases the process's
+resources and pending messages during cleanup.
+
+Call `mv.kill(handle)` to target a specific process, including during setup.
+It returns `true` when it kills a live target and returns `false` if the target
+is already dead. If the call kills the calling process, it stops immediately,
+as with `mv.kill()`.
+
+The implicit forms require the live scheduled process coroutine. A nested Lua
+coroutine cannot use implicit process control. Explicit handles must belong to
+the current runtime. Invalid arguments or extra arguments raise an error. The
+same forms are available through `mv.process` and `import_globals()`.
+
+```lua
+require("malvado").import_globals()
+
+local Enemy = process(function(self)
+  set_priority(10)
+
+  while true do
+    local message = recv()
+    if message and message.damage then
+      self.health = self.health - message.damage
+    end
+    if self.health <= 0 then
+      kill()
+    end
+    frame()
+  end
+end)
+
+start(function()
+  local enemy = Enemy {health = 100}
+  send(enemy, {damage = 100})
+end)
+```
+
+`mv.signal(handle, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle)` are shortcuts for the kill signal. `mv.signal(handle, "kill")` has the same return behavior as `mv.kill(handle)`. `mv.process.alive(handle)` checks whether a process is live.
 
 Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or handles raise an error without changing the tree. If a close callback fails, Malvado reports the error, continues cleanup and ends the run with a nonzero result.
 

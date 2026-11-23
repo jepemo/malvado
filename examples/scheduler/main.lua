@@ -4,6 +4,10 @@
 require("malvado").import_globals()
 local worker = process(function(self)
   print(self.name .. ": first tick")
+  if self.name == "Low" then
+    -- Move ahead of the other worker on the next tick.
+    set_priority(20)
+  end
   frame()
   print(self.name .. ": second tick")
 end)

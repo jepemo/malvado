@@ -62,6 +62,10 @@ local Player = process(function(self)
   world_move(world, self, 1, 0)
   local message, explicit_message = recv(), recv(self)
   local elapsed, explicit_elapsed = animation_elapsed(), animation_elapsed(self)
+  set_priority(10)
+  set_priority(self, 0)
+  if message then kill() end
+  if explicit_message then assert(kill(self)) end
   self.graph = circle {radius = 20, color = GREEN}
   draw_rect {x = 0, y = 0, width = 4, height = 6, filled = false}
   draw_circle {x = 20, y = 20, radius = 5, color = BLUE}
@@ -116,6 +120,14 @@ local actor = mv.process(function(self)
   local message, explicit_message = mv.recv(), mv.recv(self)
   local elapsed, explicit_elapsed = mv.animation_elapsed(), mv.animation_elapsed(self)
   local graphics_elapsed, graphics_explicit = mv.graphics.animation_elapsed(), mv.graphics.animation_elapsed(self)
+  mv.set_priority(10)
+  mv.set_priority(self, 0)
+  mv.process.set_priority(10)
+  mv.process.set_priority(self, 0)
+  if message then mv.kill() end
+  if explicit_message then assert(mv.kill(self)) end
+  if elapsed then mv.process.kill() end
+  if explicit_elapsed then assert(mv.process.kill(self)) end
   self.graph = mv.animation_sample(mv.animation(atlas, {1, 2}), 50)
   self.graph = mv.graphics.graph(42)
   self.graph = mv.graphics.animation(atlas, {1, 2}, {fps = 8})

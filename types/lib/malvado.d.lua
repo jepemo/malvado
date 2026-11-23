@@ -27,9 +27,9 @@
 ---@field frame fun()
 ---@field signal fun(handle: MvProcess, signal: MvSignal)
 ---@field signal_tree fun(handle: MvProcess, signal: MvSignal, options?: MvTreeOptions)
----@field set_priority fun(handle: MvProcess, priority: integer)
+---@field set_priority (fun(priority: integer))|(fun(handle: MvProcess, priority: integer)) The one-argument form requires the scheduled process coroutine.
 ---@field get_priority fun(handle: MvProcess):integer
----@field kill fun(handle: MvProcess)
+---@field kill (fun())|(fun(handle: MvProcess):boolean) The no-argument form requires the scheduled process coroutine. Self-kill stops it immediately.
 ---@field alive fun(handle: MvProcess):boolean
 ---@field kill_tree fun(handle: MvProcess, options?: MvTreeOptions)
 ---@field status fun(handle: MvProcess):MvProcessStatusName|nil
@@ -171,7 +171,8 @@ function malvado.signal(handle, signal) end
 ---@param options? MvTreeOptions
 function malvado.signal_tree(handle, signal, options) end
 
----Change the scheduling priority of a process.
+---Set an integer priority. The one-argument form requires the scheduled process coroutine.
+---@overload fun(priority: integer)
 ---@param handle MvProcess
 ---@param priority integer
 function malvado.set_priority(handle, priority) end
@@ -181,8 +182,11 @@ function malvado.set_priority(handle, priority) end
 ---@return integer priority
 function malvado.get_priority(handle) end
 
----Kill a process. Owned texts are removed at cleanup.
+---Kill a process. With no handle, kill the currently scheduled process from its own coroutine.
+---Self-kill stops the process immediately and does not return to it.
+---@overload fun()
 ---@param handle MvProcess
+---@return boolean killed Whether the target was live.
 function malvado.kill(handle) end
 
 ---Check whether a process handle is still alive.

@@ -69,9 +69,9 @@ export default {
     related: ['signal', 'kill_tree'],
   },
   'processes/set_priority': {
-    description: 'Change a process priority. Higher values run first.',
-    params: [['handle', 'A process handle.'], ['value', 'The new integer priority.']],
-    example: 'set_priority(boss, 10)',
+    description: 'Call `set_priority(priority)` in the scheduled process coroutine to change its priority, or call `set_priority(handle, priority)` to select a live process. Higher values run first. Ties use creation order. A change during a tick takes effect on the next tick.',
+    params: [['handle', 'A live process handle for the two-argument form.'], ['priority', 'The new integer priority.']],
+    example: 'set_priority(10) -- Inside the scheduled process.\nset_priority(boss, 20) -- Change a specific process.',
     related: ['get_priority'],
   },
   'processes/get_priority': {
@@ -81,9 +81,9 @@ export default {
     related: ['set_priority'],
   },
   'processes/kill': {
-    description: 'Kill a process. It returns true when the process was alive.',
-    params: [['handle', 'A process handle.']],
-    example: 'if kill(enemy) then\n    print("removed")\nend',
+    description: 'Call `kill()` in the scheduled process coroutine to stop it immediately with reason `"killed"`. Call `kill(handle)` to select a process. If the call kills the calling process, it does not return. Otherwise, `kill(handle)` returns `true` for a live target and `false` for an already dead target.',
+    params: [['handle', 'A process handle for the one-argument form.']],
+    example: 'if self.health <= 0 then\n    kill()\nend\n\nif kill(enemy) then\n    print("removed")\nend',
     related: ['signal', 'kill_tree', 'alive'],
   },
   'processes/alive': {

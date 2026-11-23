@@ -22,9 +22,9 @@ Process fields are documented in the [process guide](lua-processes.md).
 | `mv.process.frame` | Yield a process | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.signal` | Send a signal | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.signal_tree` | Signal a process tree | [processes](lua-processes.md) and [collision](collision.md) |
-| `mv.process.set_priority` | Change priority | [processes](lua-processes.md) and [collision](collision.md) |
+| `mv.process.set_priority` | Set priority with `(priority)` or `(handle, priority)` | [processes](lua-processes.md#control-processes) |
 | `mv.process.get_priority` | Read priority | [processes](lua-processes.md) and [collision](collision.md) |
-| `mv.process.kill` | Kill a process | [processes](lua-processes.md) and [collision](collision.md) |
+| `mv.process.kill` | Kill the current process with `()` or select a process with `(handle)` | [processes](lua-processes.md#control-processes) |
 | `mv.process.alive` | Check a handle | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.kill_tree` | Kill a process tree | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.status` | Read process status | [processes](lua-processes.md) and [collision](collision.md) |

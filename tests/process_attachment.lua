@@ -6,14 +6,14 @@ local proc = mv.process
 local attached, independent, from_close, owner
 local ran = 0
 local worker = proc(function() ran = ran + 1 end)
-local parent = proc(function(self)
+local parent = proc(function()
   attached = worker {}
   independent = proc.spawn(worker, {}, {attached = false})
   local guard <close> = setmetatable({}, {__close = function()
     assert(not pcall(worker))
     from_close = proc.spawn(worker, {}, {attached = false})
   end})
-  proc.kill(self)
+  proc.kill()
   error("self-kill returned")
 end)
 local policy_attached, policy_free
