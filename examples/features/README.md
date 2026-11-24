@@ -1,11 +1,12 @@
 # First Malvado lessons
 
-Start a game, run two processes, then load and draw an image. Each lesson
+Start a game, run two processes, draw an image, and resize a window. Each lesson
 has versions in C, Lua and Rust.
 
 1. [Startup](startup/README.md)
 2. [Processes](processes/README.md)
 3. [Image](image/README.md)
+4. [Runtime window resize](window-resize/README.md)
 
 ## Prepare a project
 

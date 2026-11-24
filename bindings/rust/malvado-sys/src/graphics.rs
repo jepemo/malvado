@@ -5,6 +5,7 @@ use std::ffi::{c_char, c_int};
 unsafe extern "C" {
     pub fn mv_window_open(width: c_int, height: c_int, title: *const c_char) -> c_int;
     pub fn mv_window_set_title(title: *const c_char) -> c_int;
+    pub fn mv_window_set_size(width: c_int, height: c_int) -> c_int;
     pub fn mv_window_size(width: *mut c_int, height: *mut c_int) -> c_int;
     pub fn mv_window_close() -> ();
     pub fn mv_window_should_close() -> c_int;

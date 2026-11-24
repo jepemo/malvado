@@ -16,6 +16,7 @@ TRACES = {
     'startup': ['ready'],
     'processes': ['first: 1', 'second: 1', 'first: 2', 'second: 2'],
     'image': ['image: 32x32'],
+    'window-resize': ['window: 320x240', 'window: 640x360'],
 }
 LANGUAGES = {'c': ['--c'], 'lua': [], 'rust': ['--lang', 'rust']}
 ENTRY_POINTS = {'c': 'main.c', 'lua': 'main.lua', 'rust': 'main.rs'}
@@ -88,7 +89,7 @@ def verify(sdk, work, pixels):
             asset = lesson / 'assets' / 'tile.png'
             if asset.is_file():
                 shutil.copyfile(asset, project / asset.name)
-            args = ['--headless'] if language == 'lua' and topic != 'image' else []
+            args = ['--headless'] if language == 'lua' and topic in ('startup', 'processes') else []
             check_trace(run([cli, 'run', *args], project), trace)
             exported = work / f'{topic}-{language}-export'
             run([cli, 'export', exported], project)

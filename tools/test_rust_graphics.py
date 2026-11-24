@@ -73,6 +73,8 @@ def consumer(prefix, profile):
         '    let region = malvado::camera::Viewport { x: 1, y: 2, width: 30, height: 40 }; actor.set_region(Some(region))?; assert_eq!(actor.region()?, Some(region)); actor.set_scroll((3.0,4.0))?; assert_eq!(actor.scroll()?, (3.0,4.0)); assert_eq!(actor.view_offset()?, (-3.0,-4.0)); assert_eq!(actor.view_clip(None,(100,80))?, Some(region)); actor.set_region(None)?; actor.set_scroll((0.0,0.0))?;\n'
         ' frame.graphic(geometry, malvado::collision::Transform::default(), Color {r:255,g:0,b:0,a:255})?;\n'
         ' frame.fade(&fade)?; drop(frame);\n'
+        ' window.set_size(192,144)?; assert_eq!(window.size(),(192,144));\n'
+        ' let frame = window.frame(state.background())?; frame.process_graphics(&game)?; drop(frame);\n'
         ' Ok(())\n}\n')
     run("cargo", "run", "--offline", *(["--release"] if profile == "Release" else []), cwd=game,
         env=dict(os.environ, MALVADO_SDK_PREFIX=str(prefix)), timeout=60)

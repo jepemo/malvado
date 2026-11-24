@@ -2276,16 +2276,55 @@ draw_line(lua_State *L)
 }
 
 static int
+refresh_window_size(void)
+{
+    if (engine.headless)
+        return engine.width > 0 && engine.height > 0;
+    int width, height;
+    if (!engine.window || !mv_window_size(&width, &height))
+        return 0;
+    engine.width = width;
+    engine.height = height;
+    return 1;
+}
+
+static int
 window_size(lua_State *L)
 {
-    if (!engine.started || engine.width <= 0 || engine.height <= 0)
+    if (!engine.started)
         return luaL_error(L, "window size is not available before start");
-    int width = engine.width, height = engine.height;
-    if (engine.window && !mv_window_size(&width, &height))
+    if (!refresh_window_size())
         return luaL_error(L, "window is not available");
-    lua_pushinteger(L, width);
-    lua_pushinteger(L, height);
+    lua_pushinteger(L, engine.width);
+    lua_pushinteger(L, engine.height);
     return 2;
+}
+
+static int
+valid_window_dimension(lua_State *L, int index)
+{
+    return lua_isinteger(L, index) && lua_tointeger(L, index) > 0 &&
+           lua_tointeger(L, index) <= INT_MAX;
+}
+
+static int
+set_window_size(lua_State *L)
+{
+    if (!engine.game_live)
+        return luaL_error(L, "set_window_size() requires a running game");
+    if (!valid_window_dimension(L, 1))
+        return luaL_argerror(L, 1, "width must be a positive integer in C int range");
+    if (!valid_window_dimension(L, 2))
+        return luaL_argerror(L, 2, "height must be a positive integer in C int range");
+    int width = (int)lua_tointeger(L, 1);
+    int height = (int)lua_tointeger(L, 2);
+    if (engine.headless) {
+        engine.width = width;
+        engine.height = height;
+    } else if (!engine.window || !mv_window_set_size(width, height) || !refresh_window_size()) {
+        return luaL_error(L, "could not resize window");
+    }
+    return 0;
 }
 
 static int
@@ -4959,6 +4998,8 @@ update_camera(lua_State *L, LuaCamera *camera)
 static void
 update_cameras(lua_State *L)
 {
+    if (!refresh_window_size())
+        return;
     if (!lua_checkstack(L, 10)) {
         engine.failed = 1;
         return;
@@ -5048,8 +5089,7 @@ validate_start_options(lua_State *L, int index, int allow_init)
         if (strlen(key) != length)
             luaL_error(L, "invalid game option name");
         if (strcmp(key, "width") == 0 || strcmp(key, "height") == 0) {
-            if (!lua_isinteger(L, -1) || lua_tointeger(L, -1) <= 0 ||
-                lua_tointeger(L, -1) > INT_MAX)
+            if (!valid_window_dimension(L, -1))
                 luaL_error(L, "invalid game dimension: %s", key);
         } else if (strcmp(key, "title") == 0) {
             size_t title_length;
@@ -5370,6 +5410,7 @@ static const char *const global_names[] = {
     "start",
     "set_fps",
     "set_title",
+    "set_window_size",
     "window_size",
     "set_color",
     "fade_to",
@@ -6632,6 +6673,7 @@ open_module(lua_State *L)
         {"start", start},
         {"set_fps", set_fps},
         {"set_title", set_title},
+        {"set_window_size", set_window_size},
         {"window_size", window_size},
         {"set_color", set_color},
         {"fade_to", fade_to},

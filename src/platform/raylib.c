@@ -24,7 +24,7 @@
 #include "render_internal.h"
 #include "../core/process.h"
 #include "raylib.h"
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #endif
@@ -92,7 +92,10 @@ static int drawing_active, clip_active, scroll_active;
 static MvCameraViewport current_clip;
 static float current_scroll_x, current_scroll_y;
 
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
+/* A non-NULL pointer also identifies the owner thread without reading
+ * shared window state from threads that do not own the window. */
+static _Thread_local GLFWwindow *owned_window;
 static GLFWjoystickfun previous_joystick_callback;
 static unsigned changed_pad_slots;
 
@@ -115,7 +118,7 @@ mv_pad_connected(int slot)
 {
     if (slot < 0 || slot >= MV_INPUT_PAD_SLOTS || !IsWindowReady())
         return 0;
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
     if (changed_pad_slots & (1u << slot))
         return 0;
 #endif
@@ -425,10 +428,14 @@ int mv_window_open(int width, int height, const char *title)
 #ifdef __ANDROID__
     if (!mv_android_window_wait_surface()) return 0;
 #endif
+#ifdef MV_DESKTOP_GLFW
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+#endif
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
     mv_input_open();
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
+    owned_window = glfwGetCurrentContext();
     changed_pad_slots = 0;
     previous_joystick_callback = glfwSetJoystickCallback(pad_hotplug);
 #endif
@@ -449,18 +456,58 @@ mv_window_set_title(const char *title)
 }
 
 int
+mv_window_set_size(int width, int height)
+{
+#ifdef MV_DESKTOP_GLFW
+    if (width <= 0 || height <= 0 || !owned_window || !IsWindowReady() || drawing_active)
+        return 0;
+    if (glfwGetCurrentContext() != owned_window || IsWindowFullscreen() || IsWindowMinimized() ||
+        IsWindowMaximized() || IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE))
+        return 0;
+    int current_width, current_height;
+    if (!mv_window_size(&current_width, &current_height))
+        return 0;
+    if (width == current_width && height == current_height)
+        return 1;
+
+    if (width > UINT16_MAX || height > UINT16_MAX) {
+        /* X11 and Win32 pass dimensions in 16-bit fields. Wayland adds
+         * decoration sizes and scales buffers with signed arithmetic. */
+        int platform = glfwGetPlatform();
+        if (platform == GLFW_PLATFORM_X11 || platform == GLFW_PLATFORM_WIN32 ||
+            platform == GLFW_PLATFORM_WAYLAND)
+            return 0;
+    }
+    /* Raylib's setter records the requested size before GLFW applies it.
+     * Keep its framebuffer callback in charge of updating the renderer. */
+    (void)glfwGetError(NULL);
+    glfwSetWindowSize(owned_window, width, height);
+    return glfwGetError(NULL) == GLFW_NO_ERROR;
+#else
+    (void)width;
+    (void)height;
+    return 0;
+#endif
+}
+
+int
 mv_window_size(int *width, int *height)
 {
     if (!width || !height)
         return 0;
-    if (!IsWindowReady()) {
-        *width = 0;
-        *height = 0;
+    *width = 0;
+    *height = 0;
+#ifdef MV_DESKTOP_GLFW
+    if (!owned_window || !IsWindowReady())
         return 0;
-    }
+    glfwGetWindowSize(owned_window, width, height);
+#else
+    if (!IsWindowReady())
+        return 0;
     *width = GetScreenWidth();
     *height = GetScreenHeight();
-    return 1;
+#endif
+    return *width > 0 && *height > 0;
 }
 
 void mv_window_close(void)
@@ -470,7 +517,8 @@ void mv_window_close(void)
     mv_android_window_detach();
 #endif
     if (IsWindowReady()) {
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
+        owned_window = NULL;
         glfwSetJoystickCallback(previous_joystick_callback);
         previous_joystick_callback = NULL;
 #endif
@@ -1300,7 +1348,7 @@ void mv_window_end(void)
 {
     if (scroll_active) (void)mv_window_scroll_end();
     if (clip_active) (void)mv_window_clip_end();
-#ifdef MV_GLFW_PAD_HOTPLUG
+#ifdef MV_DESKTOP_GLFW
     changed_pad_slots = 0;
 #endif
     EndDrawing();

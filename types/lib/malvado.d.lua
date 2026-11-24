@@ -720,7 +720,12 @@ function malvado.draw_line(options) end
 ---@param title string
 function malvado.set_title(title) end
 
----Read the window size in logical pixels once startup begins. In headless mode, return the configured size.
+---Request a window size during a running game. In headless mode, update the virtual size.
+---@param width integer Positive logical width in C int range.
+---@param height integer Positive logical height in C int range.
+function malvado.set_window_size(width, height) end
+
+---Read the current size in logical pixels once startup begins. In headless mode, return the virtual size.
 ---@return integer width
 ---@return integer height
 function malvado.window_size() end

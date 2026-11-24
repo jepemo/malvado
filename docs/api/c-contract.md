@@ -118,6 +118,18 @@ ignored. The wait can end early if interrupted.
 
 [`platform.h`](../../src/include/malvado/platform.h) provides the initial window adapter. The raylib implementation owns one window and must run on the main thread. `mv_window_escape_down` and `mv_window_space_down` report held keys. The headless implementation cannot open a window and reports both keys as released. These functions are separate from the process context; broader graphics and resource APIs are planned for alpha.3.
 
+Call `mv_window_set_size(width, height)` on the desktop GLFW window owner
+thread between draw frames. Give positive dimensions in logical pixels. It
+returns 1 when the backend accepts the request or the window is already that
+size. Read the current dimensions with `mv_window_size`. The OS can constrain
+the request or apply it after processing window events. The same window and
+resources stay live.
+
+The resize returns 0 for invalid dimensions, no window, a different thread,
+an active frame, or a backend rejection. Use a regular window that is neither
+minimized nor maximized. Headless, Android, and graphical backends without
+desktop GLFW support return 0. See the [runtime resize example](../../examples/features/window-resize/README.md).
+
 The current `malvado-run` owns its Lua VM and context. Only one runner can be active at a time; a nested `malvado_run` returns exit code 2. `malvado_debug_context` is an experimental runner-thread diagnostic hook, used by the [mixed C/Lua test](../../tests/mixed_host.c). It is not a stable API for attaching a binding to an arbitrary host VM. IPC, a GUI, and a LuaRocks module for an external interpreter are not part of alpha.2.
 
 ## Native version discovery
