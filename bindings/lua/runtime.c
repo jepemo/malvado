@@ -119,6 +119,7 @@ typedef struct {
 } LuaGraphic;
 typedef struct { MvAnimation *sequence; MvCollisionShape shape; } LuaAnimation;
 typedef struct { MvSound *sound; MvResource *resource; } LuaSound;
+typedef struct { MvSound *alias; int slot; } LuaVoice;
 typedef struct { MvMusic *music; MvResource *resource; } LuaMusic;
 typedef struct { MvFont *font; MvResource *resource; } LuaFont;
 typedef struct { int rows, columns, count, directory; } LuaLegacySheet;
@@ -2474,6 +2475,61 @@ static void destroy_managed_sound(void *data) { mv_sound_destroy(data); }
 static void destroy_managed_music(void *data) { mv_music_destroy(data); }
 static void destroy_managed_font(void *data) { mv_font_destroy(data); }
 
+enum { LUA_VOICE_LIMIT = 32 };
+
+static void
+finish_voice(lua_State *L, LuaVoice *voice)
+{
+    if (voice->alias) {
+        mv_sound_stop(voice->alias);
+        mv_sound_destroy(voice->alias);
+        voice->alias = NULL;
+    }
+    if (voice->slot) {
+        lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_voices");
+        lua_pushnil(L);
+        lua_rawseti(L, -2, voice->slot);
+        lua_pop(L, 1);
+        voice->slot = 0;
+    }
+}
+
+static int
+voice_finished(const LuaVoice *voice)
+{
+    return !mv_sound_paused(voice->alias) && !mv_sound_playing(voice->alias);
+}
+
+/* The preallocated slots root active and paused voices independently of their
+ * creating process. A finished handle can remain in Lua without its alias. */
+static int
+sweep_voices(lua_State *L)
+{
+    int free_slot = 0;
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_voices");
+    for (int slot = 1; slot <= LUA_VOICE_LIMIT; ++slot) {
+        lua_rawgeti(L, -1, slot);
+        LuaVoice *voice = luaL_testudata(L, -1, "malvado.voice");
+        if (voice && voice_finished(voice)) {
+            finish_voice(L, voice);
+            voice = NULL;
+        }
+        if (!voice && !free_slot)
+            free_slot = slot;
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+    return free_slot;
+}
+
+static int
+voice_gc(lua_State *L)
+{
+    LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
+    finish_voice(L, voice);
+    return 0;
+}
+
 /* Keep a playing or paused stream alive until it stops or the runtime closes. */
 static void
 pin_audio(lua_State *L, int pinned)
@@ -2492,11 +2548,8 @@ sweep_audio(lua_State *L)
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
     lua_pushnil(L);
     while (lua_next(L, -2)) {
-        LuaSound *sound = luaL_testudata(L, -2, "malvado.sound");
         LuaMusic *music = luaL_testudata(L, -2, "malvado.music");
-        int ended = sound ? !mv_sound_paused(sound->sound) && !mv_sound_playing(sound->sound) :
-                    music ? !mv_music_paused(music->music) && !mv_music_playing(music->music) : 1;
-        if (ended) {
+        if (!music || (!mv_music_paused(music->music) && !mv_music_playing(music->music))) {
             lua_pushvalue(L, -2);
             lua_pushnil(L);
             lua_rawset(L, -5);
@@ -2513,6 +2566,7 @@ maintain_audio(lua_State *L)
 {
     if (!engine.audio) return;
     (void)mv_audio_update();
+    sweep_voices(L);
     sweep_audio(L);
 }
 
@@ -2554,78 +2608,122 @@ load_sound(lua_State *L)
     return 1;
 }
 
-static int
-clone_sound(lua_State *L)
+static lua_Number
+check_sound_volume(lua_State *L, int index)
 {
-    LuaSound *source = luaL_checkudata(L, 1, "malvado.sound");
-    LuaSound *copy = lua_newuserdatauv(L, sizeof(*copy), 0);
-    *copy = (LuaSound){0};
-    luaL_setmetatable(L, "malvado.sound");
-    copy->sound = mv_sound_clone(source->sound);
-    if (!copy->sound)
-        return luaL_error(L, "could not create sound instance");
-    MvSound *native = copy->sound;
-    copy->sound = NULL;
-    copy->resource = manage_native_resource(L, native, destroy_managed_sound, adopt_sound);
-    copy->sound = native;
-    return 1;
+    luaL_checktype(L, index, LUA_TNUMBER);
+    lua_Number volume = lua_tonumber(L, index);
+    if (!isfinite(volume) || volume < 0 || volume > 1)
+        luaL_error(L, "volume must be in 0..1");
+    return volume;
 }
 
 static int
 play_sound(lua_State *L)
 {
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    if (!mv_sound_play(sound->sound))
+    lua_Number volume = 1;
+    if (!lua_isnoneornil(L, 2)) {
+        static const char *const keys[] = {"volume"};
+        validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
+        raw_option(L, 2, "volume");
+        if (!lua_isnil(L, -1))
+            volume = check_sound_volume(L, -1);
+        lua_pop(L, 1);
+    }
+    if (!engine.audio || !sound->sound)
         return luaL_error(L, "sound is not available");
-    pin_audio(L, 1);
-    return 0;
+
+    int slot = sweep_voices(L);
+    if (!slot) {
+        lua_pushnil(L);
+        return 1;
+    }
+    LuaVoice *voice = lua_newuserdatauv(L, sizeof(*voice), 0);
+    *voice = (LuaVoice){0};
+    luaL_setmetatable(L, "malvado.voice");
+    lua_getfield(L, LUA_REGISTRYINDEX, "malvado.playing_voices");
+    /* A Lua finalizer can start playback while the userdata is allocated. */
+    int occupied = lua_rawgeti(L, -1, slot) != LUA_TNIL;
+    lua_pop(L, 1);
+    if (occupied) slot = sweep_voices(L);
+    if (!slot) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    lua_pushvalue(L, -2);
+    lua_rawseti(L, -2, slot);
+    lua_pop(L, 1);
+    voice->slot = slot;
+
+    voice->alias = mv_sound_clone(sound->sound);
+    if (!voice->alias) {
+        finish_voice(L, voice);
+        return luaL_error(L, "could not create voice for sound");
+    }
+    if (!mv_sound_set_volume(voice->alias, (float)volume) || !mv_sound_play(voice->alias)) {
+        finish_voice(L, voice);
+        return luaL_error(L, "could not play sound voice");
+    }
+    return 1;
 }
 
 static int
 stop_sound(lua_State *L)
 {
-    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    if (!mv_sound_stop(sound->sound))
-        return luaL_error(L, "sound is not available");
-    pin_audio(L, 0);
+    LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
+    finish_voice(L, voice);
     return 0;
+}
+
+static LuaVoice *
+check_live_voice(lua_State *L)
+{
+    LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
+    if (voice_finished(voice)) {
+        finish_voice(L, voice);
+        luaL_error(L, "sound voice has finished");
+    }
+    return voice;
 }
 
 static int
 pause_sound(lua_State *L)
 {
-    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    if (!mv_sound_pause(sound->sound))
-        return luaL_error(L, "sound is not available");
+    LuaVoice *voice = check_live_voice(L);
+    if (!mv_sound_pause(voice->alias))
+        return luaL_error(L, "sound voice is not available");
     return 0;
 }
 
 static int
 resume_sound(lua_State *L)
 {
-    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    if (!mv_sound_resume(sound->sound))
-        return luaL_error(L, "sound is not available");
+    LuaVoice *voice = check_live_voice(L);
+    if (!mv_sound_resume(voice->alias))
+        return luaL_error(L, "sound voice is not available");
     return 0;
 }
 
 static int
 sound_playing(lua_State *L)
 {
-    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    lua_pushboolean(L, mv_sound_playing(sound->sound));
+    LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
+    int playing = mv_sound_playing(voice->alias);
+    if (!playing && !mv_sound_paused(voice->alias))
+        finish_voice(L, voice);
+    lua_pushboolean(L, playing);
     return 1;
 }
 
 static int
 sound_volume(lua_State *L)
 {
-    LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
-    lua_Number volume = luaL_checknumber(L, 2);
-    if (!isfinite(volume) || volume < 0 || volume > 1)
-        return luaL_error(L, "volume must be in 0..1");
-    if (!mv_sound_set_volume(sound->sound, (float)volume))
-        return luaL_error(L, "sound is not available");
+    LuaVoice *voice = check_live_voice(L);
+    lua_Number volume = check_sound_volume(L, 2);
+    if (!mv_sound_set_volume(voice->alias, (float)volume))
+        return luaL_error(L, "sound voice is not available");
     return 0;
 }
 
@@ -2647,9 +2745,16 @@ load_music(lua_State *L)
     const char *path = luaL_checklstring(L, 1, &length);
     if (strlen(path) != length)
         return luaL_error(L, "music path contains a zero byte");
-    if (!lua_isnoneornil(L, 2) && !lua_isboolean(L, 2))
-        return luaL_error(L, "loop must be a boolean");
-    int loop = lua_isnoneornil(L, 2) ? 0 : lua_toboolean(L, 2);
+    int loop = 0;
+    if (!lua_isnoneornil(L, 2)) {
+        static const char *const keys[] = {"loop"};
+        validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
+        raw_option(L, 2, "loop");
+        if (!lua_isnil(L, -1) && !lua_isboolean(L, -1))
+            return luaL_error(L, "loop must be a boolean");
+        loop = lua_toboolean(L, -1);
+        lua_pop(L, 1);
+    }
     if (engine.headless)
         return luaL_error(L, "music is not available in headless mode");
     if (!engine.audio) {
@@ -5177,7 +5282,6 @@ static const char *const global_names[] = {
     "text_input_next",
     "text_input_set_keyboard",
     "load_sound",
-    "clone_sound",
     "play_sound",
     "stop_sound",
     "pause_sound",
@@ -6415,7 +6519,6 @@ open_module(lua_State *L)
         {"text_input_next", text_input_next},
         {"text_input_set_keyboard", text_input_set_keyboard},
         {"load_sound", load_sound},
-        {"clone_sound", clone_sound},
         {"play_sound", play_sound},
         {"stop_sound", stop_sound},
         {"pause_sound", pause_sound},
@@ -6566,6 +6669,12 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado sound");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    luaL_newmetatable(L, "malvado.voice");
+    lua_pushcfunction(L, voice_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushliteral(L, "malvado voice");
+    lua_setfield(L, -2, "__metatable");
+    lua_pop(L, 1);
     luaL_newmetatable(L, "malvado.music");
     lua_pushcfunction(L, music_gc);
     lua_setfield(L, -2, "__gc");
@@ -6612,6 +6721,8 @@ open_module(lua_State *L)
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.cameras");
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.playing_audio");
+    lua_createtable(L, LUA_VOICE_LIMIT, 0);
+    lua_setfield(L, LUA_REGISTRYINDEX, "malvado.playing_voices");
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     luaL_newlib(L, functions);

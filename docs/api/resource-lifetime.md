@@ -23,7 +23,8 @@ In C, `mv_resource_create` registers data and a destructor with a context. A nul
 | Atlas | Parse metadata for an image. A Lua atlas keeps the image used to create it. The C atlas parser owns metadata only; its caller owns the image. | Pending sprite draws retain what they need to draw. Release the atlas metadata and image references separately. |
 | Font | `font` uses the default font; `load_font` loads a custom font with a window. Lua font tables can be shared. | A text object or pending text draw keeps its font alive. A custom font is destroyed after its owner, wrappers, and pending work release it. |
 | Text | `write` creates persistent text and stores its font. `change_text` assigns the replacement font without changing the font's owner. | The creating process owns the text, or the game context owns it outside a process. `delete_text` explicitly removes it and releases its font reference. Owner cleanup removes remaining text once. |
-| Sound | Load a WAV sound or clone an instance. A clone has independent playback state and shares sample data. | Playing or paused instances retain their data. Stop or completion releases playback retention. Each clone and pending playback releases its own reference. |
+| Sound | Load a WAV sample. C and Rust can clone a native instance with independent playback and shared sample data. | The owner and wrappers retain the sample. Each native playback instance retains its own reference to the data. |
+| Voice (Lua) | Start an independent playback with `play_sound`. | Active or paused voices retain the decoded sample even after process cleanup. Stop or completion releases the native alias and playback root. A retained Lua handle stays safe to query. |
 | Music | Load a WAV or OGG stream with an audio device. Assignment shares the stream. | Playing or paused streams retain their data. Stop or completion releases playback retention. Release the stream only after its owner, wrappers, and playback release it. |
 
 A renderer or audio backend must not access a native object after its last reference is released. If work is asynchronous, it must retain an independent reference until completion. A resource cannot be released early because its creating process ends.
@@ -50,7 +51,7 @@ fonts retain their window, and sounds and music retain their audio device.
 ## Native typed adoption
 
 C hosts can register loaded images, fonts, sounds and music without custom
-destructor callbacks. Lua uses the same constructors for loads and clones.
+destructor callbacks. Lua uses the same constructors for platform resource loads.
 See [managed platform resources](managed-platform-resources.md) for ownership
 transfer, failure cleanup and platform lifetime rules. Safe Rust uses owned
 values in the existing Resource wrapper; raw native adoption is unsafe.

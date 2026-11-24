@@ -1325,7 +1325,19 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
     add_test(NAME visual_legacy_directory COMMAND draw-order-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/legacy_directory_visual.lua)
     set_tests_properties(visual_legacy_directory PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
-  add_executable(audio-visual-test tests/audio_visual.c)
+  add_library(audio-injection-runtime OBJECT bindings/lua/runtime.c)
+  target_include_directories(audio-injection-runtime PRIVATE src)
+  target_link_libraries(audio-injection-runtime PRIVATE malvado_lua_binding)
+  target_compile_definitions(audio-injection-runtime PRIVATE
+    luaL_newstate=test_audio_newstate luaL_openlibs=test_audio_openlibs
+    mv_sound_clone=test_audio_clone mv_sound_play=test_audio_play
+    mv_sound_destroy=test_audio_destroy mv_sound_set_volume=test_audio_volume
+    mv_audio_close=test_audio_close)
+  if(MALVADO_BUILD_ASSETS)
+    target_compile_definitions(audio-injection-runtime PRIVATE MALVADO_BUILD_ASSETS)
+    target_include_directories(audio-injection-runtime PRIVATE ${cjson_SOURCE_DIR})
+  endif()
+  add_executable(audio-visual-test tests/audio_visual.c $<TARGET_OBJECTS:audio-injection-runtime>)
   target_include_directories(audio-visual-test PRIVATE src)
   target_link_libraries(audio-visual-test PRIVATE malvado_lua_binding)
   if(UNIX AND NOT APPLE)

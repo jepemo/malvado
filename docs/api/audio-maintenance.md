@@ -62,19 +62,18 @@ and while the debugger pauses process execution. This does not advance the
 scheduler. `mv.update_music(music)` remains available for explicit use, including
 scripts that operate audio without starting the runner.
 
-Playing/paused userdata stay rooted in Lua's playback registry. The sweep reads
-native pause/playing queries instead of maintaining duplicate flags. Stop removes
-the root immediately; completion removes it during maintenance. Process owner
-termination does not end playback while that root remains. Native controls and
-refill are shared, while registry references remain a Lua binding responsibility.
-Lua's existing controls and playing queries remain its public interface; pause
-state queries are internal to retention.
+Lua roots playing and paused Voice and Music handles in the registry. The sweep
+uses native pause and playing queries. Stop removes the root immediately.
+Maintenance removes it on completion. A Voice also releases its native alias at
+that point, even if a Lua variable keeps the handle. The alias retains the
+decoded sample independently of the process owner and the Sound wrapper.
+The runner releases any remaining voices before closing the device.
 
-The resource fixture starts a finite stream, lets its creator return, and proves
-that maintenance releases the playback root without explicit Lua stream updates.
-The native fixture also creates a stream during a paused Lua frame and checks
-completion while the scheduler tick counter stays unchanged. Both run with native
-ASan/UBSan and silent audio fixtures.
+The resource fixture starts one-shot voices and a finite stream and lets their
+creator return. It checks that maintenance releases their playback roots during
+a debugger pause. The native fixture also creates a stream during a paused Lua
+frame and checks completion while the scheduler tick counter stays unchanged.
+The tests use silent audio fixtures.
 
 ## Rust service
 

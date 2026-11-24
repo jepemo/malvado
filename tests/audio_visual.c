@@ -19,8 +19,95 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 #include "malvado/platform.h"
 #include "runner/runtime.h"
+
+enum { FAIL_ALLOCATION = 1, FAIL_CLONE, FAIL_VOLUME, FAIL_PLAY };
+static int failure, aliases;
+static float last_volume;
+
+static void *
+allocate(void *user, void *ptr, size_t old_size, size_t new_size)
+{
+    (void)user;
+    if (!new_size) {
+        free(ptr);
+        return NULL;
+    }
+    if (failure == FAIL_ALLOCATION && (!ptr || new_size > old_size))
+        return NULL;
+    return realloc(ptr, new_size);
+}
+
+static int
+set_failure(lua_State *L)
+{
+    failure = (int)luaL_checkinteger(L, 1);
+    return 0;
+}
+
+static int
+voice_state(lua_State *L)
+{
+    lua_pushinteger(L, aliases);
+    lua_pushnumber(L, last_volume);
+    return 2;
+}
+
+lua_State *test_audio_newstate(void) { return lua_newstate(allocate, NULL); }
+
+void
+test_audio_openlibs(lua_State *L)
+{
+    luaL_openlibs(L);
+    lua_pushcfunction(L, set_failure);
+    lua_setglobal(L, "test_audio_failure");
+    lua_pushcfunction(L, voice_state);
+    lua_setglobal(L, "test_voice_state");
+}
+
+MvSound *
+test_audio_clone(const MvSound *source)
+{
+    if (failure == FAIL_CLONE) return NULL;
+    MvSound *alias = mv_sound_clone(source);
+    if (alias) ++aliases;
+    return alias;
+}
+
+int
+test_audio_play(MvSound *alias)
+{
+    return failure != FAIL_PLAY && mv_sound_play(alias);
+}
+
+int
+test_audio_volume(MvSound *alias, float volume)
+{
+    if (failure == FAIL_VOLUME || !mv_sound_set_volume(alias, volume)) return 0;
+    last_volume = volume;
+    return 1;
+}
+
+void
+test_audio_destroy(MvSound *alias)
+{
+    if (alias) {
+        assert(aliases > 0);
+        --aliases;
+    }
+    mv_sound_destroy(alias);
+}
+
+void
+test_audio_close(void)
+{
+    assert(aliases == 0);
+    mv_audio_close();
+}
 
 static void
 check_loop(MvMusic *music)
@@ -38,7 +125,7 @@ check_loop(MvMusic *music)
 
 static void debug_tick(void *user) { (void)user; }
 
-typedef struct { MvMusic *music; int stage, frames; int64_t tick; } PumpCheck;
+typedef struct { MvMusic *music; int stage, frames; int64_t tick; double started; } PumpCheck;
 static void
 check_paused_pump(void *user)
 {
@@ -51,6 +138,7 @@ check_paused_pump(void *user)
     if (!check->stage) {
         check->music = mv_music_load("tests/fixtures/silence.wav",0);
         assert(check->music && mv_music_play(check->music));
+        assert(mv_monotonic_time(&check->started));
         check->tick = tick;
         assert(malvado_debug_pause(1));
         check->stage = 1;
@@ -58,7 +146,10 @@ check_paused_pump(void *user)
     }
     assert(tick == check->tick); /* The stream must finish without scheduler ticks. */
     assert(++check->frames < 90);
-    if (!mv_music_playing(check->music)) {
+    double now;
+    assert(mv_monotonic_time(&now));
+    /* Give the 250 ms Lua one-shots time to finish even if mixer timing varies. */
+    if (now - check->started >= 0.5 && !mv_music_playing(check->music)) {
         mv_music_destroy(check->music);
         check->music = NULL;
         check->stage = 2;

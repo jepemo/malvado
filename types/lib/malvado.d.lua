@@ -769,47 +769,44 @@ function malvado.text_input_next() end
 ---@return boolean toggled
 function malvado.text_input_set_keyboard(enabled) end
 
----Load a WAV sound effect. Requires an open audio device.
+---Load a reusable WAV sample. Opens the audio device when needed.
 ---@param path string
 ---@return MvSound sound
 function malvado.load_sound(path) end
 
----Clone a sound for independent playback.
+---Start an independent voice. Returns nil when all voice slots are in use.
 ---@param sound MvSound
----@return MvSound clone
-function malvado.clone_sound(sound) end
+---@param options? MvSoundPlayOptions
+---@return MvVoice|nil voice
+function malvado.play_sound(sound, options) end
 
----Play a sound.
----@param sound MvSound
-function malvado.play_sound(sound) end
+---Stop a voice and release its playback resources. Safe to repeat.
+---@param voice MvVoice
+function malvado.stop_sound(voice) end
 
----Stop a sound.
----@param sound MvSound
-function malvado.stop_sound(sound) end
+---Pause a voice. Raises an error after the voice has finished.
+---@param voice MvVoice
+function malvado.pause_sound(voice) end
 
----Pause a sound.
----@param sound MvSound
-function malvado.pause_sound(sound) end
+---Resume a paused voice. Raises an error after the voice has finished.
+---@param voice MvVoice
+function malvado.resume_sound(voice) end
 
----Resume a paused sound.
----@param sound MvSound
-function malvado.resume_sound(sound) end
-
----Check whether a sound is playing.
----@param sound MvSound
+---Check whether a voice is playing. Returns false while paused or after it finishes.
+---@param voice MvVoice
 ---@return boolean playing
-function malvado.sound_playing(sound) end
+function malvado.sound_playing(voice) end
 
----Set the sound volume (0..1).
----@param sound MvSound
+---Set the voice volume (0..1). Raises an error after the voice has finished.
+---@param voice MvVoice
 ---@param volume number
-function malvado.sound_volume(sound, volume) end
+function malvado.sound_volume(voice, volume) end
 
 ---Load a music stream.
 ---@param path string
----@param loop? boolean Default false.
+---@param options? MvMusicLoadOptions
 ---@return MvMusic music
-function malvado.load_music(path, loop) end
+function malvado.load_music(path, options) end
 
 ---Check whether music is playing.
 ---@param music MvMusic

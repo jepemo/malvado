@@ -2,59 +2,71 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
+local wav = "tests/fixtures/silence.wav"
+local ogg = "tests/fixtures/silence.ogg"
 local weak = setmetatable({}, {__mode = "v"})
+local retained, paused = nil, {}
 local producer = mv.process(function()
-  local sound = mv.load_sound("tests/fixtures/silence.wav")
-  local music = mv.load_music("tests/fixtures/silence.ogg", true)
-  local clone = mv.clone_sound(sound)
-  weak[1], weak[2] = sound, music
-  weak[4] = clone
-  -- No explicit update_music call: the native device pass must finish this
-  -- stream and release its playback root after its creator has returned.
-  local finite = mv.load_music("tests/fixtures/silence.wav", false)
-  weak[5] = finite
-  mv.play_music(finite)
-  mv.play_sound(sound)
-  mv.pause_sound(sound)
-  mv.play_sound(clone)
-  mv.pause_sound(clone)
+  local sound = mv.load_sound(wav)
+  local music = mv.load_music(ogg, {loop = true})
+  local voice = assert(mv.play_sound(sound))
+  mv.pause_sound(voice)
+  weak.sample, weak.voice, weak.music = sound, voice, music
   mv.play_music(music)
   mv.pause_music(music)
-end)
-local natural = mv.process(function()
-  local sound = mv.load_sound("tests/fixtures/silence.wav")
-  weak[3] = sound
-  mv.play_sound(sound)
+
+  -- The runner must complete this stream without an explicit update.
+  local finite = mv.load_music(wav)
+  weak.finite = finite
+  mv.play_music(finite)
+  local loop = mv.load_music(ogg, {loop = true})
+  weak.loop = loop
+  mv.play_music(loop)
+
+  for i = 1, 29 do
+    local hold = assert(mv.play_sound(sound))
+    mv.pause_sound(hold)
+    paused[i] = hold
+  end
+  weak.natural = assert(mv.play_sound(sound))
+  retained = assert(mv.play_sound(sound))
+  assert(mv.play_sound(sound) == nil)
 end)
 local controller = mv.process(function()
   mv.frame()
+  -- The native harness pauses the scheduler until the finite audio ends.
+  -- Collection here runs before the next scheduler maintenance pass.
   collectgarbage("collect")
-  assert(weak[1] and weak[2] and weak[4])
-  mv.stop_sound(weak[1])
+  assert(weak.sample == nil and weak.voice and weak.music)
+  assert(weak.natural == nil and weak.finite == nil)
+  assert(weak.loop and mv.music_playing(weak.loop))
+  assert(test_voice_state() == 30) -- The retained handle no longer owns an alias.
+
+  local new_sample = mv.load_sound(wav)
+  local first = assert(mv.play_sound(new_sample))
+  local second = assert(mv.play_sound(new_sample))
+  assert(mv.play_sound(new_sample) == nil)
+  assert(not mv.sound_playing(retained))
+  assert(not pcall(mv.resume_sound, retained))
+  mv.stop_sound(retained)
+  assert(mv.sound_playing(first) and mv.sound_playing(second))
+  mv.stop_sound(first)
+  mv.stop_sound(second)
+
+  mv.resume_sound(weak.voice)
+  assert(mv.sound_playing(weak.voice))
+  mv.stop_sound(weak.voice)
+  mv.resume_music(weak.music)
+  mv.stop_music(weak.music)
+  mv.stop_music(weak.loop)
   collectgarbage("collect")
-  collectgarbage("collect")
-  assert(weak[1] == nil and weak[2] and weak[4])
-  mv.resume_sound(weak[4])
-  mv.pause_sound(weak[4])
-  mv.resume_music(weak[2])
-  mv.pause_music(weak[2])
-  mv.stop_sound(weak[4])
-  mv.stop_music(weak[2])
-  collectgarbage("collect")
-  collectgarbage("collect")
-  assert(weak[2] == nil and weak[4] == nil)
-  for _ = 1, 45 do mv.frame() end
-  collectgarbage("collect")
-  collectgarbage("collect")
-  assert(weak[3] == nil and weak[5] == nil)
-  -- The runner must release active playback when the last process ends.
-  local sound = mv.load_sound("tests/fixtures/silence.wav")
-  local music = mv.load_music("tests/fixtures/silence.ogg", true)
-  mv.play_sound(sound)
+  assert(weak.voice == nil and weak.music == nil and weak.loop == nil)
+
+  -- Leave paused voices and looping music for runner shutdown.
+  local music = mv.load_music(ogg, {loop = true})
   mv.play_music(music)
 end)
 mv.start(function()
   controller()
   producer()
-  natural()
 end, {width = 64, height = 64})

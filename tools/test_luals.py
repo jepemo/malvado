@@ -52,6 +52,13 @@ local manifest = mv.fpg.parse_manifest(fpg_json(library))
 local graphic = animation_sample(animation(library, {7, 42}), 50)
 local index = fpg_id_at(library, 1)
 local manifest_count_value = manifest_count(manifest)
+local sound = load_sound("jump.wav")
+local voice = play_sound(sound, {volume = 0.5})
+if voice then
+  sound_volume(voice, 1)
+  stop_sound(voice)
+end
+play_music(load_music("music.ogg", {loop = true}))
 local Player = process(function(self)
   self.fps = 30
   self.camera = view
@@ -126,6 +133,13 @@ local hit = mv.world_sweep(world, shape, {angle = 45, dx = 1, dy = 0})
 local file = mv.fpg.parse("bytes")
 local manifest = mv.fpg.parse_manifest(mv.fpg_json(file))
 local opaque = mv.manifest_transparent_zero(manifest)
+local sound = mv.load_sound("jump.wav")
+local voice = mv.play_sound(sound)
+if voice and mv.sound_playing(voice) then
+  mv.pause_sound(voice)
+  mv.resume_sound(voice)
+end
+mv.play_music(mv.load_music("music.ogg"))
 local actor = mv.process(function(self)
   self.file = atlas
   mv.camera_follow(self)

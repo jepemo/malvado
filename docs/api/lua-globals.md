@@ -77,7 +77,6 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `text_input_next` | `mv.text_input_next` |
 | `text_input_set_keyboard` | `mv.text_input_set_keyboard` |
 | `load_sound` | `mv.load_sound` |
-| `clone_sound` | `mv.clone_sound` |
 | `play_sound` | `mv.play_sound` |
 | `stop_sound` | `mv.stop_sound` |
 | `pause_sound` | `mv.pause_sound` |

@@ -1,7 +1,7 @@
 # Managed native platform resources
 
 Use the native resource manager when a loaded image, font, sound or music stream
-belongs to a process or game context. Lua loads and sound clones use these same
+belongs to a process or game context. Lua platform resource loads use these same
 constructors. C hosts no longer need to define destructor callbacks for them.
 
 ```c

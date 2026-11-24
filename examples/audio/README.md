@@ -8,7 +8,9 @@ Build Malvado and run this command from the repository root:
 ./build/malvado run examples/audio/main.lua
 ```
 
-Press **1** and **2** close together to play two independent effects. Press **Space** to start or stop a repeating stream. Press **Escape** to exit. The audio device and a display are required.
+Press **1** and **2** close together to play overlapping copies of the same
+sample at different volumes. Press **Space** to start or stop a repeating
+stream. Press **Escape** to exit. The audio device and a display are required.
 
 The tone file was generated for this example and contains no third-party audio.
 

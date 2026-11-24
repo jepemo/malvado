@@ -580,33 +580,31 @@ function text_input_set_keyboard(enabled) end
 function load_sound(path) end
 
 ---@param sound MvSound
----@return MvSound clone
-function clone_sound(sound) end
+---@param options? MvSoundPlayOptions
+---@return MvVoice|nil voice
+function play_sound(sound, options) end
 
----@param sound MvSound
-function play_sound(sound) end
+---@param voice MvVoice
+function stop_sound(voice) end
 
----@param sound MvSound
-function stop_sound(sound) end
+---@param voice MvVoice
+function pause_sound(voice) end
 
----@param sound MvSound
-function pause_sound(sound) end
+---@param voice MvVoice
+function resume_sound(voice) end
 
----@param sound MvSound
-function resume_sound(sound) end
-
----@param sound MvSound
+---@param voice MvVoice
 ---@return boolean playing
-function sound_playing(sound) end
+function sound_playing(voice) end
 
----@param sound MvSound
+---@param voice MvVoice
 ---@param volume number
-function sound_volume(sound, volume) end
+function sound_volume(voice, volume) end
 
 ---@param path string
----@param loop? boolean Default false.
+---@param options? MvMusicLoadOptions
 ---@return MvMusic music
-function load_music(path, loop) end
+function load_music(path, options) end
 
 ---@param music MvMusic
 ---@return boolean playing

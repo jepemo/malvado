@@ -2,30 +2,52 @@
 
 The [audio inventory](audio-inventory.md) maps the C and Lua APIs to examples and tests.
 
-Malvado can load short WAV sound effects. This API is experimental. It plays each sound once. Playing the same sound again restarts it.
+Malvado plays short WAV sound effects and streams WAV or OGG music.
 
 ## Lua
 
-Load a sound, then play it when you need it:
+Load a sample once and play it when you need it.
 
 ```lua
 local mv = require("malvado")
-local sound = mv.load_sound("jump.wav")
+local jump = mv.load_sound("jump.wav")
 
-mv.sound_volume(sound, 0.5)
-mv.play_sound(sound)
-if mv.sound_playing(sound) then
-    mv.pause_sound(sound)
-    mv.resume_sound(sound)
-    mv.stop_sound(sound)
+mv.play_sound(jump)
+local voice = mv.play_sound(jump, {volume = 0.5})
+if voice then
+    mv.pause_sound(voice)
+    mv.sound_volume(voice, 0.4)
+    mv.resume_sound(voice)
 end
 ```
 
-Paths are relative to the working directory. Volume ranges from zero to one. Loading fails if the file is not a valid WAV or the audio device cannot open. Audio is not available in headless mode. Keep a reference to a sound while it plays. Lua releases sounds when they are no longer used or when the runner closes.
+Paths are relative to the working directory. Loading raises an error for an
+invalid WAV file, a device that cannot open, or headless mode.
 
-Playing and paused sounds retain their resources even if the process that created them ends. Stopping a sound releases its playback reference. See the [resource lifetime contract](resource-lifetime.md) for ownership and sharing.
+Each successful `play_sound(sound, options?)` call returns a new Voice and
+starts it immediately. Voices overlap and share the decoded sample data.
+`options.volume` sets the initial volume for that voice. It must be a finite
+number from 0 to 1 and defaults to 1. An empty options table uses the default.
+Unknown options, invalid arguments, and playback failures raise errors.
 
-To play overlapping instances of one effect, use `local another = mv.clone_sound(sound)`. Each instance has independent playback and volume. They share the sample data, which stays alive until all instances are released. Keep a Lua reference to each instance while it plays. In C, `mv_sound_clone(sound)` returns an owned instance or `NULL`; destroy each instance with `mv_sound_destroy`.
+The runner supports up to 32 playing or paused voices at once. When all slots
+are in use, `play_sound` returns `nil` and existing voices continue. A stopped
+or completed voice frees its slot.
+
+Pass a Voice to `stop_sound`, `pause_sound`, `resume_sound`, `sound_playing`,
+and `sound_volume`. Each function acts on that voice alone. `sound_playing`
+returns `false` while paused and after stop or completion. Repeating
+`stop_sound` is safe. Calling `pause_sound`, `resume_sound`, or
+`sound_volume` after stop or completion raises an error.
+
+You can ignore the returned Voice. The runner retains it and its sample data
+while it plays or is paused, even if the creating process exits. Stop or
+completion releases the native playback resources. A retained Lua handle
+remains safe to query. See the [resource lifetime contract](resource-lifetime.md).
+
+When updating older Lua code, reuse the same sample in successive
+`play_sound` calls to overlap effects. Save the returned Voice to control one
+playback. Pass the initial volume in the options table.
 
 ## C
 
@@ -47,18 +69,26 @@ if (mv_audio_open()) {
 
 `mv_audio_open` returns 1 on success. It is safe to call it again while the device is open. `mv_sound_load` returns `NULL` on failure. `mv_sound_play`, `mv_sound_stop`, `mv_sound_pause`, `mv_sound_resume`, and `mv_sound_set_volume` return 1 on success or 0 for invalid arguments or a closed device. Pause and resume keep the current playback position. `mv_sound_playing` returns 1 while the sound is playing and 0 while paused or stopped. `mv_sound_destroy(NULL)` and `mv_audio_close()` on a closed device are safe. Use audio functions on the device owner thread.
 
+`mv_sound_clone(sound)` returns an owned playback instance or `NULL`.
+Clones share the same decoded data. Destroy each instance with
+`mv_sound_destroy`.
+
 ## Stream music
 
 Load a WAV or OGG stream. The runner updates active streams automatically, including while process execution is paused. This example loops the track:
 
 ```lua
-local music = mv.load_music("music.ogg", true)
+local music = mv.load_music("music.ogg", {loop = true})
 mv.play_music(music)
--- In a process, call this before each mv.frame():
-mv.update_music(music) -- Optional explicit refill; also available outside mv.start.
 ```
 
-The second argument defaults to `false`. Use `mv.pause_music`, `mv.resume_music`, `mv.stop_music`, `mv.music_playing`, and `mv.music_volume` to control the stream. Volume is from zero to one. Keep a reference to the music while it plays. The runner releases it when it is no longer used or when it closes. Audio is unavailable in headless mode.
+`load_music(path, options?)` accepts only the optional boolean field
+`loop`, which defaults to `false`. Replace an old positional loop argument
+with `{loop = true}` or omit the options for a single play.
+Use `mv.pause_music`, `mv.resume_music`, `mv.stop_music`,
+`mv.music_playing`, and `mv.music_volume` to control the stream.
+Volume is from zero to one. `mv.update_music(music)` remains available
+for explicit refill, including scripts that use audio outside `mv.start`.
 
 Playing and paused music retains its stream after the creating process ends. The runner releases playback references when playback stops, completes, or the runner closes.
 

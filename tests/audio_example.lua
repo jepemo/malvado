@@ -6,6 +6,7 @@ local frame = mv.frame
 local play_sound = mv.play_sound
 local play_music = mv.play_music
 local ticks, effects, loops = 0, 0, 0
+local sample, first
 
 mv.frame = function()
   ticks = ticks + 1
@@ -23,9 +24,16 @@ mv.key = function(key)
     or (key == "space" and ticks >= 2 and ticks < 8)
     or (key == "escape" and ticks >= 8)
 end
-mv.play_sound = function(sound)
+mv.play_sound = function(sound, options)
   effects = effects + 1
-  return play_sound(sound)
+  local voice = assert(play_sound(sound, options))
+  if effects == 1 then
+    assert(options.volume == 0.3)
+    sample, first = sound, voice
+  else
+    assert(sound == sample and voice ~= first and options.volume == 0.15)
+  end
+  return voice
 end
 mv.play_music = function(music)
   loops = loops + 1
