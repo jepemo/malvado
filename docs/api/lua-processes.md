@@ -41,7 +41,19 @@ Omit `options` or pass a table. Other values, including the historical debug boo
 
 Call `mv.set_title(title)` after the window opens to change its title. It reports an error without a window or if the title contains a zero byte. In C, `mv_window_set_title(title)` returns 1 on success, or 0 for a null title or no window.
 
-After `start` begins, `mv.window_size()` returns the current width and height in logical pixels. In headless mode it returns the configured size. In C, `mv_window_size(&width, &height)` returns 1 for an open window. Without a window it returns 0 and writes zeros; a null pointer returns 0 without writing.
+Once startup begins, `window_size()` returns the current width and height as
+two integers in logical pixels. It works in the initializer and in processes.
+In headless mode it returns the configured size. Calling it before startup
+raises an error.
+
+```lua
+local width, height = window_size()
+set_title("Level 2")
+```
+
+In C, `mv_window_size(&width, &height)` returns 1 for an open window.
+Without a window it returns 0 and writes zeros. A null pointer returns 0
+without writing.
 
 The [input inventory](input-inventory.md) maps the C and Lua APIs to examples and tests.
 
@@ -90,21 +102,71 @@ In C, `mv_text_input_next(&codepoint)` removes one Unicode scalar and returns 1,
 
 The queue is shared by all processes and stays available across frames until read. It holds up to 256 characters and drops new characters when full. The window backend also has a per-frame event limit, so very large bursts can lose input. Closing the window clears the queue. Control keys such as Backspace are checked separately with `mv.key`.
 
-`mv.frame()` yields until the next activation. By default this is the next tick. Set `self.fps` to an integer from 1 to 60 to limit that process to the requested number of activations per 60 simulation ticks; set it to 0 for every tick. The first activation is immediate when the scheduler starts the process. At a constant rate from 1 through 60, each 60 eligible ticks after the first activation produce the requested number of activations. Fractional tick intervals alternate as needed, without cumulative drift. Changes take effect after the current activation. While a process is sleeping or frozen, its cadence does not advance. Its last drawing remains visible between activations. `frame` is valid only inside a running process. A process created during a tick starts no earlier than the next tick. An uncaught process error prints a traceback and gives the runner a nonzero exit code.
+## Process timing
 
-Use `mv.time_seconds()` to read a monotonic clock, including in headless mode. Its origin is unspecified. Subtract two readings to measure elapsed wall time; do not use it as a calendar time. It raises an error if the clock is unavailable. In C, `mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the output on failure.
+The Lua runner uses a fixed simulation step of 1/60 second. With a window,
+it can run up to five catch-up ticks per rendered frame. In headless mode it
+advances logical ticks without waiting for wall time.
 
-Use `mv.rand(min, max)` for an integer in the inclusive range. Both limits must be integers and `min` must not exceed `max`. It uses Lua's `math.random` generator; use `math.randomseed` when you need a repeatable sequence. This is not a shared C/Lua random stream.
+`frame()` yields until the process's next activation. By default this is the
+next tick. Set `self.fps` to an integer from 1 to 60 to set this process's
+activation cadence. Set it to 0 for every tick. This field controls only
+when the process runs. The simulation step and render cadence are independent.
+
+The first activation is immediate when the scheduler starts the process. At a
+constant rate from 1 through 60, each 60 eligible ticks after the first
+activation produce the requested number of activations. Fractional tick
+intervals alternate as needed, without cumulative drift. Changes take effect
+after the current activation. While a process is sleeping or frozen, its
+cadence does not advance. Its last drawing remains visible between activations.
+`frame()` is valid only inside a running process. A process created during a
+tick starts no earlier than the next tick. An uncaught process error prints a
+traceback and gives the runner a nonzero exit code.
+
+`self.delta` is the logical simulation time in seconds since the process's
+previous activation. It starts at zero and includes skipped ticks, including
+ticks spent sleeping or frozen. Multiply it by a speed in pixels per second
+to move at that speed when the process cadence changes.
 
 ```lua
-math.randomseed(12345)
-local damage = mv.rand(1, 6) -- Both 1 and 6 are possible.
+local Player = process(function(self)
+  self.fps = 30
+  local speed = 200 -- Pixels per second.
+  while true do
+    if key(KEY_RIGHT) then
+      self.x = self.x + speed * self.delta
+    end
+    frame()
+  end
+end)
 ```
 
-`rand` is also available after `import_globals()`. It raises an error for a
-non-integer bound or a minimum greater than the maximum. `lua_rand` checks the
-full integer range, fixed bounds, invalid arguments, and seeded parity with
-Lua's generator.
+Use `time_seconds()` for profiling or to measure elapsed wall time, including
+in headless mode. Subtract two readings from this monotonic clock. Its origin
+is unspecified. It raises an error if the clock is unavailable. In C,
+`mv_monotonic_time(&seconds)` returns 1 on success or 0 without changing the
+output on failure.
+
+## Pseudorandom numbers
+
+Use `rand(min, max)` for a pseudorandom integer in the inclusive range. It
+raises an error for non-integer bounds or a minimum greater than the maximum.
+It shares Lua's `math.random` generator, so calls to either function advance
+the same sequence.
+
+Lua 5.4.8 automatically picks an initial seed when it opens the math library.
+The initial seed provides weak randomness. Use this generator for gameplay and
+keep it out of cryptographic uses. Call `math.randomseed(seed)` when you need a
+repeatable sequence for tests or procedural generation.
+
+```lua
+local roll = rand(1, 6) -- Works without a manual seed.
+
+math.randomseed(12345)
+local damage = rand(1, 6)
+```
+
+## Text
 
 For persistent text, `mv.write {font = ..., text = ..., x = ..., y = ...}` returns a numeric ID. Alignment is `"left"` (the default), `"center"`, or `"right"`; `x` is the matching horizontal anchor. Optional `color` and `size` style each text independently while sharing one font. Use `mv.change_text(id, options)` to change only the fields present in the options table: `text`, `x`, `y`, `align`, `color`, `size` or `font`. Use `mv.delete_text(id)` to remove it. Use `mv.text_size(font, text)` or `mv.text_size(id)` to measure text in pixels without drawing it. Positions are window pixels from the top-left corner. Positions must be integers that fit a C `int`. Invalid input raises an error without creating or changing text. `write`, `change_text`, and `draw_text` reject strings containing zero bytes rather than truncating them. Colors are `{red, green, blue, alpha}` tables with four integers in 0..255 and are copied when a style is assigned. `mv.font {size = n}` creates a font descriptor using the built-in font. In C, `mv_window_text_width(text, size)` returns the built-in font width in pixels, or zero for invalid input, without a window, or when the width cannot fit in a C `int`.
 

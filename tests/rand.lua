@@ -19,15 +19,23 @@ assert(not pcall(mv.rand, 2, 1))
 assert(mv.rand(1, 100) == first)
 
 local ranges = {{-5, 5}, {0, 1}, {math.mininteger, math.maxinteger}, {1, 100}}
-math.randomseed(12345, 67890)
+math.randomseed(12345)
 local expected = {}
 for i = 1, 40 do
   local range = ranges[(i - 1) % #ranges + 1]
   expected[i] = math.random(range[1], range[2])
 end
-math.randomseed(12345, 67890)
+math.randomseed(12345)
 for i = 1, #expected do
   local range = ranges[(i - 1) % #ranges + 1]
   local value = mv.rand(range[1], range[2])
   assert(value == expected[i] and value >= range[1] and value <= range[2])
+end
+
+-- Both functions advance the same generator even when interleaved.
+math.randomseed(12345)
+for i = 1, #expected do
+  local range = ranges[(i - 1) % #ranges + 1]
+  local draw = i % 2 == 0 and math.random or mv.rand
+  assert(draw(range[1], range[2]) == expected[i])
 end

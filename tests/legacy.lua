@@ -4,13 +4,14 @@
 local mv = require("malvado")
 local legacy = require("malvado.compat.legacy")
 assert(process == nil and frame == nil)
+assert(get_screen_width == nil and get_screen_height == nil)
 assert(not pcall(mv.window_size))
 
-key = "existing value"
+get_screen_height = "existing value"
 local ok, message = pcall(legacy.import_globals)
-assert(not ok and message:find("global already exists: key", 1, true))
-assert(process == nil and key == "existing value")
-key = nil
+assert(not ok and message:find("global already exists: get_screen_height", 1, true))
+assert(process == nil and get_screen_width == nil and get_screen_height == "existing value")
+get_screen_height = nil
 legacy.import_globals()
 legacy.import_globals()
 assert(process == mv.process and frame ~= mv.frame and key == mv.key)
@@ -19,6 +20,7 @@ assert(draw_rect == mv.draw_rect and draw_circle == mv.draw_circle)
 assert(draw_line == mv.draw_line and set_color == mv.set_color)
 assert(fade_off == mv.fade_off and fade_on == mv.fade_on)
 assert(not pcall(frame))
+assert(not pcall(get_screen_width) and not pcall(get_screen_height))
 assert(set_title == mv.set_title and not pcall(set_title, "Headless"))
 math.randomseed(42)
 local value = rand(-5, 5)

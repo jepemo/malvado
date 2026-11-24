@@ -1,8 +1,8 @@
 # Move
 
 A first interactive scene: one process draws an orange circle and moves it
-with the arrow keys. This shows the process model that Malvado is built on,
-in less than twenty lines.
+with the arrow keys. The process uses `self.delta` to keep its speed in
+pixels per second when its activation cadence changes.
 
 Build Malvado, then run:
 

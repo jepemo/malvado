@@ -5403,8 +5403,6 @@ static const char *const global_names[] = {
     "stop_music",
     "pause_music",
     "resume_music",
-    "get_screen_width",
-    "get_screen_height",
     "KEY_A",
     "KEY_B",
     "KEY_C",
@@ -6930,12 +6928,6 @@ open_module(lua_State *L)
         lua_pushcclosure(L, music_action, 1);
         lua_setfield(L, -2, music_actions[i]);
     }
-    lua_pushinteger(L, 0);
-    lua_pushcclosure(L, legacy_screen_dimension, 1);
-    lua_setfield(L, -2, "get_screen_width");
-    lua_pushinteger(L, 1);
-    lua_pushcclosure(L, legacy_screen_dimension, 1);
-    lua_setfield(L, -2, "get_screen_height");
     lua_pushvalue(L, -1);
     lua_pushlightuserdata(L, (void *)global_names);
     push_palette(L);
@@ -6956,10 +6948,11 @@ static const char *const legacy_names[] = {
 static void
 legacy_global_value(lua_State *L, const char *name)
 {
-    if (strcmp(name, "frame") == 0)
-        lua_pushvalue(L, lua_upvalueindex(2));
-    else
-        lua_getfield(L, lua_upvalueindex(1), strcmp(name, "fpg") == 0 ? "legacy_fpg" : name);
+    lua_getfield(L, lua_upvalueindex(2), name);
+    if (!lua_isnil(L, -1))
+        return;
+    lua_pop(L, 1);
+    lua_getfield(L, lua_upvalueindex(1), strcmp(name, "fpg") == 0 ? "legacy_fpg" : name);
 }
 
 static int
@@ -6985,7 +6978,15 @@ open_legacy_module(lua_State *L)
 {
     lua_newtable(L);
     luaL_requiref(L, "malvado", open_module, 0);
+    lua_newtable(L);
     lua_pushcfunction(L, legacy_frame);
+    lua_setfield(L, -2, "frame");
+    lua_pushinteger(L, 0);
+    lua_pushcclosure(L, legacy_screen_dimension, 1);
+    lua_setfield(L, -2, "get_screen_width");
+    lua_pushinteger(L, 1);
+    lua_pushcclosure(L, legacy_screen_dimension, 1);
+    lua_setfield(L, -2, "get_screen_height");
     lua_pushcclosure(L, legacy_import_globals, 2);
     lua_setfield(L, -2, "import_globals");
     return 1;

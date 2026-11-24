@@ -512,19 +512,16 @@ function draw_line(options) end
 ---@param title string
 function set_title(title) end
 
+---Read the window size in logical pixels once startup begins. In headless mode, return the configured size.
 ---@return integer width
 ---@return integer height
 function window_size() end
 
+---Read the monotonic clock in seconds for elapsed wall time.
 ---@return number seconds
 function time_seconds() end
 
----@return integer width
-function get_screen_width() end
-
----@return integer height
-function get_screen_height() end
-
+---Return a pseudorandom integer in [min, max] from Lua's shared generator. Use `math.randomseed` for repeatable results.
 ---@param min integer
 ---@param max integer
 ---@return integer value

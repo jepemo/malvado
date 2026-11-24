@@ -141,8 +141,6 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `stop_music` | `mv.stop_music` |
 | `pause_music` | `mv.pause_music` |
 | `resume_music` | `mv.resume_music` |
-| `get_screen_width` | `mv.get_screen_width` |
-| `get_screen_height` | `mv.get_screen_height` |
 | `KEY_A` | `mv.KEY_A` |
 | `KEY_B` | `mv.KEY_B` |
 | `KEY_C` | `mv.KEY_C` |
