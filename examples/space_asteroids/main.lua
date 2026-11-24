@@ -97,7 +97,7 @@ end)
 local Game = process(function(self)
   self.camera = false
   self.z = 10
-  math.randomseed(42)
+  rand_seed(42) -- Keep the star field repeatable.
 
   for i = 1, 40 do
     Star {x = math.random(W), y = math.random(H)}

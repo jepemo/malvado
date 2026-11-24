@@ -21,6 +21,8 @@ GLOBAL_PROBE = """
 local mv = require("malvado")
 mv.import_globals()
 
+rand_seed()
+rand_seed(12345)
 local window_width, window_height = window_size()
 local f = font {size = 50}
 local title = write {
@@ -104,6 +106,8 @@ local c = missing_global_function()
 """
 NAMESPACED_PROBE = """
 local mv = require("malvado")
+mv.rand_seed()
+mv.rand_seed(12345)
 local window_width, window_height = mv.window_size()
 local f = mv.font {size = 50}
 local id = mv.write {font = f, text = "x", x = 1, y = 2}

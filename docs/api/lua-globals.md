@@ -136,6 +136,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `draw_circle` | `mv.draw_circle` |
 | `draw_line` | `mv.draw_line` |
 | `rand` | `mv.rand` |
+| `rand_seed` | `mv.rand_seed` |
 | `play_music` | `mv.play_music` |
 | `update_music` | `mv.update_music` |
 | `stop_music` | `mv.stop_music` |

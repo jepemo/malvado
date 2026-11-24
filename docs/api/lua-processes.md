@@ -155,15 +155,31 @@ It shares Lua's `math.random` generator, so calls to either function advance
 the same sequence.
 
 Lua 5.4.8 automatically picks an initial seed when it opens the math library.
-The initial seed provides weak randomness. Use this generator for gameplay and
-keep it out of cryptographic uses. Call `math.randomseed(seed)` when you need a
-repeatable sequence for tests or procedural generation.
+Ordinary gameplay needs no call to `rand_seed`. The initial seed provides weak
+randomness. Use this generator for gameplay and keep it out of cryptographic
+uses.
+
+Call `rand_seed()` to ask Lua to generate a fresh seed. Call `rand_seed(seed)`
+with one Lua integer, including zero or a negative integer, for repeatable
+tests or procedural generation. Both forms return no values. Invalid calls,
+including explicit `nil` or extra arguments, raise an error before the
+generator state changes.
+
+`math.randomseed` remains available directly. For repeatable results, use the
+same seed and keep calls to `rand` and `math.random` in the same order.
 
 ```lua
+require("malvado").import_globals()
+
 local roll = rand(1, 6) -- Works without a manual seed.
 
-math.randomseed(12345)
+rand_seed() -- Ask Lua for a fresh seed.
+
+rand_seed(12345)
 local damage = rand(1, 6)
+
+math.randomseed(12345)
+assert(rand(1, 6) == damage)
 ```
 
 ## Text

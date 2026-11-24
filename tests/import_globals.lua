@@ -3,6 +3,7 @@
 
 local mv = require("malvado")
 assert(process == nil and frame == nil and start == nil)
+assert(rand_seed == nil and type(mv.rand_seed) == "function")
 assert(mv.get_screen_width == nil and mv.get_screen_height == nil)
 mv.unlisted_extension = function() end
 KEY_UP = "occupied"

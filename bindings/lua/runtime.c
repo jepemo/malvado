@@ -5202,6 +5202,21 @@ random_range(lua_State *L)
     return 1;
 }
 
+static int
+random_seed(lua_State *L)
+{
+    int argument_count = lua_gettop(L);
+    if (argument_count > 1)
+        return luaL_error(L, "rand_seed expects zero arguments or one integer seed");
+    if (argument_count == 1 && !lua_isinteger(L, 1))
+        return luaL_argerror(L, 1, "seed must be an integer");
+
+    lua_pushvalue(L, lua_upvalueindex(1));
+    lua_insert(L, 1);
+    lua_call(L, argument_count, 0);
+    return 0;
+}
+
 static const struct { const char *name; const char *value; } api_constants[] = {
     {"KEY_A", "a"},
     {"KEY_B", "b"},
@@ -5398,6 +5413,7 @@ static const char *const global_names[] = {
     "draw_circle",
     "draw_line",
     "rand",
+    "rand_seed",
     "play_music",
     "update_music",
     "stop_music",
@@ -6917,9 +6933,12 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "fade_on");
     lua_getglobal(L, "math");
     lua_getfield(L, -1, "random");
-    lua_remove(L, -2);
     lua_pushcclosure(L, random_range, 1);
-    lua_setfield(L, -2, "rand");
+    lua_setfield(L, -3, "rand");
+    lua_getfield(L, -1, "randomseed");
+    lua_pushcclosure(L, random_seed, 1);
+    lua_setfield(L, -3, "rand_seed");
+    lua_pop(L, 1);
     static const char *const music_actions[] = {
         "play_music", "update_music", "stop_music", "pause_music", "resume_music"
     };

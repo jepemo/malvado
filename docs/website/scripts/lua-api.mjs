@@ -94,7 +94,7 @@ const groups = [
     id: 'platform', label: 'Platform', guide: 'runner-timing',
     summary: 'Start the game, change the window and read the clock.',
     flat: ['start', 'set_title', 'window_size', 'time_seconds', 'fade_to', 'fade_off',
-      'fade_on', 'fade_active', 'fade_color', 'rand'],
+      'fade_on', 'fade_active', 'fade_color', 'rand', 'rand_seed'],
   },
   {
     id: 'module', label: 'Module', guide: 'lua-processes',
@@ -161,6 +161,7 @@ const flatSummaries = {
   fade_active: 'Check whether a fade is running.',
   fade_color: 'Read the current fade color.',
   rand: 'Return a random integer in an inclusive range.',
+  rand_seed: 'Reseed the shared Lua random generator.',
   rect_overlaps: 'Test whether two rectangles overlap.',
   rect_contains: 'Test whether a rectangle contains a point.',
 };

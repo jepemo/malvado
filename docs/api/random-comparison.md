@@ -14,7 +14,8 @@ sequences can depend on the C library; this review does not claim statistical
 or boundary equivalence for that branch.
 
 Malvado's `mv.rand(min, max)` rejects a reversed range instead of swapping its
-bounds. It calls Lua's `math.random`, whose state is set with `math.randomseed`.
+bounds. It calls Lua's `math.random`. Both forms of `mv.rand_seed` delegate to
+`math.randomseed` to reseed that same generator.
 A rejected reversed range does not consume a random value. The `lua_rand` test
 checks that behavior, inclusive fixed bounds, full Lua integer bounds, and
 seeded parity with Lua's generator. The C engine does not expose a corresponding

@@ -19,7 +19,7 @@ existing APIs, not a selection of additional 2.0 features.
 | Retained registry text | `mv_text_entry_font`, `mv_text_entry_font_owned`, `mv_text_entry_font_clear`, `mv_window_draw_texts` | Lua live font descriptors; Rust retained text handles and explicit frame pass | `text_font`, `text_registry`, `input`, `visual_font` |
 | Fade | `mv_fade_start`, `mv_fade_step`, `mv_fade_active`, `mv_fade_queue_push`, `mv_fade_queue_step`, `mv_fade_queue_active`, `mv_window_draw_fade` | `mv.fade_to`, `mv.fade_on`, `mv.fade_off`, `mv.fade_active`, `mv.fade_color` | `input`, `lua_fade`, `visual_fade` |
 | Platform time | `mv_platform_time`, `mv_platform_wait`, `mv_monotonic_time` | `mv.time_seconds` reads monotonic wall time. See [process timing](lua-processes.md#process-timing) for logical activation time. | `platform_wait`, `headless_platform_time`, `lua_monotonic_time`, `lua_delta_sleep` |
-| Pseudorandom integers | — | `mv.rand` shares the Lua math library's generator | `lua_rand` |
+| Pseudorandom integers | — | `mv.rand` draws from the shared Lua math generator. `mv.rand_seed()` and `mv.rand_seed(seed)` reseed it. | `lua_rand` |
 
 ## C platform types
 
