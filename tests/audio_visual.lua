@@ -20,7 +20,9 @@ end
 
 -- Exercise Lua allocation and native clone, volume and start failures.
 local failures = {"not enough memory", "could not create voice", "could not play", "could not play"}
-local play = mv.play_sound
+assert(sound.play == mv.play_sound and sound.stop == nil)
+assert(not pcall(sound.play, nil) and not pcall(sound.play, sound, {volume = 1.1}))
+local play = sound.play
 for mode, expected in ipairs(failures) do
   test_audio_failure(mode)
   local ok, message = pcall(play, sound)
@@ -29,13 +31,26 @@ for mode, expected in ipairs(failures) do
   assert(test_voice_state() == 0)
 end
 
-local first = assert(mv.play_sound(sound))
+local first = assert(sound:play())
 local count, volume = test_voice_state()
 assert(count == 1 and volume == 1)
 local second = assert(mv.play_sound(sound, {volume = 0.75}))
 count, volume = test_voice_state()
 assert(count == 2 and volume == 0.75)
 assert(type(first) == "userdata" and first ~= second)
+assert(first:is_playing() == mv.sound_playing(first) and first.is_playing(first))
+for method, procedure in pairs {
+  stop = mv.stop_sound, pause = mv.pause_sound, resume = mv.resume_sound,
+  is_playing = mv.sound_playing, set_volume = mv.sound_volume,
+} do
+  assert(first[method] == procedure and second[method] == procedure)
+  assert(not pcall(first[method], sound, 0.5))
+end
+assert(select("#", first:pause()) == 0)
+assert(not first:is_playing() and second:is_playing())
+assert(select("#", first:set_volume(0.25)) == 0)
+assert(select("#", first:resume()) == 0)
+assert(first:is_playing())
 assert(mv.sound_playing(first) and mv.sound_playing(second))
 mv.pause_sound(first)
 mv.pause_sound(first)
@@ -47,8 +62,8 @@ mv.sound_volume(first, 0)
 mv.sound_volume(second, 1)
 mv.resume_sound(first)
 assert(mv.sound_playing(first))
-mv.stop_sound(second)
-mv.stop_sound(second)
+assert(select("#", second:stop()) == 0)
+assert(select("#", second.stop(second)) == 0)
 assert(mv.sound_playing(first) and not mv.sound_playing(second))
 for _, control in ipairs {mv.pause_sound, mv.resume_sound, mv.sound_volume} do
   local ok, message = pcall(control, second, 0.5)
@@ -63,7 +78,7 @@ for i = 1, 32 do
   mv.pause_sound(voice)
   voices[i] = voice
 end
-assert(mv.play_sound(sound) == nil)
+assert(mv.play_sound(sound) == nil and sound:play() == nil)
 test_audio_failure(1)
 local overflow_ok, overflow = pcall(play, sound)
 test_audio_failure(0)
@@ -90,6 +105,22 @@ for _, options in ipairs {true, "yes", {loop = "yes"}, {loop = 1}, {looping = tr
   assert(not pcall(mv.load_music, wav, options))
 end
 local music = mv.load_music(wav, {loop = true})
+for method, procedure in pairs {
+  play = mv.play_music, update = mv.update_music, stop = mv.stop_music,
+  pause = mv.pause_music, resume = mv.resume_music,
+  is_playing = mv.music_playing, set_volume = mv.music_volume,
+} do
+  assert(music[method] == procedure and ogg[method] == procedure)
+  assert(not pcall(music[method], nil, 0.5))
+end
+assert(select("#", music:set_volume(0.5)) == 0)
+assert(select("#", music:play()) == 0)
+assert(select("#", music:update()) == 0)
+assert(select("#", music:pause()) == 0)
+assert(not music:is_playing() and music.is_playing(music) == mv.music_playing(music))
+assert(select("#", music:resume()) == 0)
+assert(select("#", music:stop()) == 0)
+assert(not music:is_playing())
 assert(not pcall(mv.music_volume, music, -1))
 mv.music_volume(music, 0.5)
 mv.play_music(music)

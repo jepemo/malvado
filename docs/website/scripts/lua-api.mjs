@@ -249,6 +249,9 @@ await writeFile(new URL('index.md', output), front('Lua API',
 constants such as \`KEY_ESCAPE\`, \`SIGNAL_KILL\`, and \`RED\` are installed. This
 reference lists the flat name and the \`mv\` namespace form of each function.
 
+See [instance methods](../../concepts/lua-instance-methods/) for optional
+handle syntax.
+
 \`\`\`lua
 require("malvado").import_globals()
 

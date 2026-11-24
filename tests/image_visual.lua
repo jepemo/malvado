@@ -13,6 +13,10 @@ local worker = mv.process(function(self)
     assert(image and mv.image_size(image) == 8)
     local width, height = mv.image_size(image)
     assert(width == 8 and height == 8)
+    local method_width, method_height = image:size()
+    assert(method_width == width and method_height == height)
+    assert(image.size(image) == width)
+    assert(not pcall(image.size, nil) and not pcall(image.size, self))
     local function draw_count()
         for _, process in ipairs(mv.snapshot().processes) do
             if process.id == self.id then return process.draw_commands end

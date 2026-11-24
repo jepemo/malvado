@@ -93,7 +93,7 @@ local Player = process(function(self)
   collectgarbage("collect")
   assert(cached[1] == nil) -- A live library does not pin unused descriptors.
   local transient = load_asset("tests/fixtures/atlas.json")
-  self.graph = graph(transient, 42)
+  self.graph = transient:graph(42)
   local weak = setmetatable({transient, self.graph}, {__mode = "v"})
   transient = nil
   self.file = fpg

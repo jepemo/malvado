@@ -1073,6 +1073,14 @@ set_process_property(lua_State *L, LuaSelf *self, const char *name, int value)
         luaL_error(L, "cannot set process position");
 }
 
+/* The shared method table is the __index closure's private upvalue. */
+static int
+push_process_method(lua_State *L)
+{
+    lua_pushvalue(L, 2);
+    return lua_rawget(L, lua_upvalueindex(1));
+}
+
 static int
 self_index(lua_State *L)
 {
@@ -1105,6 +1113,9 @@ self_index(lua_State *L)
             lua_pushstring(L, reason);
             return 1;
         }
+        /* Ended handles use the same operation-specific checks as procedures. */
+        if (push_process_method(L) != LUA_TNIL)
+            return 1;
         return luaL_error(L, "process is no longer alive");
     }
     if (key && strcmp(key, "reason") == 0) {
@@ -1189,7 +1200,10 @@ self_index(lua_State *L)
         if (zero || !strcmp(key, "size")) {
             lua_pop(L, 1);
             lua_pushinteger(L, zero ? 0 : 1);
+            return 1;
         }
+        lua_pop(L, 1);
+        push_process_method(L);
     }
     return 1;
 }
@@ -6635,6 +6649,95 @@ animation_select(lua_State *L)
 
 #endif
 
+/* Install one method table on the metatable at the top of the stack. */
+static void
+set_method_table(lua_State *L, const luaL_Reg *methods)
+{
+    lua_newtable(L);
+    luaL_setfuncs(L, methods, 0);
+    lua_setfield(L, -2, "__index");
+}
+
+/* Methods require an explicit receiver even for overloaded procedures. */
+static int
+camera_method_set(lua_State *L)
+{
+    luaL_argcheck(L, lua_gettop(L) == 3, 3, "expected camera, x, and y");
+    return camera_set(L);
+}
+
+static int
+camera_method_move(lua_State *L)
+{
+    luaL_argcheck(L, lua_gettop(L) == 3, 3, "expected camera, dx, and dy");
+    return camera_move(L);
+}
+
+static int
+camera_method_follow(lua_State *L)
+{
+    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected camera and target");
+    return camera_follow(L);
+}
+
+static int
+camera_method_position(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.camera");
+    return camera_position(L);
+}
+
+static int
+world_method_collision(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.collision_world");
+    return world_collision(L);
+}
+
+static int
+world_method_move(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.collision_world");
+    return world_move(L);
+}
+
+static int
+process_method_kill(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.process");
+    return kill_process(L);
+}
+
+static int
+process_method_recv(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.process");
+    return receive_message(L);
+}
+
+static int
+process_method_set_priority(lua_State *L)
+{
+    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected process and priority");
+    return set_priority(L);
+}
+
+#ifdef MALVADO_BUILD_ASSETS
+static int
+process_method_animation_elapsed(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.process");
+    return animation_elapsed(L);
+}
+
+static int
+library_method_graph(lua_State *L)
+{
+    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected library and graph id");
+    return graph_select(L);
+}
+#endif
+
 static int
 open_module(lua_State *L)
 {
@@ -6780,7 +6883,16 @@ open_module(lua_State *L)
         lua_seti(L, -2, (lua_Integer)i + 1);
     }
     lua_setfield(L, LUA_REGISTRYINDEX, "malvado.collider_keys");
+    static const luaL_Reg camera_methods[] = {
+        {"set", camera_method_set},
+        {"move", camera_method_move},
+        {"follow", camera_method_follow},
+        {"position", camera_method_position},
+        {"destroy", camera_destroy},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.camera");
+    set_method_table(L, camera_methods);
     lua_pushcfunction(L, camera_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado camera");
@@ -6790,7 +6902,16 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado graphic");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg collision_world_methods[] = {
+        {"add_rect", world_add_rect},
+        {"overlap", world_overlap},
+        {"sweep", world_sweep},
+        {"collision", world_method_collision},
+        {"move", world_method_move},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.collision_world");
+    set_method_table(L, collision_world_methods);
     lua_pushcfunction(L, world_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado collision world");
@@ -6808,15 +6929,40 @@ open_module(lua_State *L)
     lua_pushliteral(L, "malvado collision shape");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg process_methods[] = {
+        {"kill", process_method_kill},
+        {"alive", process_alive},
+        {"signal", signal_process},
+        {"signal_tree", signal_tree},
+        {"kill_tree", kill_tree},
+        {"send", send_message},
+        {"recv", process_method_recv},
+        {"children", process_children},
+        {"descendants", process_descendants},
+        {"collision", process_collision_first},
+        {"collisions", process_collision_all},
+        {"set_priority", process_method_set_priority},
+#ifdef MALVADO_BUILD_ASSETS
+        {"animation_elapsed", process_method_animation_elapsed},
+#endif
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.process");
-    lua_pushcfunction(L, self_index);
+    lua_newtable(L);
+    luaL_setfuncs(L, process_methods, 0);
+    lua_pushcclosure(L, self_index, 1);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, self_newindex);
     lua_setfield(L, -2, "__newindex");
     lua_pushliteral(L, "malvado process");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg image_methods[] = {
+        {"size", image_size},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.image");
+    set_method_table(L, image_methods);
     lua_pushcfunction(L, image_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado image");
@@ -6840,44 +6986,107 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
 #endif
+    static const luaL_Reg sound_methods[] = {
+        {"play", play_sound},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.sound");
+    set_method_table(L, sound_methods);
     lua_pushcfunction(L, sound_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado sound");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg voice_methods[] = {
+        {"stop", stop_sound},
+        {"pause", pause_sound},
+        {"resume", resume_sound},
+        {"is_playing", sound_playing},
+        {"set_volume", sound_volume},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.voice");
+    set_method_table(L, voice_methods);
     lua_pushcfunction(L, voice_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado voice");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg music_methods[] = {
+        {"is_playing", music_playing},
+        {"set_volume", music_volume},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.music");
+    set_method_table(L, music_methods);
     lua_pushcfunction(L, music_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado music");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
 #ifdef MALVADO_BUILD_ASSETS
+    static const luaL_Reg fpg_manifest_methods[] = {
+        {"count", fpg_manifest_count},
+        {"id_at", fpg_manifest_id_at},
+        {"palette", fpg_manifest_palette},
+        {"gamma", fpg_manifest_gamma},
+        {"sprite", fpg_manifest_sprite},
+        {"point", fpg_manifest_point},
+        {"transparent_zero", fpg_manifest_transparent},
+        {"graph", library_method_graph},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.fpg_manifest");
+    set_method_table(L, fpg_manifest_methods);
     lua_pushcfunction(L, fpg_manifest_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado FPG manifest");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg fpg_methods[] = {
+        {"count", fpg_count},
+        {"id_at", fpg_id_at},
+        {"palette", fpg_palette},
+        {"gamma", fpg_gamma},
+        {"sprite", fpg_sprite},
+        {"point", fpg_point},
+        {"rgba", fpg_rgba},
+        {"image", fpg_image},
+        {"png", fpg_png},
+        {"json", fpg_json},
+        {"graph", library_method_graph},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.fpg");
+    set_method_table(L, fpg_methods);
     lua_pushcfunction(L, fpg_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado FPG");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg animation_methods[] = {
+        {"sample", animation_sample},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.animation");
+    set_method_table(L, animation_methods);
     lua_pushcfunction(L, animation_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado animation");
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
+    static const luaL_Reg atlas_methods[] = {
+        {"sprite_info", sprite_info},
+        {"sprite_id", sprite_id},
+        {"animation_frame", animation_frame},
+        {"animation_color", animation_color},
+        {"animation_repeats", animation_repeats},
+        {"pivot_color", atlas_pivot_color},
+        {"graph", library_method_graph},
+        {NULL, NULL}
+    };
     luaL_newmetatable(L, "malvado.atlas");
+    set_method_table(L, atlas_methods);
     lua_pushcfunction(L, atlas_gc);
     lua_setfield(L, -2, "__gc");
     lua_pushliteral(L, "malvado atlas");
@@ -7017,14 +7226,21 @@ open_module(lua_State *L)
     lua_pushcclosure(L, random_seed, 1);
     lua_setfield(L, -3, "rand_seed");
     lua_pop(L, 1);
-    static const char *const music_actions[] = {
-        "play_music", "update_music", "stop_music", "pause_music", "resume_music"
+    static const struct { const char *procedure; const char *method; } music_actions[] = {
+        {"play_music", "play"}, {"update_music", "update"}, {"stop_music", "stop"},
+        {"pause_music", "pause"}, {"resume_music", "resume"}
     };
+    luaL_getmetatable(L, "malvado.music");
+    lua_getfield(L, -1, "__index");
+    lua_remove(L, -2);
     for (size_t i = 0; i < sizeof(music_actions) / sizeof(music_actions[0]); ++i) {
         lua_pushinteger(L, (lua_Integer)i);
         lua_pushcclosure(L, music_action, 1);
-        lua_setfield(L, -2, music_actions[i]);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -3, music_actions[i].method);
+        lua_setfield(L, -3, music_actions[i].procedure);
     }
+    lua_pop(L, 1);
     lua_pushvalue(L, -1);
     lua_pushlightuserdata(L, (void *)global_names);
     push_palette(L);

@@ -13,11 +13,15 @@ local producer = mv.process(function()
   assert(not pcall(mv.fpg_image, library, 7, 3))
   local width, height = mv.image_size(red)
   assert(width == 2 and height == 2)
+  local from_method = library:image(7, true)
+  local method_width, method_height = from_method:size()
+  assert(method_width == width and method_height == height)
+  assert(library.image == mv.fpg_image and library.image(library, 8) == nil)
   local world = mv.world_create()
   mv.world_add_rect(world, {x = 31, y = 21, width = 1, height = 1})
-  local player = actor({graph = red, x = 20, y = 20, size = 10}, {attached = false})
+  local player = actor({graph = from_method, x = 20, y = 20, size = 10}, {attached = false})
   assert(mv.world_collision(world, player) == 1)
-  local weak = setmetatable({library, red}, {__mode = "v"})
+  local weak = setmetatable({library, from_method}, {__mode = "v"})
   local drawer = mv.process(function()
     while true do
       mv.draw_image {image = green, x = 50, y = 20, source = {x = 0, y = 0, width = 2, height = 1}, scale = 10}
@@ -25,7 +29,7 @@ local producer = mv.process(function()
     end
   end)
   drawer({}, {attached = false})
-  library, red = nil, nil
+  library, from_method = nil, nil
   collectgarbage("collect")
   collectgarbage("collect")
   assert(not weak[1] and weak[2])

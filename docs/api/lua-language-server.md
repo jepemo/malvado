@@ -76,6 +76,12 @@ While typing `mv.write {`, LuaLS offers the option fields, rejects unknown
 fields, and suggests the accepted `align` values. Colors check as
 `{red, green, blue, alpha}` tables of four integers in 0..255.
 
+## Complete instance methods
+
+Type `:` after a managed handle to see the available methods and their
+arguments. See [instance methods](lua-instance-methods.md) for the procedural
+equivalents.
+
 ## Declare custom process fields
 
 Process bodies accept any custom field, and the definitions allow reading and

@@ -13,7 +13,10 @@ local P = mv.process(function(self)
     self.value = 2
     assert(self.value == 2)
     assert(self.delta == 0)
-    assert(self.recv == nil)
+    self.recv = false
+    assert(self.recv == false)
+    self.recv = nil
+    assert(type(self.recv) == "function")
     for _, field in ipairs({"id", "parent", "creator_id", "priority", "status", "reason", "delta"}) do
         assert(not pcall(function() self[field] = 5 end))
     end

@@ -52,9 +52,22 @@
 ---@field parent MvProcess|nil Read-only owner process.
 ---@field creator_id integer|nil Read-only creator process ID.
 ---@field priority integer Read-only scheduling priority.
----@field status MvProcessStatusName Read-only status.
+---@field status MvProcessStatusName|"dead" Read-only status.
 ---@field reason "returned"|"error"|"killed"|nil Read-only end reason after death.
 ---@field delta number Read-only logical seconds since the previous activation, including sleep and freeze ticks. Zero on the first activation.
+---@field kill fun(self: MvProcess):boolean
+---@field alive fun(self: MvProcess):boolean
+---@field signal (fun(self: MvProcess, signal: "kill"):boolean)|(fun(self: MvProcess, signal: MvSignal))
+---@field signal_tree fun(self: MvProcess, signal: MvSignal, options?: MvTreeOptions)
+---@field kill_tree fun(self: MvProcess, options?: MvTreeOptions)
+---@field send fun(self: MvProcess, message: any)
+---@field recv fun(self: MvProcess):any
+---@field children fun(self: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field descendants fun(self: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field collision fun(self: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess|nil
+---@field collisions fun(self: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
+---@field set_priority fun(self: MvProcess, priority: integer)
+---@field animation_elapsed fun(self: MvProcess):number|nil
 ---@field [string] any Custom fields: processes accept any extra field.
 
 ---Options for `process()` (the second parameter of the definition call).

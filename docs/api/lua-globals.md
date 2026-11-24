@@ -3,6 +3,7 @@
 `require("malvado").import_globals()` installs the names below. It checks all names before it changes globals. A different existing value causes an error. If installation fails, it removes the names added by that call. Repeating the import with the same values is safe. Normal `require` does not install globals.
 
 See the [namespace inventory](lua-namespaces.md) for functions that are also available through `mv` namespaces.
+See [instance methods](lua-instance-methods.md) for optional handle syntax.
 Use one options table with `camera_create(options)` and `region(options)`.
 Use two positional offsets with `scroll(x, y)`. See [cameras](cameras.md)
 and [process drawing](drawing.md#clip-a-lua-process-to-a-region).

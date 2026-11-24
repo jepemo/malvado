@@ -51,6 +51,7 @@ export default defineConfig({
       ] },
       { label: 'Lua API', collapsed: true, items: [
         { label: 'Introduction', slug: 'docs/reference/lua' },
+        { label: 'Instance methods', slug: 'docs/concepts/lua-instance-methods' },
         { label: 'Processes', slug: 'docs/reference/lua/processes' },
         { label: 'Input', slug: 'docs/reference/lua/input' },
         { label: 'Graphics', slug: 'docs/reference/lua/graphics' },
