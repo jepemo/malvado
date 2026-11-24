@@ -86,6 +86,14 @@ class VersionedDocsTests(unittest.TestCase):
             })
             site = output / VERSION
             self.check_site(site, f'/{VERSION}/')
+            self.assertIn('meteors / main.lua', (site / 'index.html').read_text())
+            samples = (site / 'docs' / 'samples' / 'index.html').read_text()
+            for source in ('examples/catch/lua/main.lua', 'examples/catch/c/main.c',
+                           'bindings/rust/malvado/examples/catch.rs'):
+                with self.subTest(source=source):
+                    self.assertIn(source, samples)
+            self.assertIn(f'https://github.com/jepemo/malvado/tree/{revision}/examples/catch',
+                          Page(samples).links)
             for page in ROUTES:
                 html = (site / page / 'index.html').read_text()
                 self.assertIn(f'https://github.com/jepemo/malvado/blob/{revision}/', html)
