@@ -13,6 +13,11 @@ assert(not pcall(mv.start, init, {title = 5}))
 assert(not pcall(mv.start, init, {title = "a\0b"}))
 assert(not pcall(mv.start, init, {unknown = true}))
 assert(not pcall(mv.start, init, setmetatable({}, {})))
+local function unexpected_init() error("unexpected initializer") end
+for _, value in ipairs({false, "30", 30.5, -1, 61}) do
+  local ok, err = pcall(mv.start, unexpected_init, {fps = value})
+  assert(not ok and err:find("game fps must be an integer", 1, true))
+end
 local called = false
 mv.start(function() called = true end, {width = 320, height = 240})
 assert(called)

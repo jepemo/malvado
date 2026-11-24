@@ -767,10 +767,16 @@ export default {
 
   'platform/start': {
     description: 'Start the game loop and run the initial function.',
-    params: [['init?', 'A function that starts the game processes.'],
-      ['options?', 'A table with `width`, `height` and `title`.']],
-    example: 'start(function()\n    Player({x = 400, y = 300})\nend, {title = "Move"})',
-    related: ['process'],
+    params: [['init', 'A function that starts the game processes.'],
+      ['options?', 'A table with `width`, `height`, `title`, and `fps`. The process default `fps` starts at 0 when omitted.']],
+    example: 'start(function()\n    Player({x = 400, y = 300})\nend, {title = "Move", fps = 30})',
+    related: ['process', 'set_fps'],
+  },
+  'platform/set_fps': {
+    description: 'Set the default cadence for future Lua process spawns in this game. Instance fields and process definition defaults take precedence. Existing processes keep their cadence. Call from the initializer or while the game is running.',
+    params: [['fps', 'An integer from 0 to 60. Both 0 and 60 run every eligible tick.']],
+    example: 'start(function()\n    Player()           -- Uses 30.\n    Player({fps = 0})  -- Runs every eligible tick.\n    set_fps(15)\n    Player()           -- Uses 15.\nend, {fps = 30})',
+    related: ['start', 'frame'],
   },
   'platform/set_title': {
     description: 'Change the window title.',

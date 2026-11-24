@@ -4,3 +4,5 @@
 local mv = require("malvado")
 local ok, message = pcall(mv.start, function() error("unexpected initializer") end)
 assert(not ok and message:find("could not open window", 1, true))
+local changed, fps_error = pcall(mv.set_fps, 30)
+assert(not changed and fps_error:find("requires a running game", 1, true))

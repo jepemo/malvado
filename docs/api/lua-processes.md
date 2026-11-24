@@ -30,11 +30,11 @@ See the [global export table](lua-globals.md) for all current names.
 
 `mv.process(fn)` returns a constructor. Call it with a table of initial fields, or with no argument, to start a process. The table's fields are copied into a new user-data object named `self`. The constructor returns the same userdata that the process receives as `self`. Its `id` is a positive process ID. IDs increase and are not reused during the run. Pass this userdata to process operations. Numeric IDs are for inspection and are not accepted as process handles. `find` returns canonical process handles.
 
-`mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, and `title`. The defaults are 800, 600, and `Malvado`. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
+`mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, `title`, and `fps`. The defaults are 800, 600, `Malvado`, and 0. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
-You can also return a game table from the entry script. Set `width`, `height`, and `title` in the table. Add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. The same defaults apply. See the [declarative game example](../../examples/declarative/README.md).
+You can also return a game table from the entry script. Set the same options on that table and add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. See the [declarative game example](../../examples/declarative/README.md).
 
-The table can contain only those options and `init`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
+The table can contain only those options and `init`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The `fps` value must be an integer from 0 to 60. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
 
 
 Omit `options` or pass a table. Other values, including the historical debug boolean, raise an error. Invalid options do not start the game; correct them before trying again.
@@ -108,10 +108,39 @@ The Lua runner uses a fixed simulation step of 1/60 second. With a window,
 it can run up to five catch-up ticks per rendered frame. In headless mode it
 advances logical ticks without waiting for wall time.
 
-`frame()` yields until the process's next activation. By default this is the
-next tick. Set `self.fps` to an integer from 1 to 60 to set this process's
-activation cadence. Set it to 0 for every tick. This field controls only
-when the process runs. The simulation step and render cadence are independent.
+`frame()` yields until the process's next activation. Set `self.fps` to an
+integer from 0 to 60 to change when that process runs. Both 0 and 60 run
+every eligible tick. Simulation, rendering, and animation have independent
+timing.
+
+Set `fps` in the startup options or the returned game table to choose a
+default for new Lua processes. At each spawn, Malvado copies the first
+available value into the new process:
+
+1. The instance's `fps` field.
+2. The process definition's `defaults.fps` field.
+3. The current game default. It starts at 0 when omitted.
+
+Call `mv.set_fps(fps)` or import the globals and call `set_fps(fps)` to
+change the game default for later spawns. Call it from the initializer or
+while the game is running. A call before startup, after the run, or with
+a value outside the integer range 0 to 60 raises an error. Existing
+processes keep their current cadence.
+
+```lua
+local mv = require("malvado")
+local Step = mv.process(function(self)
+  print(self.fps)
+  mv.frame()
+end)
+
+mv.start(function()
+  Step()           -- 30
+  Step {fps = 0}   -- Every eligible tick.
+  mv.set_fps(15)
+  Step()           -- 15
+end, {fps = 30})
+```
 
 The first activation is immediate when the scheduler starts the process. At a
 constant rate from 1 through 60, each 60 eligible ticks after the first
@@ -226,7 +255,7 @@ The instance fields override defaults. Each spawn copies the default table graph
 
 Use `self` for your game fields, such as `self.remaining`. These fields are local to the process.
 
-The fields `x`, `y`, `z`, `angle`, `fps`, `width`, and `height` default to 0; `size` defaults to 1. They are writable. `x`, `y`, `angle`, `size`, and `z` control automatic process graphics; `fps` controls cadence. The legacy `frame` also uses the graphic fields described in the [compatibility guide](#legacy-shim).
+The fields `x`, `y`, `z`, `angle`, `width`, and `height` default to 0. The `size` defaults to 1. These fields are writable. The `x`, `y`, `angle`, `size`, and `z` fields control automatic process graphics. The writable `fps` field controls the process's activation cadence. The legacy `frame` also uses the graphic fields described in the [compatibility guide](#legacy-shim).
 
 A failed spawn leaves no process or scheduler entry from that attempt. It does not change the supplied fields or defaults. Lua prepares the process state before the native spawn. If preparation or native creation fails, it releases the references from that attempt.
 

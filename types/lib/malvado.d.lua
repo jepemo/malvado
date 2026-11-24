@@ -251,6 +251,11 @@ function malvado.recv(handle) end
 ---@param options? MvStartOptions
 function malvado.start(body, options) end
 
+---Set the default cadence for future Lua processes in the running game.
+---Existing processes keep their current cadence.
+---@param fps integer Activations per 60 eligible logical ticks (0..60). Both 0 and 60 run every tick.
+function malvado.set_fps(fps) end
+
 ---Create a rectangle process graphic.
 ---@param options MvRectOptions
 ---@return MvGraphic

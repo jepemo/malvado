@@ -57,6 +57,7 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `send` | `mv.send` |
 | `recv` | `mv.recv` |
 | `start` | `mv.start` |
+| `set_fps` | `mv.set_fps` |
 | `set_title` | `mv.set_title` |
 | `window_size` | `mv.window_size` |
 | `set_color` | `mv.set_color` |

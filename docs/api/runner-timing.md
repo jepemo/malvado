@@ -36,6 +36,10 @@ still executes one immediate scheduler tick. Frames with no due tick still draw;
 catch-up frames commit input and execute each due tick separately. Headless runs
 keep their deterministic direct-tick loop.
 
+The Lua startup `fps` option and `set_fps` choose the initial activation
+cadence of new Lua processes. The simulation still runs at 60 Hz and the
+Raylib render target stays at 60 FPS. See [Lua process cadence](lua-processes.md#process-timing).
+
 The existing pause/step path remains explicit. Time spent paused is not added to
 the accumulator. Invalid or backward platform samples contribute zero elapsed
 time, as before. A native clock overflow fails the run. The runner owns clock

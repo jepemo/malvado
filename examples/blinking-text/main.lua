@@ -9,8 +9,6 @@ local MAX_ALPHA = 255
 -- One shared font styles three independent texts. Each text keeps its own
 -- size and a copied color, so changing one never changes the others.
 local BlipText = process(function(self)
-  self.fps = 30
-
   local message = self.text or "Welcome 2 Malvado!"
   local width, height = window_size()
 
@@ -55,6 +53,7 @@ end)
 
 return {
   title = "Blinking text",
+  fps = 30,
   init = function()
     BlipText {}
   end,

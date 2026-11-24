@@ -14,7 +14,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Visual angle/scale | `mv_process_angle`, `mv_process_set_angle`, `mv_process_scale`, `mv_process_set_scale` | `self.angle`, `self.size`; shared finite values, local invalid overrides. |
 | Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
-| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv()` or `recv(handle)`, `frame`, `self.fps` |
+| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv()` or `recv(handle)`, `frame`, `self.fps`, startup `fps`, `set_fps` |
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
 
 The table maps the public functions in `malvado.h`, not every future 2.0 API.
@@ -162,7 +162,7 @@ namespace names above are aliases where the inventories list both names.
 
 ## Lua entry forms
 
-Both `mv.start(init, options)` and a returned game table with `init`, `width`, `height`, and `title` use the same runtime and scheduler. Initialization runs once before the first scheduled tick. Both forms use the same defaults and report initialization or process failures. They cannot be combined in one run. See [Lua processes](lua-processes.md) for the full options and errors.
+Both `mv.start(init, options)` and a returned game table with `init`, `width`, `height`, `title`, and `fps` use the same runtime and scheduler. Initialization runs once before the first scheduled tick. Both forms use the same defaults and report initialization or process failures. Use one startup form per run. See [Lua processes](lua-processes.md) for the full options and errors.
 
 `tests/start_parity.cmake` checks initialization, process ordering, and failures for both forms. `tests/start_results.cmake` checks defaults, invalid options, mixed forms, bootstrap processes, and errors. These are registered as `lua_start_parity` and `lua_start_results`.
 
