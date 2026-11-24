@@ -53,9 +53,15 @@ main(int argc, char **argv)
     const char expected_text[] = "aZ0";
     size_t text_length = 0;
     for (int frame = 0; frame < (ACCEPTANCE_LIFECYCLE ? 3600 : 180) && !mv_window_should_close(); ++frame) {
+        mv_input_tick();
         if (keyboard_mode()) {
-            mv_input_tick();
             keyboard_frame();
+        }
+        if (ACCEPTANCE_LIFECYCLE == 3 || ACCEPTANCE_LIFECYCLE == 7) {
+            if (!touch_down && mv_mouse_down(MV_MOUSE_LEFT))
+                assert(mv_mouse_pressed(MV_MOUSE_LEFT) && mv_mouse_pressed(MV_MOUSE_LEFT));
+            if (touch_down && !touch_released && !mv_mouse_down(MV_MOUSE_LEFT))
+                assert(mv_mouse_released(MV_MOUSE_LEFT) && mv_mouse_released(MV_MOUSE_LEFT));
         }
         if (ACCEPTANCE_LIFECYCLE == 9) {
             uint32_t codepoint;

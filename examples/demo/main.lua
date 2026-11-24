@@ -6,7 +6,6 @@ local images = { cats = {} }
 local names = { "Sprites", "Keyboard", "Texts", "Fade" }
 local selected, page = 1, 0
 local ticks, text = 0, ""
-local previous_mouse = false
 
 local function show_page(number)
   page = number
@@ -52,14 +51,13 @@ end
 local Demo = process(function()
   while true do
     ticks = ticks + 1
-    local escape = key_pressed("escape")
+    local escape = key_pressed(KEY_ESCAPE)
     if page == 0 then
       if escape then break end
-      if key_pressed("up") then selected = (selected + 2) % 4 + 1 end
-      if key_pressed("down") then selected = selected % 4 + 1 end
-      if key_pressed("enter") then show_page(selected) end
-      local mouse = mouse_button("left")
-      if mouse and not previous_mouse then
+      if key_pressed(KEY_UP) then selected = (selected + 2) % 4 + 1 end
+      if key_pressed(KEY_DOWN) then selected = selected % 4 + 1 end
+      if key_pressed(KEY_ENTER) then show_page(selected) end
+      if mouse_pressed(MOUSE_LEFT) then
         local x, y = mouse_position()
         if x >= 280 and x < 550 then
           for i = 1, #names do
@@ -68,10 +66,9 @@ local Demo = process(function()
           end
         end
       end
-      previous_mouse = mouse
     elseif escape then
       page = 0
-    elseif page == 4 and key_pressed("space") and not fade_active() then
+    elseif page == 4 and key_pressed(KEY_SPACE) and not fade_active() then
       fade_off()
       fade_on()
     end

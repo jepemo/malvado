@@ -50,8 +50,12 @@ _Static_assert(_Generic(&mv_font_text_width, int (*)(const MvFont *, const char 
 _Static_assert(_Generic(&mv_font_draw, int (*)(const MvFont *, const char *, int, int, int, MvColor): 1, default: 0), "mv_font_draw signature");
 _Static_assert(_Generic(&mv_mouse_position, int (*)(int *, int *): 1, default: 0), "mv_mouse_position signature");
 _Static_assert(_Generic(&mv_mouse_down, int (*)(MvMouseButton): 1, default: 0), "mv_mouse_down signature");
+_Static_assert(_Generic(&mv_mouse_released, int (*)(MvMouseButton): 1, default: 0), "mv_mouse_released signature");
+_Static_assert(_Generic(&mv_mouse_pressed, int (*)(MvMouseButton): 1, default: 0), "mv_mouse_pressed signature");
 _Static_assert(_Generic(&mv_pad_connected, int (*)(int): 1, default: 0), "mv_pad_connected signature");
 _Static_assert(_Generic(&mv_pad_button_down, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_down signature");
+_Static_assert(_Generic(&mv_pad_button_released, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_released signature");
+_Static_assert(_Generic(&mv_pad_button_pressed, int (*)(int, MvPadButton): 1, default: 0), "mv_pad_button_pressed signature");
 _Static_assert(_Generic(&mv_pad_axis, float (*)(int, MvPadAxis): 1, default: 0), "mv_pad_axis signature");
 _Static_assert(_Generic(&mv_text_input_set_keyboard, int (*)(int): 1, default: 0), "mv_text_input_set_keyboard signature");
 _Static_assert(_Generic(&mv_text_input_next, int (*)(uint32_t *): 1, default: 0), "mv_text_input_next signature");
@@ -87,6 +91,10 @@ _Static_assert(_Generic(&mv_draw_state_background, int (*)(MvDrawState *, int64_
 int main(void)
 {
     if (mv_text_input_set_keyboard(0)) return 1;
+    if (mv_pad_button_released(0, MV_PAD_A)) return 1;
+    if (mv_pad_button_pressed(0, MV_PAD_A)) return 1;
+    if (mv_mouse_released(MV_MOUSE_LEFT)) return 1;
+    if (mv_mouse_pressed(MV_MOUSE_LEFT)) return 1;
     printf("%zu %zu ", sizeof(MvColor), _Alignof(MvColor));
     printf("%zu ", offsetof(MvColor, r));
     printf("%zu ", offsetof(MvColor, g));

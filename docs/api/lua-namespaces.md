@@ -31,13 +31,17 @@ Process fields are documented in the [process guide](lua-processes.md).
 | `mv.process.send` | Send a message | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.collision` | Find the first colliding process | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.collisions` | List colliding processes | [processes](lua-processes.md) and [collision](collision.md) |
-| `mv.input.key_down` | Check a held key | [input](input-inventory.md) |
+| `mv.input.key` | Check a held key | [input](input-inventory.md) |
 | `mv.input.key_pressed` | Check a press in the current tick | [keyboard](keyboard.md) |
 | `mv.input.key_released` | Check a release in the current tick | [keyboard](keyboard.md) |
 | `mv.input.mouse_position` | Read pointer position | [input](input-inventory.md) |
 | `mv.input.mouse_button` | Check a held mouse button | [input](input-inventory.md) |
+| `mv.input.mouse_pressed` | Check a mouse button press in the current tick | [input](input-inventory.md) |
+| `mv.input.mouse_released` | Check a mouse button release in the current tick | [input](input-inventory.md) |
 | `mv.input.pad_connected` | Check a controller slot | [input](input-inventory.md) |
 | `mv.input.pad_button` | Check a held controller button | [input](input-inventory.md) |
+| `mv.input.pad_pressed` | Check a controller button press in the current tick | [input](input-inventory.md) |
+| `mv.input.pad_released` | Check a controller button release in the current tick | [input](input-inventory.md) |
 | `mv.input.pad_axis` | Read a controller axis | [input](input-inventory.md) |
 | `mv.input.text_input_next` | Read one typed character | [input](input-inventory.md) |
 | `mv.input.text_input_set_keyboard` | Request the Android on-screen keyboard | [keyboard](keyboard.md#android-on-screen-keyboard) |

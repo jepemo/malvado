@@ -78,16 +78,33 @@ motion(int action, int source, int buttons)
 static void
 check_pointer(void)
 {
+    app.onAppCmd(&app, APP_CMD_GAINED_FOCUS);
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
+    motion(AMOTION_EVENT_ACTION_UP, AINPUT_SOURCE_CLASS_POINTER, 0);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT) && !mv_mouse_pressed(MV_MOUSE_LEFT));
+    mv_input_tick();
+    assert(mv_mouse_pressed(MV_MOUSE_LEFT) && mv_mouse_released(MV_MOUSE_LEFT));
+    mv_input_tick();
+    assert(!mv_mouse_pressed(MV_MOUSE_LEFT) && !mv_mouse_released(MV_MOUSE_LEFT));
+
     motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
     assert(mv_android_mouse_down(MV_MOUSE_LEFT));
+    mv_input_tick();
+    assert(mv_mouse_pressed(MV_MOUSE_LEFT) && !mv_mouse_released(MV_MOUSE_LEFT));
     app.onAppCmd(&app, APP_CMD_PAUSE);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
+    mv_input_tick();
+    assert(!mv_mouse_pressed(MV_MOUSE_LEFT) && mv_mouse_released(MV_MOUSE_LEFT));
+    app.onAppCmd(&app, APP_CMD_RESUME);
     motion(2, AINPUT_SOURCE_CLASS_POINTER, 1);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
     motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 0);
     assert(mv_android_mouse_down(MV_MOUSE_LEFT));
     motion(AMOTION_EVENT_ACTION_CANCEL, AINPUT_SOURCE_CLASS_POINTER, 0);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    mv_input_tick();
+    assert(mv_mouse_pressed(MV_MOUSE_LEFT) && mv_mouse_released(MV_MOUSE_LEFT));
     motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 2 | 4);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
     assert(mv_android_mouse_down(MV_MOUSE_MIDDLE) && mv_android_mouse_down(MV_MOUSE_RIGHT));
@@ -102,7 +119,17 @@ check_pointer(void)
     app.onAppCmd(&app, APP_CMD_LOST_FOCUS);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
     motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 1);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    mv_input_tick();
+    assert(mv_mouse_pressed(MV_MOUSE_LEFT) && mv_mouse_released(MV_MOUSE_LEFT));
+    app.onAppCmd(&app, APP_CMD_GAINED_FOCUS);
+    motion(2, AINPUT_SOURCE_CLASS_POINTER, 1);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    motion(AMOTION_EVENT_ACTION_DOWN, AINPUT_SOURCE_CLASS_POINTER, 1);
     app.onAppCmd(&app, APP_CMD_TERM_WINDOW);
+    assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
+    app.onAppCmd(&app, APP_CMD_INIT_WINDOW);
+    motion(2, AINPUT_SOURCE_CLASS_POINTER, 1);
     assert(!mv_android_mouse_down(MV_MOUSE_LEFT));
 }
 
@@ -177,7 +204,7 @@ main(void)
     app.onInputEvent = input;
     app.onAppCmd = command;
     for (int reopen = 0; reopen < 2; ++reopen) {
-        mv_keyboard_open();
+        mv_input_open();
         mv_android_window_attach();
         check_pointer();
         const int native[] = {AKEYCODE_A, AKEYCODE_DPAD_LEFT, AKEYCODE_0, AKEYCODE_Z, AKEYCODE_DEL};
@@ -223,7 +250,7 @@ main(void)
         assert(event(AKEYCODE_BACK, 0) == 1);
         assert(mv_android_window_close_requested());
         mv_android_window_detach();
-        mv_keyboard_reset();
+        mv_input_reset();
         assert(app.onInputEvent == input && app.onAppCmd == command);
         assert(!mv_android_key_down(MV_KEY_A) && !mv_android_window_close_requested());
     }

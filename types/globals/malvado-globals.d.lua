@@ -535,10 +535,6 @@ function rand(min, max) end
 function key(name) end
 
 ---@param name MvKey
----@return boolean down
-function key_down(name) end
-
----@param name MvKey
 ---@return boolean pressed
 function key_pressed(name) end
 
@@ -554,17 +550,39 @@ function mouse_position() end
 ---@return boolean down
 function mouse_button(button) end
 
+---Check whether the button was pressed in the current tick. Reads are non-consuming.
+---@param button MvMouseButton
+---@return boolean pressed
+function mouse_pressed(button) end
+
+---Check whether the button was released in the current tick. Reads are non-consuming.
+---@param button MvMouseButton
+---@return boolean released
+function mouse_released(button) end
+
 ---@param slot integer
 ---@return boolean connected
 function pad_connected(slot) end
 
 ---@param slot integer
----@param name string
+---@param name MvPadButton
 ---@return boolean down
 function pad_button(slot, name) end
 
+---Check whether the button was pressed in the current tick. Reads are non-consuming.
 ---@param slot integer
----@param name string
+---@param name MvPadButton
+---@return boolean pressed
+function pad_pressed(slot, name) end
+
+---Check whether the button was released in the current tick. Reads are non-consuming.
+---@param slot integer
+---@param name MvPadButton
+---@return boolean released
+function pad_released(slot, name) end
+
+---@param slot integer
+---@param name MvPadAxis
 ---@return number value
 function pad_axis(slot, name) end
 
@@ -680,6 +698,27 @@ KEY_DOWN = "down"
 KEY_ENTER = "enter"
 KEY_TAB = "tab"
 KEY_BACKSPACE = "backspace"
+MOUSE_LEFT = "left"
+MOUSE_MIDDLE = "middle"
+MOUSE_RIGHT = "right"
+PAD_A = "a"
+PAD_B = "b"
+PAD_X = "x"
+PAD_Y = "y"
+PAD_UP = "up"
+PAD_DOWN = "down"
+PAD_LEFT = "left"
+PAD_RIGHT = "right"
+PAD_LB = "lb"
+PAD_RB = "rb"
+PAD_BACK = "back"
+PAD_START = "start"
+PAD_LEFT_X = "left_x"
+PAD_LEFT_Y = "left_y"
+PAD_RIGHT_X = "right_x"
+PAD_RIGHT_Y = "right_y"
+PAD_LEFT_TRIGGER = "left_trigger"
+PAD_RIGHT_TRIGGER = "right_trigger"
 SIGNAL_SLEEP = "sleep"
 SIGNAL_FREEZE = "freeze"
 SIGNAL_WAKEUP = "wakeup"

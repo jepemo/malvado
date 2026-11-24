@@ -1,6 +1,6 @@
 # Controller monitor
 
-Connect a controller before or after you start the monitor. Press buttons and move both sticks. The screen shows the active slot, held buttons, and stick values. Disconnect the controller and check that its slot changes to disconnected. Press **Escape** to exit.
+Connect a controller before or after you start the monitor. Press buttons and move both sticks. The screen shows the active slot, held buttons, and stick values. The last change shows `+` for a press and `-` for a release. Disconnect the controller to clear the slot. Press **Escape** to exit.
 
 Build Malvado and run this command from the repository root:
 

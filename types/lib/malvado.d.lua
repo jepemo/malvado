@@ -42,14 +42,18 @@
 ---@field SIGNAL_KILL "kill"
 
 ---@class MvInputNamespace
----@field key_down fun(name: MvKey):boolean
+---@field key fun(name: MvKey):boolean
 ---@field key_pressed fun(name: MvKey):boolean
 ---@field key_released fun(name: MvKey):boolean
 ---@field mouse_position fun():integer, integer
 ---@field mouse_button fun(button: MvMouseButton):boolean
+---@field mouse_pressed fun(button: MvMouseButton):boolean
+---@field mouse_released fun(button: MvMouseButton):boolean
 ---@field pad_connected fun(slot: integer):boolean
----@field pad_button fun(slot: integer, name: string):boolean
----@field pad_axis fun(slot: integer, name: string):number
+---@field pad_button fun(slot: integer, name: MvPadButton):boolean
+---@field pad_pressed fun(slot: integer, name: MvPadButton):boolean
+---@field pad_released fun(slot: integer, name: MvPadButton):boolean
+---@field pad_axis fun(slot: integer, name: MvPadAxis):number
 ---@field text_input_next fun():string|nil
 ---@field text_input_set_keyboard fun(enabled: boolean):boolean
 ---@field KEY_A "a"
@@ -97,6 +101,27 @@
 ---@field KEY_ENTER "enter"
 ---@field KEY_TAB "tab"
 ---@field KEY_BACKSPACE "backspace"
+---@field MOUSE_LEFT "left"
+---@field MOUSE_MIDDLE "middle"
+---@field MOUSE_RIGHT "right"
+---@field PAD_A "a"
+---@field PAD_B "b"
+---@field PAD_X "x"
+---@field PAD_Y "y"
+---@field PAD_UP "up"
+---@field PAD_DOWN "down"
+---@field PAD_LEFT "left"
+---@field PAD_RIGHT "right"
+---@field PAD_LB "lb"
+---@field PAD_RB "rb"
+---@field PAD_BACK "back"
+---@field PAD_START "start"
+---@field PAD_LEFT_X "left_x"
+---@field PAD_LEFT_Y "left_y"
+---@field PAD_RIGHT_X "right_x"
+---@field PAD_RIGHT_Y "right_y"
+---@field PAD_LEFT_TRIGGER "left_trigger"
+---@field PAD_RIGHT_TRIGGER "right_trigger"
 
 ---@class MvGraphicsNamespace
 ---@field rect fun(options: MvRectOptions):MvGraphic
@@ -718,11 +743,6 @@ function malvado.rand(min, max) end
 ---@return boolean down
 function malvado.key(name) end
 
----Alias of `key`.
----@param name MvKey
----@return boolean down
-function malvado.key_down(name) end
-
 ---Check whether a key was pressed in the current tick.
 ---@param name MvKey
 ---@return boolean pressed
@@ -743,6 +763,16 @@ function malvado.mouse_position() end
 ---@return boolean down
 function malvado.mouse_button(button) end
 
+---Check whether the button was pressed in the current tick. Reads are non-consuming.
+---@param button MvMouseButton
+---@return boolean pressed
+function malvado.mouse_pressed(button) end
+
+---Check whether the button was released in the current tick. Reads are non-consuming.
+---@param button MvMouseButton
+---@return boolean released
+function malvado.mouse_released(button) end
+
 ---Check whether a controller is connected in a slot (0..3).
 ---@param slot integer
 ---@return boolean connected
@@ -750,17 +780,29 @@ function malvado.pad_connected(slot) end
 
 ---Check whether a controller button is down.
 ---@param slot integer
----@param name string
+---@param name MvPadButton
 ---@return boolean down
 function malvado.pad_button(slot, name) end
 
+---Check whether the button was pressed in the current tick. Reads are non-consuming.
+---@param slot integer
+---@param name MvPadButton
+---@return boolean pressed
+function malvado.pad_pressed(slot, name) end
+
+---Check whether the button was released in the current tick. Reads are non-consuming.
+---@param slot integer
+---@param name MvPadButton
+---@return boolean released
+function malvado.pad_released(slot, name) end
+
 ---Read a controller axis value.
 ---@param slot integer
----@param name string
+---@param name MvPadAxis
 ---@return number value
 function malvado.pad_axis(slot, name) end
 
----Read one typed character. Returns nil when the queue is empty.
+---Consume one typed character from the shared queue. Returns nil when the queue is empty.
 ---@return string|nil character
 function malvado.text_input_next() end
 
@@ -892,6 +934,27 @@ malvado.KEY_DOWN = "down"
 malvado.KEY_ENTER = "enter"
 malvado.KEY_TAB = "tab"
 malvado.KEY_BACKSPACE = "backspace"
+malvado.MOUSE_LEFT = "left"
+malvado.MOUSE_MIDDLE = "middle"
+malvado.MOUSE_RIGHT = "right"
+malvado.PAD_A = "a"
+malvado.PAD_B = "b"
+malvado.PAD_X = "x"
+malvado.PAD_Y = "y"
+malvado.PAD_UP = "up"
+malvado.PAD_DOWN = "down"
+malvado.PAD_LEFT = "left"
+malvado.PAD_RIGHT = "right"
+malvado.PAD_LB = "lb"
+malvado.PAD_RB = "rb"
+malvado.PAD_BACK = "back"
+malvado.PAD_START = "start"
+malvado.PAD_LEFT_X = "left_x"
+malvado.PAD_LEFT_Y = "left_y"
+malvado.PAD_RIGHT_X = "right_x"
+malvado.PAD_RIGHT_Y = "right_y"
+malvado.PAD_LEFT_TRIGGER = "left_trigger"
+malvado.PAD_RIGHT_TRIGGER = "right_trigger"
 malvado.SIGNAL_SLEEP = "sleep"
 malvado.SIGNAL_FREEZE = "freeze"
 malvado.SIGNAL_WAKEUP = "wakeup"

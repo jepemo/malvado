@@ -235,6 +235,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_mouse_button_from_name`
 - `mv_mouse_down`
 - `mv_mouse_position`
+- `mv_mouse_pressed`
+- `mv_mouse_released`
 - `mv_music_destroy`
 - `mv_music_load`
 - `mv_music_pause`
@@ -249,6 +251,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_pad_axis_from_name`
 - `mv_pad_button_down`
 - `mv_pad_button_from_name`
+- `mv_pad_button_pressed`
+- `mv_pad_button_released`
 - `mv_pad_connected`
 - `mv_platform_time`
 - `mv_platform_wait`

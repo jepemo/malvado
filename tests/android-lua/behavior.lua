@@ -25,11 +25,12 @@ local task = mv.process(function()
   while os.getenv("MALVADO_APK_LIFECYCLE") or remaining > 0 do
     remaining = remaining - 1
     if os.getenv("MALVADO_APK_TOUCH") then
-      if released then assert(not mv.mouse_button("left")) end
-      if mv.mouse_button("left") then
+      if released then assert(not mv.mouse_button(mv.MOUSE_LEFT)) end
+      if mv.mouse_button(mv.MOUSE_LEFT) then
         local x, y = mv.mouse_position()
-        assert(not mv.mouse_button("middle") and not mv.mouse_button("right"))
+        assert(not mv.mouse_button(mv.MOUSE_MIDDLE) and not mv.mouse_button(mv.MOUSE_RIGHT))
         if not first_x then
+          assert(mv.mouse_pressed(mv.MOUSE_LEFT) and mv.input.mouse_pressed(mv.MOUSE_LEFT))
           assert(math.abs(x - 160) <= 16 and math.abs(y - 120) <= 16)
           first_x, maximum_x = x, x
           local file = assert(io.open("touch-held.txt", "wb"))
@@ -44,6 +45,7 @@ local task = mv.process(function()
           moved = true
         end
       elseif first_x and not released then
+        assert(mv.mouse_released(mv.MOUSE_LEFT) and mv.input.mouse_released(mv.MOUSE_LEFT))
         assert(maximum_x > first_x + 4)
         local file = assert(io.open("touch.txt", "wb"))
         assert(file:write("1"))

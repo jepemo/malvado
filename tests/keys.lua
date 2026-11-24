@@ -7,17 +7,17 @@ for code = string.byte("A"), string.byte("Z") do
     local upper = string.char(code)
     local lower = upper:lower()
     assert(mv.input["KEY_" .. upper] == lower and _G["KEY_" .. upper] == lower)
-    assert(mv.key(lower) == mv.input.key_down(_G["KEY_" .. upper]))
+    assert(mv.key(lower) == mv.input.key(_G["KEY_" .. upper]))
 end
 for code = string.byte("0"), string.byte("9") do
     local digit = string.char(code)
     assert(mv.input["KEY_" .. digit] == digit and _G["KEY_" .. digit] == digit)
-    assert(mv.key(digit) == mv.input.key_down(_G["KEY_" .. digit]))
+    assert(mv.key(digit) == mv.input.key(_G["KEY_" .. digit]))
 end
 for _, name in ipairs({"escape", "space", "left", "right", "up", "down", "enter", "tab", "backspace"}) do
     local constant = "KEY_" .. name:upper()
     assert(mv.input[constant] == name and _G[constant] == name)
-    assert(mv.key(name) == mv.input.key_down(_G[constant]))
+    assert(mv.key(name) == mv.input.key(_G[constant]))
 end
 local process = mv.process(function()
     for _, name in ipairs({"space", "escape", "left", "right", "up", "down", "enter", "tab", "backspace", "a", "z", "0", "9"}) do
@@ -28,11 +28,14 @@ local process = mv.process(function()
     end
     local x, y = mv.mouse_position()
     assert(x == 0 and y == 0)
-    for _, name in ipairs({"left", "middle", "right"}) do
-        assert(not mv.mouse_button(name))
-    end
-    for _, name in ipairs({"other", "Left", "left\0x"}) do
-        assert(not pcall(mv.mouse_button, name))
+    for _, query in ipairs({mv.mouse_button, mv.mouse_pressed, mv.mouse_released}) do
+        for constant, name in pairs({MOUSE_LEFT = "left", MOUSE_MIDDLE = "middle", MOUSE_RIGHT = "right"}) do
+            assert(mv[constant] == name and mv.input[constant] == name and _G[constant] == name)
+            assert(not query(name))
+        end
+        for _, name in ipairs({"other", "Left", "left\0x"}) do
+            assert(not pcall(query, name))
+        end
     end
     assert(mv.text_input_next() == nil)
     assert(mv.text_input_set_keyboard(true) == false)

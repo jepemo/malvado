@@ -24,6 +24,10 @@
 #include "render_internal.h"
 #include "../core/process.h"
 #include "raylib.h"
+#ifdef MV_GLFW_PAD_HOTPLUG
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#endif
 #ifdef __ANDROID__
 #include "android_window.h"
 #include <pthread.h>
@@ -88,10 +92,34 @@ static int drawing_active, clip_active, scroll_active;
 static MvCameraViewport current_clip;
 static float current_scroll_x, current_scroll_y;
 
+#ifdef MV_GLFW_PAD_HOTPLUG
+static GLFWjoystickfun previous_joystick_callback;
+static unsigned changed_pad_slots;
+
+static void
+pad_hotplug(int slot, int event)
+{
+    if (slot >= 0 && slot < MV_INPUT_PAD_SLOTS) {
+        /* raylib samples buttons before dispatching hotplug events. Wait for
+         * the next sample before exposing the replacement device's state. */
+        changed_pad_slots |= 1u << slot;
+        mv_pad_sample(slot, 0, 0);
+    }
+    if (previous_joystick_callback)
+        previous_joystick_callback(slot, event);
+}
+#endif
+
 int
 mv_pad_connected(int slot)
 {
-    return slot >= 0 && slot < 4 && IsWindowReady() && IsGamepadAvailable(slot);
+    if (slot < 0 || slot >= MV_INPUT_PAD_SLOTS || !IsWindowReady())
+        return 0;
+#ifdef MV_GLFW_PAD_HOTPLUG
+    if (changed_pad_slots & (1u << slot))
+        return 0;
+#endif
+    return IsGamepadAvailable(slot);
 }
 
 int
@@ -399,7 +427,11 @@ int mv_window_open(int width, int height, const char *title)
 #endif
     InitWindow(width, height, title);
     if (!IsWindowReady()) return 0;
-    mv_keyboard_open();
+    mv_input_open();
+#ifdef MV_GLFW_PAD_HOTPLUG
+    changed_pad_slots = 0;
+    previous_joystick_callback = glfwSetJoystickCallback(pad_hotplug);
+#endif
 #ifdef __ANDROID__
     mv_android_window_attach();
 #endif
@@ -437,8 +469,14 @@ void mv_window_close(void)
     (void)mv_android_keyboard_request(0);
     mv_android_window_detach();
 #endif
-    if (IsWindowReady()) CloseWindow();
-    mv_keyboard_reset();
+    if (IsWindowReady()) {
+#ifdef MV_GLFW_PAD_HOTPLUG
+        glfwSetJoystickCallback(previous_joystick_callback);
+        previous_joystick_callback = NULL;
+#endif
+        CloseWindow();
+    }
+    mv_input_reset();
     drawing_active = 0;
     clip_active = 0;
     scroll_active = 0;
@@ -523,23 +561,54 @@ mv_mouse_position(int *x, int *y)
     return 1;
 }
 
+#ifndef __ANDROID__
+static int
+mouse_code(MvMouseButton button)
+{
+    switch (button) {
+    case MV_MOUSE_LEFT: return MOUSE_BUTTON_LEFT;
+    case MV_MOUSE_MIDDLE: return MOUSE_BUTTON_MIDDLE;
+    case MV_MOUSE_RIGHT: return MOUSE_BUTTON_RIGHT;
+    default: return -1;
+    }
+}
+
+static void
+capture_mouse(void)
+{
+    for (int button = MV_MOUSE_LEFT; button <= MV_MOUSE_RIGHT; ++button) {
+        int code = mouse_code((MvMouseButton)button);
+        mv_mouse_sample((MvMouseButton)button, IsMouseButtonPressed(code), IsMouseButtonReleased(code));
+    }
+}
+#endif
+
+static void
+capture_pads(void)
+{
+    for (int slot = 0; slot < MV_INPUT_PAD_SLOTS; ++slot) {
+        int connected = mv_pad_connected(slot);
+        unsigned held = 0;
+        if (connected) {
+            for (int button = MV_PAD_A; button <= MV_PAD_START; ++button) {
+                if (mv_pad_button_down(slot, (MvPadButton)button))
+                    held |= 1u << button;
+            }
+        }
+        mv_pad_sample(slot, connected, held);
+    }
+}
+
 int
 mv_mouse_down(MvMouseButton button)
 {
     if (!IsWindowReady())
         return 0;
-    int code;
-    switch (button) {
-    case MV_MOUSE_LEFT: code = MOUSE_BUTTON_LEFT; break;
-    case MV_MOUSE_MIDDLE: code = MOUSE_BUTTON_MIDDLE; break;
-    case MV_MOUSE_RIGHT: code = MOUSE_BUTTON_RIGHT; break;
-    default: return 0;
-    }
 #ifdef __ANDROID__
-    (void)code;
     return mv_android_mouse_down(button);
 #else
-    return IsMouseButtonDown(code);
+    int code = mouse_code(button);
+    return code >= 0 && IsMouseButtonDown(code);
 #endif
 }
 
@@ -1231,8 +1300,15 @@ void mv_window_end(void)
 {
     if (scroll_active) (void)mv_window_scroll_end();
     if (clip_active) (void)mv_window_clip_end();
+#ifdef MV_GLFW_PAD_HOTPLUG
+    changed_pad_slots = 0;
+#endif
     EndDrawing();
     drawing_active = 0;
     capture_text_input();
     capture_keyboard();
+#ifndef __ANDROID__
+    capture_mouse();
+#endif
+    capture_pads();
 }

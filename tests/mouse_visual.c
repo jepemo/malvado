@@ -21,7 +21,16 @@ main(void)
     if (!mv_window_open(160, 120, "Malvado C mouse"))
         return 1;
     int phase = 0;
+    unsigned pressed = 0, released = 0;
     for (int frame = 0; frame < 600 && !mv_window_should_close(); ++frame) {
+        mv_input_tick();
+        for (int i = MV_MOUSE_LEFT; i <= MV_MOUSE_RIGHT; ++i) {
+            MvMouseButton button = (MvMouseButton)i;
+            if (mv_mouse_pressed(button) && mv_mouse_pressed(button))
+                pressed |= 1u << (i - MV_MOUSE_LEFT);
+            if (mv_mouse_released(button) && mv_mouse_released(button))
+                released |= 1u << (i - MV_MOUSE_LEFT);
+        }
         int x, y;
         int position = mv_mouse_position(&x, &y);
         int held = mv_mouse_down(MV_MOUSE_LEFT) + mv_mouse_down(MV_MOUSE_MIDDLE) +
@@ -36,5 +45,5 @@ main(void)
         mv_window_end();
     }
     mv_window_close();
-    return phase == 2 ? 0 : 1;
+    return phase == 2 && pressed == 7 && released == 7 ? 0 : 1;
 }

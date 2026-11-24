@@ -17,11 +17,16 @@
 #define MALVADO_INPUT_INTERNAL_H
 #include "malvado/platform.h"
 /* Backend-owned window lifetime and per-render event capture. */
-void mv_keyboard_open(void);
-void mv_keyboard_reset(void);
+void mv_input_open(void);
+void mv_input_reset(void);
 void mv_keyboard_sample(MvKey key, int pressed, int released);
 /* Derive observed edges when a backend cannot supply reliable edge state. */
 void mv_keyboard_sample_held(MvKey key, int down);
+/* Held masks use bit positions given by the corresponding button enum. */
+void mv_mouse_sample(MvMouseButton button, int pressed, int released);
+void mv_mouse_sample_held(unsigned held);
+enum { MV_INPUT_PAD_SLOTS = 4 };
+void mv_pad_sample(int slot, int connected, unsigned held);
 /* Append an observed scalar to the backend text queue; ignore unavailable
  * input, NUL, invalid scalars and a full queue. Headless sampling is neutral. */
 void mv_text_input_sample(uint32_t codepoint);
