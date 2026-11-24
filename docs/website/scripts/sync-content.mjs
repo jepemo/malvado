@@ -115,7 +115,7 @@ for (const slug of ['getting-started', 'sdk', 'api']) {
     `---\ntitle: ${JSON.stringify(title)}\nslug: ${slug}\n---\n\n${body}`);
 }
 
-// Aligned process example in C, Lua and Rust.
+// The same complete game in C, Lua and Rust.
 function stripLicenseHeader(code, lang) {
   if (lang === 'c')
     return code.replace(/^\/\*[\s\S]*?\*\/\s*/m, '').trim();
@@ -124,45 +124,53 @@ function stripLicenseHeader(code, lang) {
   return code.replace(/^(--[^\n]*\n)+\s*/m, '').trim();
 }
 
-const exampleDir = '../../../examples/features/image/';
-const lua = stripLicenseHeader(await readFile(new URL(`${exampleDir}lua/main.lua`, import.meta.url), 'utf8'), 'lua');
-const c = stripLicenseHeader(await readFile(new URL(`${exampleDir}c/main.c`, import.meta.url), 'utf8'), 'c');
-const rust = stripLicenseHeader(await readFile(new URL(`${exampleDir}rust/main.rs`, import.meta.url), 'utf8'), 'rust');
+const gameDir = '../../../examples/catch/';
+const lua = stripLicenseHeader(await readFile(new URL(`${gameDir}lua/main.lua`, import.meta.url), 'utf8'), 'lua');
+const c = stripLicenseHeader(await readFile(new URL(`${gameDir}c/main.c`, import.meta.url), 'utf8'), 'c');
+const rust = stripLicenseHeader(
+  await readFile(new URL('../../../bindings/rust/malvado/examples/catch.rs', import.meta.url), 'utf8'), 'rust');
 
-await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: See the same image example in the three languages.\n---
+await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: Run the same Catch! game in the three languages.\n---
 
-These runnable examples come from the repository. All three open a 160 × 120
-window, load the shared \`tile.png\` asset and draw it at \`(32, 32)\`. They use
-the same core scheduler, and print the image size:
+These runnable examples come from the repository. All three open a 640 × 360
+window, run the same Catch! game and use the shared core scheduler. The player
+and the ball are independent processes:
 
-\`\`\`text
-image: 32x32
-\`\`\`
+- The player is a cyan rectangle that moves left and right with the arrow keys.
+- The ball is an orange circle that falls from the top.
+- Catch the ball with the player to score a point. The ball respawns above the
+  screen at a new horizontal position. A miss respawns the ball without scoring.
+
+Press Escape or use the window close control to end the game.
 
 Each repository source starts with its license header; the headers are
 omitted here.
 
 ## Lua
 
-\`\`\`lua title="examples/features/image/lua/main.lua"
+\`\`\`lua title="examples/catch/lua/main.lua"
 ${lua}
 \`\`\`
 
 ## C
 
-\`\`\`c title="examples/features/image/c/main.c"
+\`\`\`c title="examples/catch/c/main.c"
 ${c}
 \`\`\`
 
 ## Rust (experimental)
 
-Rust gameplay support is experimental in Malvado 2.0.
+Rust support is experimental in Malvado 2.0. This version lives with the Rust
+binding and runs with the \`graphics\` feature.
 
-\`\`\`rust title="examples/features/image/rust/main.rs"
+\`\`\`rust title="bindings/rust/malvado/examples/catch.rs"
 ${rust}
 \`\`\`
 
-Copy the shared asset as described in the [lesson instructions](${repoLink('examples/features/image', 'tree')}). See the [Draw a PNG image](../concepts/images/) guide, and the [Lua processes](../concepts/lua-processes/), [C process API](../concepts/c-contract/) and [Rust processes](../concepts/rust-processes/) guides.
+See the [Catch! game lesson](${repoLink('examples/catch', 'tree')}) for controls
+and run commands, and the [Lua processes](../concepts/lua-processes/), [C
+process API](../concepts/c-contract/) and [Rust processes](../concepts/rust-processes/)
+guides.
 `);
 
 // Concept guides from docs/api.

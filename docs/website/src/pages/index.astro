@@ -3,7 +3,7 @@ import { Code } from 'astro:components';
 import CodeShowcase from '../components/CodeShowcase.astro';
 import '../styles/home.css';
 import helloWorld from '../../../../examples/helloworld/main.lua?raw';
-import processes from '../../../../examples/features/processes/lua/main.lua?raw';
+import processes from '../../../../examples/meteors/main.lua?raw';
 import movement from '../../../../examples/move/main.lua?raw';
 import { repoLink, repository, version } from '../../scripts/site-context.mjs';
 import { stable, prerelease } from '../../scripts/release.mjs';
@@ -14,7 +14,7 @@ const description = 'An open-source engine for 2D games in C and Lua, with exper
 const stripHeader = (code) => code.replace(/^(?:--[^\n]*\n)+\s*/, '').trim();
 const examples = [
   { id: 'hello', label: 'Hello World', file: 'helloworld / main.lua', code: stripHeader(helloWorld) },
-  { id: 'processes', label: 'Processes', file: 'processes / main.lua', code: stripHeader(processes) },
+  { id: 'processes', label: 'Processes', file: 'meteors / main.lua', code: stripHeader(processes) },
   { id: 'movement', label: 'Movement', file: 'move / main.lua', code: stripHeader(movement) },
 ];
 const installReady = stable.trim() !== '';

@@ -4,7 +4,7 @@
 require("malvado").import_globals()
 
 -- One process draws a circle and moves it with the arrow keys.
-local Circle = process(function(self)
+local Player = process(function(self)
     local speed = 240 -- Pixels per second.
     while not key(KEY_ESCAPE) do
         local distance = speed * self.delta
@@ -14,6 +14,6 @@ local Circle = process(function(self)
         if key(KEY_DOWN) then self.y = self.y + distance end
         frame()
     end
-end, {defaults = {graph = circle {radius = 24, color = {255, 190, 80}}}})
+end, {defaults = {graph = circle {radius = 24, color = ORANGE}}})
 
-start(function() Circle({x = 400, y = 300}) end, {title = "Move"})
+start(function() Player({x = 400, y = 300}) end, {title = "Movement"})

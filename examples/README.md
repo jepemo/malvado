@@ -11,7 +11,9 @@ process scheduling, image loading, and window resizing.
 The directory migration is planned, not complete. Current entry points include:
 
 - [C processes and its Lua counterpart](c/processes/README.md).
+- [Lua Meteors scene](meteors/README.md) with three independent processes.
 - [Lua Move scene](move/README.md) with an arrow-key circle.
+- [Catch! game](catch/README.md) in C, Lua and Rust.
 - [Lua blinking text](blinking-text/README.md) with shared fonts and RGBA colors.
 - [Lua world collision](world-collision/README.md).
 - [Lua Space Asteroids game](space_asteroids/README.md).
