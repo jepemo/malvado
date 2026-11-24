@@ -3,6 +3,7 @@
 
 local mv = require("malvado")
 assert(process == nil and frame == nil and start == nil)
+assert(mv.get_screen_width == nil and mv.get_screen_height == nil)
 mv.unlisted_extension = function() end
 KEY_UP = "occupied"
 local constants_ok = pcall(mv.import_globals)
@@ -30,6 +31,9 @@ for name, value in pairs(mv) do
   end
 end
 assert(process == mv.process and frame == mv.frame and start == mv.start)
+assert(window_size == mv.window_size)
+assert(get_screen_width == nil and get_screen_height == nil)
+assert(not pcall(window_size))
 assert(process.frame == frame and process.kill == mv.kill)
 assert(process.SIGNAL_KILL == SIGNAL_KILL)
 assert(type(process.define(function() end)) == "function")
@@ -72,5 +76,10 @@ local task = process(function()
   frame()
   completed = true
 end)
-start(function() task() end)
+start(function()
+  local width, height = window_size()
+  assert(width == 321 and height == 234)
+  assert(math.type(width) == "integer" and math.type(height) == "integer")
+  task()
+end, {width = 321, height = 234})
 assert(completed)

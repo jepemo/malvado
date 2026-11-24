@@ -12,8 +12,7 @@ local BlipText = process(function(self)
   self.fps = 30
 
   local message = self.text or "Welcome 2 Malvado!"
-  local width = self.width or get_screen_width()
-  local height = self.height or get_screen_height()
+  local width, height = window_size()
 
   local f = font {size = 50}
 
@@ -29,8 +28,8 @@ local BlipText = process(function(self)
     texts[i] = write {
       font = f,
       text = message,
-      x = width / 2,
-      y = height / 2,
+      x = width // 2,
+      y = height // 2,
       align = "center",
       size = 50 - (i - 1),
       color = color

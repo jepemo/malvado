@@ -42,7 +42,7 @@ const groups = [
     id: 'drawing', label: 'Drawing', guide: 'drawing',
     summary: 'Draw shapes and text, and set the drawing state.',
     flat: ['draw_rect', 'draw_circle', 'draw_line', 'draw_text',
-      'set_color', 'clear_screen', 'get_screen_width', 'get_screen_height'],
+      'set_color', 'clear_screen'],
   },
   {
     id: 'images', label: 'Images and sprites', guide: 'images',
@@ -117,8 +117,6 @@ const flatSummaries = {
   draw_text: 'Draw immediate-mode text with the built-in font.',
   set_color: 'Set the color that later drawing calls use.',
   clear_screen: 'Clear the window to a color.',
-  get_screen_width: 'Read the window width in pixels.',
-  get_screen_height: 'Read the window height in pixels.',
   load_asset: 'Load an image or atlas asset by path.',
   load_image: 'Load a PNG image.',
   image_size: 'Read the width and height of an image.',

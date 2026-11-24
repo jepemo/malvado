@@ -42,7 +42,7 @@
 ---@field z number Draw order. Higher values draw later.
 ---@field angle number Rotation in degrees.
 ---@field size number Scale factor. Default 1.
----@field fps integer Activation limit in frames per tick (0..60). Default 0 (every tick).
+---@field fps integer Number of process activations per 60 eligible logical ticks (1..60). Default 0 (every tick).
 ---@field graph MvGraphic|MvAnimation|MvImage|MvAtlas|MvFpg|MvFpgManifest|nil Selected graphic: result of `rect`, `circle`, `graph`, `animation`, `load_image`, or `load_asset`.
 ---@field camera MvCamera|nil|false Camera to draw with. nil: main camera. false: screen space.
 ---@field region MvRegion|nil Drawing region descriptor.
@@ -54,7 +54,7 @@
 ---@field priority integer Read-only scheduling priority.
 ---@field status MvProcessStatusName Read-only status.
 ---@field reason "returned"|"error"|"killed"|nil Read-only end reason after death.
----@field delta number Read-only seconds since the previous activation.
+---@field delta number Read-only logical seconds since the previous activation, including sleep and freeze ticks. Zero on the first activation.
 ---@field [string] any Custom fields: processes accept any extra field.
 
 ---Options for `process()` (the second parameter of the definition call).

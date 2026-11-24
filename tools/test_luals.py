@@ -21,6 +21,7 @@ GLOBAL_PROBE = """
 local mv = require("malvado")
 mv.import_globals()
 
+local window_width, window_height = window_size()
 local f = font {size = 50}
 local title = write {
   font = f,
@@ -103,6 +104,7 @@ local c = missing_global_function()
 """
 NAMESPACED_PROBE = """
 local mv = require("malvado")
+local window_width, window_height = mv.window_size()
 local f = mv.font {size = 50}
 local id = mv.write {font = f, text = "x", x = 1, y = 2}
 mv.change_text(id, {text = "y", color = {r = 1, g = 2, b = 3, a = 120}})
@@ -238,6 +240,9 @@ def main():
         missing = sorted(public_functions - declared)
         if missing:
             failures.append(f"{definitions} has no declarations for {', '.join(missing)}")
+        legacy_only = sorted(declared & {"get_screen_width", "get_screen_height"})
+        if legacy_only:
+            failures.append(f"{definitions} declares legacy-only functions: {', '.join(legacy_only)}")
     with tempfile.TemporaryDirectory(prefix="malvado-luals-") as temporary:
         # Project with globals enabled: the import_globals style must be clean
         # except for the deliberate invalid calls at the end.

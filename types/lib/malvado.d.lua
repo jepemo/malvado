@@ -17,7 +17,7 @@
 ---@alias MvProcessConstructor fun(fields?: table, options?: MvSpawnOptions):MvProcess
 
 ---@class MvProcessNamespace
----@field __call fun(_self: MvProcessNamespace, body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor Define a process. Returns a constructor; calling the constructor spawns the process and returns its handle. The body runs as a coroutine and receives `self`. Use `frame()` to yield until the next tick.
+---@field __call fun(_self: MvProcessNamespace, body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor Define a process. Returns a constructor; calling the constructor spawns the process and returns its handle. The body runs as a coroutine and receives `self`. Use `frame()` to yield until the next activation.
 ---@field define fun(body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor
 ---@field spawn fun(constructor: MvProcessConstructor, fields?: table, options?: MvSpawnOptions):MvProcess
 ---@field find fun(constructor: MvProcessConstructor):MvProcess[]
@@ -715,24 +715,16 @@ function malvado.draw_line(options) end
 ---@param title string
 function malvado.set_title(title) end
 
----Read the window size in pixels. Only available after `start`.
+---Read the window size in logical pixels once startup begins. In headless mode, return the configured size.
 ---@return integer width
 ---@return integer height
 function malvado.window_size() end
 
----Read the monotonic clock in seconds.
+---Read the monotonic clock in seconds for elapsed wall time.
 ---@return number seconds
 function malvado.time_seconds() end
 
----Read the screen width in pixels. Only available after `start`.
----@return integer width
-function malvado.get_screen_width() end
-
----Read the screen height in pixels. Only available after `start`.
----@return integer height
-function malvado.get_screen_height() end
-
----Random integer in [min, max].
+---Return a pseudorandom integer in [min, max] from Lua's shared generator. Use `math.randomseed` for repeatable results.
 ---@param min integer
 ---@param max integer
 ---@return integer value

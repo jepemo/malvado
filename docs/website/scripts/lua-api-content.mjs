@@ -50,10 +50,10 @@ export default {
     related: ['find', 'status'],
   },
   'processes/frame': {
-    description: 'Yield the running process until its next activation. It is only valid inside a process.',
+    description: 'Yield the running process until its next activation. It is only valid inside a process. Set `self.fps` to control activation cadence. Use `self.delta` for the logical seconds since the previous activation, or zero on the first activation.',
     params: [],
     example: 'process(function()\n    print("first")\n    frame()\n    print("second")\nend)()',
-    related: ['process', 'start'],
+    related: ['process', 'start', 'time_seconds'],
   },
   'processes/signal': {
     description: 'Send a signal to one process.',
@@ -293,18 +293,6 @@ export default {
     params: [['color', 'A palette color or a positional or named RGB(A) table. Channels are integers in 0..255. Alpha defaults to 255.']],
     example: 'clear_screen {25, 30, 45, 255}',
     related: ['set_color'],
-  },
-  'drawing/get_screen_width': {
-    description: 'Return the window width in pixels.',
-    params: [],
-    example: 'local width = get_screen_width()',
-    related: ['get_screen_height', 'window_size'],
-  },
-  'drawing/get_screen_height': {
-    description: 'Return the window height in pixels.',
-    params: [],
-    example: 'local height = get_screen_height()',
-    related: ['get_screen_width', 'window_size'],
   },
 
   'images/load_asset': {
@@ -791,16 +779,16 @@ export default {
     related: ['window_size'],
   },
   'platform/window_size': {
-    description: 'Return the window size in logical pixels.',
+    description: 'Return the width and height as two integers in logical pixels once startup begins. In headless mode, return the configured size.',
     params: [],
     example: 'local width, height = window_size()',
-    related: ['get_screen_width', 'get_screen_height'],
+    related: ['start', 'set_title'],
   },
   'platform/time_seconds': {
-    description: 'Return a monotonic clock reading in seconds. Subtract two readings for elapsed time.',
+    description: 'Return a monotonic clock reading in seconds. Subtract two readings for elapsed wall time. Use `self.delta` for logical simulation time between process activations.',
     params: [],
-    example: 'local start = time_seconds()\n-- later:\nprint(time_seconds() - start)',
-    related: ['rand'],
+    example: 'local began_at = time_seconds()\n-- Later:\nprint(time_seconds() - began_at)',
+    related: ['frame'],
   },
   'platform/fade_to': {
     description: 'Queue a fade of the screen to a color.',
@@ -833,9 +821,9 @@ export default {
     related: ['fade_active', 'fade_to'],
   },
   'platform/rand': {
-    description: 'Return a random integer in an inclusive range. Seed `math.random` for a repeatable sequence.',
-    params: [['min', 'The lowest value.'], ['max', 'The highest value.']],
-    example: 'local damage = rand(1, 6)',
+    description: 'Return a pseudorandom integer in an inclusive range. Lua 5.4 automatically gives the shared `math.random` generator a weak initial seed. Use `math.randomseed(seed)` for repeatable results. Use this generator for gameplay and keep it out of cryptographic uses.',
+    params: [['min', 'The lowest integer value.'], ['max', 'The highest integer value, at least `min`.']],
+    example: 'local roll = rand(1, 6)\n\nmath.randomseed(12345)\nlocal damage = rand(1, 6)',
     related: ['time_seconds'],
   },
 
