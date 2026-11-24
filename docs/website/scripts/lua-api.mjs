@@ -163,7 +163,7 @@ const flatSummaries = {
   fade_color: 'Read the current fade color.',
   rand: 'Return a random integer in an inclusive range.',
   rect_overlaps: 'Test whether two rectangles overlap.',
-  rect_contains: 'Test whether a rectangle contains another.',
+  rect_contains: 'Test whether a rectangle contains a point.',
 };
 
 function parseNamespaceFunctions(markdown) {

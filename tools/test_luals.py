@@ -39,7 +39,14 @@ clear_screen(BLACK)
 fade_to {color = TRANSPARENT, ticks = 30}
 local view = camera_create {}
 local world = world_create()
-world_add_rect(world, {x = 10, y = 10, width = 20, height = 20})
+local wall = {x = 10, y = 10, width = 20, height = 20}
+world_add_rect(world, wall)
+local shape = collision.circle {radius = 5}
+local box = collision.rect {width = 10, height = 20, offset_y = 2}
+assert(collision.overlap(shape, box))
+assert(rect_contains(wall, 15, 15))
+assert(rect_overlaps(wall, wall))
+local sweep = world_sweep(world, shape, {dx = 1, dy = 0})
 local library = mv.fpg.parse("bytes")
 local manifest = mv.fpg.parse_manifest(fpg_json(library))
 local graphic = animation_sample(animation(library, {7, 42}), 50)
@@ -58,6 +65,9 @@ local Player = process(function(self)
   camera_set(view, x, y)
   camera_move(1, 0)
   camera_move(view, x, y)
+  world_collision()
+  world_collision {x = 2}
+  world_collision(world, self)
   world_move(1, 0)
   world_move(world, self, 1, 0)
   local message, explicit_message = recv(), recv(self)
@@ -107,8 +117,12 @@ mv.camera_move(view, x, y)
 mv.camera_move(1, 0)
 mv.camera_set(0, 0)
 local world = mv.world_create()
-local shape = mv.collision.circle(5)
-local hit = mv.world_sweep(world, shape, nil, 1, 0)
+local shape = mv.collision.circle {radius = 5}
+local box = mv.collision.rect {width = 10, height = 20}
+assert(mv.collision.overlap(shape, box, {a = {x = 1}}))
+local bounds = {x = 0, y = 0, width = 10, height = 10}
+assert(mv.rect_overlaps(bounds, bounds) and mv.rect_contains(bounds, 1, 1))
+local hit = mv.world_sweep(world, shape, {angle = 45, dx = 1, dy = 0})
 local file = mv.fpg.parse("bytes")
 local manifest = mv.fpg.parse_manifest(mv.fpg_json(file))
 local opaque = mv.manifest_transparent_zero(manifest)
@@ -116,6 +130,8 @@ local actor = mv.process(function(self)
   self.file = atlas
   mv.camera_follow(self)
   mv.camera_set(view, 20, 40)
+  mv.world_collision()
+  mv.world_collision {y = 2}
   mv.world_collision(world, self, {x = 2})
   local message, explicit_message = mv.recv(), mv.recv(self)
   local elapsed, explicit_elapsed = mv.animation_elapsed(), mv.animation_elapsed(self)

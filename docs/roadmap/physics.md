@@ -124,7 +124,7 @@ values must be reevaluated against the API available during implementation.
 ```lua
 -- Proposed only: attach physics to the process, then keep it alive.
 local Ball = process(function(self)
-    self.collider = collision.circle(8)
+    self.collider = collision.circle {radius = 8}
     self.physics = { bounce = 0.8 }
     while true do frame() end
 end)
@@ -139,7 +139,7 @@ process-owned state is released.
 
 ```lua
 -- Proposed only: static terrain and an explicit shape override.
-self.collider = collision.rect(160, 16)
+self.collider = collision.rect {width = 160, height = 16}
 self.physics = { body = "static", friction = 0.5 }
 
 -- Proposed only, inside a live dynamic process:

@@ -109,9 +109,9 @@
 
 ---@class MvCollisionNamespace
 ---@field __call fun(_self: MvCollisionNamespace, target: MvProcessConstructor):MvProcess|nil
----@field circle fun(radius: number, options?: MvShapeOptions):MvCollisionShape
----@field rect fun(width: number, height: number, options?: MvShapeOptions):MvCollisionShape
----@field overlap fun(a: MvCollisionShape, transform_a?: MvCollisionTransform, b: MvCollisionShape, transform_b?: MvCollisionTransform):boolean
+---@field circle fun(options: MvCollisionCircleOptions):MvCollisionShape
+---@field rect fun(options: MvCollisionRectOptions):MvCollisionShape
+---@field overlap fun(shape_a: MvCollisionShape, shape_b: MvCollisionShape, options?: MvCollisionOverlapOptions):boolean
 
 ---@class MvFpgNamespace
 ---@field parse fun(bytes: string):MvFpg
@@ -248,26 +248,17 @@ function malvado.region(options) end
 function malvado.scroll(x, y) end
 
 ---Check whether two axis-aligned rectangles overlap.
----@param ax number
----@param ay number
----@param aw number
----@param ah number
----@param bx number
----@param by number
----@param bw number
----@param bh number
+---@param a MvWorldRect
+---@param b MvWorldRect
 ---@return boolean overlaps
-function malvado.rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
+function malvado.rect_overlaps(a, b) end
 
 ---Check whether a rectangle contains a point.
----@param rx number
----@param ry number
----@param rw number
----@param rh number
----@param px number
----@param py number
+---@param rect MvWorldRect
+---@param x number
+---@param y number
 ---@return boolean contains
-function malvado.rect_contains(rx, ry, rw, rh, px, py) end
+function malvado.rect_contains(rect, x, y) end
 
 ---Create a managed explicit camera. An empty table selects (0, 0) and the full logical window.
 ---@param options MvCameraCreateOptions
@@ -322,16 +313,16 @@ function malvado.world_add_rect(world, rect) end
 ---@return integer|nil id
 function malvado.world_overlap(world, shape, transform) end
 
----Sweep a shape through the world. Use nil for the default transform.
+---Sweep a shape through the world without moving it.
 ---@param world MvCollisionWorld
 ---@param shape MvCollisionShape
----@param transform MvCollisionTransform|nil
----@param dx number
----@param dy number
+---@param options MvWorldSweepOptions
 ---@return MvSweepResult result
-function malvado.world_sweep(world, shape, transform, dx, dy) end
+function malvado.world_sweep(world, shape, options) end
 
 ---Test a live process collider at its current or hypothetical position.
+---The contextual form uses the scheduled process and its `world` field.
+---@overload fun(options?: MvWorldCollisionOptions):integer|nil
 ---@param world MvCollisionWorld
 ---@param process MvProcess
 ---@param options? MvWorldCollisionOptions

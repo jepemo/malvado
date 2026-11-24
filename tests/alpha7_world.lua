@@ -2,8 +2,8 @@
 local mv = require("malvado")
 local world = mv.world_create()
 assert(mv.world_add_rect(world, {x = 10, y = 0, width = 10, height = 10}) == 1)
-local shape = mv.collision.circle(1)
-local sweep = mv.world_sweep(world, shape, {x = 0, y = 5}, 100, 0)
+local shape = mv.collision.circle {radius = 1}
+local sweep = mv.world_sweep(world, shape, {x = 0, y = 5, dx = 100, dy = 0})
 assert(sweep.hit and sweep.id == 1 and sweep.normal_x == -1 and sweep.normal_y == 0)
 print(string.format("sweep hit=1 fraction=%.6f normal=-1,0", sweep.fraction))
 local Actor = mv.process(function(self)

@@ -26,22 +26,28 @@ local observer = mv.process(function()
   ok, message = coroutine.close(killed_thread)
   assert(not ok and message:find("managed process", 1, true))
 end)
-local tree_closed, tree_after, rejected = 0, false, false
+local tree_closed, tree_after, rejected, detached_survived = 0, false, false, false
 local root_id
 local child = mv.process(function(self)
   local resource <close> = setmetatable({}, {__close = function() tree_closed = tree_closed + 1 end})
   local value = setmetatable({}, {__tostring = function()
     local ok = pcall(mv.kill_tree, root_id)
-    local owned_ok = pcall(mv.signal_tree, root_id, "kill", {relation = "ownership"})
+    local owned_ok = pcall(mv.kill_tree, root_id, {relation = "ownership"})
     rejected = not ok and not owned_ok and mv.status(root_id) == "running" and mv.status(self) == "running"
     return "checked"
   end})
   tostring(value)
-  pcall(mv.kill_tree, root_id)
+  pcall(mv.kill_tree, root_id, {relation = "ownership"})
   tree_after = true
+end)
+local detached = mv.process(function()
+  mv.frame()
+  assert(root_id.status == "dead")
+  detached_survived = true
 end)
 local root = mv.process(function()
   child {}
+  mv.spawn(detached, {}, {attached = false})
   while true do mv.frame() end
 end)
 local ordinary = coroutine.create(function() coroutine.yield(42); return 43 end)
@@ -111,4 +117,4 @@ mv.start(function()
 end)
 assert(closed == 1 and not after and saved.reason == "killed")
 assert(implicit_closed == 1 and implicit_handle.reason == "killed")
-assert(rejected and tree_closed == 1 and not tree_after)
+assert(rejected and tree_closed == 1 and not tree_after and detached_survived)

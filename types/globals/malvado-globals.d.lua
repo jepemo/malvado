@@ -117,25 +117,18 @@ function region(options) end
 ---@return MvScroll
 function scroll(x, y) end
 
----@param ax number
----@param ay number
----@param aw number
----@param ah number
----@param bx number
----@param by number
----@param bw number
----@param bh number
+---Check whether two axis-aligned rectangles overlap.
+---@param a MvWorldRect
+---@param b MvWorldRect
 ---@return boolean overlaps
-function rect_overlaps(ax, ay, aw, ah, bx, by, bw, bh) end
+function rect_overlaps(a, b) end
 
----@param rx number
----@param ry number
----@param rw number
----@param rh number
----@param px number
----@param py number
+---Check whether a rectangle contains a point.
+---@param rect MvWorldRect
+---@param x number
+---@param y number
 ---@return boolean contains
-function rect_contains(rx, ry, rw, rh, px, py) end
+function rect_contains(rect, x, y) end
 
 ---Create a managed explicit camera. An empty table selects (0, 0) and the full logical window.
 ---@param options MvCameraCreateOptions
@@ -183,16 +176,16 @@ function world_add_rect(world, rect) end
 ---@return integer|nil id
 function world_overlap(world, shape, transform) end
 
----Sweep a shape through the world. Use nil for the default transform.
+---Sweep a shape through the world without moving it.
 ---@param world MvCollisionWorld
 ---@param shape MvCollisionShape
----@param transform MvCollisionTransform|nil
----@param dx number
----@param dy number
+---@param options MvWorldSweepOptions
 ---@return MvSweepResult result
-function world_sweep(world, shape, transform, dx, dy) end
+function world_sweep(world, shape, options) end
 
 ---Test a live process collider at its current or hypothetical position.
+---The contextual form uses the scheduled process and its `world` field.
+---@overload fun(options?: MvWorldCollisionOptions):integer|nil
 ---@param world MvCollisionWorld
 ---@param process MvProcess
 ---@param options? MvWorldCollisionOptions

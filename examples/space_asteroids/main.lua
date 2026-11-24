@@ -18,7 +18,7 @@ local Rock = process(function(self)
     self.angle = self.angle + 1
     frame()
   end
-end, {defaults = {collider = mv.collision.circle(96)}})
+end, {defaults = {collider = mv.collision.circle {radius = 96}}})
 
 -- Lasers
 
@@ -52,7 +52,7 @@ local Shot = process(function(self)
 
     frame()
   end
-end, {defaults = {collider = mv.collision.circle(3)}})
+end, {defaults = {collider = mv.collision.circle {radius = 3}}})
 
 -- Spaceship
 
@@ -82,7 +82,7 @@ local Ship = process(function(self)
     if collision(Rock) then result = "Game over!" end
     frame()
   end
-end, {defaults = {size = 0.1, collider = mv.collision.circle(110, {offset_y = 10})}})
+end, {defaults = {size = 0.1, collider = mv.collision.circle {radius = 110, offset_y = 10}}})
 
 -- Stars
 

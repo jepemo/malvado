@@ -103,7 +103,7 @@ the same handle for the new call. Object methods and the `mv.camera` and
 | `mv.world.create()` | `world_create()` |
 | `world:add_rect(options)` | `world_add_rect(world, options)` |
 | `world:overlap(shape, transform)` | `world_overlap(world, shape, transform)` |
-| `world:sweep(shape, transform, dx, dy)` | `world_sweep(world, shape, transform, dx, dy)` |
+| `world:sweep(shape, transform, dx, dy)` | `world_sweep(world, shape, options)` with the transform and `dx` and `dy` in one table |
 | `world:collision(player, position)` | `world_collision(world, player, position)` |
 | `world:move(player, dx, dy)` or `mv.world.move(world, player, dx, dy)` | `world_move(world, player, dx, dy)` |
 | `mv.world.move(dx, dy)` | `world_move(dx, dy)` using `self.world` |

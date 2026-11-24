@@ -10,15 +10,19 @@ A rectangle uses `x`, `y`, `width`, and `height`. All values must be finite; wid
 
 ```lua
 local mv = require("malvado")
-if mv.rect_overlaps(10, 10, 16, 16, 20, 20, 8, 8) then
+local player = {x = 10, y = 10, width = 16, height = 16}
+local target = {x = 20, y = 20, width = 8, height = 8}
+if mv.rect_overlaps(player, target) then
     print("hit")
 end
-if mv.rect_contains(10, 10, 16, 16, 12, 12) then
+if mv.rect_contains(player, 12, 12) then
     print("inside")
 end
 ```
 
-Both functions return a boolean and raise an error for invalid arguments. They are available in headless mode and do not access process state.
+Pass plain tables with all four numeric fields. Both functions return a
+boolean. Missing fields, unknown fields, and invalid values raise an error.
+The functions are available in headless mode and do not access process state.
 
 ## C
 
@@ -54,28 +58,30 @@ Use `mv.collision` to create shapes and test them without a window:
 
 ```lua
 local collision = require("malvado").collision
-local circle = collision.circle(10)
-local box = collision.rect(40, 20, {offset_x = 20, offset_y = 10})
-if collision.overlap(circle, {x = 12, y = 10}, box, {x = 0, y = 0}) then
+local circle = collision.circle {radius = 10}
+local box = collision.rect {width = 40, height = 20, offset_x = 20, offset_y = 10}
+if collision.overlap(circle, box, {a = {x = 12, y = 10}}) then
     print("Overlap")
 end
 ```
 
-`circle(radius, options)` and `rect(width, height, options)` return immutable,
-reusable descriptors. Dimensions must be positive and finite. The optional
+`collision.circle(options)` requires a `radius`.
+`collision.rect(options)` requires a `width` and a `height`. Both functions
+return immutable, reusable descriptors. Dimensions must be positive and finite. The optional
 `offset_x` and `offset_y` specify the shape center relative to its origin; both
 default to zero. For a top-left rectangle origin, use half the width and height
 as the offsets. Invalid dimensions, offsets, or unknown options raise an error.
 Lua retains descriptors while they are referenced. They can be shared in
 process defaults without sharing mutable tables.
 
-`overlap(shape_a, transform_a, shape_b, transform_b)` uses the C geometry
-operation. Each transform is `nil` for the identity or a table with `x`, `y`,
-`angle`, and `scale`; these default to zero, zero, zero degrees, and one. All
-values must be finite and scale must be positive. Invalid shapes, transforms,
-unknown fields, or values outside the C operation's documented limits raise an
-error. It returns a boolean. Touching edges do not overlap. This function does not query processes. Process graphics can supply automatic
-colliders, as described below.
+`collision.overlap(shape_a, shape_b)` tests two shapes at the origin.
+To transform either shape, pass an options table with `a` for the first
+shape, `b` for the second, or both. Omitted transforms use the identity.
+Each transform accepts `x`, `y`, `angle` in clockwise degrees, and `scale`.
+The defaults are 0, 0, 0, and 1. All values must be finite and scale must be
+positive. Invalid shapes, transforms, unknown fields, and values outside the
+C operation's documented limits raise an error. The function returns a
+boolean. Touching edges do not overlap.
 
 `import_globals()` installs the callable `collision` namespace. Calling
 `collision(target)` queries the running process against a constructor or handle.
@@ -123,20 +129,20 @@ rectangles. `world_add_rect(world, {x = 100, y = 0, width = 10, height = 80})` a
 one and returns its ID. All four fields are required; unknown or invalid fields
 and allocation failures raise an error. `world_overlap(world, shape, transform)`
 returns the first overlapping ID or `nil`. It uses the same shape descriptors,
-transform defaults, limits, and errors as `mv.collision.overlap`.
+transform fields, defaults, and geometric limits as `mv.collision.overlap`.
 
 ```lua
 local mv = require("malvado")
 local world = mv.world_create()
 mv.world_add_rect(world, {x = 100, y = 0, width = 10, height = 80})
-local hit = mv.world_overlap(world, mv.collision.circle(8), {x = 96, y = 40})
+local hit = mv.world_overlap(world, mv.collision.circle {radius = 8}, {x = 96, y = 40})
 ```
 
 ### Process queries in Lua
 
-`world_collision(world, process, position)` tests a live process with an explicit
-`collision.circle` or `collision.rect` in its `collider` field. It returns the
-first overlapping obstacle ID or `nil`. It uses the process's `x`, `y`,
+`world_collision(world, process)` tests a live process in the supplied world.
+`world_collision()` tests the scheduled process in its `self.world`.
+Both forms return the first overlapping obstacle ID or `nil`. They use the process's `x`, `y`,
 `angle`, and `size`, including the collider offset. A `false` collider disables
 participation. A process with neither a collider nor a graph returns `nil`.
 When `collider` is `nil`, a supported graphic or image supplies its shape and
@@ -148,15 +154,19 @@ descriptor uses its region and metadata pivot. A graph of another type without
 an explicit collider raises an error. Invalid, foreign, or dead handles and
 invalid transforms raise an error. Sleeping and frozen processes participate.
 
-The optional `position` table can replace `x`, `y`, or both for one query; it
-does not move the process. Unknown fields and invalid numbers raise an error.
+Pass a position table with `x`, `y`, or both to test a hypothetical position.
+For example, call `world_collision(world, player, {x = 120})` or
+`world_collision {x = self.x + 10}`. The query leaves the process position
+unchanged. Unknown fields and invalid numbers raise an error.
 
 ### Sweeping a shape
 
 `mv_collision_world_sweep(world, shape, transform, dx, dy, &result)` sweeps a
 circle or rectangle, including an oriented rectangle, along a straight displacement
 against the world's axis-aligned rectangles. Lua provides
-`world_sweep(world, shape, transform, dx, dy)`. A successful result contains `hit`,
+`world_sweep(world, shape, options)`. The options table requires `dx` and `dy`.
+The optional `x`, `y`, `angle`, and `scale` set the start transform and
+default to 0, 0, 0, and 1. Unknown fields raise an error. A successful result contains `hit`,
 `fraction`, `normal_x`, `normal_y`, and, for a hit, `id`. Move by the requested
 displacement multiplied by `fraction`; the sweep does not modify the shape or
 a process. Without a hit, the fraction is 1 and the normal is zero. Equal-time
@@ -176,8 +186,8 @@ avoid unreliable corner calculations. Floating-point rounding can affect
 near-tangent contacts.
 
 ```lua
-local box = mv.collision.rect(2, 2)
-local result = mv.world_sweep(world, box, {x = 0, y = 40}, 200, 0)
+local box = mv.collision.rect {width = 2, height = 2}
+local result = mv.world_sweep(world, box, {x = 0, y = 40, dx = 200, dy = 0})
 local allowed_x = 200 * result.fraction
 ```
 
@@ -289,6 +299,8 @@ world_add_rect(world, {x = 300, y = 100, width = 40, height = 280})
 local Player = process(function(self)
   self.world = world
   self.graph = require("malvado").graphics.circle {radius = 16}
+  local ahead = world_collision {x = self.x + 10}
+  if ahead then print("Wall ahead", ahead) end
   local result = world_move(4, 0)
   if result.hit then print("Wall", result.id) end
 end)
@@ -313,9 +325,9 @@ self-exclusion, sleeping/frozen participation, and dead-target behavior.
 For an explicit source, use the existing namespace query.
 
 Implicit calls fail outside the scheduled process coroutine, including inside
-a nested user coroutine. A missing or invalid `self.world` raises a useful
-error on movement. Explicit movement validates its world and process handles
-instead. Invalid calls do not move the process. A disabled collider (`false`),
+a nested user coroutine. A missing or invalid `self.world` raises an error
+on a contextual world call. Explicit queries and movement validate their
+world and process handles. Invalid calls do not move the process. A disabled collider (`false`),
 an automatic collider (`nil`) and an explicit collider keep their existing
 behavior in every form. Worlds and descriptors remain garbage-collected; no
 new native resource or scheduler is introduced by these wrappers.

@@ -8,6 +8,9 @@ local actor = mv.process(function(self)
   self.size = .5
   local world = mv.world_create()
   mv.world_add_rect(world, {x = 20, y = -10, width = 1, height = 40})
+  self.world = world
+  assert(mv.world_collision() == nil and mv.world_collision {x = 20} == 1)
+  assert(self.x == 12 and self.y == 8)
   assert(mv.world_move(world, self, 100, 0).hit and self.x == 19.5 and self.y == 8)
   while self.x ~= -2 do mv.frame() end
   assert(self.y == 5 and self.angle == 270 and self.size == 3)
@@ -15,7 +18,7 @@ local actor = mv.process(function(self)
   self.size = nil
   assert(self.angle == 0 and self.size == 1)
   local sensor = mv.process(function() while true do mv.frame() end end) {
-    x = -2, y = 5, collider = mv.collision.rect(2, 2)
+    x = -2, y = 5, collider = mv.collision.rect {width = 2, height = 2}
   }
   assert(mv.process.collision(self, sensor) == sensor)
   for _, value in ipairs({math.maxinteger, math.mininteger, .25, -0.0}) do
@@ -44,4 +47,4 @@ local actor = mv.process(function(self)
   assert(self.angle == 0 and self.size == 1)
   mv.kill(sensor)
 end)
-mv.start(function() actor {x = 4, y = 6, collider = mv.collision.rect(2, 2)} end)
+mv.start(function() actor {x = 4, y = 6, collider = mv.collision.rect {width = 2, height = 2}} end)

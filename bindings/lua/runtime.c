@@ -621,8 +621,9 @@ signal_tree(lua_State *L)
 static int
 kill_tree(lua_State *L)
 {
-    lua_settop(L, 1);
+    lua_settop(L, 2);
     lua_pushliteral(L, "kill");
+    lua_insert(L, 2);
     return signal_tree(L);
 }
 
@@ -5339,19 +5340,63 @@ call_process_namespace(lua_State *L)
     return define_process(L);
 }
 
+static void
+validate_collision_fields(lua_State *L, int index, const char *const *fields, const char *kind)
+{
+    index = lua_absindex(L, index);
+    luaL_checktype(L, index, LUA_TTABLE);
+    lua_pushnil(L);
+    while (lua_next(L, index)) {
+        size_t length = 0;
+        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
+        const char *const *field = fields;
+        if (name && strlen(name) == length) {
+            while (*field && strcmp(name, *field) != 0)
+                ++field;
+        }
+        if (!name || strlen(name) != length || !*field)
+            luaL_error(L, "unknown %s field", kind);
+        lua_pop(L, 1);
+    }
+}
+
+static double
+number_field(lua_State *L, int index, const char *name, double fallback, int required)
+{
+    raw_option(L, index, name);
+    if ((required || !lua_isnil(L, -1)) && lua_type(L, -1) != LUA_TNUMBER)
+        luaL_error(L, "%s must be a number", name);
+    double value = lua_isnil(L, -1) ? fallback : lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return value;
+}
+
+static double
+optional_number_field(lua_State *L, int index, const char *name, double fallback)
+{
+    return number_field(L, index, name, fallback, 0);
+}
+
 static MvRect
 check_rect(lua_State *L, int index)
 {
-    MvRect rect = {luaL_checknumber(L, index), luaL_checknumber(L, index + 1),
-                   luaL_checknumber(L, index + 2), luaL_checknumber(L, index + 3)};
+    static const char *const fields[] = {"x", "y", "width", "height", NULL};
+    validate_collision_fields(L, index, fields, "rectangle");
+    MvRect rect = {
+        number_field(L, index, "x", 0, 1),
+        number_field(L, index, "y", 0, 1),
+        number_field(L, index, "width", 0, 1),
+        number_field(L, index, "height", 0, 1)
+    };
     return rect;
 }
 
 static int
 rect_overlaps(lua_State *L)
 {
+    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected two rectangle tables");
     MvRect a = check_rect(L, 1);
-    MvRect b = check_rect(L, 5);
+    MvRect b = check_rect(L, 2);
     int result = mv_rect_overlaps(a, b);
     if (result < 0)
         return luaL_error(L, "invalid rectangle");
@@ -5362,9 +5407,12 @@ rect_overlaps(lua_State *L)
 static int
 rect_contains(lua_State *L)
 {
+    luaL_argcheck(L, lua_gettop(L) == 3, 3, "expected a rectangle table and a point");
     MvRect rect = check_rect(L, 1);
-    double x = luaL_checknumber(L, 5);
-    double y = luaL_checknumber(L, 6);
+    luaL_checktype(L, 2, LUA_TNUMBER);
+    luaL_checktype(L, 3, LUA_TNUMBER);
+    double x = lua_tonumber(L, 2);
+    double y = lua_tonumber(L, 3);
     int result = mv_rect_contains(rect, x, y);
     if (result < 0)
         return luaL_error(L, "invalid rectangle or point");
@@ -5384,22 +5432,21 @@ shape_option(lua_State *L, int index, const char *name, double fallback)
 static int
 collision_shape(lua_State *L)
 {
+    static const char *const circle_fields[] = {"radius", "offset_x", "offset_y", NULL};
+    static const char *const rect_fields[] = {"width", "height", "offset_x", "offset_y", NULL};
+    luaL_argcheck(L, lua_gettop(L) == 1, 1, "expected a shape options table");
     MvCollisionKind kind = (MvCollisionKind)lua_tointeger(L, lua_upvalueindex(1));
     MvCollisionShape shape = {.kind = kind};
-    int options;
     if (kind == MV_COLLISION_CIRCLE) {
-        shape.radius = luaL_checknumber(L, 1);
-        options = 2;
+        validate_collision_fields(L, 1, circle_fields, "collision circle");
+        shape.radius = number_field(L, 1, "radius", 0, 1);
     } else {
-        shape.width = luaL_checknumber(L, 1);
-        shape.height = luaL_checknumber(L, 2);
-        options = 3;
+        validate_collision_fields(L, 1, rect_fields, "collision rectangle");
+        shape.width = number_field(L, 1, "width", 0, 1);
+        shape.height = number_field(L, 1, "height", 0, 1);
     }
-    if (!lua_isnoneornil(L, options)) {
-        validate_options(L, options, "offset_x", "offset_y");
-        shape.offset_x = shape_option(L, options, "offset_x", 0);
-        shape.offset_y = shape_option(L, options, "offset_y", 0);
-    }
+    shape.offset_x = optional_number_field(L, 1, "offset_x", 0);
+    shape.offset_y = optional_number_field(L, 1, "offset_y", 0);
     MvCollisionTransform identity = {0, 0, 0, 1};
     if (mv_collision_overlap(shape, identity, shape, identity) < 0)
         return luaL_error(L, "invalid collision shape");
@@ -5410,36 +5457,47 @@ collision_shape(lua_State *L)
 }
 
 static MvCollisionTransform
-collision_transform(lua_State *L, int index)
+collision_transform_fields(lua_State *L, int index, int strict)
 {
-    MvCollisionTransform result = {0, 0, 0, 1};
-    if (lua_isnoneornil(L, index))
-        return result;
-    luaL_checktype(L, index, LUA_TTABLE);
-    index = lua_absindex(L, index);
-    lua_pushnil(L);
-    while (lua_next(L, index)) {
-        size_t length;
-        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
-        if (!name || strlen(name) != length ||
-            (strcmp(name, "x") && strcmp(name, "y") && strcmp(name, "angle") && strcmp(name, "scale")))
-            luaL_error(L, "unknown collision transform field");
-        lua_pop(L, 1);
-    }
-    result.x = shape_option(L, index, "x", 0);
-    result.y = shape_option(L, index, "y", 0);
-    result.angle = shape_option(L, index, "angle", 0);
-    result.scale = shape_option(L, index, "scale", 1);
+    double (*read_option)(lua_State *, int, const char *, double) =
+        strict ? optional_number_field : shape_option;
+    MvCollisionTransform result = {
+        read_option(L, index, "x", 0),
+        read_option(L, index, "y", 0),
+        read_option(L, index, "angle", 0),
+        read_option(L, index, "scale", 1)
+    };
     return result;
+}
+
+static MvCollisionTransform
+collision_transform(lua_State *L, int index, int strict)
+{
+    static const char *const fields[] = {"x", "y", "angle", "scale", NULL};
+    if (lua_isnoneornil(L, index))
+        return (MvCollisionTransform){0, 0, 0, 1};
+    validate_collision_fields(L, index, fields, "collision transform");
+    return collision_transform_fields(L, index, strict);
 }
 
 static int
 collision_overlap(lua_State *L)
 {
+    static const char *const fields[] = {"a", "b", NULL};
+    luaL_argcheck(L, lua_gettop(L) <= 3, 3, "expected two shapes and optional transforms");
     MvCollisionShape *a = luaL_checkudata(L, 1, "malvado.collision_shape");
-    MvCollisionTransform transform_a = collision_transform(L, 2);
-    MvCollisionShape *b = luaL_checkudata(L, 3, "malvado.collision_shape");
-    MvCollisionTransform transform_b = collision_transform(L, 4);
+    MvCollisionShape *b = luaL_checkudata(L, 2, "malvado.collision_shape");
+    MvCollisionTransform transform_a = {0, 0, 0, 1};
+    MvCollisionTransform transform_b = {0, 0, 0, 1};
+    if (!lua_isnone(L, 3)) {
+        validate_collision_fields(L, 3, fields, "collision overlap");
+        raw_option(L, 3, "a");
+        transform_a = collision_transform(L, -1, 1);
+        lua_pop(L, 1);
+        raw_option(L, 3, "b");
+        transform_b = collision_transform(L, -1, 1);
+        lua_pop(L, 1);
+    }
     int result = mv_collision_overlap(*a, transform_a, *b, transform_b);
     if (result < 0)
         return luaL_error(L, "invalid collision transform");
@@ -5514,7 +5572,7 @@ world_overlap(lua_State *L)
 {
     MvCollisionWorld *world = check_world(L);
     MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
-    MvCollisionTransform transform = collision_transform(L, 3);
+    MvCollisionTransform transform = collision_transform(L, 3, 0);
     size_t id;
     int result = mv_collision_world_query(world, *shape, transform, &id);
     if (result < 0)
@@ -5695,6 +5753,36 @@ world_process_move(lua_State *L)
     return 1;
 }
 
+/* Insert the contextual world and process before the operation's arguments. */
+static void
+insert_current_world_process(lua_State *L)
+{
+    push_current_process(L);
+    lua_insert(L, 1);
+    lua_getiuservalue(L, 1, 1);
+    raw_option(L, -1, "world");
+    lua_remove(L, -2);
+    if (lua_isnil(L, -1))
+        luaL_error(L, "current process has no world");
+    if (!luaL_testudata(L, -1, "malvado.collision_world"))
+        luaL_error(L, "current process world must be a collision world");
+    lua_insert(L, 1);
+}
+
+static int
+world_collision(lua_State *L)
+{
+    int arguments = lua_gettop(L);
+    if (arguments <= 1) {
+        if (arguments == 1)
+            luaL_checktype(L, 1, LUA_TTABLE);
+        insert_current_world_process(L);
+    } else if (arguments > 3) {
+        return luaL_error(L, "expected world_collision([position]) or world_collision(world, process[, position])");
+    }
+    return world_process_collision(L);
+}
+
 static int
 world_move(lua_State *L)
 {
@@ -5702,16 +5790,7 @@ world_move(lua_State *L)
     if (arguments == 2) {
         luaL_checknumber(L, 1);
         luaL_checknumber(L, 2);
-        push_current_process(L);
-        lua_insert(L, 1);
-        lua_getiuservalue(L, 1, 1);
-        raw_option(L, -1, "world");
-        lua_remove(L, -2);
-        if (lua_isnil(L, -1))
-            return luaL_error(L, "current process has no world");
-        if (!luaL_testudata(L, -1, "malvado.collision_world"))
-            return luaL_error(L, "current process world must be a collision world");
-        lua_insert(L, 1);
+        insert_current_world_process(L);
     } else if (arguments != 4) {
         return luaL_error(L, "expected world_move(dx, dy) or world_move(world, process, dx, dy)");
     }
@@ -5721,11 +5800,14 @@ world_move(lua_State *L)
 static int
 world_sweep(lua_State *L)
 {
+    static const char *const fields[] = {"x", "y", "angle", "scale", "dx", "dy", NULL};
+    luaL_argcheck(L, lua_gettop(L) == 3, 3, "expected a world, shape, and sweep options");
     MvCollisionWorld *world = check_world(L);
     MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
-    MvCollisionTransform transform = collision_transform(L, 3);
-    double dx = luaL_checknumber(L, 4);
-    double dy = luaL_checknumber(L, 5);
+    validate_collision_fields(L, 3, fields, "world sweep");
+    MvCollisionTransform transform = collision_transform_fields(L, 3, 1);
+    double dx = number_field(L, 3, "dx", 0, 1);
+    double dy = number_field(L, 3, "dy", 0, 1);
     MvCollisionSweep result;
     if (mv_collision_world_sweep(world, *shape, transform, dx, dy, &result) < 0)
         return luaL_error(L, "invalid sweep, unsupported shape, or initial overlap");
@@ -6292,7 +6374,7 @@ open_module(lua_State *L)
         {"world_add_rect", world_add_rect},
         {"world_overlap", world_overlap},
         {"world_sweep", world_sweep},
-        {"world_collision", world_process_collision},
+        {"world_collision", world_collision},
         {"world_move", world_move},
         {"rect_overlaps", rect_overlaps},
         {"rect_contains", rect_contains},

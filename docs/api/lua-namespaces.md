@@ -48,9 +48,9 @@ Process fields are documented in the [process guide](lua-processes.md).
 | `mv.graphics.animation` | Select automatic animation * | [animations](animations.md) |
 | `mv.graphics.animation_elapsed` | Inspect process playback time * | [animations](animations.md) |
 | `mv.graphics.graph` | Select a static library graphic * | [images](images.md) |
-| `mv.collision.circle` | Create a circle shape | [collision](collision.md) |
-| `mv.collision.rect` | Create a rectangle shape | [collision](collision.md) |
-| `mv.collision.overlap` | Test two transformed shapes | [collision](collision.md) |
+| `mv.collision.circle` | Create a circle shape from a table with `radius` and optional offsets | [collision](collision.md) |
+| `mv.collision.rect` | Create a rectangle shape from a table with `width`, `height`, and optional offsets | [collision](collision.md) |
+| `mv.collision.overlap` | Test two shapes with optional transforms in `options.a` and `options.b` | [collision](collision.md) |
 | `mv.fpg.parse` | Parse an FPG file * | [FPG](fpg.md) |
 | `mv.fpg.parse_manifest` | Parse an FPG manifest * | [FPG](fpg.md) |
 

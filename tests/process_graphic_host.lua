@@ -5,7 +5,7 @@ local replacement = mv.graphics.rect {width = 4, height = 2, pivot = "top-left",
 local Actor = mv.process(function(self)
   assert(self.graph == initial)
   local sensor = mv.process(function() while true do mv.frame() end end) {
-    x = 4, collider = mv.collision.rect(1, 1)
+    x = 4, collider = mv.collision.rect {width = 1, height = 1}
   }
   assert(mv.process.collision(self, sensor) == nil)
   while self.graph == initial do mv.frame() end

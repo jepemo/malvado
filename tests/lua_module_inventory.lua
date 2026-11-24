@@ -48,7 +48,7 @@ local objects = {
   world = mv.world_create(),
   camera = mv.camera_create {},
   graphic = mv.rect {width = 1, height = 1},
-  shape = mv.collision.circle(1),
+  shape = mv.collision.circle {radius = 1},
   region = mv.region {x = 0, y = 0, width = 1, height = 1},
   scroll = mv.scroll(1, 0),
 }

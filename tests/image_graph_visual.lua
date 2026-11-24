@@ -38,7 +38,7 @@ local controller = mv.process(function()
   legacy_actor.fpg = {}
   assert(not pcall(mv.world_collision, world, legacy_actor))
   assert(not pcall(mv.process.collision, legacy_actor, probe))
-  legacy_actor.collider = mv.collision.rect(8, 8)
+  legacy_actor.collider = mv.collision.rect {width = 8, height = 8}
   assert(mv.world_collision(world, legacy_actor) == 3)
   legacy_actor.fpg = nil
   legacy_actor.collider = nil
@@ -168,7 +168,7 @@ local producer = mv.process(function()
   trimmed_drawer = drawer({}, {attached = false})
   local legacy = mv.process(function() while true do frame() end end)
   legacy_actor = legacy({graph = image, x = 34, y = 20}, {attached = false})
-  probe = actor({x = 30.5, y = 16.5, collider = mv.collision.rect(1, 1)}, {attached = false})
+  probe = actor({x = 30.5, y = 16.5, collider = mv.collision.rect {width = 1, height = 1}}, {attached = false})
 end)
 mv.start(function()
   mv.clear_screen {0, 0, 0, 255}

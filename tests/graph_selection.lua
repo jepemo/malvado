@@ -38,7 +38,10 @@ world_add_rect(world, {x = 8, y = 6, width = 1, height = 1})
 local Defaulted = process(function(self)
   assert(self.file == atlas and self.world == world)
   self.graph = graph(42)
-  assert(self.graph == explicit and world_collision(world, self) == 1)
+  assert(self.graph == explicit and world_collision() == 1)
+  local x, y = self.x, self.y
+  assert(world_collision {x = x + 100} == nil)
+  assert(self.x == x and self.y == y)
   self.graph = nil
 end, {defaults = {file = atlas, world = world}})
 local Actor = process(function() while true do frame() end end)

@@ -112,7 +112,7 @@ local Controller = process(function(self)
   for i = 1, 20 do frame(); assert(world_collision(world, animated) == 1) end
   animated.collider = false
   assert(world_collision(world, animated) == nil)
-  animated.collider = mv.collision.circle(1)
+  animated.collider = mv.collision.circle {radius = 1}
   assert(world_collision(world, animated) == nil)
   animated.collider = nil
   assert(world_collision(world, animated) == 1)

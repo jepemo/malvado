@@ -74,7 +74,7 @@ local controller = mv.process(function()
   assert(mv.world_move(world, b, 100, 0).hit and b.x == 6)
   b.collider = false
   assert(mv.world_collision(world, b) == nil)
-  b.collider = collision.circle(1, {offset_x = 3})
+  b.collider = collision.circle {radius = 1, offset_x = 3}
   b.x = 4
   assert(mv.world_collision(world, b) == nil)
   b.x = 7

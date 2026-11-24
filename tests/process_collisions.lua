@@ -34,7 +34,7 @@ local controller = proc(function()
   assert(#proc.collisions(player, Enemy) == 2)
   first.collider = false
   assert(proc.collision(player, Enemy) == second)
-  first.collider = collision.circle(1, {offset_x = 1})
+  first.collider = collision.circle {radius = 1, offset_x = 1}
   first.x = 2
   assert(proc.collision(player, first) == nil)
   first.x = 1
@@ -69,7 +69,7 @@ local controller = proc(function()
   for i = 1, 100 do assert(hits[i] == many[i]); mv.kill(many[i]) end
   assert(proc.collision(player, Enemy) == nil)
   local rotated = Other({graph = graphics.rect {width = 4, height = 2, pivot = "top-left"}, x = 10, angle = 90})
-  local sensor = Other({x = 8.5, y = .5, collider = collision.rect(1, 1)})
+  local sensor = Other({x = 8.5, y = .5, collider = collision.rect {width = 1, height = 1}})
   assert(proc.collision(rotated, sensor) == sensor)
   rotated.angle = 0
   assert(proc.collision(rotated, sensor) == nil)

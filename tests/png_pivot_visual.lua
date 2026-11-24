@@ -14,7 +14,7 @@ local Actor = process(function(self)
   local automatic = world_collision(world, self)
   self.collider = false
   assert(world_collision(world, self) == nil)
-  self.collider = mv.collision.circle(0.1, {offset_x = 100})
+  self.collider = mv.collision.circle {radius = 0.1, offset_x = 100}
   assert(world_collision(world, self) == nil)
   self.collider = nil
   assert(world_collision(world, self) == automatic)

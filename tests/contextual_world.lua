@@ -9,11 +9,14 @@ local function fails(fragment, fn, ...)
 end
 fails("running process", collision, {})
 fails("running process", world_move, 1, 0)
+fails("running process", world_collision)
+fails("running process", world_collision, {x = 10})
 fails("expected world_move", world_move, 1)
 fails("expected world_move", world_move, world_create(), {}, 1)
 fails("number expected", world_move, {}, 0)
 fails("expected collision", collision)
 assert(world_create == mv.world_create and world_move == mv.world_move)
+assert(world_collision == mv.world_collision)
 local weak = setmetatable({}, {__mode = "v"})
 local function make_world(x)
   local world = world_create()
@@ -39,13 +42,29 @@ local Player = process(function(self)
   assert(collision(Enemy) == nil)
   self.collider = nil
   assert(collision(Enemy) == second)
-  self.collider = mv.collision.rect(2, 2)
+  self.collider = mv.collision.rect {width = 2, height = 2}
   assert(collision(Enemy) == second)
   self.collider = nil
+  assert(world_collision() == nil and world_collision {x = 10} == 1)
+  assert(self.x == 0 and self.y == 5)
+  self.x = 10
+  assert(world_collision() == 1 and world_collision {x = 0} == nil)
+  assert(self.x == 10 and self.y == 5)
+  self.collider = false
+  assert(world_collision() == nil and world_collision {x = 10} == nil)
+  self.collider = mv.collision.circle {radius = 2, offset_x = -3}
+  assert(world_collision() == nil and world_collision {x = 12, y = 5} == 1)
+  assert(self.x == 10 and self.y == 5)
+  self.x, self.collider = 0, nil
+  fails("unknown process option", world_collision, {z = 1})
+  fails("invalid collision position", world_collision, {x = math.huge})
   fails("constructor or handle", collision, {})
   local nested = coroutine.create(function()
     fails("running process", collision, Enemy)
     fails("running process", world_move, 1, 0)
+    fails("running process", world_collision)
+    fails("running process", world_collision, {x = 10})
+    assert(world_collision(self.world, self, {x = 10}) == 1)
     -- Explicit movement never borrows a coroutine's contextual world.
     assert(not world_move(self.world, self, 0, 0).hit)
   end)
@@ -55,8 +74,10 @@ local Player = process(function(self)
   local world = self.world
   self.world = nil
   fails("no world", world_move, 1, 0)
+  fails("no world", world_collision)
   self.world = {}
   fails("world must be", world_move, 1, 0)
+  fails("world must be", world_collision, {x = 10})
   assert(self.x == 0)
   self.world = world
   local hit = world_move(100, 0)
@@ -74,7 +95,7 @@ local Player = process(function(self)
   self.collider = false
   assert(not world_move(100, 0).hit and self.x == 100)
   self.x = 0
-  self.collider = mv.collision.circle(2)
+  self.collider = mv.collision.circle {radius = 2}
   assert(world_move(100, 0).moved_x == 18)
   self.collider = nil
   self.x = 12 -- Direct coordinates do not invoke world movement.
@@ -105,6 +126,9 @@ function game.init()
   local player = Player({x = 0, y = 5, world = world})
   -- Explicit movement is valid during initialization, outside a process.
   assert(not world_move(world, player, 0, 0).hit)
+  assert(world_collision(world, player) == nil)
+  assert(world_collision(world, player, {x = 10}) == 1)
+  assert(player.x == 0 and player.y == 5)
   fails("running process", collision, Enemy)
 end
 return game

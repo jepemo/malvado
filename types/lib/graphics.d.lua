@@ -17,22 +17,40 @@
 ---Collision shape returned by `collision.rect` and `collision.circle`.
 ---@class MvCollisionShape
 
----Collision transform table accepted by `collision.overlap` and world queries.
+---Transform for a collision shape. Omitted fields use the identity transform.
 ---@class MvCollisionTransform
 ---@field x number? Horizontal offset. Default 0.
 ---@field y number? Vertical offset. Default 0.
----@field angle number? Rotation in degrees. Default 0.
+---@field angle number? Clockwise rotation in degrees. Default 0.
 ---@field scale number? Scale factor. Default 1.
 
----Options for the shape constructors `collision.rect` and `collision.circle`.
----@class MvShapeOptions
----@field offset_x number? Horizontal collider offset. Default 0.
----@field offset_y number? Vertical collider offset. Default 0.
+---Options for `collision.circle`.
+---@class MvCollisionCircleOptions
+---@field radius number Positive circle radius.
+---@field offset_x? number Horizontal collider offset. Default 0.
+---@field offset_y? number Vertical collider offset. Default 0.
+
+---Options for `collision.rect`.
+---@class MvCollisionRectOptions
+---@field width number Positive rectangle width.
+---@field height number Positive rectangle height.
+---@field offset_x? number Horizontal collider offset. Default 0.
+---@field offset_y? number Vertical collider offset. Default 0.
+
+---Optional transforms for the two shapes passed to `collision.overlap`.
+---@class MvCollisionOverlapOptions
+---@field a? MvCollisionTransform First shape's transform.
+---@field b? MvCollisionTransform Second shape's transform.
+
+---Start transform and displacement for `world_sweep`.
+---@class MvWorldSweepOptions: MvCollisionTransform
+---@field dx number Horizontal displacement.
+---@field dy number Vertical displacement.
 
 ---Static collision world returned by `world_create`.
 ---@class MvCollisionWorld
 
----Rectangle added with `world_add_rect`.
+---Axis-aligned rectangle table for rectangle queries and `world_add_rect`.
 ---@class MvWorldRect
 ---@field x number Left edge. Required.
 ---@field y number Top edge. Required.
