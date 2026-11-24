@@ -79,12 +79,17 @@ fn main() -> Result<(), Error> {
                     y = -12.0;
                 }
                 handle.set_position(x, y)?;
-                handle.draw_text(&format!("Score: {score}"), (20, 20), 24, Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                    a: 255,
-                })?;
+                handle.draw_text(
+                    &format!("Score: {score}"),
+                    (20, 20),
+                    24,
+                    Color {
+                        r: 255,
+                        g: 255,
+                        b: 255,
+                        a: 255,
+                    },
+                )?;
                 process.frame().await;
             }
             Ok(())
