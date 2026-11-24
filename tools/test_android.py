@@ -153,7 +153,7 @@ def check_result(test, result):
 
 def stage_sources(stage):
     names = subprocess.check_output(
-        ["git", "ls-files", "-z", "tests", "examples", "tools/benchmarks", "docs/api/lua-globals.md", "docs/api/lua-namespaces.md"], cwd=ROOT).decode().split("\0")
+        ["git", "ls-files", "-z", "tests", "examples", "tools/benchmarks", "docs/api/lua-globals.md", "docs/api/lua-namespaces.md", "docs/api/lua-instance-methods.md"], cwd=ROOT).decode().split("\0")
     for name in filter(None, names):
         path = ROOT / name
         # Only committed test inputs. Never stage caches, local output or native source.
