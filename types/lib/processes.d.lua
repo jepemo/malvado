@@ -42,7 +42,7 @@
 ---@field z number Draw order. Higher values draw later.
 ---@field angle number Rotation in degrees.
 ---@field size number Scale factor. Default 1.
----@field fps integer Number of process activations per 60 eligible logical ticks (1..60). Default 0 (every tick).
+---@field fps integer Activations per 60 eligible logical ticks (0..60). Both 0 and 60 run every tick. The initial value comes from instance fields, definition defaults, or the game default.
 ---@field graph MvGraphic|MvAnimation|MvImage|MvAtlas|MvFpg|MvFpgManifest|nil Selected graphic: result of `rect`, `circle`, `graph`, `animation`, `load_image`, or `load_asset`.
 ---@field camera MvCamera|nil|false Camera to draw with. nil: main camera. false: screen space.
 ---@field region MvRegion|nil Drawing region descriptor.
@@ -71,6 +71,11 @@
 ---@field width integer? Window width in pixels. Default 800.
 ---@field height integer? Window height in pixels. Default 600.
 ---@field title string? Window title. Default "Malvado".
+---@field fps integer? Default process cadence (0..60). Defaults to 0 (every tick).
+
+---Game table returned by a declarative entry script.
+---@class MvGame : MvStartOptions
+---@field init? fun() Called once before the first logical tick.
 
 ---Options for tree queries (`children`, `descendants`, `signal_tree`, `kill_tree`).
 ---@class MvTreeOptions

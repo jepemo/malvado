@@ -1,8 +1,8 @@
 # Blinking text
 
 Three texts share one built-in font while each keeps its own size and RGBA
-color. Every frame each text fades out and restarts, without recreating fonts
-or texts. Press **Escape** to close the window.
+color. The game sets a default of 30 process activations per second. Each
+activation updates the text opacity. Press **Escape** to close the window.
 
 The example shows:
 
@@ -11,6 +11,7 @@ The example shows:
 - RGBA colors as `{red, green, blue, alpha}` tables.
 - Per-text size overrides.
 - Alpha animation through partial `change_text` updates.
+- A default process cadence set by `fps` in the returned game table.
 
 Build Malvado, then run:
 

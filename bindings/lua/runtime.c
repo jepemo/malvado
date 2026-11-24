@@ -79,6 +79,8 @@ typedef struct {
     Process *items;
     size_t count, capacity;
     int active, headless, started, failed, window, audio;
+    int game_live;
+    lua_Integer default_fps;
     int in_tick, paused, step_requested;
     int width, height;
     lua_State *active_thread;
@@ -1205,6 +1207,13 @@ is_read_only_process_field(const char *key)
 }
 
 static int
+valid_process_fps(lua_State *L, int index)
+{
+    return lua_isinteger(L, index) && lua_tointeger(L, index) >= 0 &&
+           lua_tointeger(L, index) <= 60;
+}
+
+static int
 collider_number(lua_State *L, int fields, const char *name, double fallback, double *out)
 {
     raw_option(L, fields, name);
@@ -1330,8 +1339,7 @@ self_newindex(lua_State *L)
         return luaL_error(L, "z must be a finite number");
     if (key && strcmp(key, "children_attached") == 0 && lua_type(L, 3) != LUA_TBOOLEAN)
         return luaL_error(L, "children_attached must be a boolean");
-    if (key && strcmp(key, "fps") == 0 &&
-        (!lua_isinteger(L, 3) || lua_tointeger(L, 3) < 0 || lua_tointeger(L, 3) > 60))
+    if (key && strcmp(key, "fps") == 0 && !valid_process_fps(L, 3))
         return luaL_error(L, "fps must be an integer in 0..60");
     if (key && strcmp(key, "z") == 0) {
         if (mv_process_set_z(engine.context, self->reference, lua_tonumber(L, 3)) != MV_OK)
@@ -1535,10 +1543,15 @@ create_process(lua_State *L)
     lua_pop(L, 1);
     lua_pushliteral(L, "fps");
     lua_rawget(L, fields);
-    if (!lua_isnil(L, -1) &&
-        (!lua_isinteger(L, -1) || lua_tointeger(L, -1) < 0 || lua_tointeger(L, -1) > 60))
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_pushinteger(L, engine.default_fps);
+        lua_setfield(L, fields, "fps");
+    } else if (!valid_process_fps(L, -1)) {
         return luaL_error(L, "fps must be an integer in 0..60");
-    lua_pop(L, 1);
+    } else {
+        lua_pop(L, 1);
+    }
     lua_Integer creator = engine.closing_id ? engine.closing_id : engine.active_id;
     if (!creator && explicit_attachment && attached)
         return luaL_error(L, "cannot attach a process without an owner");
@@ -5045,6 +5058,9 @@ validate_start_options(lua_State *L, int index, int allow_init)
             const char *title = lua_tolstring(L, -1, &title_length);
             if (strlen(title) != title_length)
                 luaL_error(L, "game title contains a zero byte");
+        } else if (strcmp(key, "fps") == 0) {
+            if (!valid_process_fps(L, -1))
+                luaL_error(L, "game fps must be an integer in 0..60");
         } else if (allow_init && strcmp(key, "init") == 0) {
             if (!lua_isfunction(L, -1))
                 luaL_error(L, "game init must be a function");
@@ -5065,9 +5081,12 @@ start(lua_State *L)
         luaL_checktype(L, 2, LUA_TTABLE);
     if (lua_istable(L, 2))
         validate_start_options(L, 2, 0);
-    lua_Integer w = 800, h = 600;
+    lua_Integer w = 800, h = 600, fps = 0;
     const char *title = "Malvado";
     if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "fps");
+        fps = lua_tointeger(L, -1);
+        lua_pop(L, 1);
         lua_getfield(L, 2, "width");
         w = luaL_optinteger(L, -1, w);
         lua_pop(L, 1);
@@ -5090,8 +5109,11 @@ start(lua_State *L)
         }
         engine.window = 1;
     }
+    engine.default_fps = fps;
+    engine.game_live = 1;
     lua_pushvalue(L, 1);
     if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
+        engine.game_live = 0;
         engine.failed = 1;
         return lua_error(L);
     }
@@ -5142,6 +5164,7 @@ start(lua_State *L)
             }
         }
     }
+    engine.game_live = 0;
     if (engine.failed)
         return luaL_error(L, "process failed");
     return 0;
@@ -5168,13 +5191,24 @@ start_declared_game(lua_State *L)
         lua_pushcfunction(L, empty_initializer);
     }
     lua_newtable(L);
-    const char *options[] = {"width", "height", "title"};
+    const char *options[] = {"width", "height", "title", "fps"};
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
         lua_pushstring(L, options[i]);
         lua_rawget(L, 1);
         lua_setfield(L, -2, options[i]);
     }
     lua_call(L, 2, 0);
+    return 0;
+}
+
+static int
+set_fps(lua_State *L)
+{
+    if (!engine.game_live)
+        return luaL_error(L, "set_fps() requires a running game");
+    if (!valid_process_fps(L, 1))
+        return luaL_argerror(L, 1, "fps must be an integer in 0..60");
+    engine.default_fps = lua_tointeger(L, 1);
     return 0;
 }
 
@@ -5334,6 +5368,7 @@ static const char *const global_names[] = {
     "send",
     "recv",
     "start",
+    "set_fps",
     "set_title",
     "window_size",
     "set_color",
@@ -6595,6 +6630,7 @@ open_module(lua_State *L)
         {"send", send_message},
         {"recv", receive_message},
         {"start", start},
+        {"set_fps", set_fps},
         {"set_title", set_title},
         {"window_size", window_size},
         {"set_color", set_color},
