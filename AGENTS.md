@@ -37,6 +37,71 @@ Treat approved specifications as contracts. Treat experimental designs and propo
 
 When an architectural decision is unresolved, explain the trade-offs before introducing a public contract or a difficult-to-reverse design.
 
+### Lua API design guidelines
+
+The canonical Lua gameplay API is simple and procedural, in the accessible
+style of DIV Games Studio. Keep functions usable as `operation(object, ...)`
+and `mv.operation(object, ...)`, with or without `import_globals()`.
+
+A managed handle can also support method syntax when the operation belongs to
+it. For example, `camera_move(camera, 10, 20)` and `camera:move(10, 20)` run
+the same operation. Methods are optional, never mandatory. See the
+[instance methods reference](docs/api/lua-instance-methods.md).
+
+- Consider method parity during design for a new handle operation, and deliver
+  it in phases. Do not add a method for a table, numeric ID, global service,
+  constructor or ordinary options argument. A first-argument table is not
+  always an object. Do not add metatables only to create method syntax.
+- Method and procedural forms must share one implementation and the same
+  arguments (after the receiver), return values, validation, errors, side
+  effects, ownership and lifetime. Do not duplicate gameplay logic or add a
+  second object model. Keep the procedural return value; do not return `self`
+  for chaining.
+- A process handle is special. It has built-in properties and custom fields.
+  Keep field access, custom names, handle validation and dead-process
+  behavior. Do not add a method name that collides with a built-in property,
+  such as `status`.
+
+Use positional parameters for one or two obvious, required values, as in
+`rand(min, max)` or `set_window_size(width, height)`. Use one named options
+table for several fields, optional choices or otherwise unclear arguments.
+Keep keys consistent across similar APIs, and validate unknown fields and
+types. Choose useful defaults, but avoid silent or ambiguous behavior. Do not
+add overloads, aliases or options objects without a demonstrated need.
+
+Use natural Lua returns: booleans for predicates, `nil` for documented
+not-found cases, multiple values for small tuples and managed handles for
+long-lived resources. State what is per-process, per-game, per-resource,
+per-playback, per-tick or global. Use input constants such as `KEY_SPACE` in
+examples instead of literal names.
+
+Prefer Lua idioms. Do not wrap every standard-library function. Add a
+convenience function only when it clearly helps game programming or API
+consistency, and never create duplicate state. Keep the C core, scheduler and
+process model single. Expose idiomatic C, Lua and Rust APIs; do not require
+identical names or object syntax. Keep the module and global-import APIs
+equal. Confirm ownership, GC, destruction, shutdown, context restrictions,
+headless behavior, process lifetime and error paths before you add a public
+operation. Treat an approved, implemented contract as the source of truth,
+and discuss a conflict instead of silently breaking it.
+
+Before you ship a new or changed Lua function, check:
+
+1. **Purpose:** Does Lua or the current API already solve this?
+2. **Shape:** Clear name; positional or named options; sensible defaults; no
+   needless aliases or overloads.
+3. **Ownership:** Is the first argument a real handle? If yes, consider an
+   optional method. If no, keep the function procedural.
+4. **Semantics:** Arguments, units, ranges, returns, error and not-found
+   behavior, time, lifetime and shared state.
+5. **Consistency:** Similar APIs, C/Rust parity, namespaces, module imports,
+   global imports and constants.
+6. **Verification:** Tests (invalid arguments, cleanup, headless), LuaLS
+   annotations, `docs/api/` guides, the website reference, examples and
+   migration notes when needed.
+
+Keep this checklist short. It is guidance, not a new approval gate.
+
 ### Compatibility policy
 
 Malvado 2.0 is not backward compatible with Malvado 1.0.
