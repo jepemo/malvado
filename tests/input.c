@@ -62,6 +62,7 @@ main(void)
     assert(!mv_window_scroll_begin(0, 0));
     assert(!mv_window_scroll_end());
     assert(!mv_window_set_title(NULL) && !mv_window_set_title("No window"));
+    assert(!mv_window_set_size(100, 80));
     int width = 1, height = 2;
     assert(!mv_window_size(NULL, &height) && height == 2);
     assert(!mv_window_size(&width, NULL) && width == 1);

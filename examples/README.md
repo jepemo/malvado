@@ -5,8 +5,8 @@ collection will contain small feature examples and a few compact minigames.
 Each topic must have aligned behavior, simple idiomatic code, useful English
 comments, and a shared README for all three languages.
 
-Start with the [three aligned lessons](features/README.md) for startup,
-process scheduling and image loading.
+Start with the [aligned lessons](features/README.md) for startup,
+process scheduling, image loading, and window resizing.
 
 The directory migration is planned, not complete. Current entry points include:
 

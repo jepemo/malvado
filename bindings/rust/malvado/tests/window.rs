@@ -26,6 +26,8 @@ fn main() {
         assert_eq!(window.size(), (160, 120));
         window.set_title("Malvado Rust window renamed").unwrap();
         assert_eq!(window.set_title("bad\0title"), Err(Error::InvalidArgument));
+        assert_eq!(window.set_size(-1, 140), Err(Error::InvalidArgument));
+        assert_eq!(window.set_size(200, 0), Err(Error::InvalidArgument));
         assert!(matches!(Window::open(160, 120, "other"), Err(Error::Busy)));
         assert!(!window.should_close());
         let frame = window
@@ -37,8 +39,15 @@ fn main() {
             })
             .unwrap();
         assert!(matches!(window.frame(Color::default()), Err(Error::Busy)));
+        assert_eq!(window.set_size(200, 140), Err(Error::Busy));
         drop(frame);
+        assert_eq!(window.size(), (160, 120));
+        window.set_size(200, 140).unwrap();
+        assert_eq!(window.size(), (200, 140));
         drop(window.frame(Color::default()).unwrap());
+        window.set_size(200, 140).unwrap();
+        window.set_size(180, 130).unwrap();
+        assert_eq!(window.size(), (180, 130));
         let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _frame = window.frame(Color::default()).unwrap();
             panic!("verify frame cleanup during unwind");
@@ -47,5 +56,6 @@ fn main() {
         drop(window.frame(Color::default()).unwrap());
         // Forget is safe: owner cleanup must finish the active native frame.
         std::mem::forget(window.frame(Color::default()).unwrap());
+        assert_eq!(window.set_size(160, 120), Err(Error::Busy));
     }
 }

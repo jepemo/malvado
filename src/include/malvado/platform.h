@@ -144,6 +144,11 @@ typedef struct {
 int mv_window_open(int width, int height, const char *title);
 /* Set the window title. Return 0 for NULL or when no window is open. */
 int mv_window_set_title(const char *title);
+/* Request a size in positive logical pixels on the desktop GLFW window.
+ * Call on the owner thread outside a draw frame. Return 0 on invalid input,
+ * backend rejection or unsupported state, including a missing window.
+ * Read the current, possibly constrained dimensions with mv_window_size. */
+int mv_window_set_size(int width, int height);
 /* Write window dimensions in logical pixels. Return 0 and write zeros when
  * no window is open, or return 0 without writing for a NULL output pointer. */
 int mv_window_size(int *width, int *height);

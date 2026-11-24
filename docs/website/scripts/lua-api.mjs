@@ -93,7 +93,7 @@ const groups = [
   {
     id: 'platform', label: 'Platform', guide: 'runner-timing',
     summary: 'Start the game, change the window and read the clock.',
-    flat: ['start', 'set_fps', 'set_title', 'window_size', 'time_seconds', 'fade_to', 'fade_off',
+    flat: ['start', 'set_fps', 'set_title', 'set_window_size', 'window_size', 'time_seconds', 'fade_to', 'fade_off',
       'fade_on', 'fade_active', 'fade_color', 'rand', 'rand_seed'],
   },
   {
@@ -154,6 +154,7 @@ const flatSummaries = {
   start: 'Start the game loop.',
   set_fps: 'Set the default cadence for future Lua processes.',
   set_title: 'Change the window title.',
+  set_window_size: 'Resize the current game window.',
   window_size: 'Read the window size.',
   time_seconds: 'Read the monotonic clock.',
   fade_to: 'Fade the screen to a color.',

@@ -53,6 +53,21 @@ impl Window {
         }
         Ok(())
     }
+    /// Request positive logical dimensions for the current desktop window.
+    /// Read the effective dimensions with [Self::size].
+    pub fn set_size(&self, width: i32, height: i32) -> Result<(), Error> {
+        if width <= 0 || height <= 0 {
+            return Err(Error::InvalidArgument);
+        }
+        if self.drawing.get() {
+            return Err(Error::Busy);
+        }
+        // SAFETY: live owner-thread window outside a render frame.
+        if unsafe { ffi::mv_window_set_size(width, height) } == 0 {
+            return Err(Error::Platform("window resize failed"));
+        }
+        Ok(())
+    }
     pub fn size(&self) -> (i32, i32) {
         let (mut width, mut height) = (0, 0);
         // SAFETY: distinct stack outputs and owner-thread window.

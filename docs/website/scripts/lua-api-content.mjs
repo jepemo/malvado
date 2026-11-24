@@ -784,11 +784,18 @@ export default {
     example: 'set_title("Level 2")',
     related: ['window_size'],
   },
+  'platform/set_window_size': {
+    description: 'Request a resize of the existing window from the game initializer or a running process. In headless mode, update the virtual size. Invalid arguments, calls outside a running game, and backend failures raise an error.',
+    params: [['width', 'A positive integer in C int range, in logical pixels.'],
+      ['height', 'A positive integer in C int range, in logical pixels.']],
+    example: 'set_window_size(640, 360)\nlocal width, height = window_size()',
+    related: ['start', 'window_size'],
+  },
   'platform/window_size': {
-    description: 'Return the width and height as two integers in logical pixels once startup begins. In headless mode, return the configured size.',
+    description: 'Return the current width and height as two integers in logical pixels once startup begins. In headless mode, return the virtual size.',
     params: [],
     example: 'local width, height = window_size()',
-    related: ['start', 'set_title'],
+    related: ['start', 'set_window_size', 'set_title'],
   },
   'platform/time_seconds': {
     description: 'Return a monotonic clock reading in seconds. Subtract two readings for elapsed wall time. Use `self.delta` for logical simulation time between process activations.',

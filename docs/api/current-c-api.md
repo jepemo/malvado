@@ -305,6 +305,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_window_open`
 - `mv_window_scroll_begin`
 - `mv_window_scroll_end`
+- `mv_window_set_size`
 - `mv_window_set_title`
 - `mv_window_should_close`
 - `mv_window_size`

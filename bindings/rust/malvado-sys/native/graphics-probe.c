@@ -16,6 +16,7 @@
 #include <stdio.h>
 _Static_assert(_Generic(&mv_window_open, int (*)(int, int, const char *): 1, default: 0), "mv_window_open signature");
 _Static_assert(_Generic(&mv_window_set_title, int (*)(const char *): 1, default: 0), "mv_window_set_title signature");
+_Static_assert(_Generic(&mv_window_set_size, int (*)(int, int): 1, default: 0), "mv_window_set_size signature");
 _Static_assert(_Generic(&mv_window_size, int (*)(int *, int *): 1, default: 0), "mv_window_size signature");
 _Static_assert(_Generic(&mv_window_close, void (*)(void): 1, default: 0), "mv_window_close signature");
 _Static_assert(_Generic(&mv_window_should_close, int (*)(void): 1, default: 0), "mv_window_should_close signature");
@@ -90,6 +91,7 @@ _Static_assert(_Generic(&mv_draw_state_color, int (*)(MvDrawState *, int64_t, in
 _Static_assert(_Generic(&mv_draw_state_background, int (*)(MvDrawState *, int64_t, int64_t, int64_t): 1, default: 0), "mv_draw_state_background signature");
 int main(void)
 {
+    if (mv_window_set_size(1, 1)) return 1;
     if (mv_text_input_set_keyboard(0)) return 1;
     if (mv_pad_button_released(0, MV_PAD_A)) return 1;
     if (mv_pad_button_pressed(0, MV_PAD_A)) return 1;

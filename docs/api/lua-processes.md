@@ -43,13 +43,31 @@ Call `mv.set_title(title)` after the window opens to change its title. It report
 
 Once startup begins, `window_size()` returns the current width and height as
 two integers in logical pixels. It works in the initializer and in processes.
-In headless mode it returns the configured size. Calling it before startup
+In headless mode it returns the current virtual size. Calling it before startup
 raises an error.
 
 ```lua
 local width, height = window_size()
 set_title("Level 2")
 ```
+
+The `width` and `height` fields set the initial size. To resize during the
+initializer or from a process, call `set_window_size(width, height)` or
+`mv.set_window_size(width, height)`. Both arguments must be positive
+integers that fit in a C `int`. The call raises an error outside a running
+game or if the platform rejects the request.
+
+Desktop GLFW windows can resize during play, including when the user drags
+the window border. Use `window_size()` for the size applied by the window
+system. The system can constrain the size or apply the change after processing
+window events. Headless runs update the virtual size immediately. Android and
+other graphical backends without resize support raise an error.
+
+The dimensions use logical window pixels. A separate virtual game resolution
+would describe the dimensions of a game canvas. The resize keeps the current
+window, processes, and resources. Content retains its pixel coordinates and
+defined regions. Camera follow uses the current size for a camera that follows
+the full window. See the [runtime resize example](../../examples/features/window-resize/README.md).
 
 In C, `mv_window_size(&width, &height)` returns 1 for an open window.
 Without a window it returns 0 and writes zeros. A null pointer returns 0

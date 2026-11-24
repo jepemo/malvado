@@ -68,8 +68,8 @@
 
 ---Options for `start()`.
 ---@class MvStartOptions
----@field width integer? Window width in pixels. Default 800.
----@field height integer? Window height in pixels. Default 600.
+---@field width integer? Initial window width in logical pixels. Default 800.
+---@field height integer? Initial window height in logical pixels. Default 600.
 ---@field title string? Window title. Default "Malvado".
 ---@field fps integer? Default process cadence (0..60). Defaults to 0 (every tick).
 

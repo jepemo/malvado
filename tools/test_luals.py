@@ -23,7 +23,10 @@ mv.import_globals()
 
 rand_seed()
 rand_seed(12345)
-start(function() set_fps(15) end, {fps = 30})
+start(function()
+  set_fps(15)
+  set_window_size(640, 480)
+end, {fps = 30})
 local window_width, window_height = window_size()
 local f = font {size = 50}
 local title = write {
@@ -109,7 +112,10 @@ NAMESPACED_PROBE = """
 local mv = require("malvado")
 mv.rand_seed()
 mv.rand_seed(12345)
-mv.start(function() mv.set_fps(15) end, {fps = 30})
+mv.start(function()
+  mv.set_fps(15)
+  mv.set_window_size(640, 480)
+end, {fps = 30})
 local window_width, window_height = mv.window_size()
 local f = mv.font {size = 50}
 local id = mv.write {font = f, text = "x", x = 1, y = 2}

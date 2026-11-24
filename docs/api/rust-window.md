@@ -26,6 +26,13 @@ host to close or reopen its native window while it is owned.
 `should_close` reads the backend close request. Escape does not close the window
 automatically. The game decides when to exit.
 
+Use `window.set_size(640, 360)?` on a desktop GLFW window between frames.
+`set_size` returns `InvalidArgument` for a nonpositive dimension, `Busy`
+while a frame guard is active, or `Platform` if the backend rejects the
+request. Read the current logical dimensions with `size`. The window system
+can constrain the requested size or apply the change after processing events.
+See the [runtime resize example](../../examples/features/window-resize/README.md).
+
 `frame` begins drawing with a background color. Its borrowed guard ends drawing
 and captures platform events on drop, including during unwind. Nested frames
 return `Busy`. A forgotten guard prevents another frame; window destruction
@@ -40,7 +47,7 @@ Audio is covered in the [audio guide](rust-audio.md); process collection uses
 the [shared native rendering pass](runner-rendering.md).
 
 `mise run test-rust-graphics` requires a display. It verifies actual open, title,
-size, frame pairing, nested rejection, forgotten guard cleanup, duplicate open,
+size, resizing between frames, frame pairing, nested rejection, forgotten guard cleanup, duplicate open,
 reopening, main-thread checks, and compile-time frame/thread lifetimes. Both
 profiles run from relocated graphics SDKs, including an offline external
 consumer. Linux CI runs under Xvfb. Local macOS also runs these checks; no macOS
