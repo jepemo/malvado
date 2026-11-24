@@ -10,6 +10,7 @@ are listed in the global table. Functions marked with * require asset support.
 See the [palette](drawing.md#malvado-palette) for constants under `mv.colors`.
 Pass managed handles to the procedural functions in the global export table.
 Process fields are documented in the [process guide](lua-processes.md).
+See [instance methods](lua-instance-methods.md) for optional handle syntax.
 
 | Function | Purpose | Contract and examples |
 | --- | --- | --- |

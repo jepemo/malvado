@@ -7,6 +7,11 @@
 
 ---Explicit camera returned by `camera_create`.
 ---@class MvCamera
+---@field set fun(self: MvCamera, x: number, y: number)
+---@field move fun(self: MvCamera, dx: number, dy: number)
+---@field follow fun(self: MvCamera, target: MvProcess)
+---@field position fun(self: MvCamera):number, number
+---@field destroy fun(self: MvCamera)
 
 ---Options for `camera_create`. Coordinates must be finite with magnitude at most FLT_MAX / 64.
 ---@class MvCameraCreateOptions
@@ -49,6 +54,11 @@
 
 ---Static collision world returned by `world_create`.
 ---@class MvCollisionWorld
+---@field add_rect fun(self: MvCollisionWorld, rect: MvWorldRect):integer
+---@field overlap fun(self: MvCollisionWorld, shape: MvCollisionShape, transform?: MvCollisionTransform):integer|nil
+---@field sweep fun(self: MvCollisionWorld, shape: MvCollisionShape, options: MvWorldSweepOptions):MvSweepResult
+---@field collision fun(self: MvCollisionWorld, process: MvProcess, options?: MvWorldCollisionOptions):integer|nil
+---@field move fun(self: MvCollisionWorld, process: MvProcess, dx: number, dy: number):MvMoveResult
 
 ---Axis-aligned rectangle table for rectangle queries and `world_add_rect`.
 ---@class MvWorldRect
@@ -80,6 +90,7 @@
 
 ---Animation descriptor returned by `animation` (atlas or frame list).
 ---@class MvAnimation
+---@field sample fun(self: MvAnimation, elapsed_ms: number):MvGraphic
 
 ---Options for a reusable rectangle graphic.
 ---@class MvRectOptions

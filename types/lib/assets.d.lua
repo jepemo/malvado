@@ -17,9 +17,17 @@
 
 ---Image loaded with `load_image` or `load_asset`.
 ---@class MvImage
+---@field size fun(self: MvImage):integer, integer
 
 ---Sprite atlas loaded with `load_asset`, `load_atlas` or `load_aseprite`.
 ---@class MvAtlas
+---@field sprite_info fun(self: MvAtlas, id: integer):MvSpriteInfo
+---@field sprite_id fun(self: MvAtlas, name: string):integer|nil
+---@field animation_frame fun(self: MvAtlas, name: string, elapsed_ms: integer, loop?: boolean):integer
+---@field animation_color fun(self: MvAtlas, name: string):integer[]|nil
+---@field animation_repeats fun(self: MvAtlas, name: string):integer|nil
+---@field pivot_color fun(self: MvAtlas):integer[]|nil
+---@field graph fun(self: MvAtlas, id: integer):MvGraphic
 
 ---Source rectangle in image pixels.
 ---@class MvImageSource
@@ -54,9 +62,28 @@
 
 ---FPG library loaded with `load_asset` or `fpg.parse`.
 ---@class MvFpg
+---@field count fun(self: MvFpg):integer
+---@field id_at fun(self: MvFpg, index: integer):integer|nil
+---@field palette fun(self: MvFpg):string
+---@field gamma fun(self: MvFpg):string
+---@field sprite fun(self: MvFpg, id: integer):MvFpgSprite|nil
+---@field point fun(self: MvFpg, id: integer, index: integer):MvFpgPoint|nil
+---@field rgba fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
+---@field image fun(self: MvFpg, id: integer, transparent_zero?: boolean):MvImage|nil
+---@field png fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
+---@field json fun(self: MvFpg, transparent_zero?: boolean):string
+---@field graph fun(self: MvFpg, id: integer):MvGraphic
 
 ---FPG manifest loaded with `load_asset` or `fpg.parse_manifest`.
 ---@class MvFpgManifest
+---@field count fun(self: MvFpgManifest):integer
+---@field id_at fun(self: MvFpgManifest, index: integer):integer|nil
+---@field palette fun(self: MvFpgManifest):string
+---@field gamma fun(self: MvFpgManifest):string
+---@field sprite fun(self: MvFpgManifest, id: integer):MvManifestSprite|nil
+---@field point fun(self: MvFpgManifest, id: integer, index: integer):MvFpgPoint|nil
+---@field transparent_zero fun(self: MvFpgManifest):boolean
+---@field graph fun(self: MvFpgManifest, id: integer):MvGraphic
 
 ---Metadata shared by binary FPG and manifest sprite entries.
 ---@class MvFpgSpriteMetadata

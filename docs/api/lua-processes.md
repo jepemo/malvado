@@ -286,9 +286,11 @@ The following fields belong to the engine and cannot be assigned. Do not put the
 - `self.delta`: logical seconds since this process's previous activation, or 0 on its first activation. It includes ticks spent sleeping or frozen.
 - `self.status`: `"running"`, `"sleeping"`, `"frozen"`, or `"dead"` after termination.
 - `self.reason`: `nil` while alive, then `"returned"`, `"killed"`, or `"error"`.
-- `self.recv`: the message-receive method.
 
-After an owner ends, its surviving children become roots in the current process tree. Their `self.creator_id` keeps the original creator ID. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Other field reads and writes raise an error after termination. Cleanup releases its game fields, even while Lua still holds `self`.
+Process handles also support [instance methods](lua-instance-methods.md#process-handles).
+A custom field with the same name takes precedence over the method.
+
+After an owner ends, its surviving children become roots in the current process tree. Their `self.creator_id` keeps the original creator ID. A saved `self` value can outlive its process. Its `id`, `status`, and `reason` remain readable. Cleanup releases its game fields. Reads of those fields and all field writes raise an error. During the run, method lookup still works and each method applies the same rules for ended handles as its procedural form.
 
 The same rules apply to handles for native C processes. During Lua shutdown, a finalizer can still read the identity, dead status, and reason of a retained handle. Other fields are unavailable. Handles belong to one runtime and Lua state; they cannot be used in a later run.
 

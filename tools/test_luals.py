@@ -178,6 +178,42 @@ local actor = mv.process(function(self)
 end)
 actor {}
 mv.camera_destroy(view)
+local method_camera = mv.camera_create {}
+method_camera:set(10, 20)
+method_camera:move(2, 3)
+local cx, cy = method_camera:position()
+local method_world = mv.world_create()
+method_world:add_rect {x = cx, y = cy, width = 10, height = 10}
+method_world:overlap(mv.collision.circle {radius = 1}, {x = cx})
+local method_image = mv.load_image("logo.png")
+local iw, ih = method_image:size()
+local method_atlas = mv.load_asset("atlas.json", {format = "atlas"})
+local method_fpg = mv.fpg.parse("")
+local method_manifest = mv.fpg.parse_manifest(method_fpg:json())
+local sound = mv.load_sound("tone.wav")
+local voice = sound:play {volume = 0.5}
+if voice then
+  voice:set_volume(0.75)
+  voice:stop()
+end
+local music = mv.load_music("music.ogg")
+music:play()
+music:update()
+music:stop()
+local MethodActor = mv.process(function(self)
+  self:set_priority(5)
+  self:send({width = iw, height = ih})
+  self:recv()
+  self:signal(mv.SIGNAL_SLEEP)
+  method_camera:follow(self)
+  method_world:collision(self, {x = cx, y = cy})
+  method_world:move(self, 2, 3)
+  self.graph = method_manifest:graph(7)
+  self.graph = mv.animation(method_atlas, {1, 2}):sample(300)
+end)
+local method_actor = MethodActor {}
+method_actor:kill()
+method_camera:destroy()
 local current = mv.fade_color()
 mv.set_color({current[1], current[2], current[3], current[4]})
 local w, h = mv.text_size(id)
@@ -285,21 +321,24 @@ def main():
             'local image = mv.load_image("sheet.png")\n'
             'mv.draw_image {image = image, x = 0, y = 0, scale = "large"}\n',
             encoding="utf-8")
-        (project / "removed-methods.lua").write_text(
+        (project / "bad-methods.lua").write_text(
             'local mv = require("malvado")\n'
             'local view = mv.camera_create {}\n'
-            'view:move(1, 2)\n'
+            'view:move("right", 2)\n'
             'local world = mv.world_create()\n'
-            'world:add_rect({x = 0, y = 0, width = 1, height = 1})\n'
-            'local file = mv.fpg.parse("bytes")\n'
-            'file:count()\n',
+            'world:destroy()\n'
+            'local shape = mv.collision.circle {radius = 1}\n'
+            'shape:overlap(shape)\n',
             encoding="utf-8")
         output = diagnose_project(project, "mv.", failures)
-        obsolete = diagnose(output, "removed-methods.lua")
-        for line, method in [(3, "move"), (5, "add_rect"), (7, "count")]:
+        bad_methods = diagnose(output, "bad-methods.lua")
+        if not any(line == 3 and "Cannot assign `string`" in message
+                   for line, message in bad_methods):
+            failures.append("namespaced project: camera:move should reject a string displacement")
+        for line, method in [(5, "destroy"), (7, "overlap")]:
             if not any(number == line and f"Undefined field `{method}`" in message
-                       for number, message in obsolete):
-                failures.append(f"namespaced project: obsolete method {method} was not reported")
+                       for number, message in bad_methods):
+                failures.append(f"namespaced project: unsupported method {method} was not reported")
         if not any(line == 3 and "Cannot assign `string`" in message
                    for line, message in diagnose(output, "bad-drawing.lua")):
             failures.append("namespaced project: draw_image should reject a string scale")

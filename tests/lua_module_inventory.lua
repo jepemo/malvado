@@ -59,17 +59,45 @@ if has_assets then
   objects.fpg = fpg
   objects.manifest = mv.fpg.parse_manifest(mv.fpg_json(fpg))
 end
-for name, object in pairs(objects) do
-  assert(type(object) == "userdata", "expected a managed handle: " .. name)
-  assert(debug.getmetatable(object).__index == nil, "unexpected member access: " .. name)
+local methods = read("docs/api/lua-instance-methods.md")
+local expected = {}
+for receiver, method in methods:gmatch("| `([%w_]+):([%w_]+)%(") do
+  local names = expected[receiver] or {}
+  assert(not names[method], "duplicate method in inventory: " .. receiver .. ":" .. method)
+  names[method] = true
+  expected[receiver] = names
 end
 
--- Colors expose channels as data. Process handles expose live state and user fields.
+local function check_methods(name, object, entries, names)
+  assert(type(object) == "userdata" and type(getmetatable(object)) == "string", name)
+  if not names then
+    assert(entries == nil, "unexpected member access: " .. name)
+    return
+  end
+  assert(type(entries) == "table", "missing method table: " .. name)
+  for key in pairs(names) do
+    assert(type(object[key]) == "function", "missing method: " .. name .. ":" .. key)
+  end
+  for key in pairs(entries) do
+    assert(names[key], "undocumented method: " .. name .. ":" .. key)
+  end
+end
+
+for name, object in pairs(objects) do
+  check_methods(name, object, debug.getmetatable(object).__index, expected[name])
+end
+
+-- Colors expose channels as data. Process handles expose state, custom fields and methods.
 for _, key in ipairs({"r", "g", "b", "a", 1, 2, 3, 4}) do
   assert(type(mv.colors.RED[key]) == "number")
 end
 local Probe = mv.process(function(self)
-  assert(self.recv == nil)
-  assert(recv(self) == nil)
+  local _, entries = debug.getupvalue(debug.getmetatable(self).__index, 1)
+  if not has_assets then
+    assert(self.animation_elapsed == nil)
+    expected.handle.animation_elapsed = nil
+  end
+  check_methods("handle", self, entries, expected.handle)
+  assert(self:recv() == nil and recv(self) == nil)
 end)
 mv.start(function() Probe() end)
