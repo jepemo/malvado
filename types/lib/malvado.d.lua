@@ -724,11 +724,17 @@ function malvado.window_size() end
 ---@return number seconds
 function malvado.time_seconds() end
 
----Return a pseudorandom integer in [min, max] from Lua's shared generator. Use `math.randomseed` for repeatable results.
+---Return a pseudorandom integer in [min, max] from Lua's shared generator.
 ---@param min integer
 ---@param max integer
 ---@return integer value
 function malvado.rand(min, max) end
+
+---Reseed the generator shared by `rand` and `math.random`.
+---With no arguments, generate a seed automatically. Both forms return no values.
+---@overload fun()
+---@param seed integer Seed for a repeatable sequence.
+function malvado.rand_seed(seed) end
 
 ---Check whether a key is currently down.
 ---@param name MvKey

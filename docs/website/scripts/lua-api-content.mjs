@@ -821,10 +821,16 @@ export default {
     related: ['fade_active', 'fade_to'],
   },
   'platform/rand': {
-    description: 'Return a pseudorandom integer in an inclusive range. Lua 5.4 automatically gives the shared `math.random` generator a weak initial seed. Use `math.randomseed(seed)` for repeatable results. Use this generator for gameplay and keep it out of cryptographic uses.',
+    description: 'Return a pseudorandom integer in an inclusive range. Calls to `rand` and `math.random` advance the same sequence. For repeatable results, keep those calls in the same order after reseeding.',
     params: [['min', 'The lowest integer value.'], ['max', 'The highest integer value, at least `min`.']],
-    example: 'local roll = rand(1, 6)\n\nmath.randomseed(12345)\nlocal damage = rand(1, 6)',
-    related: ['time_seconds'],
+    example: 'local roll = rand(1, 6)',
+    related: ['rand_seed'],
+  },
+  'platform/rand_seed': {
+    description: 'Call `rand_seed()` to ask Lua to generate a fresh seed, or `rand_seed(seed)` to set an explicit seed. Both forms return no values. Lua 5.4 gives the shared generator a weak initial seed at startup, so ordinary gameplay needs neither call. Use this generator for gameplay and keep it out of cryptographic uses. You can also call `math.randomseed` directly.',
+    params: [['seed', 'One Lua integer, including zero or a negative integer. Omit the argument for automatic reseeding. Explicit `nil`, other types and extra arguments raise an error before the generator state changes.']],
+    example: 'rand_seed()\n\nrand_seed(12345)\nlocal damage = rand(1, 6)',
+    related: ['rand'],
   },
 
   'module/import_globals': {
