@@ -45,21 +45,44 @@ After `start` begins, `mv.window_size()` returns the current width and height in
 
 The [input inventory](input-inventory.md) maps the C and Lua APIs to examples and tests.
 
-`mv.key(name)` returns whether a key is held. Use lowercase letters `"a"` to `"z"`, digits `"0"` to `"9"`, `"left"`, `"right"`, `"up"`, `"down"`, `"space"`, `"escape"`, `"enter"`, `"tab"`, or `"backspace"`. Names are case-sensitive. Other names raise an error. In headless mode all supported keys return false. Try `"space"` and `"escape"` in the [C and Lua timing game](../../examples/c/timing-game/README.md).
+Use `mv.key(mv.KEY_LEFT)` for continuous movement. Use `key_pressed` or
+`key_released` for actions on the current logical tick. `mv.input.key` and
+`mv.key` are the same function. After `import_globals()`, use `key(KEY_LEFT)`.
 
-The input namespace also provides `mv.input.key_down` and the other input functions. After `import_globals()`, `key_down` is the same function. Key names are also available as constants, including in `mv.input`. For example, use `mv.key(mv.KEY_UP)` or `mv.key(mv.KEY_A)`. After `import_globals()`, use `key(KEY_UP)`. Constants are strings, so `mv.KEY_UP` and `"up"` have the same value. Constants cover letters, digits, and the named keys above. Signal constants are `SIGNAL_SLEEP`, `SIGNAL_FREEZE`, `SIGNAL_WAKEUP`, and `SIGNAL_KILL`. They also have string values.
+Use `mouse_button` for held buttons and `mouse_pressed` or `mouse_released`
+for transitions. `mouse_position()` returns the pointer position in window
+pixels, with `(0, 0)` at the top left.
 
-The state is updated when the window processes events after a frame. It is a held state, not a text input or a press event. Use `key_pressed(name)`
-or `key_released(name)` for non-consuming transitions in the current logical
-tick; see the [keyboard contract](keyboard.md). In C, use `mv_key_down` with an `MvKey`, such as `MV_KEY_LEFT`. Use `mv_key_from_name` to convert the same names to C key values. It returns 0 without changing the output for an invalid name or null argument. Read key state on the window thread. Name conversion does not require a window.
+```lua
+if mouse_pressed(MOUSE_LEFT) then
+  local x, y = mouse_position()
+  print(x, y)
+end
+```
 
-Use `local x, y = mv.mouse_position()` for the pointer position in window pixels. The top-left corner is `(0, 0)`. Use `mv.mouse_button("left")`, `"middle"`, or `"right"` to check whether a button is held. An unknown name raises an error. In headless mode the position is `(0, 0)` and all buttons are released.
+Controllers use explicit slots from 0 to 3. Use `pad_connected(slot)` to check
+a slot, `pad_button(slot, PAD_A)` for held state, and `pad_pressed` or
+`pad_released` for transitions. Use `pad_axis` for sticks and triggers. Sticks
+report values from -1 to 1. Triggers report values from 0 to 1.
 
-In C, `mv_mouse_position(&x, &y)` writes the position and returns 1 when a window is open. Without a window it writes zeros and returns 0. If either pointer is `NULL`, it returns 0 without writing. `mv_mouse_down(MV_MOUSE_LEFT)` checks a held button. `mv_mouse_button_from_name` converts the same names to `MvMouseButton` values. It returns 0 without changing the output for an invalid name or null argument. Read mouse state on the window thread. Name conversion does not require a window.
+```lua
+if pad_pressed(0, PAD_A) then
+  play_sound(jump_sound)
+end
+local horizontal = pad_axis(0, PAD_LEFT_X)
+```
 
-For a controller, use `mv.pad_connected(slot)`, `mv.pad_button(slot, name)`, and `mv.pad_axis(slot, name)`. Slots are 0 to 3 and can change when a controller disconnects. Button names are `a`, `b`, `x`, `y`, `up`, `down`, `left`, `right`, `lb`, `rb`, `back`, and `start`. Axis names are `left_x`, `left_y`, `right_x`, `right_y`, `left_trigger`, and `right_trigger`. Stick axes report values from -1 to 1 without a dead zone. Triggers report 0 when released and 1 when fully pressed, using the backend's standard mapping. Invalid slots or names raise an error. A disconnected controller or headless mode gives false for buttons and zero for axes. Events update after each frame. Actual mappings depend on the operating system and controller; physical-device testing remains pending.
+The `KEY_*`, `MOUSE_*`, and `PAD_*` constants are strings. They are available
+on `mv`, in `mv.input`, and after `import_globals()`. The functions also
+accept the corresponding case-sensitive string values. Invalid names and
+slots raise an error. Headless mode returns false for held and transition
+queries, zero for axes, and `(0, 0)` for the pointer position.
 
-In C, use `mv_pad_connected`, `mv_pad_button_down`, and `mv_pad_axis` with the `MvPadButton` and `MvPadAxis` enums. The name conversion functions return 0 for invalid input without changing the output. Invalid slots or controls, a disconnected controller, and no window return zero. Read controller state on the window thread. Name conversion does not require a window.
+Held and transition queries are shared and non-consuming. When a controller
+connects, its first sampled held state establishes a baseline. Disconnecting
+clears input for that slot and gives false for buttons and zero for axes.
+Read the [logical tick contract](keyboard.md) for capture timing and the
+[input inventory](input-inventory.md) for the matching C operations and constants.
 
 For typed text, call `mv.text_input_next()` until it returns `nil`. Each call removes one character from the shared queue and returns it as a UTF-8 string. This is separate from `mv.key`: it follows the operating system's text input and can return characters with more than one byte. In headless mode it always returns `nil`.
 

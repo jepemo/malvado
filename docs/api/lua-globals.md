@@ -16,7 +16,7 @@ Call `kill()` or `set_priority(priority)` to control the live scheduled process
 from its own coroutine. Use `kill(handle)` or `set_priority(handle, priority)`
 to target a process by handle. See [process control](lua-processes.md#control-processes).
 
-Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Most process operations and the signal constants are also available in `mv.process`. Use `recv` or `mv.recv` to receive messages. Input operations and key constants are also available in `mv.input`. `key_down` and `key` call the same function. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Most process operations and the signal constants are also available in `mv.process`. Use `recv` or `mv.recv` to receive messages. Input operations and constants are also available in `mv.input`. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |
@@ -66,13 +66,16 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `time_seconds` | `mv.time_seconds` |
 | `clear_screen` | `mv.clear_screen` |
 | `key` | `mv.key` |
-| `key_down` | `mv.key_down` |
 | `key_pressed` | `mv.key_pressed` |
 | `key_released` | `mv.key_released` |
 | `mouse_position` | `mv.mouse_position` |
 | `mouse_button` | `mv.mouse_button` |
+| `mouse_pressed` | `mv.mouse_pressed` |
+| `mouse_released` | `mv.mouse_released` |
 | `pad_connected` | `mv.pad_connected` |
 | `pad_button` | `mv.pad_button` |
+| `pad_pressed` | `mv.pad_pressed` |
+| `pad_released` | `mv.pad_released` |
 | `pad_axis` | `mv.pad_axis` |
 | `text_input_next` | `mv.text_input_next` |
 | `text_input_set_keyboard` | `mv.text_input_set_keyboard` |
@@ -185,6 +188,27 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `KEY_ENTER` | `mv.KEY_ENTER` |
 | `KEY_TAB` | `mv.KEY_TAB` |
 | `KEY_BACKSPACE` | `mv.KEY_BACKSPACE` |
+| `MOUSE_LEFT` | `mv.MOUSE_LEFT` |
+| `MOUSE_MIDDLE` | `mv.MOUSE_MIDDLE` |
+| `MOUSE_RIGHT` | `mv.MOUSE_RIGHT` |
+| `PAD_A` | `mv.PAD_A` |
+| `PAD_B` | `mv.PAD_B` |
+| `PAD_X` | `mv.PAD_X` |
+| `PAD_Y` | `mv.PAD_Y` |
+| `PAD_UP` | `mv.PAD_UP` |
+| `PAD_DOWN` | `mv.PAD_DOWN` |
+| `PAD_LEFT` | `mv.PAD_LEFT` |
+| `PAD_RIGHT` | `mv.PAD_RIGHT` |
+| `PAD_LB` | `mv.PAD_LB` |
+| `PAD_RB` | `mv.PAD_RB` |
+| `PAD_BACK` | `mv.PAD_BACK` |
+| `PAD_START` | `mv.PAD_START` |
+| `PAD_LEFT_X` | `mv.PAD_LEFT_X` |
+| `PAD_LEFT_Y` | `mv.PAD_LEFT_Y` |
+| `PAD_RIGHT_X` | `mv.PAD_RIGHT_X` |
+| `PAD_RIGHT_Y` | `mv.PAD_RIGHT_Y` |
+| `PAD_LEFT_TRIGGER` | `mv.PAD_LEFT_TRIGGER` |
+| `PAD_RIGHT_TRIGGER` | `mv.PAD_RIGHT_TRIGGER` |
 | `SIGNAL_SLEEP` | `mv.SIGNAL_SLEEP` |
 | `SIGNAL_FREEZE` | `mv.SIGNAL_FREEZE` |
 | `SIGNAL_WAKEUP` | `mv.SIGNAL_WAKEUP` |

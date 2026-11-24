@@ -66,13 +66,13 @@ installed-header probe checks each value. `key_down` reads held state;
 `key_pressed` and `key_released` read non-consuming logical-tick snapshots.
 They do not add text input, autorepeat or per-process key history.
 
-`input_tick` commits the native pending edges. Call it once for the shared
+`input_tick` commits pending key, mouse, and controller edges. Call it once for the shared
 window tick, including catch-up ticks, before `Game::tick` or other readers.
 Do not call it separately in each process or context. Frames without ticks
 retain pending edges. Catch-up ticks clear them without replay. Both edges
 can be true when both transitions were observed between ticks. A slower,
 sleeping or frozen process can miss a transition in a tick it does not run.
-See the [shared keyboard timing contract](keyboard.md).
+See the [shared input timing contract](keyboard.md).
 
 An `Rc<Window>` lets owned process futures query this one native service without
 another input cache. The host remains responsible for commit timing. Dropping

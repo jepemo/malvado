@@ -20,6 +20,7 @@ impl Touch {
             );
             let (x, y) = window.mouse_position();
             if !self.down {
+                assert!(window.mouse_pressed(MouseButton::Left));
                 let (width, height) = window.size();
                 assert!((x - width / 2).abs() <= 16 && (y - height / 2).abs() <= 16);
                 self.first_x = x;
@@ -39,6 +40,7 @@ impl Touch {
                 }
             }
         } else if self.down {
+            assert!(window.mouse_released(MouseButton::Left));
             assert!(self.max_x > self.first_x + 4);
             self.complete = true;
             // SAFETY: the fixture logs this static string and retains nothing.

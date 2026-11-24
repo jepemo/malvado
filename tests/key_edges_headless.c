@@ -25,12 +25,12 @@ main(int argc, char **argv)
 {
     assert(argc == 2);
     /* Simulate another window host's pending input without opening a device. */
-    mv_keyboard_open();
+    mv_input_open();
     mv_keyboard_sample(MV_KEY_SPACE, 1, 0);
     char *args[] = {"malvado-run", "--headless", argv[1]};
     assert(malvado_run(3, args) == 0);
     mv_input_tick();
     assert(mv_key_pressed(MV_KEY_SPACE));
-    mv_keyboard_reset();
+    mv_input_reset();
     return 0;
 }

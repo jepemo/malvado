@@ -130,16 +130,10 @@ export default {
   },
 
   'input/key': {
-    description: 'Check whether a key is held. `key` and `key_down` are the same function.',
-    params: [['name', 'A key name (`"left"`) or a `KEY_*` constant.']],
+    description: 'Check whether a key is held.',
+    params: [['name', 'A key constant such as `KEY_LEFT` or its string value.']],
     example: 'if key(KEY_LEFT) then self.x = self.x - 3 end',
     related: ['key_pressed', 'key_released'],
-  },
-  'input/key_down': {
-    description: 'Alias of `key`. Check whether a key is held.',
-    params: [['name', 'A key name or a `KEY_*` constant.']],
-    example: 'if key_down(KEY_SPACE) then self.y = self.y - 1 end',
-    related: ['key', 'key_pressed'],
   },
   'input/key_pressed': {
     description: 'Check whether a press was observed in the current logical tick.',
@@ -161,9 +155,21 @@ export default {
   },
   'input/mouse_button': {
     description: 'Check whether a mouse button is held.',
-    params: [['name', '`"left"`, `"middle"` or `"right"`.']],
-    example: 'if mouse_button("left") then\n    print("click")\nend',
-    related: ['mouse_position'],
+    params: [['button', '`MOUSE_LEFT`, `MOUSE_MIDDLE`, `MOUSE_RIGHT`, or their string values.']],
+    example: 'if mouse_button(MOUSE_LEFT) then\n    print("held")\nend',
+    related: ['mouse_position', 'mouse_pressed', 'mouse_released'],
+  },
+  'input/mouse_pressed': {
+    description: 'Check whether a mouse press was observed this logical tick. Reads are non-consuming.',
+    params: [['button', 'A mouse constant such as `MOUSE_LEFT` or its string value.']],
+    example: 'if mouse_pressed(MOUSE_LEFT) then\n    local x, y = mouse_position()\n    print(x, y)\nend',
+    related: ['mouse_button', 'mouse_released'],
+  },
+  'input/mouse_released': {
+    description: 'Check whether a mouse release was observed this logical tick. Reads are non-consuming.',
+    params: [['button', 'A mouse constant such as `MOUSE_LEFT` or its string value.']],
+    example: 'if mouse_released(MOUSE_LEFT) then finish_drag() end',
+    related: ['mouse_button', 'mouse_pressed'],
   },
   'input/pad_connected': {
     description: 'Check whether a controller slot has a device.',
@@ -173,14 +179,26 @@ export default {
   },
   'input/pad_button': {
     description: 'Check whether a controller button is held.',
-    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'A button name such as `"a"` or `"start"`.']],
-    example: 'if pad_button(0, "a") then\n    jump()\nend',
-    related: ['pad_connected', 'pad_axis'],
+    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'A button constant such as `PAD_A` or its string value.']],
+    example: 'if pad_button(0, PAD_A) then\n    charge_jump()\nend',
+    related: ['pad_connected', 'pad_pressed', 'pad_released', 'pad_axis'],
+  },
+  'input/pad_pressed': {
+    description: 'Check whether a controller button press was observed this logical tick. A new connection establishes the held baseline.',
+    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'A button constant such as `PAD_A` or its string value.']],
+    example: 'if pad_pressed(0, PAD_A) then jump() end',
+    related: ['pad_button', 'pad_released'],
+  },
+  'input/pad_released': {
+    description: 'Check whether a controller button release was observed this logical tick. Disconnected slots return false.',
+    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'A button constant such as `PAD_A` or its string value.']],
+    example: 'if pad_released(0, PAD_A) then stop_jump() end',
+    related: ['pad_button', 'pad_pressed'],
   },
   'input/pad_axis': {
     description: 'Read a controller axis. Sticks report -1 to 1; triggers report 0 to 1.',
-    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'An axis name such as `"left_x"`.']],
-    example: 'self.x = self.x + pad_axis(0, "left_x") * 2',
+    params: [['slot', 'A controller slot from 0 to 3.'], ['name', 'An axis constant such as `PAD_LEFT_X` or its string value.']],
+    example: 'self.x = self.x + pad_axis(0, PAD_LEFT_X) * 2',
     related: ['pad_connected', 'pad_button'],
   },
   'input/text_input_next': {

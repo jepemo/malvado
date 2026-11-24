@@ -4,28 +4,30 @@ Use three operations:
 
 | Lua | C | Rust (`Window`) | Meaning |
 | --- | --- | --- | --- |
-| `key(name)` | `mv_key_down(key)` | `key_down(Key)` | The key is currently held. Existing behavior is unchanged. |
+| `key(name)` | `mv_key_down(key)` | `key_down(Key)` | The key is currently held. |
 | `key_pressed(name)` | `mv_key_pressed(key)` | `key_pressed(Key)` | A press was observed for this logical tick. |
 | `key_released(name)` | `mv_key_released(key)` | `key_released(Key)` | A release was observed for this logical tick. |
 
-Lua also exposes these operations through the existing `mv` module and input
-namespace. `key_down` remains the established alias of `key`. Names and `KEY_*`
-constants follow the existing case-sensitive validation. Invalid names raise an
-error; headless input is false. C uses `MvKey`; unsupported keys or no open window
-return zero. All platform calls stay on the window owner thread.
+Lua exposes these operations through the `mv` module, `mv.input`, and
+`import_globals()`. Names and `KEY_*` constants are case-sensitive. Invalid
+names raise an error. Headless input is false. C uses `MvKey` and returns zero
+for unsupported keys or when no window is open. All platform calls stay on the window owner thread.
+
+In older Malvado 2 Lua projects, replace `key_down(...)` with `key(...)`.
+Use `mv.input.key(...)` when calling through the input namespace.
 
 ```lua
-if key("right") then
+if key(KEY_RIGHT) then
   -- Continuous movement while held.
   self.x = self.x + 3
 end
-if key_pressed("space") then
+if key_pressed(KEY_SPACE) then
   -- Perform this action once, without a previous-key table.
   play_sound(sound)
 end
 ```
 
-Transitions are shared snapshots, not consumable events. Every process and every
+Key, mouse, and controller transitions use shared, non-consuming snapshots. Every process and every
 read in one tick sees the same result. They stay true for that tick only. A
 slow, sleeping or frozen process can miss a transition if it does not execute
 in that tick. Use held state for continuous input, or an active process and
@@ -35,9 +37,8 @@ messages when a game needs queued actions. No per-process history is maintained.
 
 The backend captures observed press/release transitions after `mv_window_end`
 processes platform events. Frames without simulation ticks retain pending
-transitions. The next logical tick commits them; additional catch-up ticks clear
-them without replaying a press. Multiple observations coalesce into booleans,
-not counts. Both pressed and released can be true when both were observed
+transitions. The next logical tick commits them. Additional catch-up ticks
+clear them. Multiple observations coalesce into one boolean per edge. Both pressed and released can be true when both were observed
 between ticks; held state can then be false. Hardware transitions not observed
 by the backend cannot be reconstructed. These functions are not OS autorepeat
 or Unicode text input; keep using the text queue for typing.
@@ -58,11 +59,11 @@ alone does not advance the committed snapshot. Closing or reopening the window
 resets pending and committed edges. Pause can accumulate transitions until the
 next step or resumed tick; these are still coalesced, not a replay queue.
 
-The audio example now uses `key_pressed` for its effect and music actions.
-`key_up` is unnecessary because `not key(name)` already expresses it. Repeat,
-double-click, toggles, action maps and mouse/controller edge helpers are not
-added by this change. Extend other devices only with a concrete use case and
-matching timing contracts.
+The desktop mouse and controller adapters can report transitions exposed by
+their backend samples. Android pointer edges are captured per event, including
+short taps. A controller connection establishes a held baseline without an
+initial press edge. When the backend signals a disconnection, the slot clears
+its held state, axes, and edges without generating a release.
 
 ## Verification and Rust status
 

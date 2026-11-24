@@ -19,12 +19,26 @@
 
 /* The platform owns one window. Events accumulate between logical ticks;
  * queries never mutate or consume the committed snapshot. */
+typedef struct {
+    unsigned pressed, released;
+} ButtonEdges;
+
+typedef struct {
+    ButtonEdges committed, pending;
+    unsigned held;
+} ButtonSnapshot;
+
+static int input_open;
 static struct {
-    int open;
     unsigned char pressed[MV_KEY_BACKSPACE + 1], released[MV_KEY_BACKSPACE + 1];
     unsigned char pending_pressed[MV_KEY_BACKSPACE + 1], pending_released[MV_KEY_BACKSPACE + 1];
     unsigned char held[MV_KEY_BACKSPACE + 1];
 } keyboard;
+static ButtonSnapshot mouse;
+static struct {
+    int connected;
+    ButtonSnapshot buttons;
+} pads[MV_INPUT_PAD_SLOTS];
 
 static int
 supported_key(MvKey key)
@@ -35,22 +49,25 @@ supported_key(MvKey key)
 }
 
 void
-mv_keyboard_reset(void)
+mv_input_reset(void)
 {
+    input_open = 0;
     memset(&keyboard, 0, sizeof(keyboard));
+    memset(&mouse, 0, sizeof(mouse));
+    memset(pads, 0, sizeof(pads));
 }
 
 void
-mv_keyboard_open(void)
+mv_input_open(void)
 {
-    mv_keyboard_reset();
-    keyboard.open = 1;
+    mv_input_reset();
+    input_open = 1;
 }
 
 void
 mv_keyboard_sample(MvKey key, int pressed, int released)
 {
-    if (!keyboard.open || !supported_key(key))
+    if (!input_open || !supported_key(key))
         return;
     keyboard.pending_pressed[key] |= pressed != 0;
     keyboard.pending_released[key] |= released != 0;
@@ -59,11 +76,73 @@ mv_keyboard_sample(MvKey key, int pressed, int released)
 void
 mv_keyboard_sample_held(MvKey key, int down)
 {
-    if (!keyboard.open || !supported_key(key))
+    if (!input_open || !supported_key(key))
         return;
     down = down != 0;
     mv_keyboard_sample(key, down && !keyboard.held[key], !down && keyboard.held[key]);
     keyboard.held[key] = (unsigned char)down;
+}
+
+static void
+sample_held(ButtonSnapshot *buttons, unsigned held)
+{
+    buttons->pending.pressed |= held & ~buttons->held;
+    buttons->pending.released |= buttons->held & ~held;
+    buttons->held = held;
+}
+
+static void
+commit_buttons(ButtonSnapshot *buttons)
+{
+    buttons->committed = buttons->pending;
+    buttons->pending = (ButtonEdges){0};
+}
+
+static unsigned
+mouse_bit(MvMouseButton button)
+{
+    return button >= MV_MOUSE_LEFT && button <= MV_MOUSE_RIGHT ? 1u << button : 0;
+}
+
+void
+mv_mouse_sample(MvMouseButton button, int pressed, int released)
+{
+    if (!input_open)
+        return;
+    unsigned bit = mouse_bit(button);
+    if (pressed)
+        mouse.pending.pressed |= bit;
+    if (released)
+        mouse.pending.released |= bit;
+}
+
+void
+mv_mouse_sample_held(unsigned held)
+{
+    if (input_open)
+        sample_held(&mouse, held);
+}
+
+static int
+supported_slot(int slot)
+{
+    return slot >= 0 && slot < MV_INPUT_PAD_SLOTS;
+}
+
+void
+mv_pad_sample(int slot, int connected, unsigned held)
+{
+    if (!input_open || !supported_slot(slot))
+        return;
+    if (!connected) {
+        pads[slot].connected = 0;
+        pads[slot].buttons = (ButtonSnapshot){0};
+    } else if (!pads[slot].connected) {
+        pads[slot].connected = 1;
+        pads[slot].buttons.held = held;
+    } else {
+        sample_held(&pads[slot].buttons, held);
+    }
 }
 
 void
@@ -73,18 +152,51 @@ mv_input_tick(void)
     memcpy(keyboard.released, keyboard.pending_released, sizeof(keyboard.released));
     memset(keyboard.pending_pressed, 0, sizeof(keyboard.pending_pressed));
     memset(keyboard.pending_released, 0, sizeof(keyboard.pending_released));
+    commit_buttons(&mouse);
+    for (int slot = 0; slot < MV_INPUT_PAD_SLOTS; ++slot)
+        commit_buttons(&pads[slot].buttons);
 }
 
 int
 mv_key_pressed(MvKey key)
 {
-    return keyboard.open && supported_key(key) && keyboard.pressed[key];
+    return input_open && supported_key(key) && keyboard.pressed[key];
 }
 
 int
 mv_key_released(MvKey key)
 {
-    return keyboard.open && supported_key(key) && keyboard.released[key];
+    return input_open && supported_key(key) && keyboard.released[key];
+}
+
+int
+mv_mouse_pressed(MvMouseButton button)
+{
+    return (mouse.committed.pressed & mouse_bit(button)) != 0;
+}
+
+int
+mv_mouse_released(MvMouseButton button)
+{
+    return (mouse.committed.released & mouse_bit(button)) != 0;
+}
+
+static unsigned
+pad_bit(MvPadButton button)
+{
+    return button >= MV_PAD_A && button <= MV_PAD_START ? 1u << button : 0;
+}
+
+int
+mv_pad_button_pressed(int slot, MvPadButton button)
+{
+    return supported_slot(slot) && (pads[slot].buttons.committed.pressed & pad_bit(button)) != 0;
+}
+
+int
+mv_pad_button_released(int slot, MvPadButton button)
+{
+    return supported_slot(slot) && (pads[slot].buttons.committed.released & pad_bit(button)) != 0;
 }
 
 int

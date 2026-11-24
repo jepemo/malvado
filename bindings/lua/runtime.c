@@ -2348,15 +2348,33 @@ mouse_position(lua_State *L)
 }
 
 static int
-mouse_button(lua_State *L)
+query_mouse_button(lua_State *L, int (*query)(MvMouseButton))
 {
     size_t length;
     const char *name = luaL_checklstring(L, 1, &length);
     MvMouseButton button;
     if (strlen(name) != length || !mv_mouse_button_from_name(name, &button))
         return luaL_error(L, "unsupported mouse button: %s", name);
-    lua_pushboolean(L, !engine.headless && mv_mouse_down(button));
+    lua_pushboolean(L, !engine.headless && query(button));
     return 1;
+}
+
+static int
+mouse_button(lua_State *L)
+{
+    return query_mouse_button(L, mv_mouse_down);
+}
+
+static int
+mouse_pressed(lua_State *L)
+{
+    return query_mouse_button(L, mv_mouse_pressed);
+}
+
+static int
+mouse_released(lua_State *L)
+{
+    return query_mouse_button(L, mv_mouse_released);
 }
 
 static int
@@ -2377,7 +2395,7 @@ pad_connected(lua_State *L)
 }
 
 static int
-pad_button(lua_State *L)
+query_pad_button(lua_State *L, int (*query)(int, MvPadButton))
 {
     int slot = pad_slot(L);
     size_t length;
@@ -2385,8 +2403,26 @@ pad_button(lua_State *L)
     MvPadButton button;
     if (strlen(name) != length || !mv_pad_button_from_name(name, &button))
         return luaL_error(L, "unsupported controller button");
-    lua_pushboolean(L, !engine.headless && mv_pad_button_down(slot, button));
+    lua_pushboolean(L, !engine.headless && query(slot, button));
     return 1;
+}
+
+static int
+pad_button(lua_State *L)
+{
+    return query_pad_button(L, mv_pad_button_down);
+}
+
+static int
+pad_pressed(lua_State *L)
+{
+    return query_pad_button(L, mv_pad_button_pressed);
+}
+
+static int
+pad_released(lua_State *L)
+{
+    return query_pad_button(L, mv_pad_button_released);
 }
 
 static int
@@ -5212,6 +5248,27 @@ static const struct { const char *name; const char *value; } api_constants[] = {
     {"KEY_ENTER", "enter"},
     {"KEY_TAB", "tab"},
     {"KEY_BACKSPACE", "backspace"},
+    {"MOUSE_LEFT", "left"},
+    {"MOUSE_MIDDLE", "middle"},
+    {"MOUSE_RIGHT", "right"},
+    {"PAD_A", "a"},
+    {"PAD_B", "b"},
+    {"PAD_X", "x"},
+    {"PAD_Y", "y"},
+    {"PAD_UP", "up"},
+    {"PAD_DOWN", "down"},
+    {"PAD_LEFT", "left"},
+    {"PAD_RIGHT", "right"},
+    {"PAD_LB", "lb"},
+    {"PAD_RB", "rb"},
+    {"PAD_BACK", "back"},
+    {"PAD_START", "start"},
+    {"PAD_LEFT_X", "left_x"},
+    {"PAD_LEFT_Y", "left_y"},
+    {"PAD_RIGHT_X", "right_x"},
+    {"PAD_RIGHT_Y", "right_y"},
+    {"PAD_LEFT_TRIGGER", "left_trigger"},
+    {"PAD_RIGHT_TRIGGER", "right_trigger"},
     {"SIGNAL_SLEEP", "sleep"},
     {"SIGNAL_FREEZE", "freeze"},
     {"SIGNAL_WAKEUP", "wakeup"},
@@ -5271,13 +5328,16 @@ static const char *const global_names[] = {
     "time_seconds",
     "clear_screen",
     "key",
-    "key_down",
     "key_pressed",
     "key_released",
     "mouse_position",
     "mouse_button",
+    "mouse_pressed",
+    "mouse_released",
     "pad_connected",
     "pad_button",
+    "pad_pressed",
+    "pad_released",
     "pad_axis",
     "text_input_next",
     "text_input_set_keyboard",
@@ -5390,6 +5450,27 @@ static const char *const global_names[] = {
     "KEY_ENTER",
     "KEY_TAB",
     "KEY_BACKSPACE",
+    "MOUSE_LEFT",
+    "MOUSE_MIDDLE",
+    "MOUSE_RIGHT",
+    "PAD_A",
+    "PAD_B",
+    "PAD_X",
+    "PAD_Y",
+    "PAD_UP",
+    "PAD_DOWN",
+    "PAD_LEFT",
+    "PAD_RIGHT",
+    "PAD_LB",
+    "PAD_RB",
+    "PAD_BACK",
+    "PAD_START",
+    "PAD_LEFT_X",
+    "PAD_LEFT_Y",
+    "PAD_RIGHT_X",
+    "PAD_RIGHT_Y",
+    "PAD_LEFT_TRIGGER",
+    "PAD_RIGHT_TRIGGER",
     "SIGNAL_SLEEP",
     "SIGNAL_FREEZE",
     "SIGNAL_WAKEUP",
@@ -6513,8 +6594,12 @@ open_module(lua_State *L)
         {"key_released", key_released},
         {"mouse_position", mouse_position},
         {"mouse_button", mouse_button},
+        {"mouse_pressed", mouse_pressed},
+        {"mouse_released", mouse_released},
         {"pad_connected", pad_connected},
         {"pad_button", pad_button},
+        {"pad_pressed", pad_pressed},
+        {"pad_released", pad_released},
         {"pad_axis", pad_axis},
         {"text_input_next", text_input_next},
         {"text_input_set_keyboard", text_input_set_keyboard},
@@ -6807,20 +6892,20 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__call");
     lua_setmetatable(L, -2);
     lua_setfield(L, -2, "process");
-    lua_getfield(L, -1, "key");
-    lua_setfield(L, -2, "key_down");
     lua_newtable(L);
     static const char *const input_functions[] = {
-        "key_down", "key_pressed", "key_released", "mouse_position", "mouse_button",
-        "pad_connected", "pad_button",
-        "pad_axis", "text_input_next", "text_input_set_keyboard"
+        "key", "key_pressed", "key_released", "mouse_position", "mouse_button",
+        "mouse_pressed", "mouse_released", "pad_connected", "pad_button",
+        "pad_pressed", "pad_released", "pad_axis", "text_input_next", "text_input_set_keyboard"
     };
     for (size_t i = 0; i < sizeof(input_functions) / sizeof(input_functions[0]); ++i) {
         lua_getfield(L, -2, input_functions[i]);
         lua_setfield(L, -2, input_functions[i]);
     }
     for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
-        if (strncmp(api_constants[i].name, "KEY_", 4) == 0) {
+        const char *name = api_constants[i].name;
+        if (strncmp(name, "KEY_", 4) == 0 || strncmp(name, "MOUSE_", 6) == 0 ||
+            strncmp(name, "PAD_", 4) == 0) {
             lua_pushstring(L, api_constants[i].value);
             lua_setfield(L, -2, api_constants[i].name);
         }

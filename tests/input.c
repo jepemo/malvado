@@ -134,6 +134,7 @@ main(void)
     assert(!mv_mouse_button_from_name(NULL, &button));
     assert(!mv_mouse_button_from_name("left", NULL));
     assert(!mv_mouse_down(MV_MOUSE_LEFT) && !mv_mouse_down((MvMouseButton)-1));
+    assert(!mv_mouse_pressed(MV_MOUSE_LEFT) && !mv_mouse_released(MV_MOUSE_LEFT));
     static const struct { const char *name; MvPadButton value; } buttons[] = {
         {"a", MV_PAD_A}, {"b", MV_PAD_B}, {"x", MV_PAD_X}, {"y", MV_PAD_Y},
         {"up", MV_PAD_UP}, {"down", MV_PAD_DOWN}, {"left", MV_PAD_LEFT},
@@ -162,6 +163,7 @@ main(void)
     assert(!mv_pad_axis_from_name("invalid", &pad_axis) && pad_axis == MV_PAD_LEFT_TRIGGER);
     assert(!mv_pad_connected(-1) && !mv_pad_connected(4) && !mv_pad_connected(0));
     assert(!mv_pad_button_down(0, MV_PAD_A) && !mv_pad_button_down(-1, (MvPadButton)-1));
+    assert(!mv_pad_button_pressed(0, MV_PAD_A) && !mv_pad_button_released(0, MV_PAD_A));
     assert(mv_pad_axis(0, MV_PAD_LEFT_X) == 0 && mv_pad_axis(-1, (MvPadAxis)-1) == 0);
     int x = 23, y = 42;
     assert(!mv_mouse_position(NULL, &y) && y == 42);

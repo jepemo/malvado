@@ -25,6 +25,7 @@ static int close_requested;
 static void (*previous_command)(struct android_app *, int32_t);
 static unsigned char held[MV_KEY_BACKSPACE + 1];
 static int pointer_buttons;
+static int pointer_focused, pointer_paused, pointer_surface;
 
 static int
 key_from_android(int code)
@@ -46,9 +47,29 @@ key_from_android(int code)
 }
 
 static void
+set_pointer_buttons(int buttons)
+{
+    pointer_buttons = buttons;
+    unsigned mouse = 0;
+    if (buttons & AMOTION_EVENT_BUTTON_PRIMARY) mouse |= 1u << MV_MOUSE_LEFT;
+    if (buttons & AMOTION_EVENT_BUTTON_SECONDARY) mouse |= 1u << MV_MOUSE_RIGHT;
+    if (buttons & AMOTION_EVENT_BUTTON_TERTIARY) mouse |= 1u << MV_MOUSE_MIDDLE;
+    mv_mouse_sample_held(mouse);
+}
+
+static void
 window_command(struct android_app *app, int32_t command)
 {
     if (previous_command) previous_command(app, command);
+    switch (command) {
+    case APP_CMD_GAINED_FOCUS: pointer_focused = 1; break;
+    case APP_CMD_LOST_FOCUS: pointer_focused = 0; break;
+    case APP_CMD_RESUME: pointer_paused = 0; break;
+    case APP_CMD_PAUSE: pointer_paused = 1; break;
+    case APP_CMD_INIT_WINDOW: pointer_surface = 1; break;
+    case APP_CMD_TERM_WINDOW: pointer_surface = 0; break;
+    default: break;
+    }
     if (command == APP_CMD_PAUSE || command == APP_CMD_LOST_FOCUS || command == APP_CMD_TERM_WINDOW) {
         /* Android may deliver releases to another Activity. Queue key edges
          * and neutralize pointer buttons; foreground needs fresh presses. */
@@ -56,7 +77,7 @@ window_command(struct android_app *app, int32_t command)
             if (held[key]) mv_keyboard_sample_held((MvKey)key, 0);
         }
         memset(held, 0, sizeof(held));
-        pointer_buttons = 0;
+        set_pointer_buttons(0);
     }
 }
 
@@ -77,16 +98,17 @@ window_input(struct android_app *app, AInputEvent *event)
             mv_keyboard_sample_held((MvKey)key, held[key]);
         }
     }
-    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION &&
+    if (pointer_focused && !pointer_paused && pointer_surface &&
+        AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION &&
         (AInputEvent_getSource(event) & AINPUT_SOURCE_CLASS_POINTER)) {
         int action = AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
         if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_BUTTON_PRESS) {
-            pointer_buttons = AMotionEvent_getButtonState(event);
-            if (!pointer_buttons) pointer_buttons = AMOTION_EVENT_BUTTON_PRIMARY;
+            int buttons = AMotionEvent_getButtonState(event);
+            set_pointer_buttons(buttons ? buttons : AMOTION_EVENT_BUTTON_PRIMARY);
         } else if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL) {
-            pointer_buttons = 0;
+            set_pointer_buttons(0);
         } else if (action == AMOTION_EVENT_ACTION_BUTTON_RELEASE) {
-            pointer_buttons = AMotionEvent_getButtonState(event);
+            set_pointer_buttons(pointer_buttons & AMotionEvent_getButtonState(event));
         }
         /* MOVE cannot revive a contact cancelled by focus loss. */
     }
@@ -134,6 +156,9 @@ mv_android_window_attach(void)
     window_app = GetAndroidApp();
     close_requested = 0;
     pointer_buttons = 0;
+    pointer_focused = 0;
+    pointer_paused = 0;
+    pointer_surface = 1;
     memset(held, 0, sizeof(held));
     if (!window_app) return;
     previous_input = window_app->onInputEvent;
@@ -142,7 +167,8 @@ mv_android_window_attach(void)
     window_app->onAppCmd = window_command;
     /* A recreated Activity can retain its focused Window without another
      * GAINED_FOCUS event. Initialize raylib from the actual Java focus state. */
-    if (previous_command && mv_android_activity_has_focus(window_app))
+    pointer_focused = mv_android_activity_has_focus(window_app);
+    if (previous_command && pointer_focused)
         previous_command(window_app, APP_CMD_GAINED_FOCUS);
 }
 

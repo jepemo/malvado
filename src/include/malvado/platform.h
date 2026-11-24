@@ -156,9 +156,9 @@ int mv_window_space_down(void);
 int mv_key_from_name(const char *name, MvKey *key);
 /* Return 1 while the key is held. Return 0 for an unsupported key or no window. */
 int mv_key_down(MvKey key);
-/* Commit buffered keyboard transitions once before each logical simulation
- * tick, not once per process. mv_window_end captures platform events. Frames
- * without ticks retain pending events; extra catch-up ticks see no repeat.
+/* Commit buffered key, mouse, and controller transitions before each logical
+ * tick. mv_window_end captures platform events. Frames without ticks retain
+ * pending events; extra catch-up ticks see no repeat.
  * The Lua runner calls this automatically. Use on the window owner thread. */
 void mv_input_tick(void);
 /* Non-consuming transition snapshots for the current logical tick. Return 0
@@ -174,10 +174,18 @@ int mv_mouse_button_from_name(const char *name, MvMouseButton *button);
 int mv_mouse_position(int *x, int *y);
 /* Return 1 while the button is held, or 0 for an invalid button or no window. */
 int mv_mouse_down(MvMouseButton button);
+/* Non-consuming logical-tick transitions. Both can be true if both were
+ * observed between ticks. Invalid buttons and unavailable input give zero. */
+int mv_mouse_pressed(MvMouseButton button);
+int mv_mouse_released(MvMouseButton button);
 /* Slots are 0 through 3. Input is updated when the window processes events.
  * A disconnected device, invalid input, or no window gives zero. */
 int mv_pad_connected(int slot);
 int mv_pad_button_down(int slot, MvPadButton button);
+/* Non-consuming logical-tick transitions. Connection establishes the held
+ * baseline. Disconnection clears edges without generating releases. */
+int mv_pad_button_pressed(int slot, MvPadButton button);
+int mv_pad_button_released(int slot, MvPadButton button);
 float mv_pad_axis(int slot, MvPadAxis axis);
 /* Parse a case-sensitive control name. Return 1 on success, or 0 without
  * changing the output for an invalid name or NULL argument. No window is needed. */

@@ -15,3 +15,5 @@
 
 ---Mouse button name.
 ---@alias MvMouseButton "left"|"middle"|"right"
+---@alias MvPadButton "a"|"b"|"x"|"y"|"up"|"down"|"left"|"right"|"lb"|"rb"|"back"|"start"
+---@alias MvPadAxis "left_x"|"left_y"|"right_x"|"right_y"|"left_trigger"|"right_trigger"

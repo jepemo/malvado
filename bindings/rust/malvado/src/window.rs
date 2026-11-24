@@ -274,6 +274,16 @@ impl Window {
         // SAFETY: supported typed button on the live native window.
         unsafe { ffi::mv_mouse_down(button as i32) != 0 }
     }
+    /// Whether a press was observed for the current logical tick. Reads are non-consuming.
+    pub fn mouse_pressed(&self, button: MouseButton) -> bool {
+        // SAFETY: supported typed button on the live native window.
+        unsafe { ffi::mv_mouse_pressed(button as i32) != 0 }
+    }
+    /// Whether a release was observed for the current logical tick. Reads are non-consuming.
+    pub fn mouse_released(&self, button: MouseButton) -> bool {
+        // SAFETY: supported typed button on the live native window.
+        unsafe { ffi::mv_mouse_released(button as i32) != 0 }
+    }
     /// Native slots are 0..3. Invalid/disconnected slots return neutral values.
     pub fn pad_connected(&self, slot: u8) -> bool {
         // SAFETY: integer slot; native code validates availability and bounds.
@@ -283,6 +293,16 @@ impl Window {
     pub fn pad_button_down(&self, slot: u8, button: PadButton) -> bool {
         // SAFETY: supported typed button; C validates the slot and connection.
         unsafe { ffi::mv_pad_button_down(slot.into(), button as i32) != 0 }
+    }
+    /// Whether a press was observed for the current logical tick. Connection establishes a baseline.
+    pub fn pad_button_pressed(&self, slot: u8, button: PadButton) -> bool {
+        // SAFETY: supported typed button; C validates the slot and connection.
+        unsafe { ffi::mv_pad_button_pressed(slot.into(), button as i32) != 0 }
+    }
+    /// Whether a release was observed for the current logical tick. Disconnected slots return false.
+    pub fn pad_button_released(&self, slot: u8, button: PadButton) -> bool {
+        // SAFETY: supported typed button; C validates the slot and connection.
+        unsafe { ffi::mv_pad_button_released(slot.into(), button as i32) != 0 }
     }
     /// Sticks use -1..1 and triggers 0..1. Missing slots/axes return zero.
     pub fn pad_axis(&self, slot: u8, axis: PadAxis) -> f32 {
@@ -297,7 +317,7 @@ impl Window {
     }
 
     /// Pop one Unicode scalar from the shared native queue. This consumes input;
-    /// keyboard and button held-state queries do not consume anything.
+    /// key, mouse, and controller held-state and transition queries are non-consuming.
     pub fn text_input_next(&self) -> Option<char> {
         let mut codepoint = 0;
         // SAFETY: exclusive valid output on the live window owner thread.

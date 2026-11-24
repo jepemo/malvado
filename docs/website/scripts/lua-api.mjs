@@ -23,12 +23,15 @@ const groups = [
   {
     id: 'input', label: 'Input', ns: 'input', guide: 'keyboard',
     summary: 'Read the keyboard, mouse, controllers and typed text.',
-    flat: ['key', 'key_down', 'key_pressed', 'key_released', 'mouse_position',
-      'mouse_button', 'pad_connected', 'pad_button', 'pad_axis', 'text_input_next',
-      'text_input_set_keyboard'],
+    flat: ['key', 'key_pressed', 'key_released', 'mouse_position', 'mouse_button',
+      'mouse_pressed', 'mouse_released', 'pad_connected', 'pad_button', 'pad_pressed',
+      'pad_released', 'pad_axis', 'text_input_next', 'text_input_set_keyboard'],
     constants: ['KEY_A to KEY_Z', 'KEY_0 to KEY_9', 'KEY_ESCAPE', 'KEY_SPACE',
       'KEY_LEFT', 'KEY_RIGHT', 'KEY_UP', 'KEY_DOWN', 'KEY_ENTER', 'KEY_TAB',
-      'KEY_BACKSPACE'],
+      'KEY_BACKSPACE', 'MOUSE_LEFT', 'MOUSE_MIDDLE', 'MOUSE_RIGHT',
+      'PAD_A', 'PAD_B', 'PAD_X', 'PAD_Y', 'PAD_UP', 'PAD_DOWN', 'PAD_LEFT', 'PAD_RIGHT',
+      'PAD_LB', 'PAD_RB', 'PAD_BACK', 'PAD_START', 'PAD_LEFT_X', 'PAD_LEFT_Y',
+      'PAD_RIGHT_X', 'PAD_RIGHT_Y', 'PAD_LEFT_TRIGGER', 'PAD_RIGHT_TRIGGER'],
   },
   {
     id: 'graphics', label: 'Graphics', ns: 'graphics', guide: 'drawing',
@@ -108,7 +111,6 @@ const groups = [
 const flatSummaries = {
   process: 'Define a process. Call `process(fn, options)`; `mv.process` also holds the namespace functions.',
   collision: 'Find colliding processes. Call `collision(target)` to query the current process; `mv.collision` also holds the shape constructors.',
-  key: 'Check whether a key is held. `key` and `key_down` are the same function.',
   draw_rect: 'Draw a filled or outlined rectangle.',
   draw_circle: 'Draw a filled or outlined circle.',
   draw_line: 'Draw a line between two points.',
@@ -215,7 +217,7 @@ const placed = new Set(groups.flatMap((group) => group.entries.flatMap((entry) =
 const palette = globals.filter((entry) => entry.field.startsWith('colors.'));
 groups.find((group) => group.id === 'drawing').constants = palette.map((entry) => entry.name);
 for (const global of globals) {
-  if (global.field.startsWith('colors.') || global.name.startsWith('KEY_') || global.name.startsWith('SIGNAL_'))
+  if (global.field.startsWith('colors.') || /^(KEY|MOUSE|PAD|SIGNAL)_/.test(global.name))
     continue;
   if (!placed.has(global.name))
     throw new Error(`Global function not grouped in a page: ${global.name}`);
