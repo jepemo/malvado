@@ -202,7 +202,7 @@ def main():
     for mode in (('normal',) if args.text_input or args.audio_focus or args.ime else ('normal', 'process-error', 'compile-error', 'bad-entry')):
         with tempfile.TemporaryDirectory(prefix='C game with spaces ', dir=args.work.resolve()) as folder:
             project = Path(folder)/'project'
-            checked([cli,'new','--c',project])
+            checked([cli,'new','--lang','c',project])
             cmake = project/'CMakeLists.txt'
             cmake.write_text(cmake.read_text().replace('COMPONENTS graphics)', 'COMPONENTS graphics assets)')+'\ntarget_link_libraries(game PRIVATE Malvado::assets)\n')
             source = ('#define EXPECT_TEXT\n' if args.text_input else '')+GAME

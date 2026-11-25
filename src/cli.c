@@ -51,7 +51,7 @@ static void
 print_help(FILE *output)
 {
     fprintf(output, "Usage: malvado COMMAND [OPTIONS]\n\n"
-            "  new [--c | --lang lua|c|rust] PATH  Create a project\n"
+            "  new [--lang lua|c|rust] PATH  Create a project\n"
             "  build [PATH]         Build a C or Rust project\n"
             "  run [--headless] [PATH]  Run a game\n"
             "  check [PATH]         Check Lua syntax or a C/Rust project\n"
@@ -552,10 +552,8 @@ main(int argc, char **argv)
             printf("Export: unavailable in this build\n");
         return 0;
     }
-    if (argc == 3 && strcmp(argv[1], "new") == 0)
+    if (argc == 3 && strcmp(argv[1], "new") == 0 && argv[2][0] != '-')
         return new_project(argv[2], 0);
-    if (argc == 4 && strcmp(argv[1], "new") == 0 && strcmp(argv[2], "--c") == 0)
-        return new_project(argv[3], 1);
     if (argc == 5 && !strcmp(argv[1], "new") && !strcmp(argv[2], "--lang")) {
         int language = !strcmp(argv[3], "lua") ? 0 : !strcmp(argv[3], "c") ? 1 :
                        !strcmp(argv[3], "rust") ? 2 : -1;

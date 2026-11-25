@@ -23,7 +23,7 @@ verified for C, Lua and Rust on the alpha.8 baseline. See the
 | Sound and music | Explicit device/instance lifetime and shared stream update | Userdata and playback roots; runner pumps native maintenance | Optional `graphics`; RAII device/instances and explicit `Audio::update` |
 | Geometric collisions and static rectangle worlds | Native overlap/sweep and process movement | Contextual helpers over native selected colliders | Same native queries and movement through typed shapes/handles |
 | Headless use | Core without Lua, Rust or raylib | Headless runner; graphics/audio creation unavailable | Default core crate; graphics linking requires a graphical SDK |
-| Project tools and player exports | `new --c`, CMake `game` target and native player | `new`, syntax check and bundled runner | `new --lang rust`, Cargo `game` target and native player |
+| Project tools and player exports | `new --lang c`, CMake `game` target and native player | `new`, syntax check and bundled runner | `new --lang rust`, Cargo `game` target and native player |
 
 Ownership is explicit in each language. A raw C resource reference does not keep
 its window/device alive. Safe Rust image/font/audio wrappers retain their required

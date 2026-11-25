@@ -14,15 +14,22 @@ malvado run
 malvado run main.lua
 ```
 
-`new --lang lua` is equivalent to `new`; `new --lang c` is equivalent to `new --c`. Unknown languages and conflicting options return 2 without creating a project.
+```text
+malvado new [--lang lua|c|rust] PATH
+```
 
-`new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` enters it before starting the game. When given a Lua file, `run` preserves the caller’s working directory. Both forms use the entry script’s directory for [asset paths](../api/asset-sources.md#game-asset-paths) and local Lua modules. `run --headless [PATH]` is available for scripts that terminate without a window. The `malvado-run` executable also runs Lua scripts.
+Lua is the default. Use `--lang lua` to select it explicitly. Put the language
+option before the project path. Invalid arguments return status 2 without
+creating a project. If you used `new --c` in an earlier build, use
+`new --lang c` now.
+
+For Lua projects, `new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` enters it before starting the game. When given a Lua file, `run` preserves the caller’s working directory. Both forms use the entry script’s directory for [asset paths](../api/asset-sources.md#game-asset-paths) and local Lua modules. `run --headless [PATH]` is available for scripts that terminate without a window. The `malvado-run` executable also runs Lua scripts.
 
 Managed C and Rust games use the project root for assets. The CLI passes the absolute root to the child through `MALVADO_GAME_DIR`. Desktop launchers pass the packaged content directory, and Android uses its staged content directory. The export includes files inside the project. Absolute paths to external assets work at runtime when accessible. Place assets inside the project for portable exports.
 
 The Lua template returns a game table. The runner also supports `mv.start()`. Exported Lua games load `main.lua` with the same entry rules. See the [Lua process guide](../api/lua-processes.md).
 
-`malvado new --c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS, Linux and Windows x64 MSVC, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
+`malvado new --lang c NAME` creates a minimal C game and `CMakeLists.txt`. On macOS, Linux and Windows x64 MSVC, an installed graphical SDK can build it with `malvado build` or build and start it with `malvado run`. Both commands also accept the project directory as an argument. CMake and a C compiler must be available. The client uses `.malvado/build` and rejects an existing build directory that it does not recognize. C projects use a CMake target named `game`. `--headless` is only available for Lua games.
 
 `check` in a C project directory configures, compiles and links the `game`
 target through the existing managed C build. As with C builds, an installed
@@ -127,8 +134,8 @@ apksigner. Automatic debug-key creation
 needs keytool. Signing a file does not publish it to a store. Release verification
 uses disposable test credentials and does not establish production key custody.
 
-C projects now use the same command with a full Android target SDK. New
-`--c` projects contain the required CMake branch; see [C Android games](android-c-games.md).
+C projects now use the same command with a full Android target SDK. The C
+template contains the required CMake branch. See [C Android games](android-c-games.md).
 C export additionally requires CMake and NDK r27c. It supports both debug and
 release APKs, source exclusion, the same manifest options and explicit signing.
 Rust projects now support the same debug/release APK path with a staticlib

@@ -47,7 +47,7 @@ entry or C++ support.
 
 ## Export from the installed CLI
 
-New `malvado new --c PATH` projects now include the Android CMake branch above.
+New `malvado new --lang c PATH` projects now include the Android CMake branch above.
 For an existing project, replace its unconditional `add_executable(game ...)`
 with that branch. The export target must be named `game`.
 
