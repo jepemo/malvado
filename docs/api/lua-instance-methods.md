@@ -149,7 +149,11 @@ requirements.
 Use `mv.collision.overlap(a, b, options)` to test geometric shapes. That form
 keeps the two operands and their named `a` and `b` transforms together. Use
 `get_priority(handle)` and `status(handle)` for procedural process reads, or
-read `handle.priority` and `handle.status` as properties.
+read `handle.priority` and `handle.status` as properties. Both status reads
+return `STATUS_DEAD` for a terminated process during the run.
+`children` and `descendants` default to ownership and accept a constructor
+filter. `signal_tree` and `kill_tree` default to creation and accept only
+the `relation` option.
 
 Use procedural calls for global services, contextual shortcuts such as
 `world_move(dx, dy)` and `graph(selector)`, and constructors such as `animation`

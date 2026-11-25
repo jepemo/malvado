@@ -7,6 +7,7 @@ local saved
 _G.guard = setmetatable({}, {__gc = function()
   local ok = pcall(function()
     assert(saved.id > 0 and saved.status == "dead" and saved.reason == "killed")
+    assert(not pcall(mv.status, saved))
     assert(not pcall(function() return saved.payload end))
   end)
   if ok then print("native shutdown handle valid") end
@@ -17,6 +18,7 @@ local controller = mv.process(function()
   assert(#found == 1)
   saved = found[1]
   assert(mv.find(native_type)[1] == saved)
+  assert(mv.status(saved) == mv.STATUS_RUNNING and saved.status == mv.STATUS_RUNNING)
   saved.payload = {}
   mv.frame()
   error("force native shutdown")

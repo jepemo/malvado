@@ -79,13 +79,12 @@ default and false disables it. Animations use a fixed union of local frame bound
 
 ## Migrate Lua handle operations
 
-Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Managed
-resource handles are passed to functions rather than manipulated through
-instance methods.
+Malvado 2 uses a procedural Lua API inspired by DIV Games Studio. Pass managed
+resource handles to functions or use their supported instance methods.
 
 The names on the right are available through `mv` or `import_globals()`. Use
-the same handle for the new call. Object methods and the `mv.camera` and
-`mv.world` aliases were removed.
+the same handle for the new call. The `mv.camera` and `mv.world` aliases were
+removed.
 
 | Previous call | Current call |
 | --- | --- |
@@ -107,7 +106,6 @@ the same handle for the new call. Object methods and the `mv.camera` and
 | `world:collision(player, position)` | `world_collision(world, player, position)` |
 | `world:move(player, dx, dy)` or `mv.world.move(world, player, dx, dy)` | `world_move(world, player, dx, dy)` |
 | `mv.world.move(dx, dy)` | `world_move(dx, dy)` using `self.world` |
-| `self:recv()` | `recv(self)` |
 | `definition:sample(elapsed_ms)` | `animation_sample(definition, elapsed_ms)` |
 | `library:graph(id)` | `graph(library, id)` for atlases, FPG files, and manifests |
 | `atlas:animation(name_or_ids, options)` | `animation(atlas, name_or_ids, options)` |
@@ -129,6 +127,23 @@ the same handle for the new call. Object methods and the `mv.camera` and
 | `manifest:sprite(id)` | `manifest_sprite(manifest, id)` |
 | `manifest:point(id, index)` | `manifest_point(manifest, id, index)` |
 | `manifest:transparent_zero()` | `manifest_transparent_zero(manifest)` |
+
+## Process messaging and inspection
+
+Replace `status(handle) == nil` with `status(handle) == STATUS_DEAD` after
+`import_globals()`. In module code, use `mv.status(handle) == mv.STATUS_DEAD`.
+You can also use `handle.status` to read the same state. Update truthiness
+checks to use `alive(handle)` when you need a boolean.
+
+Use `recv()` in the scheduled process or `recv(handle)` for a specific
+mailbox. Both forms are now available as `mv.process.recv`. The explicit
+method form is `handle:recv()`. Check for `nil` to detect an empty queue
+and handle `false` as a message. Pass only the documented arguments to
+process operations.
+
+In LuaLS, use `MvTreeQueryOptions` for `children` and `descendants`, which
+default to ownership. Use `MvTreeSignalOptions` for `signal_tree` and
+`kill_tree`, which default to creation and accept only `relation`.
 
 ## Atlas selection and FPG conversion
 

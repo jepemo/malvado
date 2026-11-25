@@ -8,8 +8,11 @@
 ---Signal name accepted by `signal` and `signal_tree`.
 ---@alias MvSignal "sleep"|"freeze"|"wakeup"|"kill"
 
----Process status string.
----@alias MvProcessStatusName "running"|"sleeping"|"frozen"
+---Status string for a live process.
+---@alias MvLiveProcessStatusName "running"|"sleeping"|"frozen"
+
+---Status string for a live or retained process handle.
+---@alias MvProcessStatusName MvLiveProcessStatusName|"dead"
 
 ---A live process handle. The same value is `self` inside a process body.
 ---
@@ -52,18 +55,18 @@
 ---@field parent MvProcess|nil Read-only owner process.
 ---@field creator_id integer|nil Read-only creator process ID.
 ---@field priority integer Read-only scheduling priority.
----@field status MvProcessStatusName|"dead" Read-only status.
+---@field status MvProcessStatusName Read-only status.
 ---@field reason "returned"|"error"|"killed"|nil Read-only end reason after death.
 ---@field delta number Read-only logical seconds since the previous activation, including sleep and freeze ticks. Zero on the first activation.
 ---@field kill fun(self: MvProcess):boolean
 ---@field alive fun(self: MvProcess):boolean
 ---@field signal (fun(self: MvProcess, signal: "kill"):boolean)|(fun(self: MvProcess, signal: MvSignal))
----@field signal_tree fun(self: MvProcess, signal: MvSignal, options?: MvTreeOptions)
----@field kill_tree fun(self: MvProcess, options?: MvTreeOptions)
+---@field signal_tree fun(self: MvProcess, signal: MvSignal, options?: MvTreeSignalOptions)
+---@field kill_tree fun(self: MvProcess, options?: MvTreeSignalOptions)
 ---@field send fun(self: MvProcess, message: any)
 ---@field recv fun(self: MvProcess):any
----@field children fun(self: MvProcess, options?: MvTreeOptions):MvProcess[]
----@field descendants fun(self: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field children fun(self: MvProcess, options?: MvTreeQueryOptions):MvProcess[]
+---@field descendants fun(self: MvProcess, options?: MvTreeQueryOptions):MvProcess[]
 ---@field collision fun(self: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess|nil
 ---@field collisions fun(self: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
 ---@field set_priority fun(self: MvProcess, priority: integer)
@@ -92,10 +95,14 @@
 ---@field assets_dir? string Asset directory applied before init.
 ---@field init? fun() Called once before the first logical tick.
 
----Options for tree queries (`children`, `descendants`, `signal_tree`, `kill_tree`).
----@class MvTreeOptions
----@field relation "creation"|"ownership"? Tree relation. Default "creation".
----@field type fun(self: MvProcess)? Filter by a process constructor.
+---Options for `children` and `descendants`.
+---@class MvTreeQueryOptions
+---@field relation? "ownership"|"creation" Tree relation. Default "ownership".
+---@field type? MvProcessConstructor Filter by a process constructor.
+
+---Options for `signal_tree` and `kill_tree`.
+---@class MvTreeSignalOptions
+---@field relation? "creation"|"ownership" Tree relation. Default "creation".
 
 ---Result table of `snapshot()`.
 ---@class MvSnapshotProcess
@@ -105,7 +112,7 @@
 ---@field attached boolean
 ---@field type integer
 ---@field priority integer
----@field status string
+---@field status MvLiveProcessStatusName
 ---@field messages integer
 ---@field draw_commands integer
 ---@field visible boolean

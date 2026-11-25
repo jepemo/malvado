@@ -304,6 +304,25 @@ check_process_id(lua_State *L, int index)
     return (lua_Integer)id;
 }
 
+static void
+check_process_arity(lua_State *L, int minimum, int maximum, const char *signature)
+{
+    int arguments = lua_gettop(L);
+    if (arguments < minimum || arguments > maximum)
+        luaL_error(L, "expected %s", signature);
+}
+
+static const char *
+process_status_name(MvProcessStatus status)
+{
+    static const char *const names[] = {
+        [MV_PROCESS_RUNNING] = "running",
+        [MV_PROCESS_SLEEPING] = "sleeping",
+        [MV_PROCESS_FROZEN] = "frozen",
+    };
+    return names[status];
+}
+
 /* Context belongs to the scheduled coroutine. A nested user coroutine must
  * not borrow the active process of its caller. */
 static void
@@ -363,8 +382,8 @@ receive_message(lua_State *L)
 static int
 send_message(lua_State *L)
 {
+    check_process_arity(L, 2, 2, "send(process, message)");
     lua_Integer id = check_process_id(L, 1);
-    luaL_checkany(L, 2);
     if (lua_isnil(L, 2))
         return luaL_error(L, "message must not be nil");
     MvMessage message = {0};
@@ -481,6 +500,7 @@ static int active_in_tree(lua_Integer root, int attached_only);
 static int
 signal_process(lua_State *L)
 {
+    check_process_arity(L, 2, 2, "signal(process, signal)");
     lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
     if (state == PROCESS_KILLED && luaL_testudata(L, 1, "malvado.process")) {
@@ -592,6 +612,7 @@ active_in_creation_tree(lua_Integer root)
 static int
 signal_tree(lua_State *L)
 {
+    check_process_arity(L, 2, 3, "signal_tree(process, signal, options?)");
     lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
     int creation = 1;
@@ -625,6 +646,7 @@ signal_tree(lua_State *L)
 static int
 kill_tree(lua_State *L)
 {
+    check_process_arity(L, 1, 2, "kill_tree(process, options?)");
     lua_settop(L, 2);
     lua_pushliteral(L, "kill");
     lua_insert(L, 2);
@@ -652,6 +674,7 @@ set_priority(lua_State *L)
 static int
 get_priority(lua_State *L)
 {
+    check_process_arity(L, 1, 1, "get_priority(process)");
     lua_Integer id = check_process_id(L, 1);
     int64_t priority;
     if (mv_process_priority(engine.context, (MvProcessId)id, &priority) != MV_OK)
@@ -675,6 +698,7 @@ kill_process(lua_State *L)
 static int
 process_alive(lua_State *L)
 {
+    check_process_arity(L, 1, 1, "alive(process)");
     lua_Integer id = check_process_id(L, 1);
     MvProcessStatus status;
     lua_pushboolean(L, mv_process_status(engine.context, (MvProcessId)id, &status) == MV_OK);
@@ -684,14 +708,13 @@ process_alive(lua_State *L)
 static int
 process_status(lua_State *L)
 {
+    check_process_arity(L, 1, 1, "status(process)");
     lua_Integer id = check_process_id(L, 1);
     MvProcessStatus status;
-    if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK) {
-        lua_pushnil(L);
-        return 1;
-    }
-    const char *states[] = {"running", "sleeping", "frozen"};
-    lua_pushstring(L, states[status]);
+    if (mv_process_status(engine.context, (MvProcessId)id, &status) == MV_OK)
+        lua_pushstring(L, process_status_name(status));
+    else
+        lua_pushliteral(L, "dead");
     return 1;
 }
 
@@ -1183,12 +1206,7 @@ self_index(lua_State *L)
         return 1;
     }
     if (key && strcmp(key, "status") == 0) {
-        MvProcessStatus status;
-        static const char *names[] = {"running", "sleeping", "frozen"};
-        if (mv_process_status(engine.context, (MvProcessId)self->id, &status) != MV_OK)
-            lua_pushnil(L);
-        else
-            lua_pushstring(L, names[status]);
+        lua_pushstring(L, process_status_name(current_status));
         return 1;
     }
     lua_getiuservalue(L, 1, 1);
@@ -1726,14 +1744,6 @@ define_process(lua_State *L)
     return 1;
 }
 
-/* Results are copies, never references to mutable scheduler storage. */
-static const char *
-state_name(ProcessState state)
-{
-    static const char *names[] = {"running", "sleeping", "frozen", "killed"};
-    return names[state];
-}
-
 static void
 push_process_handle(lua_State *L, const MvProcessInfo *info)
 {
@@ -1765,6 +1775,7 @@ push_process_handle(lua_State *L, const MvProcessInfo *info)
 static int
 find_by_type(lua_State *L)
 {
+    check_process_arity(L, 1, 1, "find(constructor)");
     if (!lua_iscfunction(L, 1) || lua_tocfunction(L, 1) != create_process)
         return luaL_error(L, "expected a process constructor");
     if (!lua_getupvalue(L, 1, 2))
@@ -1865,18 +1876,21 @@ hierarchy_query(lua_State *L, int direct)
 static int
 process_children(lua_State *L)
 {
+    check_process_arity(L, 1, 2, "children(process, options?)");
     return hierarchy_query(L, 1);
 }
 
 static int
 process_descendants(lua_State *L)
 {
+    check_process_arity(L, 1, 2, "descendants(process, options?)");
     return hierarchy_query(L, 0);
 }
 
 static int
 snapshot(lua_State *L)
 {
+    check_process_arity(L, 0, 0, "snapshot()");
     sync_processes();
     size_t count = 0, lineage_count = 0;
     MvInspectionHeader header;
@@ -1940,7 +1954,7 @@ snapshot(lua_State *L)
         lua_pushboolean(L, p->attached); lua_setfield(L, -2, "attached");
         lua_pushinteger(L, (lua_Integer)p->type); lua_setfield(L, -2, "type");
         lua_pushinteger(L, p->priority); lua_setfield(L, -2, "priority");
-        lua_pushstring(L, state_name((ProcessState)p->status)); lua_setfield(L, -2, "status");
+        lua_pushstring(L, process_status_name(p->status)); lua_setfield(L, -2, "status");
         lua_pushinteger(L, (lua_Integer)p->messages); lua_setfield(L, -2, "messages");
         lua_pushinteger(L, (lua_Integer)draw_counts[i]); lua_setfield(L, -2, "draw_commands");
         lua_pushboolean(L, p->status != MV_PROCESS_SLEEPING); lua_setfield(L, -2, "visible");
@@ -5474,6 +5488,10 @@ static const struct { const char *name; const char *value; } api_constants[] = {
     {"SIGNAL_FREEZE", "freeze"},
     {"SIGNAL_WAKEUP", "wakeup"},
     {"SIGNAL_KILL", "kill"},
+    {"STATUS_RUNNING", "running"},
+    {"STATUS_SLEEPING", "sleeping"},
+    {"STATUS_FROZEN", "frozen"},
+    {"STATUS_DEAD", "dead"},
 };
 
 /* Each entry defines a Lua palette member and a global export. */
@@ -5680,6 +5698,10 @@ static const char *const global_names[] = {
     "SIGNAL_FREEZE",
     "SIGNAL_WAKEUP",
     "SIGNAL_KILL",
+    "STATUS_RUNNING",
+    "STATUS_SLEEPING",
+    "STATUS_FROZEN",
+    "STATUS_DEAD",
 #define PALETTE_NAME(name, r, g, b, a) #name,
     PALETTE_COLOR_LIST(PALETTE_NAME)
 #undef PALETTE_NAME
@@ -7303,14 +7325,15 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "define");
     static const char *const process_functions[] = {
         "spawn", "find", "children", "descendants", "snapshot", "frame", "signal", "signal_tree", "set_priority",
-        "get_priority", "kill", "alive", "kill_tree", "status", "send"
+        "get_priority", "kill", "alive", "kill_tree", "status", "send", "recv"
     };
     for (size_t i = 0; i < sizeof(process_functions) / sizeof(process_functions[0]); ++i) {
         lua_getfield(L, -2, process_functions[i]);
         lua_setfield(L, -2, process_functions[i]);
     }
     for (size_t i = 0; i < sizeof(api_constants) / sizeof(api_constants[0]); ++i) {
-        if (strncmp(api_constants[i].name, "SIGNAL_", 7) == 0) {
+        if (strncmp(api_constants[i].name, "SIGNAL_", 7) == 0 ||
+            strncmp(api_constants[i].name, "STATUS_", 7) == 0) {
             lua_pushstring(L, api_constants[i].value);
             lua_setfield(L, -2, api_constants[i].name);
         }
