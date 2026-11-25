@@ -14,6 +14,9 @@ updated contracts/tests/docs, migration notes and native ABI/SDK mismatch checks
 No 1.0 source/API compatibility is required. External format fidelity is a separate
 per-format decision. See the [version plan](../versions/README.md).
 
+For the modern Lua fade unit change, see
+[Migrate modern Lua fades from ticks](fades.md#migrate-modern-lua-fades-from-ticks).
+
 ## Experimental Rust gameplay API
 
 Malvado 2.0 supports C, Lua and experimental Rust. Rust is a maintained, tested

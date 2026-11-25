@@ -146,12 +146,12 @@ to a channel raises an error. To make a mutable copy, use
 
 ## Fade the screen
 
-`mv.fade_off(ticks)` fades to opaque black, and `mv.fade_on(ticks)` fades back to transparent. The duration defaults to 16 simulation ticks. Calls are queued, so `mv.fade_off(); mv.fade_on()` runs the two transitions in order. The legacy import also supplies these two names. Its argument is a duration in ticks; it does not reproduce the historical speed argument.
+`mv.fade_off(500)` fades to opaque black over 500 ms. Call `mv.fade_on(500)`
+to queue a return to transparent black. Both default to 250 ms. For another
+color, call `mv.fade_to {color = mv.colors.BLUE, duration_ms = 500}`.
 
-For another color, call `mv.fade_to {color = mv.colors.BLUE, ticks = n}`.
-The duration is an integer from 0 to 1,000,000 ticks and defaults to 16. A duration of zero changes the color immediately when the request reaches the front of the queue. Up to 16 requests can wait behind the current transition; adding another raises an error. `mv.fade_active()` is true while a transition or queued request remains. `mv.fade_color()` returns the current color as one RGBA table. The overlay is drawn after processes and persistent text. It advances once per simulation tick and stops when the runner stops.
-
-In C, initialize `MvFade fade = {0}` and call `mv_fade_start(&fade, target, ticks)`. Call `mv_fade_step(&fade)` on each simulation tick and use `fade.current` as the color of a window-sized filled box. `mv_fade_active(&fade)` reports whether the transition is in progress. A start with invalid input returns 0 without changing the state. C callers manage any transition queue themselves.
+See [Fade transitions](fades.md) for queue behavior, timing, overlay order,
+the C and Rust APIs, and migration from Lua tick durations.
 
 ## Process graphics
 

@@ -703,23 +703,23 @@ function malvado.set_color(color) end
 ---@param color MvColor
 function malvado.clear_screen(color) end
 
----Queue a fade to a color over a number of ticks. Default 16 ticks.
+---Queue a fade to a color. The duration defaults to 250 ms and rounds up to a simulation tick.
 ---
 ---```lua
----fade_to {color = {0, 0, 0, 255}, ticks = 30}
+---fade_to {color = {0, 0, 0, 255}, duration_ms = 500}
 ---```
----@param options {color: MvColor, ticks?: integer}
+---@param options {color: MvColor, duration_ms?: number}
 function malvado.fade_to(options) end
 
----Start a fade to opaque black.
----@param ticks? integer Default 16.
-function malvado.fade_off(ticks) end
+---Queue a fade to opaque black.
+---@param duration_ms? number Default 250 ms.
+function malvado.fade_off(duration_ms) end
 
----Start a fade to fully transparent.
----@param ticks? integer Default 16.
-function malvado.fade_on(ticks) end
+---Queue a fade to transparent black.
+---@param duration_ms? number Default 250 ms.
+function malvado.fade_on(duration_ms) end
 
----Check whether a fade is running.
+---Check whether a fade is running or queued.
 ---@return boolean active
 function malvado.fade_active() end
 
