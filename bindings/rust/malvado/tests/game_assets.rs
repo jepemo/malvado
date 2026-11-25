@@ -1,5 +1,8 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "assets")]
+mod common;
+
 use malvado::{Error, Game};
 use std::path::Path;
 
@@ -40,7 +43,7 @@ fn game_directories_are_independent() -> Result<(), Error> {
 #[cfg(feature = "assets")]
 #[test]
 fn metadata_loads_follow_the_game_directory() -> Result<(), Error> {
-    let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../examples/aseprite");
+    let source_dir = common::root().join("examples/aseprite");
     let game = Game::with_game_dir(&source_dir)?;
     let library = game.load_asset("sheet.json", None)?;
     assert_eq!(library.source().format(), malvado::asset::Format::Aseprite);

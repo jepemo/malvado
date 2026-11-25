@@ -301,6 +301,23 @@ fn accepted(result: i32) -> Result<(), Error> {
 /// ```
 mod ownership_contract {}
 
+impl crate::Game {
+    /// Load a WAV sound relative to this game's current asset directory.
+    pub fn load_sound(&self, audio: Rc<Audio>, path: impl AsRef<Path>) -> Result<Sound, Error> {
+        Sound::load(audio, self.resolve_asset_path(path)?)
+    }
+
+    /// Open a music stream relative to this game's current asset directory.
+    pub fn load_music(
+        &self,
+        audio: Rc<Audio>,
+        path: impl AsRef<Path>,
+        looping: bool,
+    ) -> Result<Music, Error> {
+        Music::load(audio, self.resolve_asset_path(path)?, looping)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -428,22 +445,5 @@ mod tests {
         assert!(paused_data.upgrade().is_none());
         assert!(device.upgrade().is_none());
         assert!(!AUDIO_OWNED.load(Ordering::Acquire));
-    }
-}
-
-impl crate::Game {
-    /// Load a WAV sound relative to this game's current asset directory.
-    pub fn load_sound(&self, audio: Rc<Audio>, path: impl AsRef<Path>) -> Result<Sound, Error> {
-        Sound::load(audio, self.resolve_asset_path(path)?)
-    }
-
-    /// Open a music stream relative to this game's current asset directory.
-    pub fn load_music(
-        &self,
-        audio: Rc<Audio>,
-        path: impl AsRef<Path>,
-        looping: bool,
-    ) -> Result<Music, Error> {
-        Music::load(audio, self.resolve_asset_path(path)?, looping)
     }
 }
