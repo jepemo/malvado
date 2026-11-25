@@ -24,7 +24,7 @@ fn definition(looping: bool) -> Animation {
 fn shared_clock_trace_and_retained_definition() {
     let mut game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -89,9 +89,9 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
     let slow = game
-        .spawn(
+        .spawn_with(
             SpawnOptions {
-                fps: 15,
+                fps: Some(15),
                 ..Default::default()
             },
             move |p| async move {
@@ -115,7 +115,7 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
     assert_eq!(polls.get(), 3);
     let during = definition(true);
     let actor = game
-        .spawn(Default::default(), move |p| async move {
+        .spawn(move |p| async move {
             p.current().set_animation_clock(&during)?;
             drop(during);
             loop {
@@ -127,9 +127,7 @@ fn cadence_and_in_tick_assignment_use_one_native_tick() {
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 0);
     game.tick().unwrap();
     assert_eq!(actor.animation_clock().unwrap().unwrap().elapsed_us, 16666);
-    let ended = game
-        .spawn(Default::default(), |_| async { Ok(()) })
-        .unwrap();
+    let ended = game.spawn(|_| async { Ok(()) }).unwrap();
     ended.set_animation_clock(&definition(true)).unwrap();
     game.tick().unwrap();
     assert_eq!(ended.animation_clock(), Err(Error::NotFound));

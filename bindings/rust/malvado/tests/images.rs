@@ -507,7 +507,7 @@ fn main() {
     let process_slot = slot.clone();
     let mut game = Game::new().unwrap();
     let handle = game
-        .spawn(Default::default(), move |process| async move {
+        .spawn(move |process| async move {
             *process_slot.borrow_mut() = Some(process.resource(pending)?);
             process.frame().await;
             Ok(())
@@ -551,7 +551,7 @@ fn main() {
     // Stored commands retain the image and window independently of caller values.
     let retained_engine = Game::new().unwrap();
     let actor = retained_engine
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

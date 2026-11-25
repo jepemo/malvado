@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use std::ptr::{self, NonNull};
 use std::rc::Rc;
 
+const SIMULATION_HZ: u32 = 60;
+
 pub(crate) fn result(code: i32) -> Result<(), Error> {
     let error = match code {
         sys::MV_OK => return Ok(()),
@@ -30,6 +32,12 @@ pub(crate) fn result(code: i32) -> Result<(), Error> {
 
 pub(crate) struct Runtime {
     native: Cell<Option<NonNull<sys::MvContext>>>,
+    tick: Cell<u64>,
+    default_fps: Cell<u32>,
+    #[cfg(feature = "graphics")]
+    window: Option<std::rc::Weak<crate::window::Window>>,
+    #[cfg(feature = "graphics")]
+    quit_requested: Cell<bool>,
 }
 impl Runtime {
     pub(crate) fn live(&self) -> Result<*mut sys::MvContext, Error> {
@@ -42,6 +50,10 @@ impl Runtime {
 /// may safely outlive shutdown.
 pub struct Game {
     runtime: Rc<Runtime>,
+    #[cfg(feature = "graphics")]
+    pub(crate) window: Option<Rc<crate::window::Window>>,
+    #[cfg(feature = "graphics")]
+    pub(crate) audio: Option<Rc<crate::audio::Audio>>,
 }
 impl Game {
     /// Accumulate finite nonnegative wall time and return due logical ticks.
@@ -121,7 +133,7 @@ impl Game {
     pub fn new() -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: fixed valid native clock settings; this owner destroys once.
-        Self::from_native(unsafe { sys::mv_context_create(60.0, 5) })
+        Self::from_native(unsafe { sys::mv_context_create(f64::from(SIMULATION_HZ), 5) })
     }
 
     /// Create a game with a host-selected directory. A relative directory is
@@ -134,7 +146,7 @@ impl Game {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: native copies the directory and this owner destroys once.
         Self::from_native(unsafe {
-            sys::mv_context_create_with_game_dir(60.0, 5, directory.as_ptr())
+            sys::mv_context_create_with_game_dir(f64::from(SIMULATION_HZ), 5, directory.as_ptr())
         })
     }
 
@@ -143,8 +155,31 @@ impl Game {
         Ok(Self {
             runtime: Rc::new(Runtime {
                 native: Cell::new(Some(native)),
+                tick: Cell::new(0),
+                default_fps: Cell::new(0),
+                #[cfg(feature = "graphics")]
+                window: None,
+                #[cfg(feature = "graphics")]
+                quit_requested: Cell::new(false),
             }),
+            #[cfg(feature = "graphics")]
+            window: None,
+            #[cfg(feature = "graphics")]
+            audio: None,
         })
+    }
+
+    #[cfg(feature = "graphics")]
+    pub(crate) fn attach_window(&mut self, window: crate::window::Window) {
+        let window = Rc::new(window);
+        // Only the windowed constructor calls this, before creating handles.
+        Rc::get_mut(&mut self.runtime).unwrap().window = Some(Rc::downgrade(&window));
+        self.window = Some(window);
+    }
+
+    #[cfg(feature = "graphics")]
+    pub(crate) fn quit_requested(&self) -> bool {
+        self.runtime.quit_requested.get()
     }
     /// Return the absolute directory selected at startup.
     pub fn game_dir(&self) -> Result<PathBuf, Error> {
@@ -201,7 +236,25 @@ impl Game {
         path_from_bytes(&bytes[..size - 1])
     }
 
-    pub fn spawn<F, Fut>(&self, options: SpawnOptions, run: F) -> Result<Handle, Error>
+    /// Set the cadence inherited by subsequent root and child spawns.
+    /// Valid values are 0..=60, where 0 and 60 run on every eligible tick.
+    pub fn set_fps(&self, fps: u32) -> Result<(), Error> {
+        validate_fps(fps)?;
+        self.runtime.default_fps.set(fps);
+        Ok(())
+    }
+
+    /// Schedule a root process with the current defaults.
+    pub fn spawn<F, Fut>(&self, run: F) -> Result<Handle, Error>
+    where
+        F: FnOnce(ProcessContext) -> Fut + 'static,
+        Fut: Future<Output = Result<(), Error>> + 'static,
+    {
+        self.spawn_with(SpawnOptions::default(), run)
+    }
+
+    /// Schedule a root process with explicit options.
+    pub fn spawn_with<F, Fut>(&self, options: SpawnOptions, run: F) -> Result<Handle, Error>
     where
         F: FnOnce(ProcessContext) -> Fut + 'static,
         Fut: Future<Output = Result<(), Error>> + 'static,
@@ -222,8 +275,16 @@ impl Game {
             .collect()
     }
     pub fn tick(&mut self) -> Result<(), Error> {
+        let ctx = self.runtime.live()?;
+        let previous = self.runtime.tick.get();
+        let tick = previous.checked_add(1).ok_or(Error::Overflow)?;
+        self.runtime.tick.set(tick);
         // SAFETY: the unique Game borrow prevents reentrant tick/destruction.
-        result(unsafe { sys::mv_process_tick(self.runtime.live()?) })
+        let code = unsafe { sys::mv_process_tick(ctx) };
+        if code != sys::MV_OK && code != sys::MV_PROCESS_ERROR {
+            self.runtime.tick.set(previous);
+        }
+        result(code)
     }
     pub fn process_count(&self) -> usize {
         // SAFETY: Game keeps the native context live on its owner thread.
@@ -280,11 +341,12 @@ impl Drop for Game {
 }
 
 /// Owned process configuration. Child spawns attach by default. Root spawns
-/// have no creator or owner. FPS 0/60 means every eligible tick.
+/// have no creator or owner.
 #[derive(Clone, Copy, Debug)]
 pub struct SpawnOptions {
     pub priority: i64,
-    pub fps: u32,
+    /// None inherits the current game default. Some(0) and Some(60) run every eligible tick.
+    pub fps: Option<u32>,
     pub attached: bool,
     pub type_id: u64,
 }
@@ -292,7 +354,7 @@ impl Default for SpawnOptions {
     fn default() -> Self {
         Self {
             priority: 0,
-            fps: 0,
+            fps: None,
             attached: true,
             type_id: 0,
         }
@@ -486,7 +548,8 @@ impl Handle {
 
 #[derive(Clone)]
 pub struct ProcessContext {
-    current: Handle,
+    pub(crate) current: Handle,
+    delta: Rc<Cell<f64>>,
 }
 impl ProcessContext {
     pub fn current(&self) -> Handle {
@@ -495,7 +558,72 @@ impl ProcessContext {
     pub fn frame(&self) -> Frame {
         Frame::new()
     }
-    pub fn spawn<F, Fut>(&self, options: SpawnOptions, run: F) -> Result<Handle, Error>
+    pub fn position(&self) -> Result<(f64, f64), Error> {
+        self.current.position()
+    }
+
+    pub fn set_position(&self, x: f64, y: f64) -> Result<(), Error> {
+        self.current.set_position(x, y)
+    }
+
+    pub fn x(&self) -> Result<f64, Error> {
+        self.position().map(|(x, _)| x)
+    }
+
+    pub fn y(&self) -> Result<f64, Error> {
+        self.position().map(|(_, y)| y)
+    }
+
+    pub fn set_x(&self, x: f64) -> Result<(), Error> {
+        self.set_position(x, self.y()?)
+    }
+
+    pub fn set_y(&self, y: f64) -> Result<(), Error> {
+        self.set_position(self.x()?, y)
+    }
+
+    pub fn z(&self) -> Result<f64, Error> {
+        self.current.z()
+    }
+
+    pub fn set_z(&self, value: f64) -> Result<(), Error> {
+        self.current.set_z(value)
+    }
+
+    pub fn angle(&self) -> Result<f64, Error> {
+        self.current.angle()
+    }
+
+    pub fn set_angle(&self, value: f64) -> Result<(), Error> {
+        self.current.set_angle(value)
+    }
+
+    pub fn scale(&self) -> Result<f64, Error> {
+        self.current.scale()
+    }
+
+    pub fn set_scale(&self, value: f64) -> Result<(), Error> {
+        self.current.set_scale(value)
+    }
+
+    /// Simulation seconds since the previous activation. The first poll is zero.
+    /// An activation after sleep, freeze, or an unready future includes elapsed
+    /// logical ticks. The value stays fixed until the next poll.
+    pub fn delta(&self) -> f64 {
+        self.delta.get()
+    }
+
+    /// Schedule an attached child with the current game defaults.
+    pub fn spawn<F, Fut>(&self, run: F) -> Result<Handle, Error>
+    where
+        F: FnOnce(ProcessContext) -> Fut + 'static,
+        Fut: Future<Output = Result<(), Error>> + 'static,
+    {
+        self.spawn_with(SpawnOptions::default(), run)
+    }
+
+    /// Schedule a child, attached to this process unless specified otherwise.
+    pub fn spawn_with<F, Fut>(&self, options: SpawnOptions, run: F) -> Result<Handle, Error>
     where
         F: FnOnce(ProcessContext) -> Fut + 'static,
         Fut: Future<Output = Result<(), Error>> + 'static,
@@ -526,6 +654,29 @@ impl ProcessContext {
     }
     pub fn resource<T: 'static>(&self, value: T) -> Result<Resource<T>, Error> {
         Resource::create(&self.current.inner.runtime, Some(&self.current), value)
+    }
+
+    #[cfg(feature = "graphics")]
+    pub(crate) fn managed_window(&self) -> Option<Rc<crate::window::Window>> {
+        let runtime = &self.current.inner.runtime;
+        runtime.live().ok()?;
+        runtime.window.as_ref()?.upgrade()
+    }
+
+    /// Ask the managed runner to exit after the current native tick.
+    /// A manual host continues to control its own loop.
+    #[cfg(feature = "graphics")]
+    pub fn quit(&self) -> Result<(), Error> {
+        let runtime = &self.current.inner.runtime;
+        runtime.live()?;
+        if !self.current.snapshot()?.alive {
+            return Err(Error::NotFound);
+        }
+        if runtime.window.is_none() {
+            return Err(Error::Platform("no managed window"));
+        }
+        runtime.quit_requested.set(true);
+        Ok(())
     }
 }
 fn signal_in(
@@ -560,6 +711,9 @@ fn signal_in(
 
 struct NativeTask {
     task: Task,
+    runtime: Rc<Runtime>,
+    delta: Rc<Cell<f64>>,
+    last_poll: Option<u64>,
     cadence: sys::MvCadence,
     fps: u32,
     first: bool,
@@ -576,6 +730,12 @@ unsafe extern "C" fn step(ctx: *mut sys::MvContext, id: u64, user: *mut c_void) 
             return Step::Yield;
         }
         process.task.poll_with(|| {
+            let tick = process.runtime.tick.get();
+            let delta = process
+                .last_poll
+                .replace(tick)
+                .map_or(0.0, |last| (tick - last) as f64 / f64::from(SIMULATION_HZ));
+            process.delta.set(delta);
             let mut reference = sys::MvProcessRef::default();
             // SAFETY: native callback supplies its live context/id. Clear only
             // after cadence and readiness permit an actual future poll.
@@ -597,6 +757,13 @@ unsafe extern "C" fn destroy(user: *mut c_void) {
         drop(Box::from_raw(user.cast::<NativeTask>()));
     });
 }
+fn validate_fps(fps: u32) -> Result<(), Error> {
+    if fps > SIMULATION_HZ {
+        return Err(Error::InvalidArgument);
+    }
+    Ok(())
+}
+
 fn spawn<F, Fut>(
     runtime: &Rc<Runtime>,
     creator: u64,
@@ -608,14 +775,17 @@ where
     F: FnOnce(ProcessContext) -> Fut + 'static,
     Fut: Future<Output = Result<(), Error>> + 'static,
 {
-    if options.fps > 60 {
-        return Err(Error::InvalidArgument);
-    }
+    let fps = options.fps.unwrap_or_else(|| runtime.default_fps.get());
+    validate_fps(fps)?;
     let ctx = runtime.live()?;
+    let delta = Rc::new(Cell::new(0.0));
     let task = Box::new(NativeTask {
         task: Task::empty(),
+        runtime: runtime.clone(),
+        delta: delta.clone(),
+        last_poll: None,
         cadence: sys::MvCadence::default(),
-        fps: options.fps,
+        fps,
         first: true,
     });
     let user = Box::into_raw(task);
@@ -668,6 +838,7 @@ where
     };
     let process = ProcessContext {
         current: handle.clone(),
+        delta,
     };
     // SAFETY: spawn cannot run until the next tick, so C has no active borrow.
     // Lazy construction puts factory panics inside the poll panic boundary.

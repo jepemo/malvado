@@ -50,7 +50,10 @@ The starter opens a window. Close it with **Escape** or the window's close
 control. Edit `main.lua`, `main.c` or `main.rs` to change the greeting. C and
 Rust projects can use `malvado build` to compile before running. See
 [SDK and projects](sdk.md) for the SDK and [gameplay API guides](api.md) for the
-scheduler, resources and language entry points.
+scheduler, resources and language entry points. The Rust starter uses a
+named async process and the managed runner. See the
+[first Rust games](https://github.com/jepemo/malvado/tree/master/examples/rust)
+for Hello World and several independently moving balls.
 
 ## Build from source (contributors)
 

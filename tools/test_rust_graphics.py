@@ -66,7 +66,7 @@ def consumer(prefix, profile):
         '     frame.rectangle(Rectangle {x:10,y:10,width:20,height:20}, true, state.color())\n'
         ' })?;\n'
         ' let geometry = malvado::graphic::Geometry::rectangle(10.0,10.0,malvado::graphic::Pivot::TopLeft)?;\n'
-        ' let game = Game::new()?; let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?; let assigned = Image::from_rgba(window.clone(),1,1,&[255,0,0,255])?.sprite((0.0, 0.0))?; let animated = vec![malvado::atlas::SpriteFrame {sprite:assigned.clone(),duration_us:50000}]; actor.set_sprite_animation(&animated,true)?; drop(animated); frame.process_graphics(&game)?; actor.clear_graphic()?; actor.set_sprite(&assigned)?; drop(assigned); assert_eq!(actor.sprite_geometry()?.unwrap().region.width,1); frame.process_graphics(&game)?; actor.clear_graphic()?; actor.set_graphic(Graphic { geometry: Geometry::circle(3.0)?, color: state.color() })?; frame.process_graphics(&game)?; actor.clear_graphic()?;\n'
+        ' let game = Game::new()?; let actor = game.spawn(|p| async move {loop {p.frame().await;}})?; let assigned = Image::from_rgba(window.clone(),1,1,&[255,0,0,255])?.sprite((0.0, 0.0))?; let animated = vec![malvado::atlas::SpriteFrame {sprite:assigned.clone(),duration_us:50000}]; actor.set_sprite_animation(&animated,true)?; drop(animated); frame.process_graphics(&game)?; actor.clear_graphic()?; actor.set_sprite(&assigned)?; drop(assigned); assert_eq!(actor.sprite_geometry()?.unwrap().region.width,1); frame.process_graphics(&game)?; actor.clear_graphic()?; actor.set_graphic(Graphic { geometry: Geometry::circle(3.0)?, color: state.color() })?; frame.process_graphics(&game)?; actor.clear_graphic()?;\n'
         ' let command_image = Image::from_rgba(window.clone(),1,1,&[0,255,0,255])?; actor.draw_image_region(&command_image,Rectangle {x:0,y:0,width:1,height:1},malvado::image::Transform::default())?; drop(command_image); actor.draw_text("Native",(2,3),20,state.color())?; assert_eq!(actor.draw_count()?,2); frame.process_graphics(&game)?; actor.clear_draw_commands()?;\n'
         ' let text = game.create_text("retained",(1,2),malvado::graphic::TextAlignment::Left)?; let font = Font::load(window.clone(),"AnonymousPro-Bold.ttf",24)?; text.set_font(&font,24,state.color())?; drop(font); frame.texts(&game)?; text.clear_font()?; text.set_builtin_font(window.clone(),20,state.color())?; frame.texts(&game)?; text.remove()?;\n'
         ' let camera = game.create_camera(malvado::camera::Camera::new(0.0,0.0,None)?)?; actor.set_camera(malvado::camera::Selection::Explicit(camera.clone()))?; frame.process_graphics(&game)?; camera.close()?; actor.set_camera(malvado::camera::Selection::Main)?;\n'
@@ -141,6 +141,9 @@ def main():
         if profile == "Release":
             graphics_only.append("--release")
         run(*graphics_only, env=env)
+        run("cargo", "check", "--locked", "--offline", "--bins", "--manifest-path",
+            str(ROOT / "examples/rust/Cargo.toml"),
+            *(["--release"] if profile == "Release" else []), env=env)
         output = capture(cargo, env=env)
         parity(output, "rust-key: ")
         output = capture([str(build / "key-edges-visual-test"), str(ROOT / "tests/key_edges_visual.lua")])

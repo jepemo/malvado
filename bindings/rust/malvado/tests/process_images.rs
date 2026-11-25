@@ -23,7 +23,7 @@ fn main() {
         let mut game = Game::new().unwrap();
         let natural = mode == "return";
         let actor = game
-            .spawn(Default::default(), move |p| async move {
+            .spawn(move |p| async move {
                 if !natural {
                     loop {
                         p.frame().await;
@@ -66,7 +66,7 @@ fn main() {
         actor.set_position(20.0, 20.0).unwrap();
         actor.set_scale(4.0).unwrap();
         let target = game
-            .spawn(Default::default(), |p| async move {
+            .spawn(|p| async move {
                 loop {
                     p.frame().await;
                 }
@@ -153,9 +153,7 @@ fn main() {
         .sprite((0.0, 0.0))
         .unwrap();
     let mut game = Game::new().unwrap();
-    let actor = game
-        .spawn(Default::default(), |_| async { Ok(()) })
-        .unwrap();
+    let actor = game.spawn(|_| async { Ok(()) }).unwrap();
     game.tick().unwrap();
     let before = Rc::strong_count(&window);
     assert_eq!(actor.set_sprite(&sprite), Err(Error::NotFound));
@@ -174,14 +172,14 @@ fn main() {
     let first = Game::new().unwrap();
     let second = Game::new().unwrap();
     let a = first
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
         })
         .unwrap();
     let b = second
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

@@ -351,3 +351,76 @@ pub(crate) fn main_thread() -> bool {
     // SAFETY: read-only native thread inventory; no pointers or callbacks.
     unsafe { malvado_rust_main_thread() != 0 }
 }
+
+// The weak game service does not keep the window alive after the game ends.
+impl crate::ProcessContext {
+    pub fn key_down(&self, key: Key) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.key_down(key))
+    }
+
+    pub fn key_pressed(&self, key: Key) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.key_pressed(key))
+    }
+
+    pub fn key_released(&self, key: Key) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.key_released(key))
+    }
+
+    pub fn mouse_position(&self) -> (i32, i32) {
+        self.managed_window()
+            .map_or((0, 0), |window| window.mouse_position())
+    }
+
+    pub fn mouse_down(&self, button: MouseButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.mouse_down(button))
+    }
+
+    pub fn mouse_pressed(&self, button: MouseButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.mouse_pressed(button))
+    }
+
+    pub fn mouse_released(&self, button: MouseButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.mouse_released(button))
+    }
+
+    pub fn pad_connected(&self, slot: u8) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.pad_connected(slot))
+    }
+
+    pub fn pad_button_down(&self, slot: u8, button: PadButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.pad_button_down(slot, button))
+    }
+
+    pub fn pad_button_pressed(&self, slot: u8, button: PadButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.pad_button_pressed(slot, button))
+    }
+
+    pub fn pad_button_released(&self, slot: u8, button: PadButton) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.pad_button_released(slot, button))
+    }
+
+    pub fn pad_axis(&self, slot: u8, axis: PadAxis) -> f32 {
+        self.managed_window()
+            .map_or(0.0, |window| window.pad_axis(slot, axis))
+    }
+
+    pub fn text_input_next(&self) -> Option<char> {
+        self.managed_window()
+            .and_then(|window| window.text_input_next())
+    }
+
+    pub fn set_text_input_keyboard(&self, visible: bool) -> bool {
+        self.managed_window()
+            .is_some_and(|window| window.set_text_input_keyboard(visible))
+    }
+}

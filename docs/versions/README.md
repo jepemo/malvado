@@ -16,3 +16,7 @@
 The [roadmap](../roadmap/README.md) holds feature proposals. When work is
 selected for implementation, define the scope and create its version page.
 Fixes go into releases as concrete issues are found and resolved.
+
+The current Rust gameplay API uses managed windows and shorter spawning.
+See the [Rust migration guide](../development/rust-game-migration.md)
+for source changes. These changes have no assigned release version.

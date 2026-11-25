@@ -17,7 +17,7 @@ from test_android_export import center_pixel
 from android_export import GAME_ACTIVITY
 
 GAME = r'''
-use malvado::{Game, Error, SpawnOptions, window::{Window, Color}};
+use malvado::{Game, Error, window::{Window, Color}};
 use std::{rc::Rc, cell::Cell};
 struct Guard(Rc<Cell<usize>>);
 impl Drop for Guard {
@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
     let drops = Rc::new(Cell::new(0));
     let guard = Guard(drops.clone());
     if MODE == 2 { let _guard = guard; panic!("expected exported Rust panic"); }
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         let _guard = guard;
         let _image = p.resource(image)?;
         if MODE == 1 { eprintln!("expected exported Rust process error"); return Err(Error::Process); }

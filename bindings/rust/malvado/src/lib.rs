@@ -5,28 +5,42 @@
 //! releases before Rust support is declared stable. Significant changes include
 //! migration guidance. This label does not apply to the native C core.
 //!
-//! `Game` owns the current native context. Construction creates no window and
-//! installs no host loop. Owned async processes use the same C scheduler as Lua
-//! and C; window, input, audio and drawing services stay explicit.
+//! Start windowed gameplay with the `graphics` feature and the prelude.
+//! Owned async processes run on the native C scheduler.
 //!
-//! A process owns its game state. Native handles expose copied snapshots, not
-//! mutable references into a suspended future. Contexts and handles are local
-//! to one thread. A cloned waker may cross threads; waking never calls C.
+#![cfg_attr(
+    feature = "graphics",
+    doc = r#"
+```no_run
+use malvado::prelude::*;
+
+async fn hello(p: ProcessContext) -> Result<(), Error> {
+    loop {
+        p.draw_text("Hello, Malvado!", (40, 40), 48, WHITE)?;
+        p.frame().await;
+    }
+}
+
+fn main() -> Result<(), Error> {
+    let game = Game::windowed(800, 600, "Hello world")?;
+    game.spawn(hello)?;
+    game.run()
+}
+```
+"#
+)]
+//! Use `Game::new()` for a headless game or an explicit host loop. Handles and
+//! contexts are local to one thread. A cloned waker may cross threads; waking
+//! never calls C.
 //!
-//! ```no_run
-//! use malvado::{Game, Error, ProcessContext, SpawnOptions};
-//! struct Counter(u32);
-//! impl Counter {
-//!     async fn run(mut self, process: ProcessContext) -> Result<(), Error> {
-//!         for _ in 0..3 {
-//!             self.0 += 1;
-//!             process.frame().await;
-//!         }
-//!         Ok(())
-//!     }
+//! ```
+//! use malvado::prelude::*;
+//! async fn worker(p: ProcessContext) -> Result<(), Error> {
+//!     p.frame().await;
+//!     Ok(())
 //! }
 //! let mut game = Game::new()?;
-//! game.spawn(SpawnOptions::default(), |process| Counter(0).run(process))?;
+//! game.spawn(worker)?;
 //! while game.process_count() != 0 { game.tick()?; }
 //! # Ok::<(), Error>(())
 //! ```
@@ -54,6 +68,8 @@ pub mod graphic;
 #[cfg(feature = "graphics")]
 pub mod image;
 mod resource;
+#[cfg(feature = "graphics")]
+mod runner;
 mod task;
 #[cfg(feature = "graphics")]
 pub mod window;
@@ -61,6 +77,16 @@ pub mod window;
 pub use engine::{Game, Handle, LineageEntry, ProcessContext, Relation, Snapshot, SpawnOptions};
 pub use resource::Resource;
 pub use task::Frame;
+
+/// Common types, shapes, and colors for gameplay code.
+pub mod prelude {
+    #[cfg(feature = "graphics")]
+    pub use crate::window::{Key, MouseButton, PadAxis, PadButton};
+    pub use crate::{
+        Error, Game, Handle, ProcessContext, Signal, SpawnOptions,
+        graphic::{BLACK, BLUE, CYAN, Color, GREEN, ORANGE, RED, WHITE, circle, rect},
+    };
+}
 
 /// Typed failures from the engine. Process includes an async return error or
 /// a contained panic; its native end reason is Error.
@@ -121,10 +147,10 @@ pub enum EndReason {
 /// Process futures own their state. A borrowed mutable local cannot escape
 /// into a native process whose lifetime extends past the spawn call.
 /// ```compile_fail
-/// use malvado::{Game, SpawnOptions};
+/// use malvado::Game;
 /// let game = Game::new().unwrap();
 /// let mut state = 0;
-/// game.spawn(SpawnOptions::default(), |_| async {
+/// game.spawn(|_| async {
 ///     state += 1;
 ///     Ok(())
 /// }).unwrap();
@@ -133,10 +159,10 @@ pub enum EndReason {
 /// Once state moves into a process, external code cannot keep another mutable
 /// owner. This prevents aliases to data across an await.
 /// ```compile_fail
-/// use malvado::{Game, SpawnOptions};
+/// use malvado::Game;
 /// let game = Game::new().unwrap();
 /// let mut state = vec![1];
-/// game.spawn(SpawnOptions::default(), move |p| async move {
+/// game.spawn(move |p| async move {
 ///     let borrowed = &mut state;
 ///     p.frame().await;
 ///     borrowed.push(2);
@@ -146,9 +172,9 @@ pub enum EndReason {
 /// ```
 /// A process token cannot recursively drive the native scheduler.
 /// ```compile_fail
-/// use malvado::{Game, SpawnOptions};
+/// use malvado::Game;
 /// let game = Game::new().unwrap();
-/// game.spawn(SpawnOptions::default(), |mut p| async move {
+/// game.spawn(|mut p| async move {
 ///     p.tick()?;
 ///     Ok(())
 /// }).unwrap();

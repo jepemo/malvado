@@ -106,6 +106,20 @@ Before you ship a new or changed Lua function, check:
 
 Keep this checklist short. It is guidance, not a new approval gate.
 
+### Rust gameplay API design guidelines
+
+- Teach ordinary named async functions and `frame().await` first. Let each
+  process own its state. Capture spawn parameters in a closure or move an owned
+  struct into its async run method.
+- Give common operations simple defaults. Use `spawn` for those defaults and
+  `spawn_with` for explicit options. Keep examples short and runnable.
+- Delegate process properties, collision, resources, and scheduling to checked
+  native operations. Preserve owner-thread access and native cancellation.
+- Use the managed runner in introductory windowed games. Keep manual ticks,
+  explicit platform services, handles, and headless use available.
+- Introduce extra declaration syntax only after a concrete use case and
+  a reviewed design. Keep the ordinary Rust entry points available.
+
 ### Compatibility policy
 
 Malvado 2.0 is not backward compatible with Malvado 1.0.

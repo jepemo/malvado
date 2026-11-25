@@ -24,8 +24,7 @@ def prepare(version, revision, output):
         raise ValueError('expected a full lowercase Git commit ID')
     if output.exists():
         raise FileExistsError(f'output directory already exists: {output}')
-    snapshot = subprocess.check_output([
-        'git', '-C', str(ROOT), 'archive', revision, '--',
+    sources = [
         'docs/site/getting-started.md', 'docs/site/sdk.md', 'docs/site/api.md',
         'docs/api',
         'examples/catch/lua/main.lua', 'examples/catch/c/main.c',
@@ -34,7 +33,12 @@ def prepare(version, revision, output):
         'examples/meteors/main.lua',
         'examples/move/main.lua',
         f'docs/versions/{version}.md',
-    ])
+    ]
+    git = ['git', '-C', str(ROOT)]
+    rust_lessons = 'examples/rust'
+    if subprocess.check_output([*git, 'ls-tree', revision, '--', rust_lessons], text=True):
+        sources.append(rust_lessons)
+    snapshot = subprocess.check_output([*git, 'archive', revision, '--', *sources])
     with tempfile.TemporaryDirectory(prefix='malvado-docs-') as temporary:
         staged = Path(temporary)
         with tarfile.open(fileobj=io.BytesIO(snapshot)) as files:

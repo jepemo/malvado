@@ -26,7 +26,7 @@ the C core experimental or permit broken documented behavior. Future 2.x Rust
 API changes can require source updates; significant changes need migration
 guidance. No long-term Rust API stability guarantee exists yet. See the
 [Rust support policy](rust-support.md) and the approved
-[Engine to Game migration](../development/rust-game-migration.md).
+[Rust game migration](../development/rust-game-migration.md).
 
 ## Independent profiles
 

@@ -67,12 +67,12 @@ assert(count == 3)
 print('Lua export: 3')
 '''
 RUST_GAME = r'''
-use malvado::{Error, Game, SpawnOptions, window::{Window, Color}};
+use malvado::{Error, Game, window::{Window, Color}};
 fn main() -> Result<(), Error> {
     assert_eq!(std::fs::read("assets/value.txt").unwrap(), b"asset\nvalue\r\n");
     let window = Window::open(160,120,"Windows Rust export")?;
     let mut game = Game::new()?;
-    game.spawn(SpawnOptions::default(), |p| async move {
+    game.spawn(|p| async move {
         for _ in 0..3 { p.frame().await; }
         println!("Rust export: 3");
         Ok(())

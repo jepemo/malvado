@@ -8,7 +8,7 @@ fn identity_selection_close_and_lifetime() {
     let game = Game::new().unwrap();
     let other = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -80,7 +80,7 @@ fn registered_follow_and_error_atomicity() {
     let mut game = Game::new().unwrap();
     let other = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

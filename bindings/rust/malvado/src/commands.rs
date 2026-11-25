@@ -85,3 +85,35 @@ impl Handle {
         })
     }
 }
+
+impl crate::ProcessContext {
+    pub fn draw_text(
+        &self,
+        text: &str,
+        position: (i32, i32),
+        size: i32,
+        color: Color,
+    ) -> Result<(), Error> {
+        self.current.draw_text(text, position, size, color)
+    }
+
+    pub fn draw_box(
+        &self,
+        position: (i32, i32),
+        size: (i32, i32),
+        filled: bool,
+        color: Color,
+    ) -> Result<(), Error> {
+        self.current.draw_box(position, size, filled, color)
+    }
+
+    pub fn draw_circle(
+        &self,
+        center: (i32, i32),
+        radius: i32,
+        filled: bool,
+        color: Color,
+    ) -> Result<(), Error> {
+        self.current.draw_circle(center, radius, filled, color)
+    }
+}

@@ -387,6 +387,15 @@ pub struct MvColor {
     pub b: u8,
     pub a: u8,
 }
+impl MvColor {
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self::rgba(r, g, b, 255)
+    }
+
+    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+}
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MvGraphic {

@@ -6,7 +6,7 @@ mod keyboard;
 mod music;
 mod touch;
 use malvado::{
-    Error, Game, SpawnOptions,
+    Error, Game,
     drawing::Rectangle,
     window::{Color, Window},
 };
@@ -60,7 +60,7 @@ pub extern "C" fn malvado_rust_entry() {
     let drops = Rc::new(Cell::new(0));
     let guard = Guard(drops.clone());
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |process| async move {
+    game.spawn(move |process| async move {
         let _guard = guard;
         let _image = owned_image;
         loop {

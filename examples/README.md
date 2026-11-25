@@ -17,6 +17,7 @@ The directory migration is planned, not complete. Current entry points include:
 - [Lua blinking text](blinking-text/README.md) with shared fonts and RGBA colors.
 - [Lua world collision](world-collision/README.md).
 - [Lua Space Asteroids game](space_asteroids/README.md).
+- [First Rust games](rust/README.md) with Hello World and independent moving balls.
 - [Current Rust process and world SDK examples](../bindings/rust/README.md).
 
 Each example's README gives its commands and language coverage. See the

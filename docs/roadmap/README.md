@@ -8,7 +8,7 @@ holds the design, dependencies and verification ideas.
 | Proposal | Goal | Current state and dependencies |
 | --- | --- | --- |
 | [WebAssembly / HTML5 export](webassembly.md) | Export games to static web hosting through the existing CLI | C runtime proof, then C/Lua export and browser reliability. Rust needs a separate toolchain proof. |
-| [Rust API Ergonomics and DIV-Style Processes](rust-ergonomics.md) | Evaluate concise functions and typed structs over the existing owned-future adapter | Proposal; both frontends remain open, with no syntax, architecture or version commitment. |
+| [Rust API Ergonomics and DIV-Style Processes](rust-ergonomics.md) | Managed gameplay and named async functions over the owned-future adapter | Baseline delivered in the current tree. Typed declarations remain research. |
 | [API candidate catalog](api-candidates.md) | Review historical calls and select useful modern capabilities | Existing pinned Bennu catalogs; DIV/Fénix coverage gaps are explicit. No blanket implementation selection. |
 | [Visual properties, effects and shaders](visual-effects.md) | Small process effects, reusable shaders, then camera effects | Proposal; requires completed shared process drawing and resource ownership. |
 | [Optional 2D and 3D process physics](physics.md) | Add simulation as a process capability while retaining lightweight collision APIs | Unassigned P1–P5; backend proof, integrated 2D, selected helpers, then scene-dependent 3D and optional tooling. [Library comparison](physics-libraries.md). |

@@ -1,9 +1,18 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 //! Native primitive geometry and copied process graph values.
 use crate::engine::result;
-use crate::{Error, Handle, collision::Shape};
+use crate::{Error, Handle, ProcessContext, collision::Shape};
 use malvado_sys as sys;
 pub use malvado_sys::MvColor as Color;
+
+pub const BLACK: Color = Color::rgb(0, 0, 0);
+pub const WHITE: Color = Color::rgb(255, 255, 255);
+pub const RED: Color = Color::rgb(255, 0, 0);
+pub const GREEN: Color = Color::rgb(0, 255, 0);
+pub const BLUE: Color = Color::rgb(0, 0, 255);
+pub const CYAN: Color = Color::rgb(0, 255, 255);
+pub const ORANGE: Color = Color::rgb(255, 165, 0);
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Pivot {
     Center,
@@ -70,7 +79,7 @@ impl crate::window::Frame<'_> {
 /// ```
 /// use malvado::{Game, graphic::{Graphic, Geometry, Pivot, Color}};
 /// let game = Game::new()?;
-/// let actor = game.spawn(Default::default(), |p| async move {
+/// let actor = game.spawn(|p| async move {
 ///     loop { p.frame().await; }
 /// })?;
 /// actor.set_graphic(Graphic {
@@ -87,6 +96,77 @@ pub struct Graphic {
     pub geometry: Geometry,
     pub color: Color,
 }
+
+/// Reusable primitive settings. Geometry is checked when assigned to a process.
+#[derive(Clone, Copy, Debug)]
+pub struct GraphicDescriptor {
+    primitive: Primitive,
+    color: Color,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Primitive {
+    Rectangle(f64, f64),
+    Circle(f64),
+    Explicit(Geometry),
+}
+
+/// A centered white rectangle. Width and height must be positive and finite.
+pub fn rect(width: f64, height: f64) -> GraphicDescriptor {
+    GraphicDescriptor {
+        primitive: Primitive::Rectangle(width, height),
+        color: WHITE,
+    }
+}
+
+/// A centered white circle. The radius must be positive and finite.
+pub fn circle(radius: f64) -> GraphicDescriptor {
+    GraphicDescriptor {
+        primitive: Primitive::Circle(radius),
+        color: WHITE,
+    }
+}
+
+impl GraphicDescriptor {
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+}
+
+impl From<Graphic> for GraphicDescriptor {
+    fn from(graphic: Graphic) -> Self {
+        Self {
+            primitive: Primitive::Explicit(graphic.geometry),
+            color: graphic.color,
+        }
+    }
+}
+
+impl ProcessContext {
+    /// Assign a primitive graph or an explicit checked graphic to this process.
+    pub fn set_graphic(&self, graphic: impl Into<GraphicDescriptor>) -> Result<(), Error> {
+        let graphic = graphic.into();
+        let geometry = match graphic.primitive {
+            Primitive::Rectangle(w, h) => Geometry::rectangle(w, h, Pivot::Center)?,
+            Primitive::Circle(radius) => Geometry::circle(radius)?,
+            Primitive::Explicit(geometry) => geometry,
+        };
+        self.current.set_graphic(Graphic {
+            geometry,
+            color: graphic.color,
+        })
+    }
+
+    pub fn graphic(&self) -> Result<Option<Graphic>, Error> {
+        self.current.graphic()
+    }
+
+    pub fn clear_graphic(&self) -> Result<(), Error> {
+        self.current.clear_graphic()
+    }
+}
+
 impl Handle {
     pub fn set_graphic(&self, graphic: Graphic) -> Result<(), Error> {
         // SAFETY: live owner-thread context and copied validated geometry/color.

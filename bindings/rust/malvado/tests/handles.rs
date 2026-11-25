@@ -10,7 +10,7 @@ fn canonical_handle_identity_and_properties_are_native() {
     let output = seen.clone();
     let mut game = Game::new().unwrap();
     let handle = game
-        .spawn(
+        .spawn_with(
             SpawnOptions {
                 priority: 3,
                 type_id: 12,
@@ -45,12 +45,8 @@ fn canonical_handle_identity_and_properties_are_native() {
 fn foreign_handles_cannot_signal_same_numbered_local_processes() {
     let a = Game::new().unwrap();
     let b = Game::new().unwrap();
-    let ah = a
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
-    let bh = b
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    let ah = a.spawn(|_| async { Ok(()) }).unwrap();
+    let bh = b.spawn(|_| async { Ok(()) }).unwrap();
     assert_eq!(ah.id(), bh.id());
     assert!(ah != bh);
     assert_eq!(
@@ -72,9 +68,9 @@ fn invalid_spawn_keeps_owned_state_with_the_caller_until_error_cleanup() {
     let count = Rc::new(Cell::new(0));
     let guard = Guard(count.clone());
     let game = Game::new().unwrap();
-    let result = game.spawn(
+    let result = game.spawn_with(
         SpawnOptions {
-            fps: 61,
+            fps: Some(61),
             ..Default::default()
         },
         move |_| async move {
@@ -93,7 +89,7 @@ fn priority_changes_apply_on_the_following_native_tick() {
     let output = order.clone();
     let mut game = Game::new().unwrap();
     let low = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             output.borrow_mut().push(1);
             p.frame().await;
             output.borrow_mut().push(1);
@@ -101,7 +97,7 @@ fn priority_changes_apply_on_the_following_native_tick() {
         })
         .unwrap();
     let output = order.clone();
-    game.spawn(
+    game.spawn_with(
         SpawnOptions {
             priority: 1,
             ..Default::default()

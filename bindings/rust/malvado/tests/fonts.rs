@@ -78,7 +78,7 @@ fn main() {
     let slot = Rc::new(RefCell::new(None));
     let owned = slot.clone();
     let handle = game
-        .spawn(Default::default(), move |process| async move {
+        .spawn(move |process| async move {
             *owned.borrow_mut() = Some(process.resource(selected)?);
             process.frame().await;
             Ok(())
@@ -138,7 +138,7 @@ fn main() {
     );
     assert_eq!(Rc::strong_count(&window), 1);
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

@@ -31,9 +31,9 @@ fn main() {
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
     let actor = game
-        .spawn(
+        .spawn_with(
             SpawnOptions {
-                fps: 15,
+                fps: Some(15),
                 ..Default::default()
             },
             move |p| async move {
@@ -45,7 +45,7 @@ fn main() {
         )
         .unwrap();
     let target = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -216,7 +216,7 @@ fn main() {
         let mut game = Game::new().unwrap();
         let natural = mode == "return";
         let actor = game
-            .spawn(Default::default(), move |p| async move {
+            .spawn(move |p| async move {
                 if !natural {
                     loop {
                         p.frame().await;
@@ -257,9 +257,7 @@ fn main() {
     let weak = Rc::downgrade(&window);
     let sequence = frames(window.clone());
     let mut game = Game::new().unwrap();
-    let ended = game
-        .spawn(Default::default(), |_| async { Ok(()) })
-        .unwrap();
+    let ended = game.spawn(|_| async { Ok(()) }).unwrap();
     game.tick().unwrap();
     assert_eq!(
         ended.set_sprite_animation(&sequence, true),
@@ -279,14 +277,14 @@ fn main() {
     let first = Game::new().unwrap();
     let second = Game::new().unwrap();
     let a = first
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
         })
         .unwrap();
     let b = second
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

@@ -58,7 +58,7 @@ fn main() {
     let out = slot.clone();
     let sound = Sound::load(audio.clone(), &path).unwrap();
     let process = game
-        .spawn(Default::default(), move |p| async move {
+        .spawn(move |p| async move {
             let resource = p.resource(sound)?;
             resource.play()?;
             resource.pause()?;

@@ -10,8 +10,8 @@ async fn work(process: ProcessContext, name: &str) -> Result<(), Error> {
 
 fn main() -> Result<(), Error> {
     let mut game = Game::new()?;
-    game.spawn(Default::default(), |process| work(process, "first"))?;
-    game.spawn(Default::default(), |process| work(process, "second"))?;
+    game.spawn(|process| work(process, "first"))?;
+    game.spawn(|process| work(process, "second"))?;
     while game.process_count() != 0 {
         game.tick()?;
     }

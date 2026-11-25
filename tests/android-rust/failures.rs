@@ -1,5 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Error, Game, SpawnOptions, asset::Source, image::Image, window::Window};
+use malvado::{Error, Game, asset::Source, image::Image, window::Window};
 use std::{cell::Cell, rc::Rc};
 pub fn run(window: Rc<Window>, snapshot: Source, image: Result<Image, Error>, failure: i32) {
     if failure == 2 {
@@ -15,7 +15,7 @@ pub fn run(window: Rc<Window>, snapshot: Source, image: Result<Image, Error>, fa
     let count = Rc::new(Cell::new(0));
     let guard = super::Guard(count.clone());
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |process| async move {
+    game.spawn(move |process| async move {
         let _guard = guard;
         let _image = process.resource(image?)?;
         Err(Error::Process)

@@ -19,9 +19,9 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
     let activations = Rc::new(Cell::new(0));
     let observed = activations.clone();
     let actor = game
-        .spawn(
+        .spawn_with(
             SpawnOptions {
-                fps: 5,
+                fps: Some(5),
                 ..Default::default()
             },
             move |p| async move {
@@ -78,7 +78,7 @@ fn pending_without_wake_keeps_commands_until_the_next_real_poll() {
     let saved = Rc::new(RefCell::new(None::<Waker>));
     let output = saved.clone();
     let actor = game
-        .spawn(Default::default(), move |p| async move {
+        .spawn(move |p| async move {
             let actor = p.current();
             let mut first = true;
             poll_fn(move |cx| {

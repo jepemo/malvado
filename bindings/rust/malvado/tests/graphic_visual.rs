@@ -206,7 +206,7 @@ fn main() {
         },
     ] {
         let actor = game
-            .spawn(Default::default(), |p| async move {
+            .spawn(|p| async move {
                 loop {
                     p.frame().await;
                 }
@@ -269,7 +269,7 @@ fn main() {
     }
     use malvado::camera::{Camera, Selection, Viewport};
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

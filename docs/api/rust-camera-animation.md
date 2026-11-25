@@ -35,7 +35,7 @@ Camera copy. `replace`, `set_position` and `move_by` update native values.
 ```rust
 use malvado::{Game, Error, camera::{Camera, Selection}};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let actor = game.spawn(|p| async move {loop {p.frame().await;}})?;
 let view = game.create_camera(Camera::new(10.0, 20.0, None)?)?;
 actor.set_camera(Selection::Explicit(view.clone()))?;
 view.move_by(1.0, 2.0)?;
@@ -90,7 +90,7 @@ needed to read values or compose the effective view.
 ```rust
 use malvado::{Game, camera::Viewport};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+let actor = game.spawn(|p| async move { loop { p.frame().await; } })?;
 actor.set_scroll((3.0, 4.0))?;
 actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
 assert_eq!(actor.view_offset()?, (-3.0, -4.0));
@@ -136,7 +136,7 @@ the last camera position. It does not tick or poll any future.
 ```rust
 use malvado::{Game, camera::{Camera, Follow}};
 let mut game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_position(100.0, 80.0)?;
@@ -218,7 +218,7 @@ operations preserve the clock. No borrowed native state escapes.
 ```rust
 use malvado::{Game, Error, animation::{Animation, Frame}};
 let mut game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 let animation = Animation::new(&[

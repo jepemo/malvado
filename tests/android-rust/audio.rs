@@ -1,6 +1,6 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Error, Game, SpawnOptions,
+    Error, Game,
     audio::{Audio, Sound},
 };
 use std::{cell::Cell, rc::Rc};
@@ -49,7 +49,7 @@ impl Case {
         sound.play().unwrap();
         sound.pause().unwrap();
         let guard = super::Guard(self.drops.clone());
-        game.spawn(SpawnOptions::default(), move |process| async move {
+        game.spawn(move |process| async move {
             let _guard = guard;
             let sound = process.resource(sound)?;
             loop {

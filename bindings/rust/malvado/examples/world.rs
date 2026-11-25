@@ -12,7 +12,7 @@ fn main() -> Result<(), Error> {
     })?;
     let shape = Shape::circle(1.0)?;
     let game = Game::new()?;
-    let actor = game.spawn(Default::default(), |p| async move {
+    let actor = game.spawn(|p| async move {
         p.frame().await;
         Ok(())
     })?;

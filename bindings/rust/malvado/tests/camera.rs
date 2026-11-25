@@ -92,7 +92,7 @@ fn native_follow_trace_matches_c_and_lua() {
     use malvado::{Game, Signal, camera::Follow};
     let game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -144,7 +144,7 @@ fn follow_error_atomicity_independence_and_closed_context() {
     use malvado::{Game, Signal, camera::Follow};
     let mut game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -201,7 +201,7 @@ fn follow_does_not_retain_naturally_ended_process_state() {
     let drops = Rc::new(Cell::new(0));
     let owned = CountDrop(drops.clone());
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             let _owned = owned;
             p.frame().await;
             Ok(())
