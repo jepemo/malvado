@@ -5,8 +5,8 @@ export table](lua-globals.md), which records flat functions and constants. The
 table links to contracts and examples; it does not certify every semantic test
 or select the complete 2.0 API.
 
-`mv.process` is also callable to define a process. Process and input constants
-are listed in the global table. Functions marked with * require asset support.
+`mv.process` is also callable to define a process. The `mv.process` namespace also provides the
+`SIGNAL_*` and `STATUS_*` string constants listed in the global table. Functions marked with * require asset support.
 See the [palette](drawing.md#malvado-palette) for constants under `mv.colors`.
 Pass managed handles to the procedural functions in the global export table.
 Process fields are documented in the [process guide](lua-processes.md).
@@ -29,7 +29,8 @@ See [instance methods](lua-instance-methods.md) for optional handle syntax.
 | `mv.process.alive` | Check a handle | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.kill_tree` | Kill a process tree | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.status` | Read process status | [processes](lua-processes.md) and [collision](collision.md) |
-| `mv.process.send` | Send a message | [processes](lua-processes.md) and [collision](collision.md) |
+| `mv.process.send` | Send a message | [messaging](lua-processes.md#send-and-receive-messages) |
+| `mv.process.recv` | Receive a message | [messaging](lua-processes.md#send-and-receive-messages) |
 | `mv.process.collision` | Find the first colliding process | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.process.collisions` | List colliding processes | [processes](lua-processes.md) and [collision](collision.md) |
 | `mv.input.key` | Check a held key | [input](input-inventory.md) |

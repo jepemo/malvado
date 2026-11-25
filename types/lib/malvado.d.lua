@@ -21,25 +21,30 @@
 ---@field define fun(body: fun(self: MvProcess), options?: MvProcessDefineOptions):MvProcessConstructor
 ---@field spawn fun(constructor: MvProcessConstructor, fields?: table, options?: MvSpawnOptions):MvProcess
 ---@field find fun(constructor: MvProcessConstructor):MvProcess[]
----@field children fun(handle: MvProcess, options?: MvTreeOptions):MvProcess[]
----@field descendants fun(handle: MvProcess, options?: MvTreeOptions):MvProcess[]
+---@field children fun(handle: MvProcess, options?: MvTreeQueryOptions):MvProcess[]
+---@field descendants fun(handle: MvProcess, options?: MvTreeQueryOptions):MvProcess[]
 ---@field snapshot fun():MvSnapshot
 ---@field frame fun()
 ---@field signal fun(handle: MvProcess, signal: MvSignal)
----@field signal_tree fun(handle: MvProcess, signal: MvSignal, options?: MvTreeOptions)
+---@field signal_tree fun(handle: MvProcess, signal: MvSignal, options?: MvTreeSignalOptions)
 ---@field set_priority (fun(priority: integer))|(fun(handle: MvProcess, priority: integer)) The one-argument form requires the scheduled process coroutine.
 ---@field get_priority fun(handle: MvProcess):integer
 ---@field kill (fun())|(fun(handle: MvProcess):boolean) The no-argument form requires the scheduled process coroutine. Self-kill stops it immediately.
 ---@field alive fun(handle: MvProcess):boolean
----@field kill_tree fun(handle: MvProcess, options?: MvTreeOptions)
----@field status fun(handle: MvProcess):MvProcessStatusName|nil
+---@field kill_tree fun(handle: MvProcess, options?: MvTreeSignalOptions)
+---@field status fun(handle: MvProcess):MvProcessStatusName
 ---@field send fun(handle: MvProcess, message: any)
+---@field recv (fun():any)|(fun(handle: MvProcess):any) Read the next message or nil when empty. The no-argument form requires the scheduled process coroutine.
 ---@field collision fun(source: MvProcess, target: MvProcess):MvProcess|nil
 ---@field collisions fun(source: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
 ---@field SIGNAL_SLEEP "sleep"
 ---@field SIGNAL_FREEZE "freeze"
 ---@field SIGNAL_WAKEUP "wakeup"
 ---@field SIGNAL_KILL "kill"
+---@field STATUS_RUNNING "running"
+---@field STATUS_SLEEPING "sleeping"
+---@field STATUS_FROZEN "frozen"
+---@field STATUS_DEAD "dead"
 
 ---@class MvInputNamespace
 ---@field key fun(name: MvKey):boolean
@@ -165,13 +170,13 @@ function malvado.find(constructor) end
 
 ---List direct children of a process.
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeQueryOptions
 ---@return MvProcess[] children
 function malvado.children(handle, options) end
 
 ---List all descendants of a process.
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeQueryOptions
 ---@return MvProcess[] descendants
 function malvado.descendants(handle, options) end
 
@@ -192,7 +197,7 @@ function malvado.signal(handle, signal) end
 ---Send a signal to a process tree.
 ---@param handle MvProcess
 ---@param signal MvSignal
----@param options? MvTreeOptions
+---@param options? MvTreeSignalOptions
 function malvado.signal_tree(handle, signal, options) end
 
 ---Set an integer priority. The one-argument form requires the scheduled process coroutine.
@@ -220,13 +225,12 @@ function malvado.alive(handle) end
 
 ---Kill a process and its whole tree.
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeSignalOptions
 function malvado.kill_tree(handle, options) end
 
----Read the status of a process: "running", "sleeping" or "frozen".
----Returns nil when the process is dead.
+---Read the same status string as `handle.status`, including "dead" after termination.
 ---@param handle MvProcess
----@return MvProcessStatusName|nil status
+---@return MvProcessStatusName status
 function malvado.status(handle) end
 
 ---Queue a message for a process. The recipient can read it with `recv()`.
@@ -234,7 +238,7 @@ function malvado.status(handle) end
 ---@param message any
 function malvado.send(handle, message) end
 
----Remove and return the next queued message, or nil when the queue is empty.
+---Remove and return the next queued message, or nil when the queue is empty. False is a valid message.
 ---With no argument, read from the currently scheduled process coroutine.
 ---@overload fun():any
 ---@param handle MvProcess
@@ -986,5 +990,9 @@ malvado.SIGNAL_SLEEP = "sleep"
 malvado.SIGNAL_FREEZE = "freeze"
 malvado.SIGNAL_WAKEUP = "wakeup"
 malvado.SIGNAL_KILL = "kill"
+malvado.STATUS_RUNNING = "running"
+malvado.STATUS_SLEEPING = "sleeping"
+malvado.STATUS_FROZEN = "frozen"
+malvado.STATUS_DEAD = "dead"
 
 return malvado

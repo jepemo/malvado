@@ -3,7 +3,8 @@
 
 local mv = require("malvado")
 mv.import_globals()
-assert(recv == mv.recv)
+assert(recv == mv.recv and recv == mv.process.recv)
+assert(send == mv.send and send == mv.process.send)
 
 local function fails(fragment, fn, ...)
   local ok, message = pcall(fn, ...)
@@ -22,7 +23,8 @@ local child = mv.process(function(self)
   assert(self.creator_id == parent_id)
   assert(self:recv() == "first")
   assert(recv() == "second\0part")
-  assert(recv() == false)
+  local message = mv.process.recv()
+  assert(message ~= nil and message == false)
   local integer = recv()
   assert(integer == 42 and math.type(integer) == "integer")
   assert(recv() == 1.5)
@@ -51,7 +53,7 @@ local parent = mv.process(function(self)
   fails("malvado.process", recv, nil)
   fails("malvado.process", recv, self.id)
   fails("expected recv", recv, child_id, nil)
-  assert(recv(child_id) == "inspect child")
+  assert(mv.process.recv(child_id) == "inspect child")
   local ok, message = coroutine.resume(coroutine.create(function()
     fails("running process", recv)
     assert(recv(child_id) == "inspect from coroutine")
@@ -59,9 +61,21 @@ local parent = mv.process(function(self)
   assert(ok, message)
   assert(recv() == "parent")
   check_empty(recv())
+
+  local full = child {}
+  for i = 1, 1024 do
+    send(full, i)
+  end
+  assert(not pcall(send, full, "overflow"))
+  for i = 1, 1024 do
+    assert(mv.process.recv(full) == i)
+  end
+  check_empty(full:recv())
+  assert(mv.kill(full))
+
   mv.frame()
   mv.frame()
-  assert(mv.status(child_id) == nil)
+  assert(mv.status(child_id) == mv.STATUS_DEAD)
   collectgarbage("collect")
   assert(pending[1] == nil)
 
@@ -75,8 +89,8 @@ mv.start(function()
   local handle = parent {}
   mv.send(handle, "setup")
   fails("running process", recv)
-  assert(recv(handle) == "setup")
+  assert(mv.process.recv(handle) == "setup")
 end)
-assert(mv.status(child_id) == nil)
+assert(mv.status(child_id) == mv.STATUS_DEAD)
 fails("no longer alive", recv, child_id)
 fails("running process", recv)

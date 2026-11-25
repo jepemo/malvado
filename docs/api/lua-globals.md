@@ -17,7 +17,7 @@ Call `kill()` or `set_priority(priority)` to control the live scheduled process
 from its own coroutine. Use `kill(handle)` or `set_priority(handle, priority)`
 to target a process by handle. See [process control](lua-processes.md#control-processes).
 
-Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Most process operations and the signal constants are also available in `mv.process`. Use `recv` or `mv.recv` to receive messages. Input operations and constants are also available in `mv.input`. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
+Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations such as `recv` and the `SIGNAL_*` and `STATUS_*` constants are also available in `mv.process`. Input operations and constants are also available in `mv.input`. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
 
 | Global | Module field |
 | --- | --- |
@@ -218,6 +218,10 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `SIGNAL_FREEZE` | `mv.SIGNAL_FREEZE` |
 | `SIGNAL_WAKEUP` | `mv.SIGNAL_WAKEUP` |
 | `SIGNAL_KILL` | `mv.SIGNAL_KILL` |
+| `STATUS_RUNNING` | `mv.STATUS_RUNNING` |
+| `STATUS_SLEEPING` | `mv.STATUS_SLEEPING` |
+| `STATUS_FROZEN` | `mv.STATUS_FROZEN` |
+| `STATUS_DEAD` | `mv.STATUS_DEAD` |
 
 ## Palette globals
 

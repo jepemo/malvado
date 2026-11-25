@@ -18,7 +18,8 @@ const groups = [
     flat: ['process', 'spawn', 'find', 'children', 'descendants', 'snapshot', 'frame',
       'signal', 'signal_tree', 'set_priority', 'get_priority', 'kill', 'alive',
       'kill_tree', 'status', 'send', 'recv'],
-    constants: ['SIGNAL_SLEEP', 'SIGNAL_FREEZE', 'SIGNAL_WAKEUP', 'SIGNAL_KILL'],
+    constants: ['SIGNAL_SLEEP', 'SIGNAL_FREEZE', 'SIGNAL_WAKEUP', 'SIGNAL_KILL',
+      'STATUS_RUNNING', 'STATUS_SLEEPING', 'STATUS_FROZEN', 'STATUS_DEAD'],
   },
   {
     id: 'input', label: 'Input', ns: 'input', guide: 'keyboard',
@@ -221,7 +222,7 @@ const placed = new Set(groups.flatMap((group) => group.entries.flatMap((entry) =
 const palette = globals.filter((entry) => entry.field.startsWith('colors.'));
 groups.find((group) => group.id === 'drawing').constants = palette.map((entry) => entry.name);
 for (const global of globals) {
-  if (global.field.startsWith('colors.') || /^(KEY|MOUSE|PAD|SIGNAL)_/.test(global.name))
+  if (global.field.startsWith('colors.') || /^(KEY|MOUSE|PAD|SIGNAL|STATUS)_/.test(global.name))
     continue;
   if (!placed.has(global.name))
     throw new Error(`Global function not grouped in a page: ${global.name}`);

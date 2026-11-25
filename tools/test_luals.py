@@ -114,7 +114,14 @@ local Player = process(function(self)
   local v = self.custom
   while true do frame() end
 end)
-Player {}
+local player = Player {}
+children(player, {type = Player})
+descendants(player, {relation = "creation"})
+signal_tree(player, SIGNAL_FREEZE, {relation = "ownership"})
+kill_tree(player, {relation = "creation"})
+---@type MvProcessStatusName
+local player_status = status(player)
+if player_status == STATUS_DEAD then print(player.reason) end
 
 local a = write {font = f, text = "x", x = 1, y = 2, align = "bogus"}
 local b = write {font = f, text = "x", x = 1, y = 2, color = {1, 2, 3}}
@@ -174,6 +181,8 @@ local actor = mv.process(function(self)
   mv.world_collision {y = 2}
   mv.world_collision(world, self, {x = 2})
   local message, explicit_message = mv.recv(), mv.recv(self)
+  mv.process.recv()
+  mv.process.recv(self)
   local elapsed, explicit_elapsed = mv.animation_elapsed(), mv.animation_elapsed(self)
   local graphics_elapsed, graphics_explicit = mv.graphics.animation_elapsed(), mv.graphics.animation_elapsed(self)
   assert(mv.animation_finished() == mv.animation_finished(self))
@@ -245,6 +254,16 @@ local MethodActor = mv.process(function(self)
   self.graph = mv.animation(method_atlas, {1, 2}):sample(300)
 end)
 local method_actor = MethodActor {}
+mv.children(method_actor, {type = MethodActor})
+mv.process.descendants(method_actor, {type = MethodActor, relation = "creation"})
+method_actor:children({type = MethodActor})
+method_actor:descendants({relation = "ownership"})
+mv.signal_tree(method_actor, mv.SIGNAL_WAKEUP, {relation = "ownership"})
+mv.process.kill_tree(method_actor, {relation = "creation"})
+method_actor:kill_tree({relation = "ownership"})
+---@type MvProcessStatusName
+local method_status = mv.process.status(method_actor)
+if method_status == mv.process.STATUS_DEAD then print(mv.STATUS_DEAD) end
 method_actor:kill()
 method_camera:destroy()
 local current = mv.fade_color()
@@ -383,6 +402,14 @@ def main():
             'local fpg = mv.fpg.parse("")\n'
             + "\n".join(invalid_asset_calls) + "\n",
             encoding="utf-8")
+        (project / "bad-tree-options.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local Actor = mv.process(function() end)\n'
+            '---@type MvTreeSignalOptions\n'
+            'local options = {relation = "ownership"}\n'
+            'options.type = Actor\n'
+            'mv.process.kill_tree(Actor {}, options)\n',
+            encoding="utf-8")
         output = diagnose_project(project, "mv.", failures)
         bad_assets = {line for line, _ in diagnose(output, "bad-assets.lua")}
         for line, call in enumerate(invalid_asset_calls, 3):
@@ -394,6 +421,9 @@ def main():
                 failures.append(f"namespaced project: invalid atlas query was not reported: {call}")
         if len(invalid_atlas_queries) + 5 not in bad_animations:
             failures.append("namespaced project: named animation options should reject fps")
+        if not any(line == 5 and "MvTreeSignalOptions" in message and "(inject-field)" in message
+                   for line, message in diagnose(output, "bad-tree-options.lua")):
+            failures.append("namespaced project: tree signal options should reject a type filter")
         bad_methods = diagnose(output, "bad-methods.lua")
         if not any(line == 3 and "Cannot assign `string`" in message
                    for line, message in bad_methods):

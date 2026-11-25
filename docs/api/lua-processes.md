@@ -296,7 +296,24 @@ The same rules apply to handles for native C processes. During Lua shutdown, a f
 
 ## Control processes
 
-`mv.status(handle)` returns the current state string, or `nil` for a terminated process. `mv.find(constructor)` returns a new table of live handles for that type, in creation order. It includes sleeping and frozen processes. A C process with the same type ID is also included.
+During the run, `mv.status(handle)` returns the same string as
+`handle.status`, including for a retained handle after termination.
+Use a handle from the current runtime. Numeric IDs and handles from another
+runtime raise an error. During Lua shutdown, use the retained handle's property.
+
+| Constant | String |
+| --- | --- |
+| `STATUS_RUNNING` | `"running"` |
+| `STATUS_SLEEPING` | `"sleeping"` |
+| `STATUS_FROZEN` | `"frozen"` |
+| `STATUS_DEAD` | `"dead"` |
+
+These constants are available on `mv`, on `mv.process`, and after
+`import_globals()`.
+
+`mv.find(constructor)` returns a new table of live handles for that type, in
+creation order. It includes sleeping and frozen processes. A C process with
+the same type ID is also included.
 
 Call `mv.set_priority(priority)` to set the current process's integer priority.
 Call `mv.set_priority(handle, priority)` to set the priority of a specific live
@@ -328,7 +345,7 @@ local Enemy = process(function(self)
 
   while true do
     local message = recv()
-    if message and message.damage then
+    if type(message) == "table" and message.damage then
       self.health = self.health - message.damage
     end
     if self.health <= 0 then
@@ -344,7 +361,17 @@ start(function()
 end)
 ```
 
-`mv.signal(handle, signal)` accepts `"sleep"`, `"freeze"`, `"wakeup"`, or `"kill"`. `mv.signal_tree(handle, signal)` signals the live creation lineage at the time of the call, including through dead creators. Pass `{relation = "ownership"}` as the third argument to use the current ownership tree. New children do not inherit that signal. `mv.kill(handle)` and `mv.kill_tree(handle, options?)` are shortcuts for the kill signal. Pass `{relation = "ownership"}` as the second argument to `kill_tree` to select the ownership tree. Use `{relation = "creation"}` or omit the options to select the creation lineage. `mv.signal(handle, "kill")` has the same return behavior as `mv.kill(handle)`. `mv.process.alive(handle)` checks whether a process is live.
+`mv.signal(handle, signal)` accepts `SIGNAL_SLEEP`, `SIGNAL_FREEZE`,
+`SIGNAL_WAKEUP`, or `SIGNAL_KILL`. `mv.signal_tree(handle, signal, options?)`
+signals the live creation lineage by default, including through dead
+creators. Pass `{relation = "ownership"}` to use the current ownership tree
+with a live root. New children do not inherit the signal.
+
+`mv.kill(handle)` and `mv.kill_tree(handle, options?)` are shortcuts for the
+kill signal. `mv.signal(handle, mv.SIGNAL_KILL)` has the same return behavior
+as `mv.kill(handle)`. Both tree mutations accept only the `relation` option.
+Omit it or pass `{relation = "creation"}` to follow creation lineage.
+`mv.process.alive(handle)` checks whether a process is live.
 
 Sleeping and frozen processes remain alive but do not run. Sleep hides their last process drawing; freeze keeps it visible. Wakeup makes them runnable again. A killed process cannot be reactivated. A process stops immediately if `kill`, `signal`, `kill_tree`, or `signal_tree` kills it. Cleanup runs after the scheduler regains control. A self-kill in a non-yieldable Lua context raises an error before it changes the process state. Invalid signals or handles raise an error without changing the tree. If a close callback fails, Malvado reports the error, continues cleanup and ends the run with a nonzero result.
 
@@ -352,16 +379,16 @@ The scheduler controls process coroutines. `coroutine.resume()` and `coroutine.c
 
 ## Send and receive messages
 
-`mv.send(handle, value)` puts a value in the recipient's FIFO queue. In the
-scheduled process coroutine, use `mv.recv()` to remove and return the next
-message from its own queue. Neither setup code nor an ordinary Lua coroutine
-has an implicit recipient.
+`mv.send(handle, value)` takes exactly two arguments and puts a value in the
+recipient's FIFO queue. In the scheduled process coroutine, use `mv.recv()`
+to remove and return the next message from its own queue. Neither setup code
+nor an ordinary Lua coroutine has an implicit recipient.
 
 ```lua
 local Worker = process(function()
   while true do
     local message = recv()
-    if message ~= nil then print(message) end
+    if message ~= nil then print(message) end -- Includes false.
     frame()
   end
 end)
@@ -371,6 +398,9 @@ Use `recv(handle)` to read from a specific live process, including during game
 setup or from another process. Both forms return one `nil` for an empty queue
 and return immediately. Pass zero arguments or one live process handle from the
 same runtime. Explicit `nil`, numeric IDs, and extra arguments are errors.
+A message can be `false`. Test for `nil` to detect an empty queue.
+`mv.process.recv`, `mv.recv`, and the imported `recv` are the same function.
+Use `handle:recv()` for the explicit form with method syntax.
 
 Sending `nil` is an error. A queue holds up to 1,024 messages. Sending to an
 unknown process or a full queue raises an error. Pending messages are released
@@ -380,7 +410,38 @@ Booleans, integers, numbers, and binary strings can be exchanged with C processe
 
 ## Inspect the scheduler
 
-`mv.snapshot()` returns a copy with a 48-character hexadecimal `runtime` identity, `tick`, and a `processes` list. The runtime identity stays the same during one run and is different with overwhelming probability after a restart. Each entry contains `id`, `parent`, `type`, `status`, `priority`, `messages`, `draw_commands`, and `visible`. It includes live C and Lua processes. It does not copy message payloads or call game getters. Editing the result does not change the scheduler.
+`mv.snapshot()` takes no arguments and returns a copied table.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `runtime` | string | 48-character hexadecimal identity for this runtime. It stays the same during one run. |
+| `tick` | integer | Current logical scheduler tick. |
+| `processes` | array | Live process records for both C and Lua processes. |
+| `lineage` | array | Creation-lineage records for live processes and retained ancestors. |
+
+Each live process record has these fields.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | integer | Process ID. |
+| `parent` | integer or nil | Current ownership parent ID, or `nil` for a root. |
+| `creator_id` | integer or nil | Original creator ID, or `nil` if there was no creator. |
+| `attached` | boolean | Whether the process is attached to its owner. |
+| `type` | integer | Process type ID. |
+| `status` | string | `STATUS_RUNNING`, `STATUS_SLEEPING`, or `STATUS_FROZEN`. |
+| `priority` | integer | Current scheduling priority. |
+| `messages` | integer | Number of queued messages. |
+| `draw_commands` | integer | Number of recorded draw commands. |
+| `visible` | boolean | `false` for sleeping processes and `true` for running or frozen processes. |
+
+Each creation-lineage record contains `id` (integer), `creator_id` (integer
+or `nil`) and `alive` (boolean). A retained ancestor can appear in `lineage`
+after it leaves `processes`.
+
+Snapshot IDs are numeric inspection values. Gameplay operations take process
+handles. Editing the snapshot does not change the scheduler. The snapshot
+contains no game fields or message payloads. Taking a snapshot does not call
+game getters.
 
 For tool authors, `src/runner/runtime.h` has experimental runner-thread hooks for snapshots, signals, pause, and one-tick stepping. These hooks are not a stable embedding API. They do not provide IPC or a GUI.
 

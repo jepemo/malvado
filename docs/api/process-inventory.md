@@ -15,7 +15,7 @@ This is the process and startup baseline from alpha.5. It is an input to the com
 | Visual angle/scale | `mv_process_angle`, `mv_process_set_angle`, `mv_process_scale`, `mv_process_set_scale` | `self.angle`, `self.size`; shared finite values, local invalid overrides. |
 | Visual order | `mv_process_z`, `mv_process_set_z`, `mv_process_draw_order` | `self.z`; shared native renderer order |
 | Inspection | `mv_process_info`, `mv_process_snapshot`, `mv_process_lineage_snapshot`, `mv_process_inspection_snapshot`, `mv_process_inspection_capture` | `snapshot` |
-| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv()` or `recv(handle)`, `frame`, `self.fps`, startup `fps`, `set_fps` |
+| Messages and cadence | `mv_process_send`, `mv_process_receive`, `mv_process_message_count`, `mv_message_release`, `mv_cadence_step`, `mv_process_tick` | `send`, `recv()` or `recv(handle)` (also `mv.process.recv`), `frame`, `self.fps`, startup `fps`, `set_fps` |
 | Resources | `mv_resource_create`, `mv_resource_transfer`, `mv_resource_retain`, `mv_resource_release`, `mv_resource_data` | Resource wrappers and ownership described in the resource contract |
 
 The table maps the public functions in `malvado.h`, not every future 2.0 API.
@@ -35,7 +35,7 @@ The check detects missing or extra type names, not changes to fields or semantic
 | `MvContext`, `MvCadence` | Context and cadence state are C-managed. Lua uses the runner and `self.fps`. |
 | `MvResult` | C result codes; Lua operations generally report errors or return `nil` as documented per operation. |
 | `MvProcessId`, `MvRuntimeId`, `MvProcessRef`, `MvProcessHandle` | C identity and handle types. Lua uses process handles and exposes IDs and snapshot runtime identity. |
-| `MvProcessStatus`, `MvEndReason`, `MvSignal` | C enums. Lua exposes state and reason strings, and signal strings and `SIGNAL_*` constants. |
+| `MvProcessStatus`, `MvEndReason`, `MvSignal` | C enums. Lua exposes status and reason strings, plus `STATUS_*` and `SIGNAL_*` string constants. |
 | `MvStepResult`, `MvProcessStep`, `MvProcessDestroy` | Native callback result and callbacks; Lua uses process coroutines and Lua cleanup. |
 | `MvProcessDrawInfo`, `MvProcessInfo`, `MvProcessHandleInfo`, `MvLineageInfo`, `MvInspectionHeader` | Copied C inspection values. Lua exposes process handles and snapshot tables, not these structs. |
 | `MvMessageType`, `MvMessage` | Native message tags and values. Lua exchanges primitive values and binary strings with C; Lua-only objects stay in the VM. |
@@ -142,14 +142,14 @@ valid arguments and any required assets or graphics support.
 | `animation_finished()` or `animation_finished(handle)` | Scheduled process when omitted | Live handle. The explicit form works outside. | Checks whether a non-looping animation reached its total duration. |
 | `send(handle, value)` | None | Live recipient. Works outside. | Keep the destination visible. An implicit recipient could enqueue to the wrong process. |
 | `kill(handle)` | None | Explicit target. Works outside. A dead target returns false. | The shortcut for `signal(handle, "kill")` makes termination easy to read. Keep the target visible because attached descendants can also end. |
-| `kill_tree(handle)` | None | Explicit root. Works outside. | The shortcut selects the creation relation. The current wrapper uses only the first argument. An implicit root would hide the scope of termination. |
+| `kill_tree(handle, options?)` | None | Explicit root. Works outside. | Defaults to creation. Pass `{relation = "ownership"}` for the ownership tree. |
 | `signal(handle, signal)` | None | Explicit target. Works outside. Non-kill signals need a live target. | A self form would save one argument. The explicit target makes state changes visible. Self-kill on the scheduled thread can yield. |
 | `signal_tree(handle, signal, options?)` | None | Explicit root. Works outside. Ownership needs a live root. Creation can address a retained root. | The root and relation determine which processes change state. Both are important to the caller. |
 | `children(handle, options?)` | None | Explicit root. Works outside. Ownership needs a live root. Creation can address a retained root. | A self form could shorten frequent local queries. The explicit form makes the root clear. |
 | `descendants(handle, options?)` | None | Same root validation as `children`. Works outside. | The same self shorthand could apply. The option still selects which relation to traverse. |
 | `get_priority(handle)` | None | Live handle. Works outside. | A self form could help code that often reads its own priority. The query is read-only. |
 | `set_priority(handle, priority)` | None | Live handle. Works outside. | Keep the target visible. The assignment can change the next tick's schedule. |
-| `status(handle)` | None | Explicit handle. Works outside. Returns `nil` when dead. | A self form has limited use. The explicit form supports inspecting processes that cannot currently run. |
+| `status(handle)` | None | Explicit handle from the current runtime. Returns `STATUS_DEAD` after termination. | A self form has limited use. The explicit form supports inspecting processes that cannot currently run. |
 | `alive(handle)` | None | Explicit handle. Works outside. Returns false when dead. | A scheduled-context form would usually return true. The explicit predicate also covers terminated processes. |
 | Process constructors and `spawn(constructor, ...)` | Current creator or closing process, when present | No process handle. Root creation works outside. | Implicit ancestry keeps spawning short. Attachment can affect child lifetime. This path uses the runner's active or closing ID without checking caller thread identity. |
 | `find(constructor)` and `snapshot()` | None | No process handle. Both work outside. | These inspect the runtime. `find` checks a process constructor. Neither needs a current process. |

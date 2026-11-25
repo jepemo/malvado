@@ -7,6 +7,11 @@ for _, name in ipairs({"sleep", "freeze", "wakeup", "kill"}) do
   local constant = "SIGNAL_" .. name:upper()
   assert(mv.process[constant] == name and _G[constant] == name)
 end
+for _, name in ipairs({"running", "sleeping", "frozen", "dead"}) do
+  local constant = "STATUS_" .. name:upper()
+  assert(mv[constant] == name and mv.process[constant] == name and _G[constant] == name)
+end
+assert(status == mv.status and status == mv.process.status)
 local events, target_id = {}, nil
 local closed = 0
 local shared = { value = 1 }
@@ -28,7 +33,7 @@ local controller = mv.process(function()
     {"wakeup", "running"},
   }) do
     mv.signal(target_id, transition[1])
-    assert(mv.status(target_id) == transition[2])
+    assert(status(target_id) == transition[2] and target_id.status == transition[2])
   end
   assert(not pcall(mv.signal, target_id, "invalid"))
   assert(mv.status(target_id) == "running")
@@ -45,7 +50,8 @@ local controller = mv.process(function()
   mv.signal(target_id, SIGNAL_WAKEUP)
   mv.frame()
   mv.signal(target_id, SIGNAL_KILL)
-  assert(mv.status(target_id) == nil)
+  assert(status(target_id) == STATUS_DEAD and target_id.status == STATUS_DEAD)
+  assert(not alive(target_id) and target_id.reason == "killed")
   assert(not pcall(mv.send, target_id, {}))
   mv.frame()
 end)

@@ -31,12 +31,12 @@ function spawn(constructor, fields, options) end
 function find(constructor) end
 
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeQueryOptions
 ---@return MvProcess[] children
 function children(handle, options) end
 
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeQueryOptions
 ---@return MvProcess[] descendants
 function descendants(handle, options) end
 
@@ -51,7 +51,7 @@ function signal(handle, signal) end
 
 ---@param handle MvProcess
 ---@param signal MvSignal
----@param options? MvTreeOptions
+---@param options? MvTreeSignalOptions
 function signal_tree(handle, signal, options) end
 
 ---Set an integer priority. The one-argument form requires the scheduled process coroutine.
@@ -76,18 +76,18 @@ function kill(handle) end
 function alive(handle) end
 
 ---@param handle MvProcess
----@param options? MvTreeOptions
+---@param options? MvTreeSignalOptions
 function kill_tree(handle, options) end
 
 ---@param handle MvProcess
----@return MvProcessStatusName|nil status
+---@return MvProcessStatusName status
 function status(handle) end
 
 ---@param handle MvProcess
 ---@param message any
 function send(handle, message) end
 
----Remove and return the next queued message, or nil when the queue is empty.
+---Remove and return the next queued message, or nil when the queue is empty. False is a valid message.
 ---With no argument, read from the currently scheduled process coroutine.
 ---@overload fun():any
 ---@param handle MvProcess
@@ -754,3 +754,7 @@ SIGNAL_SLEEP = "sleep"
 SIGNAL_FREEZE = "freeze"
 SIGNAL_WAKEUP = "wakeup"
 SIGNAL_KILL = "kill"
+STATUS_RUNNING = "running"
+STATUS_SLEEPING = "sleeping"
+STATUS_FROZEN = "frozen"
+STATUS_DEAD = "dead"

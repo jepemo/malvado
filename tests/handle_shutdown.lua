@@ -8,6 +8,7 @@ _G.guard = setmetatable({}, {__gc = function()
     assert(finished.id > 0 and finished.status == "dead" and finished.reason == "returned")
     assert(killed.id > 0 and killed.status == "dead" and killed.reason == "killed")
     assert(live.id > 0 and live.status == "dead" and live.reason == "killed")
+    assert(not pcall(mv.status, finished) and not pcall(mv.process.status, live))
     assert(not pcall(function() return live.payload end))
   end)
   if ok then print("shutdown handles valid") end
