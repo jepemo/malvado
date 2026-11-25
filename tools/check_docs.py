@@ -49,7 +49,7 @@ def check_documents(paths, root):
     errors = []
     checked = 0
     anchors.cache_clear()
-    github = "https://github.com/jepemo/malvado/blob/master/"
+    github = "https://github.com/jepemo/malvado/blob/main/"
     for path in paths:
         text = prose(path.read_text(encoding="utf-8"))
         for match in LINK.finditer(text):

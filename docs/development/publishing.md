@@ -1,7 +1,7 @@
 # Documentation publishing
 
 Astro builds the Malvado 2 website from the guides in `docs/site/`.
-GitHub Pages deploys it from `master` at
+GitHub Pages deploys it from `main` at
 [`malvado.dev`](https://malvado.dev/). The `docs/website/public/CNAME` file
 sets the custom domain. Versioned snapshots use the same host with a
 `/<version>/` path prefix.

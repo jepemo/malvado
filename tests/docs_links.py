@@ -56,7 +56,7 @@ class Links(unittest.TestCase):
             target = root / "target.md"
             target.write_text('# Before\n')
             source = root / "README.md"
-            source.write_text('[link](https://github.com/jepemo/malvado/blob/master/target.md#before)\n')
+            source.write_text('[link](https://github.com/jepemo/malvado/blob/main/target.md#before)\n')
             self.assertEqual(check_documents([source], root)[1], [])
             target.write_text('# After\n')
             self.assertIn('missing Markdown anchor', check_documents([source], root)[1][0])

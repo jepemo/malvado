@@ -33,7 +33,7 @@ Use that executable directly or add its `bin` directory to your PATH. The Unix
 start with `game.exe`; native C/Rust players include `game-bin.exe`. Players need
 a working OpenGL 3.3/WGL provider and the Microsoft release CRT, but no Cargo,
 rustc or compiler. Software-rendered CI and fresh-player checks are recorded in
-the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/platforms.md).
+the [platform matrix](https://github.com/jepemo/malvado/blob/main/docs/development/platforms.md).
 Windows app bundles, cross exports and Unicode project/SDK paths are not claimed.
 Windows x64 platform support is beta in Malvado 2.0.
 
@@ -53,7 +53,7 @@ The SDK includes the Lua Language Server type definitions in
 `share/malvado/types`. `malvado new` writes a `.luarc.json` file into each
 generated Lua project so editors provide autocompletion and type checking for
 the public Lua API. See the
-[Lua Language Server guide](https://github.com/jepemo/malvado/blob/master/docs/api/lua-language-server.md).
+[Lua Language Server guide](https://github.com/jepemo/malvado/blob/main/docs/api/lua-language-server.md).
 
 
 Check the archive before you extract it. On Linux, run:
@@ -91,7 +91,7 @@ malvado run
 
 Edit `main.lua` to change the game. Run `malvado check` to check the syntax of the Lua files without starting the game.
 
-The new Lua project returns a game table. Its `init` function starts the game processes. Set `title`, `width`, and `height` in the table to change the window. For a small example, see the [declarative game](https://github.com/jepemo/malvado/tree/master/examples/declarative). You can also use `mv.start()` in an entry script. Use one entry form per run.
+The new Lua project returns a game table. Its `init` function starts the game processes. Set `title`, `width`, and `height` in the table to change the window. For a small example, see the [declarative game](https://github.com/jepemo/malvado/tree/main/examples/declarative). You can also use `mv.start()` in an entry script. Use one entry form per run.
 
 To create a C game, use `malvado new --lang c my-c-game`. Run it with `malvado run` from the new directory. C projects need CMake and a C compiler. Use `malvado build` to build without starting the game.
 
@@ -100,7 +100,7 @@ To create a C game, use `malvado new --lang c my-c-game`. Run it with `malvado r
 Rust's gameplay SDK is experimental in 2.0. It is functional and tested, but
 future 2.x changes can require source updates. Use `Game` as the public entry
 point. Use `Game::windowed` and `game.run()` for a managed window. See the
-[support policy](https://github.com/jepemo/malvado/blob/master/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/master/docs/development/rust-game-migration.md).
+[support policy](https://github.com/jepemo/malvado/blob/main/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/main/docs/development/rust-game-migration.md).
 Rust games are native executables; players do not need Cargo or rustc.
 
 Install Cargo, rustc, CMake and a C compiler, then use a matching native SDK
@@ -127,7 +127,7 @@ CLI; install the required tools before building.
 `check` uses Cargo and can execute dependency build scripts and procedural macros.
 It does not start the game. `run` builds first and uses the project directory for
 asset paths. Use `Game::new()` for Rust headless hosts. `--headless` is a Lua runner option. See the
-[Rust process guide](https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md)
+[Rust process guide](https://github.com/jepemo/malvado/blob/main/docs/api/rust-processes.md)
 for state, frame waits, cancellation and resource lifetimes.
 
 ## Export a game
@@ -169,7 +169,7 @@ To give a game its own macOS identifier, use `malvado export --app --id org.exam
 
 To share a macOS app, select the `.app` in Finder and choose **Compress**. Send the resulting ZIP file. The recipient can extract it and open the app.
 
-Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/master/docs/development/cli.md).
+Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/main/docs/development/cli.md).
 
 Use `malvado --help` to list commands and `malvado doctor` to see the capabilities of your SDK. Graphics and system dependencies still need validation on more target machines.
 
@@ -179,9 +179,9 @@ Android arm64 platform support is beta in Malvado 2.0.
 
 Use a graphical macOS arm64 or Linux x86_64 host SDK and a matching Android
 arm64 target SDK. Prepare the Android tools and target SDK for
-[C](https://github.com/jepemo/malvado/blob/master/docs/development/android-c-games.md),
-[Lua](https://github.com/jepemo/malvado/blob/master/docs/development/android-runtime.md)
-or [Rust](https://github.com/jepemo/malvado/blob/master/docs/development/android-rust-games.md).
+[C](https://github.com/jepemo/malvado/blob/main/docs/development/android-c-games.md),
+[Lua](https://github.com/jepemo/malvado/blob/main/docs/development/android-runtime.md)
+or [Rust](https://github.com/jepemo/malvado/blob/main/docs/development/android-rust-games.md).
 Then run this command in the project directory:
 
 ```sh
@@ -194,6 +194,6 @@ Set `--runtime-sdk` to the installed Malvado Android prefix. Set
 `--android-sdk` to the Android tools directory. Install the debug APK on
 the supported emulator with `adb install ../my-game.apk`.
 For a release APK or AAB, use a Release target SDK and follow the
-[release bundle and signing guide](https://github.com/jepemo/malvado/blob/master/docs/development/android-bundles.md).
-See the [platform matrix](https://github.com/jepemo/malvado/blob/master/docs/development/platforms.md)
+[release bundle and signing guide](https://github.com/jepemo/malvado/blob/main/docs/development/android-bundles.md).
+See the [platform matrix](https://github.com/jepemo/malvado/blob/main/docs/development/platforms.md)
 for supported hosts, toolchains and verification limits.

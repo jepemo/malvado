@@ -10,7 +10,7 @@
 
 Pull requests run the standard build and tests, installed Rust SDK tests,
 API catalog checks and guide link checks on Ubuntu.
-Each push to `master`, including a merge, runs the full Linux, macOS, Windows
+Each push to `main`, including a merge, runs the full Linux, macOS, Windows
 and Android checks. You can also run each full workflow manually on a branch.
 Windows and Android also run on their weekly schedules.
 

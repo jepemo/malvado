@@ -52,7 +52,7 @@ Rust projects can use `malvado build` to compile before running. See
 [SDK and projects](sdk.md) for the SDK and [gameplay API guides](api.md) for the
 scheduler, resources and language entry points. The Rust starter uses a
 named async process and the managed runner. See the
-[first Rust games](https://github.com/jepemo/malvado/tree/master/examples/rust)
+[first Rust games](https://github.com/jepemo/malvado/tree/main/examples/rust)
 for Hello World and several independently moving balls.
 
 ## Build from source (contributors)
@@ -60,7 +60,7 @@ for Hello World and several independently moving balls.
 To build Malvado from source, install [Git](https://git-scm.com/),
 [mise](https://mise.jdx.dev/getting-started.html) and a C compiler. On Linux,
 install the X11 and OpenGL development packages listed in the
-[CI workflow](https://github.com/jepemo/malvado/blob/master/.github/workflows/ci.yml).
+[CI workflow](https://github.com/jepemo/malvado/blob/main/.github/workflows/ci.yml).
 
 Clone the source and install the project tools:
 
@@ -80,7 +80,7 @@ mise run hello
 ```
 
 Press **Escape** or close the window to exit. The example needs a display. Read
-its [source and instructions](https://github.com/jepemo/malvado/tree/master/examples/helloworld).
+its [source and instructions](https://github.com/jepemo/malvado/tree/main/examples/helloworld).
 
 ## Try more examples
 
@@ -88,6 +88,6 @@ Run `mise tasks` to see the available commands. Use `mise run test-headless` to
 test Lua without a graphics backend. Use `mise run test-c` to test the C core
 without Lua or raylib.
 
-Try the [first three lessons](https://github.com/jepemo/malvado/blob/master/examples/features/README.md)
+Try the [first three lessons](https://github.com/jepemo/malvado/blob/main/examples/features/README.md)
 to start a game, run two processes and draw a PNG. Each lesson has C, Lua and
 Rust versions with the same behavior.

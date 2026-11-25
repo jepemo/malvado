@@ -2,7 +2,7 @@
 name: Windows
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '23 4 * * 1'

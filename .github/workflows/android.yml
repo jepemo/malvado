@@ -2,7 +2,7 @@
 name: Android foundation
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '43 4 * * 1'

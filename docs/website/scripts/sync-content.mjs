@@ -76,9 +76,10 @@ function rewriteConceptLinks(body) {
 
 // Rewrite GitHub links to synced concept guides in the site guides. The
 // prefix is the path from the guide page to the concepts directory.
+// Archived guides can use the former default branch name.
 function rewriteGuideConceptLinks(body, prefix) {
   const pattern = new RegExp(
-    `https://github\\.com/jepemo/malvado/(?:blob|tree|edit)/master/docs/api/(${[...conceptNames].join('|')})\\.md(#[^\\s)]+)?`,
+    `https://github\\.com/jepemo/malvado/(?:blob|tree|edit)/(?:main|master)/docs/api/(${[...conceptNames].join('|')})\\.md(#[^\\s)]+)?`,
     'g',
   );
   return body.replace(pattern, (_, name, fragment = '') => `${prefix}${name}/${fragment}`);
@@ -104,7 +105,7 @@ for (const slug of ['getting-started', 'sdk', 'api']) {
   body = rewriteGuideConceptLinks(body, guideConceptPrefixes[slug]);
   if (revision) {
     body = body.replace(
-      /https:\/\/github\.com\/jepemo\/malvado\/(blob|tree|edit)\/master\//g,
+      /https:\/\/github\.com\/jepemo\/malvado\/(blob|tree|edit)\/(?:main|master)\//g,
       (_, kind) => repoLink('', kind),
     );
   }

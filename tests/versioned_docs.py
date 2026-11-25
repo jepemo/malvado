@@ -71,7 +71,10 @@ class VersionedDocsTests(unittest.TestCase):
                         self.assertIn(unquote(destination.fragment), pages[target_url].anchors)
 
     def test_public_site_preserves_live_routes(self):
-        self.check_site(ROOT / 'docs' / 'website' / 'dist', '/')
+        site = ROOT / 'docs' / 'website' / 'dist'
+        self.check_site(site, '/')
+        self.assertIn('https://github.com/jepemo/malvado/tree/main/examples/catch',
+                      Page((site / 'docs' / 'samples' / 'index.html').read_text()).links)
 
     def test_candidate_has_versioned_urls_and_locked_source_links(self):
         revision = subprocess.check_output(
@@ -101,6 +104,7 @@ class VersionedDocsTests(unittest.TestCase):
                 html = (site / page / 'index.html').read_text()
                 self.assertIn(f'https://github.com/jepemo/malvado/blob/{revision}/', html)
                 for route in ('blob', 'tree', 'edit'):
+                    self.assertNotIn(f'github.com/jepemo/malvado/{route}/main/', html)
                     self.assertNotIn(f'github.com/jepemo/malvado/{route}/master/', html)
             self.assertIn(f'git checkout --detach {revision}',
                           (site / 'getting-started' / 'index.html').read_text())
