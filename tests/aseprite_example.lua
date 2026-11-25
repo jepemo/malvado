@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 local original_frame = mv.frame
-local original_animation = mv.animation_frame
+local original_animation = mv.atlas_animation_frame
 local original_load = mv.load_asset
 local define = mv.process
 local actor, loaded
@@ -25,11 +25,11 @@ end
 mv.process = function(fn, options)
   return define(function(self) actor = self; return fn(self) end, options)
 end
-mv.key = function(name) return name == "escape" and ticks >= 80 end
+mv.key = function(name) return name == mv.KEY_ESCAPE and ticks >= 80 end
 mv.frame = function()
   local elapsed = mv.graphics.animation_elapsed(actor)
   assert(elapsed ~= nil and actor.graph == mv.animation(loaded, "bounce"))
-  seen[original_animation(loaded, "bounce", math.floor(elapsed))] = true
+  seen[original_animation(loaded, "bounce", elapsed)] = true
   ticks = ticks + 1
   if ticks == 80 then assert(seen[1] and seen[2] and seen[3]) end
   return original_frame()

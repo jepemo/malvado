@@ -8,7 +8,7 @@ Use one options table with `camera_create(options)` and `region(options)`.
 Use two positional offsets with `scroll(x, y)`. See [cameras](cameras.md)
 and [process drawing](drawing.md#clip-a-lua-process-to-a-region).
 
-Call `recv()` and `animation_elapsed()` inside the scheduled process coroutine.
+Call `recv()`, `animation_elapsed()`, and `animation_finished()` inside the scheduled process coroutine.
 Pass a live process handle to either function to select a specific process.
 See [messages](lua-processes.md#send-and-receive-messages) and
 [animations](animations.md#explicit-sampling).
@@ -94,6 +94,9 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `music_volume` | `mv.music_volume` |
 | `draw_text` | `mv.draw_text` |
 | `animation` | `mv.animation` |
+| `animation_sample` | `mv.animation_sample` |
+| `animation_elapsed` | `mv.animation_elapsed` |
+| `animation_finished` | `mv.animation_finished` |
 | `graph` | `mv.graph` |
 | `set_assets_dir` | `mv.set_assets_dir` |
 | `get_assets_dir` | `mv.get_assets_dir` |
@@ -105,12 +108,10 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `load_aseprite` | `mv.load_aseprite` |
 | `sprite_info` | `mv.sprite_info` |
 | `sprite_id` | `mv.sprite_id` |
-| `animation_frame` | `mv.animation_frame` |
-| `animation_sample` | `mv.animation_sample` |
-| `animation_elapsed` | `mv.animation_elapsed` |
-| `animation_color` | `mv.animation_color` |
+| `atlas_animation_frame` | `mv.atlas_animation_frame` |
+| `atlas_animation_color` | `mv.atlas_animation_color` |
+| `atlas_animation_repeats` | `mv.atlas_animation_repeats` |
 | `atlas_pivot_color` | `mv.atlas_pivot_color` |
-| `animation_repeats` | `mv.animation_repeats` |
 | `draw_sprite` | `mv.draw_sprite` |
 | `fpg_count` | `mv.fpg_count` |
 | `fpg_id_at` | `mv.fpg_id_at` |

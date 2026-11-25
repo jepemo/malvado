@@ -25,7 +25,8 @@ for namespace, name in documentation:gmatch("| `mv%.([%w_]+)%.([%w_]+)` |") do
   local key = namespace .. "." .. name
   assert(not documented[key], "duplicate inventory entry: " .. key)
   documented[key] = true
-  local optional = namespace == "fpg" or (namespace == "graphics" and (name == "graph" or name == "animation" or name == "animation_elapsed"))
+  local optional = namespace == "fpg" or (namespace == "graphics" and
+    (name == "graph" or name == "animation" or name == "animation_elapsed" or name == "animation_finished"))
   if not optional or has_assets then
     assert(type(mv[namespace]) == "table" and type(mv[namespace][name]) == "function",
       "documented function is missing: " .. key)

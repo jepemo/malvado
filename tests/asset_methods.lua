@@ -2,6 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
+mv.import_globals()
 local atlas = mv.load_asset("fixtures/animated-atlas.json")
 local file = assert(io.open("tests/fixtures/fpg/bennugd-8.fpg", "rb"))
 local fpg = mv.fpg.parse(file:read("a"))
@@ -34,13 +35,20 @@ local function check_graph(library, id)
   assert(not pcall(library.graph, id))
 end
 
-local sprite_id = mv.animation_frame(atlas, "flash", 0)
+assert(atlas_animation_frame == mv.atlas_animation_frame)
+assert(atlas_animation_color == mv.atlas_animation_color)
+assert(atlas_animation_repeats == mv.atlas_animation_repeats)
+for _, name in ipairs({"animation_frame", "animation_color", "animation_repeats"}) do
+  assert(mv[name] == nil and _G[name] == nil)
+end
+local sprite_id = mv.atlas_animation_frame(atlas, "flash", 0)
 local sprite_name = mv.sprite_info(atlas, sprite_id).name
 check(atlas, "sprite_info", mv.sprite_info, atlas:sprite_info(sprite_id), sprite_id)
 check(atlas, "sprite_id", mv.sprite_id, atlas:sprite_id(sprite_name), sprite_name)
-check(atlas, "animation_frame", mv.animation_frame, atlas:animation_frame("flash", 0, false), "flash", 0, false)
-check(atlas, "animation_color", mv.animation_color, atlas:animation_color("flash"), "flash")
-check(atlas, "animation_repeats", mv.animation_repeats, atlas:animation_repeats("flash"), "flash")
+check(atlas, "animation_frame", mv.atlas_animation_frame, atlas:animation_frame("flash", 300.5, {loop = false}),
+  "flash", 300.5, {loop = false})
+check(atlas, "animation_color", mv.atlas_animation_color, atlas:animation_color("flash"), "flash")
+check(atlas, "animation_repeats", mv.atlas_animation_repeats, atlas:animation_repeats("flash"), "flash")
 check(atlas, "pivot_color", mv.atlas_pivot_color, atlas:pivot_color())
 assert(atlas:sprite_id("missing") == nil and not pcall(atlas.sprite_info, atlas, -1))
 assert(not pcall(atlas.animation_frame, atlas, "flash", -1))

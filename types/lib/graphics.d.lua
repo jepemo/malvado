@@ -130,6 +130,10 @@
 ---@field color? MvColor Command color. Defaults to the current drawing color.
 ---@field thickness? number Positive thickness in world pixels. Defaults to 1.
 
+---Options for a named atlas animation or atlas frame query.
+---@class (exact) MvNamedAnimationOptions
+---@field loop? boolean Loop the animation. Default true.
+
 ---Options for `animation` with a frame list.
 ---@class MvAnimationOptions
 ---@field fps number? Playback speed in frames per second (1/3600..1000). Default 8.

@@ -27,8 +27,8 @@ local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 assert(asset_option == "0" or asset_option == "1")
 local has_assets = asset_option == "1"
 local optional = {animation=true, graph=true, load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
-  animation_frame=true, animation_elapsed=true, animation_color=true, atlas_pivot_color=true,
-  animation_repeats=true, draw_sprite=true, animation_sample=true,
+  atlas_animation_frame=true, atlas_animation_color=true, atlas_animation_repeats=true,
+  animation_elapsed=true, animation_finished=true, atlas_pivot_color=true, draw_sprite=true, animation_sample=true,
   fpg_count=true, fpg_id_at=true, fpg_palette=true, fpg_gamma=true,
   fpg_sprite=true, fpg_point=true, fpg_rgba=true, fpg_image=true, fpg_png=true, fpg_json=true,
   manifest_count=true, manifest_id_at=true, manifest_transparent_zero=true,
@@ -95,7 +95,9 @@ local Probe = mv.process(function(self)
   local _, entries = debug.getupvalue(debug.getmetatable(self).__index, 1)
   if not has_assets then
     assert(self.animation_elapsed == nil)
+    assert(self.animation_finished == nil)
     expected.handle.animation_elapsed = nil
+    expected.handle.animation_finished = nil
   end
   check_methods("handle", self, entries, expected.handle)
   assert(self:recv() == nil and recv(self) == nil)

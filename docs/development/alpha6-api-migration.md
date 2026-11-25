@@ -147,6 +147,20 @@ once and reused. Explicit samplers remain available for manual control.
 The [native animation example](../../examples/c/animation/) runs the same
 playback math from a C process, with no Lua or graphics dependency.
 
+## Atlas animation queries
+
+| Previous Lua call | Current Lua call |
+| --- | --- |
+| `animation_frame(atlas, name, elapsed_ms, false)` | `atlas_animation_frame(atlas, name, elapsed_ms, {loop = false})` |
+| `animation_color(atlas, name)` | `atlas_animation_color(atlas, name)` |
+| `animation_repeats(atlas, name)` | `atlas_animation_repeats(atlas, name)` |
+
+Omit the frame query's options table to loop. With method syntax, use
+`atlas:animation_frame(name, elapsed_ms, {loop = false})`,
+`atlas:animation_color(name)`, or `atlas:animation_repeats(name)`.
+Use `animation_finished()` to wait for a one-shot process graph to play through
+its final frame. See [automatic process animation](../api/animations.md#inspect-playback).
+
 ## Native C and compatibility
 
 Native asset parsers keep metadata and explicit ownership. The new

@@ -3746,7 +3746,7 @@ atlas_pivot_color(lua_State *L)
 }
 
 static int
-animation_repeats(lua_State *L)
+atlas_animation_repeats(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
@@ -3762,7 +3762,7 @@ animation_repeats(lua_State *L)
 }
 
 static int
-animation_color(lua_State *L)
+atlas_animation_color(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
@@ -3783,19 +3783,36 @@ animation_color(lua_State *L)
     return 1;
 }
 
+static double
+check_animation_time(lua_State *L, int index, const char *message)
+{
+    double elapsed = luaL_checknumber(L, index);
+    if (!isfinite(elapsed) || elapsed < 0 || elapsed > 1e12)
+        luaL_error(L, "%s", message);
+    return elapsed;
+}
+
 static int
-animation_frame(lua_State *L)
+atlas_animation_frame(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
     const char *name = luaL_checklstring(L, 2, &length);
-    lua_Integer elapsed = luaL_checkinteger(L, 3);
-    if (strlen(name) != length || elapsed < 0)
-        return luaL_error(L, "invalid animation name or elapsed time");
-    if (!lua_isnoneornil(L, 4) && !lua_isboolean(L, 4))
-        return luaL_error(L, "loop must be a boolean");
-    int loop = lua_isnoneornil(L, 4) ? 1 : lua_toboolean(L, 4);
+    if (strlen(name) != length)
+        return luaL_error(L, "invalid animation name");
+    double elapsed = check_animation_time(L, 3, "invalid animation time in milliseconds");
+    int loop = 1;
+    if (!lua_isnoneornil(L, 4)) {
+        validate_options(L, 4, "loop", NULL);
+        raw_option(L, 4, "loop");
+        if (!lua_isnil(L, -1)) {
+            if (!lua_isboolean(L, -1)) return luaL_error(L, "loop must be a boolean");
+            loop = lua_toboolean(L, -1);
+        }
+        lua_pop(L, 1);
+    }
     int id;
+    /* Imported frame and cycle boundaries are whole milliseconds. */
     if (!mv_atlas_animation_frame(atlas->atlas, name, (uint64_t)elapsed, loop, &id))
         return luaL_error(L, "unknown animation");
     lua_pushinteger(L, id);
@@ -5504,6 +5521,9 @@ static const char *const global_names[] = {
     "music_volume",
     "draw_text",
     "animation",
+    "animation_sample",
+    "animation_elapsed",
+    "animation_finished",
     "graph",
     "set_assets_dir",
     "get_assets_dir",
@@ -5515,8 +5535,10 @@ static const char *const global_names[] = {
     "load_aseprite",
     "sprite_info",
     "sprite_id",
-    "animation_frame",
-    "animation_sample",
+    "atlas_animation_frame",
+    "atlas_animation_color",
+    "atlas_animation_repeats",
+    "atlas_pivot_color",
     "fpg_count",
     "fpg_id_at",
     "fpg_palette",
@@ -5534,10 +5556,6 @@ static const char *const global_names[] = {
     "manifest_gamma",
     "manifest_sprite",
     "manifest_point",
-    "animation_elapsed",
-    "animation_color",
-    "atlas_pivot_color",
-    "animation_repeats",
     "draw_sprite",
     "font",
     "load_font",
@@ -6515,9 +6533,7 @@ static int
 animation_sample(lua_State *L)
 {
     LuaAnimation *animation = luaL_checkudata(L, 1, "malvado.animation");
-    double elapsed = luaL_checknumber(L, 2);
-    if (!isfinite(elapsed) || elapsed < 0 || elapsed > 1e12)
-        return luaL_error(L, "invalid animation sample time in milliseconds");
+    double elapsed = check_animation_time(L, 2, "invalid animation sample time in milliseconds");
     MvAnimationSample sample;
     if (!mv_animation_sample(animation->sequence, (uint64_t)(elapsed * 1000), &sample))
         return luaL_error(L, "invalid animation descriptor");
@@ -6526,24 +6542,40 @@ animation_sample(lua_State *L)
     return 1;
 }
 
-static int
-animation_elapsed(lua_State *L)
+/* Resolve the live process and check its Lua graph selection. The native
+ * clock can still be cleared or replaced by a headless host. */
+static LuaSelf *
+check_process_animation_graph(lua_State *L, const char *operation)
 {
-    lua_Integer id = check_optional_process_id(L, "animation_elapsed");
+    lua_Integer id = check_optional_process_id(L, operation);
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
-        return luaL_error(L, "process is no longer alive");
+        luaL_error(L, "process is no longer alive");
     LuaSelf *self = luaL_checkudata(L, 1, "malvado.process");
     lua_getiuservalue(L, 1, 1);
     raw_option(L, -1, "graph");
+    return luaL_testudata(L, -1, "malvado.animation") ? self : NULL;
+}
+
+static int
+animation_elapsed(lua_State *L)
+{
+    LuaSelf *self = check_process_animation_graph(L, "animation_elapsed");
     MvAnimationState state;
     MvAnimationSample sample;
     int present;
-    if (luaL_testudata(L, -1, "malvado.animation") &&
-        mv_process_animation_clock_get(engine.context, self->reference,
+    if (self && mv_process_animation_clock_get(engine.context, self->reference,
             &state, &sample, &present) == MV_OK && present)
         lua_pushnumber(L, state.elapsed_us / 1000.0);
     else lua_pushnil(L);
+    return 1;
+}
+
+static int
+animation_finished(lua_State *L)
+{
+    LuaSelf *self = check_process_animation_graph(L, "animation_finished");
+    lua_pushboolean(L, self && malvado_process_animation_finished(engine.context, self->reference));
     return 1;
 }
 
@@ -6779,6 +6811,13 @@ process_method_animation_elapsed(lua_State *L)
 }
 
 static int
+process_method_animation_finished(lua_State *L)
+{
+    luaL_checkudata(L, 1, "malvado.process");
+    return animation_finished(L);
+}
+
+static int
 library_method_graph(lua_State *L)
 {
     luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected library and graph id");
@@ -6869,13 +6908,16 @@ open_module(lua_State *L)
         {"legacy_fpg", legacy_fpg},
 #ifdef MALVADO_BUILD_ASSETS
         {"animation", animation_select},
+        {"animation_sample", animation_sample},
         {"graph", graph_select},
         {"load_atlas", load_atlas},
         {"load_aseprite", load_aseprite},
         {"sprite_info", sprite_info},
         {"sprite_id", sprite_id},
-        {"animation_frame", animation_frame},
-        {"animation_sample", animation_sample},
+        {"atlas_animation_frame", atlas_animation_frame},
+        {"atlas_animation_color", atlas_animation_color},
+        {"atlas_animation_repeats", atlas_animation_repeats},
+        {"atlas_pivot_color", atlas_pivot_color},
         {"fpg_count", fpg_count},
         {"fpg_id_at", fpg_id_at},
         {"fpg_palette", fpg_palette},
@@ -6893,9 +6935,6 @@ open_module(lua_State *L)
         {"manifest_gamma", fpg_manifest_gamma},
         {"manifest_sprite", fpg_manifest_sprite},
         {"manifest_point", fpg_manifest_point},
-        {"animation_color", animation_color},
-        {"atlas_pivot_color", atlas_pivot_color},
-        {"animation_repeats", animation_repeats},
         {"draw_sprite", draw_sprite},
 #endif
         {"font", font},
@@ -6994,6 +7033,7 @@ open_module(lua_State *L)
         {"set_priority", process_method_set_priority},
 #ifdef MALVADO_BUILD_ASSETS
         {"animation_elapsed", process_method_animation_elapsed},
+        {"animation_finished", process_method_animation_finished},
 #endif
         {NULL, NULL}
     };
@@ -7128,9 +7168,9 @@ open_module(lua_State *L)
     static const luaL_Reg atlas_methods[] = {
         {"sprite_info", sprite_info},
         {"sprite_id", sprite_id},
-        {"animation_frame", animation_frame},
-        {"animation_color", animation_color},
-        {"animation_repeats", animation_repeats},
+        {"animation_frame", atlas_animation_frame},
+        {"animation_color", atlas_animation_color},
+        {"animation_repeats", atlas_animation_repeats},
         {"pivot_color", atlas_pivot_color},
         {"graph", library_method_graph},
         {NULL, NULL}
@@ -7182,6 +7222,10 @@ open_module(lua_State *L)
     lua_pushvalue(L, -1);
     lua_setfield(L, -4, "animation_elapsed");
     lua_setfield(L, -2, "animation_elapsed");
+    lua_pushcfunction(L, animation_finished);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -4, "animation_finished");
+    lua_setfield(L, -2, "animation_finished");
 #endif
     /* Copy the closures, including their kind upvalues, rather than creating
      * separate constructors for the procedural interface. */

@@ -52,6 +52,7 @@ See [instance methods](lua-instance-methods.md) for optional handle syntax.
 | `mv.graphics.scroll` | Create a scroll descriptor | [drawing](drawing.md) and [images](images.md) |
 | `mv.graphics.animation` | Select automatic animation * | [animations](animations.md) |
 | `mv.graphics.animation_elapsed` | Inspect process playback time * | [animations](animations.md) |
+| `mv.graphics.animation_finished` | Check completion of a non-looping process animation * | [animations](animations.md) |
 | `mv.graphics.graph` | Select a static library graphic * | [images](images.md) |
 | `mv.collision.circle` | Create a circle shape from a table with `radius` and optional offsets | [collision](collision.md) |
 | `mv.collision.rect` | Create a rectangle shape from a table with `width`, `height`, and optional offsets | [collision](collision.md) |

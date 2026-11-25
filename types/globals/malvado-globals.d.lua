@@ -257,10 +257,10 @@ function sprite_id(atlas, name) end
 
 ---@param atlas MvAtlas
 ---@param name string
----@param elapsed_ms integer
----@param loop? boolean Default true.
+---@param elapsed_ms number Finite milliseconds from 0 to 1e12.
+---@param options? MvNamedAnimationOptions
 ---@return integer sprite_id
-function animation_frame(atlas, name, elapsed_ms, loop) end
+function atlas_animation_frame(atlas, name, elapsed_ms, options) end
 
 ---Sample a reusable animation descriptor at a time in milliseconds.
 ---This does not change any process playback clock.
@@ -275,6 +275,13 @@ function animation_sample(animation, elapsed_ms) end
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function animation_elapsed(handle) end
+
+---Check whether a non-looping animation has played through its final frame.
+---The no-argument form requires the currently scheduled process coroutine.
+---@overload fun():boolean
+---@param handle MvProcess
+---@return boolean finished
+function animation_finished(handle) end
 
 ---Return the number of sprites.
 ---@param fpg MvFpg
@@ -379,7 +386,7 @@ function manifest_transparent_zero(manifest) end
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer[]|nil color
-function animation_color(atlas, name) end
+function atlas_animation_color(atlas, name) end
 
 ---@param atlas MvAtlas
 ---@return integer[]|nil color
@@ -388,7 +395,7 @@ function atlas_pivot_color(atlas) end
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer|nil repeats
-function animation_repeats(atlas, name) end
+function atlas_animation_repeats(atlas, name) end
 
 ---Queue an atlas sprite draw with its metadata pivot until the process next activates.
 ---Must be called inside a process.
@@ -401,10 +408,11 @@ function draw_sprite(options) end
 function graph(library, id) end
 
 ---Create an animation descriptor from an atlas animation or a frame list.
----@overload fun(library: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(name: string, options?: MvNamedAnimationOptions):MvAnimation
+---@overload fun(library: MvAtlas, name: string, options?: MvNamedAnimationOptions):MvAnimation
 ---@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
----@overload fun(name: string, options?: MvAnimationOptions):MvAnimation
----@overload fun(sequence: integer[], options?: MvAnimationOptions):MvAnimation
+---@param sequence integer[]
+---@param options? MvAnimationOptions
 ---@return MvAnimation
 function animation(sequence, options) end
 

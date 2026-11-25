@@ -8,7 +8,7 @@ local Player = process(function(self)
   self.file = atlas
   self.x, self.y, self.size = 280, 190, 16
   self.graph = animation("bounce")
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     draw_text {text = "Aseprite animation  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end

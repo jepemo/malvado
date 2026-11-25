@@ -68,6 +68,7 @@
 ---@field collisions fun(self: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
 ---@field set_priority fun(self: MvProcess, priority: integer)
 ---@field animation_elapsed fun(self: MvProcess):number|nil
+---@field animation_finished fun(self: MvProcess):boolean
 ---@field [string] any Custom fields: processes accept any extra field.
 
 ---Options for `process()` (the second parameter of the definition call).
