@@ -2,7 +2,8 @@
 
 | Version | Scope |
 | --- | --- |
-| [2.0.0](2.0.0.md) | Planned stable release. |
+| [2.1.0](2.1.0.md) | Lua gameplay API updates and managed windowed Rust games. |
+| [2.0.0](2.0.0.md) | Published stable release. |
 | [Beta.1](2.0.0-beta.1.md) | Published prerelease with three desktop SDKs and a verified source archive. |
 | [Alpha.8](2.0.0-alpha.8.md) | Windows and Android support and automated platform verification. |
 | [Alpha.7](2.0.0-alpha.7.md) | Published prerelease with Rust integration and shared native APIs. |
@@ -16,7 +17,3 @@
 The [roadmap](../roadmap/README.md) holds feature proposals. When work is
 selected for implementation, define the scope and create its version page.
 Fixes go into releases as concrete issues are found and resolved.
-
-The current Rust gameplay API uses managed windows and shorter spawning.
-See the [Rust migration guide](../development/rust-game-migration.md)
-for source changes. These changes have no assigned release version.
