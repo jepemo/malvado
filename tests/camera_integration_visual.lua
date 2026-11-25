@@ -47,7 +47,7 @@ local Control = process(function()
       blue.x, blue.y = 45, 65
       blue.scroll = nil
     end
-    if tick == 30 then fade_to {color = {0, 255, 255, 128}, ticks = 0} end
+    if tick == 30 then fade_to {color = {0, 255, 255, 128}, duration_ms = 0} end
     tick = tick + 1
     frame()
   end

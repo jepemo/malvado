@@ -69,8 +69,8 @@ local Demo = process(function()
     elseif escape then
       page = 0
     elseif page == 4 and key_pressed(KEY_SPACE) and not fade_active() then
-      fade_off()
-      fade_on()
+      fade_off(500)
+      fade_on(500)
     end
 
     if page == 1 then

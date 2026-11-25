@@ -56,7 +56,7 @@ local function assert_rgba(color, expected)
 end
 
 local function check_fade(color, expected)
-  mv.fade_to {color = color, ticks = 0}
+  mv.fade_to {color = color, duration_ms = 0}
   assert_rgba(mv.fade_color(), expected)
 end
 
@@ -106,7 +106,7 @@ local task = mv.process(function()
     assert(not pcall(mv.change_text, id, {color = invalid}))
     assert(not pcall(mv.rect, 2, 2, {color = invalid}))
     assert(not pcall(mv.graphics.circle, 2, {color = invalid}))
-    assert(not pcall(mv.fade_to, {color = invalid, ticks = 0}))
+    assert(not pcall(mv.fade_to, {color = invalid, duration_ms = 0}))
   end
   assert_rgba(mv.fade_color(), palette.TRANSPARENT)
 end)

@@ -47,6 +47,8 @@
 #include "malvado/graphic.h"
 #include "runner/runtime.h"
 
+enum { LUA_SIMULATION_HZ = 60, LUA_FADE_MAX_TICKS = 1000000 };
+
 typedef enum {
     PROCESS_RUNNING,
     PROCESS_SLEEPING,
@@ -2118,42 +2120,88 @@ validate_table_keys(lua_State *L, int index, const char *const *names, size_t co
     }
 }
 
+static void
+check_single_options(lua_State *L, const char *const *keys, size_t count)
+{
+    luaL_checktype(L, 1, LUA_TTABLE);
+    if (lua_gettop(L) != 1)
+        luaL_error(L, "expected one options table");
+    validate_table_keys(L, 1, keys, count);
+}
+
+static unsigned
+fade_duration_ticks(lua_State *L, int index)
+{
+    double duration_ms = 250;
+    if (!lua_isnoneornil(L, index)) {
+        if (lua_type(L, index) != LUA_TNUMBER)
+            luaL_error(L, "fade duration must be a number in milliseconds");
+        duration_ms = lua_tonumber(L, index);
+    }
+    if (!isfinite(duration_ms) || duration_ms < 0 ||
+        duration_ms > LUA_FADE_MAX_TICKS * 1000.0 / LUA_SIMULATION_HZ)
+        luaL_error(L, "fade duration must be finite, non-negative, and at most 1000000 simulation ticks");
+
+    unsigned ticks = (unsigned)(duration_ms * LUA_SIMULATION_HZ / 1000.0);
+    /* Compare in milliseconds so rounding in the scaled value cannot hide
+     * a duration just above a tick boundary. */
+    if (duration_ms > ticks * 1000.0 / LUA_SIMULATION_HZ)
+        ++ticks;
+    return ticks;
+}
+
 static int
 fade_to(lua_State *L)
 {
-    static const char *const keys[] = {"color", "ticks"};
-    luaL_checktype(L, 1, LUA_TTABLE);
-    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    static const char *const keys[] = {"color", "duration_ms"};
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     raw_option(L, 1, "color");
     MvColor color = check_color(L, -1);
     lua_pop(L, 1);
-    lua_Integer ticks = 16;
-    raw_option(L, 1, "ticks");
-    if (!lua_isnil(L, -1)) {
-        int is_integer;
-        ticks = lua_tointegerx(L, -1, &is_integer);
-        if (!is_integer || ticks < 0 || ticks > 1000000) {
-            lua_pop(L, 1);
-            return luaL_error(L, "fade duration must be an integer in 0..1000000");
-        }
-    }
-    lua_pop(L, 1);
-    return queue_fade(L, color, (unsigned)ticks);
+    raw_option(L, 1, "duration_ms");
+    return queue_fade(L, color, fade_duration_ticks(L, -1));
+}
+
+static int
+queue_black_fade(lua_State *L, unsigned ticks)
+{
+    int opaque = lua_toboolean(L, lua_upvalueindex(1));
+    return queue_fade(L, (MvColor){0, 0, 0, opaque ? 255 : 0}, ticks);
 }
 
 static int
 fade_switch(lua_State *L)
 {
+    if (lua_gettop(L) > 1)
+        return luaL_error(L, "expected at most one fade duration");
+    return queue_black_fade(L, fade_duration_ticks(L, 1));
+}
+
+static int
+legacy_fade_switch(lua_State *L)
+{
     lua_Integer ticks = luaL_optinteger(L, 1, 16);
-    if (ticks < 0 || ticks > 1000000)
+    if (ticks < 0 || ticks > LUA_FADE_MAX_TICKS)
         return luaL_error(L, "invalid fade duration");
-    int opaque = lua_toboolean(L, lua_upvalueindex(1));
-    return queue_fade(L, (MvColor){0, 0, 0, opaque ? 255 : 0}, (unsigned)ticks);
+    return queue_black_fade(L, (unsigned)ticks);
+}
+
+static void
+register_fade_switches(lua_State *L, lua_CFunction function)
+{
+    lua_pushboolean(L, 1);
+    lua_pushcclosure(L, function, 1);
+    lua_setfield(L, -2, "fade_off");
+    lua_pushboolean(L, 0);
+    lua_pushcclosure(L, function, 1);
+    lua_setfield(L, -2, "fade_on");
 }
 
 static int
 fade_active(lua_State *L)
 {
+    if (lua_gettop(L) != 0)
+        return luaL_error(L, "expected fade_active()");
     lua_pushboolean(L, mv_fade_queue_active(&engine.fade));
     return 1;
 }
@@ -2161,6 +2209,8 @@ fade_active(lua_State *L)
 static int
 fade_color(lua_State *L)
 {
+    if (lua_gettop(L) != 0)
+        return luaL_error(L, "expected fade_color()");
     push_color(L, engine.fade.fade.current);
     return 1;
 }
@@ -2174,15 +2224,6 @@ set_color(lua_State *L)
         return luaL_error(L, "color must be in 0..255");
     engine.draw = next;
     return 0;
-}
-
-static void
-check_single_options(lua_State *L, const char *const *keys, size_t count)
-{
-    luaL_checktype(L, 1, LUA_TTABLE);
-    if (lua_gettop(L) != 1)
-        luaL_error(L, "expected one options table");
-    validate_table_keys(L, 1, keys, count);
 }
 
 static int
@@ -4773,7 +4814,8 @@ lua_process_step_protected(lua_State *L)
     lua_State *co = process->thread;
     int draw_resources_ref = process->draw_resources_ref;
     int first = process->first;
-    process->delta = first ? 0 : (engine.tick_number - process->last_activation_tick) / 60.0;
+    process->delta = first ? 0 :
+        (engine.tick_number - process->last_activation_tick) / (double)LUA_SIMULATION_HZ;
     process->last_activation_tick = engine.tick_number;
     process->first = 0;
     MvProcessRef reference = {engine.runtime_id, (MvProcessId)id};
@@ -7366,12 +7408,7 @@ open_module(lua_State *L)
         }
     }
     lua_setfield(L, -2, "input");
-    lua_pushboolean(L, 1);
-    lua_pushcclosure(L, fade_switch, 1);
-    lua_setfield(L, -2, "fade_off");
-    lua_pushboolean(L, 0);
-    lua_pushcclosure(L, fade_switch, 1);
-    lua_setfield(L, -2, "fade_on");
+    register_fade_switches(L, fade_switch);
     lua_getglobal(L, "math");
     lua_getfield(L, -1, "random");
     lua_pushcclosure(L, random_range, 1);
@@ -7454,6 +7491,7 @@ open_legacy_module(lua_State *L)
     lua_pushinteger(L, 1);
     lua_pushcclosure(L, legacy_screen_dimension, 1);
     lua_setfield(L, -2, "get_screen_height");
+    register_fade_switches(L, legacy_fade_switch);
     lua_pushcclosure(L, legacy_import_globals, 2);
     lua_setfield(L, -2, "import_globals");
     return 1;
@@ -7561,7 +7599,7 @@ malvado_run(int argc, char **argv)
         free(script);
         return 1;
     }
-    engine.context = mv_context_create_with_game_dir(60, 5, directory);
+    engine.context = mv_context_create_with_game_dir(LUA_SIMULATION_HZ, 5, directory);
     free(directory);
     if (!engine.context) {
         free(script);

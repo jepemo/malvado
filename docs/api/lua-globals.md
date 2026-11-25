@@ -19,6 +19,10 @@ to target a process by handle. See [process control](lua-processes.md#control-pr
 
 Each global has the same value as the `mv` field shown below. `process` and `collision` are callable tables. Calling `collision(target)` queries the current process; `mv.collision` keeps its geometric constructors and tests. `mv.process.define` defines a process and is not a separate global. `mv.process.collision` and `mv.process.collisions` are namespace-only functions; they are not separate globals. Process operations such as `recv` and the `SIGNAL_*` and `STATUS_*` constants are also available in `mv.process`. Input operations and constants are also available in `mv.input`. The `graph`/`animation` selectors, `animation_sample`, atlas functions, and `fpg_*` and `manifest_*` operations require asset support. The legacy module has a separate import; it is not included in this table.
 
+The fade globals in this table take durations in milliseconds. The explicit
+[legacy import](fades.md#use-tick-durations-in-the-legacy-profile) has its own
+tick-based `fade_off` and `fade_on`.
+
 | Global | Module field |
 | --- | --- |
 | `camera_follow` | `mv.camera_follow` |

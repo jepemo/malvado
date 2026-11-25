@@ -43,7 +43,12 @@ draw_text {text = "x", x = 1, y = 2, color = {r = RED.r, g = RED[2], b = RED.b}}
 delete_text(title)
 set_color {10, 20, 30}
 clear_screen(BLACK)
-fade_to {color = TRANSPARENT, ticks = 30}
+fade_to {color = TRANSPARENT, duration_ms = 500}
+fade_off(25.5)
+fade_on()
+mv.fade_to {color = mv.colors.BLUE}
+mv.fade_off()
+mv.fade_on(500)
 local view = camera_create {}
 local world = world_create()
 local wall = {x = 10, y = 10, width = 20, height = 20}

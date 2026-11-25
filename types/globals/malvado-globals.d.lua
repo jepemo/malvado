@@ -505,14 +505,14 @@ function set_color(color) end
 ---@param color MvColor
 function clear_screen(color) end
 
----@param options {color: MvColor, ticks?: integer}
+---@param options {color: MvColor, duration_ms?: number}
 function fade_to(options) end
 
----@param ticks? integer Default 16.
-function fade_off(ticks) end
+---@param duration_ms? number Default 250 ms.
+function fade_off(duration_ms) end
 
----@param ticks? integer Default 16.
-function fade_on(ticks) end
+---@param duration_ms? number Default 250 ms.
+function fade_on(duration_ms) end
 
 ---@return boolean active
 function fade_active() end
