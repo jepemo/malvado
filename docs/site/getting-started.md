@@ -61,6 +61,15 @@ named async process and the managed runner. See the
 [first Rust games](https://github.com/jepemo/malvado/tree/main/examples/rust)
 for Hello World and several independently moving balls.
 
+## Lua in VS Code
+
+For a Lua project, open its folder in VS Code and install the
+[Lua Language Server extension](https://marketplace.visualstudio.com/items?itemName=sumneko.lua)
+(`sumneko.lua`). The `.luarc.json` created by `malvado new` gives you
+autocompletion and type checking for Malvado's Lua API.
+See the [Lua Language Server guide](https://github.com/jepemo/malvado/blob/main/docs/api/lua-language-server.md)
+for existing projects.
+
 ## Build from source (contributors)
 
 To build Malvado from source, install [Git](https://git-scm.com/),
