@@ -239,17 +239,25 @@ export default {
     related: ['region', 'camera_move'],
   },
   'graphics/animation': {
-    description: 'Select an animation sequence for `self.graph`. A process plays it on the simulation clock.',
-    params: [['name', 'A named sequence in `self.file`, or a list of ids.'],
-      ['options?', 'The `loop` flag defaults to true. Use `fps` only with a custom list of IDs. Named sequences use atlas frame durations.']],
-    example: 'self.file = hero\nself.graph = animation("walk")',
-    related: ['graph', 'animation_elapsed'],
+    description: 'Create a reusable animation for `self.graph`. A process plays it on the simulation clock. Pass a library explicitly or use the scheduled process’s `self.file`.',
+    params: [['library?', 'An atlas for named sequences. An atlas, FPG, or FPG manifest for a list of IDs.'],
+      ['name', 'A named atlas sequence. It keeps the imported frame durations and direction. Its options table accepts only `loop`.'],
+      ['ids', 'A list of sprite IDs. Its options table accepts `loop` and `fps`. For a custom list, `fps` defaults to 8 and ranges from 1/3600 to 1000.'],
+      ['loop?', 'Defaults to true for both options tables. Use false to hold the last frame after playback.']],
+    example: 'self.file = hero\nself.graph = animation("walk", {loop = false})\nlocal run = animation(hero, {1, 2, 3}, {fps = 12})',
+    related: ['graph', 'animation_elapsed', 'animation_finished'],
   },
   'graphics/animation_elapsed': {
     description: 'Read playback time in milliseconds, or `nil` when there is no active animation. The query leaves the clock as it was.',
     params: [['process?', 'A live process handle. Omit the argument when calling from the scheduled process coroutine to read its playback time.']],
     example: 'local ms = animation_elapsed() -- Inside a scheduled process.\nlocal other_ms = animation_elapsed(worker)',
     related: ['animation'],
+  },
+  'graphics/animation_finished': {
+    description: 'Return true when a non-looping animation reaches its full duration, including the final frame. In all other states, return false. A completed animation holds its last frame until the process changes or resets its graph.',
+    params: [['handle?', 'A live process handle. Omit it when calling from the scheduled process coroutine. The method form is `handle:animation_finished()`.']],
+    example: 'self.graph = animation("explosion", {loop = false})\nwhile not animation_finished() do\n  frame()\nend',
+    related: ['animation', 'animation_elapsed'],
   },
   'graphics/graph': {
     description: 'Select one static graphic from a library for `self.graph`, without advancing it. Inside a process it uses `self.file`; call `graph(library, id)` to select from a library explicitly.',
@@ -363,36 +371,38 @@ export default {
     related: ['sprite_info'],
   },
 
+  'images/atlas_animation_frame': {
+    description: 'Return the sprite ID for a named atlas animation at a given time. Unknown names and invalid arguments raise an error. The method form is `atlas:animation_frame(name, elapsed_ms, options?)`.',
+    params: [['atlas', 'An atlas.'], ['name', 'An animation name.'],
+      ['elapsed_ms', 'Finite milliseconds from 0 to 1e12, inclusive. Fractions are accepted.'],
+      ['options?', 'A table with optional boolean `loop`. It defaults to true. Use false to hold the last frame.']],
+    example: 'local id = atlas_animation_frame(atlas, "flash", 250.5, {loop = false})\ndraw_sprite {atlas = atlas, id = id, x = x, y = y}',
+    related: ['atlas_animation_color', 'atlas_animation_repeats'],
+  },
+  'images/atlas_animation_color': {
+    description: 'Return the imported tag color as `{r, g, b, a}`, or `nil` when the tag or color is missing. The method form is `atlas:animation_color(name)`.',
+    params: [['atlas', 'An atlas.'], ['name', 'An animation name.']],
+    example: 'local color = atlas_animation_color(atlas, "walk")',
+    related: ['atlas_animation_frame'],
+  },
+  'images/atlas_pivot_color': {
+    description: 'Return the pivot slice color of an atlas as `{r, g, b, a}`, or `nil`.',
+    params: [['atlas', 'An atlas.']],
+    example: 'local color = atlas_pivot_color(atlas)',
+    related: ['atlas_animation_color'],
+  },
+  'images/atlas_animation_repeats': {
+    description: 'Return the imported repeat count, or `nil` when the tag or count is missing. The count has no effect on playback. The method form is `atlas:animation_repeats(name)`.',
+    params: [['atlas', 'An atlas.'], ['name', 'An animation name.']],
+    example: 'local count = atlas_animation_repeats(atlas, "walk")',
+    related: ['atlas_animation_frame'],
+  },
+
   'animations/animation_sample': {
     description: 'Return a reusable frame graphic from an animation descriptor without changing its playback time.',
     params: [['animation', 'An animation descriptor.'], ['elapsed_ms', 'A time from 0 to 1e12 milliseconds.']],
     example: 'local still = animation_sample(walk, 100)',
-    related: ['animation', 'animation_frame', 'animation_elapsed'],
-  },
-  'animations/animation_frame': {
-    description: 'Return the sprite id for a named animation at a given time.',
-    params: [['atlas', 'An atlas.'], ['name', 'An animation name.'], ['elapsed_ms', 'A non-negative time in milliseconds.'],
-      ['loop?', '`true` (default) or `false` to hold the last frame.']],
-    example: 'local id = animation_frame(atlas, "flash", elapsed, true)\ndraw_sprite {atlas = atlas, id = id, x = x, y = y}',
-    related: ['animation_color', 'animation_repeats'],
-  },
-  'animations/animation_color': {
-    description: 'Return the color of an animation tag as `{r, g, b, a}`, or `nil`.',
-    params: [['atlas', 'An atlas.'], ['name', 'An animation name.']],
-    example: 'local color = animation_color(atlas, "walk")',
-    related: ['animation_frame'],
-  },
-  'animations/atlas_pivot_color': {
-    description: 'Return the pivot slice color of an atlas as `{r, g, b, a}`, or `nil`.',
-    params: [['atlas', 'An atlas.']],
-    example: 'local color = atlas_pivot_color(atlas)',
-    related: ['animation_color'],
-  },
-  'animations/animation_repeats': {
-    description: 'Return the explicit repeat count of an animation, or `nil`.',
-    params: [['atlas', 'An atlas.'], ['name', 'An animation name.']],
-    example: 'local count = animation_repeats(atlas, "walk")',
-    related: ['animation_frame'],
+    related: ['animation', 'atlas_animation_frame', 'animation_elapsed'],
   },
 
   'text/font': {

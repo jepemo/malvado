@@ -129,8 +129,8 @@
 ---@field region fun(options: MvRegionOptions):MvRegion
 ---@field scroll fun(x: number, y: number):MvScroll
 ---@field graph fun(library_or_id: MvAtlas|MvFpg|MvFpgManifest|integer, id?: integer):MvGraphic Select a graphic from a library or the process file.
----@field animation fun(library_or_sequence: MvAtlas|MvFpg|MvFpgManifest|string|integer[], sequence_or_options?: string|integer[]|MvAnimationOptions, options?: MvAnimationOptions):MvAnimation Create an animation from an atlas animation or a frame list.
 ---@field animation_elapsed (fun():number|nil)|(fun(handle: MvProcess):number|nil) The no-argument form requires the scheduled process coroutine.
+---@field animation_finished (fun():boolean)|(fun(handle: MvProcess):boolean) The no-argument form requires the scheduled process coroutine.
 
 ---@class MvCollisionNamespace
 ---@field __call fun(_self: MvCollisionNamespace, target: MvProcessConstructor):MvProcess|nil
@@ -436,27 +436,27 @@ function malvado.sprite_id(atlas, name) end
 ---Compute the atlas animation frame for an elapsed time in milliseconds.
 ---@param atlas MvAtlas
 ---@param name string
----@param elapsed_ms integer
----@param loop? boolean Default true.
+---@param elapsed_ms number Finite milliseconds from 0 to 1e12.
+---@param options? MvNamedAnimationOptions
 ---@return integer sprite_id
-function malvado.animation_frame(atlas, name, elapsed_ms, loop) end
+function malvado.atlas_animation_frame(atlas, name, elapsed_ms, options) end
 
----Read the ambient color of an atlas animation. Returns nil when missing.
+---Read the imported color of an atlas animation tag. Returns nil when missing.
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer[]|nil color
-function malvado.animation_color(atlas, name) end
+function malvado.atlas_animation_color(atlas, name) end
 
 ---Read the transparent pivot color of an atlas. Returns nil when missing.
 ---@param atlas MvAtlas
 ---@return integer[]|nil color
 function malvado.atlas_pivot_color(atlas) end
 
----Read how often an atlas animation repeats. Returns nil when missing.
+---Read the imported repeat count of an atlas animation tag. Returns nil when missing.
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer|nil repeats
-function malvado.animation_repeats(atlas, name) end
+function malvado.atlas_animation_repeats(atlas, name) end
 
 ---Queue an atlas sprite draw with its metadata pivot until the process next activates.
 ---Must be called inside a process.
@@ -478,12 +478,15 @@ function malvado.graph(library, id) end
 ---self.graph = animation("walk")        -- uses the process's `file` field
 ---self.graph = animation({1, 2, 3}, {fps = 12})
 ---```
----@overload fun(library: MvAtlas, name: string, options?: MvAnimationOptions):MvAnimation
+---@overload fun(name: string, options?: MvNamedAnimationOptions):MvAnimation
+---@overload fun(library: MvAtlas, name: string, options?: MvNamedAnimationOptions):MvAnimation
 ---@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
----@overload fun(name: string, options?: MvAnimationOptions):MvAnimation
----@overload fun(sequence: integer[], options?: MvAnimationOptions):MvAnimation
+---@param sequence integer[]
+---@param options? MvAnimationOptions
 ---@return MvAnimation
 function malvado.animation(sequence, options) end
+
+malvado.graphics.animation = malvado.animation
 
 ---Sample a reusable animation descriptor at a time in milliseconds.
 ---This does not change any process playback clock.
@@ -498,6 +501,13 @@ function malvado.animation_sample(animation, elapsed_ms) end
 ---@param handle MvProcess
 ---@return number|nil elapsed_ms
 function malvado.animation_elapsed(handle) end
+
+---Check whether a non-looping animation has played through its final frame.
+---The no-argument form requires the currently scheduled process coroutine.
+---@overload fun():boolean
+---@param handle MvProcess
+---@return boolean finished
+function malvado.animation_finished(handle) end
 
 ---Return the number of sprites.
 ---@param fpg MvFpg

@@ -45,7 +45,8 @@ static void check_frame(void *user)
     UnloadImage(screen);
     if (probe->stage == 0) {
         assert(present && animated);
-        assert(state.elapsed_us == ((uint64_t)tick * 1000000 / 60) % 100000);
+        uint64_t elapsed_us = (uint64_t)tick * 1000000 / 60;
+        assert(state.elapsed_us == (elapsed_us < 100000 ? elapsed_us : 100000));
         assert(mv_process_animation_clock_clear(ctx,ref) == MV_BUSY);
         if (sample.graph_id == 7) {
             assert(pixel.r == 252 && pixel.g == 0);

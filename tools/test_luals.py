@@ -86,6 +86,7 @@ local Player = process(function(self)
   world_move(world, self, 1, 0)
   local message, explicit_message = recv(), recv(self)
   local elapsed, explicit_elapsed = animation_elapsed(), animation_elapsed(self)
+  assert(animation_finished() == animation_finished(self))
   set_priority(10)
   set_priority(self, 0)
   if message then kill() end
@@ -96,6 +97,12 @@ local Player = process(function(self)
   draw_line {x1 = 0, y1 = 0, x2 = 4, y2 = 6, thickness = 1.5}
   local image = load_image("sheet.png")
   local atlas = load_atlas(image, "{}")
+  local sprite_id = atlas_animation_frame(atlas, "walk", 10.5, {loop = false})
+  local tag_color = atlas_animation_color(atlas, "walk")
+  local repeats = atlas_animation_repeats(atlas, "walk")
+  self.graph = animation(atlas, "walk", {loop = false})
+  self.graph = animation("walk", {loop = true})
+  self.graph = animation({1, 2}, {fps = 12})
   draw_image {image = image, x = 0.5, y = 0, pivot = "center"}
   draw_sprite {atlas = atlas, id = 42, x = 10, y = 10, angle = 90}
   self.custom = 1
@@ -164,6 +171,9 @@ local actor = mv.process(function(self)
   local message, explicit_message = mv.recv(), mv.recv(self)
   local elapsed, explicit_elapsed = mv.animation_elapsed(), mv.animation_elapsed(self)
   local graphics_elapsed, graphics_explicit = mv.graphics.animation_elapsed(), mv.graphics.animation_elapsed(self)
+  assert(mv.animation_finished() == mv.animation_finished(self))
+  assert(mv.graphics.animation_finished() == mv.graphics.animation_finished(self))
+  assert(self:animation_finished() == mv.animation_finished(self))
   mv.set_priority(10)
   mv.set_priority(self, 0)
   mv.process.set_priority(10)
@@ -175,6 +185,9 @@ local actor = mv.process(function(self)
   self.graph = mv.animation_sample(mv.animation(atlas, {1, 2}), 50)
   self.graph = mv.graphics.graph(42)
   self.graph = mv.graphics.animation(atlas, {1, 2}, {fps = 8})
+  self.graph = mv.graphics.animation({1, 2}, {fps = 12, loop = false})
+  self.graph = mv.graphics.animation(atlas, "walk", {loop = false})
+  self.graph = mv.graphics.animation("walk", {loop = true})
 end)
 actor {}
 mv.camera_destroy(view)
@@ -187,7 +200,11 @@ method_world:add_rect {x = cx, y = cy, width = 10, height = 10}
 method_world:overlap(mv.collision.circle {radius = 1}, {x = cx})
 local method_image = mv.load_image("logo.png")
 local iw, ih = method_image:size()
-local method_atlas = mv.load_asset("atlas.json", {format = "atlas"})
+local method_atlas = mv.load_atlas(method_image, "{}")
+local sprite_id = mv.atlas_animation_frame(method_atlas, "walk", 10.5, {loop = false})
+local method_id = method_atlas:animation_frame("walk", 10.5, {loop = false})
+local tag_color = mv.atlas_animation_color(method_atlas, "walk")
+local repeats = mv.atlas_animation_repeats(method_atlas, "walk")
 local method_fpg = mv.fpg.parse("")
 local method_manifest = mv.fpg.parse_manifest(method_fpg:json())
 local sound = mv.load_sound("tone.wav")
@@ -330,7 +347,23 @@ def main():
             'local shape = mv.collision.circle {radius = 1}\n'
             'shape:overlap(shape)\n',
             encoding="utf-8")
+        invalid_atlas_queries = [
+            'mv.atlas_animation_frame(atlas, "walk", 10.5, false)',
+            'atlas:animation_frame("walk", 10.5, false)',
+        ]
+        (project / "bad-animations.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local atlas = mv.load_atlas(mv.load_image("sheet.png"), "{}")\n'
+            + "\n".join(invalid_atlas_queries)
+            + "\n---@type MvNamedAnimationOptions\nlocal options = {}\noptions.fps = 12\n",
+            encoding="utf-8")
         output = diagnose_project(project, "mv.", failures)
+        bad_animations = {line for line, _ in diagnose(output, "bad-animations.lua")}
+        for line, call in enumerate(invalid_atlas_queries, 3):
+            if line not in bad_animations:
+                failures.append(f"namespaced project: invalid atlas query was not reported: {call}")
+        if len(invalid_atlas_queries) + 5 not in bad_animations:
+            failures.append("namespaced project: named animation options should reject fps")
         bad_methods = diagnose(output, "bad-methods.lua")
         if not any(line == 3 and "Cannot assign `string`" in message
                    for line, message in bad_methods):

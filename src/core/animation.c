@@ -13,7 +13,7 @@
  * See LICENSE for details.
  */
 
-#include "malvado/animation.h"
+#include "animation_internal.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -65,11 +65,17 @@ mv_animation_count(const MvAnimation *animation)
 }
 
 int
+malvado_animation_finished(const MvAnimation *animation, uint64_t elapsed_us)
+{
+    return animation && !animation->loop && elapsed_us >= animation->duration_us;
+}
+
+int
 mv_animation_sample(const MvAnimation *animation, uint64_t elapsed_us, MvAnimationSample *out)
 {
     if (!animation || !out) return 0;
     if (animation->loop) elapsed_us %= animation->duration_us;
-    else if (elapsed_us >= animation->duration_us) {
+    else if (malvado_animation_finished(animation, elapsed_us)) {
         *out = (MvAnimationSample){animation->count - 1, animation->frames[animation->count - 1].graph_id};
         return 1;
     }

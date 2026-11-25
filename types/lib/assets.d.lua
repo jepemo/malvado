@@ -21,13 +21,36 @@
 
 ---Sprite atlas loaded with `load_asset`, `load_atlas` or `load_aseprite`.
 ---@class MvAtlas
----@field sprite_info fun(self: MvAtlas, id: integer):MvSpriteInfo
----@field sprite_id fun(self: MvAtlas, name: string):integer|nil
----@field animation_frame fun(self: MvAtlas, name: string, elapsed_ms: integer, loop?: boolean):integer
----@field animation_color fun(self: MvAtlas, name: string):integer[]|nil
----@field animation_repeats fun(self: MvAtlas, name: string):integer|nil
----@field pivot_color fun(self: MvAtlas):integer[]|nil
----@field graph fun(self: MvAtlas, id: integer):MvGraphic
+local Atlas = {}
+
+---@param id integer
+---@return MvSpriteInfo
+function Atlas:sprite_info(id) end
+
+---@param name string
+---@return integer|nil
+function Atlas:sprite_id(name) end
+
+---@param name string
+---@param elapsed_ms number
+---@param options? MvNamedAnimationOptions
+---@return integer
+function Atlas:animation_frame(name, elapsed_ms, options) end
+
+---@param name string
+---@return integer[]|nil
+function Atlas:animation_color(name) end
+
+---@param name string
+---@return integer|nil
+function Atlas:animation_repeats(name) end
+
+---@return integer[]|nil
+function Atlas:pivot_color() end
+
+---@param id integer
+---@return MvGraphic
+function Atlas:graph(id) end
 
 ---Source rectangle in image pixels.
 ---@class MvImageSource

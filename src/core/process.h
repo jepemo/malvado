@@ -31,6 +31,7 @@ MvResult malvado_process_visual_set(MvContext *ctx, MvProcessRef ref,
     MvCollisionShape shape, void *data, MvResourceDestroy destroy);
 MvResult malvado_process_visual_get(MvContext *ctx, MvProcessRef ref, void **data);
 #include "malvado/animation.h"
+int malvado_process_animation_finished(MvContext *ctx, MvProcessRef ref);
 typedef int (*MvVisualSample)(void *data, size_t index, MvCollisionShape *shape);
 /* Sample must only select immutable platform values, with no process calls. */
 MvResult malvado_process_visual_animation_set(MvContext *ctx, MvProcessRef ref,

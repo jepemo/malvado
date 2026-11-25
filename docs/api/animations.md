@@ -40,8 +40,8 @@ Custom ID lists contain 1..4096 entries; repeated and nonconsecutive IDs work.
 Every ID must exist. `fps` defaults to 8 and must be finite in 1/3600..1000.
 Uniform durations are rounded to the nearest microsecond. `loop` defaults to
 true and must be boolean. Named sequences preserve their native frame durations
-and tag direction; they accept `loop`, not an fps override. Aseprite repeat-count
-metadata retains its existing descriptive meaning; it is not a playback limit.
+and tag direction. Their only option is `loop`. Aseprite repeat counts are
+imported tag metadata and have no effect on playback.
 Unknown options, names, IDs, sparse lists and invalid contexts raise errors.
 Per-frame custom duration tables are not part of this initial interface.
 
@@ -82,8 +82,10 @@ for static/manual and explicit namespace alternatives.
 `animation_sample(definition, elapsed_ms)` returns the reusable static frame descriptor at
 a finite time in 0..1e12 milliseconds. It uses the definition's loop rule and
 does not change any process. Use `graph(library, id)` for a specific static ID.
-`animation_frame(atlas, name, elapsed_ms, loop?)` returns the sprite ID
+Use [`atlas_animation_frame`](images.md#animate-an-atlas) to query a sprite ID
 from a named atlas sequence.
+
+## Inspect playback
 
 Inside the scheduled process coroutine, use `animation_elapsed()` to read its
 playback time. Use `animation_elapsed(handle)` to inspect a specific live process,
@@ -95,15 +97,39 @@ local elapsed = animation_elapsed() -- Inside the process body.
 local other_elapsed = animation_elapsed(other_process)
 ```
 
-The query returns playback milliseconds within the sequence, wrapping when it
-loops. It returns `nil` when there is no active animation. The query leaves the
+The elapsed query returns playback milliseconds within the sequence, wrapping
+when it loops. It returns `nil` when there is no active animation. The query leaves the
 graph and the clock as they were. Calling without an argument from setup code or
 an ordinary Lua coroutine raises an error. The explicit form accepts one live
 process handle from the same runtime. Explicit `nil`, numeric IDs, and extra
 arguments are errors.
 
-The update happens after scheduled process behavior, so a process observes the
-completed previous tick's advance until that tick's update finishes.
+Use `animation_finished()`, `animation_finished(handle)`, or
+`handle:animation_finished()` to check if a non-looping animation has played
+through the full duration of its last frame. This includes single-frame
+sequences. A static graph, a cleared graph, a looping animation, or a sequence
+still in progress returns `false`. A completed sequence holds its last frame
+and reports `true` until the selection changes or is reset. Reassigning the same
+cached definition preserves completion, including when the process is asleep
+or frozen.
+
+Both queries have the same context and handle rules. They read the same
+simulation clock, which advances after scheduled process behavior. The
+completion query is available as `mv.animation_finished` and
+`mv.graphics.animation_finished` as well.
+
+To end a process after a one-shot animation, let its body return once the
+query reports completion. This uses the normal process cleanup rules.
+
+```lua
+local Explosion = process(function(self)
+  self.file = effects
+  self.graph = animation("explosion", {loop = false})
+  while not animation_finished() do
+    frame()
+  end
+end)
+```
 
 ## Native C
 

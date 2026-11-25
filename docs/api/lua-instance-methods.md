@@ -57,8 +57,8 @@ After a process ends, its custom fields are released. The handle still lets you
 call its methods. Each operation handles an ended process as its procedural
 form does. For example, `handle:alive()` and a repeated `handle:kill()` return
 `false`. A process that kills itself stops immediately. Sending a message with
-`handle:send(message)` queues it for that handle. The `animation_elapsed` method
-requires asset support.
+`handle:send(message)` queues it for that handle. The `animation_elapsed` and
+`animation_finished` methods require asset support.
 
 | Instance method | Explicit procedural call |
 | --- | --- |
@@ -72,6 +72,7 @@ requires asset support.
 | `handle:children(options?)` | `children(handle, options?)` |
 | `handle:descendants(options?)` | `descendants(handle, options?)` |
 | `handle:animation_elapsed()` | `animation_elapsed(handle)` |
+| `handle:animation_finished()` | `animation_finished(handle)` |
 | `handle:collision(target)` | `mv.process.collision(handle, target)` |
 | `handle:collisions(target)` | `mv.process.collisions(handle, target)` |
 | `handle:set_priority(priority)` | `set_priority(handle, priority)` |
@@ -115,9 +116,9 @@ requires an open window when it finds the requested sprite.
 | --- | --- |
 | `atlas:sprite_info(id)` | `sprite_info(atlas, id)` |
 | `atlas:sprite_id(name)` | `sprite_id(atlas, name)` |
-| `atlas:animation_frame(name, elapsed_ms, loop?)` | `animation_frame(atlas, name, elapsed_ms, loop?)` |
-| `atlas:animation_color(name)` | `animation_color(atlas, name)` |
-| `atlas:animation_repeats(name)` | `animation_repeats(atlas, name)` |
+| `atlas:animation_frame(name, elapsed_ms, options?)` | `atlas_animation_frame(atlas, name, elapsed_ms, options?)` |
+| `atlas:animation_color(name)` | `atlas_animation_color(atlas, name)` |
+| `atlas:animation_repeats(name)` | `atlas_animation_repeats(atlas, name)` |
 | `atlas:pivot_color()` | `atlas_pivot_color(atlas)` |
 | `atlas:graph(id)` | `graph(atlas, id)` |
 | `fpg:count()` | `fpg_count(fpg)` |

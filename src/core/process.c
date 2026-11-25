@@ -15,7 +15,7 @@
 #include "process.h"
 #include "malvado/collision.h"
 #include "malvado/graphic.h"
-#include "malvado/animation.h"
+#include "animation_internal.h"
 #include "malvado/camera.h"
 #include "malvado/text.h"
 #include "collision_internal.h"
@@ -495,6 +495,14 @@ mv_process_animation_clock_get(MvContext *ctx, MvProcessRef reference,
     }
     *present = item->animation != NULL;
     return MV_OK;
+}
+
+int
+malvado_process_animation_finished(MvContext *ctx, MvProcessRef reference)
+{
+    Process *item;
+    return resolve_live_process(ctx, reference, &item) == MV_OK &&
+        malvado_animation_finished(item->animation, item->animation_state.elapsed_us);
 }
 
 MvResult
