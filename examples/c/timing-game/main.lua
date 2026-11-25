@@ -4,10 +4,10 @@
 require("malvado").import_globals()
 local Game = process(function()
     local elapsed, stopped = 0, nil
-    while not key("escape") do
+    while not key(KEY_ESCAPE) do
         if not stopped then
             elapsed = elapsed + 1
-            if key("space") then stopped = elapsed end
+            if key(KEY_SPACE) then stopped = elapsed end
         end
         draw_text {text = "Press SPACE as close to 5 seconds as you can.", x = 30, y = 40, size = 20}
         draw_text {text = string.format("Time: %.2f seconds", elapsed / 60), x = 30, y = 100, size = 28}

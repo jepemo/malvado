@@ -46,7 +46,9 @@
 ---@field angle number Rotation in degrees.
 ---@field size number Scale factor. Default 1.
 ---@field fps integer Activations per 60 eligible logical ticks (0..60). Both 0 and 60 run every tick. The initial value comes from instance fields, definition defaults, or the game default.
----@field graph MvGraphic|MvAnimation|MvImage|MvAtlas|MvFpg|MvFpgManifest|nil Selected graphic: result of `rect`, `circle`, `graph`, `animation`, `load_image`, or `load_asset`.
+---@field graph MvGraphic|MvAnimation|MvImage|nil Graphic, animation or standalone image to draw. Set nil to clear.
+---@field file MvGraphicLibrary|nil Library for contextual graph and animation selection.
+---@field world MvCollisionWorld|nil World for contextual movement and collision queries.
 ---@field camera MvCamera|nil|false Camera to draw with. nil: main camera. false: screen space.
 ---@field region MvRegion|nil Drawing region descriptor.
 ---@field scroll MvScroll|nil Scroll descriptor.

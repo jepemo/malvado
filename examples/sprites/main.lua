@@ -8,7 +8,7 @@ local images = {}
 local Cat = process(function(self)
   local image = 1
   self.fps = 15
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     self.graph = images[image]
     image = image % #images + 1
     frame()

@@ -5,10 +5,10 @@ require("malvado").import_globals()
 local sound, music
 local Demo = process(function()
   local looping = false
-  while not key("escape") do
-    if key_pressed("1") then play_sound(sound, {volume = 0.3}) end
-    if key_pressed("2") then play_sound(sound, {volume = 0.15}) end
-    if key_pressed("space") then
+  while not key(KEY_ESCAPE) do
+    if key_pressed(KEY_1) then play_sound(sound, {volume = 0.3}) end
+    if key_pressed(KEY_2) then play_sound(sound, {volume = 0.15}) end
+    if key_pressed(KEY_SPACE) then
       looping = not looping
       if looping then play_music(music) else stop_music(music) end
     end

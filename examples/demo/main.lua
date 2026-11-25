@@ -84,8 +84,8 @@ local Demo = process(function()
 end)
 
 start(function()
-  for i = 1, 6 do images.cats[i] = load_image("assets/cat/c" .. i .. ".png") end
-  images.hero = load_image("assets/hero_spritesheet.png")
+  for i = 1, 6 do images.cats[i] = load_asset("assets/cat/c" .. i .. ".png") end
+  images.hero = load_asset("assets/hero_spritesheet.png")
   clear_screen(BLACK)
   Demo()
 end, { width = 800, height = 600, title = "Malvado Demo" })

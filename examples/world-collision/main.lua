@@ -10,12 +10,12 @@ world_add_rect(world, {x = 300, y = 100, width = 40, height = 280})
 
 local Player = process(function(self)
   self.world = world
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     local dx, dy = 0, 0
-    if key("left") then dx = -4 end
-    if key("right") then dx = 4 end
-    if key("up") then dy = -4 end
-    if key("down") then dy = 4 end
+    if key(KEY_LEFT) then dx = -4 end
+    if key(KEY_RIGHT) then dx = 4 end
+    if key(KEY_UP) then dy = -4 end
+    if key(KEY_DOWN) then dy = 4 end
     world_move(dx, dy)
 
     draw_rect {x = 300, y = 100, width = 40, height = 280, color = {255, 165, 70}}

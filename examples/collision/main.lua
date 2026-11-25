@@ -5,15 +5,15 @@ local mv = require("malvado")
 mv.import_globals()
 
 local Square = process(function()
-  while not key("escape") do frame() end
+  while not key(KEY_ESCAPE) do frame() end
 end, {defaults = {graph = rect {width = 100, height = 100, pivot = "top-left", color = {255, 165, 70}}}})
 
 local Circle = process(function(self)
-  while not key("escape") do
-    if key("left") then self.x = self.x - 4 end
-    if key("right") then self.x = self.x + 4 end
-    if key("up") then self.y = self.y - 4 end
-    if key("down") then self.y = self.y + 4 end
+  while not key(KEY_ESCAPE) do
+    if key(KEY_LEFT) then self.x = self.x - 4 end
+    if key(KEY_RIGHT) then self.x = self.x + 4 end
+    if key(KEY_UP) then self.y = self.y - 4 end
+    if key(KEY_DOWN) then self.y = self.y + 4 end
     self.x = math.max(20, math.min(620, self.x))
     self.y = math.max(20, math.min(460, self.y))
     draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}

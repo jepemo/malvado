@@ -75,6 +75,11 @@ local Player = process(function(self)
   self.fps = 30
   self.camera = view
   self.world = world
+  self.file = library
+  local selected = graph(self.file, 7)
+  self.graph = selected
+  local first = collision(self)
+  local second = process.collision(self, self)
   self.region = region {x = 0, y = 0, width = 64, height = 48}
   self.scroll = scroll(5, 0)
   camera_follow(self)
@@ -180,6 +185,14 @@ end
 mv.play_music(mv.load_music("music.ogg"))
 local actor = mv.process(function(self)
   self.file = atlas
+  self.world = world
+  local target = mv.process(function() end)
+  local detected = mv.collision(target)
+  local explicit = mv.process.collision(self, target)
+  local handle_hit = mv.collision(self)
+  local method_hit = self:collision(target)
+  local world_x, world_y = view:position()
+  self.world:move(self, world_x, world_y)
   mv.camera_follow(self)
   mv.camera_set(view, 20, 40)
   mv.world_collision()
@@ -397,6 +410,17 @@ def main():
             + "\n".join(invalid_atlas_queries)
             + "\n---@type MvNamedAnimationOptions\nlocal options = {}\noptions.fps = 12\n",
             encoding="utf-8")
+        (project / "bad-process-fields.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local atlas = mv.parse_atlas(mv.load_image("sheet.png"), "{}")\n'
+            '---@param self MvProcess\n'
+            'local function actor(self)\n'
+            '  self.graph = atlas\n'
+            '  self.file = mv.graph(atlas, 1)\n'
+            '  self.world = atlas\n'
+            '  mv.process.collision(self, "actor")\n'
+            'end\n',
+            encoding="utf-8")
         invalid_asset_calls = [
             'fpg:graph("7")',
             'mv.fpg_png(fpg, 7, true)',
@@ -416,6 +440,10 @@ def main():
             'mv.process.kill_tree(Actor {}, options)\n',
             encoding="utf-8")
         output = diagnose_project(project, "mv.", failures)
+        bad_fields = {line for line, _ in diagnose(output, "bad-process-fields.lua")}
+        for line in range(5, 9):
+            if line not in bad_fields:
+                failures.append(f"namespaced project: invalid process usage on line {line} was not reported")
         bad_assets = {line for line, _ in diagnose(output, "bad-assets.lua")}
         for line, call in enumerate(invalid_asset_calls, 3):
             if line not in bad_assets:

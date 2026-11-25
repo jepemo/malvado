@@ -878,6 +878,8 @@ add_test(NAME lua_delta_sleep COMMAND malvado-run --headless ${CMAKE_CURRENT_SOU
 set_tests_properties(lua_delta_sleep PROPERTIES TIMEOUT 15)
 add_test(NAME lua_rand COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/rand.lua)
 set_tests_properties(lua_rand PROPERTIES TIMEOUT 15)
+add_test(NAME lua_api_validation COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/lua_api_validation.lua)
+set_tests_properties(lua_api_validation PROPERTIES TIMEOUT 15)
 add_executable(process-view-host-test tests/process_view_host.c)
 target_include_directories(process-view-host-test PRIVATE src)
 target_link_libraries(process-view-host-test PRIVATE malvado_lua_binding)

@@ -3,7 +3,7 @@
 require("malvado").import_globals()
 
 local World = process(function()
-  while not key("escape") do frame() end
+  while not key(KEY_ESCAPE) do frame() end
 end, {defaults = {graph = rect {width = 30, height = 30, color = {180, 80, 220}}}})
 
 local Inventory = process(function(self)
@@ -11,9 +11,9 @@ local Inventory = process(function(self)
   self.region = region {x = 80, y = 140, width = 480, height = 180}
   local offset = 0
   local colors = {{230, 80, 80}, {80, 210, 120}, {80, 150, 240}}
-  while not key("escape") do
-    if key("right") then offset = math.min(160, offset + 4) end
-    if key("left") then offset = math.max(0, offset - 4) end
+  while not key(KEY_ESCAPE) do
+    if key(KEY_RIGHT) then offset = math.min(160, offset + 4) end
+    if key(KEY_LEFT) then offset = math.max(0, offset - 4) end
     self.scroll = scroll(offset, 0)
     for i = 0, 5 do
       local color = colors[i % #colors + 1]
@@ -25,7 +25,7 @@ end)
 
 local Overlay = process(function(self)
   self.camera = false
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     draw_rect {x = 80, y = 140, width = 480, height = 180, color = WHITE, filled = false}
     draw_text {text = "Left / Right: scroll inventory  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
