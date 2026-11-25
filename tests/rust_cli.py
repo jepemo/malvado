@@ -25,6 +25,9 @@ def creation(cli, work, visual):
     manifest = tomllib.loads((game / "Cargo.toml").read_text())
     assert manifest["package"]["name"] == "game"
     assert manifest["bin"] == [{"name": "game", "path": "main.rs"}]
+    assert manifest["lib"] == {"name": "game", "path": "android.rs", "crate-type": ["staticlib"]}
+    bridge = (game / "android.rs").read_text()
+    assert 'include!("main.rs");' in bridge and "malvado::android_entry!(main);" in bridge
     dependency = manifest["dependencies"]["malvado"]
     assert Path(dependency["path"]).is_dir()
     assert dependency["features"] == ["graphics"]

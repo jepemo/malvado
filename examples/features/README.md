@@ -21,7 +21,7 @@ for your installed SDK.
 
 ```sh
 # C
-malvado new --c lesson
+malvado new --lang c lesson
 cp "$source/c/main.c" lesson/main.c
 ```
 

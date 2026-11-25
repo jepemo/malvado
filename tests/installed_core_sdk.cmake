@@ -86,6 +86,7 @@ if(CLI_NAME)
   endif()
   execute_process(COMMAND "${CMAKE_COMMAND}"
     "-DCLI=${WORK}/moved sdk/${BINDIR}/${CLI_NAME}" "-DWORK=${WORK}/cli"
+    "-DREQUIRE_LUA_CONFIG=${CAN_EXPORT}"
     -P "${SOURCE}/tests/cli_project.cmake" RESULT_VARIABLE result)
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Installed client test failed")
@@ -97,7 +98,7 @@ if(CLI_NAME)
     message(FATAL_ERROR "Installed game launcher test failed")
   endif()
   if(HAS_GRAPHICS)
-    execute_process(COMMAND "${WORK}/moved sdk/${BINDIR}/${CLI_NAME}" new --c "${WORK}/C game"
+    execute_process(COMMAND "${WORK}/moved sdk/${BINDIR}/${CLI_NAME}" new --lang c "${WORK}/C game"
       RESULT_VARIABLE result)
     if(NOT result EQUAL 0)
       message(FATAL_ERROR "C project creation failed")

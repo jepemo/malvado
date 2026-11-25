@@ -18,7 +18,7 @@ TRACES = {
     'image': ['image: 32x32'],
     'window-resize': ['window: 320x240', 'window: 640x360'],
 }
-LANGUAGES = {'c': ['--c'], 'lua': [], 'rust': ['--lang', 'rust']}
+LANGUAGES = {'c': ['--lang', 'c'], 'lua': [], 'rust': ['--lang', 'rust']}
 ENTRY_POINTS = {'c': 'main.c', 'lua': 'main.lua', 'rust': 'main.rs'}
 
 

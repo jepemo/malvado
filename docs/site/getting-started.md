@@ -37,7 +37,7 @@ Run the command for your language from a directory where you keep projects:
 | Language | Command | Tools for building the game |
 | --- | --- | --- |
 | Lua | `malvado new my-game` | The SDK includes the Lua runner. |
-| C | `malvado new --c my-game` | CMake and a C compiler. |
+| C | `malvado new --lang c my-game` | CMake and a C compiler. |
 | Rust | `malvado new --lang rust my-game` | Cargo, rustc, CMake and a C compiler. |
 
 ```sh

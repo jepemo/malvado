@@ -43,7 +43,7 @@ Each run must open the game window. Close it before the next command. The export
 Create a C game:
 
 ```sh
-malvado new --c c-game
+malvado new --lang c c-game
 cd c-game
 malvado build
 malvado run
