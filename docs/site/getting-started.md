@@ -21,14 +21,20 @@ under `~/.local/share/malvado`. It then prints the line that adds the `bin`
 directory to your `PATH`. Add that line to your shell configuration to keep
 the `malvado` command.
 
-To read the installer before you run it:
-
-```sh
-curl -fsSL https://malvado.dev/install.sh -o install.sh
-```
-
 On Windows, download the SDK archive from
 [GitHub Releases](https://github.com/jepemo/malvado/releases).
+
+## Uninstall the SDK
+
+To remove an SDK installed with the script, run:
+
+```sh
+curl -fsSL https://malvado.dev/install.sh | bash -s -- --uninstall
+```
+
+If you installed with `--prefix`, pass the same `--prefix` when you uninstall.
+If you added the SDK to your `PATH`, remove that entry from your shell
+configuration.
 
 ## Create and run a game
 
