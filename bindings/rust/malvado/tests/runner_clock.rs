@@ -8,7 +8,7 @@ fn native_time_plans_do_not_poll_processes() {
     let count = Rc::new(Cell::new(0));
     let seen = count.clone();
     let _actor = game
-        .spawn(Default::default(), move |p| async move {
+        .spawn(move |p| async move {
             loop {
                 seen.set(seen.get() + 1);
                 p.frame().await;

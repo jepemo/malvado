@@ -170,3 +170,17 @@ consumers against the matching SDK. Rust probes and runtime checks reject ABI
 revision 1 before calling the revised operations. Rust whole-image
 `Image::sprite` now returns a Result; `SpriteImage::pivot` and
 `SpriteGeometry::pivot` return copied double coordinates.
+
+## Rust gameplay primitives
+
+Import `malvado::prelude::*` and use `rect(width, height)` or `circle(radius)`.
+Both start centered and white. Apply `.color(CYAN)` to set the color, or
+construct a color with `Color::rgb` or `Color::rgba`. The named colors match
+the Lua palette. `p.set_graphic` checks the geometry before assigning it.
+Invalid dimensions return `Error::InvalidArgument` and preserve the previous
+graph. These shapes and colors also work in headless builds.
+
+For an explicit pivot, create `Geometry::rectangle(width, height, Pivot::TopLeft)`
+and place it in a `Graphic`. Use `p.set_graphic` or an explicit `Handle` to assign
+the graphic. Process commands such as `p.draw_text` have their own world
+coordinates and clear at the next activation.

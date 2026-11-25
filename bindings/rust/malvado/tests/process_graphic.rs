@@ -7,7 +7,7 @@ use malvado::{
 fn copied_graphic_assignment_and_handle_lifetimes() {
     let mut game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

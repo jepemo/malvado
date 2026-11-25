@@ -1,5 +1,5 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Error, Game, ProcessContext, SpawnOptions};
+use malvado::{Error, Game, ProcessContext};
 
 struct Counter {
     value: u32,
@@ -17,9 +17,7 @@ impl Counter {
 
 fn main() -> Result<(), Error> {
     let mut game = Game::new()?;
-    game.spawn(SpawnOptions::default(), |process| {
-        Counter { value: 0 }.run(process)
-    })?;
+    game.spawn(|process| Counter { value: 0 }.run(process))?;
     while game.process_count() != 0 {
         game.tick()?;
     }

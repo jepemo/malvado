@@ -13,10 +13,11 @@ installed project with `malvado new --lang rust my-game`; see the
 [CLI guide](../../docs/development/cli.md#rust-projects) and
 [language matrix](../../docs/api/language-parity.md).
 
-Use `Game::new()` as the main Rust entry point. It owns the native context;
-it does not open a window or run a host loop. Keep ordinary owned async process
-methods and explicit platform services. Existing projects can follow the
-[Engine to Game migration](../../docs/development/rust-game-migration.md).
+Use `Game::windowed`, `game.spawn`, and `game.run` to start a windowed game
+with named async process functions. Use `Game::new()` with direct ticks for
+headless simulation or a manual host. See the
+[beginner examples](../../examples/rust/README.md) and the
+[Rust migration guide](../../docs/development/rust-game-migration.md).
 
 Use the project toolchain and run all local SDK checks:
 
@@ -102,12 +103,11 @@ See the [graphics sanitizer limits](../../docs/development/ci.md#rust-sanitizer-
 when interpreting leak reports.
 
 For safe game processes, start with the [Rust process guide](../../docs/api/rust-processes.md)
-and `malvado/examples/counter.rs`. The unsafe sys crate is not an alternate
-recommended gameplay style.
+and the [Catch! example](../../examples/catch/README.md).
+`malvado/examples/counter.rs` is a manual headless example.
 
 The [native collision/world guide](../../docs/api/rust-collision.md) covers
-explicit geometry and process colliders. It does not promise graph-derived
-colliders or contextual process movement. `malvado/examples/world.rs` is a
+explicit geometry, graph-derived process colliders and selected world movement. `malvado/examples/world.rs` is a
 bounded headless example.
 
 The [camera and animation guide](../../docs/api/rust-camera-animation.md) covers
@@ -124,7 +124,7 @@ Run `mise run test-rust-graphics` with a real or virtual display.
 
 The [drawing and image guide](../../docs/api/rust-drawing.md) covers immediate
 shapes/text, scoped clip/scroll, owned PNG/RGBA images and queued-frame retention.
-These services do not assign process graphs or collect process draws yet.
+Use `p.set_graphic` for reusable primitives and `p.draw_text` for process commands.
 
 The [FPG guide](../../docs/api/rust-fpg.md) covers the accepted uncompressed
 BennuGD 8-bit subset, indexed data, conversion and metadata manifests. The

@@ -6,7 +6,7 @@ use malvado::{
 };
 fn actor(game: &Game, geometry: Geometry, x: f64) -> Handle {
     let handle = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

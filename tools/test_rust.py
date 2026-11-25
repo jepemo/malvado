@@ -86,7 +86,7 @@ def external_consumer(prefix):
         '[dependencies]\nmalvado = { path = '
         + json.dumps(os.path.relpath(sdk / 'malvado', game)) + ' }\n')
     (game / "src/main.rs").write_text(
-        'use malvado::{Game, Error, SpawnOptions};\n'
+        'use malvado::{Game, Error};\n'
         'use malvado::collision::{Rect, Shape, Transform, World};\n'
         'fn main() -> Result<(), Error> {\n'
         ' let mut text = malvado::text::Text::new("stored",(1,2),malvado::graphic::TextAlignment::Left)?; text.update("updated",(3,4),malvado::graphic::TextAlignment::Center)?; assert_eq!(text.snapshot().value,"updated");\n'
@@ -104,7 +104,7 @@ def external_consumer(prefix):
         '    let mut clock = Game::new()?; assert_eq!(clock.advance_time(1.0/60.0)?,1); assert_eq!(clock.planned_ticks()?,1); assert_eq!(clock.dropped_seconds()?,0.0); clock.tick()?;\n'
         '    let mut game = Game::new()?; assert!(game.draw_order()?.is_empty());\n'
         ' let registered = game.create_text("host",(1,2),malvado::graphic::TextAlignment::Left)?; registered.update("changed",(3,4),malvado::graphic::TextAlignment::Right)?; assert_eq!(registered.snapshot()?.value,"changed"); registered.remove()?;\n'
-        '    let handle = game.spawn(SpawnOptions::default(), |p| async move { p.frame().await; Ok(()) })?;\n'
+        '    let handle = game.spawn(|p| async move { p.frame().await; Ok(()) })?;\n'
         '    handle.set_position(-1.5, 2.25)?; assert_eq!(handle.position()?, (-1.5, 2.25));\n'
         '    handle.set_angle(90.0)?; handle.set_scale(2.0)?; assert_eq!(handle.angle()?, 90.0); assert_eq!(handle.scale()?, 2.0);\n'
         '    handle.set_animation_clock(&animation)?; assert_eq!(handle.animation_clock()?.unwrap().sample.graph_id,1); handle.clear_animation_clock()?; assert!(handle.animation_clock()?.is_none());\n'

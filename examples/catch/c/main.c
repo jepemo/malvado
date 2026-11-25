@@ -28,6 +28,7 @@ typedef struct {
     MvProcessRef self;
     MvProcessRef target;
     int score;
+    int started;
 } Actor;
 
 /* Move the player left and right with the arrow keys and clamp its center. */
@@ -40,7 +41,8 @@ player_step(MvContext *ctx, MvProcessId id, void *user)
     if (mv_process_position(ctx, player->self, &x, &y) != MV_OK)
         return MV_STEP_ERROR;
 
-    double distance = 400.0 / TICKS_PER_SECOND;
+    double distance = player->started ? 400.0 / TICKS_PER_SECOND : 0.0;
+    player->started = 1;
     if (mv_key_down(MV_KEY_LEFT))
         x -= distance;
     if (mv_key_down(MV_KEY_RIGHT))
@@ -52,7 +54,7 @@ player_step(MvContext *ctx, MvProcessId id, void *user)
     if (mv_process_set_position(ctx, player->self, x, y) != MV_OK)
         return MV_STEP_ERROR;
 
-    return mv_window_escape_down() ? MV_STEP_DONE : MV_STEP_YIELD;
+    return MV_STEP_YIELD;
 }
 
 /* Fall, score one point on a catch, and respawn above the screen. */
@@ -65,7 +67,10 @@ ball_step(MvContext *ctx, MvProcessId id, void *user)
     if (mv_process_position(ctx, ball->self, &x, &y) != MV_OK)
         return MV_STEP_ERROR;
 
-    y += 180.0 / TICKS_PER_SECOND;
+    y += ball->started ? 180.0 / TICKS_PER_SECOND : 0.0;
+    ball->started = 1;
+    if (mv_process_set_position(ctx, ball->self, x, y) != MV_OK)
+        return MV_STEP_ERROR;
 
     int caught = 0;
     if (mv_process_collider_test(ctx, ball->self, ball->target, &caught) != MV_OK)
@@ -75,9 +80,9 @@ ball_step(MvContext *ctx, MvProcessId id, void *user)
     if (caught || y > HEIGHT + 12.0) {
         x = fmod(x + 160.0, (double)WIDTH);
         y = -12.0;
+        if (mv_process_set_position(ctx, ball->self, x, y) != MV_OK)
+            return MV_STEP_ERROR;
     }
-    if (mv_process_set_position(ctx, ball->self, x, y) != MV_OK)
-        return MV_STEP_ERROR;
 
     /* The engine clears each process command list before its next activation. */
     char text[32];
@@ -86,7 +91,7 @@ ball_step(MvContext *ctx, MvProcessId id, void *user)
                              (MvColor){255, 255, 255, 255}) != MV_OK)
         return MV_STEP_ERROR;
 
-    return mv_window_escape_down() ? MV_STEP_DONE : MV_STEP_YIELD;
+    return MV_STEP_YIELD;
 }
 
 int
@@ -120,14 +125,29 @@ main(void)
          mv_process_graphic_set(ctx, ball.self, circle) == MV_OK;
 
     MvColor background = {0, 0, 0, 255};
+    double previous = mv_platform_time();
     while (ok && mv_process_count(ctx) && !mv_window_should_close()) {
-        ok = mv_process_tick(ctx) == MV_OK;
+        double now = mv_platform_time();
+        unsigned steps;
+        ok = mv_context_advance(ctx, now - previous, &steps) == MV_OK;
+        previous = now;
+        int quit = 0;
+        for (unsigned i = 0; ok && i < steps; ++i) {
+            mv_input_tick();
+            if (mv_window_escape_down() || mv_key_pressed(MV_KEY_ESCAPE)) {
+                quit = 1;
+                break;
+            }
+            ok = mv_process_tick(ctx) == MV_OK;
+        }
+        if (quit || !ok)
+            break;
         mv_window_begin(background);
-        ok = ok && mv_window_draw_process_graphics(ctx);
+        ok = mv_window_draw_process_graphics(ctx);
         mv_window_end();
     }
 
-    mv_window_close();
     mv_context_destroy(ctx);
+    mv_window_close();
     return ok ? 0 : 1;
 }

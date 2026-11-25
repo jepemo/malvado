@@ -63,7 +63,7 @@ fn main() {
     let mut game = Game::new().unwrap();
     let music = Music::load(audio.clone(), &path, true).unwrap();
     let process = game
-        .spawn(Default::default(), move |p| async move {
+        .spawn(move |p| async move {
             let owned = p.resource(music)?;
             owned.play()?;
             p.frame().await;

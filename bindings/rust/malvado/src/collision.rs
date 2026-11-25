@@ -217,7 +217,7 @@ impl World {
     /// ```
     /// use malvado::{Game, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
     /// let game = Game::new()?;
-    /// let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// let actor = game.spawn(|p| async move {loop {p.frame().await;}})?;
     /// actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
     /// actor.set_position(0.0, 5.0)?;
     /// let mut world = World::new()?;
@@ -365,8 +365,8 @@ impl Handle {
     /// ```
     /// use malvado::{Game, graphic::{Graphic, Geometry, Color}};
     /// let game = Game::new()?;
-    /// let a = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-    /// let b = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+    /// let a = game.spawn(|p| async move {loop {p.frame().await;}})?;
+    /// let b = game.spawn(|p| async move {loop {p.frame().await;}})?;
     /// let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
     /// a.set_graphic(graphic)?;
     /// b.set_graphic(graphic)?;
@@ -465,3 +465,17 @@ impl Handle {
 /// std::thread::spawn(move || drop(world));
 /// ```
 mod ownership_contract {}
+
+impl crate::ProcessContext {
+    pub fn collides_with(&self, other: &Handle) -> Result<bool, Error> {
+        self.current.collides_with(other)
+    }
+
+    pub fn first_collision(&self, type_id: u64) -> Result<Option<Handle>, Error> {
+        self.current.first_collision(type_id)
+    }
+
+    pub fn collisions(&self, type_id: u64) -> Result<Vec<Handle>, Error> {
+        self.current.collisions(type_id)
+    }
+}

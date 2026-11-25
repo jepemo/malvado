@@ -63,10 +63,10 @@ def verify_rust_sdk(log, work, prefix, config, graphics=False):
         ' drop(frame); drop(window);\n'
     ) if graphics else ""
     (game / "src/main.rs").write_text(
-        'use malvado::{Game, SpawnOptions};\n'
+        'use malvado::{Game};\n'
         'fn main() -> Result<(), malvado::Error> {\n' + window_probe +
         ' let mut game = Game::new()?;\n'
-        ' let process = game.spawn(SpawnOptions::default(), |p| async move {\n'
+        ' let process = game.spawn(|p| async move {\n'
         '  p.frame().await; Ok(())\n'
         ' })?;\n'
         ' process.set_position(3.0,4.0)?;\n'

@@ -19,9 +19,9 @@ fn queries_and_signals_preserve_ownership_and_creation_relations() {
     let out = children.clone();
     let mut game = Game::new().unwrap();
     let root = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             for attached in [true, false] {
-                out.borrow_mut().push(p.spawn(
+                out.borrow_mut().push(p.spawn_with(
                     SpawnOptions {
                         attached,
                         type_id: 7,
@@ -89,19 +89,17 @@ fn nested_creation_and_ownership_trees_have_distinct_kill_boundaries() {
     let output = records.clone();
     let mut game = Game::new().unwrap();
     let root = game
-        .spawn(SpawnOptions::default(), move |p| async move {
-            let child = p.spawn(
+        .spawn(move |p| async move {
+            let child = p.spawn_with(
                 SpawnOptions {
                     attached: false,
                     ..Default::default()
                 },
                 move |p| async move {
-                    output
-                        .borrow_mut()
-                        .push(p.spawn(SpawnOptions::default(), |_| async {
-                            pending::<()>().await;
-                            Ok(())
-                        })?);
+                    output.borrow_mut().push(p.spawn(|_| async {
+                        pending::<()>().await;
+                        Ok(())
+                    })?);
                     pending::<()>().await;
                     Ok(())
                 },
@@ -155,7 +153,7 @@ fn process_resources_release_after_poll_and_can_outlive_the_process() {
     let retained = Rc::new(RefCell::new(None));
     let (out, drops) = (retained.clone(), count.clone());
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         let resource = p.resource(Count(drops.clone()))?;
         *out.borrow_mut() = Some(resource.try_clone()?);
         assert!(p.current().kill()?);
@@ -169,7 +167,7 @@ fn process_resources_release_after_poll_and_can_outlive_the_process() {
     drop(retained.borrow_mut().take());
     assert_eq!(count.get(), 1);
     let drops = count.clone();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         drop(p.resource(Count(drops.clone()))?);
         assert_eq!(drops.get(), 1); // owner reference still owns the value
         Ok(())
@@ -184,18 +182,14 @@ fn transfer_rejects_foreign_stale_and_closed_owners_without_mutation() {
     let count = Rc::new(Cell::new(0));
     let mut game = Game::new().unwrap();
     let foreign = Game::new().unwrap();
-    let dead = game
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    let dead = game.spawn(|_| async { Ok(()) }).unwrap();
     let owner = game
-        .spawn(SpawnOptions::default(), |_| async {
+        .spawn(|_| async {
             pending::<()>().await;
             Ok(())
         })
         .unwrap();
-    let other = foreign
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    let other = foreign.spawn(|_| async { Ok(()) }).unwrap();
     let resource = game.resource(Count(count.clone())).unwrap();
     resource.transfer_to(Some(&owner)).unwrap();
     assert_eq!(
@@ -216,7 +210,7 @@ fn promoting_resource_to_context_preserves_it_after_original_owner_ends() {
     let count = Rc::new(Cell::new(0));
     let drops = count.clone();
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         let resource = p.resource(Count(drops))?;
         resource.transfer_to(None)?;
         Ok(())
@@ -238,7 +232,7 @@ fn detached_spawn_from_destructor_keeps_the_native_historical_creator() {
         fn drop(&mut self) {
             *self.output.borrow_mut() = Some(
                 self.process
-                    .spawn(
+                    .spawn_with(
                         SpawnOptions {
                             attached: false,
                             ..Default::default()
@@ -253,7 +247,7 @@ fn detached_spawn_from_destructor_keeps_the_native_historical_creator() {
     let out = spawned.clone();
     let mut game = Game::new().unwrap();
     let root = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             let _cleanup = SpawnOnDrop {
                 process: p.clone(),
                 output: out,
@@ -287,7 +281,7 @@ fn resource_destructor_panics_are_contained_at_process_and_context_cleanup() {
     let count = Rc::new(Cell::new(0));
     let drops = count.clone();
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         drop(p.resource(BadDrop(drops))?);
         Ok(())
     })
@@ -303,15 +297,11 @@ fn resource_destructor_panics_are_contained_at_process_and_context_cleanup() {
 fn factory_panic_is_contained_and_native_state_remains_usable() {
     let mut game = Game::new().unwrap();
     let handle = game
-        .spawn(
-            SpawnOptions::default(),
-            |_| -> std::future::Ready<Result<(), Error>> { panic!("factory") },
-        )
+        .spawn(|_| -> std::future::Ready<Result<(), Error>> { panic!("factory") })
         .unwrap();
     assert_eq!(game.tick(), Err(Error::Process));
     assert_eq!(handle.snapshot().unwrap().reason, Some(EndReason::Error));
-    game.spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    game.spawn(|_| async { Ok(()) }).unwrap();
     game.tick().unwrap();
     assert_eq!(game.process_count(), 0);
 }
@@ -327,7 +317,7 @@ fn repeated_spawn_cancel_and_shutdown_drop_every_state_and_resource_once() {
             let guard = Count(count.clone());
             let drops = resources.clone();
             handles.push(
-                game.spawn(SpawnOptions::default(), move |p| async move {
+                game.spawn(move |p| async move {
                     let _guard = guard;
                     let _resource = p.resource(Count(drops))?;
                     if index % 2 == 0 {
@@ -356,9 +346,9 @@ fn lifecycle_trace_matches_c_and_lua() {
     let out = children.clone();
     let mut game = Game::new().unwrap();
     let root = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             for attached in [true, false] {
-                out.borrow_mut().push(p.spawn(
+                out.borrow_mut().push(p.spawn_with(
                     SpawnOptions {
                         attached,
                         ..Default::default()
@@ -418,13 +408,13 @@ fn retained_resource_can_acquire_a_new_owner_after_the_old_one_ends() {
     let retained = Rc::new(RefCell::new(None));
     let (out, drops) = (retained.clone(), count.clone());
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         *out.borrow_mut() = Some(p.resource(Count(drops))?);
         Ok(())
     })
     .unwrap();
     let next = game
-        .spawn(SpawnOptions::default(), |_| async {
+        .spawn(|_| async {
             pending::<()>().await;
             Ok(())
         })
@@ -445,7 +435,7 @@ fn native_resources_release_once_for_return_error_panic_and_cancellation() {
         let count = Rc::new(Cell::new(0));
         let drops = count.clone();
         let mut game = Game::new().unwrap();
-        game.spawn(SpawnOptions::default(), move |p| async move {
+        game.spawn(move |p| async move {
             let _value = p.resource(Count(drops))?;
             match mode {
                 0 => Err(Error::Process),
@@ -478,7 +468,7 @@ fn failed_registration_to_a_dead_process_releases_the_untransferred_value() {
     let saved = Rc::new(RefCell::new(None));
     let out = saved.clone();
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |p| async move {
+    game.spawn(move |p| async move {
         *out.borrow_mut() = Some(p);
         Ok(())
     })

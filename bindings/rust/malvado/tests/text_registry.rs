@@ -19,7 +19,7 @@ fn context_and_process_lifetimes() {
     ));
     assert_eq!(copy.snapshot().unwrap().position, (1, 2));
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -36,9 +36,7 @@ fn context_and_process_lifetimes() {
         actor.create_text("dead", (0, 0), TextAlignment::Left),
         Err(Error::NotFound)
     ));
-    let done = game
-        .spawn(Default::default(), |_| async { Ok(()) })
-        .unwrap();
+    let done = game.spawn(|_| async { Ok(()) }).unwrap();
     let returned = done
         .create_text("return", (0, 0), TextAlignment::Left)
         .unwrap();

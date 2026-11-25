@@ -45,15 +45,14 @@ Physical device behavior and audible output remain beta checks. See
 [platform verification](../development/platforms.md) for evidence and
 limits, and the [language matrix](language-parity.md) for feature differences.
 
-## Current entry point
+## Current entry points
 
-Use `Game::new()` and the existing owned async process API. The constructor
-creates the same native context as the former `Engine::new()`: a 60 Hz clock
-with a five-step advance limit. It does not create a window, run processes,
-poll input or start an application loop. See [Rust processes](rust-processes.md)
-and the [rename migration](../development/rust-game-migration.md).
+For windowed games, create a `Game::windowed`, spawn named async functions,
+and call `run`. This uses the native 60 Hz logical clock, window services,
+and scheduler. `Game::new()` remains available for headless use or manual
+hosting. See [Rust processes](rust-processes.md) and the
+[Rust migration guide](../development/rust-game-migration.md).
 
-Ordinary structs with owned `async fn run(self, ProcessContext)` remain the
-baseline. Macros, direct native property fields, shorter spawning and higher
-level initialization are [future proposals](../roadmap/rust-ergonomics.md).
-Their sample syntax is not available in this SDK and is not required for 2.0.
+Owned state structs with an `async fn run(self, ProcessContext)` also work with
+the same spawn API. Macro declarations and typed collision queries remain
+[open design topics](../roadmap/rust-ergonomics.md).

@@ -33,14 +33,15 @@ def creation(cli, work, visual):
     assert dependency["features"] == ["graphics"]
     assert not (game / "malvado.toml").exists()
     before = (game / "main.rs").read_bytes()
-    assert b"Game::new()" in before and b"Engine" not in before
+    assert b"Game::windowed(" in before and b"game.spawn(hello)?" in before
+    assert b"game.run()" in before and b"Window::open(" not in before
     run(cli, "new", "--lang", "rust", game, cwd=work, code=1)
     assert (game / "main.rs").read_bytes() == before
     run(cli, "check", game, cwd=work)
     if visual:
-        # Bound the generated host loop without changing the delivered template.
-        bounded = before.decode().replace("    while !window.should_close()",
-            "    let mut frames = 0;\n    while { frames += 1; frames <= 3 } && !window.should_close()")
+        # Let the starter process finish after presenting three frames.
+        bounded = before.decode().replace("    loop {", "    for _ in 0..3 {")
+        bounded = bounded.replace("    }\n}\n\nfn main", "    }\n    Ok(())\n}\n\nfn main")
         (game / "main.rs").write_text(bounded)
         run(cli, "run", game, cwd=work)
         run(cli, "export", work / "starter player", cwd=game)
@@ -56,7 +57,7 @@ def commands(cli, work, game):
     assert "Cargo: found" in doctor and "Rust SDK: " in doctor
     (game / "assets").mkdir()
     (game / "assets/value.txt").write_text("asset")
-    (game / "main.rs").write_text('''use malvado::{Game, Error, SpawnOptions};
+    (game / "main.rs").write_text('''use malvado::{Game, Error};
 fn main() -> Result<(), Error> {
     assert_eq!(std::fs::read_to_string("assets/value.txt").unwrap(), "asset");
     std::fs::write("executed", "yes").unwrap();
@@ -64,7 +65,7 @@ fn main() -> Result<(), Error> {
     let mut game = Game::new()?;
     game.set_assets_dir("assets")?;
     assert_eq!(std::fs::read_to_string(game.resolve_asset_path("value.txt")?).unwrap(), "asset");
-    game.spawn(SpawnOptions::default(), |p| async move {
+    game.spawn(|p| async move {
         println!("rust: first");
         p.frame().await;
         println!("rust: second");

@@ -20,13 +20,13 @@ fn golden_native_trace_matches_c_and_lua() {
     let drops = Rc::new(Cell::new(0));
     let mut game = Game::new().unwrap();
     let (t, out, d) = (tick.clone(), output.clone(), drops.clone());
-    game.spawn(SpawnOptions::default(), move |process| async move {
+    game.spawn(move |process| async move {
         let _guard = Guard(d.clone());
         let mut value = 40;
         out.borrow_mut()
             .push_str(&format!("{} parent {value}\n", t.get()));
         let (t2, out2) = (t.clone(), out.clone());
-        process.spawn(
+        process.spawn_with(
             SpawnOptions {
                 attached: false,
                 ..Default::default()
@@ -51,9 +51,9 @@ fn golden_native_trace_matches_c_and_lua() {
     })
     .unwrap();
     let (t, out, d) = (tick.clone(), output.clone(), drops.clone());
-    game.spawn(
+    game.spawn_with(
         SpawnOptions {
-            fps: 15,
+            fps: Some(15),
             ..Default::default()
         },
         move |process| async move {
@@ -91,9 +91,9 @@ fn all_native_cadences_match_the_lua_baseline() {
         let count = Rc::new(Cell::new(0));
         let output = count.clone();
         let mut game = Game::new().unwrap();
-        game.spawn(
+        game.spawn_with(
             SpawnOptions {
-                fps,
+                fps: Some(fps),
                 ..Default::default()
             },
             move |p| async move {
@@ -122,7 +122,7 @@ fn sleeping_and_freezing_preserve_pending_locals_until_wakeup() {
         let output = count.clone();
         let mut game = Game::new().unwrap();
         let h = game
-            .spawn(SpawnOptions::default(), move |p| async move {
+            .spawn(move |p| async move {
                 let mut local = 5;
                 output.set(local);
                 p.frame().await;
@@ -157,7 +157,7 @@ fn unsupported_pending_future_is_not_busy_polled() {
     let polls = Rc::new(Cell::new(0));
     let count = polls.clone();
     let mut game = Game::new().unwrap();
-    game.spawn(SpawnOptions::default(), move |_| {
+    game.spawn(move |_| {
         poll_fn(move |_| {
             count.set(count.get() + 1);
             Poll::Pending
@@ -176,7 +176,7 @@ fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
     let d = drops.clone();
     let mut game = Game::new().unwrap();
     let h = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             let _guard = Guard(d.clone());
             assert!(p.current().kill()?);
             assert_eq!(d.get(), 0);
@@ -189,7 +189,7 @@ fn self_kill_and_external_cancel_drop_only_at_native_safe_points() {
     assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Killed));
     let guard = Guard(drops.clone());
     let h = game
-        .spawn(SpawnOptions::default(), move |_| async move {
+        .spawn(move |_| async move {
             let _guard = guard;
             pending::<()>().await;
             Ok(())
@@ -208,9 +208,9 @@ fn attached_and_detached_children_keep_native_creator_and_owner() {
     let output = children.clone();
     let mut game = Game::new().unwrap();
     let parent = game
-        .spawn(SpawnOptions::default(), move |p| async move {
+        .spawn(move |p| async move {
             for attached in [true, false] {
-                output.borrow_mut().push(p.spawn(
+                output.borrow_mut().push(p.spawn_with(
                     SpawnOptions {
                         attached,
                         ..Default::default()
@@ -254,7 +254,7 @@ fn panic_and_async_error_have_native_error_reason_and_safe_cleanup() {
         let d = drops.clone();
         let mut game = Game::new().unwrap();
         let h = game
-            .spawn(SpawnOptions::default(), move |_| async move {
+            .spawn(move |_| async move {
                 let _guard = Guard(d);
                 if panic {
                     panic!("contained future panic");
@@ -280,7 +280,7 @@ fn destructor_panics_do_not_unwind_across_native_cleanup() {
     let mut game = Game::new().unwrap();
     let value = BadDrop;
     let h = game
-        .spawn(SpawnOptions::default(), move |_| async move {
+        .spawn(move |_| async move {
             let _value = value;
             pending::<()>().await;
             Ok(())
@@ -290,7 +290,7 @@ fn destructor_panics_do_not_unwind_across_native_cleanup() {
     game.tick().unwrap();
     assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Killed));
     let value = BadDrop;
-    game.spawn(SpawnOptions::default(), move |_| async move {
+    game.spawn(move |_| async move {
         let _v = value;
         pending::<()>().await;
         Ok(())
@@ -308,7 +308,7 @@ fn wake_after_shutdown_and_saved_process_tokens_are_safe() {
     let guard = Guard(drops.clone());
     let mut game = Game::new().unwrap();
     let h = game
-        .spawn(SpawnOptions::default(), move |p| {
+        .spawn(move |p| {
             *context_out.borrow_mut() = Some(p);
             let guard = guard;
             poll_fn(move |cx| {
@@ -327,7 +327,7 @@ fn wake_after_shutdown_and_saved_process_tokens_are_safe() {
     let process = process.as_ref().unwrap();
     assert_eq!(process.signal(&h, Signal::Wake), Err(Error::Closed));
     assert!(matches!(
-        process.spawn(SpawnOptions::default(), |_| async { Ok(()) }),
+        process.spawn(|_| async { Ok(()) }),
         Err(Error::Closed)
     ));
     assert_eq!(h.snapshot().unwrap().reason, Some(EndReason::Killed));

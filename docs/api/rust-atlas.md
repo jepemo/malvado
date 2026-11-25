@@ -177,7 +177,7 @@ use std::rc::Rc;
 let window = Rc::new(Window::open(320, 240, "Process sprite")?);
 let image = Image::load(window.clone(), "ship.png")?;
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 let sprite = image.sprite((0.0, 0.0))?;
@@ -235,7 +235,7 @@ let frames = [
     SpriteFrame { sprite: green.sprite((0.0, 0.0))?, duration_us: 50_000 },
 ];
 let mut game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_position(40.0, 40.0)?;

@@ -85,8 +85,8 @@ contract. A failed bind preserves the previous selection.
 ```rust
 use malvado::{Game, graphic::{Graphic, Geometry, Color}};
 let game = Game::new()?;
-let a = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
-let b = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let a = game.spawn(|p| async move {loop {p.frame().await;}})?;
+let b = game.spawn(|p| async move {loop {p.frame().await;}})?;
 let graphic = Graphic { geometry: Geometry::circle(2.0)?, color: Color {r:255,g:255,b:255,a:255} };
 a.set_graphic(graphic)?;
 b.set_graphic(graphic)?;
@@ -124,7 +124,7 @@ and no tick or future activation is added.
 ```rust
 use malvado::{Game, collision::{World, Rect}, graphic::{Graphic, Geometry, Color}};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+let actor = game.spawn(|p| async move {loop {p.frame().await;}})?;
 actor.set_graphic(Graphic {geometry:Geometry::circle(1.0)?,color:Color {r:255,g:255,b:255,a:255}})?;
 actor.set_position(0.0, 5.0)?;
 let mut world = World::new()?;
@@ -171,7 +171,7 @@ clear when the caller supplies its own geometry.
 use malvado::{Game, Error};
 use malvado::collision::{World, Rect, Shape};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) })?;
+let actor = game.spawn(|p| async move { p.frame().await; Ok(()) })?;
 actor.set_position(0.0, 5.0)?;
 let mut world = World::new()?;
 world.add_rect(Rect { x: 10.0, y: 0.0, width: 10.0, height: 10.0 })?;

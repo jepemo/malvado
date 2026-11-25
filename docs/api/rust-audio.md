@@ -17,6 +17,10 @@ audio.update()?;
 # Ok::<(), Error>(())
 ```
 
+For a managed game, use `game.audio()?` before starting `game.run()`. The
+runner updates that device on each render iteration. Keep a clone of the
+returned service if you need to load sounds or music from a process.
+
 ## Device and ownership
 
 Open one `Audio` on the application main thread. A second safe owner returns

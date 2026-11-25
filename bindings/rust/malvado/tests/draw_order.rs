@@ -13,7 +13,7 @@ fn native_z_order_and_lifetimes() {
     let mut handles = Vec::new();
     for _ in 0..3 {
         handles.push(
-            game.spawn(Default::default(), |p| async move {
+            game.spawn(|p| async move {
                 loop {
                     p.frame().await;
                 }
@@ -60,7 +60,7 @@ fn native_order_matches_many_duplicate_and_fractional_depths() {
     let mut expected = Vec::new();
     for index in 0..257 {
         let handle = game
-            .spawn(Default::default(), |p| async move {
+            .spawn(|p| async move {
                 loop {
                     p.frame().await;
                 }

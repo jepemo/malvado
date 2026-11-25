@@ -8,7 +8,7 @@ use malvado::{
 fn copied_descriptors_composition_errors_and_lifetime() {
     let mut game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

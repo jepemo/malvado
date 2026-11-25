@@ -29,9 +29,9 @@ fn snapshots() {
         let mut game = Game::new().unwrap();
         for rate in [60, 60, 30] {
             let (window, tick, calls) = (window.clone(), tick.clone(), calls.clone());
-            game.spawn(
+            game.spawn_with(
                 SpawnOptions {
-                    fps: rate,
+                    fps: Some(rate),
                     ..Default::default()
                 },
                 move |process| async move {

@@ -5,15 +5,54 @@ native graphics component and its raylib archive. Cargo validates signatures,
 record layouts and dependencies against that SDK; it does not build native
 sources. Default core-only users do not need a graphics backend.
 
+## Managed game
+
+`Game::windowed(width, height, title)` opens a window on the application main
+thread. `run()` consumes the game and manages input, native ticks, rendering and
+shutdown. It clears to black and draws process graphics, commands, and retained
+text. Use `game.audio()` before `run()` to open a shared audio service on demand.
+The runner services that device once per render iteration. Exit occurs on
+window close, Escape, `p.quit()`, or when no processes remain. All remaining
+processes are cancelled before the window lease is released.
+
+Use `p.key_down(Key::Left)`, `p.key_pressed(Key::Space)`, and the corresponding
+release, mouse, controller and text methods from any process with a managed
+window. Held and edge queries are non-consuming. Text input consumes one
+character per successful read. Without a managed window, input returns neutral
+values and `p.quit()` reports a platform error. A process token does not keep
+the managed window alive. See [runner timing](runner-timing.md#rust-host-integration).
+
+## Manual host
+
+Use `Window` directly when embedding Malvado or controlling the render pass.
+
 ```rust
-use malvado::window::{Window, Color};
-let window = Window::open(640, 480, "Game")?;
+use malvado::{prelude::*, window::Window};
+use std::time::Instant;
+
+async fn hello(p: ProcessContext) -> Result<(), Error> {
+    loop {
+        p.draw_text("Hello, Malvado!", (20, 20), 24, WHITE)?;
+        p.frame().await;
+    }
+}
+
+let mut game = Game::new()?;
+let window = Window::open(640, 480, "Manual host")?;
+game.spawn(hello)?;
+let mut previous = Instant::now();
 for _ in 0..3 {
     if window.should_close() { break; }
-    let frame = window.frame(Color { r: 20, g: 30, b: 40, a: 255 })?;
-    drop(frame); // End drawing and process platform events.
+    let now = Instant::now();
+    for _ in 0..game.advance_time((now - previous).as_secs_f64())? {
+        window.input_tick();
+        game.tick()?;
+    }
+    previous = now;
+    window.frame(BLACK)?.process_graphics(&game)?;
 }
-# Ok::<(), malvado::Error>(())
+drop(game);
+# Ok::<(), Error>(())
 ```
 
 Open the window on the application main thread. The safe wrapper rejects other

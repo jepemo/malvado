@@ -49,7 +49,7 @@ get its handle. No graphics feature or window is required.
 ```rust
 use malvado::{Game, Error};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_z(-2.5)?;
@@ -142,7 +142,7 @@ Rust; these properties do not introduce automatic Rust graph drawing.
 ```rust
 # use malvado::{Game, Error};
 let game = Game::new()?;
-let actor = game.spawn(Default::default(), |p| async move {
+let actor = game.spawn(|p| async move {
     loop { p.frame().await; }
 })?;
 actor.set_angle(90.0)?;

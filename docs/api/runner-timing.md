@@ -58,6 +58,16 @@ services are delivered separately; host service calls remain explicit.
 
 ## Rust host integration
 
+`Game::windowed(...)` and `game.run()` manage the native clock at 60 Hz with
+up to five due ticks per render iteration. They use monotonic elapsed seconds.
+The backend collects events when drawing ends. The runner commits input
+before each due tick, so edges are visible to all processes that run on that
+tick and do not replay during catch-up. If no tick is due, the host still
+renders and leaves pending input intact. The audio device opened by
+`game.audio()` updates once per render iteration, including zero-tick frames.
+
+### Advanced manual timing
+
 `Game::advance_time(elapsed_seconds)` uses the same context planner. The default
 engine runs at 60 Hz and returns at most five steps per call. `planned_ticks()`
 and `dropped_seconds()` read native clock accounting. All input and overflow
@@ -88,3 +98,20 @@ Rust tests read the same fixture as C and the injected-time Lua runner. They
 check future activation counts, independent clocks, invalid inputs, overflow
 atomicity and manual-tick independence. The installed offline SDK consumer uses
 all three Rust timing methods in Debug and Release.
+
+## Rust process timing
+
+`p.delta()` is zero at first activation. Later values are the difference
+between the current and previous actual poll's logical tick numbers divided
+by 60. A 15 FPS process normally sees four ticks per activation after startup.
+A fractional cadence such as 17 FPS alternates intervals. Logical ticks that
+pass during sleep, freeze, or a wait for a waker contribute to the next
+activation's delta. A catch-up frame can contain several separate activations.
+Dropped wall time and render-only frames contribute no logical ticks. The
+value is a copied snapshot of the last poll, including on a retained token.
+
+`game.set_fps(30)` chooses a new default for subsequent spawns.
+`SpawnOptions { fps: Some(0), ..Default::default() }` explicitly requests
+every eligible tick, as does `Some(60)`. The default does not change render
+pacing, VSync, the logical clock, or the cadence of existing processes.
+Both manual and managed hosts use these rules.

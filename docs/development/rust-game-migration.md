@@ -1,15 +1,15 @@
-# Rust Engine to Game migration
+# Rust game migration
 
 The canonical Rust context owner is now `malvado::Game`. Replace `Engine` imports,
 type annotations and constructor calls with `Game`. Local variables can use the
 name `game`. Update CLI-generated projects that still use the old name.
 
 ```rust
-use malvado::{Error, Game, SpawnOptions};
+use malvado::{Error, Game};
 
 fn main() -> Result<(), Error> {
     let mut game = Game::new()?;
-    game.spawn(SpawnOptions::default(), |process| async move {
+    game.spawn(|process| async move {
         process.frame().await;
         Ok(())
     })?;
@@ -31,18 +31,30 @@ symbol changes. The native ABI revision, layouts and release/SDK mismatch checks
 are unchanged. Rebuild Rust code against the updated installed crate sources;
 this Rust source rename does not require a native ABI revision bump.
 
-Construction, the explicit host loop, window service, clock defaults, spawning,
-process identity, cancellation, resources and shutdown keep their existing
-contracts. `Game::new()` does not open a window. There is no new builder,
-executor, macro, process declaration style or `Game::run()` method.
+## Migrate spawning and windowed code
+
+Replace `game.spawn(SpawnOptions::default(), worker)` with `game.spawn(worker)`.
+Replace `game.spawn(options, worker)` with `game.spawn_with(options, worker)`.
+Apply the same changes to `p.spawn` for child processes. For a custom
+`SpawnOptions` value, change a numeric `fps` to `Some(fps)`. Use `None`
+for the current game default. An explicit `Some(0)` still runs on every
+eligible tick.
+
+For a windowed starter, follow the [Hello World source](../../examples/rust/hello.rs).
+Move the game code into named async functions, create a game with
+`Game::windowed(width, height, title)`, then spawn the first process and return
+`game.run()`. Replace manually shared window input with `p.key_down` and related
+queries. Replace `p.current()` for common self operations with methods such as
+`p.set_position` and `p.draw_text`. Use `p.delta()` for movement in units per second.
+Keep `Game::new()`, `advance_time`, and `tick` when the host owns the loop.
 
 The Rust gameplay API is [experimental](../api/rust-support.md). That policy
 allows future approved changes with migration guidance; it does not weaken
 safety, tests or the shared native scheduler contract.
 
-## Verification
+## Engine rename verification
 
-Local macOS verification passed:
+The original rename passed these local macOS checks:
 
 - `mise run test-rust`: Debug/Release safe API, scheduler/lifecycle/shutdown,
   ABI diagnostics, installed external Cargo consumer, Clippy and formatting.

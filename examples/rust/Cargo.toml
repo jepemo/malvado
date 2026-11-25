@@ -1,0 +1,16 @@
+[package]
+name = "malvado-rust-lessons"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+malvado = { path = "../../bindings/rust/malvado", features = ["graphics"] }
+
+[[bin]]
+name = "hello"
+path = "hello.rs"
+
+[[bin]]
+name = "moving-balls"
+path = "moving-balls.rs"

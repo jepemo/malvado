@@ -120,7 +120,7 @@ fn success(value: i32) -> Result<(), Error> {
 /// ```
 /// use malvado::{Game, camera::{Camera, Follow}};
 /// let mut game = Game::new()?;
-/// let actor = game.spawn(Default::default(), |p| async move {
+/// let actor = game.spawn(|p| async move {
 ///     loop { p.frame().await; }
 /// })?;
 /// actor.set_position(100.0, 80.0)?;
@@ -139,7 +139,7 @@ fn success(value: i32) -> Result<(), Error> {
 /// ```compile_fail
 /// # use malvado::{Game, camera::Follow};
 /// let game = Game::new().unwrap();
-/// let actor = game.spawn(Default::default(), |p| async move { p.frame().await; Ok(()) }).unwrap();
+/// let actor = game.spawn(|p| async move { p.frame().await; Ok(()) }).unwrap();
 /// let follow = Follow::new(&actor).unwrap();
 /// std::thread::spawn(move || drop(follow));
 /// ```
@@ -194,7 +194,7 @@ impl Follow {
 /// ```
 /// use malvado::{Game, Error, camera::{Camera, Selection}};
 /// let game = Game::new()?;
-/// let actor = game.spawn(Default::default(), |p| async move {loop {p.frame().await;}})?;
+/// let actor = game.spawn(|p| async move {loop {p.frame().await;}})?;
 /// let view = game.create_camera(Camera::new(10.0, 20.0, None)?)?;
 /// actor.set_camera(Selection::Explicit(view.clone()))?;
 /// view.move_by(1.0, 2.0)?;
@@ -345,7 +345,7 @@ impl Handle {
     /// ```
     /// use malvado::{Game, camera::Viewport};
     /// let game = Game::new()?;
-    /// let actor = game.spawn(Default::default(), |p| async move { loop { p.frame().await; } })?;
+    /// let actor = game.spawn(|p| async move { loop { p.frame().await; } })?;
     /// actor.set_scroll((3.0, 4.0))?;
     /// actor.set_region(Some(Viewport { x: 10, y: 20, width: 30, height: 40 }))?;
     /// assert_eq!(actor.view_offset()?, (-3.0, -4.0));

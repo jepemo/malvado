@@ -1,6 +1,11 @@
 # Rust immediate drawing and images
 
-Enable the `graphics` feature and open a [Window](rust-window.md). Its `frame`
+For gameplay, use `p.set_graphic(rect(80.0, 16.0).color(CYAN))` for a reusable
+graph or `p.draw_text("Hello", (40, 40), 48, WHITE)` for a drawing command.
+The managed game renders both. See the [primitive geometry guide](graphic-geometry.md)
+for shape validation and pivots.
+
+For direct drawing, enable the `graphics` feature and open a [Window](rust-window.md). Its `frame`
 guard keeps drawing active. Calls return `InvalidArgument` when native geometry
 or drawing scope validation fails; rejected calls preserve current state.
 
@@ -106,7 +111,7 @@ Use handle methods to keep drawing between process activations:
 ```rust
 use malvado::{Game, Error, graphic::Color};
 let mut game = Game::new()?;
-let actor = game.spawn(Default::default(), |process| async move {
+let actor = game.spawn(|process| async move {
     loop {
         process.current().draw_box((10, 20), (30, 40), true,
             Color { r: 255, g: 80, b: 40, a: 255 })?;

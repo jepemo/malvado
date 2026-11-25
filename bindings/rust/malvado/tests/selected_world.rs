@@ -13,7 +13,7 @@ fn world(rect: Rect) -> World {
 fn graph_local_disabled_and_world_lifetime() {
     let game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -73,7 +73,7 @@ fn graph_local_disabled_and_world_lifetime() {
 fn fixed_offset_translation_and_failure_atomicity() {
     let game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }

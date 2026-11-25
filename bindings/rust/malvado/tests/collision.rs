@@ -152,7 +152,7 @@ fn corner_circle_collision_does_not_leave_an_overlap() {
 fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
     let mut game = Game::new().unwrap();
     let source = game
-        .spawn(SpawnOptions::default(), |_| async {
+        .spawn(|_| async {
             pending::<()>().await;
             Ok(())
         })
@@ -162,7 +162,7 @@ fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
     source.set_collider(shape, Transform::default()).unwrap();
     for index in 1..=3 {
         let target = game
-            .spawn(
+            .spawn_with(
                 SpawnOptions {
                     type_id: index % 2,
                     ..Default::default()
@@ -223,12 +223,8 @@ fn process_colliders_support_types_identity_sleep_freeze_and_clear() {
 fn foreign_colliders_are_rejected_and_world_data_can_outlive_context() {
     let game = Game::new().unwrap();
     let other = Game::new().unwrap();
-    let a = game
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
-    let b = other
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    let a = game.spawn(|_| async { Ok(()) }).unwrap();
+    let b = other.spawn(|_| async { Ok(()) }).unwrap();
     assert_eq!(a.collides_with(&b), Err(Error::ForeignContext));
     let mut world = World::new().unwrap();
     world.add_rect(wall()).unwrap();
@@ -246,9 +242,7 @@ fn foreign_colliders_are_rejected_and_world_data_can_outlive_context() {
 #[test]
 fn no_collider_returns_no_hit_and_stale_sources_are_errors() {
     let mut game = Game::new().unwrap();
-    let source = game
-        .spawn(SpawnOptions::default(), |_| async { Ok(()) })
-        .unwrap();
+    let source = game.spawn(|_| async { Ok(()) }).unwrap();
     assert!(source.first_collision(0).unwrap().is_none());
     assert!(source.collisions(0).unwrap().is_empty());
     game.tick().unwrap();
@@ -290,7 +284,7 @@ fn world_trace_matches_c_and_lua_process_movement() {
     let shape = Shape::circle(1.0).unwrap();
     let game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
@@ -331,7 +325,7 @@ fn world_trace_matches_c_and_lua_process_movement() {
 fn contextual_world_movement_properties_errors_and_lifetime() {
     let mut game = Game::new().unwrap();
     let actor = game
-        .spawn(Default::default(), |p| async move {
+        .spawn(|p| async move {
             loop {
                 p.frame().await;
             }
