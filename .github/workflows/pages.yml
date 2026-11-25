@@ -32,6 +32,22 @@ jobs:
           mise install node
           mise exec -- npm ci --no-audit --no-fund
           mise exec -- npm run build
+      - name: Include published documentation snapshots
+        working-directory: docs/website
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          versions=$(mise exec -- node --input-type=module -e \
+            'import { archivedStable, stable } from "./scripts/release.mjs"; console.log([...archivedStable, stable].filter(Boolean).join("\n"));')
+          bundles=$(mktemp -d "${RUNNER_TEMP}/malvado-docs.XXXXXX")
+          trap 'rm -rf "$bundles"' EXIT
+          while IFS= read -r version; do
+            [ -n "$version" ] || continue
+            bundle="malvado-$version-release-bundle.tar.gz"
+            gh release download "v$version" --pattern "$bundle" --dir "$bundles"
+            tar -xzf "$bundles/$bundle" -C dist --strip-components=2 "./docs/$version/"
+            test -s "dist/$version/index.html"
+          done <<< "$versions"
       - uses: actions/configure-pages@1f0c5cde4bc74cd7e1254d0cb4de8d49e9068c7d # v4
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:

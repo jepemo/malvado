@@ -2,7 +2,7 @@
 
 | Version | Scope |
 | --- | --- |
-| [2.1.0](2.1.0.md) | Lua gameplay API updates and managed windowed Rust games. |
+| [2.1.0](2.1.0.md) | Published stable release with Lua gameplay API updates and managed windowed Rust games. |
 | [2.0.0](2.0.0.md) | Published stable release. |
 | [Beta.1](2.0.0-beta.1.md) | Published prerelease with three desktop SDKs and a verified source archive. |
 | [Alpha.8](2.0.0-alpha.8.md) | Windows and Android support and automated platform verification. |

@@ -6,6 +6,11 @@ GitHub Pages deploys it from `main` at
 sets the custom domain. Versioned snapshots use the same host with a
 `/<version>/` path prefix.
 
+The Pages workflow takes published snapshots from their GitHub release
+bundles. Keep published versions in
+[`release.mjs`](../website/scripts/release.mjs) so later site builds retain
+their documentation URLs.
+
 See the [website instructions](../website/README.md) for local development.
 Run `mise run test-docs` to check repository links and heading anchors.
 

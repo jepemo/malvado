@@ -2,7 +2,7 @@
 
 Malvado is an open-source engine for making 2D games in C, Lua and experimental
 Rust. Inspired by DIV Games Studio, it lets you give each character, object or
-effect its own process. Malvado 2.0.0 is released for macOS arm64 and Linux
+effect its own process. Malvado 2.1.0 is released for macOS arm64 and Linux
 x86_64; Windows x64 and Android arm64 keep beta platform support.
 
 [Documentation](https://malvado.dev/) · [Downloads](https://github.com/jepemo/malvado/releases)
