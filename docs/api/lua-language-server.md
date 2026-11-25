@@ -73,8 +73,8 @@ mv.change_text(title, {
 ```
 
 While typing `mv.write {`, LuaLS offers the option fields, rejects unknown
-fields, and suggests the accepted `align` values. Colors check as
-`{red, green, blue, alpha}` tables of four integers in 0..255.
+fields, and suggests the accepted `align` values. Use a palette color or an
+RGB(A) table with channels in 0..255.
 
 ## Complete instance methods
 
@@ -121,5 +121,12 @@ The definitions cover processes and lifecycle, process fields, signals,
 graphics and drawing, sprites and animations, text and fonts, input, audio
 and music, resource loading, the namespaced API and the opt-in globals. The
 implementation is the source of truth; definitions follow the delivered API.
+The definitions distinguish `self.file` (a graphic library), `self.graph` (a
+selected graphic, animation, or image), and `self.world` (a collision world).
+LuaLS checks the explicit `mv.process.collision(source, target)` and
+`source:collision(target)` signatures. LuaLS 3.19.2 does not diagnose every
+invalid argument to the callable `collision(target)` table. The runtime
+validates both the target and the scheduled process context.
+
 LuaLS suggests the option fields inside `mv.draw_image { ... }` and
 `mv.draw_sprite { ... }`. The same types apply to the opt-in global functions.

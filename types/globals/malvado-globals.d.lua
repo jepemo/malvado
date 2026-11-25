@@ -46,6 +46,7 @@ function snapshot() end
 function frame() end
 
 ---@param handle MvProcess
+---@overload fun(handle: MvProcess, signal: "kill"):boolean
 ---@param signal MvSignal
 function signal(handle, signal) end
 
@@ -412,7 +413,7 @@ function graph(library, id) end
 ---Create an animation descriptor from an atlas animation or a frame list.
 ---@overload fun(name: string, options?: MvNamedAnimationOptions):MvAnimation
 ---@overload fun(library: MvAtlas, name: string, options?: MvNamedAnimationOptions):MvAnimation
----@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
+---@overload fun(library: MvGraphicLibrary, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@param sequence integer[]
 ---@param options? MvAnimationOptions
 ---@return MvAnimation
@@ -678,7 +679,7 @@ function pause_music(music) end
 ---@param music MvMusic
 function resume_music(music) end
 
----Query the first collision of the current process against one process type.
+---Query the current process against a process handle or constructor.
 ---Must be called inside a process. The table also exposes `collision.circle`,
 ---`collision.rect` and `collision.overlap`.
 ---@type MvCollisionNamespace

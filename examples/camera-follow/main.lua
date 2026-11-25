@@ -3,24 +3,24 @@
 require("malvado").import_globals()
 
 local Wall = process(function()
-  while not key("escape") do frame() end
+  while not key(KEY_ESCAPE) do frame() end
 end, {defaults = {graph = rect {width = 20, height = 120, color = {255, 165, 70}}}})
 
 local Player = process(function(self)
   self.graph = circle {radius = 16, color = {80, 190, 255}}
   camera_follow(self)
-  while not key("escape") do
-    if key("left") then self.x = self.x - 3 end
-    if key("right") then self.x = self.x + 3 end
-    if key("up") then self.y = self.y - 3 end
-    if key("down") then self.y = self.y + 3 end
+  while not key(KEY_ESCAPE) do
+    if key(KEY_LEFT) then self.x = self.x - 3 end
+    if key(KEY_RIGHT) then self.x = self.x + 3 end
+    if key(KEY_UP) then self.y = self.y - 3 end
+    if key(KEY_DOWN) then self.y = self.y + 3 end
     frame()
   end
 end)
 
 local HUD = process(function(self)
   self.camera = false
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     draw_text {text = "Arrow keys: move  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()
   end

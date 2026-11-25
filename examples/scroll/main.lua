@@ -6,11 +6,11 @@ mv.import_globals()
 
 local Scene = process(function(self)
   local scroll_x, scroll_y = 80, 40
-  while not key("escape") do
-    if key("left") then scroll_x = scroll_x - 3 end
-    if key("right") then scroll_x = scroll_x + 3 end
-    if key("up") then scroll_y = scroll_y - 3 end
-    if key("down") then scroll_y = scroll_y + 3 end
+  while not key(KEY_ESCAPE) do
+    if key(KEY_LEFT) then scroll_x = scroll_x - 3 end
+    if key(KEY_RIGHT) then scroll_x = scroll_x + 3 end
+    if key(KEY_UP) then scroll_y = scroll_y - 3 end
+    if key(KEY_DOWN) then scroll_y = scroll_y + 3 end
     self.scroll = scroll(scroll_x, scroll_y)
     draw_rect {x = 280, y = 180, width = 60, height = 60, color = {255, 165, 70}}
     frame()
@@ -21,7 +21,7 @@ end, {defaults = {
 }})
 
 local Overlay = process(function()
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     draw_rect {x = 40, y = 60, width = 300, height = 240, color = {240, 240, 240}, filled = false}
     draw_text {text = "Arrow keys: scroll  |  Escape: exit", x = 20, y = 20, size = 20}
     frame()

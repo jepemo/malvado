@@ -22,11 +22,11 @@ local Benchmark = process(function()
   local count = 0
   local previous = time_seconds()
 
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     local now = time_seconds()
     change_text(time_text, {text = string.format("Tick interval: %.2f ms", (now - previous) * 1000)})
     previous = now
-    if key("space") then
+    if key(KEY_SPACE) then
       BenchProcess { x = math.random(50, 750), y = math.random(50, 550) }
       count = count + 1
       change_text(count_text, {text = "Processes: " .. count})

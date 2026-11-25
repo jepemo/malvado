@@ -5,7 +5,7 @@ require("malvado").import_globals()
 
 local Picture = process(function(self)
   self.graph = graph(self.sprite)
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     if self.help then
       draw_text {text = "FPG sprites  |  Escape: exit", x = 20, y = 20, size = 20}
     end

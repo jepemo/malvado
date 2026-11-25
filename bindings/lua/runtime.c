@@ -307,11 +307,41 @@ check_process_id(lua_State *L, int index)
 }
 
 static void
-check_process_arity(lua_State *L, int minimum, int maximum, const char *signature)
+check_arity(lua_State *L, int minimum, int maximum, const char *signature)
 {
     int arguments = lua_gettop(L);
     if (arguments < minimum || arguments > maximum)
         luaL_error(L, "expected %s", signature);
+}
+
+static const char *
+check_string(lua_State *L, int index, size_t *length)
+{
+    luaL_checktype(L, index, LUA_TSTRING);
+    return lua_tolstring(L, index, length);
+}
+
+static lua_Number
+check_number(lua_State *L, int index)
+{
+    luaL_checktype(L, index, LUA_TNUMBER);
+    return lua_tonumber(L, index);
+}
+
+static lua_Integer
+to_integer(lua_State *L, int index, int *valid)
+{
+    if (lua_type(L, index) == LUA_TNUMBER)
+        return lua_tointegerx(L, index, valid);
+    *valid = 0;
+    return 0;
+}
+
+static lua_Integer
+check_integer(lua_State *L, int index)
+{
+    luaL_checktype(L, index, LUA_TNUMBER);
+    return luaL_checkinteger(L, index);
 }
 
 static const char *
@@ -384,7 +414,7 @@ receive_message(lua_State *L)
 static int
 send_message(lua_State *L)
 {
-    check_process_arity(L, 2, 2, "send(process, message)");
+    check_arity(L, 2, 2, "send(process, message)");
     lua_Integer id = check_process_id(L, 1);
     if (lua_isnil(L, 2))
         return luaL_error(L, "message must not be nil");
@@ -439,7 +469,7 @@ static ProcessState
 parse_signal(lua_State *L, int argument)
 {
     size_t length;
-    const char *signal = luaL_checklstring(L, argument, &length);
+    const char *signal = check_string(L, argument, &length);
     if (strlen(signal) != length)
         luaL_error(L, "unknown signal");
     if (strcmp(signal, "kill") == 0)
@@ -489,7 +519,7 @@ static int
 parse_creation_relation(lua_State *L, int argument)
 {
     size_t length;
-    const char *relation = luaL_checklstring(L, argument, &length);
+    const char *relation = check_string(L, argument, &length);
     if (strlen(relation) != length)
         return luaL_error(L, "unknown process relation");
     if (strcmp(relation, "creation") == 0) return 1;
@@ -502,7 +532,7 @@ static int active_in_tree(lua_Integer root, int attached_only);
 static int
 signal_process(lua_State *L)
 {
-    check_process_arity(L, 2, 2, "signal(process, signal)");
+    check_arity(L, 2, 2, "signal(process, signal)");
     lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
     if (state == PROCESS_KILLED && luaL_testudata(L, 1, "malvado.process")) {
@@ -614,7 +644,7 @@ active_in_creation_tree(lua_Integer root)
 static int
 signal_tree(lua_State *L)
 {
-    check_process_arity(L, 2, 3, "signal_tree(process, signal, options?)");
+    check_arity(L, 2, 3, "signal_tree(process, signal, options?)");
     lua_Integer id = check_process_id(L, 1);
     ProcessState state = parse_signal(L, 2);
     int creation = 1;
@@ -648,7 +678,7 @@ signal_tree(lua_State *L)
 static int
 kill_tree(lua_State *L)
 {
-    check_process_arity(L, 1, 2, "kill_tree(process, options?)");
+    check_arity(L, 1, 2, "kill_tree(process, options?)");
     lua_settop(L, 2);
     lua_pushliteral(L, "kill");
     lua_insert(L, 2);
@@ -666,7 +696,7 @@ set_priority(lua_State *L)
         return luaL_error(L, "expected set_priority(priority) or set_priority(process, priority)");
     }
     lua_Integer id = check_process_id(L, 1);
-    lua_Integer priority = luaL_checkinteger(L, 2);
+    lua_Integer priority = check_integer(L, 2);
     if (mv_process_set_priority(engine.context, (MvProcessId)id, priority) != MV_OK)
         return luaL_error(L, "unknown process id");
     sync_processes();
@@ -676,7 +706,7 @@ set_priority(lua_State *L)
 static int
 get_priority(lua_State *L)
 {
-    check_process_arity(L, 1, 1, "get_priority(process)");
+    check_arity(L, 1, 1, "get_priority(process)");
     lua_Integer id = check_process_id(L, 1);
     int64_t priority;
     if (mv_process_priority(engine.context, (MvProcessId)id, &priority) != MV_OK)
@@ -700,7 +730,7 @@ kill_process(lua_State *L)
 static int
 process_alive(lua_State *L)
 {
-    check_process_arity(L, 1, 1, "alive(process)");
+    check_arity(L, 1, 1, "alive(process)");
     lua_Integer id = check_process_id(L, 1);
     MvProcessStatus status;
     lua_pushboolean(L, mv_process_status(engine.context, (MvProcessId)id, &status) == MV_OK);
@@ -710,7 +740,7 @@ process_alive(lua_State *L)
 static int
 process_status(lua_State *L)
 {
-    check_process_arity(L, 1, 1, "status(process)");
+    check_arity(L, 1, 1, "status(process)");
     lua_Integer id = check_process_id(L, 1);
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)id, &status) == MV_OK)
@@ -1507,6 +1537,7 @@ discard_spawn(lua_State *L, SpawnDraft *draft)
 static int
 create_process(lua_State *L)
 {
+    check_arity(L, 0, 2, "constructor(fields?, options?)");
     lua_settop(L, 2);
     if (!lua_isnil(L, 1)) luaL_checktype(L, 1, LUA_TTABLE);
     if (!lua_isnil(L, 2)) validate_options(L, 2, "attached", NULL);
@@ -1715,6 +1746,7 @@ create_process(lua_State *L)
 static int
 define_process(lua_State *L)
 {
+    check_arity(L, 1, 2, "process(body, options?)");
     luaL_checktype(L, 1, LUA_TFUNCTION);
     if (engine.next_type_id == LUA_MAXINTEGER)
         return luaL_error(L, "process type ID space exhausted");
@@ -1777,7 +1809,7 @@ push_process_handle(lua_State *L, const MvProcessInfo *info)
 static int
 find_by_type(lua_State *L)
 {
-    check_process_arity(L, 1, 1, "find(constructor)");
+    check_arity(L, 1, 1, "find(constructor)");
     if (!lua_iscfunction(L, 1) || lua_tocfunction(L, 1) != create_process)
         return luaL_error(L, "expected a process constructor");
     if (!lua_getupvalue(L, 1, 2))
@@ -1878,21 +1910,21 @@ hierarchy_query(lua_State *L, int direct)
 static int
 process_children(lua_State *L)
 {
-    check_process_arity(L, 1, 2, "children(process, options?)");
+    check_arity(L, 1, 2, "children(process, options?)");
     return hierarchy_query(L, 1);
 }
 
 static int
 process_descendants(lua_State *L)
 {
-    check_process_arity(L, 1, 2, "descendants(process, options?)");
+    check_arity(L, 1, 2, "descendants(process, options?)");
     return hierarchy_query(L, 0);
 }
 
 static int
 snapshot(lua_State *L)
 {
-    check_process_arity(L, 0, 0, "snapshot()");
+    check_arity(L, 0, 0, "snapshot()");
     sync_processes();
     size_t count = 0, lineage_count = 0;
     MvInspectionHeader header;
@@ -1983,6 +2015,7 @@ snapshot(lua_State *L)
 static int
 frame(lua_State *L)
 {
+    check_arity(L, 0, 0, "frame()");
     if (!engine.active || L != engine.active_thread || !lua_isyieldable(L))
         return luaL_error(L, "frame() must be called inside a process");
     Process *process = find_process(engine.active_id);
@@ -2218,6 +2251,7 @@ fade_color(lua_State *L)
 static int
 set_color(lua_State *L)
 {
+    check_arity(L, 1, 1, "set_color(color)");
     MvColor color = check_color(L, 1);
     MvDrawState next = engine.draw;
     if (!mv_draw_state_color(&next, color.r, color.g, color.b, color.a))
@@ -2231,8 +2265,8 @@ drawing_integer(lua_State *L, int options, const char *name)
 {
     raw_option(L, options, name);
     int is_integer;
-    lua_Integer value = lua_tointegerx(L, -1, &is_integer);
-    if (lua_type(L, -1) != LUA_TNUMBER || !is_integer)
+    lua_Integer value = to_integer(L, -1, &is_integer);
+    if (!is_integer)
         luaL_error(L, "%s must be an integer", name);
     lua_pop(L, 1);
     if (value < INT_MIN || value > INT_MAX)
@@ -2359,7 +2393,7 @@ refresh_window_size(void)
 }
 
 static int
-window_size(lua_State *L)
+push_window_size(lua_State *L)
 {
     if (!engine.started)
         return luaL_error(L, "window size is not available before start");
@@ -2368,6 +2402,13 @@ window_size(lua_State *L)
     lua_pushinteger(L, engine.width);
     lua_pushinteger(L, engine.height);
     return 2;
+}
+
+static int
+window_size(lua_State *L)
+{
+    check_arity(L, 0, 0, "window_size()");
+    return push_window_size(L);
 }
 
 static int
@@ -2380,6 +2421,7 @@ valid_window_dimension(lua_State *L, int index)
 static int
 set_window_size(lua_State *L)
 {
+    check_arity(L, 2, 2, "set_window_size(width, height)");
     if (!engine.game_live)
         return luaL_error(L, "set_window_size() requires a running game");
     if (!valid_window_dimension(L, 1))
@@ -2401,7 +2443,7 @@ static int
 legacy_screen_dimension(lua_State *L)
 {
     int dimension = (int)lua_tointeger(L, lua_upvalueindex(1));
-    window_size(L);
+    push_window_size(L);
     lua_pushvalue(L, dimension == 0 ? -2 : -1);
     return 1;
 }
@@ -2409,8 +2451,9 @@ legacy_screen_dimension(lua_State *L)
 static int
 set_title(lua_State *L)
 {
+    check_arity(L, 1, 1, "set_title(title)");
     size_t length;
-    const char *title = luaL_checklstring(L, 1, &length);
+    const char *title = check_string(L, 1, &length);
     if (strlen(title) != length)
         return luaL_error(L, "title contains a zero byte");
     if (!engine.window || !mv_window_set_title(title))
@@ -2421,6 +2464,7 @@ set_title(lua_State *L)
 static int
 clear_screen(lua_State *L)
 {
+    check_arity(L, 1, 1, "clear_screen(color)");
     MvColor color = check_color(L, 1);
     MvDrawState next = engine.draw;
     /* The background is always opaque; only the RGB channels are used. */
@@ -2433,8 +2477,9 @@ clear_screen(lua_State *L)
 static int
 query_key(lua_State *L, int (*query)(MvKey))
 {
+    check_arity(L, 1, 1, "a key name");
     size_t length;
-    const char *s = luaL_checklstring(L, 1, &length);
+    const char *s = check_string(L, 1, &length);
     MvKey parsed;
     if (strlen(s) != length || !mv_key_from_name(s, &parsed))
         return luaL_error(L, "unsupported key: %s", s);
@@ -2461,6 +2506,7 @@ key_released(lua_State *L)
 static int
 mouse_position(lua_State *L)
 {
+    check_arity(L, 0, 0, "mouse_position()");
     int x = 0, y = 0;
     if (!engine.headless)
         (void)mv_mouse_position(&x, &y);
@@ -2472,8 +2518,9 @@ mouse_position(lua_State *L)
 static int
 query_mouse_button(lua_State *L, int (*query)(MvMouseButton))
 {
+    check_arity(L, 1, 1, "a mouse button name");
     size_t length;
-    const char *name = luaL_checklstring(L, 1, &length);
+    const char *name = check_string(L, 1, &length);
     MvMouseButton button;
     if (strlen(name) != length || !mv_mouse_button_from_name(name, &button))
         return luaL_error(L, "unsupported mouse button: %s", name);
@@ -2502,7 +2549,7 @@ mouse_released(lua_State *L)
 static int
 pad_slot(lua_State *L)
 {
-    lua_Integer slot = luaL_checkinteger(L, 1);
+    lua_Integer slot = check_integer(L, 1);
     if (slot < 0 || slot > 3)
         luaL_error(L, "controller slot must be in 0..3");
     return (int)slot;
@@ -2511,6 +2558,7 @@ pad_slot(lua_State *L)
 static int
 pad_connected(lua_State *L)
 {
+    check_arity(L, 1, 1, "pad_connected(slot)");
     int slot = pad_slot(L);
     lua_pushboolean(L, !engine.headless && mv_pad_connected(slot));
     return 1;
@@ -2519,9 +2567,10 @@ pad_connected(lua_State *L)
 static int
 query_pad_button(lua_State *L, int (*query)(int, MvPadButton))
 {
+    check_arity(L, 2, 2, "a controller slot and button");
     int slot = pad_slot(L);
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = check_string(L, 2, &length);
     MvPadButton button;
     if (strlen(name) != length || !mv_pad_button_from_name(name, &button))
         return luaL_error(L, "unsupported controller button");
@@ -2550,9 +2599,10 @@ pad_released(lua_State *L)
 static int
 pad_axis(lua_State *L)
 {
+    check_arity(L, 2, 2, "pad_axis(slot, axis)");
     int slot = pad_slot(L);
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = check_string(L, 2, &length);
     MvPadAxis axis;
     if (strlen(name) != length || !mv_pad_axis_from_name(name, &axis))
         return luaL_error(L, "unsupported controller axis");
@@ -2563,6 +2613,7 @@ pad_axis(lua_State *L)
 static int
 text_input_set_keyboard(lua_State *L)
 {
+    check_arity(L, 1, 1, "text_input_set_keyboard(visible)");
     luaL_checktype(L, 1, LUA_TBOOLEAN);
     lua_pushboolean(L, !engine.headless && mv_text_input_set_keyboard(lua_toboolean(L, 1)));
     return 1;
@@ -2571,6 +2622,7 @@ text_input_set_keyboard(lua_State *L)
 static int
 text_input_next(lua_State *L)
 {
+    check_arity(L, 0, 0, "text_input_next()");
     uint32_t codepoint;
     if (engine.headless || !mv_text_input_next(&codepoint)) {
         lua_pushnil(L);
@@ -2732,7 +2784,7 @@ static const char *
 check_asset_path(lua_State *L, int index)
 {
     size_t length;
-    const char *path = luaL_checklstring(L, index, &length);
+    const char *path = check_string(L, index, &length);
     if (!length || strlen(path) != length)
         luaL_argerror(L, index, "invalid asset path");
     return path;
@@ -2754,6 +2806,7 @@ resolve_asset_path(lua_State *L, const char *path)
 static int
 set_assets_dir(lua_State *L)
 {
+    check_arity(L, 0, 1, "set_assets_dir(path?)");
     const char *path = NULL;
     if (!lua_isnoneornil(L, 1)) {
         luaL_checktype(L, 1, LUA_TSTRING);
@@ -2770,6 +2823,7 @@ set_assets_dir(lua_State *L)
 static int
 get_assets_dir(lua_State *L)
 {
+    check_arity(L, 0, 0, "get_assets_dir()");
     lua_pushstring(L, mv_get_assets_dir(engine.context));
     return 1;
 }
@@ -2788,6 +2842,7 @@ sound_gc(lua_State *L)
 static int
 load_sound(lua_State *L)
 {
+    check_arity(L, 1, 1, "load_sound(path)");
     const char *path = check_asset_path(L, 1);
     if (engine.headless)
         return luaL_error(L, "sound is not available in headless mode");
@@ -2811,7 +2866,7 @@ load_sound(lua_State *L)
 }
 
 static lua_Number
-check_sound_volume(lua_State *L, int index)
+check_volume(lua_State *L, int index)
 {
     luaL_checktype(L, index, LUA_TNUMBER);
     lua_Number volume = lua_tonumber(L, index);
@@ -2823,6 +2878,7 @@ check_sound_volume(lua_State *L, int index)
 static int
 play_sound(lua_State *L)
 {
+    check_arity(L, 1, 2, "play_sound(sound, options?)");
     LuaSound *sound = luaL_checkudata(L, 1, "malvado.sound");
     lua_Number volume = 1;
     if (!lua_isnoneornil(L, 2)) {
@@ -2830,7 +2886,7 @@ play_sound(lua_State *L)
         validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
         raw_option(L, 2, "volume");
         if (!lua_isnil(L, -1))
-            volume = check_sound_volume(L, -1);
+            volume = check_volume(L, -1);
         lua_pop(L, 1);
     }
     if (!engine.audio || !sound->sound)
@@ -2874,6 +2930,7 @@ play_sound(lua_State *L)
 static int
 stop_sound(lua_State *L)
 {
+    check_arity(L, 1, 1, "stop_sound(voice)");
     LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
     finish_voice(L, voice);
     return 0;
@@ -2893,6 +2950,7 @@ check_live_voice(lua_State *L)
 static int
 pause_sound(lua_State *L)
 {
+    check_arity(L, 1, 1, "pause_sound(voice)");
     LuaVoice *voice = check_live_voice(L);
     if (!mv_sound_pause(voice->alias))
         return luaL_error(L, "sound voice is not available");
@@ -2902,6 +2960,7 @@ pause_sound(lua_State *L)
 static int
 resume_sound(lua_State *L)
 {
+    check_arity(L, 1, 1, "resume_sound(voice)");
     LuaVoice *voice = check_live_voice(L);
     if (!mv_sound_resume(voice->alias))
         return luaL_error(L, "sound voice is not available");
@@ -2911,6 +2970,7 @@ resume_sound(lua_State *L)
 static int
 sound_playing(lua_State *L)
 {
+    check_arity(L, 1, 1, "sound_playing(voice)");
     LuaVoice *voice = luaL_checkudata(L, 1, "malvado.voice");
     int playing = mv_sound_playing(voice->alias);
     if (!playing && !mv_sound_paused(voice->alias))
@@ -2922,8 +2982,9 @@ sound_playing(lua_State *L)
 static int
 sound_volume(lua_State *L)
 {
+    check_arity(L, 2, 2, "sound_volume(voice, volume)");
+    lua_Number volume = check_volume(L, 2);
     LuaVoice *voice = check_live_voice(L);
-    lua_Number volume = check_sound_volume(L, 2);
     if (!mv_sound_set_volume(voice->alias, (float)volume))
         return luaL_error(L, "sound voice is not available");
     return 0;
@@ -2943,6 +3004,7 @@ music_gc(lua_State *L)
 static int
 load_music(lua_State *L)
 {
+    check_arity(L, 1, 2, "load_music(path, options?)");
     const char *path = check_asset_path(L, 1);
     int loop = 0;
     if (!lua_isnoneornil(L, 2)) {
@@ -2978,6 +3040,7 @@ load_music(lua_State *L)
 static int
 music_action(lua_State *L)
 {
+    check_arity(L, 1, 1, "a music handle");
     LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
     int action = (int)lua_tointeger(L, lua_upvalueindex(1));
     int ok = 0;
@@ -3001,6 +3064,7 @@ music_action(lua_State *L)
 static int
 music_playing(lua_State *L)
 {
+    check_arity(L, 1, 1, "music_playing(music)");
     LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
     lua_pushboolean(L, mv_music_playing(music->music));
     return 1;
@@ -3009,10 +3073,9 @@ music_playing(lua_State *L)
 static int
 music_volume(lua_State *L)
 {
+    check_arity(L, 2, 2, "music_volume(music, volume)");
     LuaMusic *music = luaL_checkudata(L, 1, "malvado.music");
-    lua_Number volume = luaL_checknumber(L, 2);
-    if (!isfinite(volume) || volume < 0 || volume > 1)
-        return luaL_error(L, "volume must be in 0..1");
+    lua_Number volume = check_volume(L, 2);
     if (!mv_music_set_volume(music->music, (float)volume))
         return luaL_error(L, "music is not available");
     return 0;
@@ -3062,6 +3125,7 @@ load_resolved_image(lua_State *L, const char *path, const char *resolved)
 static int
 load_image(lua_State *L)
 {
+    check_arity(L, 1, 1, "load_image(path)");
     const char *path = check_asset_path(L, 1);
     return load_resolved_image(L, path, resolve_asset_path(L, path));
 }
@@ -3069,6 +3133,7 @@ load_image(lua_State *L)
 static int
 image_size(lua_State *L)
 {
+    check_arity(L, 1, 1, "image_size(image)");
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     lua_pushinteger(L, mv_image_width(image->image));
     lua_pushinteger(L, mv_image_height(image->image));
@@ -3302,7 +3367,7 @@ legacy_fpg(lua_State *L)
     lua_Integer columns = luaL_checkinteger(L, 4);
     if (rows < 1 || rows > INT_MAX || columns < 1 || columns > INT_MAX)
         return luaL_error(L, "invalid sheet dimensions");
-    load_image(L);
+    load_resolved_image(L, path, resolve_asset_path(L, path));
     LuaImage *image = luaL_checkudata(L, -1, "malvado.image");
     int width = mv_image_width(image->image);
     int height = mv_image_height(image->image);
@@ -3422,8 +3487,9 @@ fpg_gc(lua_State *L)
 static int
 fpg_parse(lua_State *L)
 {
+    check_arity(L, 1, 1, "fpg.parse(data)");
     size_t length;
-    const char *data = luaL_checklstring(L, 1, &length);
+    const char *data = check_string(L, 1, &length);
     LuaFpg *value = lua_newuserdatauv(L, sizeof(*value), 2);
     value->fpg = NULL;
     value->transparent_zero = 1;
@@ -3446,8 +3512,9 @@ fpg_manifest_gc(lua_State *L)
 static int
 fpg_manifest_parse(lua_State *L)
 {
+    check_arity(L, 1, 1, "fpg.parse_manifest(json)");
     size_t length;
-    const char *json = luaL_checklstring(L, 1, &length);
+    const char *json = check_string(L, 1, &length);
     LuaFpgManifest *value = lua_newuserdatauv(L, sizeof(*value), 3);
     value->manifest = NULL;
     luaL_setmetatable(L, "malvado.fpg_manifest");
@@ -3460,6 +3527,7 @@ fpg_manifest_parse(lua_State *L)
 static int
 fpg_manifest_count(lua_State *L)
 {
+    check_arity(L, 1, 1, "manifest_count(manifest)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
     lua_pushinteger(L, (lua_Integer)mv_fpg_manifest_count(value->manifest));
     return 1;
@@ -3468,8 +3536,9 @@ fpg_manifest_count(lua_State *L)
 static int
 fpg_manifest_id_at(lua_State *L)
 {
+    check_arity(L, 2, 2, "manifest_id_at(manifest, index)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
-    lua_Integer index = luaL_checkinteger(L, 2);
+    lua_Integer index = check_integer(L, 2);
     MvFpgManifestSprite sprite;
     if (index < 1 || (uint64_t)(index - 1) > SIZE_MAX ||
         !mv_fpg_manifest_at(value->manifest, (size_t)(index - 1), &sprite))
@@ -3481,6 +3550,7 @@ fpg_manifest_id_at(lua_State *L)
 static int
 fpg_manifest_transparent(lua_State *L)
 {
+    check_arity(L, 1, 1, "manifest_transparent_zero(manifest)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
     lua_pushboolean(L, mv_fpg_manifest_transparent_zero(value->manifest));
     return 1;
@@ -3489,6 +3559,7 @@ fpg_manifest_transparent(lua_State *L)
 static int
 fpg_manifest_palette(lua_State *L)
 {
+    check_arity(L, 1, 1, "manifest_palette(manifest)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
     lua_pushlstring(L, (const char *)mv_fpg_manifest_palette(value->manifest), 768);
     return 1;
@@ -3497,6 +3568,7 @@ fpg_manifest_palette(lua_State *L)
 static int
 fpg_manifest_gamma(lua_State *L)
 {
+    check_arity(L, 1, 1, "manifest_gamma(manifest)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
     lua_pushlstring(L, (const char *)mv_fpg_manifest_gamma(value->manifest), 576);
     return 1;
@@ -3505,8 +3577,9 @@ fpg_manifest_gamma(lua_State *L)
 static int
 fpg_manifest_sprite(lua_State *L)
 {
+    check_arity(L, 2, 2, "manifest_sprite(manifest, id)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
-    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Integer id = check_integer(L, 2);
     MvFpgManifestSprite sprite;
     if (id < 1 || id > 999 || !mv_fpg_manifest_sprite(value->manifest, (int)id, &sprite)) {
         lua_pushnil(L);
@@ -3526,8 +3599,9 @@ fpg_manifest_sprite(lua_State *L)
 static int
 fpg_manifest_point(lua_State *L)
 {
+    check_arity(L, 3, 3, "manifest_point(manifest, id, index)");
     LuaFpgManifest *value = luaL_checkudata(L, 1, "malvado.fpg_manifest");
-    lua_Integer id = luaL_checkinteger(L, 2), index = luaL_checkinteger(L, 3);
+    lua_Integer id = check_integer(L, 2), index = check_integer(L, 3);
     MvFpgPoint point;
     if (id < 1 || id > 999 || index < 0 || (uint64_t)index > SIZE_MAX ||
         !mv_fpg_manifest_point(value->manifest, (int)id, (size_t)index, &point)) {
@@ -3544,6 +3618,7 @@ fpg_manifest_point(lua_State *L)
 static int
 fpg_count(lua_State *L)
 {
+    check_arity(L, 1, 1, "fpg_count(fpg)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
     lua_pushinteger(L, (lua_Integer)mv_fpg_count(value->fpg));
     return 1;
@@ -3552,8 +3627,9 @@ fpg_count(lua_State *L)
 static int
 fpg_id_at(lua_State *L)
 {
+    check_arity(L, 2, 2, "fpg_id_at(fpg, index)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer index = luaL_checkinteger(L, 2);
+    lua_Integer index = check_integer(L, 2);
     MvFpgSprite sprite;
     if (index < 1 || (uint64_t)(index - 1) > SIZE_MAX ||
         !mv_fpg_at(value->fpg, (size_t)(index - 1), &sprite))
@@ -3566,6 +3642,7 @@ fpg_id_at(lua_State *L)
 static int
 fpg_palette(lua_State *L)
 {
+    check_arity(L, 1, 1, "fpg_palette(fpg)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
     lua_pushlstring(L, (const char *)mv_fpg_palette(value->fpg), 768);
     return 1;
@@ -3574,6 +3651,7 @@ fpg_palette(lua_State *L)
 static int
 fpg_gamma(lua_State *L)
 {
+    check_arity(L, 1, 1, "fpg_gamma(fpg)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
     lua_pushlstring(L, (const char *)mv_fpg_gamma(value->fpg), 576);
     return 1;
@@ -3582,8 +3660,9 @@ fpg_gamma(lua_State *L)
 static int
 fpg_sprite(lua_State *L)
 {
+    check_arity(L, 2, 2, "fpg_sprite(fpg, id)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Integer id = check_integer(L, 2);
     MvFpgSprite sprite;
     if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
         lua_pushnil(L);
@@ -3610,8 +3689,9 @@ fpg_sprite(lua_State *L)
 static int
 fpg_point(lua_State *L)
 {
+    check_arity(L, 3, 3, "fpg_point(fpg, id, index)");
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2), index = luaL_checkinteger(L, 3);
+    lua_Integer id = check_integer(L, 2), index = check_integer(L, 3);
     MvFpgPoint point;
     if (id < 1 || id > 999 || index < 0 || (uint64_t)index > SIZE_MAX ||
         !mv_fpg_point(value->fpg, (int)id, (size_t)index, &point)) {
@@ -3649,7 +3729,7 @@ static int
 fpg_rgba(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Integer id = check_integer(L, 2);
     int transparent_zero = fpg_conversion_transparency(L, 3);
     MvFpgSprite sprite;
     if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
@@ -3684,7 +3764,7 @@ static int
 fpg_png(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Integer id = check_integer(L, 2);
     int transparent_zero = fpg_conversion_transparency(L, 3);
     if (id < 1 || id > 999) {
         lua_pushnil(L);
@@ -3734,7 +3814,7 @@ static int
 fpg_image(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2);
+    lua_Integer id = check_integer(L, 2);
     int transparent_zero = fpg_conversion_transparency(L, 3);
     return push_fpg_image(L, value, id, transparent_zero);
 }
@@ -3761,9 +3841,10 @@ atlas_gc(lua_State *L)
 static int
 parse_atlas_format(lua_State *L, int aseprite)
 {
+    check_arity(L, 2, 2, "an image and a JSON string");
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     size_t length;
-    const char *json = luaL_checklstring(L, 2, &length);
+    const char *json = check_string(L, 2, &length);
     LuaAtlas *atlas = lua_newuserdatauv(L, sizeof(*atlas), 3);
     *atlas = (LuaAtlas){0};
     luaL_setmetatable(L, "malvado.atlas");
@@ -3800,6 +3881,7 @@ parse_aseprite(lua_State *L)
 static int
 atlas_pivot_color(lua_State *L)
 {
+    check_arity(L, 1, 1, "atlas_pivot_color(atlas)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     MvColor color;
     if (!mv_atlas_pivot_color(atlas->atlas, &color)) {
@@ -3818,9 +3900,10 @@ atlas_pivot_color(lua_State *L)
 static int
 atlas_animation_repeats(lua_State *L)
 {
+    check_arity(L, 2, 2, "atlas_animation_repeats(atlas, name)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = check_string(L, 2, &length);
     if (strlen(name) != length)
         return luaL_error(L, "invalid animation name");
     unsigned repeats;
@@ -3834,9 +3917,10 @@ atlas_animation_repeats(lua_State *L)
 static int
 atlas_animation_color(lua_State *L)
 {
+    check_arity(L, 2, 2, "atlas_animation_color(atlas, name)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = check_string(L, 2, &length);
     if (strlen(name) != length)
         return luaL_error(L, "invalid animation name");
     MvColor color;
@@ -3856,7 +3940,7 @@ atlas_animation_color(lua_State *L)
 static double
 check_animation_time(lua_State *L, int index, const char *message)
 {
-    double elapsed = luaL_checknumber(L, index);
+    double elapsed = check_number(L, index);
     if (!isfinite(elapsed) || elapsed < 0 || elapsed > 1e12)
         luaL_error(L, "%s", message);
     return elapsed;
@@ -3865,9 +3949,10 @@ check_animation_time(lua_State *L, int index, const char *message)
 static int
 atlas_animation_frame(lua_State *L)
 {
+    check_arity(L, 3, 4, "atlas_animation_frame(atlas, name, elapsed_ms, options?)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = check_string(L, 2, &length);
     if (strlen(name) != length)
         return luaL_error(L, "invalid animation name");
     double elapsed = check_animation_time(L, 3, "invalid animation time in milliseconds");
@@ -3903,7 +3988,7 @@ find_atlas_sprite_name(lua_State *L, LuaAtlas *atlas, int index, MvAtlasSprite *
 static int
 check_sprite_id(lua_State *L, int index, const char *range_error)
 {
-    lua_Integer id = luaL_checkinteger(L, index);
+    lua_Integer id = check_integer(L, index);
     if (id <= 0 || id > INT_MAX)
         return luaL_error(L, "%s", range_error);
     return (int)id;
@@ -3912,6 +3997,7 @@ check_sprite_id(lua_State *L, int index, const char *range_error)
 static int
 atlas_sprite_id(lua_State *L)
 {
+    check_arity(L, 2, 2, "atlas_sprite_id(atlas, name)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     MvAtlasSprite sprite;
     if (find_atlas_sprite_name(L, atlas, 2, &sprite))
@@ -3925,6 +4011,7 @@ atlas_sprite_id(lua_State *L)
 static int
 atlas_sprite_info(lua_State *L)
 {
+    check_arity(L, 2, 2, "atlas_sprite_info(atlas, selector)");
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     MvAtlasSprite sprite;
     int found;
@@ -4155,6 +4242,7 @@ load_asset_library(lua_State *L, MvAssetSource *source, const char *path,
 static int
 load_asset(lua_State *L)
 {
+    check_arity(L, 1, 2, "load_asset(path, options?)");
     const char *path = check_asset_path(L, 1);
     const char *requested = NULL;
     int transparent = 1, has_transparent = 0, has_pivot = 0, centered = 0;
@@ -4163,7 +4251,7 @@ load_asset(lua_State *L)
         raw_option(L, 2, "format");
         if (!lua_isnil(L, -1)) {
             size_t length;
-            requested = luaL_checklstring(L, -1, &length);
+            requested = check_string(L, -1, &length);
             if (strlen(requested) != length ||
                 (strcmp(requested, "png") && strcmp(requested, "fpg") &&
                  strcmp(requested, "atlas") && strcmp(requested, "aseprite") &&
@@ -4174,7 +4262,7 @@ load_asset(lua_State *L)
         raw_option(L, 2, "pivot");
         if (!lua_isnil(L, -1)) {
             size_t length;
-            const char *pivot = luaL_checklstring(L, -1, &length);
+            const char *pivot = check_string(L, -1, &length);
             if (strlen(pivot) != length || (strcmp(pivot, "center") && strcmp(pivot, "top-left")))
                 return luaL_error(L, "PNG pivot must be center or top-left");
             has_pivot = 1;
@@ -4248,7 +4336,7 @@ check_font_descriptor(lua_State *L, int index)
     FontDescriptor descriptor = {0, NULL};
     raw_option(L, index, "size");
     int is_integer;
-    descriptor.size = lua_tointegerx(L, -1, &is_integer);
+    descriptor.size = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer || descriptor.size < 1 || descriptor.size > 1024)
         luaL_error(L, "font size must be an integer in 1..1024");
@@ -4270,27 +4358,26 @@ static int
 text(lua_State *L)
 {
     static const char *const keys[] = {"text", "x", "y", "size", "color"};
-    luaL_checktype(L, 1, LUA_TTABLE);
-    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     int is_integer;
     raw_option(L, 1, "text");
     size_t text_length;
-    const char *s = luaL_checklstring(L, -1, &text_length);
+    const char *s = check_string(L, -1, &text_length);
     if (strlen(s) != text_length)
         return luaL_error(L, "text contains a zero byte");
     /* Keep the text value rooted on the stack until drawing copies it. */
     raw_option(L, 1, "x");
-    lua_Integer x = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer x = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer) return luaL_error(L, "x must be an integer");
     raw_option(L, 1, "y");
-    lua_Integer y = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer y = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer) return luaL_error(L, "y must be an integer");
     lua_Integer size = 20;
     raw_option(L, 1, "size");
     if (!lua_isnil(L, -1)) {
-        size = lua_tointegerx(L, -1, &is_integer);
+        size = to_integer(L, -1, &is_integer);
         if (!is_integer) {
             lua_pop(L, 1);
             return luaL_error(L, "size must be an integer");
@@ -4334,13 +4421,12 @@ static int
 load_font(lua_State *L)
 {
     static const char *const keys[] = {"path", "size", "extra_glyphs"};
-    luaL_checktype(L, 1, LUA_TTABLE);
-    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     raw_option(L, 1, "path");
     const char *path = check_asset_path(L, -1);
     raw_option(L, 1, "size");
     int is_integer;
-    lua_Integer size = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer size = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer || size < 1 || size > 1024)
         return luaL_error(L, "font size must be an integer in 1..1024");
@@ -4353,7 +4439,7 @@ load_font(lua_State *L)
     raw_option(L, 1, "extra_glyphs");
     if (!lua_isnil(L, -1)) {
         size_t extra_length;
-        const char *extra = luaL_checklstring(L, -1, &extra_length);
+        const char *extra = check_string(L, -1, &extra_length);
         for (size_t offset = 0; offset < extra_length;) {
             uint32_t codepoint;
             size_t bytes = mv_utf8_decode(extra + offset, extra_length - offset, &codepoint);
@@ -4399,11 +4485,10 @@ static int
 font(lua_State *L)
 {
     static const char *const keys[] = {"size"};
-    luaL_checktype(L, 1, LUA_TTABLE);
-    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     raw_option(L, 1, "size");
     int is_integer;
-    lua_Integer size = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer size = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer || size < 1 || size > 1024)
         return luaL_error(L, "font size must be an integer in 1..1024");
@@ -4417,25 +4502,24 @@ static int
 write_text(lua_State *L)
 {
     static const char *const keys[] = {"font", "text", "x", "y", "align", "color", "size"};
-    luaL_checktype(L, 1, LUA_TTABLE);
-    validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
+    check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     raw_option(L, 1, "font");
     luaL_checktype(L, -1, LUA_TTABLE);
     FontDescriptor descriptor = check_font_descriptor(L, -1);
     lua_pop(L, 1);
     raw_option(L, 1, "text");
     size_t text_length;
-    const char *text = luaL_checklstring(L, -1, &text_length);
+    const char *text = check_string(L, -1, &text_length);
     if (strlen(text) != text_length)
         return luaL_error(L, "text contains a zero byte");
     /* Keep the text value rooted on the stack until creation copies it. */
     int is_integer;
     raw_option(L, 1, "x");
-    lua_Integer x = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer x = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer) return luaL_error(L, "x must be an integer");
     raw_option(L, 1, "y");
-    lua_Integer y = lua_tointegerx(L, -1, &is_integer);
+    lua_Integer y = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer) return luaL_error(L, "y must be an integer");
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
@@ -4444,7 +4528,7 @@ write_text(lua_State *L)
     raw_option(L, 1, "align");
     if (!lua_isnil(L, -1)) {
         size_t align_length;
-        const char *align = luaL_checklstring(L, -1, &align_length);
+        const char *align = check_string(L, -1, &align_length);
         if (strlen(align) != align_length) {
             lua_pop(L, 1);
             return luaL_error(L, "alignment must be left, center, or right");
@@ -4470,7 +4554,7 @@ write_text(lua_State *L)
     lua_Integer size = descriptor.size;
     raw_option(L, 1, "size");
     if (!lua_isnil(L, -1)) {
-        size = lua_tointegerx(L, -1, &is_integer);
+        size = to_integer(L, -1, &is_integer);
         if (!is_integer) {
             lua_pop(L, 1);
             return luaL_error(L, "size must be an integer");
@@ -4519,7 +4603,8 @@ release_text_value(lua_State *L)
 static int
 delete_text(lua_State *L)
 {
-    lua_Integer id = luaL_checkinteger(L, 1);
+    check_arity(L, 1, 1, "delete_text(id)");
+    lua_Integer id = check_integer(L, 1);
     lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
     lua_geti(L, -1, id);
     if (lua_isnil(L, -1))
@@ -4542,7 +4627,8 @@ text_size(lua_State *L)
     const char *text;
     FontDescriptor descriptor;
     if (lua_type(L, 1) == LUA_TNUMBER) {
-        lua_Integer id = luaL_checkinteger(L, 1);
+        check_arity(L, 1, 1, "text_size(id)");
+        lua_Integer id = check_integer(L, 1);
         lua_getfield(L, LUA_REGISTRYINDEX, "malvado.texts");
         lua_geti(L, -1, id);
         if (lua_isnil(L, -1))
@@ -4556,14 +4642,15 @@ text_size(lua_State *L)
         lua_pop(L, 1);
         lua_getfield(L, -1, "size");
         int is_integer;
-        descriptor.size = lua_tointegerx(L, -1, &is_integer);
+        descriptor.size = to_integer(L, -1, &is_integer);
         lua_pop(L, 3);
         if (!is_integer || descriptor.size < 1 || descriptor.size > 1024)
             return luaL_error(L, "invalid text style");
     } else {
+        check_arity(L, 2, 2, "text_size(font, text)");
         descriptor = check_font_descriptor(L, 1);
         size_t text_length;
-        text = luaL_checklstring(L, 2, &text_length);
+        text = check_string(L, 2, &text_length);
         if (strlen(text) != text_length)
             return luaL_error(L, "text contains a zero byte");
     }
@@ -4583,8 +4670,9 @@ text_size(lua_State *L)
 static int
 change_text(lua_State *L)
 {
+    check_arity(L, 2, 2, "change_text(id, options)");
     static const char *const keys[] = {"text", "x", "y", "align", "size", "color", "font"};
-    lua_Integer id = luaL_checkinteger(L, 1);
+    lua_Integer id = check_integer(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
     /* Validate every option before applying any change. */
@@ -4595,7 +4683,7 @@ change_text(lua_State *L)
     raw_option(L, 2, "text");
     if (!lua_isnil(L, -1)) {
         size_t text_length;
-        text = luaL_checklstring(L, -1, &text_length);
+        text = check_string(L, -1, &text_length);
         if (strlen(text) != text_length)
             return luaL_error(L, "text contains a zero byte");
         has_text = 1;
@@ -4605,7 +4693,7 @@ change_text(lua_State *L)
     lua_Integer x = 0, y = 0;
     raw_option(L, 2, "x");
     if (!lua_isnil(L, -1)) {
-        x = lua_tointegerx(L, -1, &is_integer);
+        x = to_integer(L, -1, &is_integer);
         if (!is_integer)
             return luaL_error(L, "x must be an integer");
         has_x = 1;
@@ -4613,7 +4701,7 @@ change_text(lua_State *L)
     lua_pop(L, 1);
     raw_option(L, 2, "y");
     if (!lua_isnil(L, -1)) {
-        y = lua_tointegerx(L, -1, &is_integer);
+        y = to_integer(L, -1, &is_integer);
         if (!is_integer)
             return luaL_error(L, "y must be an integer");
         has_y = 1;
@@ -4625,7 +4713,7 @@ change_text(lua_State *L)
     raw_option(L, 2, "align");
     if (!lua_isnil(L, -1)) {
         size_t align_length;
-        const char *align = luaL_checklstring(L, -1, &align_length);
+        const char *align = check_string(L, -1, &align_length);
         if (strlen(align) != align_length ||
             (strcmp(align, "left") && strcmp(align, "center") && strcmp(align, "right")))
             return luaL_error(L, "alignment must be left, center, or right");
@@ -4636,7 +4724,7 @@ change_text(lua_State *L)
     lua_Integer size = 0;
     raw_option(L, 2, "size");
     if (!lua_isnil(L, -1)) {
-        size = lua_tointegerx(L, -1, &is_integer);
+        size = to_integer(L, -1, &is_integer);
         if (!is_integer || size < 1 || size > 1024)
             return luaL_error(L, "font size must be an integer in 1..1024");
         has_size = 1;
@@ -4994,6 +5082,7 @@ camera_stop_following(lua_State *L, LuaCamera *camera)
 static int
 camera_destroy(lua_State *L)
 {
+    check_arity(L, 1, 1, "camera_destroy(camera)");
     LuaCamera *camera = luaL_checkudata(L, 1, "malvado.camera");
     camera_stop_following(L, camera);
     if (engine.context && camera->reference.id)
@@ -5051,8 +5140,8 @@ camera_set(lua_State *L)
         return luaL_error(L, "expected camera_set(x, y) or camera_set(camera, x, y)");
     LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
     load_camera(L, camera);
-    double x = luaL_checknumber(L, explicit ? 2 : 1);
-    double y = luaL_checknumber(L, explicit ? 3 : 2);
+    double x = check_number(L, explicit ? 2 : 1);
+    double y = check_number(L, explicit ? 3 : 2);
     if (!mv_camera_set(&camera->value, x, y))
         return luaL_error(L, "invalid camera position");
     if (mv_camera_put(engine.context, camera->reference, camera->value) != MV_OK)
@@ -5069,8 +5158,8 @@ camera_move(lua_State *L)
         return luaL_error(L, "expected camera_move(dx, dy) or camera_move(camera, dx, dy)");
     LuaCamera *camera = explicit ? check_camera(L, 1) : &engine.main_camera;
     load_camera(L, camera);
-    double x = luaL_checknumber(L, explicit ? 2 : 1);
-    double y = luaL_checknumber(L, explicit ? 3 : 2);
+    double x = check_number(L, explicit ? 2 : 1);
+    double y = check_number(L, explicit ? 3 : 2);
     if (!mv_camera_move(&camera->value, x, y))
         return luaL_error(L, "invalid camera movement");
     if (mv_camera_put(engine.context, camera->reference, camera->value) != MV_OK)
@@ -5082,6 +5171,7 @@ camera_move(lua_State *L)
 static int
 camera_position(lua_State *L)
 {
+    check_arity(L, 0, 1, "camera_position(camera?)");
     LuaCamera *camera = lua_isnoneornil(L, 1) ? &engine.main_camera : check_camera(L, 1);
     load_camera(L, camera);
     lua_pushnumber(L, camera->value.x);
@@ -5278,6 +5368,7 @@ validate_start_options(lua_State *L, int index, int allow_init)
 static int
 start(lua_State *L)
 {
+    check_arity(L, 1, 2, "start(init, options?)");
     luaL_checktype(L, 1, LUA_TFUNCTION);
     if (engine.started)
         return luaL_error(L, "start() can only be called once");
@@ -5412,6 +5503,7 @@ start_declared_game(lua_State *L)
 static int
 set_fps(lua_State *L)
 {
+    check_arity(L, 0, 1, "set_fps(fps)");
     if (!engine.game_live)
         return luaL_error(L, "set_fps() requires a running game");
     if (!valid_process_fps(L, 1))
@@ -5423,6 +5515,7 @@ set_fps(lua_State *L)
 static int
 time_seconds(lua_State *L)
 {
+    check_arity(L, 0, 0, "time_seconds()");
     double seconds;
     if (!mv_monotonic_time(&seconds))
         return luaL_error(L, "monotonic clock unavailable");
@@ -5433,8 +5526,9 @@ time_seconds(lua_State *L)
 static int
 random_range(lua_State *L)
 {
-    lua_Integer minimum = luaL_checkinteger(L, 1);
-    lua_Integer maximum = luaL_checkinteger(L, 2);
+    check_arity(L, 2, 2, "rand(min, max)");
+    lua_Integer minimum = check_integer(L, 1);
+    lua_Integer maximum = check_integer(L, 2);
     if (minimum > maximum)
         return luaL_error(L, "minimum must not exceed maximum");
     lua_pushvalue(L, lua_upvalueindex(1));
@@ -5780,6 +5874,7 @@ push_palette(lua_State *L)
 static int
 spawn_process(lua_State *L)
 {
+    check_arity(L, 1, 3, "spawn(constructor, fields?, options?)");
     if (!lua_iscfunction(L, 1) || lua_tocfunction(L, 1) != create_process)
         return luaL_error(L, "expected a process constructor");
     lua_settop(L, 3);
@@ -5874,14 +5969,6 @@ rect_contains(lua_State *L)
     return 1;
 }
 
-static double
-shape_option(lua_State *L, int index, const char *name, double fallback)
-{
-    raw_option(L, index, name);
-    double value = lua_isnil(L, -1) ? fallback : luaL_checknumber(L, -1);
-    lua_pop(L, 1);
-    return value;
-}
 
 static int
 collision_shape(lua_State *L)
@@ -5911,27 +5998,25 @@ collision_shape(lua_State *L)
 }
 
 static MvCollisionTransform
-collision_transform_fields(lua_State *L, int index, int strict)
+collision_transform_fields(lua_State *L, int index)
 {
-    double (*read_option)(lua_State *, int, const char *, double) =
-        strict ? optional_number_field : shape_option;
     MvCollisionTransform result = {
-        read_option(L, index, "x", 0),
-        read_option(L, index, "y", 0),
-        read_option(L, index, "angle", 0),
-        read_option(L, index, "scale", 1)
+        optional_number_field(L, index, "x", 0),
+        optional_number_field(L, index, "y", 0),
+        optional_number_field(L, index, "angle", 0),
+        optional_number_field(L, index, "scale", 1)
     };
     return result;
 }
 
 static MvCollisionTransform
-collision_transform(lua_State *L, int index, int strict)
+collision_transform(lua_State *L, int index)
 {
     static const char *const fields[] = {"x", "y", "angle", "scale", NULL};
     if (lua_isnoneornil(L, index))
         return (MvCollisionTransform){0, 0, 0, 1};
     validate_collision_fields(L, index, fields, "collision transform");
-    return collision_transform_fields(L, index, strict);
+    return collision_transform_fields(L, index);
 }
 
 static int
@@ -5946,10 +6031,10 @@ collision_overlap(lua_State *L)
     if (!lua_isnone(L, 3)) {
         validate_collision_fields(L, 3, fields, "collision overlap");
         raw_option(L, 3, "a");
-        transform_a = collision_transform(L, -1, 1);
+        transform_a = collision_transform(L, -1);
         lua_pop(L, 1);
         raw_option(L, 3, "b");
-        transform_b = collision_transform(L, -1, 1);
+        transform_b = collision_transform(L, -1);
         lua_pop(L, 1);
     }
     int result = mv_collision_overlap(*a, transform_a, *b, transform_b);
@@ -5980,6 +6065,7 @@ check_world(lua_State *L)
 static int
 world_create(lua_State *L)
 {
+    check_arity(L, 0, 0, "world_create()");
     MvCollisionWorld **world = lua_newuserdatauv(L, sizeof(*world), 0);
     *world = NULL;
     luaL_setmetatable(L, "malvado.collision_world");
@@ -5989,31 +6075,12 @@ world_create(lua_State *L)
     return 1;
 }
 
-static double
-world_rect_field(lua_State *L, const char *name)
-{
-    raw_option(L, 2, name);
-    double value = luaL_checknumber(L, -1);
-    lua_pop(L, 1);
-    return value;
-}
-
 static int
 world_add_rect(lua_State *L)
 {
+    check_arity(L, 2, 2, "world_add_rect(world, rectangle)");
     MvCollisionWorld *world = check_world(L);
-    luaL_checktype(L, 2, LUA_TTABLE);
-    lua_pushnil(L);
-    while (lua_next(L, 2)) {
-        size_t length;
-        const char *name = lua_type(L, -2) == LUA_TSTRING ? lua_tolstring(L, -2, &length) : NULL;
-        if (!name || strlen(name) != length ||
-            (strcmp(name, "x") && strcmp(name, "y") && strcmp(name, "width") && strcmp(name, "height")))
-            return luaL_error(L, "unknown world rectangle field");
-        lua_pop(L, 1);
-    }
-    MvRect rect = {world_rect_field(L, "x"), world_rect_field(L, "y"),
-                   world_rect_field(L, "width"), world_rect_field(L, "height")};
+    MvRect rect = check_rect(L, 2);
     size_t id;
     if (!mv_collision_world_add_rect(world, rect, &id))
         return luaL_error(L, "invalid rectangle or out of memory");
@@ -6024,9 +6091,10 @@ world_add_rect(lua_State *L)
 static int
 world_overlap(lua_State *L)
 {
+    check_arity(L, 2, 3, "world_overlap(world, shape, transform?)");
     MvCollisionWorld *world = check_world(L);
     MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
-    MvCollisionTransform transform = collision_transform(L, 3, 0);
+    MvCollisionTransform transform = collision_transform(L, 3);
     size_t id;
     int result = mv_collision_world_query(world, *shape, transform, &id);
     if (result < 0)
@@ -6084,6 +6152,19 @@ process_collider(lua_State *L, int fields, int legacy, MvCollisionShape *shape)
     return 1;
 }
 
+/* Process properties can hold Lua-local visual overrides. Keep their established
+ * conversion at the point where the world consumes those fields. */
+static MvCollisionTransform
+process_collision_transform(lua_State *L, int fields)
+{
+    MvCollisionTransform transform;
+    if (!collider_number(L, fields, "x", 0, &transform.x) ||
+        !collider_number(L, fields, "y", 0, &transform.y) ||
+        !collider_number(L, fields, "angle", 0, &transform.angle) ||
+        !collider_number(L, fields, "size", 1, &transform.scale))
+        luaL_error(L, "invalid process collision transform");
+    return transform;
+}
 
 static int
 world_process_collision(lua_State *L)
@@ -6092,8 +6173,8 @@ world_process_collision(lua_State *L)
     MvCollisionWorld *world = check_world(L);
     if (!lua_isnil(L, 3)) {
         validate_options(L, 3, "x", "y");
-        double x = shape_option(L, 3, "x", 0);
-        double y = shape_option(L, 3, "y", 0);
+        double x = optional_number_field(L, 3, "x", 0);
+        double y = optional_number_field(L, 3, "y", 0);
         if (!isfinite(x) || !isfinite(y))
             return luaL_error(L, "invalid collision position");
     }
@@ -6110,13 +6191,10 @@ world_process_collision(lua_State *L)
         lua_pushnil(L);
         return 1;
     }
-    MvCollisionTransform transform = {
-        shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
-        shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
-    };
+    MvCollisionTransform transform = process_collision_transform(L, fields);
     if (!lua_isnil(L, 3)) {
-        transform.x = shape_option(L, 3, "x", transform.x);
-        transform.y = shape_option(L, 3, "y", transform.y);
+        transform.x = optional_number_field(L, 3, "x", transform.x);
+        transform.y = optional_number_field(L, 3, "y", transform.y);
     }
     size_t hit;
     int result;
@@ -6148,22 +6226,19 @@ world_process_move(lua_State *L)
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
-    double dx = luaL_checknumber(L, 3), dy = luaL_checknumber(L, 4);
+    double dx = check_number(L, 3), dy = check_number(L, 4);
     if (!isfinite(dx) || !isfinite(dy) || fabs(dx) > DBL_MAX / 16 || fabs(dy) > DBL_MAX / 16)
         return luaL_error(L, "invalid movement");
     lua_getiuservalue(L, 2, 1);
     int fields = lua_gettop(L);
     refresh_process_transform(L, luaL_checkudata(L, 2, "malvado.process"), fields);
-    MvCollisionTransform transform = {
-        shape_option(L, fields, "x", 0), shape_option(L, fields, "y", 0),
-        shape_option(L, fields, "angle", 0), shape_option(L, fields, "size", 1)
-    };
+    Process *slot = find_process_slot(id);
+    MvCollisionTransform transform = process_collision_transform(L, fields);
     if (!isfinite(transform.x) || !isfinite(transform.y))
         return luaL_error(L, "invalid process position");
     double old_x = transform.x, old_y = transform.y;
     MvCollisionShape shape;
     MvCollisionSweep result = {.fraction = 1};
-    Process *slot = find_process_slot(id);
     int present = process_collider(L, fields, slot && slot->legacy_frame, &shape);
     LuaSelf *self = luaL_checkudata(L, 2, "malvado.process");
     sync_process_collider(L, self, fields);
@@ -6242,8 +6317,8 @@ world_move(lua_State *L)
 {
     int arguments = lua_gettop(L);
     if (arguments == 2) {
-        luaL_checknumber(L, 1);
-        luaL_checknumber(L, 2);
+        check_number(L, 1);
+        check_number(L, 2);
         insert_current_world_process(L);
     } else if (arguments != 4) {
         return luaL_error(L, "expected world_move(dx, dy) or world_move(world, process, dx, dy)");
@@ -6259,7 +6334,7 @@ world_sweep(lua_State *L)
     MvCollisionWorld *world = check_world(L);
     MvCollisionShape *shape = luaL_checkudata(L, 2, "malvado.collision_shape");
     validate_collision_fields(L, 3, fields, "world sweep");
-    MvCollisionTransform transform = collision_transform_fields(L, 3, 1);
+    MvCollisionTransform transform = collision_transform_fields(L, 3);
     double dx = number_field(L, 3, "dx", 0, 1);
     double dy = number_field(L, 3, "dy", 0, 1);
     MvCollisionSweep result;
@@ -6284,11 +6359,23 @@ world_sweep(lua_State *L)
 static int
 process_collision_query(lua_State *L, int multiple)
 {
+    check_arity(L, 2, 2, "a source process and a target constructor or handle");
     LuaSelf *source = luaL_checkudata(L, 1, "malvado.process");
     lua_Integer source_id = check_process_id(L, 1);
     MvProcessStatus status;
     if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
         return luaL_error(L, "process is no longer alive");
+    uint64_t type = 0;
+    LuaSelf *target = luaL_testudata(L, 2, "malvado.process");
+    if (target) {
+        (void)check_process_id(L, 2);
+    } else {
+        if (!lua_iscfunction(L, 2) || lua_tocfunction(L, 2) != create_process ||
+            !lua_getupvalue(L, 2, 2))
+            return luaL_error(L, "expected a process constructor or handle");
+        type = (uint64_t)lua_tointeger(L, -1);
+        lua_pop(L, 1);
+    }
     /* Native hosts can move Lua processes between ticks. Refresh before any
      * query, including sleeping/frozen targets and constructor filters. */
     for (size_t i = 0; i < engine.count; ++i) {
@@ -6302,10 +6389,7 @@ process_collision_query(lua_State *L, int multiple)
     if (source->collision_invalid)
         return luaL_error(L, "invalid process collider or transform");
     MvProcessRef source_ref = source->reference;
-    uint64_t type = 0;
-    LuaSelf *target = luaL_testudata(L, 2, "malvado.process");
     if (target) {
-        (void)check_process_id(L, 2);
         if (multiple)
             lua_createtable(L, 1, 0);
         if (mv_process_status(engine.context, (MvProcessId)source_id, &status) != MV_OK)
@@ -6330,11 +6414,6 @@ process_collision_query(lua_State *L, int multiple)
         } else lua_pushnil(L);
         return 1;
     }
-    if (!lua_iscfunction(L, 2) || lua_tocfunction(L, 2) != create_process ||
-        !lua_getupvalue(L, 2, 2))
-        return luaL_error(L, "expected a process constructor or handle");
-    type = (uint64_t)lua_tointeger(L, -1);
-    lua_pop(L, 1);
     if (!multiple) {
         MvProcessRef found;
         if (mv_process_collider_first(engine.context, source_ref, type, &found) != MV_OK)
@@ -6466,7 +6545,8 @@ graphic_create(lua_State *L)
 static int
 scroll_create(lua_State *L)
 {
-    lua_Number x = luaL_checknumber(L, 1), y = luaL_checknumber(L, 2);
+    check_arity(L, 2, 2, "scroll(x, y)");
+    lua_Number x = check_number(L, 1), y = check_number(L, 2);
     if (!isfinite(x) || !isfinite(y) || fabs(x) > FLT_MAX / 16 || fabs(y) > FLT_MAX / 16)
         return luaL_error(L, "invalid scroll coordinates");
     LuaScroll *scroll = lua_newuserdatauv(L, sizeof(*scroll), 0);
@@ -6633,6 +6713,7 @@ animation_gc(lua_State *L)
 static int
 animation_sample(lua_State *L)
 {
+    check_arity(L, 2, 2, "animation_sample(animation, elapsed_ms)");
     LuaAnimation *animation = luaL_checkudata(L, 1, "malvado.animation");
     double elapsed = check_animation_time(L, 2, "invalid animation sample time in milliseconds");
     MvAnimationSample sample;
@@ -6710,7 +6791,7 @@ animation_select(lua_State *L)
         lua_pop(L, 1);
         raw_option(L, 3, "fps");
         has_fps = !lua_isnil(L, -1);
-        if (has_fps) fps = luaL_checknumber(L, -1);
+        if (has_fps) fps = check_number(L, -1);
         lua_pop(L, 1);
     }
     int named = lua_type(L, 2) == LUA_TSTRING;
@@ -6728,7 +6809,7 @@ animation_select(lua_State *L)
         }
         if (has_fps) return luaL_error(L, "fps is only valid for custom frame lists");
         size_t length;
-        name = luaL_checklstring(L, 2, &length);
+        name = check_string(L, 2, &length);
         if (!length || strlen(name) != length) return luaL_error(L, "invalid animation name");
         count = mv_atlas_animation_frame_count(atlas->atlas, name);
         if (!count) return luaL_error(L, "unknown animation");
@@ -6790,7 +6871,7 @@ animation_select(lua_State *L)
             duration = (uint64_t)frame.duration_ms * 1000;
         } else {
             lua_rawgeti(L, 2, (lua_Integer)i + 1);
-            lua_Integer value = luaL_checkinteger(L, -1);
+            lua_Integer value = check_integer(L, -1);
             if (value <= 0 || value > INT_MAX) return luaL_error(L, "invalid animation graph id");
             id = (int)value;
             lua_pop(L, 1);
@@ -6871,6 +6952,7 @@ camera_method_position(lua_State *L)
 static int
 world_method_collision(lua_State *L)
 {
+    check_arity(L, 2, 3, "world:collision(process, options?)");
     luaL_checkudata(L, 1, "malvado.collision_world");
     return world_collision(L);
 }
@@ -6878,6 +6960,7 @@ world_method_collision(lua_State *L)
 static int
 world_method_move(lua_State *L)
 {
+    check_arity(L, 4, 4, "world:move(process, dx, dy)");
     luaL_checkudata(L, 1, "malvado.collision_world");
     return world_move(L);
 }
@@ -7534,7 +7617,7 @@ static int
 search_game_module(lua_State *L)
 {
     size_t length;
-    const char *name = luaL_checklstring(L, 1, &length);
+    const char *name = check_string(L, 1, &length);
     if (strlen(name) != length) return 0;
     const char *module = luaL_gsub(L, name, ".", "/");
     const char *directory = mv_context_game_dir(engine.context);

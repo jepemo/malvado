@@ -5,9 +5,12 @@
 
 ---@meta
 
+---Library accepted by `graph` and by frame-list animations.
+---@alias MvGraphicLibrary MvAtlas|MvFpg|MvFpgManifest
+
 ---PNG pivot options: the asset must be a PNG image.
 ---@class MvLoadAssetPivotOptions
----@field pivot string Pivot position: "center" or "top-left".
+---@field pivot "center"|"top-left" Pivot position: "center" or "top-left".
 
 ---Options for `load_asset`.
 ---@class MvLoadAssetOptions
@@ -102,6 +105,7 @@ function Atlas:graph(id_or_name) end
 ---@field graph fun(self: MvFpg, id: integer):MvGraphic
 
 ---FPG manifest loaded with `load_asset` or `fpg.parse_manifest`.
+---Use `load_asset` to supply the PNGs for drawing in a graphical game.
 ---@class MvFpgManifest
 ---@field count fun(self: MvFpgManifest):integer
 ---@field id_at fun(self: MvFpgManifest, index: integer):integer|nil

@@ -433,9 +433,8 @@ existing finite `DBL_MAX / 16` limit. A valid selected collider can still move
 while the process sleeps or freezes.
 
 Lua `world_collision` at the current position and `world_move` use selected
-geometry after the existing binding validation/synchronization. Hypothetical
-query positions and local invalid/numeric-string overrides keep their existing
-conversion path. Asset shapes remain supplied by the Lua binding; this step
+geometry after the existing binding validation/synchronization. Hypothetical query positions require finite Lua numbers. Local process-field
+overrides keep their existing conversion path. Asset shapes remain supplied by the Lua binding; this step
 does not add native image/animation graph storage.
 
 The older explicit-shape process/world calls keep their contract. In those

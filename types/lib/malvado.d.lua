@@ -25,7 +25,7 @@
 ---@field descendants fun(handle: MvProcess, options?: MvTreeQueryOptions):MvProcess[]
 ---@field snapshot fun():MvSnapshot
 ---@field frame fun()
----@field signal fun(handle: MvProcess, signal: MvSignal)
+---@field signal (fun(handle: MvProcess, signal: "kill"):boolean)|(fun(handle: MvProcess, signal: MvSignal))
 ---@field signal_tree fun(handle: MvProcess, signal: MvSignal, options?: MvTreeSignalOptions)
 ---@field set_priority (fun(priority: integer))|(fun(handle: MvProcess, priority: integer)) The one-argument form requires the scheduled process coroutine.
 ---@field get_priority fun(handle: MvProcess):integer
@@ -35,7 +35,7 @@
 ---@field status fun(handle: MvProcess):MvProcessStatusName
 ---@field send fun(handle: MvProcess, message: any)
 ---@field recv (fun():any)|(fun(handle: MvProcess):any) Read the next message or nil when empty. The no-argument form requires the scheduled process coroutine.
----@field collision fun(source: MvProcess, target: MvProcess):MvProcess|nil
+---@field collision fun(source: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess|nil
 ---@field collisions fun(source: MvProcess, target: MvProcess|MvProcessConstructor):MvProcess[]
 ---@field SIGNAL_SLEEP "sleep"
 ---@field SIGNAL_FREEZE "freeze"
@@ -137,7 +137,7 @@
 ---@field animation_finished (fun():boolean)|(fun(handle: MvProcess):boolean) The no-argument form requires the scheduled process coroutine.
 
 ---@class MvCollisionNamespace
----@field __call fun(_self: MvCollisionNamespace, target: MvProcessConstructor):MvProcess|nil
+---@operator call(MvProcess|MvProcessConstructor): MvProcess|nil
 ---@field circle fun(options: MvCollisionCircleOptions):MvCollisionShape
 ---@field rect fun(options: MvCollisionRectOptions):MvCollisionShape
 ---@field overlap fun(shape_a: MvCollisionShape, shape_b: MvCollisionShape, options?: MvCollisionOverlapOptions):boolean
@@ -153,7 +153,7 @@
 ---@field graphics MvGraphicsNamespace
 ---@field colors MvColorPalette
 ---@field collision MvCollisionNamespace
----@field fpg MvFpgNamespace
+---@field fpg MvFpgNamespace Requires asset support.
 local malvado = {}
 
 ---Spawn a process from a constructor with explicit fields and options.
@@ -185,12 +185,13 @@ function malvado.descendants(handle, options) end
 function malvado.snapshot() end
 
 ---Yield the current process until the next tick.
----Must be called inside a process body.
+---Must be called from the scheduled process coroutine.
 function malvado.frame() end
 
 ---Send a signal: "sleep", "freeze", "wakeup" or "kill".
 ---Kill removes the process and its owned texts.
 ---@param handle MvProcess
+---@overload fun(handle: MvProcess, signal: "kill"):boolean
 ---@param signal MvSignal
 function malvado.signal(handle, signal) end
 
@@ -485,7 +486,7 @@ malvado.graphics.graph = malvado.graph
 ---```
 ---@overload fun(name: string, options?: MvNamedAnimationOptions):MvAnimation
 ---@overload fun(library: MvAtlas, name: string, options?: MvNamedAnimationOptions):MvAnimation
----@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, sequence: integer[], options?: MvAnimationOptions):MvAnimation
+---@overload fun(library: MvGraphicLibrary, sequence: integer[], options?: MvAnimationOptions):MvAnimation
 ---@param sequence integer[]
 ---@param options? MvAnimationOptions
 ---@return MvAnimation

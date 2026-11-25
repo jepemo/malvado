@@ -61,18 +61,18 @@ local Ship = process(function(self)
   local firing = false
 
   while not result do
-    if key("left") then self.angle = self.angle - 4 end
-    if key("right") then self.angle = self.angle + 4 end
+    if key(KEY_LEFT) then self.angle = self.angle - 4 end
+    if key(KEY_RIGHT) then self.angle = self.angle + 4 end
 
     local angle = math.rad(self.angle - 90)
     local dx, dy = math.cos(angle), math.sin(angle)
 
-    if key("up") then
+    if key(KEY_UP) then
       self.x = (self.x + dx * 3) % W
       self.y = (self.y + dy * 3) % H
     end
 
-    local pressed = key("space")
+    local pressed = key(KEY_SPACE)
     if pressed and not firing then
       Shot {x = self.x, y = self.y, vx = dx * 7, vy = dy * 7}
     end
@@ -114,7 +114,7 @@ local Game = process(function(self)
     }
   end
 
-  while not key("escape") do
+  while not key(KEY_ESCAPE) do
     if score == 20 then result = "You win!" end
 
     draw_text {text = "Score: " .. score, x = 20, y = 20, size = 24}

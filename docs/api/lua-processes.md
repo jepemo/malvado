@@ -24,6 +24,55 @@ Run the [complete C and Lua examples](../../examples/c/processes/README.md), or 
 
 See the [global export table](lua-globals.md) for all current names.
 
+## Lua API conventions
+
+Use the module or import its procedural operations and constants into the
+global environment. [Managed handles](lua-instance-methods.md) can also
+provide methods. Namespace-only operations include `mv.fpg.parse` and
+`mv.process.collisions`. Contextual calls such as `recv()`, `graph(id)`, and
+`world_move(dx, dy)` use the scheduled process coroutine. Explicit forms
+take a handle and work from the contexts described in each guide.
+
+Use Lua numbers and strings for typed engine arguments. Numeric strings and
+number-to-string conversion raise errors. Use finite numbers for positions,
+geometry, timing, and volume. Keep the argument count and options described
+for each operation. For example, `world_overlap(world, shape, nil)` uses the
+identity transform. `collision.overlap(a, b)` uses identity transforms and
+requires a table if a third argument is present.
+
+Integer representation depends on the operation. Cadence, window dimensions,
+palette channels, and `rand_seed(seed)` require Lua integers. Bounds in
+`rand(min, max)`, priority, and many IDs and pixel coordinates also accept
+whole-valued floats that fit their integer range. Follow the family guide for
+each range. The existing Lua-local visual property overrides have their own
+[rendering and collision rules](process-visual-order.md#native-position-storage).
+
+| Quantity | Convention |
+| --- | --- |
+| Positions and dimensions | Logical pixels. Process positions and camera coordinates are in world space. Mouse positions, persistent text anchors, and clipping regions use screen space. Image source rectangles use source-image pixels. Local graphic coordinates and pivots are relative to a graphic or its selected source rectangle. |
+| Geometry precision | Immediate primitive positions and region edges use integer coordinates. Reusable shapes and transforms can take real values. See the [drawing geometry and rounding rules](drawing.md) for each primitive and backend. |
+| Rotation and scale | Clockwise degrees. Scale 1 is the identity. Use `self.size` on a process and `scale` in explicit transform options. Rectangles default to a center pivot. [Image and atlas pivots](images.md) depend on the operation and metadata. |
+| Color and volume | Color channels are integers from 0 to 255. Volume is a number from 0 to 1. |
+| Time | Modern fade durations and animation times are in milliseconds. `self.delta` is in logical seconds. `time_seconds()` reads the monotonic wall clock in seconds. |
+| Cadence | Process `fps` controls activations per 60 eligible logical ticks. The default is 0. Both 0 and 60 run on every eligible tick. `set_fps` changes the default for later spawns. Simulation ticks and render frequency have their own [timing rules](runner-timing.md). |
+
+Each run shares the main camera, background, fade queue, and default primitive
+drawing color. Use a command's `color` option to make its color independent
+of other processes' calls to `set_color`. The RNG is shared with `math.random`
+in the same Lua state. Process properties, mailboxes, and animation clocks
+belong to individual processes. A graphic, animation definition, or sound
+can be shared. Each sound play has its own voice and volume, while a music
+handle controls its own stream.
+
+Predicates return booleans. An ordinary query can return `nil` for a documented
+miss. Collection queries return a table, including an empty table for no
+matches. Coordinate and dimension pairs are multiple return values. Managed
+handles carry their own ownership rules. Persistent text uses numeric IDs.
+`play_sound` returns `nil` when it cannot allocate a voice slot. `kill` and
+`stop_sound` keep their idempotent behavior. A dead process handle retains its
+identity and status. See the [process inventory](process-inventory.md) and
+[resource lifetime guide](resource-lifetime.md) for operation-specific rules.
+
 ## Start and stop
 
 `mv.process` is a callable namespace. Use `mv.process(fn, options)` or `mv.process.define(fn, options)` to define a process. Both use the same implementation. Definition options are `defaults` and `children_attached`. Use `mv.process.spawn(definition, fields, options)` for an explicit spawn; its option is `attached`. Unknown options raise an error. Options use the table's own fields; metatable lookup is not used. Its current operations include `frame`, `signal`, `kill`, `find`, and `snapshot`; they use the same functions as the flat API.
@@ -34,10 +83,10 @@ See the [global export table](lua-globals.md) for all current names.
 
 You can also return a game table from the entry script. Set the same options on that table and add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. Set `assets_dir` on the game table to configure the [asset directory](asset-sources.md#game-asset-paths) before `init`. See the [declarative game example](../../examples/declarative/README.md).
 
-The table can contain only those options and `init`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The `fps` value must be an integer from 0 to 60. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
+The table can contain those options, `init`, and `assets_dir`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The `fps` value must be an integer from 0 to 60. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
 
 
-Omit `options` or pass a table. Other values, including the historical debug boolean, raise an error. Invalid options do not start the game; correct them before trying again.
+Omit `options`, pass `nil`, or pass a table. A historical debug boolean raises an error. Invalid options do not start the game; correct them before trying again.
 
 Call `mv.set_title(title)` after the window opens to change its title. It reports an error without a window or if the title contains a zero byte. In C, `mv_window_set_title(title)` returns 1 on success, or 0 for a null title or no window.
 
@@ -231,13 +280,13 @@ assert(rand(1, 6) == damage)
 
 ## Text
 
-For persistent text, `mv.write {font = ..., text = ..., x = ..., y = ...}` returns a numeric ID. Alignment is `"left"` (the default), `"center"`, or `"right"`; `x` is the matching horizontal anchor. Optional `color` and `size` style each text independently while sharing one font. Use `mv.change_text(id, options)` to change only the fields present in the options table: `text`, `x`, `y`, `align`, `color`, `size` or `font`. Use `mv.delete_text(id)` to remove it. Use `mv.text_size(font, text)` or `mv.text_size(id)` to measure text in pixels without drawing it. Positions are window pixels from the top-left corner. Positions must be integers that fit a C `int`. Invalid input raises an error without creating or changing text. `write`, `change_text`, and `draw_text` reject strings containing zero bytes rather than truncating them. Colors are `{red, green, blue, alpha}` tables with four integers in 0..255 and are copied when a style is assigned. `mv.font {size = n}` creates a font descriptor using the built-in font. In C, `mv_window_text_width(text, size)` returns the built-in font width in pixels, or zero for invalid input, without a window, or when the width cannot fit in a C `int`.
+For persistent text, `mv.write {font = ..., text = ..., x = ..., y = ...}` returns a numeric ID. Alignment is `"left"` (the default), `"center"`, or `"right"`; `x` is the matching horizontal anchor. Optional `color` and `size` style each text independently while sharing one font. Use `mv.change_text(id, options)` to change only the fields present in the options table: `text`, `x`, `y`, `align`, `color`, `size` or `font`. Use `mv.delete_text(id)` to remove it. Use `mv.text_size(font, text)` or `mv.text_size(id)` to measure text in pixels without drawing it. Positions are window pixels from the top-left corner. Positions must be integers that fit a C `int`. Invalid input raises an error without creating or changing text. `write`, `change_text`, and `draw_text` reject strings containing zero bytes rather than truncating them. Use [palette colors or RGB(A) tables](drawing.md#lua-colors). Text copies colors when it assigns a style. `mv.font {size = n}` creates a font descriptor using the built-in font. In C, `mv_window_text_width(text, size)` returns the built-in font width in pixels, or zero for invalid input, without a window, or when the width cannot fit in a C `int`.
 
 Text created inside a process is removed when that process ends. Text created outside a process belongs to the game and remains until it is deleted or the game closes. Changing a text object does not change its owner.
 
 To use a TTF or OTF file with persistent text, call `mv.load_font {path = ..., size = ...}` after the window opens. The size is an integer from 1 to 1024. The optional `extra_glyphs` field is a UTF-8 string of additional characters to load. For example, `mv.load_font {path = "font.ttf", size = 24, extra_glyphs = "ΩЖ"}` adds those two characters. Invalid UTF-8 and zero bytes are rejected. Pass the returned font to `mv.write` or `mv.change_text`. The text keeps its font resource alive until the text is removed or the runner closes. Loading fails without a window or if the font cannot be loaded.
 
-The loader always prepares printable ASCII and Latin-1 code points, plus any requested characters. It accepts up to 1024 distinct code points in total. A glyph also needs to exist in the font file. The built-in font has its own smaller glyph set. `mv.draw_text` uses the built-in font. Call it inside a running process with text, integer `x` and `y`, and an optional integer size (default 20). Coordinates and size must fit a C `int`; out-of-range values raise an error without adding a draw command.
+The loader always prepares printable ASCII and Latin-1 code points, plus any requested characters. It accepts up to 1024 distinct code points in total. A glyph also needs to exist in the font file. The built-in font has its own smaller glyph set. `mv.draw_text` uses the built-in font. Pass an options table inside a running process with `text`, integer `x` and `y`, and optional integer `size` (default 20). Coordinates and size must fit a C `int`; out-of-range values raise an error without adding a draw command.
 
 In C, open a window and call `mv_font_load(path, base_size)` for the default glyph set. To choose the whole set explicitly, use `mv_font_load_codepoints(path, base_size, codepoints, count)`, with 1 to 1024 distinct nonzero Unicode scalar values. Include a fallback character such as `?` in the set. Use `mv_font_text_width` and `mv_font_draw` with a size from 1 to 1024. They return 0 for invalid arguments or without a window; an empty string can also have zero width. Destroy every font with `mv_font_destroy` before closing the window. `mv_utf8_decode` and `mv_utf8_encode` convert one Unicode scalar at a time.
 

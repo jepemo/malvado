@@ -65,6 +65,8 @@ install_globals(lua_State *L)
 int
 malvado_import_globals(lua_State *L)
 {
+    if (lua_gettop(L) != 0)
+        return luaL_error(L, "expected import_globals()");
     const char *const *names = lua_touserdata(L, lua_upvalueindex(2));
     lua_pushglobaltable(L);
     int globals = lua_gettop(L);

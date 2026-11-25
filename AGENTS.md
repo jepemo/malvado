@@ -66,8 +66,12 @@ Use positional parameters for one or two obvious, required values, as in
 `rand(min, max)` or `set_window_size(width, height)`. Use one named options
 table for several fields, optional choices or otherwise unclear arguments.
 Keep keys consistent across similar APIs, and validate unknown fields and
-types. Choose useful defaults, but avoid silent or ambiguous behavior. Do not
-add overloads, aliases or options objects without a demonstrated need.
+types. Choose useful defaults, but avoid silent or ambiguous behavior. Require actual
+Lua types, validate arity and options before changing state, and preserve each
+operation's numeric precision and nil behavior. Add overloads, aliases, or
+options objects only when a specific use case requires them. See the
+[Lua API conventions](docs/api/lua-processes.md#lua-api-conventions) for units,
+defaults, result shapes, and state scope.
 
 Use natural Lua returns: booleans for predicates, `nil` for documented
 not-found cases, multiple values for small tuples and managed handles for
