@@ -3574,18 +3574,33 @@ fpg_point(lua_State *L)
 }
 
 static int
+fpg_conversion_transparency(lua_State *L, int index)
+{
+    if (lua_gettop(L) > index)
+        return luaL_error(L, "unexpected arguments after FPG conversion options");
+    if (lua_isnoneornil(L, index))
+        return 0;
+    static const char *const keys[] = {"transparent_zero"};
+    validate_table_keys(L, index, keys, sizeof(keys) / sizeof(keys[0]));
+    raw_option(L, index, "transparent_zero");
+    if (!lua_isnil(L, -1) && !lua_isboolean(L, -1))
+        return luaL_error(L, "transparent_zero must be a boolean");
+    int transparent_zero = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+    return transparent_zero;
+}
+
+static int
 fpg_rgba(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
     lua_Integer id = luaL_checkinteger(L, 2);
-    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
-        return luaL_error(L, "transparent_zero must be a boolean");
+    int transparent_zero = fpg_conversion_transparency(L, 3);
     MvFpgSprite sprite;
     if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
         lua_pushnil(L);
         return 1;
     }
-    int transparent_zero = lua_toboolean(L, 3);
     size_t length = (size_t)sprite.width * (size_t)sprite.height * 4;
     luaL_Buffer buffer;
     char *output = luaL_buffinitsize(L, &buffer, length);
@@ -3599,9 +3614,7 @@ static int
 fpg_json(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    if (!lua_isnoneornil(L, 2) && !lua_isboolean(L, 2))
-        return luaL_error(L, "transparent_zero must be a boolean");
-    int transparent_zero = lua_toboolean(L, 2);
+    int transparent_zero = fpg_conversion_transparency(L, 2);
     size_t length = mv_fpg_json_size(value->fpg, transparent_zero);
     if (!length) return luaL_error(L, "cannot encode FPG metadata");
     luaL_Buffer buffer;
@@ -3617,13 +3630,11 @@ fpg_png(lua_State *L)
 {
     LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
     lua_Integer id = luaL_checkinteger(L, 2);
-    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
-        return luaL_error(L, "transparent_zero must be a boolean");
+    int transparent_zero = fpg_conversion_transparency(L, 3);
     if (id < 1 || id > 999) {
         lua_pushnil(L);
         return 1;
     }
-    int transparent_zero = lua_toboolean(L, 3);
     size_t length = mv_fpg_png_size(value->fpg, (int)id, transparent_zero);
     if (!length) {
         lua_pushnil(L);
@@ -3638,12 +3649,8 @@ fpg_png(lua_State *L)
 }
 
 static int
-fpg_image(lua_State *L)
+push_fpg_image(lua_State *L, LuaFpg *value, lua_Integer id, int transparent_zero)
 {
-    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
-    lua_Integer id = luaL_checkinteger(L, 2);
-    if (!lua_isnoneornil(L, 3) && !lua_isboolean(L, 3))
-        return luaL_error(L, "transparent_zero must be a boolean");
     MvFpgSprite sprite;
     if (id < 1 || id > 999 || !mv_fpg_sprite(value->fpg, (int)id, &sprite)) {
         lua_pushnil(L);
@@ -3651,7 +3658,6 @@ fpg_image(lua_State *L)
     }
     if (!engine.window)
         return luaL_error(L, "FPG image requires an open window");
-    int transparent_zero = lua_toboolean(L, 3);
     LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
     *image = (LuaImage){0};
     luaL_setmetatable(L, "malvado.image");
@@ -3667,6 +3673,15 @@ fpg_image(lua_State *L)
         return luaL_error(L, "could not create FPG image");
     manage_image(L, image);
     return 1;
+}
+
+static int
+fpg_image(lua_State *L)
+{
+    LuaFpg *value = luaL_checkudata(L, 1, "malvado.fpg");
+    lua_Integer id = luaL_checkinteger(L, 2);
+    int transparent_zero = fpg_conversion_transparency(L, 3);
+    return push_fpg_image(L, value, id, transparent_zero);
 }
 
 static MvResult
@@ -3689,7 +3704,7 @@ atlas_gc(lua_State *L)
 }
 
 static int
-load_atlas_format(lua_State *L, int aseprite)
+parse_atlas_format(lua_State *L, int aseprite)
 {
     LuaImage *image = luaL_checkudata(L, 1, "malvado.image");
     size_t length;
@@ -3716,15 +3731,15 @@ load_atlas_format(lua_State *L, int aseprite)
 }
 
 static int
-load_atlas(lua_State *L)
+parse_atlas(lua_State *L)
 {
-    return load_atlas_format(L, 0);
+    return parse_atlas_format(L, 0);
 }
 
 static int
-load_aseprite(lua_State *L)
+parse_aseprite(lua_State *L)
 {
-    return load_atlas_format(L, 1);
+    return parse_atlas_format(L, 1);
 }
 
 static int
@@ -3820,15 +3835,31 @@ atlas_animation_frame(lua_State *L)
 }
 
 static int
-sprite_id(lua_State *L)
+find_atlas_sprite_name(lua_State *L, LuaAtlas *atlas, int index, MvAtlasSprite *sprite)
 {
-    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
+    luaL_checktype(L, index, LUA_TSTRING);
     size_t length;
-    const char *name = luaL_checklstring(L, 2, &length);
+    const char *name = lua_tolstring(L, index, &length);
     if (strlen(name) != length)
         return luaL_error(L, "invalid sprite name");
+    return mv_atlas_find_name(atlas->atlas, name, sprite);
+}
+
+static int
+check_sprite_id(lua_State *L, int index, const char *range_error)
+{
+    lua_Integer id = luaL_checkinteger(L, index);
+    if (id <= 0 || id > INT_MAX)
+        return luaL_error(L, "%s", range_error);
+    return (int)id;
+}
+
+static int
+atlas_sprite_id(lua_State *L)
+{
+    LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
     MvAtlasSprite sprite;
-    if (mv_atlas_find_name(atlas->atlas, name, &sprite))
+    if (find_atlas_sprite_name(L, atlas, 2, &sprite))
         lua_pushinteger(L, sprite.id);
     else
         lua_pushnil(L);
@@ -3837,13 +3868,21 @@ sprite_id(lua_State *L)
 
 /* Return a snapshot; it does not retain the atlas or expose borrowed pointers. */
 static int
-sprite_info(lua_State *L)
+atlas_sprite_info(lua_State *L)
 {
     LuaAtlas *atlas = luaL_checkudata(L, 1, "malvado.atlas");
-    lua_Integer id = luaL_checkinteger(L, 2);
     MvAtlasSprite sprite;
-    if (id <= 0 || id > INT_MAX || !mv_atlas_find(atlas->atlas, (int)id, &sprite))
-        return luaL_error(L, "unknown sprite id");
+    int found;
+    if (lua_type(L, 2) == LUA_TSTRING) {
+        found = find_atlas_sprite_name(L, atlas, 2, &sprite);
+    } else {
+        int id = check_sprite_id(L, 2, "sprite id must be a positive integer in range");
+        found = mv_atlas_find(atlas->atlas, id, &sprite);
+    }
+    if (!found) {
+        lua_pushnil(L);
+        return 1;
+    }
     lua_createtable(L, 0, 12);
     lua_pushstring(L, sprite.name);
     lua_setfield(L, -2, "name");
@@ -4029,11 +4068,7 @@ load_asset_library(lua_State *L, MvAssetSource *source, const char *path,
             for (size_t i = 0; i < mv_fpg_count(fpg->fpg); ++i) {
                 MvFpgSprite sprite;
                 (void)mv_fpg_at(fpg->fpg, i, &sprite);
-                lua_pushcfunction(L, fpg_image);
-                lua_pushvalue(L, library);
-                lua_pushinteger(L, sprite.id);
-                lua_pushboolean(L, transparent);
-                lua_call(L, 3, 1);
+                push_fpg_image(L, fpg, sprite.id, transparent);
                 lua_rawseti(L, images, sprite.id);
             }
         }
@@ -5531,10 +5566,10 @@ static const char *const global_names[] = {
     "load_image",
     "image_size",
     "draw_image",
-    "load_atlas",
-    "load_aseprite",
-    "sprite_info",
-    "sprite_id",
+    "parse_atlas",
+    "parse_aseprite",
+    "atlas_sprite_info",
+    "atlas_sprite_id",
     "atlas_animation_frame",
     "atlas_animation_color",
     "atlas_animation_repeats",
@@ -6440,16 +6475,23 @@ graph_select(lua_State *L)
         lua_settop(L, 2);
         lua_insert(L, 1);
     } else if (arguments != 2) {
-        return luaL_error(L, "expected graph(id) or graph(library, id)");
+        return luaL_error(L, "expected graph(selector) or graph(library, selector)");
     }
-    lua_Integer id = luaL_checkinteger(L, 2);
-    if (id <= 0 || id > INT_MAX)
-        return luaL_error(L, "unknown graph id");
+    int named = lua_type(L, 2) == LUA_TSTRING;
+    int id = named ? 0 : check_sprite_id(L, 2, "unknown graph id");
     LuaAtlas *atlas = luaL_testudata(L, 1, "malvado.atlas");
     LuaFpg *fpg = luaL_testudata(L, 1, "malvado.fpg");
     LuaFpgManifest *manifest = luaL_testudata(L, 1, "malvado.fpg_manifest");
     if (!atlas && !fpg && !manifest)
         return luaL_error(L, "graph requires an atlas, FPG, or loaded FPG manifest");
+    MvAtlasSprite atlas_sprite;
+    if (named) {
+        if (!atlas)
+            return luaL_error(L, "graph names require an atlas");
+        if (!find_atlas_sprite_name(L, atlas, 2, &atlas_sprite))
+            return luaL_error(L, "unknown sprite name");
+        id = atlas_sprite.id;
+    }
 
     int descriptors = graph_cache(L, fpg ? 2 : 3);
     lua_rawgeti(L, descriptors, id);
@@ -6467,10 +6509,9 @@ graph_select(lua_State *L)
         LuaImage *image = luaL_testudata(L, -1, "malvado.image");
         if (engine.window && (!image || !image->image))
             return luaL_error(L, "asset has no visual images; load_asset requires an open window");
-        MvAtlasSprite sprite;
-        if (!mv_atlas_find(atlas->atlas, (int)id, &sprite))
+        if (!named && !mv_atlas_find(atlas->atlas, id, &atlas_sprite))
             return luaL_error(L, "unknown sprite id");
-        push_sprite_graphic(L, sprite.region, sprite.pivot_x, sprite.pivot_y, -1);
+        push_sprite_graphic(L, atlas_sprite.region, atlas_sprite.pivot_x, atlas_sprite.pivot_y, -1);
         lua_pushvalue(L, -1);
         lua_rawseti(L, descriptors, id);
         return 1;
@@ -6479,18 +6520,18 @@ graph_select(lua_State *L)
     MvFpgPoint pivot = {0};
     if (fpg) {
         MvFpgSprite sprite;
-        if (!mv_fpg_sprite(fpg->fpg, (int)id, &sprite))
+        if (!mv_fpg_sprite(fpg->fpg, id, &sprite))
             return luaL_error(L, "unknown graph id");
         region.width = sprite.width;
         region.height = sprite.height;
-        (void)mv_fpg_pivot(fpg->fpg, (int)id, &pivot);
+        (void)mv_fpg_pivot(fpg->fpg, id, &pivot);
     } else {
         MvFpgManifestSprite sprite;
-        if (!mv_fpg_manifest_sprite(manifest->manifest, (int)id, &sprite))
+        if (!mv_fpg_manifest_sprite(manifest->manifest, id, &sprite))
             return luaL_error(L, "unknown graph id");
         region.width = sprite.width;
         region.height = sprite.height;
-        (void)mv_fpg_manifest_pivot(manifest->manifest, (int)id, &pivot);
+        (void)mv_fpg_manifest_pivot(manifest->manifest, id, &pivot);
     }
     int cache_slot = fpg ? 1 : 2;
     lua_getiuservalue(L, 1, cache_slot);
@@ -6506,11 +6547,7 @@ graph_select(lua_State *L)
         if (!fpg)
             return luaL_error(L, "manifest has no visual images; use load_asset with an open window");
         lua_pop(L, 1);
-        lua_pushcfunction(L, fpg_image);
-        lua_pushvalue(L, 1);
-        lua_pushinteger(L, id);
-        lua_pushboolean(L, fpg->transparent_zero);
-        lua_call(L, 3, 1);
+        push_fpg_image(L, fpg, id, fpg->transparent_zero);
         lua_pushvalue(L, -1);
         lua_rawseti(L, cache, id);
     }
@@ -6820,7 +6857,7 @@ process_method_animation_finished(lua_State *L)
 static int
 library_method_graph(lua_State *L)
 {
-    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected library and graph id");
+    luaL_argcheck(L, lua_gettop(L) == 2, 2, "expected library and graph selector");
     return graph_select(L);
 }
 #endif
@@ -6910,10 +6947,10 @@ open_module(lua_State *L)
         {"animation", animation_select},
         {"animation_sample", animation_sample},
         {"graph", graph_select},
-        {"load_atlas", load_atlas},
-        {"load_aseprite", load_aseprite},
-        {"sprite_info", sprite_info},
-        {"sprite_id", sprite_id},
+        {"parse_atlas", parse_atlas},
+        {"parse_aseprite", parse_aseprite},
+        {"atlas_sprite_info", atlas_sprite_info},
+        {"atlas_sprite_id", atlas_sprite_id},
         {"atlas_animation_frame", atlas_animation_frame},
         {"atlas_animation_color", atlas_animation_color},
         {"atlas_animation_repeats", atlas_animation_repeats},
@@ -7166,8 +7203,8 @@ open_module(lua_State *L)
     lua_setfield(L, -2, "__metatable");
     lua_pop(L, 1);
     static const luaL_Reg atlas_methods[] = {
-        {"sprite_info", sprite_info},
-        {"sprite_id", sprite_id},
+        {"sprite_info", atlas_sprite_info},
+        {"sprite_id", atlas_sprite_id},
         {"animation_frame", atlas_animation_frame},
         {"animation_color", atlas_animation_color},
         {"animation_repeats", atlas_animation_repeats},

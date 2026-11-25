@@ -12,7 +12,7 @@ mv.load_asset = function(...)
   local atlas = original_load(...)
   loaded = atlas
   for id = 1, 3 do
-    local info = mv.sprite_info(atlas, id)
+    local info = mv.atlas_sprite_info(atlas, id)
     assert(info.source_width == 8 and info.source_height == 8)
     assert(info.trim_x == 2 and info.trim_y == 2)
     assert(info.pivot_x == 2 and info.pivot_y == 2)

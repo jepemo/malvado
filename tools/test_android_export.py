@@ -116,7 +116,7 @@ def main():
      assert(f:read('a') == string.char(0,13,10,255))
      f:close()
      local atlas = mv.load_asset('atlas.json')
-     assert(mv.sprite_id(atlas, 'red') == 7)
+     assert(mv.atlas_sprite_id(atlas, 'red') == 7)
      local image = mv.load_image('red.png')
      local w,h = mv.image_size(image)
      assert(w == 8 and h == 8)

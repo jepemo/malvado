@@ -104,10 +104,10 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `load_image` | `mv.load_image` |
 | `image_size` | `mv.image_size` |
 | `draw_image` | `mv.draw_image` |
-| `load_atlas` | `mv.load_atlas` |
-| `load_aseprite` | `mv.load_aseprite` |
-| `sprite_info` | `mv.sprite_info` |
-| `sprite_id` | `mv.sprite_id` |
+| `parse_atlas` | `mv.parse_atlas` |
+| `parse_aseprite` | `mv.parse_aseprite` |
+| `atlas_sprite_info` | `mv.atlas_sprite_info` |
+| `atlas_sprite_id` | `mv.atlas_sprite_id` |
 | `atlas_animation_frame` | `mv.atlas_animation_frame` |
 | `atlas_animation_color` | `mv.atlas_animation_color` |
 | `atlas_animation_repeats` | `mv.atlas_animation_repeats` |

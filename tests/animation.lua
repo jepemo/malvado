@@ -186,7 +186,7 @@ local Controller = process(function(self)
   -- Native Aseprite timing and forward/ping-pong expanded IDs agree with sampling.
   for _, time in ipairs({0, 99, 100, 299, 300, 599, 600, 799, 800}) do
     local id = mv.atlas_animation_frame(atlas, "bounce", time)
-    local info = mv.sprite_info(atlas, id)
+    local info = mv.atlas_sprite_info(atlas, id)
     local probe = Actor({graph = animation_sample(walk, time), x = 0, y = 0})
     local world = world_create()
     world_add_rect(world, {x = -info.pivot_x, y = -info.pivot_y, width = 1, height = 1})

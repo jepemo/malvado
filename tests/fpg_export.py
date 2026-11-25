@@ -11,12 +11,24 @@ import tempfile
 import zlib
 
 
+runner, script, fixture, cli = sys.argv[1:]
 with tempfile.TemporaryDirectory(prefix="malvado-fpg-") as temp:
-    env = dict(os.environ, MALVADO_FPG_TEST_DIR=temp)
-    subprocess.run([sys.argv[1], "--headless", sys.argv[2]], env=env, check=True)
-    directory = Path(temp)
+    root = Path(temp)
+    for transparent in (False, True):
+        directory = root / ("transparent" if transparent else "opaque")
+        directory.mkdir()
+        env = dict(os.environ, MALVADO_FPG_TEST_DIR=str(directory),
+                   MALVADO_FPG_TEST_TRANSPARENT=str(int(transparent)))
+        subprocess.run([runner, "--headless", script], env=env, check=True)
+        native = directory.with_name(directory.name + "-native")
+        flags = ["--transparent-zero"] if transparent else []
+        subprocess.run([cli, "fpg-export", *flags, fixture, str(native)], check=True)
+        for name in ("manifest.json", "7.png", "42.png"):
+            assert (directory / name).read_bytes() == (native / name).read_bytes()
+
+    directory = root / "transparent"
     manifest = json.loads((directory / "manifest.json").read_text())
-    source = Path(sys.argv[3]).read_bytes()
+    source = Path(fixture).read_bytes()
     assert manifest["transparent_zero"] is True
     assert bytes.fromhex(manifest["palette_hex"]) == source[8:776]
     assert bytes.fromhex(manifest["gamma_hex"]) == source[776:1352]

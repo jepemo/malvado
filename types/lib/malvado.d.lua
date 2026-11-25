@@ -128,7 +128,6 @@
 ---@field circle fun(options: MvCircleOptions):MvGraphic
 ---@field region fun(options: MvRegionOptions):MvRegion
 ---@field scroll fun(x: number, y: number):MvScroll
----@field graph fun(library_or_id: MvAtlas|MvFpg|MvFpgManifest|integer, id?: integer):MvGraphic Select a graphic from a library or the process file.
 ---@field animation_elapsed (fun():number|nil)|(fun(handle: MvProcess):number|nil) The no-argument form requires the scheduled process coroutine.
 ---@field animation_finished (fun():boolean)|(fun(handle: MvProcess):boolean) The no-argument form requires the scheduled process coroutine.
 
@@ -409,29 +408,29 @@ function malvado.image_size(image) end
 ---@param options MvDrawImageOptions
 function malvado.draw_image(options) end
 
----Load a sprite atlas from an image and its JSON metadata.
+---Parse a sprite atlas from an image and its JSON metadata.
 ---@param image MvImage
 ---@param json string
 ---@return MvAtlas atlas
-function malvado.load_atlas(image, json) end
+function malvado.parse_atlas(image, json) end
 
----Load a sprite atlas from an Aseprite JSON export.
+---Parse a sprite atlas from an Aseprite JSON export.
 ---@param image MvImage
 ---@param json string
 ---@return MvAtlas atlas
-function malvado.load_aseprite(image, json) end
+function malvado.parse_aseprite(image, json) end
 
----Read metadata for one atlas sprite.
+---Read an independent sprite metadata table. Returns nil when missing.
 ---@param atlas MvAtlas
----@param id integer
----@return MvSpriteInfo info
-function malvado.sprite_info(atlas, id) end
+---@param id_or_name integer|string Exact sprite name or positive ID.
+---@return MvSpriteInfo|nil info
+function malvado.atlas_sprite_info(atlas, id_or_name) end
 
 ---Find the sprite ID for an atlas sprite name. Returns nil when missing.
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer|nil id
-function malvado.sprite_id(atlas, name) end
+function malvado.atlas_sprite_id(atlas, name) end
 
 ---Compute the atlas animation frame for an elapsed time in milliseconds.
 ---@param atlas MvAtlas
@@ -465,11 +464,13 @@ function malvado.draw_sprite(options) end
 
 ---Select a static graphic to assign to `self.graph`. With one argument, the
 ---graphic comes from the current process's `file` field.
----@overload fun(id: integer):MvGraphic
----@param library MvAtlas|MvFpg|MvFpgManifest
+---@overload fun(id_or_name: integer|string):MvGraphic
+---@overload fun(library: MvAtlas, id_or_name: integer|string):MvGraphic
+---@param library MvFpg|MvFpgManifest
 ---@param id integer
 ---@return MvGraphic
 function malvado.graph(library, id) end
+malvado.graphics.graph = malvado.graph
 
 ---Create an animation descriptor from an atlas animation or a frame list.
 ---
@@ -546,29 +547,29 @@ function malvado.fpg_point(fpg, id, index) end
 ---Return RGBA bytes, or nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string|nil bytes
-function malvado.fpg_rgba(fpg, id, transparent_zero) end
+function malvado.fpg_rgba(fpg, id, options) end
 
 ---Create an independent image in an open window, or return nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return MvImage|nil image
-function malvado.fpg_image(fpg, id, transparent_zero) end
+function malvado.fpg_image(fpg, id, options) end
 
 ---Encode an indexed PNG, or return nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string|nil bytes
-function malvado.fpg_png(fpg, id, transparent_zero) end
+function malvado.fpg_png(fpg, id, options) end
 
 ---Encode the sprite metadata as a JSON manifest.
 ---@param fpg MvFpg
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string json
-function malvado.fpg_json(fpg, transparent_zero) end
+function malvado.fpg_json(fpg, options) end
 
 ---Return the number of sprites.
 ---@param manifest MvFpgManifest

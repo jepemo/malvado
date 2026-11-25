@@ -96,7 +96,12 @@ local Player = process(function(self)
   draw_circle {x = 20, y = 20, radius = 5, color = BLUE}
   draw_line {x1 = 0, y1 = 0, x2 = 4, y2 = 6, thickness = 1.5}
   local image = load_image("sheet.png")
-  local atlas = load_atlas(image, "{}")
+  local atlas = parse_atlas(image, "{}")
+  local named = graph(atlas, "one")
+  local contextual = graph("one")
+  local info = atlas_sprite_info(atlas, "one")
+  local id = atlas_sprite_id(atlas, "one")
+  local converted = fpg_png(library, 7, {transparent_zero = true})
   local sprite_id = atlas_animation_frame(atlas, "walk", 10.5, {loop = false})
   local tag_color = atlas_animation_color(atlas, "walk")
   local repeats = atlas_animation_repeats(atlas, "walk")
@@ -132,7 +137,7 @@ mv.circle {radius = 2, color = {r = 2, g = 0, b = 0}}
 mv.graphics.rect {width = 2, height = 2, color = mv.colors.PINK, pivot = "top-left"}
 mv.draw_line {x1 = 0, y1 = 0, x2 = 2, y2 = 2, color = mv.colors.YELLOW}
 local image = mv.load_image("sheet.png")
-local atlas = mv.load_aseprite(image, "{}")
+local atlas = mv.parse_aseprite(image, "{}")
 mv.draw_image {
   image = image, x = 10, y = 10, source = {x = 1, y = 2, width = 3, height = 4},
   pivot = {x = 1.5, y = 2}, scale = 2, angle = 90,
@@ -184,6 +189,9 @@ local actor = mv.process(function(self)
   if explicit_elapsed then assert(mv.process.kill(self)) end
   self.graph = mv.animation_sample(mv.animation(atlas, {1, 2}), 50)
   self.graph = mv.graphics.graph(42)
+  self.graph = mv.graphics.graph(atlas, "one")
+  self.graph = mv.graphics.graph("one")
+  self.graph = mv.graph(atlas, "one")
   self.graph = mv.graphics.animation(atlas, {1, 2}, {fps = 8})
   self.graph = mv.graphics.animation({1, 2}, {fps = 12, loop = false})
   self.graph = mv.graphics.animation(atlas, "walk", {loop = false})
@@ -200,13 +208,21 @@ method_world:add_rect {x = cx, y = cy, width = 10, height = 10}
 method_world:overlap(mv.collision.circle {radius = 1}, {x = cx})
 local method_image = mv.load_image("logo.png")
 local iw, ih = method_image:size()
-local method_atlas = mv.load_atlas(method_image, "{}")
+local method_atlas = mv.parse_atlas(method_image, "{}")
+local method_sprite = method_atlas:graph("one")
+local method_info = method_atlas:sprite_info("one")
+local named_info = mv.atlas_sprite_info(method_atlas, "one")
 local sprite_id = mv.atlas_animation_frame(method_atlas, "walk", 10.5, {loop = false})
 local method_id = method_atlas:animation_frame("walk", 10.5, {loop = false})
 local tag_color = mv.atlas_animation_color(method_atlas, "walk")
 local repeats = mv.atlas_animation_repeats(method_atlas, "walk")
 local method_fpg = mv.fpg.parse("")
+local method_png = method_fpg:png(7, {transparent_zero = true})
+local rgba = mv.fpg_rgba(method_fpg, 7, {})
+local converted_image = mv.fpg_image(method_fpg, 7, {transparent_zero = false})
 local method_manifest = mv.fpg.parse_manifest(method_fpg:json())
+local fpg_graph = mv.graph(method_fpg, 7)
+local manifest_graph = mv.graphics.graph(method_manifest, 7)
 local sound = mv.load_sound("tone.wav")
 local voice = sound:play {volume = 0.5}
 if voice then
@@ -353,11 +369,25 @@ def main():
         ]
         (project / "bad-animations.lua").write_text(
             'local mv = require("malvado")\n'
-            'local atlas = mv.load_atlas(mv.load_image("sheet.png"), "{}")\n'
+            'local atlas = mv.parse_atlas(mv.load_image("sheet.png"), "{}")\n'
             + "\n".join(invalid_atlas_queries)
             + "\n---@type MvNamedAnimationOptions\nlocal options = {}\noptions.fps = 12\n",
             encoding="utf-8")
+        invalid_asset_calls = [
+            'fpg:graph("7")',
+            'mv.fpg_png(fpg, 7, true)',
+            'fpg:json(true)',
+        ]
+        (project / "bad-assets.lua").write_text(
+            'local mv = require("malvado")\n'
+            'local fpg = mv.fpg.parse("")\n'
+            + "\n".join(invalid_asset_calls) + "\n",
+            encoding="utf-8")
         output = diagnose_project(project, "mv.", failures)
+        bad_assets = {line for line, _ in diagnose(output, "bad-assets.lua")}
+        for line, call in enumerate(invalid_asset_calls, 3):
+            if line not in bad_assets:
+                failures.append(f"namespaced project: invalid asset call was not reported: {call}")
         bad_animations = {line for line, _ in diagnose(output, "bad-animations.lua")}
         for line, call in enumerate(invalid_atlas_queries, 3):
             if line not in bad_animations:

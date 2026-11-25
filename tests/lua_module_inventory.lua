@@ -26,7 +26,7 @@ end
 local asset_option = assert(os.getenv("MALVADO_INVENTORY_ASSETS"))
 assert(asset_option == "0" or asset_option == "1")
 local has_assets = asset_option == "1"
-local optional = {animation=true, graph=true, load_atlas=true, load_aseprite=true, sprite_info=true, sprite_id=true,
+local optional = {animation=true, graph=true, parse_atlas=true, parse_aseprite=true, atlas_sprite_info=true, atlas_sprite_id=true,
   atlas_animation_frame=true, atlas_animation_color=true, atlas_animation_repeats=true,
   animation_elapsed=true, animation_finished=true, atlas_pivot_color=true, draw_sprite=true, animation_sample=true,
   fpg_count=true, fpg_id_at=true, fpg_palette=true, fpg_gamma=true,

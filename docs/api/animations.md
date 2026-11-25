@@ -81,7 +81,7 @@ for static/manual and explicit namespace alternatives.
 
 `animation_sample(definition, elapsed_ms)` returns the reusable static frame descriptor at
 a finite time in 0..1e12 milliseconds. It uses the definition's loop rule and
-does not change any process. Use `graph(library, id)` for a specific static ID.
+does not change any process. Use `graph(library, selector)` for a static sprite by ID or atlas name.
 Use [`atlas_animation_frame`](images.md#animate-an-atlas) to query a sprite ID
 from a named atlas sequence.
 

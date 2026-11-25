@@ -10,9 +10,10 @@ import tempfile
 
 cli, visual, script, source = sys.argv[1:]
 with tempfile.TemporaryDirectory(prefix="malvado-assets-") as temp:
-    subprocess.run([cli, "fpg-export", "--transparent-zero",
-                    str(Path(source) / "examples/fpg/graphics.fpg"),
+    fpg = str(Path(source) / "examples/fpg/graphics.fpg")
+    subprocess.run([cli, "fpg-export", "--transparent-zero", fpg,
                     str(Path(temp) / "assets")], check=True)
+    subprocess.run([cli, "fpg-export", fpg, str(Path(temp) / "opaque")], check=True)
     fixtures = Path(source) / "tests/fixtures"
     for directory, name in (("first", "red.png"), ("second", "odd-red.png")):
         destination = Path(temp) / directory

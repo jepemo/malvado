@@ -9,8 +9,8 @@ for inputs, errors, ownership, examples, and limitations.
 | --- | --- | --- | --- |
 | Asset unified library metadata | `mv_asset_metadata_parse`, `mv_asset_metadata_destroy` | Shared `load_asset` metadata dispatch and guarded ownership | `asset_metadata`, Lua loader and installed record/signature checks |
 | Asset source and routing | `mv_asset_source_open`, `mv_asset_source_open_for_game`, `mv_asset_source_destroy`, `mv_asset_source_path`, `mv_asset_source_data`, `mv_asset_source_format`, `mv_asset_source_dimensions`, `mv_asset_source_image_path_size`, `mv_asset_source_image_path` | Native-backed `load_asset` source/routing and image paths | `asset_source`, `lua_asset_loader`, installed signatures |
-| Atlas import and lifetime | `mv_atlas_validate_image`, `mv_atlas_parse`, `mv_atlas_parse_aseprite`, `mv_atlas_destroy`, `mv_resource_adopt_atlas` | `mv.load_atlas`, `mv.load_aseprite`; managed atlas | `atlas`, `atlas_allocation`, `visual_image` |
-| Atlas sprite lookup | `mv_atlas_count`, `mv_atlas_image`, `mv_atlas_find`, `mv_atlas_find_name` | `mv.sprite_info`, `mv.sprite_id` | `atlas`, `visual_image_graph` |
+| Atlas import and lifetime | `mv_atlas_validate_image`, `mv_atlas_parse`, `mv_atlas_parse_aseprite`, `mv_atlas_destroy`, `mv_resource_adopt_atlas` | `mv.parse_atlas`, `mv.parse_aseprite`; managed atlas | `atlas`, `atlas_allocation`, `visual_image` |
+| Atlas sprite lookup | `mv_atlas_count`, `mv_atlas_image`, `mv_atlas_find`, `mv_atlas_find_name` | `mv.atlas_sprite_info`, `mv.atlas_sprite_id` | `atlas`, `visual_image_graph` |
 | Atlas animation and pivot metadata | `mv_atlas_animation_frame_count`, `mv_atlas_animation_frame_at`, `mv_atlas_animation_frame`, `mv_atlas_animation_color`, `mv_atlas_animation_repeats`, `mv_atlas_pivot_color` | `mv.atlas_animation_frame`, `mv.atlas_animation_color`, `mv.atlas_animation_repeats`, `mv.atlas_pivot_color` | `atlas`, `visual_image_graph`, `visual_image` |
 | FPG import and metadata | `mv_fpg_parse`, `mv_fpg_destroy`, `mv_fpg_count`, `mv_fpg_at`, `mv_fpg_sprite`, `mv_fpg_point`, `mv_fpg_pivot`, `mv_fpg_palette`, `mv_fpg_gamma` | `mv.fpg.parse` and the `fpg_*` metadata functions | `fpg`, `fpg_allocation`, `lua_fpg` |
 | FPG conversion | `mv_fpg_copy_rgba`, `mv_fpg_png_size`, `mv_fpg_copy_png`, `mv_fpg_json_size`, `mv_fpg_copy_json` | `fpg_rgba`, `fpg_png`, `fpg_json`, and `fpg_image` | `fpg`, `fpg_png`, `visual_fpg_image` |
@@ -27,7 +27,7 @@ resource lifetimes follow their respective contracts; they are not interchangeab
 | --- | --- |
 | `MvAtlas` | Opaque, caller-owned metadata. Lua atlas objects are managed and retain their image. |
 | `MvAtlasAnimationFrame` | Copied expanded sequence entry with ID and duration; Lua animation definitions copy it. |
-| `MvAtlasSprite` | A copied C record; its name is borrowed from the atlas. Lua `sprite_info` returns an independent table. |
+| `MvAtlasSprite` | A copied C record; its name is borrowed from the atlas. Lua `atlas_sprite_info` returns an independent table. |
 
 The [atlas contract](images.md) defines validation, metadata, errors, and the
 borrowed name lifetime. The [C example](../../examples/c/atlas/README.md),
