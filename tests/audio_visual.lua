@@ -7,11 +7,15 @@ local sound = mv.load_sound(wav)
 assert(not pcall(mv.load_sound, "fixtures/missing.wav"))
 assert(not pcall(mv.load_sound, "fixtures/silence.mp3"))
 
-for _, control in ipairs {mv.stop_sound, mv.pause_sound, mv.resume_sound,
-                           mv.sound_playing, mv.sound_volume} do
-  local ok, message = pcall(control, sound, 0.5)
-  assert(not ok and message:match("voice expected"), message)
+local function expect_voice_error(expected, control, ...)
+  local ok, message = pcall(control, ...)
+  assert(not ok and message:match(expected), message)
 end
+
+for _, control in ipairs {mv.stop_sound, mv.pause_sound, mv.resume_sound, mv.sound_playing} do
+  expect_voice_error("voice expected", control, sound)
+end
+expect_voice_error("voice expected", mv.sound_volume, sound, 0.5)
 for _, options in ipairs {true, "volume", {0.5}, {pitch = 1}, {volume = "0.5"},
                            {volume = false}, {volume = -0.1}, {volume = 1.1},
                            {volume = 0 / 0}, {volume = math.huge}} do
@@ -65,10 +69,9 @@ assert(mv.sound_playing(first))
 assert(select("#", second:stop()) == 0)
 assert(select("#", second.stop(second)) == 0)
 assert(mv.sound_playing(first) and not mv.sound_playing(second))
-for _, control in ipairs {mv.pause_sound, mv.resume_sound, mv.sound_volume} do
-  local ok, message = pcall(control, second, 0.5)
-  assert(not ok and message:match("finished"), message)
-end
+expect_voice_error("finished", mv.pause_sound, second)
+expect_voice_error("finished", mv.resume_sound, second)
+expect_voice_error("finished", mv.sound_volume, second, 0.5)
 mv.stop_sound(first)
 assert(test_voice_state() == 0)
 

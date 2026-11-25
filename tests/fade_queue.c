@@ -25,6 +25,7 @@ main(void)
 {
     MvFadeQueue queue = {0}, before;
     MvColor white = {255, 255, 255, 255};
+    const unsigned maximum_ticks = 1000000;
     assert(!mv_fade_queue_push(NULL, white, 1));
     assert(!mv_fade_queue_step(NULL));
     assert(!mv_fade_queue_active(NULL));
@@ -32,11 +33,16 @@ main(void)
     assert(!mv_fade_queue_active(&queue));
     assert(!mv_fade_queue_step(&queue));
     memcpy(&before, &queue, sizeof(queue));
-    assert(!mv_fade_queue_push(&queue, white, 1000001));
+    assert(!mv_fade_queue_push(&queue, white, maximum_ticks + 1));
     assert(memcmp(&before, &queue, sizeof(queue)) == 0);
-    assert(mv_fade_queue_push(&queue, white, 1000000) == 1);
+    assert(mv_fade_queue_push(&queue, white, maximum_ticks) == 1);
     assert(mv_fade_queue_step(&queue));
     assert(queue.fade.current.a == 0);
+    for (unsigned tick = 1; tick < maximum_ticks - 1; ++tick)
+        assert(mv_fade_queue_step(&queue));
+    assert(mv_fade_queue_active(&queue));
+    assert(mv_fade_queue_step(&queue));
+    assert(!mv_fade_queue_active(&queue) && queue.fade.current.a == 255);
     queue = (MvFadeQueue){0};
     /* Wrap the FIFO repeatedly and prove that zero-tick work drains in order. */
     for (unsigned round = 0; round < 40; ++round) {
@@ -46,7 +52,7 @@ main(void)
         memcpy(&before, &queue, sizeof(queue));
         assert(mv_fade_queue_push(&queue, white, 0) == -1);
         assert(memcmp(&before, &queue, sizeof(queue)) == 0);
-        assert(!mv_fade_queue_push(&queue, white, 1000001));
+        assert(!mv_fade_queue_push(&queue, white, maximum_ticks + 1));
         assert(memcmp(&before, &queue, sizeof(queue)) == 0);
         assert(mv_fade_queue_step(&queue));
         assert(!mv_fade_queue_active(&queue));

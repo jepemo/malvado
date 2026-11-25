@@ -293,10 +293,15 @@ def verify_profile(work, config, ndk, prefix, abi):
                 settings = {item["name"]: item["value"] for item in test.get("properties", [])}
                 command = [remap(value, build, remote) for value in test["command"]]
                 cwd = remap(settings.get("WORKING_DIRECTORY", str(build)), build, remote)
+                # CTest fixtures can pass host paths through environment variables.
+                environment = []
+                for assignment in settings.get("ENVIRONMENT", []):
+                    name, _, value = assignment.partition("=")
+                    environment.append(f"{name}={remap(value, build, remote)}")
                 timeout = min(90, max(15, settings.get("TIMEOUT", 30)))
                 try:
                     result = shell(prefix, log, command, cwd=cwd,
-                                   environment=settings.get("ENVIRONMENT", []), timeout=timeout, check=False)
+                                   environment=environment, timeout=timeout, check=False)
                     check_result(test, result)
                     passed.append(test["name"])
                 except (RuntimeError, subprocess.TimeoutExpired) as error:

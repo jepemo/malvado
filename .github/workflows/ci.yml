@@ -4,6 +4,7 @@
 name: CI
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -16,22 +17,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["ubuntu-24.04", "macos-15"]') }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: mise run test-rust
       - run: mise run test-rust-assets
       - name: Install optional Rust proof toolchain
+        if: github.event_name != 'pull_request'
         run: mise install --cd tools/miri rust
       - run: mise run test-rust-miri
+        if: github.event_name != 'pull_request'
       - name: Install Linux Rust sanitizer linker
-        if: runner.os == 'Linux'
+        if: github.event_name != 'pull_request' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang lld
       - run: mise run test-rust-sanitize
+        if: github.event_name != 'pull_request'
       - run: mise run test-rust-assets-sanitize
+        if: github.event_name != 'pull_request'
   sdk-package:
     name: Build SDK archive (${{ matrix.os }})
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
@@ -55,6 +61,7 @@ jobs:
           retention-days: 3
   sdk-consumer:
     name: Test SDK on a fresh runner (${{ matrix.os }})
+    if: github.event_name != 'pull_request'
     needs: sdk-package
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -98,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15] # Windows headless checks use windows.yml
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["ubuntu-24.04", "macos-15"]') }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
@@ -108,9 +115,11 @@ jobs:
       - name: Build and test
         run: mise run test
       - name: Test Lua with headless backend and no Cargo
+        if: github.event_name != 'pull_request'
         run: mise run test-headless-no-cargo
   c-core:
     name: C core without Lua or raylib (${{ matrix.os }})
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -133,6 +142,7 @@ jobs:
           "$RUNNER_TEMP/malvado-c-processes"
   c-assets:
     name: C atlas without Lua or raylib
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -141,6 +151,7 @@ jobs:
       - run: mise run test-c-assets
   sanitizers:
     name: Address and undefined behavior sanitizers
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -172,6 +183,7 @@ jobs:
             "-DMALVADO_VERSION_STRING=\"$version\"" -Isrc src/build.c
   visual:
     name: Sleep and freeze rendering (Linux)
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -207,16 +219,19 @@ jobs:
       - name: Check current guide links and anchors
         run: python3 tools/check_docs.py
       - name: Build documentation
+        if: github.event_name != 'pull_request'
         working-directory: docs/website
         run: |
           mise install node
           mise exec -- npm ci --no-audit --no-fund
           mise exec -- npm run build
       - name: Verify versioned documentation
+        if: github.event_name != 'pull_request'
         working-directory: docs/website
         run: mise exec -- python3 ../../tests/versioned_docs.py
   source-archive:
     name: Verify source archive
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

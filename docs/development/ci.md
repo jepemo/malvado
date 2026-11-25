@@ -8,6 +8,12 @@
 | `platform-candidate.yml` | Exact-revision platform gate, SDK collection and optional draft release bundle. |
 | `pages.yml` | Builds and publishes the documentation site. |
 
+Pull requests run the standard build and tests, installed Rust SDK tests,
+API catalog checks and guide link checks on Ubuntu.
+Each push to `master`, including a merge, runs the full Linux, macOS, Windows
+and Android checks. You can also run each full workflow manually on a branch.
+Windows and Android also run on their weekly schedules.
+
 Run bounded tests and retain failures as diagnostic artifacts. Record hardware
 and audible checks separately from emulator and software-rendered results.
 Use the [platform matrix](platforms.md) for supported paths and
@@ -63,9 +69,7 @@ Emulator execution also verifies Rust and requires the `aarch64-linux-android`
 Rust target for the executable ABI probes. With no
 serial, the command verifies C and Lua package contents on the authoring host.
 
-Pull requests run a Debug installed-C-SDK emulator smoke test and the Debug
-production export cases. Pushes, scheduled runs and manual dispatches run the
-full Debug and Release matrices. The candidate gate requires branch runs.
+The candidate gate requires branch runs.
 
 ## Supported-platform candidate gate
 
