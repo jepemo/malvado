@@ -7,7 +7,7 @@ local weak = setmetatable({}, {__mode = "v"})
 local producer = mv.process(function()
   image = mv.load_image("fixtures/red.png")
   local file = assert(io.open("tests/fixtures/atlas.json", "rb"))
-  atlas = mv.load_atlas(image, file:read("a"))
+  atlas = mv.parse_atlas(image, file:read("a"))
   file:close()
   weak[1], weak[2] = image, atlas
 end)

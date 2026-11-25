@@ -142,27 +142,10 @@ Pass the handle to the following functions. Each returns an independent Lua valu
   palette index per byte), or `nil` if the ID is absent. Names are fixed-size bytes, not guaranteed text.
 - `fpg_point(fpg, id, index)` returns `{x, y, defined}` for a zero-based point, or
   `nil` for an absent ID or index. Undefined points retain their raw values.
+  Sprite enumeration starts at 1. Control points start at 0 because point 0
+  is the historical graphic pivot.
 - `fpg_palette(fpg)` returns the 768 original six-bit RGB bytes and `fpg_gamma(fpg)`
   returns the 576 original gamma bytes.
-- `fpg_json(fpg, transparent_zero)` returns the metadata manifest as a JSON string
-  without a trailing zero byte. The optional flag is a boolean and defaults to
-  false. It works without a window. Use the same flag for every sprite PNG.
-- `fpg_png(fpg, id, transparent_zero)` returns an indexed PNG byte string, or `nil`
-  for an absent ID. The optional flag is a boolean and defaults to false. It
-  works without a window and uses the C PNG encoder described above.
-- `fpg_rgba(fpg, id, transparent_zero)` returns an RGBA byte string or `nil` for an
-  absent ID. The optional flag is a boolean and defaults to false. Conversion
-  has the same channel and transparency behavior as `mv_fpg_copy_rgba`.
-
-`fpg_image(fpg, id, transparent_zero)` creates an independent managed image from a
-sprite. The optional boolean defaults to false, as for `fpg_rgba`; absent IDs
-return `nil`. A valid ID requires an open graphics window. Image creation
-raises an error if conversion or upload fails. The image keeps its pixels
-after the FPG object is collected and can be used with `draw_image`, image
-regions, and `self.graph`. It follows the normal image resource lifetime.
-An automatic graph collider uses image bounds. FPG control point zero is not
-implicitly applied as the image pivot; read it with `fpg_point` and use an
-explicit image-region pivot when needed.
 
 `mv.fpg.parse_manifest(json)` reads a version 1 JSON manifest using the same
 C reader and limits. It returns a garbage-collected metadata object without
@@ -185,6 +168,43 @@ helper. The `fpg` object can still be inspected in headless mode, but image
 creation requires a window.
 
 Manifest numeric fields must be exact integers, including when written with a decimal point or exponent. Manifest parsing accepts only JSON whitespace outside strings. It rejects other unescaped control characters.
+
+## Lua conversion
+
+- `fpg_rgba(fpg, id, options?)` returns RGBA bytes or `nil` for an absent ID.
+  It uses the channel and transparency rules of `mv_fpg_copy_rgba`.
+- `fpg_png(fpg, id, options?)` returns indexed PNG bytes or `nil` for an absent ID.
+- `fpg_json(fpg, options?)` returns a JSON manifest without a trailing zero byte.
+
+These functions work without a window. `fpg_image(fpg, id, options?)` returns
+an independent managed image or `nil` for an absent ID. A valid ID requires an
+open window. Conversion or upload failure raises an error. The image keeps its
+pixels after the FPG is collected and can be used with `draw_image`, image
+regions, and `self.graph`. An automatic collider uses its image bounds.
+To use FPG control point 0 as the image pivot, read it with `fpg_point` and
+pass an explicit image-region pivot.
+
+The options table accepts one field, the boolean `transparent_zero`.
+Omission, `nil`, and an empty table use `false`. Unknown keys, invalid types,
+and extra arguments raise errors. The equivalent methods are `fpg:rgba()`,
+`fpg:png()`, `fpg:json()`, and `fpg:image()`.
+
+Conversion defaults to opaque index 0 for every FPG handle. For gameplay,
+`load_asset()` defaults to transparent index 0 and lets you override it.
+Graph selection from `mv.fpg.parse()` uses transparent index 0.
+
+Use the same explicit option for every PNG and its manifest. Save the strings
+as the corresponding files in one directory. The loaded manifest uses the
+transparency stored in its PNGs.
+
+```lua
+local options = {transparent_zero = true}
+local json = fpg:json(options) -- manifest.json
+for index = 1, fpg:count() do
+  local id = fpg:id_at(index)
+  local png = fpg:png(id, options) -- save as id .. ".png"
+end
+```
 
 ## JSON parser threading
 

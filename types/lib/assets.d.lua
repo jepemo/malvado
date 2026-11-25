@@ -19,13 +19,13 @@
 ---@class MvImage
 ---@field size fun(self: MvImage):integer, integer
 
----Sprite atlas loaded with `load_asset`, `load_atlas` or `load_aseprite`.
+---Sprite atlas loaded with `load_asset`, `parse_atlas` or `parse_aseprite`.
 ---@class MvAtlas
 local Atlas = {}
 
----@param id integer
----@return MvSpriteInfo
-function Atlas:sprite_info(id) end
+---@param id_or_name integer|string Exact sprite name or positive ID.
+---@return MvSpriteInfo|nil
+function Atlas:sprite_info(id_or_name) end
 
 ---@param name string
 ---@return integer|nil
@@ -48,9 +48,9 @@ function Atlas:animation_repeats(name) end
 ---@return integer[]|nil
 function Atlas:pivot_color() end
 
----@param id integer
+---@param id_or_name integer|string Exact sprite name or positive ID.
 ---@return MvGraphic
-function Atlas:graph(id) end
+function Atlas:graph(id_or_name) end
 
 ---Source rectangle in image pixels.
 ---@class MvImageSource
@@ -83,6 +83,10 @@ function Atlas:graph(id) end
 ---@field scale? number Positive uniform scale. Defaults to 1.
 ---@field angle? number Clockwise degrees. Defaults to 0.
 
+---Options for FPG conversions.
+---@class MvFpgConversionOptions
+---@field transparent_zero? boolean Treat palette index 0 as transparent. Default false.
+
 ---FPG library loaded with `load_asset` or `fpg.parse`.
 ---@class MvFpg
 ---@field count fun(self: MvFpg):integer
@@ -91,10 +95,10 @@ function Atlas:graph(id) end
 ---@field gamma fun(self: MvFpg):string
 ---@field sprite fun(self: MvFpg, id: integer):MvFpgSprite|nil
 ---@field point fun(self: MvFpg, id: integer, index: integer):MvFpgPoint|nil
----@field rgba fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
----@field image fun(self: MvFpg, id: integer, transparent_zero?: boolean):MvImage|nil
----@field png fun(self: MvFpg, id: integer, transparent_zero?: boolean):string|nil
----@field json fun(self: MvFpg, transparent_zero?: boolean):string
+---@field rgba fun(self: MvFpg, id: integer, options?: MvFpgConversionOptions):string|nil
+---@field image fun(self: MvFpg, id: integer, options?: MvFpgConversionOptions):MvImage|nil
+---@field png fun(self: MvFpg, id: integer, options?: MvFpgConversionOptions):string|nil
+---@field json fun(self: MvFpg, options?: MvFpgConversionOptions):string
 ---@field graph fun(self: MvFpg, id: integer):MvGraphic
 
 ---FPG manifest loaded with `load_asset` or `fpg.parse_manifest`.
@@ -131,7 +135,7 @@ function Atlas:graph(id) end
 ---@field y integer
 ---@field defined boolean
 
----Sprite metadata returned by `sprite_info`.
+---Sprite metadata returned by `atlas_sprite_info`.
 ---@class MvSpriteInfo
 ---@field name string
 ---@field id integer

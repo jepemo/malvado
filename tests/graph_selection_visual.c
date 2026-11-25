@@ -31,12 +31,12 @@ static void
 check_frame(void *user)
 {
     int *checked = user;
-    MalvadoProcessInfo processes[7];
+    MalvadoProcessInfo processes[9];
     size_t count;
     int64_t tick;
-    assert(malvado_debug_snapshot(processes, 7, &count, &tick));
+    assert(malvado_debug_snapshot(processes, 9, &count, &tick));
     if (tick < 2 || *checked) return;
-    assert(count == 7);
+    assert(count == 9);
     Image screen = LoadImageFromScreen();
     Image sheet = LoadImage("examples/aseprite/sheet.png");
     assert(screen.data && sheet.data);
@@ -59,6 +59,14 @@ check_frame(void *user)
     assert(shared.r == aseprite.r && shared.g == aseprite.g && shared.b == aseprite.b);
     Color opaque = pixel(screen, 119, 20);
     assert(opaque.r != transparent.r || opaque.g != transparent.g || opaque.b != transparent.b);
+    Color converted_opaque = pixel(screen, 119, 50);
+    assert(converted_opaque.r == opaque.r && converted_opaque.g == opaque.g &&
+           converted_opaque.b == opaque.b);
+    Color parsed = pixel(screen, 80, 50);
+    Color parsed_transparent = pixel(screen, 79, 50);
+    assert(parsed.r == original.r && parsed.g == original.g && parsed.b == original.b);
+    assert(parsed_transparent.r == transparent.r && parsed_transparent.g == transparent.g &&
+           parsed_transparent.b == transparent.b);
     UnloadImage(sheet);
     UnloadImage(screen);
     *checked = 1;

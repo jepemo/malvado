@@ -118,10 +118,10 @@ the same handle for the new call. Object methods and the `mv.camera` and
 | `fpg:gamma()` | `fpg_gamma(fpg)` |
 | `fpg:sprite(id)` | `fpg_sprite(fpg, id)` |
 | `fpg:point(id, index)` | `fpg_point(fpg, id, index)` |
-| `fpg:rgba(id, transparent_zero)` | `fpg_rgba(fpg, id, transparent_zero)` |
-| `fpg:image(id, transparent_zero)` | `fpg_image(fpg, id, transparent_zero)` |
-| `fpg:png(id, transparent_zero)` | `fpg_png(fpg, id, transparent_zero)` |
-| `fpg:json(transparent_zero)` | `fpg_json(fpg, transparent_zero)` |
+| `fpg:rgba(id, options?)` | `fpg_rgba(fpg, id, options?)` |
+| `fpg:image(id, options?)` | `fpg_image(fpg, id, options?)` |
+| `fpg:png(id, options?)` | `fpg_png(fpg, id, options?)` |
+| `fpg:json(options?)` | `fpg_json(fpg, options?)` |
 | `manifest:count()` | `manifest_count(manifest)` |
 | `manifest:id_at(index)` | `manifest_id_at(manifest, index)` |
 | `manifest:palette()` | `manifest_palette(manifest)` |
@@ -129,6 +129,27 @@ the same handle for the new call. Object methods and the `mv.camera` and
 | `manifest:sprite(id)` | `manifest_sprite(manifest, id)` |
 | `manifest:point(id, index)` | `manifest_point(manifest, id, index)` |
 | `manifest:transparent_zero()` | `manifest_transparent_zero(manifest)` |
+
+## Atlas selection and FPG conversion
+
+| Previous Lua call | Current Lua call |
+| --- | --- |
+| `load_atlas(image, json)` | `parse_atlas(image, json)` |
+| `load_aseprite(image, json)` | `parse_aseprite(image, json)` |
+| `sprite_info(atlas, id)` | `atlas_sprite_info(atlas, id_or_name)` |
+| `sprite_id(atlas, name)` | `atlas_sprite_id(atlas, name)` |
+| `fpg_png(fpg, id, true)` | `fpg_png(fpg, id, {transparent_zero = true})` |
+
+The parsers still take a managed image and the JSON contents. Use
+`load_asset(path)` to load the library by path. The atlas retains the
+`sprite_info` and `sprite_id` methods. Sprite info now returns `nil` for a
+valid selector that finds no sprite. `graph()` still raises an error for an
+unavailable graphic. A string selector is an exact atlas name. Use a Lua
+number to select by ID.
+
+Apply the same options table to `fpg_rgba`, `fpg_image`, `fpg_png`, and
+`fpg_json`, including their method forms. Omit options for opaque index 0.
+When exporting a manifest, use the same option for its PNGs.
 
 ## Camera, region and scroll
 

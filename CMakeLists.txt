@@ -1452,7 +1452,8 @@ if(MALVADO_BUILD_ASSETS)
   find_package(Python3 QUIET COMPONENTS Interpreter)
   if(Python3_Interpreter_FOUND)
     add_test(NAME lua_fpg_export COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_export.py
-      $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_export.lua ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)
+      $<TARGET_FILE:malvado-run> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_export.lua
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg $<TARGET_FILE:malvado>)
     set_tests_properties(lua_fpg_export PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
     add_test(NAME cli_fpg_export COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/fpg_cli.py
       $<TARGET_FILE:malvado> ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fpg/bennugd-8.fpg)

@@ -28,8 +28,8 @@ return {width = 160, height = 120, init = function()
   local manifest = load_asset("assets/manifest.json")
   assert(manifest_palette(manifest) == fpg_palette(fpg) and manifest_gamma(manifest) == fpg_gamma(fpg))
   local converted = load_asset("assets/7.png")
-  assert(mv.sprite_info(atlas, 42).pivot_x == 2)
-  assert(mv.sprite_info(aseprite, 1).trim_x == 2)
+  assert(mv.atlas_sprite_info(atlas, 42).pivot_x == 2)
+  assert(mv.atlas_sprite_info(aseprite, 1).trim_x == 2)
   assert(manifest_point(manifest, 7, 0).x == fpg_point(fpg, 7, 0).x)
   write("missing.json", '{"schema":1,"kind":"graphics-library","image":"absent.png","sprites":[{"id":7,"name":"test","x":0,"y":0,"width":1,"height":1}]}')
   fails("could not load PNG", root .. "/missing.json")
@@ -52,7 +52,7 @@ return {width = 160, height = 120, init = function()
       draw_image {image = image, x = 10, y = 10}
       draw_sprite {atlas = atlas, id = 42, x = 40, y = 20}
       draw_sprite {atlas = aseprite, id = 1, x = 60, y = 20}
-      draw_image {image = fpg_image(fpg, 7, true), x = 80, y = 20}
+      draw_image {image = fpg_image(fpg, 7, {transparent_zero = true}), x = 80, y = 20}
       draw_image {image = converted, x = 100, y = 20}
       collectgarbage("collect")
       assert(weak[1] and weak[2] and weak[3])

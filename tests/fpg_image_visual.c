@@ -41,6 +41,10 @@ check_frame(void *user)
     assert(red.r >= 250 && red.g < 5 && red.b < 5);
     assert(green.g >= 250 && green.r < 5 && green.b < 5);
     assert(second_red.r >= 250 && second_red.g < 5 && second_red.b < 5);
+    for (int index = 1; index <= 4; ++index) {
+        Color opaque = GetImageColor(image, (20 * index + 1) * w / 128, 51 * h / 80);
+        assert(opaque.r == 0 && opaque.g == 0 && opaque.b == 0);
+    }
     UnloadImage(image);
     *checked = 1;
     for (size_t i = 0; i < count; ++i)

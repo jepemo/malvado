@@ -238,22 +238,22 @@ function draw_image(options) end
 ---@param image MvImage
 ---@param json string
 ---@return MvAtlas atlas
-function load_atlas(image, json) end
+function parse_atlas(image, json) end
 
 ---@param image MvImage
 ---@param json string
 ---@return MvAtlas atlas
-function load_aseprite(image, json) end
+function parse_aseprite(image, json) end
 
 ---@param atlas MvAtlas
----@param id integer
----@return MvSpriteInfo info
-function sprite_info(atlas, id) end
+---@param id_or_name integer|string Exact sprite name or positive ID.
+---@return MvSpriteInfo|nil info
+function atlas_sprite_info(atlas, id_or_name) end
 
 ---@param atlas MvAtlas
 ---@param name string
 ---@return integer|nil id
-function sprite_id(atlas, name) end
+function atlas_sprite_id(atlas, name) end
 
 ---@param atlas MvAtlas
 ---@param name string
@@ -320,29 +320,29 @@ function fpg_point(fpg, id, index) end
 ---Return RGBA bytes, or nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string|nil bytes
-function fpg_rgba(fpg, id, transparent_zero) end
+function fpg_rgba(fpg, id, options) end
 
 ---Create an independent image in an open window, or return nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return MvImage|nil image
-function fpg_image(fpg, id, transparent_zero) end
+function fpg_image(fpg, id, options) end
 
 ---Encode an indexed PNG, or return nil if the sprite is missing.
 ---@param fpg MvFpg
 ---@param id integer
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string|nil bytes
-function fpg_png(fpg, id, transparent_zero) end
+function fpg_png(fpg, id, options) end
 
 ---Encode the sprite metadata as a JSON manifest.
 ---@param fpg MvFpg
----@param transparent_zero? boolean Defaults to false.
+---@param options? MvFpgConversionOptions
 ---@return string json
-function fpg_json(fpg, transparent_zero) end
+function fpg_json(fpg, options) end
 
 ---Return the number of sprites.
 ---@param manifest MvFpgManifest
@@ -402,8 +402,10 @@ function atlas_animation_repeats(atlas, name) end
 ---@param options MvDrawSpriteOptions
 function draw_sprite(options) end
 
----@overload fun(library: MvAtlas|MvFpg|MvFpgManifest, id: integer):MvGraphic
----@overload fun(id: integer):MvGraphic
+---@overload fun(id_or_name: integer|string):MvGraphic
+---@overload fun(library: MvAtlas, id_or_name: integer|string):MvGraphic
+---@param library MvFpg|MvFpgManifest
+---@param id integer
 ---@return MvGraphic
 function graph(library, id) end
 

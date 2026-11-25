@@ -114,23 +114,23 @@ requires an open window when it finds the requested sprite.
 
 | Instance method | Explicit procedural call |
 | --- | --- |
-| `atlas:sprite_info(id)` | `sprite_info(atlas, id)` |
-| `atlas:sprite_id(name)` | `sprite_id(atlas, name)` |
+| `atlas:sprite_info(id_or_name)` | `atlas_sprite_info(atlas, id_or_name)` |
+| `atlas:sprite_id(name)` | `atlas_sprite_id(atlas, name)` |
 | `atlas:animation_frame(name, elapsed_ms, options?)` | `atlas_animation_frame(atlas, name, elapsed_ms, options?)` |
 | `atlas:animation_color(name)` | `atlas_animation_color(atlas, name)` |
 | `atlas:animation_repeats(name)` | `atlas_animation_repeats(atlas, name)` |
 | `atlas:pivot_color()` | `atlas_pivot_color(atlas)` |
-| `atlas:graph(id)` | `graph(atlas, id)` |
+| `atlas:graph(id_or_name)` | `graph(atlas, id_or_name)` |
 | `fpg:count()` | `fpg_count(fpg)` |
 | `fpg:id_at(index)` | `fpg_id_at(fpg, index)` |
 | `fpg:palette()` | `fpg_palette(fpg)` |
 | `fpg:gamma()` | `fpg_gamma(fpg)` |
 | `fpg:sprite(id)` | `fpg_sprite(fpg, id)` |
 | `fpg:point(id, index)` | `fpg_point(fpg, id, index)` |
-| `fpg:rgba(id, transparent_zero?)` | `fpg_rgba(fpg, id, transparent_zero?)` |
-| `fpg:image(id, transparent_zero?)` | `fpg_image(fpg, id, transparent_zero?)` |
-| `fpg:png(id, transparent_zero?)` | `fpg_png(fpg, id, transparent_zero?)` |
-| `fpg:json(transparent_zero?)` | `fpg_json(fpg, transparent_zero?)` |
+| `fpg:rgba(id, options?)` | `fpg_rgba(fpg, id, options?)` |
+| `fpg:image(id, options?)` | `fpg_image(fpg, id, options?)` |
+| `fpg:png(id, options?)` | `fpg_png(fpg, id, options?)` |
+| `fpg:json(options?)` | `fpg_json(fpg, options?)` |
 | `fpg:graph(id)` | `graph(fpg, id)` |
 | `manifest:count()` | `manifest_count(manifest)` |
 | `manifest:id_at(index)` | `manifest_id_at(manifest, index)` |
@@ -152,7 +152,7 @@ keeps the two operands and their named `a` and `b` transforms together. Use
 read `handle.priority` and `handle.status` as properties.
 
 Use procedural calls for global services, contextual shortcuts such as
-`world_move(dx, dy)` and `graph(id)`, and constructors such as `animation`
-and `load_atlas`. Rectangle options and font descriptors are tables.
+`world_move(dx, dy)` and `graph(selector)`, and constructors such as `animation`
+and `parse_atlas`. Rectangle options and font descriptors are tables.
 Persistent text operations select text by numeric ID. Regions, scrolls,
 and graphics are values you pass to the drawing or process API.

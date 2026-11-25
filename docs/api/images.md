@@ -11,14 +11,14 @@ local mv = require("malvado")
 local image
 
 local picture = mv.process(function()
-    while not mv.key("escape") do
+    while not mv.key(mv.KEY_ESCAPE) do
         mv.draw_image {image = image, x = 40, y = 40}
         mv.frame()
     end
 end)
 
 mv.start(function()
-    image = mv.load_image("picture.png")
+    image = mv.load_asset("picture.png")
     local width, height = mv.image_size(image)
     print("Image size:", width, height)
     picture()
@@ -36,8 +36,8 @@ A sleeping process is hidden. Each command retains its source until the process
 clears the command list or ends. Use `self.graph` to assign a graphic that the
 engine draws automatically every frame.
 
-Relative paths use the [game asset directory](asset-sources.md#game-asset-paths). `load_image` raises an
-error when it cannot load the PNG or when no window is open. Immediate image and
+Relative paths use the [game asset directory](asset-sources.md#game-asset-paths).
+Loading a PNG raises an error when the file cannot be loaded or when no window is open. Immediate image and
 sprite drawing requires a window and a loaded image.
 
 Each Lua process has a `self.z` draw order, initially zero. Set it to a finite number to draw that process in front of lower values. Equal values use process creation order, so later processes draw on top. Changes take effect on the next render. This order applies to process draw commands; persistent text is drawn afterward. It does not change scheduler priority. In C, issue drawing calls in the order you want between `mv_window_begin` and `mv_window_end`.
@@ -125,14 +125,10 @@ An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
 
 All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. Names and image paths must be valid UTF-8 without ASCII control characters. Names have at most 127 bytes and image paths have at most 511 bytes. Lookups compare bytes exactly and do not normalize Unicode. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields, duplicate keys, escaped zero bytes, and unescaped control characters in JSON strings. Outside strings, only JSON whitespace is accepted. Numeric fields must be exact integers, including when written with a decimal point or exponent. A literal backslash followed by `u0000` is allowed. This schema is separate from the Aseprite subset described below.
 
-Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Use the same asset directory for both files:
+Load the atlas in your `start` function. The PNG path is relative to the JSON file:
 
 ```lua
-local image = mv.load_image("sprites.png")
-local file = assert(io.open(mv.get_assets_dir() .. "/atlas.json", "rb"))
-local json = file:read("a")
-file:close()
-local atlas = mv.load_atlas(image, json)
+local atlas = mv.load_asset("atlas.json")
 ```
 
 Draw a sprite by ID inside a process:
@@ -175,7 +171,7 @@ In C, `mv_atlas_animation_frame(atlas, name, elapsed_ms, loop, &id)` returns 1 o
 
 ## Use images and atlas sprites as process graphics
 
-An image returned by `load_image` can be assigned directly to `self.graph`.
+Assign a PNG image from `load_asset` directly to `self.graph`.
 By default its position is the top-left corner. Automatic image
 drawing starts after the process first activates. The process's `x`,
 `y`, `angle`, and `size` transform the image, and its full dimensions provide
@@ -183,7 +179,7 @@ the default rectangular collider. Process defaults may share an image. The
 process holds the image alive while its `graph` refers to it. Images still
 require an open window and cannot be loaded in headless mode.
 
-Use `graph(atlas, id)` to select a static sprite for `self.graph`. It uses the
+Use `graph(atlas, id_or_name)` to select a static sprite for `self.graph`. It uses the
 sprite's region and metadata pivot for drawing and its rectangular collider.
 Use [automatic animation](animations.md) to play a sequence on the simulation
 clock.
@@ -202,14 +198,19 @@ Legacy FPG sheets require an explicit collider.
 
 ## Import an Aseprite JSON array
 
-`mv.load_aseprite(image, json)` loads a restricted Aseprite JSON array export into an atlas. Load the PNG with `mv.load_image` first. The function retains the image just like `mv.load_atlas`; release Lua references when no longer needed. It raises an error for invalid or unsupported input.
+For gameplay, pass the JSON path to `mv.load_asset("sheet.json")`.
+For an in-memory import, call `mv.parse_aseprite(image, json)` with a managed
+image and the JSON contents. Use `mv.parse_atlas(image, json)` for the Malvado
+atlas schema. Both validate the image dimensions and retain the image.
+Use the image named in the metadata. The parsers receive an image handle
+and validate its dimensions without checking the filename.
 
 ```lua
 local image = mv.load_image("sheet.png")
 local file = assert(io.open("sheet.json", "rb"))
 local json = file:read("a")
 file:close()
-local atlas = mv.load_aseprite(image, json)
+local atlas = mv.parse_aseprite(image, json)
 local id = mv.atlas_animation_frame(atlas, "default", elapsed_ms)
 -- Inside a process: mv.draw_sprite {atlas = atlas, id = id, x = x, y = y}
 ```
@@ -222,8 +223,21 @@ A single slice named `pivot` can set a custom origin. Keys must have strictly in
 
 Escaped zero bytes, unescaped control characters in JSON strings, non-JSON whitespace, other extra tag fields, nonempty layers, other slices, rotated frames, unknown fields, duplicate keys, invalid bounds, and metadata over 1 MiB are rejected. It does not import multiple slices, nine-slice centers, layers, or palette data. The automatic process collider covers the cropped rectangle, not the full original canvas or an alpha mask. It does not verify that `meta.image` names the supplied image. Use a suitable export without these features. The error identifies JSON-hash exports, unsupported pixel formats or scales, rotated frames, unsupported tags, multiple slices or pivot slices, and nonempty layers; other invalid or unsupported metadata uses a general error.
 
-C programs can call `mv_atlas_parse_aseprite(json, length, width, height, &error)` without Lua or a graphics backend when asset support is enabled. The caller owns the returned atlas and destroys it with `mv_atlas_destroy`; the error, when provided, is a static string. `mv_atlas_find` returns `source_width`, `source_height`, `trim_x`, and `trim_y` in `MvAtlasSprite`. For the native atlas schema, source size equals the region and the trim offset is zero. Lua sprite drawing uses the crop offset. `mv.sprite_info(atlas, id)` returns a fresh table with `id`, `name`, region `x`, `y`, `width`, `height`, `pivot_x`, `pivot_y`, `source_width`, `source_height`, `trim_x`, and `trim_y`. Unknown IDs and invalid arguments raise an error. Modifying the table does not change the atlas. `mv.sprite_id(atlas, name)` looks up an exact, case-sensitive name and returns its ID or `nil`; names containing a zero byte raise an error. In C, `mv_atlas_find_name(atlas, name, &sprite)` copies the matching sprite and leaves the output unchanged on failure. The [Coric fixture](../../tests/fixtures/aseprite/coric/README.md) is an unmodified Aseprite export. The other test fixtures and the crop-and-pivot example are original Malvado data, not exports from Aseprite.
+C programs can call `mv_atlas_parse_aseprite(json, length, width, height, &error)` without Lua or a graphics backend when asset support is enabled. The caller owns the returned atlas and destroys it with `mv_atlas_destroy`; the error, when provided, is a static string. `mv_atlas_find` returns `source_width`, `source_height`, `trim_x`, and `trim_y` in `MvAtlasSprite`. For the native atlas schema, source size equals the region and the trim offset is zero. Lua sprite drawing uses the crop offset. In C, `mv_atlas_find_name(atlas, name, &sprite)` copies the matching sprite and leaves the output unchanged on failure. The [Coric fixture](../../tests/fixtures/aseprite/coric/README.md) is an unmodified Aseprite export. The other test fixtures and the crop-and-pivot example are original Malvado data, not exports from Aseprite.
 
+
+## Query atlas sprites
+
+`atlas_sprite_info(atlas, id_or_name)` and `atlas:sprite_info(id_or_name)`
+return a fresh table with `id`, `name`, region `x`, `y`, `width`, `height`,
+`pivot_x`, `pivot_y`, `source_width`, `source_height`, `trim_x`, and `trim_y`.
+Coordinates and dimensions are in pixels. Lookups by name and ID return the
+same values. You can edit the returned table independently of the atlas.
+
+`atlas_sprite_id(atlas, name)` and `atlas:sprite_id(name)` return the sprite ID.
+Both queries return `nil` for a valid lookup that finds no sprite. Names are
+exact and case-sensitive, and digit strings are names. Invalid types, names
+with a zero byte, and IDs outside the positive integer range raise errors.
 
 ## Load an asset by path
 
@@ -254,7 +268,7 @@ the image center. The default is `"top-left"`. See [PNG pivots](#shared-png-text
 Unknown options and format names raise errors. `transparent_zero` is an optional
 boolean only for FPG input, defaulting to true for loaded library graphics.
 Converted FPG PNGs retain the transparency already encoded by the converter.
-Existing `fpg_image(fpg, id, transparent_zero)` calls keep their explicit policy.
+The [FPG conversion functions](fpg.md#lua-conversion) take their own options.
 
 Relative paths use the [game asset directory](asset-sources.md#game-asset-paths). Referenced atlas and manifest images
 are relative to their metadata file, or use their explicit absolute path.
@@ -283,37 +297,46 @@ them. The low-level loaders and parsers remain available for advanced use.
 
 ## Select a static graphic
 
-`graph()` selects one static graphic. It does not advance an animation:
+`graph()` selects one static graphic. This example uses the `sheet.json`
+asset from the [Aseprite example](../../examples/aseprite/README.md). Place the
+script beside its assets. Press Space to switch from frame `one` to the
+`bounce` animation.
 
 ```lua
 require("malvado").import_globals()
-local hero
+local atlas
 local Player = process(function(self)
-  self.file = hero
-  self.graph = graph(42)
+  self.file = atlas
+  self.graph = graph("one")
+  while not key_pressed(KEY_SPACE) do frame() end
+  self.graph = animation("bounce")
   while true do frame() end
 end)
 start(function()
-  hero = load_asset("hero.json")
+  atlas = load_asset("sheet.json")
   Player({x = 100, y = 100})
 end)
 ```
 
-Use `graph(id)` inside the running process, or pass the library explicitly
-with `graph(library, id)`. Both `mv.graph` and `mv.graphics.graph` expose
-the same selector. The selector
-is available with asset support. It accepts atlases (including Aseprite), FPGs
-and converted-FPG manifests. IDs must be positive integers present in the
-library. Invalid IDs/types raise errors. A standalone image is assigned directly
-to `self.graph`, without calling `graph()` or setting `self.file`.
+Use `graph(selector)` inside the running process, or pass the library explicitly
+with `graph(library, selector)` or `library:graph(selector)`. Both `mv.graph`
+and `mv.graphics.graph` expose the same selector in asset-enabled builds.
+
+- Atlases, including Aseprite atlases, accept positive integer IDs and exact,
+  case-sensitive names. A digit string selects a name. Names cannot contain
+  a zero byte.
+- Binary FPGs and converted-FPG manifests accept positive integer IDs.
+
+Missing sprites and invalid selectors raise errors. Assign standalone images
+directly to `self.graph`.
 
 The implicit call uses only the scheduled coroutine's `self.file`. Missing file
 context or calls outside that coroutine raise errors. Explicit calls work
 without a running process and ignore its contextual file. No shared default
 library is stored globally. Both game entry forms use these same rules.
 
-The result is immutable and reusable. Lookups for the same library and ID share
-the descriptor while it is in use. It retains its original library and image.
+The result is immutable and reusable. A sprite's ID and name share the same
+descriptor while it is in use. The descriptor retains its library and image.
 Changing `self.file` affects later lookups only. Two processes can share one
 descriptor, including when their file fields differ. Clearing/replacing a graph
 releases its references when no other user retains it. A retained process handle
