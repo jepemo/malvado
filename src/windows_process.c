@@ -66,19 +66,21 @@ compare_environment(const void *left, const void *right)
 }
 
 static char *
-child_environment(const char *sdk)
+child_environment(const char *sdk, const char *game_dir)
 {
     char *original = GetEnvironmentStringsA();
     if (!original) return NULL;
     size_t count = 0;
     for (const char *p = original; *p; p += strlen(p) + 1) ++count;
-    const char **entries = calloc(count + 2, sizeof(*entries));
-    char *sdk_entry = NULL, *block = NULL;
+    const char **entries = calloc(count + 3, sizeof(*entries));
+    char *sdk_entry = NULL, *game_entry = NULL, *block = NULL;
     if (!entries) goto done;
     size_t used = 0;
     for (const char *p = original; *p; p += strlen(p) + 1) {
         if (!_strnicmp(p, "RUSTUP_AUTO_INSTALL=", 20)) continue;
         if (sdk && !_strnicmp(p, "MALVADO_SDK_PREFIX=", 19)) continue;
+        if (game_dir && !_strnicmp(p, "MALVADO_GAME_DIR=", sizeof("MALVADO_GAME_DIR=") - 1))
+            continue;
         entries[used++] = p;
     }
     entries[used++] = "RUSTUP_AUTO_INSTALL=0";
@@ -87,6 +89,12 @@ child_environment(const char *sdk)
         if (!sdk_entry) goto done;
         sprintf(sdk_entry, "MALVADO_SDK_PREFIX=%s", sdk);
         entries[used++] = sdk_entry;
+    }
+    if (game_dir) {
+        game_entry = malloc(strlen(game_dir) + sizeof("MALVADO_GAME_DIR="));
+        if (!game_entry) goto done;
+        sprintf(game_entry, "MALVADO_GAME_DIR=%s", game_dir);
+        entries[used++] = game_entry;
     }
     qsort(entries, used, sizeof(*entries), compare_environment);
     size_t length = 1;
@@ -102,6 +110,7 @@ child_environment(const char *sdk)
     }
     *cursor = '\0';
 done:
+    free(game_entry);
     free(sdk_entry);
     free(entries);
     FreeEnvironmentStringsA(original);
@@ -111,10 +120,17 @@ done:
 int
 malvado_windows_process(char *const args[], const char *sdk, char *output, size_t size)
 {
+    return malvado_windows_process_with_game_dir(args, sdk, NULL, output, size);
+}
+
+int
+malvado_windows_process_with_game_dir(char *const args[], const char *sdk,
+                                     const char *game_dir, char *output, size_t size)
+{
     if (!args || !args[0] || (output && !size)) return 1;
     if (output) output[0] = '\0';
     char *line = command_line(args);
-    char *environment = child_environment(sdk);
+    char *environment = child_environment(sdk, game_dir);
     if (!line || !environment) { free(line); free(environment); return 1; }
     HANDLE reader = NULL, writer = NULL;
     SECURITY_ATTRIBUTES security = {sizeof(security), NULL, TRUE};

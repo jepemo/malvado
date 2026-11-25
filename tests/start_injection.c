@@ -37,10 +37,10 @@ MvResult test_process_spawn_related(MvContext *ctx, MvProcessId creator, MvProce
     return mv_process_spawn_related(ctx, creator, owner, priority, step, destroy, user, id);
 }
 
-MvContext *test_context_create(double rate, unsigned steps)
+MvContext *test_context_create(double rate, unsigned steps, const char *directory)
 {
     if (failure == CONTEXT) return NULL;
-    MvContext *ctx = mv_context_create(rate, steps);
+    MvContext *ctx = mv_context_create_with_game_dir(rate, steps, directory);
     if (ctx) contexts_created++;
     return ctx;
 }

@@ -2,7 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 require("malvado").import_globals()
 local atlas, definition
-local metadata = load_asset("examples/aseprite/sheet.json")
+local metadata = load_asset("../examples/aseprite/sheet.json")
 local metadata_definition = animation(metadata, "bounce")
 local Actor = process(function(self)
   while true do
@@ -24,7 +24,7 @@ return {width = 120, height = 80, init = function()
   local ok, message = pcall(animation, metadata, "bounce")
   assert(not ok and message:find("no visual images", 1, true))
   assert(metadata_definition)
-  atlas = load_asset("examples/aseprite/sheet.json")
+  atlas = load_asset("../examples/aseprite/sheet.json")
   definition = animation(atlas, "bounce")
   Controller()
 end}

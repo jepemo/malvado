@@ -88,6 +88,7 @@
 
 ---Game table returned by a declarative entry script.
 ---@class MvGame : MvStartOptions
+---@field assets_dir? string Asset directory applied before init.
 ---@field init? fun() Called once before the first logical tick.
 
 ---Options for tree queries (`children`, `descendants`, `signal_tree`, `kill_tree`).

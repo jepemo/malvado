@@ -11,7 +11,7 @@ local task = mv.process(function()
   end
 end)
 mv.start(function()
-  image = mv.load_image("tests/fixtures/red.png")
+  image = mv.load_image("fixtures/red.png")
   task()
   mv.set_fps(60)
 end, {width = 64, height = 64, title = "Cadence test", fps = 15})

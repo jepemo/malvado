@@ -32,7 +32,7 @@ See the [global export table](lua-globals.md) for all current names.
 
 `mv.start(init, options)` calls `init` once and runs until the window closes, a process fails, or no processes remain. `options` can set `width`, `height`, `title`, and `fps`. The defaults are 800, 600, `Malvado`, and 0. To run without a window, use `malvado run --headless game.lua`. A headless game must end its processes to exit.
 
-You can also return a game table from the entry script. Set the same options on that table and add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. See the [declarative game example](../../examples/declarative/README.md).
+You can also return a game table from the entry script. Set the same options on that table and add an `init` function to start processes. Malvado calls it once, without arguments, before the first tick. Set `assets_dir` on the game table to configure the [asset directory](asset-sources.md#game-asset-paths) before `init`. See the [declarative game example](../../examples/declarative/README.md).
 
 The table can contain only those options and `init`. Dimensions must be positive integers that fit in a C `int`. The title must be a string without zero bytes. The `fps` value must be an integer from 0 to 60. The table cannot have a metatable. A game cannot use both a returned table and `mv.start()` in the same run. If there is no initializer and no active process, the game exits.
 

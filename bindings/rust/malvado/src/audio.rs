@@ -430,3 +430,20 @@ mod tests {
         assert!(!AUDIO_OWNED.load(Ordering::Acquire));
     }
 }
+
+impl crate::Game {
+    /// Load a WAV sound relative to this game's current asset directory.
+    pub fn load_sound(&self, audio: Rc<Audio>, path: impl AsRef<Path>) -> Result<Sound, Error> {
+        Sound::load(audio, self.resolve_asset_path(path)?)
+    }
+
+    /// Open a music stream relative to this game's current asset directory.
+    pub fn load_music(
+        &self,
+        audio: Rc<Audio>,
+        path: impl AsRef<Path>,
+        looping: bool,
+    ) -> Result<Music, Error> {
+        Music::load(audio, self.resolve_asset_path(path)?, looping)
+    }
+}

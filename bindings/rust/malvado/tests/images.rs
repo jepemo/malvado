@@ -149,12 +149,11 @@ fn main() {
         );
         assert!(Visual::open(window.clone(), "bad\0path", None).is_err());
         assert!(Visual::open(window.clone(), fixture.with_file_name("missing"), None).is_err());
-        let Visual::Atlas(atlas_visual) = Visual::open(
-            window.clone(),
-            fixture.with_file_name("atlas.json"),
-            Some(Format::Unknown),
-        )
-        .unwrap() else {
+        let game = malvado::Game::with_game_dir(fixture.parent().unwrap()).unwrap();
+        let Visual::Atlas(atlas_visual) = game
+            .load_visual_asset(window.clone(), "atlas.json", Some(Format::Unknown))
+            .unwrap()
+        else {
             unreachable!()
         };
         assert_eq!(atlas_visual.metadata().len(), 2);

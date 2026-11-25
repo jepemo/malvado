@@ -16,6 +16,12 @@ file(WRITE "${WORK}/C game/main.c" [=[
 #include <stdio.h>
 #include <string.h>
 #include <malvado/malvado.h>
+#ifdef _WIN32
+#include <direct.h>
+#define chdir _chdir
+#else
+#include <unistd.h>
+#endif
 int main(void) {
   char text[6] = {0};
   FILE *file = fopen("assets/value.txt", "rb");
@@ -23,8 +29,16 @@ int main(void) {
   size_t n = fread(text, 1, 5, file);
   fclose(file);
   if (n != 5 || strcmp(text, "asset") != 0) return 1;
+  if (chdir("assets") != 0) return 1;
   MvContext *ctx = mv_context_create(60, 5);
-  if (!ctx) return 1;
+  if (!ctx || mv_set_assets_dir(ctx, "assets") != MV_OK) return 1;
+  char path[4096];
+  if (mv_resolve_asset_path(ctx, "value.txt", path, sizeof(path), NULL) != MV_OK) return 1;
+  file = fopen(path, "rb");
+  if (!file) return 1;
+  n = fread(text, 1, 5, file);
+  fclose(file);
+  if (n != 5 || strcmp(text, "asset") != 0) return 1;
   mv_context_destroy(ctx);
   puts("native game works");
   return 0;

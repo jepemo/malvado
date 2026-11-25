@@ -11,8 +11,8 @@ end
 fails("running process", graph, 42)
 fails("expected graph", graph)
 fails("requires an atlas", graph, {}, 42)
-local atlas = load_asset("tests/fixtures/atlas.json")
-local fpg = load_asset("examples/fpg/graphics.fpg")
+local atlas = load_asset("fixtures/atlas.json")
+local fpg = load_asset("../examples/fpg/graphics.fpg")
 local explicit = graph(atlas, 42)
 local namespaced = mv.graphics.graph(atlas, 42)
 local module = mv.graph(atlas, 42)
@@ -92,7 +92,7 @@ local Player = process(function(self)
   descriptor = nil
   collectgarbage("collect")
   assert(cached[1] == nil) -- A live library does not pin unused descriptors.
-  local transient = load_asset("tests/fixtures/atlas.json")
+  local transient = load_asset("fixtures/atlas.json")
   self.graph = transient:graph(42)
   local weak = setmetatable({transient, self.graph}, {__mode = "v"})
   transient = nil

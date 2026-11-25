@@ -134,7 +134,17 @@ run_game(void)
         return 1;
     }
 #ifdef MALVADO_ANDROID_NATIVE_GAME
-    int result = malvado_game_main();
+    char *directory = getcwd(NULL, 0);
+    const char *inherited = getenv("MALVADO_GAME_DIR");
+    char *previous = inherited ? strdup(inherited) : NULL;
+    int result = 1;
+    if (directory && (!inherited || previous) && setenv("MALVADO_GAME_DIR", directory, 1) == 0) {
+        result = malvado_game_main();
+        if (previous ? setenv("MALVADO_GAME_DIR", previous, 1) : unsetenv("MALVADO_GAME_DIR"))
+            result = 1;
+    }
+    free(previous);
+    free(directory);
 #else
     char *arguments[] = {"game", "main.lua"};
     int result = malvado_run(2, arguments);

@@ -62,7 +62,7 @@ local controller = mv.process(function()
 end)
 
 local producer = mv.process(function()
-  local image = mv.load_image("tests/fixtures/red.png")
+  local image = mv.load_image("fixtures/red.png")
   local file = assert(io.open("tests/fixtures/atlas.json", "rb"))
   local json = file:read("a")
   file:close()

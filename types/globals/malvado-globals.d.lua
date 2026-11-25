@@ -213,6 +213,14 @@ function world_move(dx, dy) end
 ---@return MvImage|MvAtlas|MvFpg|MvFpgManifest
 function load_asset(path, options) end
 
+---Set the asset directory relative to the game directory. Use nil or "." to reset.
+---@param path? string
+function set_assets_dir(path) end
+
+---Return the current absolute asset directory.
+---@return string directory
+function get_assets_dir() end
+
 ---@param path string
 ---@return MvImage image
 function load_image(path) end

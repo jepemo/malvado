@@ -86,7 +86,7 @@ void test_lua_openlibs(lua_State *L)
     lua_pushcfunction(L, report); lua_setglobal(L, "test_report");
 }
 void test_lua_close(lua_State *L) { lua_close(L); }
-MvContext *test_context_create(double rate, unsigned steps) { return mv_context_create(rate, steps); }
+MvContext *test_context_create(double rate, unsigned steps, const char *directory) { return mv_context_create_with_game_dir(rate, steps, directory); }
 void test_context_destroy(MvContext *ctx) { mv_context_destroy(ctx); }
 int test_window_open(int w, int h, const char *title) { return mv_window_open(w, h, title); }
 void test_window_close(void) { mv_window_close(); }

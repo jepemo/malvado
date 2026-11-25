@@ -16,7 +16,9 @@ malvado run main.lua
 
 `new --lang lua` is equivalent to `new`; `new --lang c` is equivalent to `new --c`. Unknown languages and conflicting options return 2 without creating a project.
 
-`new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` uses it as the working directory, so modules and assets resolve relative to the project. When given a file, paths remain relative to the current working directory. `run --headless [PATH]` is available for scripts that terminate without a window. The `malvado-run` executable also runs Lua scripts.
+`new` creates a directory and `main.lua`. `run` executes `main.lua` in the current directory, a specified file, or `main.lua` in a specified project directory. When given a directory, `run` enters it before starting the game. When given a Lua file, `run` preserves the caller’s working directory. Both forms use the entry script’s directory for [asset paths](../api/asset-sources.md#game-asset-paths) and local Lua modules. `run --headless [PATH]` is available for scripts that terminate without a window. The `malvado-run` executable also runs Lua scripts.
+
+Managed C and Rust games use the project root for assets. The CLI passes the absolute root to the child through `MALVADO_GAME_DIR`. Desktop launchers pass the packaged content directory, and Android uses its staged content directory. The export includes files inside the project. Absolute paths to external assets work at runtime when accessible. Place assets inside the project for portable exports.
 
 The Lua template returns a game table. The runner also supports `mv.start()`. Exported Lua games load `main.lua` with the same entry rules. See the [Lua process guide](../api/lua-processes.md).
 

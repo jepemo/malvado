@@ -17,7 +17,7 @@ end)
 local game = {width = 640, height = 480, title = "Aseprite animation"}
 function game.init()
   clear_screen {25, 30, 45, 255}
-  atlas = load_asset("examples/aseprite/sheet.json")
+  atlas = load_asset("sheet.json")
   Player()
 end
 return game

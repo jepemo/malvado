@@ -3,7 +3,7 @@
 
 local mv = require("malvado")
 assert(camera_create == nil)
-assert(not pcall(mv.load_image, "tests/fixtures/red.png"))
+assert(not pcall(mv.load_image, "fixtures/red.png"))
 
 local viewport = mv.region {x = 0, y = 0, width = 10, height = 10}
 local camera = mv.camera_create {viewport = viewport}
@@ -79,7 +79,7 @@ local controller = mv.process(function()
 end)
 
 if mv.animation then
-  local library = mv.load_asset("examples/aseprite/sheet.json")
+  local library = mv.load_asset("../examples/aseprite/sheet.json")
   local clip = mv.animation(library, "bounce")
   assert(clip:sample(0) == mv.animation_sample(clip, 0))
   assert(clip.sample(clip, 500) == mv.animation_sample(clip, 500))

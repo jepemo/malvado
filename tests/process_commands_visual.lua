@@ -4,7 +4,7 @@ local Actor = mv.process(function(self)
   while true do
     mv.set_color {0, 255, 0, 255}
     mv.draw_rect {x = 10, y = 10, width = 20, height = 20}
-    local image = mv.load_image("tests/fixtures/red.png")
+    local image = mv.load_image("fixtures/red.png")
     mv.draw_image {image = image, x = 10, y = 10}
     mv.draw_circle {x = 12, y = 12, radius = 1}
     mv.draw_image {image = image, x = 20, y = 10, source = {x = 0, y = 0, width = 2, height = 2}}

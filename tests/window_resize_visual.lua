@@ -47,9 +47,9 @@ return {width = 160, height = 120, title = "Lua window resize", init = function(
   set_window_size(200, 140)
   width, height = window_size()
   assert(width == 200 and height == 140)
-  image = load_image("tests/fixtures/red.png")
+  image = load_image("fixtures/red.png")
   label = write {text = "Resize", font = font {size = 12}, x = 8, y = 30}
-  music = load_music("tests/fixtures/silence.wav", {loop = true})
+  music = load_music("fixtures/silence.wav", {loop = true})
   play_music(music)
   Hud {camera = false, region = region {x = 16, y = 8, width = 4, height = 8}}
   camera_follow(Followed {x = 300, y = 250, fps = 60, graph = circle {radius = 5, color = GREEN}})

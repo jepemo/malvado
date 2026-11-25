@@ -2,7 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local ok, message = pcall(mv.load_image, "tests/fixtures/red.png")
+local ok, message = pcall(mv.load_image, "fixtures/red.png")
 assert(not ok and message:match("open window"))
 assert(not pcall(mv.load_image, "a\0b.png"))
 assert(not pcall(mv.image_size, {}))

@@ -55,7 +55,7 @@ end)
 return {width = 160, height = 120, init = function()
   clear_screen {0, 0, 0, 255}
   camera_set(50, 30)
-  image = load_image("tests/fixtures/red.png")
+  image = load_image("fixtures/red.png")
   Actor({x = 70, y = 50, physical = true, paint = true,
     graph = rect {width = 20, height = 20, color = {255, 0, 0}},
     scroll = scroll(10, 5), region = region {x = 5, y = 10, width = 10, height = 10}})

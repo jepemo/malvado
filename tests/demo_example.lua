@@ -21,6 +21,7 @@ if not interactive then
   mv.frame = function() ticks = ticks + 1; frame() end
 end
 
+mv.set_assets_dir("../examples/demo")
 dofile("examples/demo/main.lua")
 assert(seen["Sprites - Escape: menu"] and seen["Keyboard - Escape: menu"])
 if not interactive then

@@ -21,7 +21,7 @@ local Green = mv.process(function(self)
   end
 end)
 mv.start(function()
-  image = mv.load_image("tests/fixtures/red.png")
+  image = mv.load_image("fixtures/red.png")
   assert(not pcall(Red, {z = math.huge}))
   Red {z = 10}
   Green()

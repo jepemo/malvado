@@ -156,6 +156,8 @@ completed implementation reports.
 
 ### Example policy
 
+- Keep examples self-contained. Resolve game assets independently of the
+  repository root and the caller’s working directory.
 - Keep public runnable examples under the root `examples/` directory. Keep language bindings, verification fixtures, and benchmark tools in their own components.
 - Organize the selected teaching catalog by topic. Each selected example must have aligned C, Lua, and Rust versions with the same learning objective, observable behavior, controls, and assets where applicable.
 - Use the idiomatic API of each language. Alignment does not require identical source structure or extra API styles.

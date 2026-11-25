@@ -16,7 +16,7 @@ end)
 local game = {width = 640, height = 480, title = "FPG sprites"}
 function game.init()
   clear_screen {25, 30, 45, 255}
-  local library = load_asset("examples/fpg/graphics.fpg")
+  local library = load_asset("graphics.fpg")
   Picture({file = library, sprite = 7, x = 160, y = 120, size = 32, help = true})
   Picture({file = library, sprite = 42, x = 240, y = 120, size = 32})
 end

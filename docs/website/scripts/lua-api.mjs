@@ -47,7 +47,7 @@ const groups = [
   {
     id: 'images', label: 'Images and sprites', guide: 'images',
     summary: 'Load image and atlas assets and draw them.',
-    flat: ['load_asset', 'load_image', 'image_size', 'draw_image',
+    flat: ['set_assets_dir', 'get_assets_dir', 'load_asset', 'load_image', 'image_size', 'draw_image',
       'load_atlas', 'load_aseprite', 'draw_sprite', 'sprite_info', 'sprite_id'],
   },
   {
@@ -117,6 +117,8 @@ const flatSummaries = {
   draw_text: 'Draw immediate-mode text with the built-in font.',
   set_color: 'Set the color that later drawing calls use.',
   clear_screen: 'Clear the window to a color.',
+  set_assets_dir: 'Set the directory for subsequent asset loads.',
+  get_assets_dir: 'Return the absolute asset directory.',
   load_asset: 'Load an image or atlas asset by path.',
   load_image: 'Load a PNG image.',
   image_size: 'Read the width and height of an image.',

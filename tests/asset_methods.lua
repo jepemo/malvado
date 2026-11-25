@@ -2,7 +2,7 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local atlas = mv.load_asset("tests/fixtures/animated-atlas.json")
+local atlas = mv.load_asset("fixtures/animated-atlas.json")
 local file = assert(io.open("tests/fixtures/fpg/bennugd-8.fpg", "rb"))
 local fpg = mv.fpg.parse(file:read("a"))
 file:close()

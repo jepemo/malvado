@@ -57,7 +57,10 @@ def commands(cli, work, game):
 fn main() -> Result<(), Error> {
     assert_eq!(std::fs::read_to_string("assets/value.txt").unwrap(), "asset");
     std::fs::write("executed", "yes").unwrap();
+    std::env::set_current_dir("assets").unwrap();
     let mut game = Game::new()?;
+    game.set_assets_dir("assets")?;
+    assert_eq!(std::fs::read_to_string(game.resolve_asset_path("value.txt")?).unwrap(), "asset");
     game.spawn(SpawnOptions::default(), |p| async move {
         println!("rust: first");
         p.frame().await;

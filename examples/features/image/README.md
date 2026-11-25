@@ -7,7 +7,8 @@ release its reference when the lesson ends.
 
 Use the [shared SDK setup](../README.md#prepare-a-project) with
 `examples/features/image` as the lesson source. Copy the shared asset to the
-generated project root, then run the project with a display:
+generated project root, then run the project with a display. Each variant
+loads the PNG from the game directory:
 
 ```sh
 cp "$source/assets/tile.png" lesson/tile.png

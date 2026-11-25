@@ -47,7 +47,8 @@ owner returns or is killed. Sleep and freeze do not remove it.
 ### Lua fonts and styles
 
 `mv.font {size = n}` creates a built-in font descriptor. A font carries
-typography and a default size; colors belong to each text. `mv.load_font
+typography and a default size. Colors belong to each text. Relative font paths
+use the [game asset directory](asset-sources.md#game-asset-paths). `mv.load_font
 {path = ..., size = ..., extra_glyphs = ...}` loads a TTF/OTF font and keeps
 the same descriptor shape. Each `write` accepts an optional per-text `color`
 and `size` override, so many texts share one font with independent styles.

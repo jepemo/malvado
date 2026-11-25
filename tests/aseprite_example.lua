@@ -34,4 +34,5 @@ mv.frame = function()
   if ticks == 80 then assert(seen[1] and seen[2] and seen[3]) end
   return original_frame()
 end
+mv.set_assets_dir("../examples/aseprite")
 return dofile("examples/aseprite/main.lua")

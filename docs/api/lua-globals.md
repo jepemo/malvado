@@ -95,6 +95,8 @@ Each global has the same value as the `mv` field shown below. `process` and `col
 | `draw_text` | `mv.draw_text` |
 | `animation` | `mv.animation` |
 | `graph` | `mv.graph` |
+| `set_assets_dir` | `mv.set_assets_dir` |
+| `get_assets_dir` | `mv.get_assets_dir` |
 | `load_asset` | `mv.load_asset` |
 | `load_image` | `mv.load_image` |
 | `image_size` | `mv.image_size` |

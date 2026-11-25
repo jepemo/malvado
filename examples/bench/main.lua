@@ -44,7 +44,7 @@ end)
 start(function()
   math.randomseed(1)
   for i = 0, 8 do
-    images[i + 1] = load_image(string.format("examples/bench/assets/colours/%03d.png", i))
+    images[i + 1] = load_image(string.format("assets/colours/%03d.png", i))
   end
   clear_screen(BLACK)
   Benchmark()
