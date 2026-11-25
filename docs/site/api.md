@@ -10,7 +10,7 @@ platform requirements.
 | --- | --- | --- |
 | C | Create an `MvContext`, add callbacks and drive ticks from the host. | Return a completion result or send a kill signal. Release owned handles and destroy the context after the last tick. See the [C contract][c]. |
 | Lua | Define processes with `mv.process` and start them with `mv.start` or in a returned game table. Call `frame()` inside a process to yield. | Return from the process or signal it using its handle. The runner handles shutdown. See [Lua processes][lua]. |
-| Rust | Use `Game::new` and `Game::spawn`. Drive native ticks from the host. Call `process.frame().await` inside the future. | Return `Ok(())` or send a kill signal. Dropping `Game` cancels any remaining processes. See [Rust processes][rust]. |
+| Rust | Use `Game::windowed`, `game.spawn`, and `game.run`. Call `p.frame().await` inside each process. | Return `Ok(())` or send a kill signal. Dropping `Game` cancels any remaining processes. See [Rust processes][rust]. |
 
 Cancel a process by its handle. An owned C or Rust handle can record the end
 reason after the process ends. Attached children end with their owner. A detached

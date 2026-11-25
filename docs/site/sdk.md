@@ -99,7 +99,7 @@ To create a C game, use `malvado new --lang c my-c-game`. Run it with `malvado r
 
 Rust's gameplay SDK is experimental in 2.0. It is functional and tested, but
 future 2.x changes can require source updates. Use `Game` as the public entry
-point; window creation and the host loop remain explicit. See the
+point. Use `Game::windowed` and `game.run()` for a managed window. See the
 [support policy](https://github.com/jepemo/malvado/blob/master/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/master/docs/development/rust-game-migration.md).
 Rust games are native executables; players do not need Cargo or rustc.
 
@@ -116,8 +116,9 @@ malvado run
 ```
 
 Edit `main.rs` to change the game. The starter runs an async process on the native
-scheduler and draws its greeting in an explicit window loop. Press Escape to
-close it. `Cargo.toml` defines the package, the `game` binary and the dependency
+scheduler. Its named async function draws the greeting and waits for each
+new activation. The managed runner handles input, ticks and drawing. Press
+Escape or close the window to exit. `Cargo.toml` defines the package, the `game` binary and the dependency
 on the SDK's installed `malvado` crate. The CLI supplies the native SDK prefix;
 you do not need a Malvado source checkout. If you move the SDK, update the crate
 path in the manifest. Rustup automatic toolchain installation is disabled by the
@@ -125,7 +126,7 @@ CLI; install the required tools before building.
 
 `check` uses Cargo and can execute dependency build scripts and procedural macros.
 It does not start the game. `run` builds first and uses the project directory for
-asset paths. Rust owns its host loop; `--headless` is a Lua runner option. See the
+asset paths. Use `Game::new()` for Rust headless hosts. `--headless` is a Lua runner option. See the
 [Rust process guide](https://github.com/jepemo/malvado/blob/master/docs/api/rust-processes.md)
 for state, frame waits, cancellation and resource lifetimes.
 

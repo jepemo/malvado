@@ -130,9 +130,38 @@ const c = stripLicenseHeader(await readFile(new URL(`${gameDir}c/main.c`, import
 const rust = stripLicenseHeader(
   await readFile(new URL('../../../bindings/rust/malvado/examples/catch.rs', import.meta.url), 'utf8'), 'rust');
 
+let rustLessons = '';
+try {
+  const hello = stripLicenseHeader(
+    await readFile(new URL('../../../examples/rust/hello.rs', import.meta.url), 'utf8'), 'rust');
+  const movingBalls = stripLicenseHeader(
+    await readFile(new URL('../../../examples/rust/moving-balls.rs', import.meta.url), 'utf8'), 'rust');
+  rustLessons = `The managed runner takes care of window events, simulation ticks and rendering.
+
+### Hello World
+
+\`\`\`rust title="examples/rust/hello.rs"
+${hello}
+\`\`\`
+
+### Moving balls
+
+Each ball runs the same function with its own speed, position and color.
+
+\`\`\`rust title="examples/rust/moving-balls.rs"
+${movingBalls}
+\`\`\`
+
+See the [first Rust games](${repoLink('examples/rust', 'tree')}) for run commands.
+
+`;
+} catch (error) {
+  if (!revision || error.code !== 'ENOENT') throw error;
+}
+
 await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: Run the same Catch! game in the three languages.\n---
 
-These runnable examples come from the repository. All three open a 640 × 360
+The three Catch! implementations below open a 640 × 360
 window, run the same Catch! game and use the shared core scheduler. The player
 and the ball are independent processes:
 
@@ -160,8 +189,9 @@ ${c}
 
 ## Rust (experimental)
 
-Rust support is experimental in Malvado 2.0. This version lives with the Rust
-binding and runs with the \`graphics\` feature.
+Enable the \`graphics\` feature for these examples.
+
+${rustLessons}### Catch!
 
 \`\`\`rust title="bindings/rust/malvado/examples/catch.rs"
 ${rust}

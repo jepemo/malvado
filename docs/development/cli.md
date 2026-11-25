@@ -171,7 +171,7 @@ malvado run
 ```
 
 The template contains `main.rs` and `Cargo.toml`. It uses the safe Rust API,
-the native process scheduler and an explicit window/time loop. Escape closes
+the native process scheduler and a managed window loop. Escape closes
 the window. Cargo owns package metadata; no `malvado.toml` is required. The CLI
 supports a binary target named `game`; Cargo defines its source path. Other
 binary names and workspaces with multiple packages are outside this initial
