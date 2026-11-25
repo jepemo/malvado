@@ -13,6 +13,9 @@ Build Malvado and run this command from the repository root:
 ./build/malvado run examples/demo/main.lua
 ```
 
+The installed CLI also runs the example with `malvado run .` from this
+directory or with `malvado run /path/to/main.lua` from any directory.
+
 The demo requires a display or virtual display.
 
 ## Artwork

@@ -2,10 +2,10 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local wav = "tests/fixtures/silence.wav"
+local wav = "fixtures/silence.wav"
 local sound = mv.load_sound(wav)
-assert(not pcall(mv.load_sound, "tests/fixtures/missing.wav"))
-assert(not pcall(mv.load_sound, "tests/fixtures/silence.mp3"))
+assert(not pcall(mv.load_sound, "fixtures/missing.wav"))
+assert(not pcall(mv.load_sound, "fixtures/silence.mp3"))
 
 for _, control in ipairs {mv.stop_sound, mv.pause_sound, mv.resume_sound,
                            mv.sound_playing, mv.sound_volume} do
@@ -96,11 +96,11 @@ assert(not mv.sound_playing(voices[1]) and mv.sound_playing(replacement))
 mv.stop_sound(voices[1]) -- The old handle cannot affect the reused slot.
 for i = 2, #voices do mv.stop_sound(voices[i]) end
 
-local ogg = mv.load_music("tests/fixtures/silence.ogg")
+local ogg = mv.load_music("fixtures/silence.ogg")
 mv.play_music(ogg)
 mv.update_music(ogg)
 mv.stop_music(ogg)
-assert(not pcall(mv.load_music, "tests/fixtures/missing.wav"))
+assert(not pcall(mv.load_music, "fixtures/missing.wav"))
 for _, options in ipairs {true, "yes", {loop = "yes"}, {loop = 1}, {looping = true}, {false}} do
   assert(not pcall(mv.load_music, wav, options))
 end

@@ -36,7 +36,7 @@ A sleeping process is hidden. Each command retains its source until the process
 clears the command list or ends. Use `self.graph` to assign a graphic that the
 engine draws automatically every frame.
 
-Paths are relative to the current working directory. `load_image` raises an
+Relative paths use the [game asset directory](asset-sources.md#game-asset-paths). `load_image` raises an
 error when it cannot load the PNG or when no window is open. Immediate image and
 sprite drawing requires a window and a loaded image.
 
@@ -125,11 +125,11 @@ An atlas gives each region a stable numeric ID. Put the metadata in a JSON file:
 
 All fields are required except `pivot_x` and `pivot_y`, which default to zero. IDs must be positive and unique. Names must be unique. Regions must fit in the image. Names and image paths must be valid UTF-8 without ASCII control characters. Names have at most 127 bytes and image paths have at most 511 bytes. Lookups compare bytes exactly and do not normalize Unicode. It supports up to 4096 sprites and 1 MiB of JSON. It rejects unknown fields, duplicate keys, escaped zero bytes, and unescaped control characters in JSON strings. Outside strings, only JSON whitespace is accepted. Numeric fields must be exact integers, including when written with a decimal point or exponent. A literal backslash followed by `u0000` is allowed. This schema is separate from the Aseprite subset described below.
 
-Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Paths are relative to the working directory:
+Load the PNG and JSON in your `start` function. Use the image named by the metadata; `load_atlas` checks its dimensions but does not check its filename. Use the same asset directory for both files:
 
 ```lua
 local image = mv.load_image("sprites.png")
-local file = assert(io.open("atlas.json", "rb"))
+local file = assert(io.open(mv.get_assets_dir() .. "/atlas.json", "rb"))
 local json = file:read("a")
 file:close()
 local atlas = mv.load_atlas(image, json)
@@ -254,7 +254,7 @@ boolean only for FPG input, defaulting to true for loaded library graphics.
 Converted FPG PNGs retain the transparency already encoded by the converter.
 Existing `fpg_image(fpg, id, transparent_zero)` calls keep their explicit policy.
 
-Paths are relative to the working directory. Referenced atlas/manifest images
+Relative paths use the [game asset directory](asset-sources.md#game-asset-paths). Referenced atlas and manifest images
 are relative to their metadata file, or use their explicit absolute path.
 Sources must be readable, seekable files of at most 64 MiB; the native parser's
 smaller metadata limits still apply. Asset-enabled builds use the shared

@@ -30,6 +30,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_asset_source_image_path`
 - `mv_asset_source_image_path_size`
 - `mv_asset_source_open`
+- `mv_asset_source_open_for_game`
 - `mv_asset_source_path`
 
 ## [atlas.h](../../src/include/malvado/atlas.h)
@@ -145,10 +146,13 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_cadence_step`
 - `mv_context_advance`
 - `mv_context_create`
+- `mv_context_create_with_game_dir`
 - `mv_context_destroy`
 - `mv_context_dropped_seconds`
+- `mv_context_game_dir`
 - `mv_context_runtime_id`
 - `mv_context_ticks`
+- `mv_get_assets_dir`
 - `mv_message_release`
 - `mv_process_angle`
 - `mv_process_children`
@@ -188,11 +192,13 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_status`
 - `mv_process_tick`
 - `mv_process_z`
+- `mv_resolve_asset_path`
 - `mv_resource_create`
 - `mv_resource_data`
 - `mv_resource_release`
 - `mv_resource_retain`
 - `mv_resource_transfer`
+- `mv_set_assets_dir`
 - `mv_version_string`
 
 ## [platform.h](../../src/include/malvado/platform.h)
@@ -213,6 +219,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_font_draw`
 - `mv_font_load`
 - `mv_font_load_codepoints`
+- `mv_font_load_codepoints_for_game`
+- `mv_font_load_for_game`
 - `mv_font_retain`
 - `mv_font_text_height`
 - `mv_font_text_width`
@@ -223,6 +231,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_image_from_rgba`
 - `mv_image_height`
 - `mv_image_load`
+- `mv_image_load_for_game`
 - `mv_image_region_valid`
 - `mv_image_retain`
 - `mv_image_width`
@@ -239,6 +248,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_mouse_released`
 - `mv_music_destroy`
 - `mv_music_load`
+- `mv_music_load_for_game`
 - `mv_music_pause`
 - `mv_music_paused`
 - `mv_music_play`
@@ -271,6 +281,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_sound_clone`
 - `mv_sound_destroy`
 - `mv_sound_load`
+- `mv_sound_load_for_game`
 - `mv_sound_pause`
 - `mv_sound_paused`
 - `mv_sound_play`

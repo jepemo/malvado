@@ -31,8 +31,13 @@ int main(int argc, char **argv)
     char absolute[4096];
     int size = snprintf(absolute, sizeof(absolute), "%s/tests/fixtures/red.png", GetWorkingDirectory());
     assert(size > 0 && (size_t)size < sizeof(absolute));
-    MvImage *third = mv_image_load(absolute);
-    assert(first && first == second && first == third);
+    MvContext *game = mv_context_create_with_game_dir(60, 5, GetWorkingDirectory());
+    assert(game && mv_set_assets_dir(game, "tests/fixtures") == MV_OK);
+    MvImage *third = mv_image_load_for_game(game, absolute);
+    MvImage *from_game = mv_image_load_for_game(game, "red.png");
+    assert(first && first == second && first == third && first == from_game);
+    mv_context_destroy(game);
+    mv_image_destroy(from_game);
     for (int i = 0; i < 50; ++i) {
         MvImage *extra = mv_image_load("tests/fixtures/red.png");
         assert(extra == first);

@@ -105,22 +105,23 @@ static MvStepResult step(MvContext *ctx, MvProcessId id, void *data) {
 #endif
 }
 int main(void) {
+    MvContext *ctx = mv_context_create(60, 4);
+    if (!ctx) return 5;
     const char *error = NULL;
-    MvAssetSource *source = mv_asset_source_open("assets/value.bin", &error);
+    MvAssetSource *source = mv_asset_source_open_for_game(ctx, "assets/value.bin", &error);
     size_t length = 0;
     const char *bytes = mv_asset_source_data(source, &length);
     if (!source || length != 4 || memcmp(bytes, "\0\r\n\xff", 4)) return 2;
     mv_asset_source_destroy(source);
     if (!mv_window_open(320, 240, "C exported game")) return 3;
     State state = {0};
-    state.image = mv_image_load("red.png");
+    state.image = mv_image_load_for_game(ctx, "red.png");
     if (!state.image || mv_image_width(state.image) != 8) return 4;
 #ifdef EXPECT_AUDIO_FOCUS
     if (!mv_audio_open()) return 9;
-    state.paused = mv_sound_load("silence.wav");
+    state.paused = mv_sound_load_for_game(ctx, "silence.wav");
     if (!state.paused || !mv_sound_play(state.paused) || !mv_sound_pause(state.paused)) return 10;
 #endif
-    MvContext *ctx = mv_context_create(60, 4);
     MvProcessId id;
     if (!ctx || mv_process_spawn(ctx, 0, 0, step, destroy, &state, &id) != MV_OK) return 5;
     MvResult result = MV_OK;

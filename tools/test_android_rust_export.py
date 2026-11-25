@@ -17,21 +17,22 @@ from test_android_export import center_pixel
 from android_export import GAME_ACTIVITY
 
 GAME = r'''
-use malvado::{Game, Error, SpawnOptions, image::Image, window::{Window, Color}};
+use malvado::{Game, Error, SpawnOptions, window::{Window, Color}};
 use std::{rc::Rc, cell::Cell};
 struct Guard(Rc<Cell<usize>>);
 impl Drop for Guard {
     fn drop(&mut self) { self.0.set(self.0.get()+1); eprintln!("Rust exported resource released"); }
 }
 fn main() -> Result<(), Error> {
-    assert_eq!(std::fs::read("assets/value.bin").unwrap(), &[0,13,10,255]);
+    let mut game = Game::new()?;
+    let binary = malvado::asset::Source::open(game.resolve_asset_path("assets/value.bin")?)?;
+    assert_eq!(binary.bytes(), &[0,13,10,255]);
     let window = Rc::new(Window::open(320,240,"Rust exported game")?);
-    let image = Image::load(window.clone(), "red.png")?;
+    let image = game.load_image(window.clone(), "red.png")?;
     let weak = Rc::downgrade(&window);
     let drops = Rc::new(Cell::new(0));
     let guard = Guard(drops.clone());
     if MODE == 2 { let _guard = guard; panic!("expected exported Rust panic"); }
-    let mut game = Game::new()?;
     game.spawn(SpawnOptions::default(), move |p| async move {
         let _guard = guard;
         let _image = p.resource(image)?;

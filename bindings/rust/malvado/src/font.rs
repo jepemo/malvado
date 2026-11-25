@@ -129,3 +129,26 @@ impl Frame<'_> {
 /// fn invalid(font: Font) { std::thread::spawn(move || drop(font)); }
 /// ```
 mod ownership_contract {}
+
+impl crate::Game {
+    /// Load a font relative to this game's current asset directory.
+    pub fn load_font(
+        &self,
+        window: Rc<Window>,
+        path: impl AsRef<Path>,
+        base_size: i32,
+    ) -> Result<Font, Error> {
+        Font::load(window, self.resolve_asset_path(path)?, base_size)
+    }
+
+    /// Load a font and its extra glyphs from this game's asset directory.
+    pub fn load_font_glyphs(
+        &self,
+        window: Rc<Window>,
+        path: impl AsRef<Path>,
+        base_size: i32,
+        glyphs: &[char],
+    ) -> Result<Font, Error> {
+        Font::load_glyphs(window, self.resolve_asset_path(path)?, base_size, glyphs)
+    }
+}

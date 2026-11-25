@@ -23,5 +23,6 @@ mv.frame = function()
   return frame()
 end
 
+mv.set_assets_dir("../examples/sprites")
 dofile("examples/sprites/main.lua")
 assert(frames >= 8 and unique == 6)

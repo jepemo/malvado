@@ -11,6 +11,9 @@ Build Malvado and run from the repository root:
 ./build/malvado run examples/space_asteroids/main.lua
 ```
 
+The installed CLI also runs the example with `malvado run .` from this
+directory or with `malvado run /path/to/main.lua` from any directory.
+
 Each rock, shot, ship and star has its own process. `load_asset()` shares the
 live native PNG texture across processes. `pivot = "center"` keeps rotation and
 position centered without changing the default origin used by other examples.

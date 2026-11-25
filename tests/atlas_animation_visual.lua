@@ -11,7 +11,7 @@ local task = mv.process(function()
   end
 end)
 mv.start(function()
-  local image = mv.load_image("tests/fixtures/red.png")
+  local image = mv.load_image("fixtures/red.png")
   local file = assert(io.open("tests/fixtures/animated-atlas.json", "rb"))
   local json = file:read("a")
   file:close()

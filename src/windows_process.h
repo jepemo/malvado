@@ -19,4 +19,6 @@
  * stdout capture is bounded and NUL-terminated; overflow returns failure after
  * draining the pipe. All process/pipe/environment storage is released. */
 int malvado_windows_process(char *const args[], const char *sdk, char *output, size_t size);
+int malvado_windows_process_with_game_dir(char *const args[], const char *sdk,
+                                          const char *game_dir, char *output, size_t size);
 #endif

@@ -2,9 +2,9 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24}))
-assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 0}))
-assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\0"}))
+assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24}))
+assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 0}))
+assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\0"}))
 local id
 local task = mv.process(function()
   local f = mv.font {size = 24}

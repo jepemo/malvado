@@ -74,7 +74,7 @@ local Controller = proc(function(self)
   assert(ok, error_message)
 
   if mv.animation then
-    self.graph = mv.animation(mv.load_asset("examples/aseprite/sheet.json"), "bounce")
+    self.graph = mv.animation(mv.load_asset("../examples/aseprite/sheet.json"), "bounce")
     mv.frame()
     mv.frame()
     assert(self:animation_elapsed() > 0)

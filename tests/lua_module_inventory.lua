@@ -53,7 +53,7 @@ local objects = {
   scroll = mv.scroll(1, 0),
 }
 if has_assets then
-  objects.atlas = mv.load_asset("tests/fixtures/atlas.json")
+  objects.atlas = mv.load_asset("fixtures/atlas.json")
   local fpg = mv.fpg.parse(read("tests/fixtures/fpg/bennugd-8.fpg"))
   objects.animation = mv.animation(fpg, {7, 42})
   objects.fpg = fpg

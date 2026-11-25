@@ -40,6 +40,7 @@
 #include "malvado/asset.h"
 #endif
 #include "globals.h"
+#include "core/game_path.h"
 #include "core/process.h"
 #include "core/schedule.h"
 #include "malvado/malvado.h"
@@ -2672,6 +2673,52 @@ maintain_audio(lua_State *L)
     sweep_audio(L);
 }
 
+static const char *
+check_asset_path(lua_State *L, int index)
+{
+    size_t length;
+    const char *path = luaL_checklstring(L, index, &length);
+    if (!length || strlen(path) != length)
+        luaL_argerror(L, index, "invalid asset path");
+    return path;
+}
+
+/* Lua owns the temporary buffer even when a loader raises an error. */
+static const char *
+resolve_asset_path(lua_State *L, const char *path)
+{
+    size_t size;
+    if (mv_resolve_asset_path(engine.context, path, NULL, 0, &size) != MV_OK)
+        luaL_error(L, "invalid asset path: %s", path);
+    char *resolved = lua_newuserdatauv(L, size, 0);
+    if (mv_resolve_asset_path(engine.context, path, resolved, size, NULL) != MV_OK)
+        luaL_error(L, "could not resolve asset path: %s", path);
+    return resolved;
+}
+
+static int
+set_assets_dir(lua_State *L)
+{
+    const char *path = NULL;
+    if (!lua_isnoneornil(L, 1)) {
+        luaL_checktype(L, 1, LUA_TSTRING);
+        path = check_asset_path(L, 1);
+    }
+    MvResult result = mv_set_assets_dir(engine.context, path);
+    if (result == MV_OUT_OF_MEMORY)
+        return luaL_error(L, "out of memory setting assets directory");
+    if (result != MV_OK)
+        return luaL_error(L, "invalid assets directory: %s", path);
+    return 0;
+}
+
+static int
+get_assets_dir(lua_State *L)
+{
+    lua_pushstring(L, mv_get_assets_dir(engine.context));
+    return 1;
+}
+
 static int
 sound_gc(lua_State *L)
 {
@@ -2686,10 +2733,7 @@ sound_gc(lua_State *L)
 static int
 load_sound(lua_State *L)
 {
-    size_t length;
-    const char *path = luaL_checklstring(L, 1, &length);
-    if (strlen(path) != length)
-        return luaL_error(L, "sound path contains a zero byte");
+    const char *path = check_asset_path(L, 1);
     if (engine.headless)
         return luaL_error(L, "sound is not available in headless mode");
     if (!engine.audio) {
@@ -2697,12 +2741,13 @@ load_sound(lua_State *L)
             return luaL_error(L, "could not open audio device");
         engine.audio = 1;
     }
+    const char *resolved = resolve_asset_path(L, path);
     LuaSound *sound = lua_newuserdatauv(L, sizeof(*sound), 0);
     *sound = (LuaSound){0};
     luaL_setmetatable(L, "malvado.sound");
-    sound->sound = mv_sound_load(path);
+    sound->sound = mv_sound_load(resolved);
     if (!sound->sound)
-        return luaL_error(L, "could not load WAV sound: %s", path);
+        return luaL_error(L, "could not load WAV sound: %s (resolved to %s)", path, resolved);
     MvSound *native = sound->sound;
     sound->sound = NULL;
     sound->resource = manage_native_resource(L, native, destroy_managed_sound, adopt_sound);
@@ -2843,10 +2888,7 @@ music_gc(lua_State *L)
 static int
 load_music(lua_State *L)
 {
-    size_t length;
-    const char *path = luaL_checklstring(L, 1, &length);
-    if (strlen(path) != length)
-        return luaL_error(L, "music path contains a zero byte");
+    const char *path = check_asset_path(L, 1);
     int loop = 0;
     if (!lua_isnoneornil(L, 2)) {
         static const char *const keys[] = {"loop"};
@@ -2864,12 +2906,13 @@ load_music(lua_State *L)
             return luaL_error(L, "could not open audio device");
         engine.audio = 1;
     }
+    const char *resolved = resolve_asset_path(L, path);
     LuaMusic *music = lua_newuserdatauv(L, sizeof(*music), 0);
     *music = (LuaMusic){0};
     luaL_setmetatable(L, "malvado.music");
-    music->music = mv_music_load(path, loop);
+    music->music = mv_music_load(resolved, loop);
     if (!music->music)
-        return luaL_error(L, "could not load music: %s", path);
+        return luaL_error(L, "could not load music: %s (resolved to %s)", path, resolved);
     MvMusic *native = music->music;
     music->music = NULL;
     music->resource = manage_native_resource(L, native, destroy_managed_music, adopt_music);
@@ -2947,22 +2990,25 @@ image_gc(lua_State *L)
 }
 
 static int
-load_image(lua_State *L)
+load_resolved_image(lua_State *L, const char *path, const char *resolved)
 {
-    size_t length;
-    const char *path = luaL_checklstring(L, 1, &length);
-    if (strlen(path) != length)
-        return luaL_error(L, "image path contains a zero byte");
     if (!engine.window)
         return luaL_error(L, "load_image requires an open window");
     LuaImage *image = lua_newuserdatauv(L, sizeof(*image), 0);
     *image = (LuaImage){0};
     luaL_setmetatable(L, "malvado.image");
-    image->image = mv_image_load(path);
+    image->image = mv_image_load(resolved);
     if (!image->image)
-        return luaL_error(L, "could not load PNG image: %s", path);
+        return luaL_error(L, "could not load PNG image: %s (resolved to %s)", path, resolved);
     manage_image(L, image);
     return 1;
+}
+
+static int
+load_image(lua_State *L)
+{
+    const char *path = check_asset_path(L, 1);
+    return load_resolved_image(L, path, resolve_asset_path(L, path));
 }
 
 static int
@@ -3192,7 +3238,7 @@ legacy_fpg(lua_State *L)
 #ifdef _WIN32
         return luaL_error(L, "legacy directory graphics are not supported on Windows");
 #else
-        return legacy_directory(L, path);
+        return legacy_directory(L, resolve_asset_path(L, path));
 #endif
     }
     if (kind_length != 5 || memcmp(kind, "image", 5) != 0)
@@ -3833,7 +3879,7 @@ asset_source_gc(lua_State *L)
     return 0;
 }
 static const char *
-read_asset_file(lua_State *L, const char *path, size_t *length)
+read_asset_file(lua_State *L, const char *path, const char *resolved, size_t *length)
 {
     LuaAssetSource *value = lua_newuserdatauv(L, sizeof(*value), 0);
     value->source = NULL;
@@ -3843,33 +3889,33 @@ read_asset_file(lua_State *L, const char *path, size_t *length)
     }
     lua_setmetatable(L, -2);
     const char *error = NULL;
-    value->source = mv_asset_source_open(path, &error);
-    if (!value->source) luaL_error(L, "%s: %s", error, path);
+    value->source = mv_asset_source_open(resolved, &error);
+    if (!value->source) luaL_error(L, "%s: %s (resolved to %s)", error, path, resolved);
     return mv_asset_source_data(value->source, length);
 }
 #else
 /* Read a bounded source without keeping a FILE open across Lua allocations. */
 static const char *
-read_asset_file(lua_State *L, const char *path, size_t *length)
+read_asset_file(lua_State *L, const char *path, const char *resolved, size_t *length)
 {
-    FILE *file = fopen(path, "rb");
+    FILE *file = fopen(resolved, "rb");
     if (!file)
-        luaL_error(L, "cannot open asset: %s", path);
+        luaL_error(L, "cannot open asset: %s (resolved to %s)", path, resolved);
     int seek_ok = fseek(file, 0, SEEK_END) == 0;
     long size = seek_ok ? ftell(file) : -1;
     int closed = fclose(file);
     if (size < 0 || size > 64 * 1024 * 1024 || closed != 0)
-        luaL_error(L, "cannot read asset (maximum 64 MiB): %s", path);
+        luaL_error(L, "cannot read asset (maximum 64 MiB): %s (resolved to %s)", path, resolved);
     char *bytes = lua_newuserdatauv(L, (size_t)size + 1, 0);
-    file = fopen(path, "rb");
+    file = fopen(resolved, "rb");
     if (!file)
-        luaL_error(L, "cannot reopen asset: %s", path);
+        luaL_error(L, "cannot reopen asset: %s (resolved to %s)", path, resolved);
     size_t count = fread(bytes, 1, (size_t)size, file);
     int extra = fgetc(file);
     int failed = ferror(file);
     closed = fclose(file);
     if (count != (size_t)size || extra != EOF || failed || closed != 0)
-        luaL_error(L, "cannot read asset or source changed: %s", path);
+        luaL_error(L, "cannot read asset or source changed: %s (resolved to %s)", path, resolved);
     bytes[count] = '\0';
     *length = count;
     return bytes;
@@ -3887,7 +3933,8 @@ asset_metadata_gc(lua_State *L)
 }
 
 static MvAssetMetadata *
-parse_asset_metadata(lua_State *L, MvAssetSource *source, MvAssetFormat format, const char *path)
+parse_asset_metadata(lua_State *L, MvAssetSource *source, MvAssetFormat format,
+                     const char *path, const char *resolved)
 {
     LuaAssetMetadata *value = lua_newuserdatauv(L, sizeof(*value), 0);
     value->metadata = (MvAssetMetadata){0};
@@ -3898,7 +3945,7 @@ parse_asset_metadata(lua_State *L, MvAssetSource *source, MvAssetFormat format, 
     lua_setmetatable(L, -2);
     const char *error = NULL;
     if (!mv_asset_metadata_parse(source, format, &value->metadata, &error))
-        luaL_error(L, "%s: %s", path, error);
+        luaL_error(L, "%s (resolved to %s): %s", path, resolved, error);
     return &value->metadata;
 }
 
@@ -3907,13 +3954,11 @@ push_asset_image(lua_State *L, const MvAssetSource *source, const char *image)
 {
     size_t size = mv_asset_source_image_path_size(source, image);
     if (!size) luaL_error(L, "invalid asset image path");
-    lua_pushcfunction(L, load_image);
     char *path = lua_newuserdatauv(L, size, 0);
     if (!mv_asset_source_image_path(source, image, path, size))
         luaL_error(L, "cannot resolve asset image path");
-    lua_pushstring(L, path);
+    (void)load_resolved_image(L, image, path);
     lua_remove(L, -2);
-    lua_call(L, 1, 1);
 }
 
 static int
@@ -4003,10 +4048,7 @@ load_asset_library(lua_State *L, MvAssetSource *source, const char *path,
 static int
 load_asset(lua_State *L)
 {
-    size_t path_length;
-    const char *path = luaL_checklstring(L, 1, &path_length);
-    if (!path_length || strlen(path) != path_length)
-        return luaL_error(L, "invalid asset path");
+    const char *path = check_asset_path(L, 1);
     const char *requested = NULL;
     int transparent = 1, has_transparent = 0, has_pivot = 0, centered = 0;
     if (!lua_isnoneornil(L, 2)) {
@@ -4042,7 +4084,8 @@ load_asset(lua_State *L)
         lua_pop(L, 1);
     }
     size_t length;
-    const char *bytes = read_asset_file(L, path, &length);
+    const char *resolved = resolve_asset_path(L, path);
+    const char *bytes = read_asset_file(L, path, resolved, &length);
     (void)bytes;
 #ifdef MALVADO_BUILD_ASSETS
     MvAssetSource *source = ((LuaAssetSource *)lua_touserdata(L, -1))->source;
@@ -4053,9 +4096,7 @@ load_asset(lua_State *L)
     if ((requested && !strcmp(requested, "png")) || (!requested && png)) {
         if (has_transparent)
             return luaL_error(L, "transparent_zero is only valid for FPG assets");
-        lua_pushcfunction(L, load_image);
-        lua_pushvalue(L, 1);
-        lua_call(L, 1, 1);
+        (void)load_resolved_image(L, path, resolved);
         if (centered) {
             LuaImage *image = lua_touserdata(L, -1);
             image->pivot_x = mv_image_width(image->image) / 2.0;
@@ -4074,10 +4115,10 @@ load_asset(lua_State *L)
     }
     if (has_transparent && format != MV_ASSET_FPG)
         return luaL_error(L, "transparent_zero is only valid for FPG assets");
-    MvAssetMetadata *metadata = parse_asset_metadata(L, source, format, path);
+    MvAssetMetadata *metadata = parse_asset_metadata(L, source, format, path, resolved);
     if (metadata->atlas)
-        return load_asset_atlas(L, source, path, metadata);
-    return load_asset_library(L, source, path, metadata, transparent);
+        return load_asset_atlas(L, source, resolved, metadata);
+    return load_asset_library(L, source, resolved, metadata, transparent);
 #else
     (void)transparent;
     return luaL_error(L, "asset format requires asset support (only PNG is available)");
@@ -4189,11 +4230,7 @@ load_font(lua_State *L)
     luaL_checktype(L, 1, LUA_TTABLE);
     validate_table_keys(L, 1, keys, sizeof(keys) / sizeof(keys[0]));
     raw_option(L, 1, "path");
-    size_t length;
-    const char *path = luaL_checklstring(L, -1, &length);
-    if (strlen(path) != length)
-        return luaL_error(L, "invalid font path");
-    lua_pop(L, 1);
+    const char *path = check_asset_path(L, -1);
     raw_option(L, 1, "size");
     int is_integer;
     lua_Integer size = lua_tointegerx(L, -1, &is_integer);
@@ -4232,12 +4269,13 @@ load_font(lua_State *L)
     lua_pop(L, 1);
     if (!engine.window)
         return luaL_error(L, "load_font requires an open window");
+    const char *resolved = resolve_asset_path(L, path);
     LuaFont *font = lua_newuserdatauv(L, sizeof(*font), 0);
     *font = (LuaFont){0};
     luaL_setmetatable(L, "malvado.font");
-    font->font = mv_font_load_codepoints(path, (int)size, glyphs, count);
+    font->font = mv_font_load_codepoints(resolved, (int)size, glyphs, count);
     if (!font->font)
-        return luaL_error(L, "could not load TTF or OTF font: %s", path);
+        return luaL_error(L, "could not load TTF or OTF font: %s (resolved to %s)", path, resolved);
     MvFont *native = font->font;
     font->font = NULL;
     font->resource = manage_native_resource(L, native, destroy_managed_font, adopt_font);
@@ -5115,6 +5153,10 @@ validate_start_options(lua_State *L, int index, int allow_init)
         } else if (strcmp(key, "fps") == 0) {
             if (!valid_process_fps(L, -1))
                 luaL_error(L, "game fps must be an integer in 0..60");
+        } else if (allow_init && strcmp(key, "assets_dir") == 0) {
+            if (lua_type(L, -1) != LUA_TSTRING)
+                luaL_error(L, "game assets_dir must be a string");
+            (void)check_asset_path(L, -1);
         } else if (allow_init && strcmp(key, "init") == 0) {
             if (!lua_isfunction(L, -1))
                 luaL_error(L, "game init must be a function");
@@ -5237,6 +5279,10 @@ start_declared_game(lua_State *L)
     if (engine.started)
         return luaL_error(L, "game table returned after start()");
     validate_start_options(L, 1, 1);
+    lua_pushcfunction(L, set_assets_dir);
+    raw_option(L, 1, "assets_dir");
+    if (lua_isnil(L, -1)) lua_pop(L, 2);
+    else lua_call(L, 1, 0);
     lua_pushcfunction(L, start);
     lua_pushliteral(L, "init");
     lua_rawget(L, 1);
@@ -5459,6 +5505,8 @@ static const char *const global_names[] = {
     "draw_text",
     "animation",
     "graph",
+    "set_assets_dir",
+    "get_assets_dir",
     "load_asset",
     "load_image",
     "image_size",
@@ -6812,6 +6860,8 @@ open_module(lua_State *L)
         {"draw_rect", draw_rect},
         {"draw_circle", draw_circle},
         {"draw_line", draw_line},
+        {"set_assets_dir", set_assets_dir},
+        {"get_assets_dir", get_assets_dir},
         {"load_asset", load_asset},
         {"load_image", load_image},
         {"image_size", image_size},
@@ -7339,9 +7389,40 @@ protect_process_coroutines(lua_State *L)
 }
 
 static int
+search_game_module(lua_State *L)
+{
+    size_t length;
+    const char *name = luaL_checklstring(L, 1, &length);
+    if (strlen(name) != length) return 0;
+    const char *module = luaL_gsub(L, name, ".", "/");
+    const char *directory = mv_context_game_dir(engine.context);
+    const char *suffixes[] = {".lua", "/init.lua"};
+    for (size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); ++i) {
+        const char *path = lua_pushfstring(L, "%s/%s%s", directory, module, suffixes[i]);
+        int result = luaL_loadfile(L, path);
+        if (result == LUA_OK) {
+            lua_insert(L, -2);
+            return 2;
+        }
+        if (result != LUA_ERRFILE) return lua_error(L);
+        lua_pop(L, 2);
+    }
+    return 0;
+}
+
+static int
 initialize_lua(lua_State *L)
 {
     luaL_openlibs(L);
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "searchers");
+    for (lua_Integer i = (lua_Integer)lua_rawlen(L, -1); i >= 2; --i) {
+        lua_rawgeti(L, -1, i);
+        lua_rawseti(L, -2, i + 1);
+    }
+    lua_pushcfunction(L, search_game_module);
+    lua_rawseti(L, -2, 2);
+    lua_pop(L, 2);
     protect_process_coroutines(L);
     luaL_requiref(L, "malvado", open_module, 0);
     lua_pop(L, 1);
@@ -7369,12 +7450,22 @@ malvado_run(int argc, char **argv)
         return 2;
     }
     (void)mv_draw_state_init(&engine.draw);
-    engine.context = mv_context_create(60, 5);
+    char *script = malvado_path_absolute(argv[index]);
+    char *directory = script ? malvado_path_parent(script) : NULL;
+    if (!directory) {
+        fprintf(stderr, "Could not determine game directory for %s\n", argv[index]);
+        free(script);
+        return 1;
+    }
+    engine.context = mv_context_create_with_game_dir(60, 5, directory);
+    free(directory);
     if (!engine.context) {
+        free(script);
         fprintf(stderr, "Could not create Malvado context\n");
         return 1;
     }
     if (mv_context_runtime_id(engine.context, &engine.runtime_id) != MV_OK) {
+        free(script);
         fprintf(stderr, "Could not identify Malvado context\n");
         mv_context_destroy(engine.context);
         engine.context = NULL;
@@ -7383,6 +7474,7 @@ malvado_run(int argc, char **argv)
     (void)mv_camera_main(engine.context, &engine.main_camera.reference);
     engine.L = luaL_newstate();
     if (!engine.L) {
+        free(script);
         fprintf(stderr, "Could not create Lua state\n");
         mv_context_destroy(engine.context);
         engine.context = NULL;
@@ -7391,7 +7483,8 @@ malvado_run(int argc, char **argv)
     lua_pushcfunction(engine.L, initialize_lua);
     int status = lua_pcall(engine.L, 0, 0, 0);
     if (status == LUA_OK)
-        status = luaL_loadfile(engine.L, argv[index]);
+        status = luaL_loadfile(engine.L, script);
+    free(script);
     if (status == LUA_OK)
         status = lua_pcall(engine.L, 0, 1, 0);
     if (status != LUA_OK) {

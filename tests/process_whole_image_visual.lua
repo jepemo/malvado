@@ -8,7 +8,7 @@ local actor = mv.process(function(self)
   while true do mv.frame() end
 end)
 mv.start(function()
-  selected = mv.load_asset("tests/fixtures/odd-red.png", {pivot = "center"})
+  selected = mv.load_asset("fixtures/odd-red.png", {pivot = "center"})
   actor {x = 10, y = 10, graph = selected}
   collectgarbage("collect")
 end, {width = 64, height = 64, title = "Native Lua fractional whole image"})

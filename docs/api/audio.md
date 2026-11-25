@@ -21,7 +21,7 @@ if voice then
 end
 ```
 
-Paths are relative to the working directory. Loading raises an error for an
+Relative sound and music paths use the [game asset directory](asset-sources.md#game-asset-paths). Loading raises an error for an
 invalid WAV file, a device that cannot open, or headless mode.
 
 Each successful `play_sound(sound, options?)` call returns a new Voice and

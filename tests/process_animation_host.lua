@@ -1,6 +1,6 @@
 -- Malvado 2; SPDX-License-Identifier: Apache-2.0
 local mv = require("malvado")
-local library = mv.load_asset("tests/fixtures/fpg/bennugd-8.fpg")
+local library = mv.load_asset("fixtures/fpg/bennugd-8.fpg")
 local definition = mv.animation(library, {7,42}, {fps = 20})
 local elapsed = mv.graphics.animation_elapsed
 local expected = {}

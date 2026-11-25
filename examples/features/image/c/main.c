@@ -22,8 +22,10 @@ main(void)
     if (!mv_window_open(160, 120, "Malvado Image"))
         return 1;
 
-    MvImage *image = mv_image_load("tile.png");
+    MvContext *game = mv_context_create(60, 5);
+    MvImage *image = mv_image_load_for_game(game, "tile.png");
     if (!image) {
+        mv_context_destroy(game);
         mv_window_close();
         return 1;
     }
@@ -36,6 +38,7 @@ main(void)
 
     /* A direct image reference belongs to the caller and needs a live window. */
     mv_image_destroy(image);
+    mv_context_destroy(game);
     mv_window_close();
     return 0;
 }

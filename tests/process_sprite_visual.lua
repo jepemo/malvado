@@ -6,7 +6,7 @@ local actor = mv.process(function(self)
   while true do mv.frame() end
 end)
 mv.start(function()
-  local library = mv.load_asset("tests/fixtures/atlas.json")
+  local library = mv.load_asset("fixtures/atlas.json")
   selected = mv.graph(library, 7)
   actor {x = 10, y = 10, graph = selected}
   collectgarbage("collect")

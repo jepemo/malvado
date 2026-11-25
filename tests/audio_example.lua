@@ -40,5 +40,6 @@ mv.play_music = function(music)
   return play_music(music)
 end
 
+mv.set_assets_dir("../examples/audio")
 dofile("examples/audio/main.lua")
 assert(effects == 2 and loops == 1 and ticks >= 8)

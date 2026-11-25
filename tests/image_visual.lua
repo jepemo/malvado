@@ -2,12 +2,12 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-assert(not pcall(mv.load_image, "tests/fixtures/red.png"))
+assert(not pcall(mv.load_image, "fixtures/red.png"))
 assert(mv.draw_image_region == nil)
 mv.import_globals()
 assert(draw_image_region == nil and draw_image == mv.draw_image)
 local shared
-local producer = mv.process(function() shared = mv.load_image("tests/fixtures/red.png") end)
+local producer = mv.process(function() shared = mv.load_image("fixtures/red.png") end)
 local worker = mv.process(function(self)
     local image = shared
     assert(image and mv.image_size(image) == 8)
@@ -91,7 +91,7 @@ local worker = mv.process(function(self)
         assert(not pcall(mv.animation_frame, animated, "flash", -1))
         assert(not pcall(mv.animation_frame, animated, "missing", 0))
         assert(not pcall(mv.load_atlas, image, "{}"))
-        local real_image = mv.load_image("tests/fixtures/aseprite/coric/coric.png")
+        local real_image = mv.load_image("fixtures/aseprite/coric/coric.png")
         local real_file = assert(io.open("tests/fixtures/aseprite/coric/coric.json", "rb"))
         local real_atlas = mv.load_aseprite(real_image, real_file:read("a"))
         real_file:close()
@@ -183,7 +183,7 @@ local worker = mv.process(function(self)
         bad_sprite_option("y", "0")
         bad_sprite_option("angle", math.huge)
     end
-    assert(not pcall(mv.load_image, "tests/fixtures/missing.png"))
+    assert(not pcall(mv.load_image, "fixtures/missing.png"))
     mv.draw_image {image = image, x = 10, y = 10}
     local green = {x = 4, y = 0, width = 4, height = 8}
     mv.draw_image {image = image, x = 25, y = 5, source = green, pivot = "top-left"}
@@ -217,7 +217,7 @@ local worker = mv.process(function(self)
     mv.frame()
 end)
 mv.start(function()
-    local image = mv.load_image("tests/fixtures/red.png")
+    local image = mv.load_image("fixtures/red.png")
     local ok, message = pcall(mv.draw_image, {image = image, x = 0, y = 0})
     assert(not ok and message:find("inside a process", 1, true))
     producer()

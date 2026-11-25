@@ -8,6 +8,9 @@ Build Malvado and run this command from the repository root:
 ./build/malvado run examples/audio/main.lua
 ```
 
+The installed CLI also runs the example with `malvado run .` from this
+directory or with `malvado run /path/to/main.lua` from any directory.
+
 Press **1** and **2** close together to play overlapping copies of the same
 sample at different volumes. Press **Space** to start or stop a repeating
 stream. Press **Escape** to exit. The audio device and a display are required.

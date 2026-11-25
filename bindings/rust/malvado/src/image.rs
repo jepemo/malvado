@@ -228,3 +228,10 @@ unsafe extern "C" fn release_command_image(owner: *mut std::ffi::c_void) {
         drop(Box::from_raw(owner.cast::<Image>()));
     });
 }
+
+impl crate::Game {
+    /// Load a PNG relative to this game's current asset directory.
+    pub fn load_image(&self, window: Rc<Window>, path: impl AsRef<Path>) -> Result<Image, Error> {
+        Image::load(window, self.resolve_asset_path(path)?)
+    }
+}

@@ -82,6 +82,7 @@ mv.frame = function()
   end
   return original_frame()
 end
+mv.set_assets_dir("../examples/space_asteroids")
 local game = dofile("examples/space_asteroids/main.lua")
 mv.start(game.init, {width = game.width, height = game.height, title = game.title})
 if interactive then

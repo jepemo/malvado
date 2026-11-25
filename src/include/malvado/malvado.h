@@ -273,12 +273,33 @@ MvResult mv_process_signal_creation_tree(MvContext *ctx, MvProcessId ancestor, M
 MvResult mv_process_tick(MvContext *ctx);
 
 /** Create an independent context and logical clock.
+ * The game directory comes from the native launcher or the executable path.
  * @param ticks_per_second Finite, positive logical tick rate in hertz. Its
  * reciprocal must also be finite and positive.
  * @param max_steps Maximum ticks returned for one advance; must be nonzero.
  * @return Owned context, or NULL for invalid settings or allocation failure.
  * Destroy the context with mv_context_destroy. */
 MvContext *mv_context_create(double ticks_per_second, unsigned max_steps);
+/** Create a context with a host-selected game directory. A relative directory
+ * is relative to the working directory at creation. NULL selects the executable
+ * directory. No directory existence check is performed. */
+MvContext *mv_context_create_with_game_dir(double ticks_per_second, unsigned max_steps,
+                                          const char *directory);
+/** Borrow the absolute game directory until context destruction. */
+const char *mv_context_game_dir(const MvContext *ctx);
+/** Set the asset directory relative to the game directory or use an absolute
+ * path. NULL or "." restores the game directory. Does not check existence.
+ * A failed call preserves the previous directory. */
+MvResult mv_set_assets_dir(MvContext *ctx, const char *path);
+/** Borrow the absolute asset directory until the next successful setter or
+ * context destruction. */
+const char *mv_get_assets_dir(const MvContext *ctx);
+/** Join a relative asset path to the asset directory or copy an absolute path.
+ * With out == NULL, required receives the buffer size including the terminator.
+ * With a buffer, required is optional. Returns MV_BUFFER_TOO_SMALL if necessary.
+ * The two strings and the output buffer must not overlap. */
+MvResult mv_resolve_asset_path(const MvContext *ctx, const char *path, char *out,
+                              size_t capacity, size_t *required);
 /** Destroy from the owner outside process callbacks or destructors. Calls
  * made from those callbacks are ignored; destroy again after the tick. */
 void mv_context_destroy(MvContext *ctx);

@@ -295,16 +295,28 @@ export default {
     related: ['set_color'],
   },
 
+  'images/set_assets_dir': {
+    description: 'Set the base for subsequent relative asset loads. Relative directories start at the entry script.',
+    params: [['path?', 'An asset directory. Omit it or pass "." to restore the game directory.']],
+    example: 'set_assets_dir("assets")',
+    related: ['get_assets_dir', 'load_asset'],
+  },
+  'images/get_assets_dir': {
+    description: 'Return the current absolute asset directory.',
+    params: [],
+    example: 'local directory = get_assets_dir()',
+    related: ['set_assets_dir'],
+  },
   'images/load_asset': {
     description: 'Load a PNG, FPG, atlas or Aseprite asset by path.',
-    params: [['path', 'A path relative to the working directory.'],
+    params: [['path', 'An absolute path or a path relative to the asset directory.'],
       ['options?', 'A table with `format`, `pivot` and `transparent_zero`.']],
     example: 'local hero = load_asset("hero.json")\nlocal icon = load_asset("icon.png", {pivot = "center"})',
     related: ['load_image', 'load_atlas', 'load_aseprite'],
   },
   'images/load_image': {
     description: 'Load a PNG image. It needs an open window.',
-    params: [['path', 'A path relative to the working directory.']],
+    params: [['path', 'An absolute path or a path relative to the asset directory.']],
     example: 'local image = load_image("picture.png")',
     related: ['image_size', 'draw_image', 'load_asset'],
   },
@@ -423,7 +435,7 @@ export default {
 
   'audio/load_sound': {
     description: 'Load a reusable WAV sample. Opens the audio device when needed.',
-    params: [['path', 'A path relative to the working directory.']],
+    params: [['path', 'An absolute path or a path relative to the asset directory.']],
     example: 'local jump = load_sound("jump.wav")',
     related: ['play_sound'],
   },
@@ -465,7 +477,7 @@ export default {
   },
   'audio/load_music': {
     description: 'Load a WAV or OGG music stream.',
-    params: [['path', 'A path relative to the working directory.'], ['options?', 'Optional boolean `loop`. Defaults to `false`.']],
+    params: [['path', 'An absolute path or a path relative to the asset directory.'], ['options?', 'Optional boolean `loop`. Defaults to `false`.']],
     example: 'local track = load_music("music.ogg", {loop = true})',
     related: ['play_music', 'update_music'],
   },

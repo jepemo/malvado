@@ -359,3 +359,25 @@ impl Visual {
         }
     }
 }
+
+impl crate::Game {
+    /// Load headless-capable library metadata from the current asset directory.
+    pub fn load_asset(
+        &self,
+        path: impl AsRef<Path>,
+        format: Option<Format>,
+    ) -> Result<Library, Error> {
+        Library::open(self.resolve_asset_path(path)?, format)
+    }
+
+    /// Load a visual asset. References inside the asset follow its source path.
+    #[cfg(feature = "graphics")]
+    pub fn load_visual_asset(
+        &self,
+        window: Rc<crate::window::Window>,
+        path: impl AsRef<Path>,
+        format: Option<Format>,
+    ) -> Result<Visual, Error> {
+        Visual::open(window, self.resolve_asset_path(path)?, format)
+    }
+}

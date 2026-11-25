@@ -21,5 +21,6 @@ mv.draw_image = function(options)
   return draw_image(options)
 end
 
+mv.set_assets_dir("../examples/bench")
 dofile("examples/bench/main.lua")
 assert(count_seen and draws > 0)

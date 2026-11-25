@@ -224,6 +224,8 @@ int mv_audio_update(void);
 void mv_audio_close(void);
 /* Load a WAV file. Return an owned sound, or NULL on failure. */
 MvSound *mv_sound_load(const char *path);
+/** Resolve the path with the game context before calling mv_sound_load. */
+MvSound *mv_sound_load_for_game(const MvContext *ctx, const char *path);
 /* Create an independent playback instance that shares the sound data.
  * Each instance is owned and must be destroyed before closing the device. */
 MvSound *mv_sound_clone(const MvSound *sound);
@@ -244,6 +246,8 @@ int mv_sound_set_volume(MvSound *sound, float volume);
 /* Streams require regular updates on the audio owner thread. Destroy each
  * stream before closing the device. The loop argument must be 0 or 1. */
 MvMusic *mv_music_load(const char *path, int loop);
+/** Resolve the path with the game context before calling mv_music_load. */
+MvMusic *mv_music_load_for_game(const MvContext *ctx, const char *path, int loop);
 void mv_music_destroy(MvMusic *music);
 int mv_music_play(MvMusic *music);
 int mv_music_update(MvMusic *music);
@@ -279,10 +283,14 @@ int mv_window_text_height(const char *text, int size);
  * must destroy it before closing the window. The initial glyph set covers
  * printable ASCII and Latin-1. Base size must be in 1..256. */
 MvFont *mv_font_load(const char *path, int base_size);
+/** Resolve the path with the game context before calling mv_font_load. */
+MvFont *mv_font_load_for_game(const MvContext *ctx, const char *path, int base_size);
 /* Load 1..1024 distinct Unicode scalars as the font glyph set. Code point 0
  * and surrogate values are invalid. The input array is borrowed. */
 MvFont *mv_font_load_codepoints(const char *path, int base_size,
                                 const uint32_t *codepoints, size_t count);
+/** Resolve the path with the game context before calling mv_font_load_codepoints. */
+MvFont *mv_font_load_codepoints_for_game(const MvContext *ctx, const char *path, int base_size, const uint32_t *codepoints, size_t count);
 /* Acquire one shared immutable native font reference. NULL/reference overflow
  * returns 0 unchanged. Destroy releases one reference; the last unloads the GPU
  * resource. Keep every reference on the window owner thread, release all before
@@ -330,6 +338,8 @@ int mv_window_draw_filled_circle(float x, float y, float radius, MvColor color);
  * The weak cache releases the texture with its last reference. Live images do
  * not reload when their source file changes. RGBA-created images are not cached. */
 MvImage *mv_image_load(const char *path);
+/** Resolve the path with the game context before calling mv_image_load. */
+MvImage *mv_image_load_for_game(const MvContext *ctx, const char *path);
 /* Create an image from packed RGBA bytes. Input is borrowed only during the
  * call. Width and height are positive, at most 8192, and length must cover
  * width * height * 4 bytes. Requires an open graphics window. Returns an

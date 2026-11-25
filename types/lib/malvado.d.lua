@@ -385,6 +385,14 @@ function malvado.world_move(dx, dy) end
 ---@return MvImage|MvAtlas|MvFpg|MvFpgManifest
 function malvado.load_asset(path, options) end
 
+---Set the asset directory relative to the game directory. Use nil or "." to reset.
+---@param path? string
+function malvado.set_assets_dir(path) end
+
+---Return the current absolute asset directory.
+---@return string directory
+function malvado.get_assets_dir() end
+
 ---Load a PNG image. Requires an open window.
 ---@param path string
 ---@return MvImage image

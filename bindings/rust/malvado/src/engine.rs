@@ -1,12 +1,14 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
+use crate::native_path::{native_path, path_from_bytes};
 use crate::resource::Resource;
 use crate::task::{Frame, Step, Task, contain};
 use crate::{EndReason, Error, Signal, Status};
 use malvado_sys as sys;
 use std::cell::Cell;
-use std::ffi::c_void;
+use std::ffi::{CStr, c_char, c_void};
 use std::future::Future;
-use std::ptr::NonNull;
+use std::path::{Path, PathBuf};
+use std::ptr::{self, NonNull};
 use std::rc::Rc;
 
 pub(crate) fn result(code: i32) -> Result<(), Error> {
@@ -119,14 +121,86 @@ impl Game {
     pub fn new() -> Result<Self, Error> {
         sys::check_abi().map_err(Error::Abi)?;
         // SAFETY: fixed valid native clock settings; this owner destroys once.
-        let native =
-            NonNull::new(unsafe { sys::mv_context_create(60.0, 5) }).ok_or(Error::OutOfMemory)?;
+        Self::from_native(unsafe { sys::mv_context_create(60.0, 5) })
+    }
+
+    /// Create a game with a host-selected directory. A relative directory is
+    /// resolved against the current working directory at construction.
+    pub fn with_game_dir(directory: impl AsRef<Path>) -> Result<Self, Error> {
+        let directory = native_path(directory.as_ref())?;
+        if directory.as_bytes().is_empty() {
+            return Err(Error::InvalidArgument);
+        }
+        sys::check_abi().map_err(Error::Abi)?;
+        // SAFETY: native copies the directory and this owner destroys once.
+        Self::from_native(unsafe {
+            sys::mv_context_create_with_game_dir(60.0, 5, directory.as_ptr())
+        })
+    }
+
+    fn from_native(native: *mut sys::MvContext) -> Result<Self, Error> {
+        let native = NonNull::new(native).ok_or(Error::OutOfMemory)?;
         Ok(Self {
             runtime: Rc::new(Runtime {
                 native: Cell::new(Some(native)),
             }),
         })
     }
+    /// Return the absolute directory selected at startup.
+    pub fn game_dir(&self) -> Result<PathBuf, Error> {
+        // SAFETY: checked context and copied borrowed path.
+        let path = unsafe { CStr::from_ptr(sys::mv_context_game_dir(self.runtime.live()?)) };
+        path_from_bytes(path.to_bytes())
+    }
+
+    /// Return the current absolute directory used for game-facing loads.
+    pub fn assets_dir(&self) -> Result<PathBuf, Error> {
+        // SAFETY: checked context and copied borrowed path.
+        let path = unsafe { CStr::from_ptr(sys::mv_get_assets_dir(self.runtime.live()?)) };
+        path_from_bytes(path.to_bytes())
+    }
+
+    /// Set the asset directory. Relative paths are relative to the game
+    /// directory. A dot restores that directory. Existence is checked at load.
+    pub fn set_assets_dir(&mut self, directory: impl AsRef<Path>) -> Result<(), Error> {
+        let directory = native_path(directory.as_ref())?;
+        // SAFETY: checked context and valid borrowed C string.
+        result(unsafe { sys::mv_set_assets_dir(self.runtime.live()?, directory.as_ptr()) })
+    }
+
+    /// Restore the game directory for subsequent loads.
+    pub fn reset_assets_dir(&mut self) -> Result<(), Error> {
+        // SAFETY: checked context; null is the reset sentinel.
+        result(unsafe { sys::mv_set_assets_dir(self.runtime.live()?, ptr::null()) })
+    }
+
+    /// Resolve a top-level resource path once. Absolute paths pass through.
+    pub fn resolve_asset_path(&self, path: impl AsRef<Path>) -> Result<PathBuf, Error> {
+        let path = native_path(path.as_ref())?;
+        let ctx = self.runtime.live()?;
+        let mut size = 0;
+        // SAFETY: valid C string and initialized size output.
+        result(unsafe {
+            sys::mv_resolve_asset_path(ctx, path.as_ptr(), ptr::null_mut(), 0, &mut size)
+        })?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(size)
+            .map_err(|_| Error::OutOfMemory)?;
+        bytes.resize(size, 0u8);
+        // SAFETY: output owns size writable bytes and does not overlap inputs.
+        result(unsafe {
+            sys::mv_resolve_asset_path(
+                ctx,
+                path.as_ptr(),
+                bytes.as_mut_ptr().cast::<c_char>(),
+                size,
+                ptr::null_mut(),
+            )
+        })?;
+        path_from_bytes(&bytes[..size - 1])
+    }
+
     pub fn spawn<F, Fut>(&self, options: SpawnOptions, run: F) -> Result<Handle, Error>
     where
         F: FnOnce(ProcessContext) -> Fut + 'static,

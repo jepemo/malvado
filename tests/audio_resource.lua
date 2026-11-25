@@ -2,8 +2,8 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 local mv = require("malvado")
-local wav = "tests/fixtures/silence.wav"
-local ogg = "tests/fixtures/silence.ogg"
+local wav = "fixtures/silence.wav"
+local ogg = "fixtures/silence.ogg"
 local weak = setmetatable({}, {__mode = "v"})
 local retained, paused = nil, {}
 local producer = mv.process(function()

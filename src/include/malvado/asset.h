@@ -39,6 +39,8 @@ typedef struct MvAssetSource MvAssetSource;
  * context, resource manager, image loading or native importer is implicit.
  * Serialize calls with other native JSON parsing on the same host. */
 MvAssetSource *mv_asset_source_open(const char *path, const char **error);
+/** Open a game-relative source. Ownership and errors match mv_asset_source_open. */
+MvAssetSource *mv_asset_source_open_for_game(const MvContext *ctx, const char *path, const char **error);
 void mv_asset_source_destroy(MvAssetSource *source);
 /* Borrowed input path and bytes remain valid until destruction. Bytes have an
  * extra NUL after length, which is not part of the source. Invalid arguments

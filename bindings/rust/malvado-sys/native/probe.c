@@ -23,6 +23,8 @@
 _Static_assert(_Generic(&mv_abi_version, uint32_t (*)(void): 1, default: 0), "mv_abi_version signature");
 _Static_assert(_Generic(&mv_version_string, const char * (*)(void): 1, default: 0), "mv_version_string signature");
 _Static_assert(_Generic(&mv_context_create, MvContext * (*)(double, unsigned): 1, default: 0), "mv_context_create signature");
+_Static_assert(_Generic(&mv_context_create_with_game_dir, MvContext * (*)(double, unsigned, const char *): 1, default: 0), "mv_context_create_with_game_dir signature");
+_Static_assert(_Generic(&mv_resolve_asset_path, MvResult (*)(const MvContext *, const char *, char *, size_t, size_t *): 1, default: 0), "mv_resolve_asset_path signature");
 _Static_assert(_Generic(&mv_context_destroy, void (*)(MvContext *): 1, default: 0), "mv_context_destroy signature");
 _Static_assert(_Generic(&mv_context_runtime_id, MvResult (*)(MvContext *, MvRuntimeId *): 1, default: 0), "mv_context_runtime_id signature");
 _Static_assert(_Generic(&mv_context_advance, MvResult (*)(MvContext *, double, unsigned *): 1, default: 0), "mv_context_advance signature");

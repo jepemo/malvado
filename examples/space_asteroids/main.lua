@@ -10,7 +10,7 @@ local score, result = 0, nil
 -- Asteroids
 
 local Rock = process(function(self)
-  self.graph = load_asset("examples/space_asteroids/asteroid.png", {pivot = "center"})
+  self.graph = load_asset("asteroid.png", {pivot = "center"})
 
   while true do
     self.x = (self.x + self.vx) % W
@@ -57,7 +57,7 @@ end, {defaults = {collider = mv.collision.circle {radius = 3}}})
 -- Spaceship
 
 local Ship = process(function(self)
-  self.graph = load_asset("examples/space_asteroids/spaceship.png", {pivot = "center"})
+  self.graph = load_asset("spaceship.png", {pivot = "center"})
   local firing = false
 
   while not result do

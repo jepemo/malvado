@@ -135,16 +135,17 @@ prepare_build(int rust)
 }
 
 static int
-run_process_with_sdk(char *const args[], const char *sdk)
+run_child(char *const args[], const char *sdk, const char *game_dir)
 {
 #ifdef _WIN32
-    return malvado_windows_process(args, sdk, NULL, 0);
+    return malvado_windows_process_with_game_dir(args, sdk, game_dir, NULL, 0);
 #else
     pid_t pid = fork();
     if (pid < 0) { perror("fork"); return 1; }
     if (pid == 0) {
         if (setenv("RUSTUP_AUTO_INSTALL", "0", 1) != 0 ||
-            (sdk && setenv("MALVADO_SDK_PREFIX", sdk, 1) != 0)) {
+            (sdk && setenv("MALVADO_SDK_PREFIX", sdk, 1) != 0) ||
+            (game_dir && setenv("MALVADO_GAME_DIR", game_dir, 1) != 0)) {
             perror("setenv");
             _exit(1);
         }
@@ -163,7 +164,7 @@ run_process_with_sdk(char *const args[], const char *sdk)
 static int
 run_process(char *const args[])
 {
-    return run_process_with_sdk(args, NULL);
+    return run_child(args, NULL, NULL);
 }
 
 int
@@ -185,7 +186,7 @@ malvado_android_export(int argc, char **argv)
     arguments[2] = "--engine-version";
     arguments[3] = MALVADO_VERSION_STRING;
     for (int i = 2; i < argc; ++i) arguments[i + 2] = argv[i];
-    int result = run_process_with_sdk(arguments, NULL);
+    int result = run_process(arguments);
     free(arguments);
     return result;
 #endif
@@ -278,7 +279,18 @@ malvado_rust_build(int check)
     if (!rust_host(host, sizeof(host)) || !prepare_build(1)) return 1;
     char *args[] = {"cargo", check ? "check" : "build", "--bin", "game", "--target", host,
                     "--target-dir", ".malvado/rust", NULL};
-    return run_process_with_sdk(args, sdk) == 0 ? 0 : 1;
+    return run_child(args, sdk, NULL) == 0 ? 0 : 1;
+}
+
+static int
+run_native_game(char *const args[])
+{
+    char directory[PATH_MAX];
+    if (!getcwd(directory, sizeof(directory))) {
+        perror("getcwd");
+        return 1;
+    }
+    return run_child(args, NULL, directory);
 }
 
 int
@@ -291,7 +303,7 @@ malvado_rust_run(void)
         return 1;
     }
     char *args[] = {binary, NULL};
-    return run_process(args);
+    return run_native_game(args);
 }
 
 int
@@ -339,7 +351,7 @@ malvado_native_run(void)
                    ".exe"
 #endif
                    , NULL};
-    return run_process(run);
+    return run_native_game(run);
 }
 #else
 #include <stdio.h>

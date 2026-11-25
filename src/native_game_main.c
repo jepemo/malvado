@@ -13,8 +13,13 @@
  * See LICENSE for details.
  */
 
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef _WIN32
+#include <direct.h>
 #include "windows_process.h"
 #else
 #include <unistd.h>
@@ -31,9 +36,17 @@ main(int argc, char **argv)
     }
 #ifdef _WIN32
     argv[0] = "./game-bin.exe";
-    return malvado_windows_process(argv, NULL, NULL, 0);
+    char directory[8192];
+    if (!_getcwd(directory, sizeof(directory))) return 1;
+    return malvado_windows_process_with_game_dir(argv, NULL, directory, NULL, 0);
 #else
     argv[0] = "./game-bin";
+    char *directory = getcwd(NULL, 0);
+    if (!directory || setenv("MALVADO_GAME_DIR", directory, 1) != 0) {
+        free(directory);
+        return 1;
+    }
+    free(directory);
     execv(argv[0], argv);
 #endif
     perror("game-bin");

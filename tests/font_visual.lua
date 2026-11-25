@@ -4,7 +4,7 @@
 local mv = require("malvado")
 local font
 local producer = mv.process(function()
-  font = mv.load_font {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "ΩΩ"}
+  font = mv.load_font {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "ΩΩ"}
 end)
 local worker = mv.process(function()
   mv.frame()
@@ -14,15 +14,15 @@ local worker = mv.process(function()
   for _ = 1, 15 do mv.frame() end
 end)
 mv.start(function()
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/missing.ttf", size = 24}))
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 0}))
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\xed\xa0\x80"}))
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\0"}))
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/missing.ttf", size = 24}))
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 0}))
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\xed\xa0\x80"}))
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = "\0"}))
   local too_many = {}
   for codepoint = 0x100, 0x441 do too_many[#too_many + 1] = utf8.char(codepoint) end
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = table.concat(too_many)}))
-  assert(not pcall(mv.load_font, {path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, wrong = 1}))
-  local otf = mv.load_font {path = "tests/fixtures/fonts/SourceCodePro-Regular.otf", size = 24}
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, extra_glyphs = table.concat(too_many)}))
+  assert(not pcall(mv.load_font, {path = "fixtures/fonts/AnonymousPro-Bold.ttf", size = 24, wrong = 1}))
+  local otf = mv.load_font {path = "fixtures/fonts/SourceCodePro-Regular.otf", size = 24}
   assert(otf)
   local width, height = mv.text_size(otf, "OpenType")
   assert(width > 0 and height > 0)

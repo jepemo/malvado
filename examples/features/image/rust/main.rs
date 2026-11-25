@@ -1,15 +1,15 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
 use malvado::{
-    Error,
-    image::Image,
+    Error, Game,
     window::{Color, Window},
 };
 use std::rc::Rc;
 
 fn main() -> Result<(), Error> {
+    let game = Game::new()?;
     let window = Rc::new(Window::open(160, 120, "Malvado Image")?);
     // The image keeps its window alive until the image is dropped.
-    let image = Image::load(window.clone(), "tile.png")?;
+    let image = game.load_image(window.clone(), "tile.png")?;
     let (width, height) = image.size();
     println!("image: {width}x{height}");
     for _ in 0..120 {

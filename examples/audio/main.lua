@@ -21,8 +21,8 @@ local Demo = process(function()
 end)
 
 start(function()
-  sound = load_sound("examples/audio/tone.wav")
-  music = load_music("examples/audio/tone.wav", {loop = true})
+  sound = load_sound("tone.wav")
+  music = load_music("tone.wav", {loop = true})
   music_volume(music, 0.2)
   clear_screen {25, 30, 45, 255}
   Demo()

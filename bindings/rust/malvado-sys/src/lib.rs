@@ -234,6 +234,21 @@ unsafe extern "C" {
     pub fn mv_abi_version() -> u32;
     pub fn mv_version_string() -> *const c_char;
     pub fn mv_context_create(rate: f64, max_steps: u32) -> *mut MvContext;
+    pub fn mv_context_create_with_game_dir(
+        rate: f64,
+        max_steps: u32,
+        directory: *const c_char,
+    ) -> *mut MvContext;
+    pub fn mv_context_game_dir(ctx: *const MvContext) -> *const c_char;
+    pub fn mv_set_assets_dir(ctx: *mut MvContext, path: *const c_char) -> c_int;
+    pub fn mv_get_assets_dir(ctx: *const MvContext) -> *const c_char;
+    pub fn mv_resolve_asset_path(
+        ctx: *const MvContext,
+        path: *const c_char,
+        out: *mut c_char,
+        capacity: usize,
+        required: *mut usize,
+    ) -> c_int;
     pub fn mv_context_destroy(ctx: *mut MvContext) -> ();
     pub fn mv_context_runtime_id(ctx: *mut MvContext, out: *mut MvRuntimeId) -> c_int;
     pub fn mv_context_advance(ctx: *mut MvContext, elapsed: f64, steps: *mut u32) -> c_int;
