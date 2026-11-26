@@ -1,0 +1,112 @@
+---
+import Playground from './Playground.astro';
+
+const boxes = [
+  { name: 'A', x: 20, y: 20, width: 60, height: 50 },
+  { name: 'B', x: 110, y: 40, width: 60, height: 50 },
+];
+---
+
+<Playground id="collision" question="Do rectangles collide when their edges touch?"
+  description="Move either rectangle with its X and Y sliders. The diagram shows the hitboxes. A shaded area appears only when the rectangles share an area.">
+  <svg viewBox="0 0 280 150" aria-hidden="true">
+    <rect class="boundary" x="1" y="1" width="278" height="148" rx="4" />
+    {boxes.map(({ name, x, y, width, height }) => (
+      <rect class:list={['hitbox', name === 'B' && 'dashed']} data-box={name}
+        x={x} y={y} width={width} height={height} />
+    ))}
+    <rect data-overlap x="0" y="0" width="0" height="0" />
+    {boxes.map(({ name, x, y }) => <text data-label={name} x={x + 7} y={y + 17}>{name}</text>)}
+  </svg>
+  <p class="playground-readout" data-summary role="status">No overlap. A starts at (20, 20) and B at (110, 40). Both are 60 × 50.</p>
+  <div data-controls hidden>
+    {boxes.map(({ name, x, y }) => (
+      <fieldset class="playground-controls">
+        <legend>Rectangle {name}</legend>
+        <label>X <input aria-label={`Rectangle ${name} X`} name="x" type="range" min="5" max="215" value={x} /></label>
+        <label>Y <input aria-label={`Rectangle ${name} Y`} name="y" type="range" min="5" max="95" value={y} /></label>
+      </fieldset>
+    ))}
+    <button type="button" data-reset>Reset</button>
+  </div>
+  <p>Try setting A’s X to 50. Its right edge reaches B’s left edge at X = 110.
+    Move A one more unit to the right to get an overlap. This test uses the
+    axis-aligned rectangles accepted by <code>mv.rect_overlaps</code>.</p>
+</Playground>
+
+<style>
+  svg {
+    max-inline-size: 32rem;
+  }
+
+  .boundary {
+    fill: var(--sl-color-bg);
+    stroke: var(--sl-color-gray-4);
+  }
+
+  .hitbox {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+
+  .dashed {
+    stroke-dasharray: 5 3;
+  }
+
+  [data-overlap] {
+    fill: var(--sl-color-text-accent);
+    fill-opacity: 0.35;
+  }
+
+  text {
+    fill: currentColor;
+    font-size: 14px;
+    paint-order: stroke;
+    stroke: var(--sl-color-bg);
+    stroke-width: 2px;
+  }
+</style>
+
+<script>
+  for (const root of document.querySelectorAll('[data-playground="collision"]')) {
+    const controls = root.querySelector<HTMLElement>('[data-controls]')!;
+    const fieldsets = Array.from(controls.querySelectorAll('fieldset'));
+    const boxes = Array.from(root.querySelectorAll('[data-box]'));
+    const labels = Array.from(root.querySelectorAll('[data-label]'));
+    const overlap = root.querySelector('[data-overlap]')!;
+    const summary = root.querySelector('[data-summary]')!;
+    const inputs = Array.from(controls.querySelectorAll('input'));
+
+    function render() {
+      const [a, b] = fieldsets.map((fieldset, index) => {
+        const [x, y] = Array.from(fieldset.querySelectorAll('input'), (input) => input.valueAsNumber);
+        boxes[index].setAttribute('x', String(x));
+        boxes[index].setAttribute('y', String(y));
+        labels[index].setAttribute('x', String(x + 7));
+        labels[index].setAttribute('y', String(y + 17));
+        return { x, y, right: x + Number(boxes[index].getAttribute('width')),
+          bottom: y + Number(boxes[index].getAttribute('height')) };
+      });
+      const x = Math.max(a.x, b.x);
+      const y = Math.max(a.y, b.y);
+      const width = Math.min(a.right, b.right) - x;
+      const height = Math.min(a.bottom, b.bottom) - y;
+      const hit = width > 0 && height > 0;
+      overlap.setAttribute('x', String(x));
+      overlap.setAttribute('y', String(y));
+      overlap.setAttribute('width', String(hit ? width : 0));
+      overlap.setAttribute('height', String(hit ? height : 0));
+      const result = hit ? `Overlap of ${width} × ${height}.` : 'No overlap.';
+      summary.textContent = `${result} A starts at (${a.x}, ${a.y}) and B at (${b.x}, ${b.y}). Both are 60 × 50.`;
+    }
+
+    controls.addEventListener('input', render);
+    controls.querySelector('[data-reset]')!.addEventListener('click', () => {
+      inputs.forEach((input) => { input.value = input.defaultValue; });
+      render();
+    });
+    render();
+    controls.hidden = false;
+  }
+</script>

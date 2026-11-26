@@ -1,0 +1,85 @@
+---
+import Playground from './Playground.astro';
+const workers = ['first', 'second'];
+---
+
+<Playground id="scheduler" question="Where does each worker resume after frame()?"
+  description="Step through the two workers from the Lua example. Each turn runs until the worker yields or returns. Both are eligible every tick and have the same priority, so creation order puts first ahead of second.">
+  <p data-summary role="status">Ready for tick 1. Both workers are ready.</p>
+  <dl class="workers">
+    {workers.map((name) => <div><dt><code>{name}</code></dt><dd data-worker={name}>Ready</dd></div>)}
+  </dl>
+  <div>
+    <strong>Console output</strong>
+    <pre class="playground-readout" data-console>Waiting for the first turn.</pre>
+  </div>
+  <div class="playground-controls" data-controls hidden>
+    <button type="button" data-turn>Next turn</button>
+    <button type="button" data-tick>Finish tick</button>
+    <button type="button" data-reset>Reset</button>
+  </div>
+  <p>“Ready” and “Yielded” describe a worker’s place in this trace. A yielded
+    worker can resume on its next eligible tick. Priority, cadence, sleep,
+    and freeze can change when a worker gets its turn.</p>
+</Playground>
+
+<style>
+  .workers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+  }
+
+  .workers > div {
+    margin-block-start: 0;
+  }
+
+  dd {
+    padding-inline-start: 0;
+  }
+</style>
+
+<script>
+  for (const root of document.querySelectorAll('[data-playground="scheduler"]')) {
+    const controls = root.querySelector<HTMLElement>('[data-controls]')!;
+    const turn = root.querySelector<HTMLButtonElement>('[data-turn]')!;
+    const tick = root.querySelector<HTMLButtonElement>('[data-tick]')!;
+    const consoleOutput = root.querySelector('[data-console]')!;
+    const summary = root.querySelector('[data-summary]')!;
+    const workers = Array.from(root.querySelectorAll<HTMLElement>('[data-worker]'));
+    const lines: string[] = [];
+    let turns = 0;
+
+    function render(message: string) {
+      workers.forEach((worker, index) => {
+        const activations = Math.floor((turns + 1 - index) / 2);
+        worker.textContent = ['Ready', 'Yielded at frame()', 'Returned'][activations];
+      });
+      consoleOutput.textContent = lines.join('\n') || 'Waiting for the first turn.';
+      summary.textContent = message;
+      turn.disabled = tick.disabled = turns === 4;
+    }
+
+    function advance(count: number) {
+      const nextTick = 1 + Math.floor(turns / 2);
+      for (let i = 0; i < count; i++) {
+        lines.push(`${workers[turns % 2].dataset.worker}: ${nextTick}`);
+        turns++;
+      }
+      const worker = workers[(turns - 1) % 2].dataset.worker;
+      const action = nextTick === 1 ? 'printed and yielded at frame().' : 'resumed after frame(), printed and returned.';
+      const next = turns === 4 ? ' Both workers have returned.'
+        : turns === 2 ? ' Tick 1 is complete. Next turn starts tick 2.' : '';
+      render(`Tick ${nextTick}. ${worker} ${action}${next}`);
+    }
+
+    turn.addEventListener('click', () => advance(1));
+    tick.addEventListener('click', () => advance(2 - (turns % 2)));
+    root.querySelector('[data-reset]')!.addEventListener('click', () => {
+      turns = 0;
+      lines.length = 0;
+      render('Ready for tick 1. Both workers are ready.');
+    });
+    controls.hidden = false;
+  }
+</script>

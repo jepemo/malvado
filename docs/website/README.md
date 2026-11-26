@@ -70,6 +70,23 @@ mise exec -- npx playwright install --only-shell chromium
 mise exec -- npm run test:gallery
 ```
 
+## Add a Learn playground
+
+Use `Playground.astro` to introduce a conceptual simulation. Keep its initial
+diagram and explanation readable without JavaScript. Reveal native controls
+only after their event handlers are ready. Use the shared styles and keep the
+simulation state in its own component.
+
+Register the component in `scripts/learn-lessons.mjs` and add the playground
+marker under a Playground heading in the source lesson. Link from relevant
+API entries in `scripts/lua-api-content.mjs`. Check the simulation against the
+current engine behavior and explain any simplifications in the lesson.
+
+Run `mise exec -- npm run test:playgrounds` after building the site and
+installing the Chromium test browser.
+
+## Verify runnable examples
+
 Use `malvado run --headless` for Lua examples that need no graphics or audio
 and end on their own. For graphical examples, use a desktop display or the
 virtual display already used by CI. Use a timeout and check output or

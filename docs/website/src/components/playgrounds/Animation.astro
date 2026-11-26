@@ -1,0 +1,164 @@
+---
+import Playground from './Playground.astro';
+
+const frames = [1, 2, 3];
+const rates = [2, 4, 8];
+const defaultRate = 8;
+---
+
+<Playground id="animation" question="What happens after the last animation frame?"
+  description="Step through a three-frame sequence. This example uses a uniform duration for each frame, as when you create a custom animation with fps. A different rate or loop setting starts a new sequence.">
+  <ol class="timeline" aria-label="Animation frames">
+    {frames.map((frame) => (
+      <li data-frame={frame} aria-current={frame === 1 ? 'step' : undefined}>
+        <svg viewBox="0 0 60 38" aria-hidden="true">
+          <circle cx="30" cy={27 - 9 * (frame - 1)} r="6" />
+        </svg>
+        Frame {frame}
+      </li>
+    ))}
+  </ol>
+  <p class="playground-readout" data-summary>Frame 1 of 3. Paused. 125 ms per frame, 375 ms per loop.</p>
+  <div data-controls hidden>
+    <fieldset class="playground-controls">
+      <legend>Playback</legend>
+      <button type="button" data-play>Play</button>
+      <button type="button" data-step>Next frame</button>
+      <label>Frames per second
+        <select data-rate>
+          {rates.map((rate) => <option value={rate} selected={rate === defaultRate}>{rate}</option>)}
+        </select>
+      </label>
+      <label><input type="checkbox" data-loop checked /> Loop</label>
+      <button type="button" data-reset>Reset</button>
+    </fieldset>
+    <p data-reduced hidden>Reduced motion is active. Use Next frame to explore at your own pace.</p>
+    <span class="playground-announcement" role="status" data-announcement></span>
+  </div>
+  <p>Turn off Loop and step past the last frame. The animation finishes after
+    that frame’s full duration and holds it on screen. With Loop on, the next
+    frame is the first one. The browser’s play and step controls illustrate
+    frame boundaries. In a game, running simulation ticks advance playback.</p>
+</Playground>
+
+<style>
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .timeline li {
+    margin: 0;
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.35rem;
+    padding: 0.25rem;
+    text-align: center;
+  }
+
+  .timeline li[aria-current="step"] {
+    border-color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+    font-weight: bold;
+  }
+
+  .timeline circle {
+    fill: currentColor;
+  }
+</style>
+
+<script>
+  for (const root of document.querySelectorAll('[data-playground="animation"]')) {
+    const controls = root.querySelector<HTMLElement>('[data-controls]')!;
+    const play = controls.querySelector<HTMLButtonElement>('[data-play]')!;
+    const step = controls.querySelector<HTMLButtonElement>('[data-step]')!;
+    const rate = controls.querySelector<HTMLSelectElement>('[data-rate]')!;
+    const loop = controls.querySelector<HTMLInputElement>('[data-loop]')!;
+    const reduced = controls.querySelector<HTMLElement>('[data-reduced]')!;
+    const summary = root.querySelector('[data-summary]')!;
+    const announcement = controls.querySelector('[data-announcement]')!;
+    const frames = Array.from(root.querySelectorAll('[data-frame]'));
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+    let finished = false;
+    let timer: number | undefined;
+
+    function stop() {
+      window.clearTimeout(timer);
+      timer = undefined;
+    }
+
+    function render(announce = true) {
+      frames.forEach((item, index) => {
+        if (index === frame) item.setAttribute('aria-current', 'step');
+        else item.removeAttribute('aria-current');
+      });
+      const duration = 1000 / Number(rate.value);
+      const state = finished ? 'Finished.' : timer !== undefined ? 'Playing.' : 'Paused.';
+      const position = `Frame ${frame + 1} of ${frames.length}. ${state}`;
+      summary.textContent = `${position} ${duration} ms per frame, ${duration * frames.length} ms `
+        + (loop.checked ? 'per loop.' : 'total.');
+      play.textContent = timer === undefined ? 'Play' : 'Pause';
+      play.disabled = finished || motion.matches;
+      step.disabled = finished;
+      reduced.hidden = !motion.matches;
+      if (announce) announcement.textContent = position;
+    }
+
+    function advance() {
+      if (frame < frames.length - 1) frame++;
+      else if (loop.checked) frame = 0;
+      else {
+        finished = true;
+        stop();
+      }
+    }
+
+    function schedule() {
+      timer = window.setTimeout(() => {
+        advance();
+        if (!finished) schedule();
+        render(finished);
+      }, 1000 / Number(rate.value));
+    }
+
+    function restart() {
+      stop();
+      frame = 0;
+      finished = false;
+      render();
+    }
+
+    play.addEventListener('click', () => {
+      if (timer === undefined) schedule();
+      else stop();
+      render();
+    });
+    step.addEventListener('click', () => {
+      stop();
+      advance();
+      render();
+    });
+    rate.addEventListener('change', restart);
+    loop.addEventListener('change', restart);
+    controls.querySelector('[data-reset]')!.addEventListener('click', () => {
+      rate.selectedIndex = Array.from(rate.options).findIndex((option) => option.defaultSelected);
+      loop.checked = loop.defaultChecked;
+      restart();
+    });
+    motion.addEventListener('change', () => {
+      if (motion.matches) stop();
+      render();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && timer !== undefined) {
+        stop();
+        render();
+      }
+    });
+    render(false);
+    controls.hidden = false;
+  }
+</script>

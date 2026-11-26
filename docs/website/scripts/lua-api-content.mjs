@@ -50,6 +50,7 @@ export default {
     related: ['find', 'status'],
   },
   'processes/frame': {
+    playground: ['process-model', 'Step through two cooperative workers'],
     description: 'Yield the running process until its next activation. It is only valid inside a process. Set `self.fps` to control activation cadence. Use `self.delta` for the logical seconds since the previous activation, or zero on the first activation.',
     params: [],
     example: 'process(function()\n    print("first")\n    frame()\n    print("second")\nend)()',
@@ -239,6 +240,7 @@ export default {
     related: ['region', 'camera_move'],
   },
   'graphics/animation': {
+    playground: ['animation', 'Try the animation timeline'],
     description: 'Create a reusable animation for `self.graph`. A process plays it on the simulation clock. Pass a library explicitly or use the scheduled process’s `self.file`.',
     params: [['library?', 'An atlas for named sequences. An atlas, FPG, or FPG manifest for a list of IDs.'],
       ['name', 'A named atlas sequence. It keeps the imported frame durations and direction. Its options table accepts only `loop`.'],
@@ -548,6 +550,7 @@ export default {
     related: ['region', 'camera_set', 'camera_follow', 'camera_position', 'camera_destroy'],
   },
   'cameras/camera_set': {
+    playground: ['cameras-and-scrolling', 'Explore camera position and the viewport'],
     description: 'Set an absolute world position. A successful call cancels following.',
     params: [['camera?', 'An explicit camera. Omit this argument to use the main camera.'],
       ['x', 'New x.'], ['y', 'New y.']],
@@ -582,6 +585,7 @@ export default {
     related: ['collisions'],
   },
   'collision/rect_overlaps': {
+    playground: ['collisions', 'Move two rectangles and test for overlap'],
     description: 'Test whether two rectangles overlap. Touching edges do not overlap.',
     params: [['a', 'First rectangle table with `x`, `y`, `width`, and `height`.'],
       ['b', 'Second rectangle table with the same fields.']],
