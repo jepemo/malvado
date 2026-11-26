@@ -36,7 +36,10 @@ def prepare(version, revision, output):
         f'docs/versions/{version}.md',
     ]
     git = ['git', '-C', str(ROOT)]
-    optional_lessons = ['examples/rust', 'examples/rand', 'examples/features/image']
+    optional_lessons = [
+        'examples/rust', 'examples/rand', 'examples/features/image',
+        'docs/site/learn', 'examples/features/processes', 'examples/process-lesson',
+    ]
     for path in optional_lessons:
         if subprocess.check_output([*git, 'ls-tree', revision, '--', path], text=True):
             sources.append(path)

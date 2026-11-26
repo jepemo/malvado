@@ -85,7 +85,7 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames, imageRoute) {
+export async function migrateGuides(writePage, conceptNames, imageRoute, processModelTitle) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -144,7 +144,7 @@ export async function migrateGuides(writePage, conceptNames, imageRoute) {
     'docs/tools/editor': 'Editor setup',
     'docs/tools/export': 'Build and export games',
     'docs/tools/platforms': 'Platform support',
-    'docs/learn/process-model': 'Processes across languages',
+    'docs/learn/process-model': processModelTitle ?? 'Processes across languages',
     'docs/learn/resources': 'Resource ownership in games',
     'docs/patterns/level-lifecycle': 'Organize a level',
     'docs/reference': 'Choose an API reference',
@@ -227,14 +227,16 @@ exit codes, file rules, and platform-specific options. Follow
     '[platform matrix](' + repoLink('docs/development/platforms.md') +
     ') for graphics requirements, automated coverage, and Windows and Android hardware verification limits.',
     ['api', 'Choose a runtime and target'], ['sdk', 'Windows players']);
-  await publish('docs/learn/process-model',
-    sources.api.intro.replace(/^# .+\n/, '').trim() + '\n\n' +
-    'Start with [Lua processes](../../concepts/lua-processes/), then see how to ' +
-    '[start and stop them](../../concepts/lua-processes/#start-and-stop), ' +
-    '[wait between activations](../../concepts/lua-processes/#process-timing), ' +
-    '[manage children](../../concepts/lua-processes/#children-and-ownership), and ' +
-    '[send messages](../../concepts/lua-processes/#send-and-receive-messages).',
-    ['api', 'Run and stop processes']);
+  if (!processModelTitle) {
+    await publish('docs/learn/process-model',
+      sources.api.intro.replace(/^# .+\n/, '').trim() + '\n\n' +
+      'Start with [Lua processes](../../concepts/lua-processes/), then see how to ' +
+      '[start and stop them](../../concepts/lua-processes/#start-and-stop), ' +
+      '[wait between activations](../../concepts/lua-processes/#process-timing), ' +
+      '[manage children](../../concepts/lua-processes/#children-and-ownership), and ' +
+      '[send messages](../../concepts/lua-processes/#send-and-receive-messages).',
+      ['api', 'Run and stop processes']);
+  }
   await publish('docs/learn/resources',
     'Use the resource handles provided by your language. See the [images guide](' +
     siteLink('docs/learn/resources', 'docs/concepts/images') + ') and [asset paths](' +

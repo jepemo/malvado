@@ -11,6 +11,7 @@ process scheduling, image loading, and window resizing.
 The directory migration is planned, not complete. Current entry points include:
 
 - [C processes and its Lua counterpart](c/processes/README.md).
+- [Lua process lessons](process-lesson/README.md) on teardown, movement timing, and mailboxes.
 - [Lua Meteors scene](meteors/README.md) with three independent processes.
 - [Lua Move scene](move/README.md) with an arrow-key circle.
 - [Catch! game](catch/README.md) in C, Lua and Rust.

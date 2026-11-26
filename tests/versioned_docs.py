@@ -22,6 +22,12 @@ RUST_BASICS = 'docs/examples/rust-basics/'
 SOURCE_BUILD = 'docs/contributing/build/'
 ROLL_PAGE = 'docs/reference/lua/platform/rand/'
 IMAGE_PAGE = 'docs/examples/image/'
+PROCESS_LESSONS = {
+    'process-model': ('two-workers/main.lua', 'examples/features/processes/lua/main.lua'),
+    'process-lifecycle': ('level-teardown/level.lua', 'examples/process-lesson/level.lua'),
+    'frames-and-time': ('movement-time/movement.lua', 'examples/process-lesson/movement.lua'),
+    'process-communication': ('mailbox/mailbox.lua', 'examples/process-lesson/mailbox.lua'),
+}
 LEGACY = {
     'getting-started/': {
         'install-the-sdk': 'docs/start/installation/#install-the-sdk',
@@ -120,6 +126,21 @@ class VersionedDocsTests(unittest.TestCase):
                 self.assertIn(b'Malvado project', bundle.read('NOTICE'))
         else:
             self.assertFalse((site / image).exists())
+
+        for chapter, (download, path) in PROCESS_LESSONS.items():
+            route = f'docs/learn/{chapter}/'
+            download = f'example-downloads/{download}'
+            with self.subTest(chapter=chapter):
+                if present('docs/site/learn'):
+                    check_link(route, download)
+                    self.assertEqual((site / download).read_bytes(), source(path))
+                    page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
+                    self.assertTrue(page.indexed)
+                    check_link('docs/learn/process-model/', route)
+                else:
+                    self.assertFalse((site / download).exists())
+                    if chapter != 'process-model':
+                        self.assertFalse((site / route).exists())
 
     def check_site(self, site, prefix):
         pages = {}

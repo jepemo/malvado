@@ -40,6 +40,7 @@ Published release snapshots keep their existing HTML.
 | --- | --- | --- |
 | / | [Landing page](src/pages/index.astro) and Lua sources in examples/helloworld, examples/meteors, and examples/move | Landing page with updated documentation links |
 | /docs/ | [Introduction](src/content/docs/docs/index.md) | Getting started |
+| /docs/learn/process-model/ | [Thinking in processes](../site/learn/process-model.md) | Learn Malvado, followed by [lifecycle](../site/learn/process-lifecycle.md), [timing](../site/learn/frames-and-time.md), and [communication](../site/learn/process-communication.md) |
 | /docs/concepts/lua-processes/, drawing/, keyboard/, images/, animations/, text/, cameras/, collision/, audio/ | Same-named [API guides](../api/README.md) | Learn Malvado |
 | /docs/concepts/lua-language-server/ | [LuaLS guide](../api/lua-language-server.md) | Linked from Tools and deployment → Editor setup |
 | /docs/concepts/lua-instance-methods/ | [Instance methods](../api/lua-instance-methods.md) | Lua API |

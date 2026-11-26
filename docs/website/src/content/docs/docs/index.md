@@ -20,5 +20,5 @@ macOS arm64, Linux x86_64, or Windows x64. See
 [platform support](./tools/platforms/) for desktop and Android exports.
 
 - [Install the SDK](./start/installation/) and [change the greeting in your first Lua game](./start/first-program/).
-- [Learn how processes work](./concepts/lua-processes/) or [try runnable examples](./examples/).
+- [Learn how processes work](./learn/process-model/) or [try runnable examples](./examples/).
 - [Choose an API reference](./reference/) for Lua, C, or experimental Rust.
