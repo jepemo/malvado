@@ -31,12 +31,12 @@ for new and updated documentation.
 
 - Establish canonical examples and shared assets in [#63](https://github.com/jepemo/malvado/issues/63).
 - Rewrite onboarding and tool guides in [#64](https://github.com/jepemo/malvado/issues/64).
-- Expand Learn with short lessons on the [process model](https://github.com/jepemo/malvado/issues/65) and [gameplay APIs](https://github.com/jepemo/malvado/issues/66).
+- Expand Learn with short lessons on [gameplay APIs](https://github.com/jepemo/malvado/issues/66).
 - Add an [incremental Lua game tutorial](https://github.com/jepemo/malvado/issues/67) with runnable checkpoints.
-- Expand the examples catalog and add interactive explanations where they help teach a concept.
+- Expand the [examples catalog](https://github.com/jepemo/malvado/issues/68) and add [interactive playgrounds](https://github.com/jepemo/malvado/issues/69), including the scheduler.
 - Apply the function template across the Lua API reference in [#70](https://github.com/jepemo/malvado/issues/70).
 - Enforce reference coverage, runnable examples, and website checks in CI in [#71](https://github.com/jepemo/malvado/issues/71).
-- Add patterns for game state, spawning, communication, and levels as verified examples become available.
+- Add [patterns](https://github.com/jepemo/malvado/issues/72) for game state, spawning, communication, and levels as verified examples become available.
 
 ## Promotion into a release
 

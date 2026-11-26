@@ -27,8 +27,10 @@ created during a tick starts on the next tick.
 
 The [process tree example][process-tree] shows the lifetime pattern in
 Lua. The controller starts a group with two children, then calls
-`kill_tree` with the group handle. The same pattern can clean
-up a level when the player finishes it or returns to a menu.
+`kill_tree` with the group handle. By default, that call follows creation
+history and can also kill detached children. When the level has only
+attached children to stop, let the level return or call `kill` on the level
+handle. The attached subtree ends with it.
 
 ## Choose a reference
 

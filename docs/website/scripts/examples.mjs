@@ -12,6 +12,10 @@ const downloads = new URL('../public/example-downloads/', import.meta.url);
 const run = promisify(execFile);
 
 const examples = {
+  'two-workers': { directory: 'examples/features/processes/', source: 'lua/main.lua' },
+  'level-teardown': { directory: 'examples/process-lesson/', source: 'level.lua' },
+  'movement-time': { directory: 'examples/process-lesson/', source: 'movement.lua' },
+  mailbox: { directory: 'examples/process-lesson/', source: 'mailbox.lua' },
   roll: {
     directory: 'examples/rand/',
     source: 'roll.lua',

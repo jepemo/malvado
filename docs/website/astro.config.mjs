@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { repoLink, repository, version } from './scripts/site-context.mjs';
+import { processLessons } from './scripts/process-lessons.mjs';
 
 export default defineConfig({
   site: 'https://malvado.dev',
@@ -20,8 +21,10 @@ export default defineConfig({
         { label: 'Project structure', slug: 'docs/start/project-structure' },
       ] },
       { label: 'Learn Malvado', collapsed: true, items: [
-        { label: 'Lua processes, lifecycle and time', slug: 'docs/concepts/lua-processes' },
-        { label: 'Processes across languages', slug: 'docs/learn/process-model' },
+        ...(processLessons.length ? processLessons.map(({ label, slug }) => ({ label, slug })) : [
+          { label: 'Processes across languages', slug: 'docs/learn/process-model' },
+        ]),
+        { label: 'Lua process guide', slug: 'docs/concepts/lua-processes' },
         { label: 'Drawing and coordinates', slug: 'docs/concepts/drawing' },
         { label: 'Keyboard input', slug: 'docs/concepts/keyboard' },
         { label: 'Images and sprites', slug: 'docs/concepts/images' },
