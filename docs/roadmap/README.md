@@ -43,7 +43,17 @@ for new and updated documentation.
 - Expand the [examples catalog](https://github.com/jepemo/malvado/issues/68).
 - Apply the function template across the Lua API reference in [#70](https://github.com/jepemo/malvado/issues/70).
 - Enforce reference coverage, runnable examples, and website checks in CI in [#71](https://github.com/jepemo/malvado/issues/71).
-- Add [patterns](https://github.com/jepemo/malvado/issues/72) for game state, spawning, communication, and levels as verified examples become available.
+
+### Future gameplay recipes
+
+- Object pooling when profiling shows that frequent creation and destruction
+  are a bottleneck.
+- Composition and components for actors that share behavior across roles.
+- Spatial partitioning when a measured gameplay query needs it.
+- Advanced animation and effects using the available animation and drawing APIs.
+- Scene and level organization for games with shared assets and several areas.
+
+Add more recipes when a recurring game problem has a small runnable example.
 
 ### Future playgrounds
 

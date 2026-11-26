@@ -16,6 +16,7 @@ The directory migration is planned, not complete. Current entry points include:
 - [Lua Move scene](move/README.md) with an arrow-key circle.
 - [Catch! game](catch/README.md) in C, Lua and Rust.
 - [Dodge! tutorial checkpoints](dodge/README.md) for a first Lua game.
+- [Lua gameplay recipes](gameplay-recipes/README.md) for common process-based tasks.
 - [Lua blinking text](blinking-text/README.md) with shared fonts and RGBA colors.
 - [Lua world collision](world-collision/README.md).
 - [Lua Space Asteroids game](space_asteroids/README.md).

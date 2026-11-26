@@ -27,6 +27,10 @@ DODGE_CHECKPOINTS = (
     '01-start', '02-player', '03-movement', '04-enemy',
     '05-spawn', '06-collision', '07-score', 'main',
 )
+RECIPES = (
+    'game-states', 'finite-state-machine', 'spawn-enemies-and-bullets',
+    'coordinate-processes', 'level-lifecycle',
+)
 PROCESS_LESSONS = {
     'process-model': ('two-workers/main.lua', 'examples/features/processes/lua/main.lua'),
     'process-lifecycle': ('level-teardown/level.lua', 'examples/process-lesson/level.lua'),
@@ -145,6 +149,26 @@ class VersionedDocsTests(unittest.TestCase):
         else:
             self.assertFalse((site / DODGE).exists())
             self.assertFalse(list((site / 'example-downloads').glob('dodge-*')))
+
+        for recipe in RECIPES:
+            route = f'docs/patterns/{recipe}/'
+            download = f'example-downloads/recipe-{recipe}/{recipe}.lua'
+            with self.subTest(recipe=recipe):
+                if not present(f'docs/site/patterns/{recipe}.md'):
+                    self.assertFalse((site / download).exists())
+                    if recipe != 'level-lifecycle':
+                        self.assertFalse((site / route).exists())
+                    continue
+                check_link('docs/', route)
+                check_link(route, download)
+                page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
+                self.assertTrue(page.indexed)
+                path = f'examples/gameplay-recipes/{recipe}.lua'
+                self.assertEqual((site / download).read_bytes(), source(path))
+                self.assertIn(
+                    f'https://github.com/jepemo/malvado/blob/{revision or "main"}/{path}',
+                    page.links,
+                )
 
         roll = 'example-downloads/roll/roll.lua'
         if present('examples/rand'):
