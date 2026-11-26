@@ -135,6 +135,7 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_process_draw_count`
 - `mv_process_draw_line`
 - `mv_process_draw_text`
+- `mv_process_draw_text_aligned`
 - `mv_process_graphic_clear`
 - `mv_process_graphic_get`
 - `mv_process_graphic_set`
@@ -268,6 +269,8 @@ See the linked headers and the [process](process-inventory.md),
 - `mv_platform_wait`
 - `mv_process_draw_image_region`
 - `mv_process_draw_image_region_owned`
+- `mv_process_draw_text_font`
+- `mv_process_draw_text_font_owned`
 - `mv_process_image_animation_bind_owned`
 - `mv_process_image_animation_set`
 - `mv_process_image_animation_set_owned`

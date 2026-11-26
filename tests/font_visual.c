@@ -44,10 +44,41 @@ check_frame(void *user)
     UnloadImage(image);
 }
 
+static void
+check_process_text(void *user)
+{
+    Comparison *comparison = user;
+    if (comparison->matched) return;
+    MvContext *ctx = malvado_debug_context();
+    MvProcessRef ref;
+    size_t commands, entries;
+    if (mv_process_ref_create(ctx, 1, &ref) != MV_OK) return;
+    if (mv_process_draw_count(ctx, ref, &commands) != MV_OK) return;
+    assert(mv_text_entries(ctx, NULL, 0, &entries) == MV_OK);
+    if (commands && !comparison->reference.data) {
+        assert(entries == 0);
+        Image image = LoadImageFromScreen();
+        assert(image.data);
+        int light[2][3] = {{0}};
+        for (int y = 0; y < image.height; ++y) {
+            for (int x = 0; x < image.width; ++x) {
+                if (GetImageColor(image, x, y).r > 100)
+                    ++light[y * 2 / image.height][x * 3 / image.width];
+            }
+        }
+        for (int row = 0; row < 2; ++row)
+            for (int column = 0; column < 3; ++column)
+                assert(light[row][column] > 10);
+        comparison->reference = image;
+    } else if (!commands && entries && comparison->reference.data) {
+        check_frame(comparison);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
-    assert(argc == 2);
+    assert(argc == 3);
     const char *path = "tests/fixtures/fonts/AnonymousPro-Bold.ttf";
     assert(!mv_font_load(path, 24));
     assert(mv_window_open(200, 80, "C font test"));
@@ -173,5 +204,12 @@ main(int argc, char **argv)
     malvado_debug_set_frame_hook(NULL, NULL);
     UnloadImage(comparison.reference);
     assert(result == 0 && comparison.matched);
+    Comparison process_text = {0};
+    args[1] = argv[2];
+    malvado_debug_set_frame_hook(check_process_text, &process_text);
+    result = malvado_run(2, args);
+    malvado_debug_set_frame_hook(NULL, NULL);
+    assert(result == 0 && process_text.matched);
+    UnloadImage(process_text.reference);
     return 0;
 }

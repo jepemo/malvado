@@ -4353,11 +4353,22 @@ check_font_descriptor(lua_State *L, int index)
     return descriptor;
 }
 
+static int
+check_text_alignment(lua_State *L, int index)
+{
+    size_t length;
+    const char *value = check_string(L, index, &length);
+    if (length == 4 && strcmp(value, "left") == 0) return MV_TEXT_ALIGN_LEFT;
+    if (length == 6 && strcmp(value, "center") == 0) return MV_TEXT_ALIGN_CENTER;
+    if (length == 5 && strcmp(value, "right") == 0) return MV_TEXT_ALIGN_RIGHT;
+    return luaL_error(L, "alignment must be left, center, or right");
+}
+
 /* Immediate text follows the process command lifetime. */
 static int
 text(lua_State *L)
 {
-    static const char *const keys[] = {"text", "x", "y", "size", "color"};
+    static const char *const keys[] = {"text", "x", "y", "size", "color", "align", "font"};
     check_single_options(L, keys, sizeof(keys) / sizeof(keys[0]));
     int is_integer;
     raw_option(L, 1, "text");
@@ -4374,7 +4385,16 @@ text(lua_State *L)
     lua_Integer y = to_integer(L, -1, &is_integer);
     lua_pop(L, 1);
     if (!is_integer) return luaL_error(L, "y must be an integer");
-    lua_Integer size = 20;
+    raw_option(L, 1, "align");
+    int alignment = lua_isnil(L, -1) ? MV_TEXT_ALIGN_LEFT : check_text_alignment(L, -1);
+    lua_pop(L, 1);
+    raw_option(L, 1, "font");
+    int has_font = !lua_isnil(L, -1);
+    FontDescriptor descriptor = {20, NULL};
+    if (has_font)
+        descriptor = check_font_descriptor(L, -1);
+    lua_pop(L, 1);
+    lua_Integer size = descriptor.size;
     raw_option(L, 1, "size");
     if (!lua_isnil(L, -1)) {
         size = to_integer(L, -1, &is_integer);
@@ -4387,6 +4407,8 @@ text(lua_State *L)
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX ||
         size < INT_MIN || size > INT_MAX)
         return luaL_error(L, "text coordinate or size is outside the supported range");
+    if (has_font && (size < 1 || size > 1024))
+        return luaL_error(L, "size must be an integer in 1..1024");
     MvColor color = {255, 255, 255, 255};
     raw_option(L, 1, "color");
     if (!lua_isnil(L, -1))
@@ -4399,8 +4421,12 @@ text(lua_State *L)
     if (!process || L != engine.active_thread)
         return luaL_error(L, "draw_text must be called inside a live process");
     MvProcessRef reference = {engine.runtime_id, (MvProcessId)process->id};
-    if (mv_process_draw_text(engine.context, reference, s, (int)x, (int)y,
-            (int)size, color) != MV_OK)
+    MvResult result = descriptor.custom ?
+        mv_process_draw_text_font(engine.context, reference, s, (int)x, (int)y,
+            (int)size, alignment, color, descriptor.custom) :
+        mv_process_draw_text_aligned(engine.context, reference, s, (int)x, (int)y,
+            (int)size, alignment, color);
+    if (result != MV_OK)
         return luaL_error(L, "cannot append text command");
     lua_pop(L, 1);
     return 0;
@@ -4524,26 +4550,8 @@ write_text(lua_State *L)
     if (!is_integer) return luaL_error(L, "y must be an integer");
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
         return luaL_error(L, "text coordinate is outside the supported range");
-    lua_Integer alignment = 0;
     raw_option(L, 1, "align");
-    if (!lua_isnil(L, -1)) {
-        size_t align_length;
-        const char *align = check_string(L, -1, &align_length);
-        if (strlen(align) != align_length) {
-            lua_pop(L, 1);
-            return luaL_error(L, "alignment must be left, center, or right");
-        }
-        if (strcmp(align, "left") == 0)
-            alignment = 0;
-        else if (strcmp(align, "center") == 0)
-            alignment = 1;
-        else if (strcmp(align, "right") == 0)
-            alignment = 2;
-        else {
-            lua_pop(L, 1);
-            return luaL_error(L, "alignment must be left, center, or right");
-        }
-    }
+    int alignment = lua_isnil(L, -1) ? MV_TEXT_ALIGN_LEFT : check_text_alignment(L, -1);
     lua_pop(L, 1);
     MvColor color = {255, 255, 255, 255};
     raw_option(L, 1, "color");
@@ -4571,7 +4579,7 @@ write_text(lua_State *L)
         return luaL_error(L, "invalid text owner");
     uint64_t native_id;
     if (mv_text_entry_create(engine.context, engine.active ? &owner : NULL,
-            text, (int)x, (int)y, (int)alignment, &native_id) != MV_OK)
+            text, (int)x, (int)y, alignment, &native_id) != MV_OK)
         return luaL_error(L, "cannot create text");
     lua_pushinteger(L, (lua_Integer)native_id);
     lua_setfield(L, -2, "id");
@@ -4676,7 +4684,7 @@ change_text(lua_State *L)
     luaL_checktype(L, 2, LUA_TTABLE);
     validate_table_keys(L, 2, keys, sizeof(keys) / sizeof(keys[0]));
     /* Validate every option before applying any change. */
-    int has_text = 0, has_x = 0, has_y = 0, has_align = 0;
+    int has_text = 0, has_x = 0, has_y = 0;
     int has_size = 0, has_color = 0, has_font = 0;
     int is_integer;
     const char *text = NULL;
@@ -4709,17 +4717,9 @@ change_text(lua_State *L)
     lua_pop(L, 1);
     if (x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX)
         return luaL_error(L, "text coordinate is outside the supported range");
-    lua_Integer alignment = 0;
     raw_option(L, 2, "align");
-    if (!lua_isnil(L, -1)) {
-        size_t align_length;
-        const char *align = check_string(L, -1, &align_length);
-        if (strlen(align) != align_length ||
-            (strcmp(align, "left") && strcmp(align, "center") && strcmp(align, "right")))
-            return luaL_error(L, "alignment must be left, center, or right");
-        alignment = strcmp(align, "center") == 0 ? 1 : strcmp(align, "right") == 0 ? 2 : 0;
-        has_align = 1;
-    }
+    int has_align = !lua_isnil(L, -1);
+    int alignment = has_align ? check_text_alignment(L, -1) : MV_TEXT_ALIGN_LEFT;
     lua_pop(L, 1);
     lua_Integer size = 0;
     raw_option(L, 2, "size");
@@ -4757,7 +4757,7 @@ change_text(lua_State *L)
     if (mv_text_entry_update(engine.context, (uint64_t)id,
             has_text ? text : previous,
             has_x ? (int)x : old_x, has_y ? (int)y : old_y,
-            has_align ? (int)alignment : old_alignment) != MV_OK)
+            has_align ? alignment : old_alignment) != MV_OK)
         return luaL_error(L, "cannot update text");
     if (has_font) {
         lua_pushvalue(L, font_slot);
@@ -5628,6 +5628,9 @@ static const struct { const char *name; const char *value; } api_constants[] = {
     {"STATUS_SLEEPING", "sleeping"},
     {"STATUS_FROZEN", "frozen"},
     {"STATUS_DEAD", "dead"},
+    {"TEXT_ALIGN_LEFT", "left"},
+    {"TEXT_ALIGN_CENTER", "center"},
+    {"TEXT_ALIGN_RIGHT", "right"},
 };
 
 /* Each entry defines a Lua palette member and a global export. */
@@ -5838,6 +5841,9 @@ static const char *const global_names[] = {
     "STATUS_SLEEPING",
     "STATUS_FROZEN",
     "STATUS_DEAD",
+    "TEXT_ALIGN_LEFT",
+    "TEXT_ALIGN_CENTER",
+    "TEXT_ALIGN_RIGHT",
 #define PALETTE_NAME(name, r, g, b, a) #name,
     PALETTE_COLOR_LIST(PALETTE_NAME)
 #undef PALETTE_NAME

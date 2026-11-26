@@ -34,12 +34,13 @@ local title = write {
   text = "Hello, Malvado!",
   x = 400,
   y = 300,
-  align = "center",
+  align = TEXT_ALIGN_CENTER,
   color = WHITE,
 }
-change_text(title, {color = {255, 100, 100, 180}})
+change_text(title, {align = TEXT_ALIGN_LEFT, color = {255, 100, 100, 180}})
 local width, height = text_size(f, "Hello")
-draw_text {text = "x", x = 1, y = 2, color = {r = RED.r, g = RED[2], b = RED.b}}
+draw_text {text = "x", x = 1, y = 2, font = f, align = TEXT_ALIGN_RIGHT,
+  color = {r = RED.r, g = RED[2], b = RED.b}}
 delete_text(title)
 set_color {10, 20, 30}
 clear_screen(BLACK)
@@ -148,7 +149,9 @@ end, {fps = 30})
 local window_width, window_height = mv.window_size()
 local f = mv.font {size = 50}
 local id = mv.write {font = f, text = "x", x = 1, y = 2}
-mv.change_text(id, {text = "y", color = {r = 1, g = 2, b = 3, a = 120}})
+mv.change_text(id, {text = "y", align = mv.TEXT_ALIGN_RIGHT, color = {r = 1, g = 2, b = 3, a = 120}})
+mv.draw_text {text = "x", x = 1, y = 2, font = f, align = mv.TEXT_ALIGN_CENTER}
+mv.draw_text {text = "x", x = 1, y = 2, align = mv.TEXT_ALIGN_LEFT}
 mv.set_color(mv.colors.RED)
 mv.circle {radius = 2, color = {r = 2, g = 0, b = 0}}
 mv.graphics.rect {width = 2, height = 2, color = mv.colors.PINK, pivot = "top-left"}
@@ -389,7 +392,8 @@ def main():
         (project / "bad-drawing.lua").write_text(
             'local mv = require("malvado")\n'
             'local image = mv.load_image("sheet.png")\n'
-            'mv.draw_image {image = image, x = 0, y = 0, scale = "large"}\n',
+            'mv.draw_image {image = image, x = 0, y = 0, scale = "large"}\n'
+            'mv.draw_text {text = "x", x = 1, y = 2, align = "middle"}\n',
             encoding="utf-8")
         (project / "bad-methods.lua").write_text(
             'local mv = require("malvado")\n'
@@ -468,6 +472,9 @@ def main():
         if not any(line == 3 and "Cannot assign `string`" in message
                    for line, message in diagnose(output, "bad-drawing.lua")):
             failures.append("namespaced project: draw_image should reject a string scale")
+        if not any(line == 4 and "Cannot assign `string`" in message
+                   for line, message in diagnose(output, "bad-drawing.lua")):
+            failures.append("namespaced project: draw_text should reject unknown alignment")
         if "probe-globals.lua:1:1 [Warning] Undefined global `write`" not in output:
             failures.append("namespaced project: global `write` should be undefined")
         if "Undefined global `RED`" not in output:

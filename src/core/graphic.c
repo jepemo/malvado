@@ -57,9 +57,10 @@ mv_graphic_sprite(int width, int height, double pivot_x, double pivot_y, MvColli
 int
 mv_text_aligned_x(int x, int width, int alignment, int *out)
 {
-    if (!out || width < 0 || alignment < 0 || alignment > 2)
+    if (!out || width < 0 || alignment < MV_TEXT_ALIGN_LEFT || alignment > MV_TEXT_ALIGN_RIGHT)
         return 0;
-    int64_t offset = alignment == 1 ? width / 2 : alignment == 2 ? width : 0;
+    int64_t offset = alignment == MV_TEXT_ALIGN_CENTER ? width / 2 :
+                     alignment == MV_TEXT_ALIGN_RIGHT ? width : 0;
     int64_t result = (int64_t)x - offset;
     if (result < INT_MIN)
         result = INT_MIN;

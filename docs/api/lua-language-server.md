@@ -63,7 +63,7 @@ local title = mv.write {
   text = "Hello, Malvado!",
   x = 400,
   y = 300,
-  align = "center",
+  align = mv.TEXT_ALIGN_CENTER,
   color = {255, 255, 255, 255},
 }
 

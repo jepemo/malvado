@@ -1,5 +1,8 @@
 // Malvado 2; SPDX-License-Identifier: Apache-2.0
-use malvado::{Error, Game, SpawnOptions, graphic::Color};
+use malvado::{
+    Error, Game, SpawnOptions,
+    graphic::{Color, TextAlignment},
+};
 use std::{
     cell::{Cell, RefCell},
     future::poll_fn,
@@ -30,6 +33,7 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
                     assert_eq!(actor.draw_count()?, 0);
                     actor.draw_box((0, 0), (4, 4), true, WHITE)?;
                     actor.draw_circle((10, 10), 2, false, WHITE)?;
+                    p.draw_text_aligned("", (0, 0), 20, WHITE, TextAlignment::Right)?;
                     observed.set(observed.get() + 1);
                     p.frame().await;
                 }
@@ -42,7 +46,7 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
     assert_eq!(actor.draw_count().unwrap(), 1);
     game.tick().unwrap();
     assert_eq!(activations.get(), 1);
-    assert_eq!(actor.draw_count().unwrap(), 2);
+    assert_eq!(actor.draw_count().unwrap(), 3);
     actor
         .draw_text(&String::from("copied"), (0, 0), -1, WHITE)
         .unwrap();
@@ -50,17 +54,17 @@ fn copied_commands_validate_and_clear_only_on_actual_low_cadence_activation() {
         actor.draw_box((i32::MAX, 0), (1, 1), true, WHITE),
         actor.draw_box((0, 0), (0, 1), true, WHITE),
         actor.draw_circle((i32::MIN, 0), 1, true, WHITE),
-        actor.draw_text("bad\0text", (0, 0), 20, WHITE),
+        actor.draw_text_aligned("bad\0text", (0, 0), 20, WHITE, TextAlignment::Center),
     ] {
         assert_eq!(invalid, Err(Error::InvalidArgument));
     }
     for _ in 0..11 {
         game.tick().unwrap();
-        assert_eq!(actor.draw_count().unwrap(), 3);
+        assert_eq!(actor.draw_count().unwrap(), 4);
     }
     game.tick().unwrap();
     assert_eq!(activations.get(), 2);
-    assert_eq!(actor.draw_count().unwrap(), 2);
+    assert_eq!(actor.draw_count().unwrap(), 3);
     actor.clear_draw_commands().unwrap();
     actor.clear_draw_commands().unwrap();
     assert_eq!(actor.draw_count().unwrap(), 0);

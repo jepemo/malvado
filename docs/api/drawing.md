@@ -322,7 +322,13 @@ return {
 C hosts can append `mv_process_draw_box`, `mv_process_draw_circle`,
 `mv_process_draw_line`, and `mv_process_draw_text` without a window. The line
 takes two integer endpoints, a double thickness, and a color, with the same
-bounds and rendering behavior as Lua. Text and colors are copied. Use
+bounds and rendering behavior as Lua. Text and colors are copied.
+`mv_process_draw_text_aligned` also works without a window and accepts an
+`MV_TEXT_ALIGN_*` constant. `mv_process_draw_text` uses left alignment.
+Use `mv_process_draw_text_font` with a live custom font and size 1..1024.
+It retains the font until command cleanup. Its `_owned` variant can also
+take a lifetime owner on success, which is released after the native font.
+Use
 `mv_process_draw_image_region` for retained image regions and transforms.
 The `_owned` variant also takes a binding lifetime owner on success. Native
 images are released before the owner. Failure preserves the previous list and
@@ -367,8 +373,9 @@ rounding. The result saturates at `INT_MIN`. A negative width, unknown
 alignment, or NULL output returns 0 and leaves the output unchanged.
 The operation requires no window, allocation, or process.
 
-Lua persistent text uses this operation after built-in or custom font
-measurement. Its `left`, `center`, and `right` behavior is unchanged.
+Immediate and persistent text use this operation with the same built-in
+or custom font measurement. Lua uses `TEXT_ALIGN_LEFT`, `TEXT_ALIGN_CENTER`,
+and `TEXT_ALIGN_RIGHT` or the corresponding string values.
 
 Rust exposes the same core operation through
 `malvado::graphic::TextAlignment::{Left, Center, Right}`:

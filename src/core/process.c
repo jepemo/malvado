@@ -626,9 +626,17 @@ MvResult
 mv_process_draw_text(MvContext *ctx, MvProcessRef ref, const char *text,
                      int x, int y, int size, MvColor color)
 {
-    if (!text) return MV_INVALID_ARGUMENT;
+    return mv_process_draw_text_aligned(ctx, ref, text, x, y, size, MV_TEXT_ALIGN_LEFT, color);
+}
+
+MvResult
+mv_process_draw_text_aligned(MvContext *ctx, MvProcessRef ref, const char *text,
+                             int x, int y, int size, int alignment, MvColor color)
+{
+    if (!text || alignment < MV_TEXT_ALIGN_LEFT || alignment > MV_TEXT_ALIGN_RIGHT)
+        return MV_INVALID_ARGUMENT;
     return malvado_process_draw_owned(ctx, ref, (MvStoredDraw){.kind = MV_STORED_TEXT,
-        .x = x, .y = y, .size = size, .color = color, .text = text});
+        .x = x, .y = y, .size = size, .alignment = alignment, .color = color, .text = text});
 }
 
 static void

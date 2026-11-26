@@ -1006,7 +1006,7 @@ draw_stored_command(const MvStoredDraw *command, void *user)
         draw_stored_line(command);
         break;
     case MV_STORED_TEXT:
-        mv_window_draw_text(command->text, command->x, command->y, command->size, command->color);
+        malvado_draw_stored_text(command);
         break;
     case MV_STORED_CUSTOM:
         (void)command->draw(command->data);

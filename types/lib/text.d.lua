@@ -45,5 +45,7 @@
 ---@field text string Text content. Required.
 ---@field x integer Horizontal position. Required.
 ---@field y integer Vertical position. Required.
----@field size integer? Font size in pixels (default 20).
+---@field align MvTextAlign? Horizontal anchor. Default: `"left"`.
+---@field font MvFont? Built-in or loaded font descriptor.
+---@field size integer? Font size in pixels. Default: the descriptor size or 20. Use 1..1024 with a descriptor.
 ---@field color MvColor? RGBA color for this draw only (default opaque white).

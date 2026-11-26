@@ -321,6 +321,30 @@ unsafe extern "C" {
     ) -> c_int;
     pub fn mv_text_entry_font_clear(ctx: *mut crate::MvContext, id: u64) -> c_int;
     pub fn mv_window_draw_texts(ctx: *mut crate::MvContext) -> c_int;
+    pub fn mv_process_draw_text_font(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        alignment: c_int,
+        color: MvColor,
+        font: *mut MvFont,
+    ) -> c_int;
+    pub fn mv_process_draw_text_font_owned(
+        ctx: *mut crate::MvContext,
+        process: crate::MvProcessRef,
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        alignment: c_int,
+        color: MvColor,
+        font: *mut MvFont,
+        owner: *mut std::ffi::c_void,
+        release: crate::MvResourceDestroy,
+    ) -> c_int;
     pub fn mv_font_retain(font: *mut MvFont) -> c_int;
     pub fn mv_font_destroy(font: *mut MvFont) -> ();
     pub fn mv_font_text_width(font: *const MvFont, text: *const c_char, size: c_int) -> c_int;

@@ -226,6 +226,9 @@ tick-based `fade_off` and `fade_on`.
 | `STATUS_SLEEPING` | `mv.STATUS_SLEEPING` |
 | `STATUS_FROZEN` | `mv.STATUS_FROZEN` |
 | `STATUS_DEAD` | `mv.STATUS_DEAD` |
+| `TEXT_ALIGN_LEFT` | `mv.TEXT_ALIGN_LEFT` |
+| `TEXT_ALIGN_CENTER` | `mv.TEXT_ALIGN_CENTER` |
+| `TEXT_ALIGN_RIGHT` | `mv.TEXT_ALIGN_RIGHT` |
 
 ## Palette globals
 

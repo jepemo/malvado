@@ -14,7 +14,8 @@ if (mv_text_create("Score: 0", 10, 10, 0, &text) == MV_OK) {
 }
 ```
 
-Alignment is 0 for left, 1 for center or 2 for right. Use
+Use `MV_TEXT_ALIGN_LEFT` (0), `MV_TEXT_ALIGN_CENTER` (1) or
+`MV_TEXT_ALIGN_RIGHT` (2) for alignment. Use
 `mv_text_aligned_x` with the measured font width when rendering.
 `mv_text_read` returns a borrowed string and copied coordinates/alignment.
 All output pointers are required. The borrowed string lasts until update or
@@ -62,16 +63,33 @@ return width and height in pixels without drawing. Empty text measures
 (0, 0); multiline text splits on `\n`, measures the widest line and adds one
 line to the height. The headless backend cannot measure and returns (0, 0).
 
-`mv.draw_text(options)` queues text until the process next runs.
-It requires `text`, `x` and `y`; `size` defaults to 20 and `color` defaults to
-opaque white. It creates no persistent text and does not change the drawing
-state used by the primitive functions.
+### Lua process text
+
+Call `mv.draw_text(options)` inside a process to queue text until the next
+activation. It requires `text`, `x` and `y`. Pass a descriptor from `font`
+or `load_font` as `font` to use its typeface and size. Without a descriptor,
+the built-in font uses size 20. An explicit `size` overrides these defaults.
+Use 1..1024 with a descriptor. Color defaults to opaque white.
+
+For `draw_text`, `write`, and `change_text`, use `mv.TEXT_ALIGN_LEFT`,
+`mv.TEXT_ALIGN_CENTER`, or `mv.TEXT_ALIGN_RIGHT`. With `import_globals()`,
+omit the `mv.` prefix. The constants are the strings `"left"`, `"center"`
+and `"right"`, which you can also pass directly. The default is left when
+drawing or creating text. For a partial update, omitting `align` keeps the
+current value. Both drawing paths use the measured width of the whole string,
+including for multiline text. Center subtracts half the width, rounded down.
+Right subtracts the full width. Alignment leaves `y` unchanged.
+
+The command copies the text and effective size, alignment, and color, and
+retains any custom font. You can change or drop the Lua descriptor after
+queuing the command. Invalid options leave the queue unchanged. A command
+creates no persistent text and leaves primitive drawing state unchanged.
 
 The `color` option in `draw_text`, `write`, and `change_text` accepts
 [palette colors and custom color tables](drawing.md#lua-colors).
 
 ```lua
-mv.draw_text {text = "Hello!", x = 20, y = 20, color = mv.colors.WHITE}
+mv.draw_text {text = "Ready?", x = 160, y = 20, align = mv.TEXT_ALIGN_CENTER}
 local label = mv.write {
   font = mv.font {size = 40},
   text = "Hello, Malvado!",
