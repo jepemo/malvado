@@ -36,7 +36,10 @@ for new and updated documentation.
   [spatial queries](https://github.com/jepemo/malvado/issues/38) and
   [runtime graphics libraries](https://github.com/jepemo/malvado/issues/44)
   as those APIs become available.
-- Add an [incremental Lua game tutorial](https://github.com/jepemo/malvado/issues/67) with runnable checkpoints.
+- Build on the [Dodge! tutorial](../site/tutorials/dodge.md) with future tutorials.
+  Explore Asteroids for rotation and wraparound, a platformer for jumping
+  and terrain, a top-down adventure for rooms and interaction, and a
+  shoot 'em up for waves and projectiles.
 - Expand the [examples catalog](https://github.com/jepemo/malvado/issues/68) and add [interactive playgrounds](https://github.com/jepemo/malvado/issues/69), including the scheduler.
 - Apply the function template across the Lua API reference in [#70](https://github.com/jepemo/malvado/issues/70).
 - Enforce reference coverage, runnable examples, and website checks in CI in [#71](https://github.com/jepemo/malvado/issues/71).

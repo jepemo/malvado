@@ -25,6 +25,10 @@ const examples = {
   'catch-lua': { directory: 'examples/catch/', source: 'lua/main.lua' },
   'catch-c': { directory: 'examples/catch/', source: 'c/main.c' },
   'catch-rust': { directory: 'bindings/rust/malvado/examples/', source: 'catch.rs' },
+  ...Object.fromEntries([
+    '01-start', '02-player', '03-movement', '04-enemy',
+    '05-spawn', '06-collision', '07-score', 'main',
+  ].map((name) => [`dodge-${name}`, { directory: 'examples/dodge/', source: name + '.lua' }])),
   'two-workers-c': { directory: 'examples/features/processes/', source: 'c/main.c' },
   'two-workers-rust': { directory: 'examples/features/processes/', source: 'rust/main.rs' },
   'two-workers': { directory: 'examples/features/processes/', source: 'lua/main.lua' },

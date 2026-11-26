@@ -1431,6 +1431,11 @@ endif()
 
 add_test(NAME lua_collision_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/collision_example.lua)
 set_tests_properties(lua_collision_example PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME lua_dodge_tutorial COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dodge_tutorial.py $<TARGET_FILE:malvado>)
+  set_tests_properties(lua_dodge_tutorial PROPERTIES TIMEOUT 15)
+endif()
 add_test(NAME lua_world_example COMMAND malvado-run --headless ${CMAKE_CURRENT_SOURCE_DIR}/tests/world_example.lua)
 set_tests_properties(lua_world_example PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TIMEOUT 15)
 if(MALVADO_BUILD_ASSETS)

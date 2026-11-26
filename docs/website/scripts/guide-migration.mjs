@@ -85,7 +85,7 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames, processModelTitle, resourcesTitle) {
+export async function migrateGuides(writePage, conceptNames, processModelTitle, resourcesTitle, tutorialRoute) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -168,8 +168,10 @@ export async function migrateGuides(writePage, conceptNames, processModelTitle, 
     'Open a window that says **Hello, Malvado!**, then put your own message in it. ' +
     local('docs/start/first-program', 'docs/start/installation', 'Install the SDK') +
     ' and use a desktop session with a display. After the game runs, see ' +
-    '[what the generator created](../project-structure/) or try ' +
-    '[the first gameplay examples](../../examples/#basics).',
+    '[what the generator created](../project-structure/) or ' +
+    (tutorialRoute
+      ? local('docs/start/first-program', tutorialRoute, 'build your first game, Dodge!')
+      : '[try the first gameplay examples](../../examples/#basics)') + '.',
     ['getting-started', 'Create and run a game', 'Create a project']);
   await publish('docs/start/project-structure',
     'Start with the files from [your first Lua game](../first-program/). ' +
