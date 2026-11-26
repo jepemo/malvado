@@ -1,6 +1,8 @@
 # SDK and projects
 
-The development SDK includes the `malvado` command, the Lua runtime, the C libraries, and Rust crate sources. Use a matching native macOS, Linux or Windows x64 MSVC SDK. Malvado 2 is in development, and its tools can change.
+The SDK includes the `malvado` command, the Lua runtime, the C libraries,
+and experimental Rust crate sources. See the [installation
+instructions](getting-started.md#install-the-sdk) for a released desktop SDK.
 
 ## Install a local development build
 
@@ -81,24 +83,54 @@ Use an empty directory for each SDK version. To use the command in a new termina
 
 ## Create and run a game
 
-Create a Lua game and run it:
+The Lua starter contains two files when you create it with the installed SDK.
 
-```sh
-malvado new my-game
-cd my-game
-malvado run
+```text
+my-game/
+  main.lua
+  .luarc.json
 ```
 
-Edit `main.lua` to change the game. Run `malvado check` to check the syntax of the Lua files without starting the game.
+`main.lua` is the entry script. It returns a game table with an `init`
+function that starts the first process. Set `title`, `width`, and `height`
+in that table to configure the window. An entry script can also use
+`mv.start()`. Use one entry form per run. See the
+[declarative game example](https://github.com/jepemo/malvado/tree/main/examples/declarative)
+for a complete game table.
 
-The new Lua project returns a game table. Its `init` function starts the game processes. Set `title`, `width`, and `height` in the table to change the window. For a small example, see the [declarative game](https://github.com/jepemo/malvado/tree/main/examples/declarative). You can also use `mv.start()` in an entry script. Use one entry form per run.
+`.luarc.json` is editor configuration. The generator writes it when it finds
+the installed Lua type definitions. The runtime reads game settings from
+your Lua code.
 
-To create a C game, use `malvado new --lang c my-c-game`. Run it with `malvado run` from the new directory. C projects need CMake and a C compiler. Use `malvado build` to build without starting the game.
+### Add scripts and assets
+
+Add folders as the game grows. For example, put Lua modules in `scripts/`
+and place a player image at `assets/sprites/player.png`. These folders are
+optional. Load a module with `require("scripts.player")` for a file named
+`scripts/player.lua`, and load the image with
+`load_asset("assets/sprites/player.png")` when using the starter's global imports.
+
+By default, relative asset paths and local Lua module paths start at the
+directory that contains the entry script. This also works when you run
+`malvado run my-game/main.lua` from its parent directory.
+Use `assets_dir = "assets"` in the returned game table to shorten the
+image path to `load_asset("sprites/player.png")`. The runner applies that
+setting before `init`. A relative `assets_dir` starts at the entry script's
+directory and affects asset lookup only. Keep files inside the project so
+they travel with your export. See [game asset paths](https://github.com/jepemo/malvado/blob/main/docs/api/asset-sources.md#game-asset-paths)
+for overrides and native games.
+
+### Create a C game
+
+Use `malvado new --lang c my-c-game` to generate `main.c` and
+`CMakeLists.txt`. Install CMake and a C compiler. From `my-c-game`,
+use `malvado check` to compile and link the starter without running it, or
+`malvado run` to build and start it.
 
 ## Create a Rust game
 
-Rust's gameplay SDK is experimental in 2.0. It is functional and tested, but
-future 2.x changes can require source updates. Use `Game` as the public entry
+Rust's gameplay SDK is experimental. Future 2.x changes can require source
+updates. Use `Game` as the public entry
 point. Use `Game::windowed` and `game.run()` for a managed window. See the
 [support policy](https://github.com/jepemo/malvado/blob/main/docs/api/rust-support.md) and [Game migration](https://github.com/jepemo/malvado/blob/main/docs/development/rust-game-migration.md).
 Rust games are native executables; players do not need Cargo or rustc.
@@ -132,12 +164,19 @@ for state, frame waits, cancellation and resource lifetimes.
 
 ## Export a game
 
-From the project directory, run:
+Use `malvado build` from a C or Rust project directory to compile the game.
+Use `malvado run` to build and play it. For Lua, run `malvado check` to find
+syntax errors, then use `malvado run` to play the scripts.
+
+When you are ready to share the game, run this from its project directory.
+The second command starts the exported copy on macOS or Linux.
 
 ```sh
 malvado export
 ./dist/game/game
 ```
+
+On Windows, start it with `.\dist\game\game.exe` in PowerShell.
 
 The exported folder contains the game and its license notices. Copy the full
 folder to a matching target computer. Native desktop exports use the current
@@ -171,14 +210,12 @@ To share a macOS app, select the `.app` in Finder and choose **Compress**. Send 
 
 Exported games skip hidden files, and directories named `build` or `dist`. They cannot include symbolic links. For the current limits and project rules, see the [CLI guide](https://github.com/jepemo/malvado/blob/main/docs/development/cli.md).
 
-Use `malvado --help` to list commands and `malvado doctor` to see the capabilities of your SDK. Graphics and system dependencies still need validation on more target machines.
-
 ## Export for Android
 
-Android arm64 platform support is beta in Malvado 2.0.
+Android arm64 platform support is beta.
 
-Use a graphical macOS arm64 or Linux x86_64 host SDK and a matching Android
-arm64 target SDK. Prepare the Android tools and target SDK for
+Use a graphical macOS arm64 or Linux x86_64 host SDK. Install the Android
+tools and prepare a separate Android arm64 target SDK. Follow the setup for
 [C](https://github.com/jepemo/malvado/blob/main/docs/development/android-c-games.md),
 [Lua](https://github.com/jepemo/malvado/blob/main/docs/development/android-runtime.md)
 or [Rust](https://github.com/jepemo/malvado/blob/main/docs/development/android-rust-games.md).

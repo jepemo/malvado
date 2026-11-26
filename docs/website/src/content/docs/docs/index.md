@@ -3,13 +3,22 @@ title: Introduction
 description: Learn to write games with Malvado processes.
 ---
 
-Malvado is a 2D game engine inspired by DIV Games Studio. Give the player,
-enemies, and effects their own processes. Each process has its own state and
-can wait for its next turn with a frame call.
+Malvado is a 2D game engine inspired by DIV Games Studio. The Lua
+starter opens a window and draws a greeting near the upper left.
 
-- [Install the SDK](./start/installation/) and [run your first Lua game](./start/first-program/).
-- [Learn how Lua processes work](./concepts/lua-processes/) and use them to
-  [organize a level](./patterns/level-lifecycle/).
-- [Browse runnable examples](./examples/) or play [Catch!](./examples/catch/).
+```lua
+draw_text {text = "Hello, Malvado!", x = 40, y = 40, size = 30}
+```
+
+This line runs inside a **process**. A process is a small piece of the
+game that can keep its own state and wait for its next turn. You can
+give the player, each enemy, and each effect its own process. When the
+player waits for the next frame, the enemies still take their turns.
+
+Write games in Lua, C, or experimental Rust. Use the desktop SDK on
+macOS arm64, Linux x86_64, or Windows x64. See
+[platform support](./tools/platforms/) for desktop and Android exports.
+
+- [Install the SDK](./start/installation/) and [change the greeting in your first Lua game](./start/first-program/).
+- [Learn how processes work](./concepts/lua-processes/) or [try runnable examples](./examples/).
 - [Choose an API reference](./reference/) for Lua, C, or experimental Rust.
-- [Build Malvado from source](./contributing/build/) to work on the engine.

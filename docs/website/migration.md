@@ -52,8 +52,10 @@ Retained guide headings stay at their existing fragments. Repository-only
 material stays in the [API index](../api/README.md),
 [development guide](../development/README.md), [example catalog](../../examples/README.md),
 [version plan](../versions/README.md), and [Roadmap](../roadmap/README.md).
-The sidebar links directly to the C reference, Rust support policy, CLI,
+The sidebar links directly to the C reference, Rust support policy,
 engine architecture, binding ownership, and documentation guidelines.
+The [website CLI reference](scripts/guide-migration.mjs) summarizes the
+installed commands and links to the [full CLI contract](../development/cli.md).
 The platform and release pages link to the detailed Android, SDK, and
 publishing guides. The examples page groups existing programs by topic and
 links their source and run instructions.
