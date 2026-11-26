@@ -28,6 +28,24 @@ PROCESS_LESSONS = {
     'frames-and-time': ('movement-time/movement.lua', 'examples/process-lesson/movement.lua'),
     'process-communication': ('mailbox/mailbox.lua', 'examples/process-lesson/mailbox.lua'),
 }
+SPRITE_ARCHIVE = (
+    'select-sprites/select-sprites.zip', 'examples/applied-learn/sprites.lua',
+    {'assets/sheet.json': 'examples/aseprite/sheet.json',
+     'assets/sheet.png': 'examples/aseprite/sheet.png'},
+)
+APPLIED_LESSONS = {
+    'drawing-and-coordinates': ('shape-coordinates/shapes.lua', 'examples/applied-learn/shapes.lua', {}),
+    'input-and-movement': ('input-movement/movement.lua', 'examples/applied-learn/movement.lua', {}),
+    'graphics-and-sprites': SPRITE_ARCHIVE,
+    'animation': ('aseprite-bounce/aseprite-bounce.zip', 'examples/aseprite/main.lua',
+                  {'sheet.json': 'examples/aseprite/sheet.json', 'sheet.png': 'examples/aseprite/sheet.png'}),
+    'collisions': ('circle-collision/main.lua', 'examples/collision/main.lua', {}),
+    'text-and-fonts': ('text-labels/labels.lua', 'examples/applied-learn/labels.lua', {}),
+    'sound-and-music': ('audio-tone/audio-tone.zip', 'examples/audio/main.lua',
+                       {'tone.wav': 'examples/audio/tone.wav'}),
+    'cameras-and-scrolling': ('camera-follow/main.lua', 'examples/camera-follow/main.lua', {}),
+    'resources': SPRITE_ARCHIVE,
+}
 LEGACY = {
     'getting-started/': {
         'install-the-sdk': 'docs/start/installation/#install-the-sdk',
@@ -141,6 +159,30 @@ class VersionedDocsTests(unittest.TestCase):
                     self.assertFalse((site / download).exists())
                     if chapter != 'process-model':
                         self.assertFalse((site / route).exists())
+
+        for chapter, (download, code, assets) in APPLIED_LESSONS.items():
+            route = f'docs/learn/{chapter}/'
+            download = f'example-downloads/{download}'
+            with self.subTest(chapter=chapter):
+                if not present(f'docs/site/learn/{chapter}.md'):
+                    self.assertFalse((site / download).exists())
+                    if chapter != 'resources':
+                        self.assertFalse((site / route).exists())
+                    continue
+                check_link(route, download)
+                check_link('docs/learn/process-model/', route)
+                page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
+                self.assertTrue(page.indexed)
+                if assets:
+                    files = {Path(code).name: code, 'LICENSE': 'LICENSE', **assets}
+                    with ZipFile(site / download) as bundle:
+                        archive_files = [name for name in bundle.namelist() if not name.endswith('/')]
+                        self.assertCountEqual(archive_files, [*files, 'NOTICE'])
+                        for name, path in files.items():
+                            self.assertEqual(bundle.read(name), source(path))
+                        self.assertIn(b'Malvado project', bundle.read('NOTICE'))
+                else:
+                    self.assertEqual((site / download).read_bytes(), source(code))
 
     def check_site(self, site, prefix):
         pages = {}

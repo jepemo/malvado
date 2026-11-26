@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { repoLink, revision } from './site-context.mjs';
 import { migrateGuides, rewriteGuideLinks, siteLink, writeLegacy } from './guide-migration.mjs';
 import { clearExampleDownloads, publishExample } from './examples.mjs';
-import { processLessons, writeProcessLessons } from './process-lessons.mjs';
+import { learnLessons, writeLearnLessons } from './learn-lessons.mjs';
 
 // The repository guides and examples remain the source of truth.
 const output = new URL('../src/content/docs/docs/', import.meta.url);
@@ -94,8 +94,10 @@ async function writePage(route, title, body, pagefind = true) {
 await clearExampleDownloads();
 const imageRoute = 'docs/examples/image';
 const image = await publishExample('image', imageRoute);
-await migrateGuides(writePage, conceptNames, image ? imageRoute : undefined, processLessons[0]?.label);
-await writeProcessLessons(writePage, conceptNames);
+const processModel = learnLessons.find(({ name }) => name === 'process-model');
+const resources = learnLessons.find(({ name }) => name === 'resources');
+await migrateGuides(writePage, conceptNames, image ? imageRoute : undefined, processModel?.label, resources?.label);
+await writeLearnLessons(writePage, conceptNames);
 if (image) {
   await writePage(imageRoute, 'Draw a PNG', `Load a PNG after opening a window and draw it at its original size.
 
