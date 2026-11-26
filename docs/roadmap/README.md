@@ -26,11 +26,16 @@ holds the design, dependencies and verification ideas.
 
 ## Documentation
 
-- Define the editorial and verification rules in [#62](https://github.com/jepemo/malvado/issues/62).\n- Establish canonical examples and shared assets in [#63](https://github.com/jepemo/malvado/issues/63).\n- Rewrite onboarding and tool guides in [#64](https://github.com/jepemo/malvado/issues/64).
+Use the [writing guide and templates](../development/api-documentation.md)
+for new and updated documentation.
+
+- Establish canonical examples and shared assets in [#63](https://github.com/jepemo/malvado/issues/63).
+- Rewrite onboarding and tool guides in [#64](https://github.com/jepemo/malvado/issues/64).
 - Expand Learn with short lessons on the [process model](https://github.com/jepemo/malvado/issues/65) and [gameplay APIs](https://github.com/jepemo/malvado/issues/66).
 - Add an [incremental Lua game tutorial](https://github.com/jepemo/malvado/issues/67) with runnable checkpoints.
 - Expand the examples catalog and add interactive explanations where they help teach a concept.
-- Add runnable examples to the Lua API reference and extend documentation checks.
+- Apply the function template across the Lua API reference in [#70](https://github.com/jepemo/malvado/issues/70).
+- Enforce reference coverage, runnable examples, and website checks in CI in [#71](https://github.com/jepemo/malvado/issues/71).
 - Add patterns for game state, spawning, communication, and levels as verified examples become available.
 
 ## Promotion into a release

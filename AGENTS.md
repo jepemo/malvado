@@ -153,6 +153,34 @@ Preserve third-party licenses, notices, and attribution.
 
 Write documentation, README files, examples, and code comments in English.
 
+### Public API documentation
+
+Adding, changing, renaming, or removing a public function, constant, property,
+type, or observable contract is incomplete until you update all affected
+documentation, examples, and metadata in the same change.
+
+- Update the public reference, the applicable language binding docs, the
+  canonical public inventories, and any generated metadata and editor
+  definitions, such as LuaLS. Document exact signatures, including supported
+  procedural and method forms, and explain purpose, types, units, defaults,
+  returns, and errors.
+- Add or update complete runnable Lua examples and their setup, assets, and
+  fixtures where the API is available in Lua. Use idiomatic current public
+  APIs, named constants where available, and documented defaults. Keep affected
+  C and Rust examples accurate and identify language limits.
+- Update affected guides, tutorials, gallery entries, links, and tests. Correct
+  any diagram or playground the change makes misleading. Keep public behavior
+  separate from internal contracts. Present only implemented behavior as
+  available.
+- Build the affected documentation, check its links, and run the affected
+  examples with their documented setup. Check the expected behavior and report
+  any verification limit.
+
+Use the [writing guide](docs/development/api-documentation.md) and
+[templates](docs/development/documentation-templates.md).
+
+### Writing style
+
 Follow ASD-STE100 Simplified Technical English principles:
 
 - Use short, direct sentences.
