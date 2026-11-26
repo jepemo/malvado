@@ -286,10 +286,10 @@ export default {
     related: ['draw_rect', 'draw_circle', 'set_color'],
   },
   'drawing/draw_text': {
-    description: 'Queue text with the built-in font until the process next runs.',
-    params: [['options', 'A table: `text`, `x` and `y` are required; `size` (default 20) and `color` are optional.']],
-    example: 'draw_text {text = "Hello World", x = 40, y = 40, size = 48}',
-    related: ['set_color', 'write'],
+    description: 'Queue text until the process next runs. The command copies its style and retains any custom font.',
+    params: [['options', 'Required fields are `text`, `x` and `y`. Optional `align` anchors the measured width at `x`. Use `TEXT_ALIGN_LEFT` (default), `TEXT_ALIGN_CENTER`, or `TEXT_ALIGN_RIGHT`. Optional `font` selects a descriptor. `size` overrides the descriptor size and defaults to 20 without a descriptor. `color` defaults to opaque white.']],
+    example: 'draw_text {text = "Ready?", x = 160, y = 40, size = 24, align = TEXT_ALIGN_CENTER}',
+    related: ['font', 'load_font', 'write'],
   },
   'drawing/set_color': {
     description: 'Set the color that later shape drawing calls use.',

@@ -130,6 +130,14 @@ error. Native integer bounds and failure behavior apply. `draw_count` reports
 all native commands, including those appended through C. `clear_draw_commands`
 releases the list immediately and is idempotent.
 
+Use `p.draw_text_aligned("Ready?", (160, 20), 24, WHITE, TextAlignment::Center)`
+for a built-in font with a horizontal anchor. Import `TextAlignment` from
+`malvado::graphic`. With graphics enabled, call
+`p.draw_text_with_font(&font, "Ready?", (160, 20), 24, WHITE, TextAlignment::Center)`
+with a loaded `Font` and a size in 1..=1024. The native command retains the font,
+and the Rust binding keeps its window alive. Both methods also work on a process
+`Handle`. They use the same horizontal alignment as retained text.
+
 The async adapter clears the old list after cadence and readiness checks, just
 before a real future poll. Pending futures without a wake keep their commands.
 Sleep and freeze also keep the list. Manual commands queued before the first

@@ -229,18 +229,21 @@ pub enum TextAlignment {
     Right,
 }
 impl TextAlignment {
+    pub(crate) fn native(self) -> i32 {
+        match self {
+            Self::Left => sys::MV_TEXT_ALIGN_LEFT,
+            Self::Center => sys::MV_TEXT_ALIGN_CENTER,
+            Self::Right => sys::MV_TEXT_ALIGN_RIGHT,
+        }
+    }
+
     /// Return the native aligned coordinate, saturating at i32::MIN.
     /// Negative measured widths return InvalidArgument. No window is required.
     pub fn aligned_x(self, x: i32, width: i32) -> Result<i32, Error> {
         sys::check_abi().map_err(Error::Abi)?;
-        let alignment = match self {
-            Self::Left => 0,
-            Self::Center => 1,
-            Self::Right => 2,
-        };
         let mut out = 0;
         // SAFETY: initialized stack output, no retained pointers.
-        if unsafe { sys::mv_text_aligned_x(x, width, alignment, &mut out) } == 0 {
+        if unsafe { sys::mv_text_aligned_x(x, width, self.native(), &mut out) } == 0 {
             return Err(Error::InvalidArgument);
         }
         Ok(out)

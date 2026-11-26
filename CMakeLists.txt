@@ -1285,7 +1285,9 @@ if(MALVADO_VISUAL_TESTS AND MALVADO_BUILD_RAYLIB)
   add_executable(font-visual-test tests/font_visual.c)
   target_include_directories(font-visual-test PRIVATE src)
   target_link_libraries(font-visual-test PRIVATE malvado_lua_binding)
-  add_test(NAME visual_font COMMAND font-visual-test ${CMAKE_CURRENT_SOURCE_DIR}/tests/font_visual.lua)
+  add_test(NAME visual_font COMMAND font-visual-test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/font_visual.lua
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/process_text_visual.lua)
   set_tests_properties(visual_font PROPERTIES TIMEOUT 15 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   add_executable(process-view-visual-test tests/process_view_visual.c)
   target_include_directories(process-view-visual-test PRIVATE src)
@@ -1584,7 +1586,8 @@ set_tests_properties(text_registry PROPERTIES TIMEOUT 15)
 
 add_library(text-font-allocation OBJECT src/platform/text.c)
 target_include_directories(text-font-allocation PRIVATE src/include)
-target_compile_definitions(text-font-allocation PRIVATE malloc=test_text_font_malloc)
+target_compile_definitions(text-font-allocation PRIVATE malloc=test_text_font_malloc
+  malvado_process_draw_owned=test_text_draw_owned)
 add_executable(text-font-test tests/text_font.c $<TARGET_OBJECTS:text-font-allocation>)
 target_link_libraries(text-font-test PRIVATE malvado_core)
 add_test(NAME text_font COMMAND text-font-test)

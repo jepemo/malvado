@@ -61,6 +61,7 @@ const groups = [
     id: 'text', label: 'Text', guide: 'text',
     summary: 'Create persistent text and load fonts.',
     flat: ['font', 'load_font', 'write', 'change_text', 'delete_text', 'text_size'],
+    constants: ['TEXT_ALIGN_LEFT', 'TEXT_ALIGN_CENTER', 'TEXT_ALIGN_RIGHT'],
   },
   {
     id: 'audio', label: 'Audio', guide: 'audio',
@@ -116,7 +117,7 @@ const flatSummaries = {
   draw_rect: 'Draw a filled or outlined rectangle.',
   draw_circle: 'Draw a filled or outlined circle.',
   draw_line: 'Draw a line between two points.',
-  draw_text: 'Draw immediate-mode text with the built-in font.',
+  draw_text: 'Queue text with an optional font and horizontal alignment.',
   set_color: 'Set the color that later drawing calls use.',
   clear_screen: 'Clear the window to a color.',
   set_assets_dir: 'Set the directory for subsequent asset loads.',
@@ -218,7 +219,10 @@ for (const group of groups) {
 
 // Every flat function in the inventory must land in a page.
 const allEntries = groups.flatMap((group) => group.entries.map((entry) => ({ ...entry, group: group.id })));
-const placed = new Set(groups.flatMap((group) => group.entries.flatMap((entry) => entry.flat)));
+const placed = new Set(groups.flatMap((group) => [
+  ...(group.constants ?? []),
+  ...group.entries.flatMap((entry) => entry.flat),
+]));
 const palette = globals.filter((entry) => entry.field.startsWith('colors.'));
 groups.find((group) => group.id === 'drawing').constants = palette.map((entry) => entry.name);
 for (const global of globals) {

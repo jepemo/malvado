@@ -652,7 +652,7 @@ function malvado.load_font(options) end
 ---  font = f,
 ---  text = "Welcome 2 Malvado!",
 ---  x = 400, y = 300,
----  align = "center",
+---  align = TEXT_ALIGN_CENTER,
 ---  color = {255, 255, 255, 255},
 ---  size = 50,
 ---}
@@ -687,6 +687,7 @@ function malvado.delete_text(id) end
 function malvado.text_size(font, text) end
 
 ---Queue immediate text until the process next runs.
+---The optional alignment anchors the measured width at x. Style is copied.
 ---No persistent text object is created. Must be called inside a process.
 ---
 ---```lua
@@ -995,5 +996,8 @@ malvado.STATUS_RUNNING = "running"
 malvado.STATUS_SLEEPING = "sleeping"
 malvado.STATUS_FROZEN = "frozen"
 malvado.STATUS_DEAD = "dead"
+malvado.TEXT_ALIGN_LEFT = "left"
+malvado.TEXT_ALIGN_CENTER = "center"
+malvado.TEXT_ALIGN_RIGHT = "right"
 
 return malvado

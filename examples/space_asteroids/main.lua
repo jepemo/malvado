@@ -118,7 +118,9 @@ local Game = process(function(self)
     if score == 20 then result = "You win!" end
 
     draw_text {text = "Score: " .. score, x = 20, y = 20, size = 24}
-    if result then draw_text {text = result, x = 300, y = 280, size = 28} end
+    if result then
+      draw_text {text = result, x = W // 2, y = 280, size = 28, align = TEXT_ALIGN_CENTER}
+    end
     frame()
   end
 

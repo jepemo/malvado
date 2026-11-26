@@ -44,7 +44,10 @@ static void inspect(const MvStoredDraw *command, void *user)
         assert(command->color.a == 127);
     } else if (*index == 3) {
         assert(command->kind == MV_STORED_TEXT && !strcmp(command->text,"copied"));
-        assert(command->size == -1);
+        assert(command->size == -1 && command->alignment == MV_TEXT_ALIGN_LEFT);
+    } else if (*index == 4) {
+        assert(command->kind == MV_STORED_TEXT && !strcmp(command->text, "line\ntext"));
+        assert(command->size == 20 && command->alignment == MV_TEXT_ALIGN_RIGHT);
     } else assert(command->kind == MV_STORED_CUSTOM);
     ++*index;
 }
@@ -71,6 +74,9 @@ int main(void)
     char text[] = "copied";
     assert(mv_process_draw_text(ctx,ref,text,INT_MIN,INT_MAX,-1,color) == MV_OK);
     text[0] = 'X';
+    assert(mv_process_draw_text_aligned(ctx,ref,"line\ntext",10,20,20,
+        MV_TEXT_ALIGN_RIGHT,color) == MV_OK);
+    assert(mv_process_draw_text_aligned(ctx,ref,"invalid",0,0,20,-1,color) == MV_INVALID_ARGUMENT);
     int releases = 0;
     MvStoredDraw owned = {.kind = MV_STORED_CUSTOM, .data = &releases, .destroy = release};
     assert(malvado_process_draw_owned(ctx,ref,owned) == MV_OK);
@@ -92,10 +98,10 @@ int main(void)
     assert(mv_process_signal(ctx,id,MV_SIGNAL_FREEZE,0) == MV_OK);
     assert(mv_process_tick(ctx) == MV_OK);
     unsigned index = 0;
-    assert(malvado_process_draw_visit(ctx,ref,inspect,&index) == MV_OK && index == 5);
-    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 5);
+    assert(malvado_process_draw_visit(ctx,ref,inspect,&index) == MV_OK && index == 6);
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 6);
     assert(mv_process_graphic_clear(ctx,ref) == MV_OK);
-    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 5);
+    assert(mv_process_draw_count(ctx,ref,&count) == MV_OK && count == 6);
     assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
     assert(mv_process_draw_clear(ctx,ref) == MV_OK && releases == 1);
     assert(malvado_process_draw_owned(ctx,ref,owned) == MV_OK);

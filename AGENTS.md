@@ -73,6 +73,10 @@ options objects only when a specific use case requires them. See the
 [Lua API conventions](docs/api/lua-processes.md#lua-api-conventions) for units,
 defaults, result shapes, and state scope.
 
+Expose named public constants for closed sets of symbolic values that games use.
+Keep compatible literal values valid. Give related operations the same
+presentation options when their results have different lifetimes.
+
 Use natural Lua returns: booleans for predicates, `nil` for documented
 not-found cases, multiple values for small tuples and managed handles for
 long-lived resources. State what is per-process, per-game, per-resource,

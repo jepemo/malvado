@@ -2,6 +2,7 @@
 use malvado::{
     Error, Game,
     font::Font,
+    graphic::TextAlignment,
     window::{Color, Window},
 };
 use std::{cell::RefCell, path::Path, rc::Rc};
@@ -109,7 +110,7 @@ fn main() {
     let mut game = Game::new().unwrap();
     let font = Font::load(window.clone(), &path, 24).unwrap();
     let text = game
-        .create_text("Café", (20, 20), malvado::graphic::TextAlignment::Left)
+        .create_text("Café", (20, 20), TextAlignment::Left)
         .unwrap();
     text.set_font(&font, 24, white).unwrap();
     let frame = window.frame(black).unwrap();
@@ -145,7 +146,7 @@ fn main() {
         })
         .unwrap();
     let owned = actor
-        .create_text("process", (0, 0), malvado::graphic::TextAlignment::Left)
+        .create_text("process", (0, 0), TextAlignment::Left)
         .unwrap();
     owned.set_builtin_font(window.clone(), 20, white).unwrap();
     actor.kill().unwrap();
@@ -153,7 +154,7 @@ fn main() {
     assert_eq!(owned.clear_font(), Err(Error::NotFound));
     assert_eq!(Rc::strong_count(&window), 1);
     let host = game
-        .create_text("shutdown", (0, 0), malvado::graphic::TextAlignment::Left)
+        .create_text("shutdown", (0, 0), TextAlignment::Left)
         .unwrap();
     host.set_builtin_font(window.clone(), 20, white).unwrap();
     drop(window);
@@ -161,5 +162,52 @@ fn main() {
     drop(game);
     assert!(weak.upgrade().is_none());
     assert_eq!(host.clear_font(), Err(Error::Closed));
+    let window = Rc::new(Window::open(200, 100, "Process text").unwrap());
+    let weak = Rc::downgrade(&window);
+    let mut game = Game::new().unwrap();
+    let font = Font::load(window.clone(), &path, 24).unwrap();
+    let actor = game
+        .spawn(|p| async move {
+            p.frame().await;
+            Ok(())
+        })
+        .unwrap();
+    game.tick().unwrap();
+    assert_eq!(
+        actor.draw_text_with_font(
+            &font,
+            "bad size",
+            (100, 20),
+            0,
+            white,
+            TextAlignment::Center,
+        ),
+        Err(Error::InvalidArgument)
+    );
+    assert_eq!(actor.draw_count().unwrap(), 0);
+    let position = (100, 20);
+    let text = "Café\ni";
+    let frame = window.frame(black).unwrap();
+    let x = TextAlignment::Center
+        .aligned_x(position.0, font.text_width(text, 24).unwrap())
+        .unwrap();
+    frame
+        .font_text(&font, text, (x, position.1), 24, white)
+        .unwrap();
+    let reference = capture();
+    drop(frame);
+    actor
+        .draw_text_with_font(&font, text, position, 24, white, TextAlignment::Center)
+        .unwrap();
+    drop(font);
+    let frame = window.frame(black).unwrap();
+    frame.process_graphics(&game).unwrap();
+    assert_eq!(capture(), reference);
+    drop(frame);
+    drop(window);
+    assert!(weak.upgrade().is_some());
+    game.tick().unwrap(); // The resuming process clears its list and returns.
+    assert_eq!(actor.draw_count(), Err(Error::NotFound));
+    assert!(weak.upgrade().is_none());
     drop(Window::open(32, 32, "After font cleanup").unwrap());
 }

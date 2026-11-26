@@ -297,6 +297,16 @@ MvFont *mv_font_load_codepoints_for_game(const MvContext *ctx, const char *path,
  * window close. Retain does not retain or reopen the window. Headless returns 0. */
 int mv_font_retain(MvFont *font);
 void mv_font_destroy(MvFont *font);
+/* Queue a copy of the text and style with a retained custom font. The caller
+ * supplies a live font and a size in 1..1024, and keeps the window open until
+ * command cleanup. The owned form takes the optional owner/release pair only
+ * on success. Cleanup releases the native font before calling release(owner).
+ * Both functions follow the core process command lifetime and error rules. */
+MvResult mv_process_draw_text_font(MvContext *ctx, MvProcessRef process,
+    const char *text, int x, int y, int size, int alignment, MvColor color, MvFont *font);
+MvResult mv_process_draw_text_font_owned(MvContext *ctx, MvProcessRef process,
+    const char *text, int x, int y, int size, int alignment, MvColor color, MvFont *font,
+    void *owner, MvResourceDestroy release);
 int mv_font_text_width(const MvFont *font, const char *text, int size);
 int mv_font_text_height(const MvFont *font, const char *text, int size);
 int mv_font_draw(const MvFont *font, const char *text, int x, int y, int size, MvColor color);

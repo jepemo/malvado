@@ -5,6 +5,9 @@
 #![allow(non_snake_case)]
 use std::ffi::{CStr, c_char, c_int, c_void};
 
+pub const MV_TEXT_ALIGN_LEFT: c_int = 0;
+pub const MV_TEXT_ALIGN_CENTER: c_int = 1;
+pub const MV_TEXT_ALIGN_RIGHT: c_int = 2;
 pub const MV_ABI_VERSION: u32 = 2;
 pub type MvProcessId = u64;
 #[repr(C)]
@@ -440,6 +443,16 @@ unsafe extern "C" {
         x: c_int,
         y: c_int,
         size: c_int,
+        color: MvColor,
+    ) -> c_int;
+    pub fn mv_process_draw_text_aligned(
+        ctx: *mut MvContext,
+        process: MvProcessRef,
+        text: *const c_char,
+        x: c_int,
+        y: c_int,
+        size: c_int,
+        alignment: c_int,
         color: MvColor,
     ) -> c_int;
     pub fn mv_process_draw_count(

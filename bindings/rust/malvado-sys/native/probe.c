@@ -106,6 +106,8 @@ _Static_assert(_Generic(&mv_process_graphic_set, MvResult (*)(MvContext *, MvPro
 _Static_assert(_Generic(&mv_process_graphic_get, MvResult (*)(MvContext *, MvProcessRef, MvGraphic *, int *): 1, default: 0), "mv_process_graphic_get signature");
 _Static_assert(_Generic(&mv_process_draw_box, MvResult (*)(MvContext *, MvProcessRef, int, int, int, int, int, MvColor): 1, default: 0), "mv_process_draw_box signature");
 _Static_assert(_Generic(&mv_process_draw_circle, MvResult (*)(MvContext *, MvProcessRef, int, int, int, int, MvColor): 1, default: 0), "mv_process_draw_circle signature");
+_Static_assert(MV_TEXT_ALIGN_LEFT == 0 && MV_TEXT_ALIGN_CENTER == 1 && MV_TEXT_ALIGN_RIGHT == 2, "text alignment values");
+_Static_assert(_Generic(&mv_process_draw_text_aligned, MvResult (*)(MvContext *, MvProcessRef, const char *, int, int, int, int, MvColor): 1, default: 0), "mv_process_draw_text_aligned signature");
 _Static_assert(_Generic(&mv_process_draw_text, MvResult (*)(MvContext *, MvProcessRef, const char *, int, int, int, MvColor): 1, default: 0), "mv_process_draw_text signature");
 _Static_assert(_Generic(&mv_process_draw_count, MvResult (*)(MvContext *, MvProcessRef, size_t *): 1, default: 0), "mv_process_draw_count signature");
 _Static_assert(_Generic(&mv_process_draw_clear, MvResult (*)(MvContext *, MvProcessRef): 1, default: 0), "mv_process_draw_clear signature");

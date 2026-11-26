@@ -33,13 +33,6 @@ pub struct Snapshot<'a> {
     pub position: (i32, i32),
     pub alignment: TextAlignment,
 }
-fn alignment(value: TextAlignment) -> i32 {
-    match value {
-        TextAlignment::Left => 0,
-        TextAlignment::Center => 1,
-        TextAlignment::Right => 2,
-    }
-}
 impl Text {
     /// Copies UTF-8 content. Embedded NUL returns InvalidArgument.
     /// ```
@@ -59,7 +52,7 @@ impl Text {
                 value.as_ptr(),
                 position.0,
                 position.1,
-                alignment(align),
+                align.native(),
                 &mut native,
             )
         })?;
@@ -83,7 +76,7 @@ impl Text {
                 value.as_ptr(),
                 position.0,
                 position.1,
-                alignment(align),
+                align.native(),
             )
         })
     }
@@ -150,7 +143,7 @@ pub(crate) fn register(
             value.as_ptr(),
             position.0,
             position.1,
-            alignment(align),
+            align.native(),
             &mut id,
         )
     })?;
@@ -189,7 +182,7 @@ impl TextHandle {
                 value.as_ptr(),
                 position.0,
                 position.1,
-                alignment(align),
+                align.native(),
             )
         })
     }
@@ -288,7 +281,7 @@ impl TextHandle {
     }
 }
 #[cfg(feature = "graphics")]
-unsafe extern "C" fn release_text_owner<T>(owner: *mut std::ffi::c_void) {
+pub(crate) unsafe extern "C" fn release_text_owner<T>(owner: *mut std::ffi::c_void) {
     // SAFETY: each successful bind transfers exactly one Box; no unwind into C.
     let _ = crate::task::contain(|| unsafe {
         drop(Box::from_raw(owner.cast::<T>()));

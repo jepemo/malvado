@@ -28,7 +28,7 @@ local BlipText = process(function(self)
       text = message,
       x = width // 2,
       y = height // 2,
-      align = "center",
+      align = TEXT_ALIGN_CENTER,
       size = 50 - (i - 1),
       color = color
     }

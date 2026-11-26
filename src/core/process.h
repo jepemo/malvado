@@ -51,6 +51,7 @@ typedef struct {
     MvStoredDrawKind kind;
     int x, y, width, height, radius, size, filled;
     int x2, y2;
+    int alignment; /* Text anchor. */
     float thickness;
     MvColor color;
     const char *text;
@@ -62,6 +63,8 @@ typedef void (*MvDrawVisitor)(const MvStoredDraw *command, void *user);
 MvResult malvado_process_draw_owned(MvContext *ctx, MvProcessRef process, MvStoredDraw command);
 MvResult malvado_process_draw_visit(MvContext *ctx, MvProcessRef process,
     MvDrawVisitor visit, void *user);
+/* Platform text renderer. Draw a borrowed MV_STORED_TEXT record. */
+void malvado_draw_stored_text(const MvStoredDraw *command);
 /* Binding/platform-only retained text renderer. Callbacks must only release or
  * draw borrowed platform data; they must not call context/process/text APIs.
  * Successful bind takes data; replacement/removal/cleanup releases once.
