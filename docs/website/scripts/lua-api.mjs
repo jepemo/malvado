@@ -314,7 +314,9 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       continue;
     }
     const parts = [detail.description];
-    if (entry.flat.length)
+    if (detail.signatures)
+      parts.push('', '**Signatures**', '', '```lua', ...detail.signatures, '```');
+    else if (entry.flat.length)
       parts.push(`Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`);
     parts.push('');
     if (detail.params.length) {
@@ -324,8 +326,16 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       parts.push('Takes no arguments.');
     }
     parts.push('');
+    if (detail.returns)
+      parts.push('**Returns**', '', detail.returns, '');
+    if (detail.exampleSetup)
+      parts.push('**Run the example**', '', detail.exampleSetup, '');
     if (detail.example)
       parts.push('```lua', detail.example, '```', '');
+    if (detail.exampleResult)
+      parts.push(detail.exampleResult, '');
+    if (detail.notes)
+      parts.push('**Things to know**', '', detail.notes, '');
     const related = (detail.related ?? [])
       .map((name) => {
         const target = allEntries.find((item) => item.slug === name && item.group === group.id) ??
