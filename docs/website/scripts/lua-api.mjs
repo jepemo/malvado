@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
-import { repoLink } from './site-context.mjs';
+import { repoLink, revision } from './site-context.mjs';
 import { publishExample } from './examples.mjs';
 import { learnLessons } from './learn-lessons.mjs';
 import { siteLink } from './guide-migration.mjs';
@@ -222,6 +222,13 @@ for (const group of groups) {
 
 // Every flat function in the inventory must land in a page.
 const allEntries = groups.flatMap((group) => group.entries.map((entry) => ({ ...entry, group: group.id })));
+const entryKeys = new Set(allEntries.map(({ group, slug }) => `${group}/${slug}`));
+if (!revision) {
+  for (const key of Object.keys(content)) {
+    if (!entryKeys.has(key))
+      throw new Error(`Lua reference content has no inventory page: ${key}`);
+  }
+}
 const placed = new Set(groups.flatMap((group) => [
   ...(group.constants ?? []),
   ...group.entries.flatMap((entry) => entry.flat),
@@ -239,6 +246,18 @@ const output = new URL('../src/content/docs/docs/reference/lua/', import.meta.ur
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 
+const familyDetails = {
+  processes: 'See [process properties](../../../concepts/lua-processes/#process-data), [signal and status values](../../../concepts/lua-processes/#control-processes), and [instance methods](../../../concepts/lua-instance-methods/#process-handles).',
+  input: 'See the [input conventions](../../../concepts/lua-processes/#lua-api-conventions) and the [input inventory](' + repoLink('docs/api/input-inventory.md') + ') for the names and types used by each device.',
+  graphics: 'See [process graphics](../../../concepts/drawing/#process-graphics), [clipping regions](../../../concepts/drawing/#clip-a-lua-process-to-a-region), and [scrolling](../../../concepts/drawing/#scroll-a-lua-process).',
+  drawing: 'See the [palette values and color channels](../../../concepts/drawing/#lua-colors).',
+  text: 'See [font descriptors](../../../concepts/text/#lua-fonts-and-styles) and [alignment values](../../../concepts/text/#lua-process-text).',
+  audio: 'The family uses sound samples, per-playback voice handles and music stream handles. See [audio instance methods](../../../concepts/lua-instance-methods/#sound-voices-and-music).',
+  cameras: 'A managed camera can use the full window or a screen-space viewport. See [camera associations and coordinates](../../../concepts/cameras/).',
+  collision: 'See [reusable colliders and transforms](../../../concepts/collision/#reusable-shapes-in-lua).',
+  world: 'See [world and process types](../../../concepts/collision/#contextual-process-and-world-calls), and [sweep results](../../../concepts/collision/#sweeping-a-shape).',
+};
+
 function guideLink(guide, depth) {
   if (guide.startsWith('docs/'))
     return repoLink(guide);
@@ -255,30 +274,19 @@ function front(title, description, body) {
 
 await writeFile(new URL('index.md', output), front('Lua API',
   'Lua functions and constants, grouped by namespace.',
-  `Every function is available from \`require("malvado")\`. After
-\`require("malvado").import_globals()\` the same functions are flat globals, and
-constants such as \`KEY_ESCAPE\`, \`SIGNAL_KILL\`, and \`RED\` are installed. This
-reference lists the flat name and the \`mv\` namespace form of each function.
+  `Load the module with \`local mv = require("malvado")\`. Use
+\`mv.import_globals()\` to install the [supported global exports](${repoLink('docs/api/lua-globals.md')}).
+These include functions such as \`frame\` and constants such as \`KEY_ESCAPE\`,
+\`SIGNAL_KILL\` and \`RED\`. Each entry lists its supported call forms.
 
 See [Lua API conventions](../../concepts/lua-processes/#lua-api-conventions)
 for units, defaults and validation. See [instance methods](../../concepts/lua-instance-methods/)
-for optional handle syntax.
+for optional handle syntax, and the [LuaLS definitions](${repoLink('types/lib', 'tree')})
+for the public types and their fields.
 
-\`\`\`lua
-require("malvado").import_globals()
-
-local Player = process(function(self)
-    while not key(KEY_ESCAPE) do
-        if key(KEY_LEFT) then self.x = self.x - 4 end
-        if key(KEY_RIGHT) then self.x = self.x + 4 end
-        if key(KEY_UP) then self.y = self.y - 4 end
-        if key(KEY_DOWN) then self.y = self.y + 4 end
-        frame()
-    end
-end)
-
-start(function() Player({x = 400, y = 300}) end, {title = "Move"})
-\`\`\`
+Try the [drawing program](./drawing/draw_rect/#run-the-example) to see filled
+and outlined shapes. Use the [two workers program](./processes/frame/#run-the-example)
+to see how processes take turns.
 
 Choose a family in the sidebar to find individual functions. See the
 [Lua process guide](../../concepts/lua-processes/) for the gameplay model.`));
@@ -294,7 +302,8 @@ for (const group of groups) {
     : '';
   await writeFile(new URL('index.md', dir), front(group.label, group.summary,
     `${group.summary} See the [${guideLabel(group.guide)}](${guideLink(group.guide, 3)}) guide.
-${constants}
+
+${familyDetails[group.id] ?? ''}${constants}
 | Function | Summary |
 | --- | --- |
 ${table}`));
@@ -303,7 +312,7 @@ ${table}`));
       ? ` or \`mv.${group.ns}.${entry.name}\``
       : '';
     const detail = content[`${group.id}/${entry.slug}`];
-    if (!detail) {
+    if (!detail && revision) {
       const call = entry.flat.length
         ? `Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`
         : `Call as \`${entry.title}\`.`;
@@ -316,35 +325,33 @@ ${call}
 See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arguments, errors and examples.`));
       continue;
     }
-    const parts = [detail.description];
-    if (detail.signatures)
-      parts.push('', '**Signatures**', '', '```lua', ...detail.signatures, '```');
-    else if (entry.flat.length)
-      parts.push(`Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`);
+    if (!detail?.description || !detail.signatures?.length || !Array.isArray(detail.params) ||
+        !detail.returns || !detail.exampleId || !detail.exampleSetup || !detail.exampleResult)
+      throw new Error(`Incomplete Lua reference entry: ${group.id}/${entry.slug}`);
+    const parts = [detail.description, '', '## Signatures', '',
+      '```lua', ...detail.signatures, '```'];
+    if (entry.flat.length || detail.signatures.some((call) => /^(process|collision)\./.test(call)))
+      parts.push('', 'Call the unqualified forms after `mv.import_globals()`.');
     parts.push('');
     if (detail.params.length) {
-      parts.push('**Parameters**', '');
+      parts.push('## Parameters', '');
       parts.push(...detail.params.map(([name, text]) => `- \`${name}\` — ${text}`));
     } else {
       parts.push('Takes no arguments.');
     }
     parts.push('');
-    if (detail.returns)
-      parts.push('**Returns**', '', detail.returns, '');
-    const runnable = detail.exampleId && await publishExample(
-      detail.exampleId, `docs/reference/lua/${group.id}/${entry.slug}`);
+    parts.push('## Returns', '', detail.returns, '');
+    const route = `docs/reference/lua/${group.id}/${entry.slug}`;
+    const runnable = await publishExample(detail.exampleId, route);
     if (runnable) {
-      parts.push('**Run the example**', '', runnable.links, '', detail.exampleSetup, '',
+      parts.push('## Run the example', '', runnable.links, '', detail.exampleSetup, '',
         runnable.snippet, '', detail.exampleResult, '');
-    } else if (detail.example) {
-      if (detail.exampleSetup)
-        parts.push('**Run the example**', '', detail.exampleSetup, '');
-      parts.push('```lua', detail.example, '```', '');
-      if (detail.exampleResult)
-        parts.push(detail.exampleResult, '');
+    } else {
+      parts.push('## Run the example', '',
+        `This example was added after this SDK snapshot. See the [current reference](https://malvado.dev/${route}/#run-the-example) for the runnable program.`, '');
     }
     if (detail.notes)
-      parts.push('**Things to know**', '', detail.notes, '');
+      parts.push('## Things to know', '', detail.notes, '');
     const related = (detail.related ?? [])
       .map((name) => {
         const target = allEntries.find((item) => item.slug === name && item.group === group.id) ??
@@ -355,14 +362,14 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
         return `[\`${target.title}\`](${path})`;
       })
       .filter(Boolean);
+    parts.push('## Related', '');
     if (related.length)
-      parts.push(`Related: ${related.join(', ')}.`, '');
+      parts.push(`See also ${related.join(', ')}.`, '');
     if (detail.playground) {
       const [name, label] = detail.playground;
       const lesson = learnLessons.find((item) => item.name === name && item.playground);
       if (lesson) {
-        const from = `docs/reference/lua/${group.id}/${entry.slug}`;
-        parts.push(`[${label}](${siteLink(from, lesson.slug, '#playground')}).`, '');
+        parts.push(`[${label}](${siteLink(route, lesson.slug, '#playground')}).`, '');
       }
     }
     parts.push(`See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for more examples and limits.`);
@@ -371,3 +378,11 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
 }
 
 console.log(`Lua API: ${groups.reduce((sum, group) => sum + group.entries.length, 0)} function pages in ${groups.length} groups`);
+for (const group of groups) {
+  const documented = group.entries.filter(({ slug }) => {
+    const entry = content[`${group.id}/${slug}`];
+    return entry?.signatures?.length && entry.returns &&
+      entry.exampleId && entry.exampleSetup && entry.exampleResult;
+  }).length;
+  console.log(`  ${group.label}: ${documented}/${group.entries.length} entries with signatures, returns and canonical examples`);
+}

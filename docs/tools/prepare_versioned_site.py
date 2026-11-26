@@ -43,7 +43,9 @@ def prepare(version, revision, output):
         'examples/camera-follow', 'examples/collision', 'examples/blinking-text',
         'examples/world-collision', 'examples/space_asteroids',
         'docs/site/tutorials', 'examples/dodge',
-        'docs/site/patterns', 'examples/gameplay-recipes',
+        'docs/site/patterns', 'examples/gameplay-recipes', 'examples/lua-reference',
+        'examples/fpg/graphics.fpg', 'tests/fixtures/fonts/AnonymousPro-Bold.ttf',
+        'tests/fixtures/fonts/OFL.txt',
     ]
     for path in optional_lessons:
         if subprocess.check_output([*git, 'ls-tree', revision, '--', path], text=True):

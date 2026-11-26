@@ -69,6 +69,51 @@ const examples = {
     directory: 'examples/rand/',
     source: 'roll.lua',
   },
+  ...Object.fromEntries([
+    'shapes', 'startup', 'title', 'fades', 'random-seed', 'import-globals',
+    'cameras', 'collision', 'world', 'input', 'process-control', 'graphics',
+  ].map((name) => [`reference-${name}`, {
+    directory: 'examples/lua-reference/', source: `${name}.lua`,
+  }])),
+  ...Object.fromEntries(['fpg-metadata', 'fpg-image'].map((name) => [`reference-${name}`, {
+    directory: 'examples/lua-reference/',
+    source: `${name}.lua`,
+    assets: { 'graphics.fpg': '../fpg/graphics.fpg' },
+    credit: 'The project generated graphics.fpg and distributes it under Apache 2.0.',
+  }])),
+  'reference-images': {
+    directory: 'examples/lua-reference/',
+    source: 'images.lua',
+    assets: { 'assets/tile.png': '../features/image/assets/tile.png' },
+    credit: 'The red tile is original artwork by the Malvado project.',
+  },
+  'reference-atlas': {
+    directory: 'examples/lua-reference/',
+    source: 'atlas.lua',
+    assets: { 'sheet.json': '../aseprite/sheet.json', 'sheet.png': '../aseprite/sheet.png' },
+    credit: 'The atlas and sprite artwork are original Malvado project assets.',
+  },
+  'reference-text': {
+    directory: 'examples/lua-reference/',
+    source: 'text.lua',
+    assets: {
+      'AnonymousPro-Bold.ttf': '../../tests/fixtures/fonts/AnonymousPro-Bold.ttf',
+      'OFL.txt': '../../tests/fixtures/fonts/OFL.txt',
+    },
+    credit: 'Anonymous Pro Bold is by Mark Simonson. See OFL.txt for the SIL Open Font License.',
+  },
+  'reference-audio': {
+    directory: 'examples/lua-reference/',
+    source: 'audio.lua',
+    assets: { 'tone.wav': '../audio/tone.wav' },
+    credit: 'The Malvado project generated the 440 Hz tone for this example.',
+  },
+  'reference-legacy-sheet': {
+    directory: 'examples/lua-reference/',
+    source: 'legacy-sheet.lua',
+    assets: { 'tile.png': '../features/image/assets/tile.png' },
+    credit: 'The red tile is original artwork by the Malvado project.',
+  },
   image: {
     directory: 'examples/features/image/',
     source: 'lua/main.lua',
