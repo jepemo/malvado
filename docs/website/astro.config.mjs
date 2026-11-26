@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { repoLink, repository, version } from './scripts/site-context.mjs';
 import { learnLessons } from './scripts/learn-lessons.mjs';
+import { dodgeTutorial } from './scripts/tutorials.mjs';
 
 export default defineConfig({
   site: 'https://malvado.dev',
@@ -38,6 +39,9 @@ export default defineConfig({
           { label: 'Resource ownership in games', slug: 'docs/learn/resources' },
         ] : []),
       ] },
+      ...(dodgeTutorial ? [{ label: 'Tutorials', items: [
+        { label: dodgeTutorial.title, slug: dodgeTutorial.route },
+      ] }] : []),
       { label: 'Game programming patterns', collapsed: true, items: [
         { label: 'Organize a level', slug: 'docs/patterns/level-lifecycle' },
       ] },

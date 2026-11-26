@@ -22,6 +22,11 @@ RUST_BASICS = 'docs/examples/rust-basics/'
 SOURCE_BUILD = 'docs/contributing/build/'
 ROLL_PAGE = 'docs/reference/lua/platform/rand/'
 IMAGE_PAGE = 'docs/examples/image/'
+DODGE = 'docs/tutorials/dodge/'
+DODGE_CHECKPOINTS = (
+    '01-start', '02-player', '03-movement', '04-enemy',
+    '05-spawn', '06-collision', '07-score', 'main',
+)
 PROCESS_LESSONS = {
     'process-model': ('two-workers/main.lua', 'examples/features/processes/lua/main.lua'),
     'process-lifecycle': ('level-teardown/level.lua', 'examples/process-lesson/level.lua'),
@@ -122,6 +127,24 @@ class VersionedDocsTests(unittest.TestCase):
             page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
             page_url = PAGES + prefix + route
             self.assertIn(PAGES + prefix + path, {urljoin(page_url, href) for href in page.links})
+
+        if present('docs/site/tutorials/dodge.md'):
+            check_link('docs/start/first-program/', DODGE)
+            page = Page((site / DODGE / 'index.html').read_text(encoding='utf-8'))
+            self.assertTrue(page.indexed)
+            for step in DODGE_CHECKPOINTS:
+                with self.subTest(checkpoint=step):
+                    path = f'examples/dodge/{step}.lua'
+                    download = f'example-downloads/dodge-{step}/{step}.lua'
+                    check_link(DODGE, download)
+                    self.assertEqual((site / download).read_bytes(), source(path))
+                    self.assertIn(
+                        f'https://github.com/jepemo/malvado/blob/{revision or "main"}/{path}',
+                        page.links,
+                    )
+        else:
+            self.assertFalse((site / DODGE).exists())
+            self.assertFalse(list((site / 'example-downloads').glob('dodge-*')))
 
         roll = 'example-downloads/roll/roll.lua'
         if present('examples/rand'):
