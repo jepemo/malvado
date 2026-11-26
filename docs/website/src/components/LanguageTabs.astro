@@ -1,0 +1,163 @@
+---
+import { Code } from '@astrojs/starlight/components';
+
+interface Props {
+  id: string;
+  variants: {
+    language: 'lua' | 'c' | 'rust';
+    filename: string;
+    code: string;
+    sourceUrl: string;
+    downloadUrl: string;
+    downloadLabel: string;
+    setup: string;
+    commands: string;
+  }[];
+}
+const { id, variants } = Astro.props;
+const labels = { lua: 'Lua', c: 'C', rust: 'Rust (experimental)' };
+const fragments = { lua: 'lua', c: 'c', rust: 'rust-experimental' };
+---
+
+<div class="language-examples" data-language-examples>
+  {variants.length > 1 && (
+    <div class="language-tabs not-content" role="tablist" aria-label="Example language" hidden>
+      {variants.map(({ language }) => (
+        <button type="button" role="tab" id={`${id}-tab-${language}`}
+          aria-controls={`${id}-panel-${language}`}>{labels[language]}</button>
+      ))}
+    </div>
+  )}
+  {variants.map((variant) => (
+    <section id={`${id}-panel-${variant.language}`} data-language={variant.language}>
+      {id === 'catch' && <span id={fragments[variant.language]} />}
+      <h3>{labels[variant.language]}</h3>
+      <p>{variant.setup}</p>
+      <pre><code>{variant.commands}</code></pre>
+      <p class="example-actions">
+        <a href={variant.downloadUrl} download>{variant.downloadLabel}</a>
+        <a href={variant.sourceUrl}>View source on GitHub</a>
+        <button type="button" data-copy-source={JSON.stringify(variant.code)} hidden>Copy code</button>
+      </p>
+      <p class="copy-status" role="status"></p>
+      <Code code={variant.code} lang={variant.language} title={variant.filename} frame="code" />
+    </section>
+  ))}
+</div>
+
+<script>
+  const preferenceKey = 'malvado-example-language';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-language-examples]')) {
+    const tablist = root.querySelector<HTMLElement>('[role="tablist"]');
+    const tabs = Array.from(tablist?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []);
+    const panels = Array.from(root.querySelectorAll<HTMLElement>(':scope > section[data-language]'));
+
+    if (tablist) {
+      const select = (index: number) => {
+        tabs.forEach((tab, i) => {
+          const selected = i === index;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          panels[i].hidden = !selected;
+        });
+      };
+
+      const selectFragment = () => {
+        const target = document.getElementById(location.hash.slice(1));
+        return panels.findIndex((panel) => panel.contains(target));
+      };
+
+      let preferred;
+      try {
+        preferred = localStorage.getItem(preferenceKey);
+      } catch {
+        // Storage can be disabled. The default is still available.
+      }
+      const index = [selectFragment(), panels.findIndex((panel) => panel.dataset.language === preferred),
+        panels.findIndex((panel) => panel.dataset.language === 'lua'), 0].find((i) => i >= 0)!;
+      select(index);
+      panels.forEach((panel, i) => {
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', tabs[i].id);
+        panel.tabIndex = 0;
+      });
+      tablist.hidden = false;
+
+      const choose = (index: number) => {
+        select(index);
+        tabs[index].focus();
+        try {
+          localStorage.setItem(preferenceKey, panels[index].dataset.language!);
+        } catch {
+          // Selection still works for this page.
+        }
+      };
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => choose(index));
+        tab.addEventListener('keydown', (event) => {
+          const next = {
+            ArrowLeft: (index + tabs.length - 1) % tabs.length,
+            ArrowRight: (index + 1) % tabs.length,
+            Home: 0,
+            End: tabs.length - 1,
+          }[event.key];
+          if (next === undefined) return;
+          event.preventDefault();
+          choose(next);
+        });
+      });
+      window.addEventListener('hashchange', () => {
+        const index = selectFragment();
+        if (index >= 0) select(index);
+      });
+    }
+
+    for (const panel of panels) {
+      const button = panel.querySelector<HTMLButtonElement>('[data-copy-source]')!;
+      const status = panel.querySelector<HTMLElement>('[role="status"]')!;
+      button.hidden = false;
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(JSON.parse(button.dataset.copySource!));
+          status.textContent = 'Code copied.';
+        } catch {
+          status.textContent = 'Copy unavailable. Select the code to copy it manually.';
+        }
+      });
+    }
+  }
+</script>
+
+<style>
+  .language-examples [hidden] { display: none; }
+  .language-examples :global(.expressive-code .copy) { display: none; }
+  .language-tabs, .example-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+  }
+  .language-tabs { border-bottom: 1px solid var(--sl-color-gray-5); }
+  button {
+    font: inherit;
+    color: var(--sl-color-text);
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    cursor: pointer;
+  }
+  button[aria-selected="true"] {
+    border-color: var(--sl-color-text-accent);
+    color: var(--sl-color-text-accent);
+    font-weight: 600;
+  }
+  button:focus-visible, [role="tabpanel"]:focus-visible {
+    outline: 2px solid var(--sl-color-text-accent);
+    outline-offset: 2px;
+  }
+  .copy-status:empty { margin: 0; }
+  pre { overflow-x: auto; }
+  pre > code { white-space: pre; }
+</style>

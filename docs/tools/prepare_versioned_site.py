@@ -40,7 +40,8 @@ def prepare(version, revision, output):
         'examples/rust', 'examples/rand', 'examples/features/image',
         'docs/site/learn', 'examples/features/processes', 'examples/process-lesson',
         'examples/applied-learn', 'examples/aseprite', 'examples/audio',
-        'examples/camera-follow', 'examples/collision',
+        'examples/camera-follow', 'examples/collision', 'examples/blinking-text',
+        'examples/world-collision', 'examples/space_asteroids',
     ]
     for path in optional_lessons:
         if subprocess.check_output([*git, 'ls-tree', revision, '--', path], text=True):

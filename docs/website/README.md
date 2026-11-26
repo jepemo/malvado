@@ -57,6 +57,19 @@ preserve that layout in the ZIP. Use a matching SDK and state when the
 example needs a display, audio device, or other platform setup. For C and
 Rust, link the checked-in source and give the SDK project and build commands.
 
+Add gallery listings to `scripts/example-gallery.mjs`. Use the same example
+IDs in guides and the gallery when they share a program. For equivalent
+programs, register each verified language separately and give its exact
+run commands. `LanguageTabs.astro` shows every supplied version without
+JavaScript and remembers the selected language when storage is available.
+
+After building the site, run the gallery browser checks from `docs/website`.
+
+```sh
+mise exec -- npx playwright install --only-shell chromium
+mise exec -- npm run test:gallery
+```
+
 Use `malvado run --headless` for Lua examples that need no graphics or audio
 and end on their own. For graphical examples, use a desktop display or the
 virtual display already used by CI. Use a timeout and check output or

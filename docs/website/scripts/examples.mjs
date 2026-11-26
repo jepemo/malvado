@@ -12,6 +12,21 @@ const downloads = new URL('../public/example-downloads/', import.meta.url);
 const run = promisify(execFile);
 
 const examples = {
+  hello: { directory: 'examples/helloworld/', source: 'main.lua' },
+  meteors: { directory: 'examples/meteors/', source: 'main.lua' },
+  'blinking-text': { directory: 'examples/blinking-text/', source: 'main.lua' },
+  'world-wall': { directory: 'examples/world-collision/', source: 'main.lua' },
+  'space-asteroids': {
+    directory: 'examples/space_asteroids/',
+    source: 'main.lua',
+    assets: { 'asteroid.png': 'asteroid.png', 'spaceship.png': 'spaceship.png' },
+    credit: 'The ship and asteroid artwork are original Malvado project assets.',
+  },
+  'catch-lua': { directory: 'examples/catch/', source: 'lua/main.lua' },
+  'catch-c': { directory: 'examples/catch/', source: 'c/main.c' },
+  'catch-rust': { directory: 'bindings/rust/malvado/examples/', source: 'catch.rs' },
+  'two-workers-c': { directory: 'examples/features/processes/', source: 'c/main.c' },
+  'two-workers-rust': { directory: 'examples/features/processes/', source: 'rust/main.rs' },
   'two-workers': { directory: 'examples/features/processes/', source: 'lua/main.lua' },
   'level-teardown': { directory: 'examples/process-lesson/', source: 'level.lua' },
   'movement-time': { directory: 'examples/process-lesson/', source: 'movement.lua' },
@@ -51,6 +66,13 @@ const examples = {
   },
 };
 
+for (const [language, extension] of [['c', 'c'], ['rust', 'rs']]) {
+  examples[`image-${language}`] = {
+    ...examples.image,
+    source: `${language}/main.${extension}`,
+  };
+}
+
 export async function clearExampleDownloads() {
   await rm(downloads, { recursive: true, force: true });
 }
@@ -70,7 +92,7 @@ async function writeBundle(archive, files, credit) {
   }
 }
 
-export async function publishExample(id, route) {
+export async function publishExample(id, route, language = 'lua') {
   const example = examples[id];
   if (!example) throw new Error(`Unknown documentation example: ${id}`);
 
@@ -91,10 +113,11 @@ export async function publishExample(id, route) {
   await mkdir(output, { recursive: true });
 
   const url = (name) => siteLink(route, `example-downloads/${id}`) + name;
-  const sourceLink = `[View source on GitHub](${repoLink(example.directory + example.source)})`;
-  const code = source.toString('utf8').trimEnd();
-  const snippet = ['```lua title="' + filename + '"', code, '```'].join('\n');
-  const links = [sourceLink];
+  const sourceUrl = repoLink(example.directory + example.source);
+  const code = source.toString('utf8');
+  const snippet = [`\`\`\`${language} title="${filename}"`, code.trimEnd(), '\`\`\`'].join('\n');
+  let downloadUrl = url(filename);
+  let downloadLabel = `Download ${filename}`;
   if (example.assets) {
     const files = {
       [filename]: sourcePath,
@@ -104,10 +127,12 @@ export async function publishExample(id, route) {
       files[name] = new URL(path, directory);
     const archive = `${id}.zip`;
     await writeBundle(new URL(archive, output), files, example.credit);
-    links.unshift(`[Download the Lua project ZIP](${url(archive)})`);
+    const languageLabel = { lua: 'Lua', c: 'C', rust: 'Rust' }[language];
+    downloadUrl = url(archive);
+    downloadLabel = `Download the ${languageLabel} project ZIP`;
   } else {
     await writeFile(new URL(filename, output), source);
-    links.unshift(`[Download ${filename}](${url(filename)})`);
   }
-  return { snippet, links: links.join(' · ') };
+  const links = `[${downloadLabel}](${downloadUrl}) · [View source on GitHub](${sourceUrl})`;
+  return { language, filename, code, sourceUrl, downloadUrl, downloadLabel, snippet, links };
 }
