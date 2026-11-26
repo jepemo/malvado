@@ -219,12 +219,16 @@ jobs:
       - name: Check current guide links and anchors
         run: python3 tools/check_docs.py
       - name: Build documentation
-        if: github.event_name != 'pull_request'
         working-directory: docs/website
         run: |
           mise install node
           mise exec -- npm ci --no-audit --no-fund
           mise exec -- npm run build
+      - name: Check the example gallery in Chromium
+        working-directory: docs/website
+        run: |
+          mise exec -- npx playwright install --with-deps --only-shell chromium
+          mise exec -- npm run test:gallery
       - name: Verify versioned documentation
         if: github.event_name != 'pull_request'
         working-directory: docs/website

@@ -1,0 +1,102 @@
+---
+interface Props {
+  groups: {
+    id: string;
+    title: string;
+    entries: { title: string; href: string; summary: string; difficulty: string; languages: string }[];
+  }[];
+}
+const { groups } = Astro.props;
+---
+
+<div class="example-gallery" data-example-gallery>
+  <div data-gallery-search hidden>
+    <label for="example-search">Find an example</label>
+    <input id="example-search" type="search" placeholder="Try “collision”" aria-controls="example-results" />
+    <p role="status"></p>
+  </div>
+  <nav aria-label="Example topics">
+    <ul>
+      {groups.map(({ id, title }) => <li data-gallery-topic={id}><a href={`#${id}`}>{title}</a></li>)}
+    </ul>
+  </nav>
+  <div id="example-results">
+    {groups.map(({ id, title, entries }) => (
+      <section aria-labelledby={id}>
+        <h2 id={id}>{title}</h2>
+        <ul class="examples-grid">
+          {entries.map((entry) => (
+            <li data-example-card>
+              <h3><a href={entry.href}>{entry.title}</a></h3>
+              <p>{entry.summary}</p>
+              <p class="example-meta">{entry.difficulty} · {entry.languages}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</div>
+
+<script>
+  for (const gallery of document.querySelectorAll('[data-example-gallery]')) {
+    const search = gallery.querySelector<HTMLElement>('[data-gallery-search]')!;
+    const input = search.querySelector('input')!;
+    const status = search.querySelector('[role="status"]')!;
+    const groups = Array.from(gallery.querySelectorAll('section'), (section) => {
+      const id = section.getAttribute('aria-labelledby');
+      const topic = gallery.querySelector<HTMLElement>(`[data-gallery-topic="${id}"]`)!;
+      const entries = Array.from(section.querySelectorAll<HTMLElement>('[data-example-card]'), (card) => ({
+        card, text: `${topic.textContent} ${card.textContent}`.toLowerCase(),
+      }));
+      return { section, topic, entries };
+    });
+    const update = () => {
+      const tokens = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let count = 0;
+      for (const { section, topic, entries } of groups) {
+        for (const { card, text } of entries) {
+          card.hidden = !tokens.every((token) => text.includes(token));
+          if (!card.hidden) count++;
+        }
+        section.hidden = entries.every(({ card }) => card.hidden);
+        topic.hidden = section.hidden;
+      }
+      status.textContent = count === 1 ? '1 example' : `${count} examples`;
+    };
+    input.addEventListener('input', update);
+    update();
+    search.hidden = false;
+  }
+</script>
+
+<style>
+  [hidden] { display: none; }
+  label { display: block; font-weight: 600; }
+  input {
+    width: min(100%, 25rem);
+    font: inherit;
+    color: var(--sl-color-text);
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.65rem;
+  }
+  input:focus-visible { outline: 2px solid var(--sl-color-text-accent); }
+  nav ul, .examples-grid {
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+  }
+  nav ul { display: flex; flex-wrap: wrap; }
+  nav li, .examples-grid li { margin: 0; }
+  .examples-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+  .examples-grid li {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.45rem;
+    padding: 1rem;
+  }
+  .examples-grid h3 { font-size: var(--sl-text-lg); }
+  .example-meta { font-size: var(--sl-text-sm); color: var(--sl-color-gray-2); }
+</style>

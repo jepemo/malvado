@@ -130,20 +130,24 @@ class VersionedDocsTests(unittest.TestCase):
         else:
             self.assertFalse((site / roll).exists())
 
-        image = 'example-downloads/image/image.zip'
         lesson = 'examples/features/image'
-        if present(lesson):
-            check_link('docs/examples/', IMAGE_PAGE)
-            check_link('docs/concepts/images/', IMAGE_PAGE)
-            check_link(IMAGE_PAGE, image)
-            with ZipFile(site / image) as bundle:
-                self.assertCountEqual(bundle.namelist(), ['main.lua', 'tile.png', 'LICENSE', 'NOTICE'])
-                self.assertEqual(bundle.read('main.lua'), source(f'{lesson}/lua/main.lua'))
-                self.assertEqual(bundle.read('tile.png'), source(f'{lesson}/assets/tile.png'))
-                self.assertEqual(bundle.read('LICENSE'), source('LICENSE'))
-                self.assertIn(b'Malvado project', bundle.read('NOTICE'))
-        else:
-            self.assertFalse((site / image).exists())
+        for language, example, name in [
+                ('lua', 'image', 'main.lua'), ('c', 'image-c', 'main.c'),
+                ('rust', 'image-rust', 'main.rs')]:
+            download = f'example-downloads/{example}/{example}.zip'
+            with self.subTest(example=example):
+                if not present(lesson):
+                    self.assertFalse((site / download).exists())
+                    continue
+                check_link('docs/examples/', IMAGE_PAGE)
+                check_link('docs/concepts/images/', IMAGE_PAGE)
+                check_link(IMAGE_PAGE, download)
+                with ZipFile(site / download) as bundle:
+                    self.assertCountEqual(bundle.namelist(), [name, 'tile.png', 'LICENSE', 'NOTICE'])
+                    self.assertEqual(bundle.read(name), source(f'{lesson}/{language}/{name}'))
+                    self.assertEqual(bundle.read('tile.png'), source(f'{lesson}/assets/tile.png'))
+                    self.assertEqual(bundle.read('LICENSE'), source('LICENSE'))
+                    self.assertIn(b'Malvado project', bundle.read('NOTICE'))
 
         for chapter, (download, path) in PROCESS_LESSONS.items():
             route = f'docs/learn/{chapter}/'

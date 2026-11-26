@@ -58,8 +58,9 @@ engine architecture, binding ownership, and documentation guidelines.
 The [website CLI reference](scripts/guide-migration.mjs) summarizes the
 installed commands and links to the [full CLI contract](../development/cli.md).
 The platform and release pages link to the detailed Android, SDK, and
-publishing guides. The examples page groups existing programs by topic and
-links their source and run instructions.
+publishing guides. The searchable example gallery groups runnable programs
+by topic and difficulty. The Catch! language tabs keep the old sample
+fragments. Example pages include source, downloads and run instructions.
 
 See the [documentation roadmap](../roadmap/README.md#documentation) for the
 next editorial phases.

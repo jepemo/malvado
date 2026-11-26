@@ -85,7 +85,7 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames, imageRoute, processModelTitle, resourcesTitle) {
+export async function migrateGuides(writePage, conceptNames, processModelTitle, resourcesTitle) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -269,27 +269,9 @@ exit codes, file rules, and platform-specific options. Follow
     repoLink('docs/development/publishing.md') + ') and [distribution](' + repoLink('docs/development/distribution.md') + ').',
     ['sdk', 'Build and install the SDK']);
   const more = sources['getting-started'].sections.get('Try more examples');
-  const [, testing, ...featureLessons] = more.split(/\n\n/);
+  const [, testing] = more.split(/\n\n/);
   await publish('docs/contributing/testing',
     testing + '\n\nSee [verification and CI](' + repoLink('docs/development/ci.md') + ') for platform and release checks.');
-  await publish('docs/examples', [
-    '## Basics',
-    featureLessons.join('\n\n'),
-    '- [Meteors](' + repoLink('examples/meteors', 'tree') + ') shows three independent Lua processes.',
-    '- [First Rust games (experimental)](./rust-basics/) shows Hello World and moving balls.',
-    '## Graphics and effects',
-    '- [Draw a PNG](' + (imageRoute ? siteLink('docs/examples', imageRoute) : '../concepts/images/') +
-      ') and [animate a process](../concepts/animations/).',
-    '- [Blinking text](' + repoLink('examples/blinking-text', 'tree') + ') changes the color of Lua text.',
-    '## Gameplay mechanics',
-    '- [Move](' + repoLink('examples/move', 'tree') + ') reads the arrow keys in Lua.',
-    '- [World collision](' + repoLink('examples/world-collision', 'tree') + ') uses collision against static geometry in Lua.',
-    '## Complete games',
-    '- [Catch!](./catch/) is the same game in Lua, C, and experimental Rust.',
-    '- [Space Asteroids](' + repoLink('examples/space_asteroids', 'tree') + ') is a Lua game.',
-    'See the [repository examples index](' + repoLink('examples/README.md') + ') for more.',
-  ].join('\n\n'));
-
   for (const [route, headings] of Object.entries(guides)) {
     const destinations = Object.entries(headings).map(([heading, target]) => {
       let hash = '#' + anchor(heading);

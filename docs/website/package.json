@@ -8,10 +8,14 @@
     "dev": "astro dev",
     "prebuild": "node scripts/sync-content.mjs && node scripts/lua-api.mjs",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "test:gallery": "node --test tests/example-gallery.test.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.8",
     "astro": "7.4.5"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
   }
 }
