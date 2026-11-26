@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
-import { repoLink, revision, version } from './site-context.mjs';
+import { repoLink, revision } from './site-context.mjs';
+import { migrateGuides, rewriteGuideLinks, writeLegacy } from './guide-migration.mjs';
 
 // The repository guides and examples remain the source of truth.
 const output = new URL('../src/content/docs/docs/', import.meta.url);
@@ -7,40 +8,33 @@ await mkdir(output, { recursive: true });
 
 // Concept guides from docs/api that become website pages. Every other
 // docs/api file stays on GitHub as reference material.
-const conceptGroups = [
-  ['Processes', [
-    ['lua-processes', 'Lua processes'],
-    ['lua-instance-methods', 'Lua instance methods'],
-    ['lua-language-server', 'Lua Language Server support'],
-    ['c-contract', 'C process API'],
-    ['rust-processes', 'Rust processes'],
-    ['process-cleanup', 'Process cleanup contract'],
-    ['runner-timing', 'Shared runner timing'],
-    ['resource-lifetime', 'Resource lifetime contract'],
-  ]],
-  ['Graphics and sound', [
-    ['drawing', 'Draw rectangles and circles'],
-    ['keyboard', 'Keyboard state and transitions'],
-    ['images', 'Draw a PNG image'],
-    ['animations', 'Automatic process animation'],
-    ['text', 'Owned text content'],
-    ['cameras', '2D cameras'],
-    ['collision', 'Rectangle collision'],
-    ['audio', 'Play a sound'],
-  ]],
-  ['Rust API', [
-    ['rust-window', 'Rust window ownership'],
-    ['rust-drawing', 'Rust immediate drawing and images'],
-    ['rust-input', 'Rust mouse, gamepad and text input'],
-    ['rust-atlas', 'Rust atlas metadata'],
-    ['rust-fpg', 'Rust FPG import and conversion'],
-    ['rust-camera-animation', 'Rust camera and animation values'],
-    ['rust-font', 'Rust font ownership and Unicode glyphs'],
-    ['rust-collision', 'Native collision and static worlds in Rust'],
-    ['rust-audio', 'Rust audio'],
-  ]],
-];
-const conceptNames = new Set(conceptGroups.flatMap(([, pages]) => pages.map(([name]) => name)));
+const conceptNames = new Set([
+  'lua-processes',
+  'lua-instance-methods',
+  'lua-language-server',
+  'c-contract',
+  'rust-processes',
+  'process-cleanup',
+  'runner-timing',
+  'resource-lifetime',
+  'drawing',
+  'keyboard',
+  'images',
+  'animations',
+  'text',
+  'cameras',
+  'collision',
+  'audio',
+  'rust-window',
+  'rust-drawing',
+  'rust-input',
+  'rust-atlas',
+  'rust-fpg',
+  'rust-camera-animation',
+  'rust-font',
+  'rust-collision',
+  'rust-audio',
+]);
 
 function githubLink(path, fragment = '') {
   const kind = /^(?:.*\/)?[^/]*\.md$/.test(path) || path.includes('.') ? 'blob' : 'tree';
@@ -61,8 +55,8 @@ function conceptLink(url) {
       return `../${name}/${fragment}`;
     return githubLink(`docs/api/${path}`, fragment);
   }
-  if (path === '../site/sdk.md')
-    return `../../../sdk/${fragment}`;
+  if (path.startsWith('../site/'))
+    return url;
   if (path.startsWith('../../'))
     return githubLink(path.slice(6), fragment);
   if (path.startsWith('../'))
@@ -74,47 +68,28 @@ function rewriteConceptLinks(body) {
   return body.replace(/\]\(([^)\s]+)\)/g, (_, url) => `](${conceptLink(url)})`);
 }
 
-// Rewrite GitHub links to synced concept guides in the site guides. The
-// prefix is the path from the guide page to the concepts directory.
-// Archived guides can use the former default branch name.
-function rewriteGuideConceptLinks(body, prefix) {
-  const pattern = new RegExp(
-    `https://github\\.com/jepemo/malvado/(?:blob|tree|edit)/(?:main|master)/docs/api/(${[...conceptNames].join('|')})\\.md(#[^\\s)]+)?`,
-    'g',
-  );
-  return body.replace(pattern, (_, name, fragment = '') => `${prefix}${name}/${fragment}`);
+const generated = new URL('generated/', output);
+await rm(generated, { recursive: true, force: true });
+await mkdir(generated, { recursive: true });
+for (const name of ['getting-started', 'sdk', 'api', 'samples']) {
+  await rm(new URL(name + '.md', output), { force: true });
 }
 
-async function readGuide(slug) {
-  const guide = await readFile(new URL(`../../site/${slug}.md`, import.meta.url), 'utf8');
-  const heading = /^# ([^\r\n]+)\r?\n/.exec(guide);
-  if (!heading)
-    throw new Error(`Missing title in ${slug}.md`);
-  return { title: heading[1], body: guide.slice(heading[0].length).trimStart() };
+async function writePage(route, title, body, pagefind = true) {
+  const file = new URL(route.replaceAll('/', '-') + '.md', generated);
+  await writeFile(file, [
+    '---',
+    'title: ' + JSON.stringify(title),
+    'slug: ' + route,
+    'pagefind: ' + pagefind,
+    '---',
+    '',
+    body,
+    '',
+  ].join('\n'));
 }
 
-// Site guides: getting-started, sdk and api. Their pages live at the site
-// root, so concept pages need a ../docs/concepts/ prefix.
-const guideConceptPrefixes = { 'getting-started': '../docs/concepts/', 'sdk': '../docs/concepts/', 'api': '../docs/concepts/' };
-for (const slug of ['getting-started', 'sdk', 'api']) {
-  const { title, body: raw } = await readGuide(slug);
-  let body = raw.replace(
-    /\]\((getting-started|sdk|api)\.md(#[^)]+)?\)/g,
-    (_, page, fragment = '') => `](../${page}/${fragment})`,
-  );
-  body = rewriteGuideConceptLinks(body, guideConceptPrefixes[slug]);
-  if (revision) {
-    body = body.replace(
-      /https:\/\/github\.com\/jepemo\/malvado\/(blob|tree|edit)\/(?:main|master)\//g,
-      (_, kind) => repoLink('', kind),
-    );
-  }
-  if (slug === 'getting-started' && version) {
-    body = `This documentation is for Malvado ${version}. When building from Git, run \`git checkout --detach ${revision}\` after entering the cloned directory and before running \`mise install\`.\n\n${body}`;
-  }
-  await writeFile(new URL(`${slug}.md`, output),
-    `---\ntitle: ${JSON.stringify(title)}\nslug: ${slug}\n---\n\n${body}`);
-}
+await migrateGuides(writePage, conceptNames);
 
 // The same complete game in C, Lua and Rust.
 function stripLicenseHeader(code, lang) {
@@ -131,7 +106,7 @@ const c = stripLicenseHeader(await readFile(new URL(`${gameDir}c/main.c`, import
 const rust = stripLicenseHeader(
   await readFile(new URL('../../../bindings/rust/malvado/examples/catch.rs', import.meta.url), 'utf8'), 'rust');
 
-let rustLessons = '';
+let rustLessons = 'See the [Rust process guide](../../concepts/rust-processes/) for a managed game and the process API.';
 try {
   const hello = stripLicenseHeader(
     await readFile(new URL('../../../examples/rust/hello.rs', import.meta.url), 'utf8'), 'rust');
@@ -139,13 +114,13 @@ try {
     await readFile(new URL('../../../examples/rust/moving-balls.rs', import.meta.url), 'utf8'), 'rust');
   rustLessons = `The managed runner takes care of window events, simulation ticks and rendering.
 
-### Hello World
+## Hello World
 
 \`\`\`rust title="examples/rust/hello.rs"
 ${hello}
 \`\`\`
 
-### Moving balls
+## Moving balls
 
 Each ball runs the same function with its own speed, position and color.
 
@@ -160,9 +135,8 @@ See the [first Rust games](${repoLink('examples/rust', 'tree')}) for run command
   if (!revision || error.code !== 'ENOENT') throw error;
 }
 
-await writeFile(new URL('samples.md', output), `---\ntitle: C, Lua and Rust examples\ndescription: Run the same Catch! game in the three languages.\n---
-
-The three Catch! implementations below open a 640 × 360
+await writePage('docs/examples/rust-basics', 'First Rust games (experimental)', rustLessons);
+await writePage('docs/examples/catch', 'Catch!', `The three Catch! implementations below open a 640 × 360
 window, run the same Catch! game and use the shared core scheduler. The player
 and the ball are independent processes:
 
@@ -190,32 +164,45 @@ ${c}
 
 ## Rust (experimental)
 
-Enable the \`graphics\` feature for these examples.
+Enable the \`graphics\` feature for this example.
 
-${rustLessons}### Catch!
+### Catch!
 
 \`\`\`rust title="bindings/rust/malvado/examples/catch.rs"
 ${rust}
 \`\`\`
 
 See the [Catch! game lesson](${repoLink('examples/catch', 'tree')}) for controls
-and run commands, and the [Lua processes](../concepts/lua-processes/), [C
-process API](../concepts/c-contract/) and [Rust processes](../concepts/rust-processes/)
+and run commands, and the [Lua processes](../../concepts/lua-processes/), [C
+process API](../../concepts/c-contract/) and [Rust processes (experimental)](../../concepts/rust-processes/)
 guides.
 `);
+
+const catchPage = { route: 'docs/examples/catch', title: 'Catch!' };
+const rustBasics = { route: 'docs/examples/rust-basics', title: 'First Rust games (experimental)' };
+await writeLegacy(writePage, 'docs/samples', 'C, Lua and Rust examples', [
+  ['Lua', catchPage],
+  ['C', catchPage],
+  ['Rust (experimental)', catchPage],
+  ['Hello World', rustBasics, rustLessons.includes('## Hello World') ? '#hello-world' : ''],
+  ['Moving balls', rustBasics, rustLessons.includes('## Moving balls') ? '#moving-balls' : ''],
+  ['Catch!', catchPage, '#catch'],
+]);
 
 // Concept guides from docs/api.
 const conceptsOutput = new URL('concepts/', output);
 await rm(conceptsOutput, { recursive: true, force: true });
 await mkdir(conceptsOutput, { recursive: true });
-for (const [, pages] of conceptGroups) {
-  for (const [name] of pages) {
-    const guide = await readFile(new URL(`../../../docs/api/${name}.md`, import.meta.url), 'utf8');
-    const heading = /^# ([^\r\n]+)\r?\n/.exec(guide);
-    if (!heading)
-      throw new Error(`Missing title in docs/api/${name}.md`);
-    const body = rewriteConceptLinks(guide.slice(heading[0].length).trimStart());
-    await writeFile(new URL(`${name}.md`, conceptsOutput),
-      `---\ntitle: ${JSON.stringify(heading[1])}\n---\n\n${body}\n`);
-  }
+for (const name of conceptNames) {
+  const guide = await readFile(new URL(`../../../docs/api/${name}.md`, import.meta.url), 'utf8');
+  const heading = /^# ([^\r\n]+)\r?\n/.exec(guide);
+  if (!heading)
+    throw new Error(`Missing title in docs/api/${name}.md`);
+  const body = rewriteGuideLinks(
+    rewriteConceptLinks(guide.slice(heading[0].length).trimStart()),
+    'docs/concepts/' + name, conceptNames,
+  );
+  const title = name.startsWith('rust-') ? heading[1] + ' (experimental)' : heading[1];
+  await writeFile(new URL(`${name}.md`, conceptsOutput),
+    `---\ntitle: ${JSON.stringify(title)}\n---\n\n${body}\n`);
 }

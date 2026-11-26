@@ -10,7 +10,7 @@ platform requirements.
 | --- | --- | --- |
 | C | Create an `MvContext`, add callbacks and drive ticks from the host. | Return a completion result or send a kill signal. Release owned handles and destroy the context after the last tick. See the [C contract][c]. |
 | Lua | Define processes with `mv.process` and start them with `mv.start` or in a returned game table. Call `frame()` inside a process to yield. | Return from the process or signal it using its handle. The runner handles shutdown. See [Lua processes][lua]. |
-| Rust | Use `Game::windowed`, `game.spawn`, and `game.run`. Call `p.frame().await` inside each process. | Return `Ok(())` or send a kill signal. Dropping `Game` cancels any remaining processes. See [Rust processes][rust]. |
+| Rust (experimental) | Use `Game::windowed`, `game.spawn`, and `game.run`. Call `p.frame().await` inside each process. | Return `Ok(())` or send a kill signal. Dropping `Game` cancels any remaining processes. See [Rust processes][rust]. |
 
 Cancel a process by its handle. An owned C or Rust handle can record the end
 reason after the process ends. Attached children end with their owner. A detached
@@ -32,7 +32,7 @@ up a level when the player finishes it or returns to a menu.
 
 ## Choose a reference
 
-| Task | C and Lua reference | Rust reference |
+| Task | C and Lua reference | Rust reference (experimental) |
 | --- | --- | --- |
 | Open a window, draw and read input | [Platform functions][platform], [drawing][drawing], [keyboard and text input][keys] | [Window][rust-window], [drawing][rust-drawing], [input][rust-input] |
 | Load assets and animate sprites | [Asset functions][assets], [images][images], [animations][animation] | [Atlas][rust-atlas], [FPG][rust-fpg], [cameras and animation][rust-animation] |
@@ -58,8 +58,8 @@ transfer, failure and cleanup rules.
 
 Run scheduler-only code with the C core or the default Rust crate. Use
 `malvado run --headless` for a Lua project that needs no window or audio
-device. The Lua runner owns its loop. C and Rust callers drive their own
-input, audio and rendering.
+device. The Lua runner owns its loop. Rust also has a managed windowed runner.
+C and manual Rust hosts drive input, audio and rendering.
 
 Use a matching desktop SDK for native projects. The Android CLI export target
 is arm64 from macOS or Linux. See [SDK and projects](sdk.md#export-for-android)

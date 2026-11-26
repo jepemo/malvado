@@ -19,10 +19,19 @@ holds the design, dependencies and verification ideas.
 | [Graphical workshop](gui.md) | Projects, assets, process inspection and export | Existing proposal and experimental G0 tooling; production editor is not delivered. |
 | [Project tools](project-tools.md) | Project metadata, templates and SDK selection | Reuse the existing CLI and define one project workflow before adding commands. |
 | [Asset extensions](asset-formats.md) | Additional Aseprite metadata, formats, FPG writing and runtime archives | Candidates; each format/direction requires a fidelity and ownership review. |
-| [Public website](../website/README.md) | Complete reference navigation and presentation | Preparatory Astro/Starlight work exists; evaluate the migration when this proposal is selected. |
+| [Documentation](#documentation) | Teach Malvado through learning guides, tutorials, and runnable examples | The public site uses Astro and Starlight. See the [website guide](../website/README.md). |
 | [External Lua module and LuaRocks](../development/distribution.md#optional-external-lua-module) | Let projects use Malvado from an existing Lua interpreter | Requires a loadable C binding, Lua ABI checks and a tested rockspec. |
 | LuaJIT evaluation | Measure a possible alternative Lua runtime | Research only; compare scheduler, coroutine cleanup, language/C API, memory, assets, exports and real game workloads before any runtime decision. |
 | iOS feasibility | Evaluate another deployment target | Research only; toolchain, distribution, signing and device evidence are required before scheduling support. |
+
+## Documentation
+
+- Define the editorial and verification rules in [#62](https://github.com/jepemo/malvado/issues/62).\n- Establish canonical examples and shared assets in [#63](https://github.com/jepemo/malvado/issues/63).\n- Rewrite onboarding and tool guides in [#64](https://github.com/jepemo/malvado/issues/64).
+- Expand Learn with short lessons on the [process model](https://github.com/jepemo/malvado/issues/65) and [gameplay APIs](https://github.com/jepemo/malvado/issues/66).
+- Add an [incremental Lua game tutorial](https://github.com/jepemo/malvado/issues/67) with runnable checkpoints.
+- Expand the examples catalog and add interactive explanations where they help teach a concept.
+- Add runnable examples to the Lua API reference and extend documentation checks.
+- Add patterns for game state, spawning, communication, and levels as verified examples become available.
 
 ## Promotion into a release
 
