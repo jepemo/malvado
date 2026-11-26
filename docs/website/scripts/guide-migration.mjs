@@ -85,7 +85,7 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames) {
+export async function migrateGuides(writePage, conceptNames, imageRoute) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -229,7 +229,8 @@ export async function migrateGuides(writePage, conceptNames) {
     '- [Meteors](' + repoLink('examples/meteors', 'tree') + ') shows three independent Lua processes.',
     '- [First Rust games (experimental)](./rust-basics/) shows Hello World and moving balls.',
     '## Graphics and effects',
-    '- [Draw a PNG](../concepts/images/) and [animate a process](../concepts/animations/).',
+    '- [Draw a PNG](' + (imageRoute ? siteLink('docs/examples', imageRoute) : '../concepts/images/') +
+      ') and [animate a process](../concepts/animations/).',
     '- [Blinking text](' + repoLink('examples/blinking-text', 'tree') + ') changes the color of Lua text.',
     '## Gameplay mechanics',
     '- [Move](' + repoLink('examples/move', 'tree') + ') reads the arrow keys in Lua.',

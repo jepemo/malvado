@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { repoLink, revision } from './site-context.mjs';
-import { migrateGuides, rewriteGuideLinks, writeLegacy } from './guide-migration.mjs';
+import { migrateGuides, rewriteGuideLinks, siteLink, writeLegacy } from './guide-migration.mjs';
+import { clearExampleDownloads, publishExample } from './examples.mjs';
 
 // The repository guides and examples remain the source of truth.
 const output = new URL('../src/content/docs/docs/', import.meta.url);
@@ -89,7 +90,43 @@ async function writePage(route, title, body, pagefind = true) {
   ].join('\n'));
 }
 
-await migrateGuides(writePage, conceptNames);
+await clearExampleDownloads();
+const imageRoute = 'docs/examples/image';
+const image = await publishExample('image', imageRoute);
+await migrateGuides(writePage, conceptNames, image ? imageRoute : undefined);
+if (image) {
+  await writePage(imageRoute, 'Draw a PNG', `Load a PNG after opening a window and draw it at its original size.
+
+## Run the example
+
+Install a [desktop Malvado SDK](../../start/installation/) and use a display.
+${image.links}
+
+Extract the ZIP into an empty directory. Open a terminal in that directory,
+where \`main.lua\` and \`tile.png\` sit side by side, and run this command.
+
+\`\`\`sh
+malvado run main.lua
+\`\`\`
+
+The program prints \`image: 32x32\` and shows a red tile at (32, 32) in a
+160 × 120 window. It ends after about two seconds. You can close the window
+earlier.
+
+The ZIP includes the Apache 2.0 license and credits for the original Malvado tile.
+
+## Explore the code
+
+The game loads the tile during initialization. A process draws the tile once
+per frame and keeps the image available until it ends.
+
+${image.snippet}
+
+See the [images guide](../../concepts/images/) for drawing options and the
+[shared image lesson](${repoLink('examples/features/image/README.md')}) for the
+C and experimental Rust versions.
+`);
+}
 
 // The same complete game in C, Lua and Rust.
 function stripLicenseHeader(code, lang) {
@@ -198,10 +235,14 @@ for (const name of conceptNames) {
   const heading = /^# ([^\r\n]+)\r?\n/.exec(guide);
   if (!heading)
     throw new Error(`Missing title in docs/api/${name}.md`);
-  const body = rewriteGuideLinks(
+  let body = rewriteGuideLinks(
     rewriteConceptLinks(guide.slice(heading[0].length).trimStart()),
     'docs/concepts/' + name, conceptNames,
   );
+  if (name === 'images' && image) {
+    const lesson = siteLink('docs/concepts/images', imageRoute);
+    body = `Try the [downloadable PNG lesson](${lesson}) with a complete Lua project.\n\n${body}`;
+  }
   const title = name.startsWith('rust-') ? heading[1] + ' (experimental)' : heading[1];
   await writeFile(new URL(`${name}.md`, conceptsOutput),
     `---\ntitle: ${JSON.stringify(title)}\n---\n\n${body}\n`);

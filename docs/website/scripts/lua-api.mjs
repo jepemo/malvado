@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { repoLink } from './site-context.mjs';
+import { publishExample } from './examples.mjs';
 import content from './lua-api-content.mjs';
 
 // Generate the Lua API reference from the repository inventories:
@@ -328,12 +329,18 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
     parts.push('');
     if (detail.returns)
       parts.push('**Returns**', '', detail.returns, '');
-    if (detail.exampleSetup)
-      parts.push('**Run the example**', '', detail.exampleSetup, '');
-    if (detail.example)
+    const runnable = detail.exampleId && await publishExample(
+      detail.exampleId, `docs/reference/lua/${group.id}/${entry.slug}`);
+    if (runnable) {
+      parts.push('**Run the example**', '', runnable.links, '', detail.exampleSetup, '',
+        runnable.snippet, '', detail.exampleResult, '');
+    } else if (detail.example) {
+      if (detail.exampleSetup)
+        parts.push('**Run the example**', '', detail.exampleSetup, '');
       parts.push('```lua', detail.example, '```', '');
-    if (detail.exampleResult)
-      parts.push(detail.exampleResult, '');
+      if (detail.exampleResult)
+        parts.push(detail.exampleResult, '');
+    }
     if (detail.notes)
       parts.push('**Things to know**', '', detail.notes, '');
     const related = (detail.related ?? [])
