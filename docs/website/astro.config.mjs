@@ -41,7 +41,7 @@ export default defineConfig({
         { label: 'Catch!', slug: 'docs/examples/catch' },
       ] },
       { label: 'Tools and deployment', collapsed: true, items: [
-        { label: 'CLI reference', link: repoLink('docs/development/cli.md') },
+        { label: 'CLI reference', slug: 'docs/tools/cli' },
         { label: 'Editor setup', slug: 'docs/tools/editor' },
         { label: 'Build and export games', slug: 'docs/tools/export' },
         { label: 'Platform support', slug: 'docs/tools/platforms' },

@@ -118,10 +118,9 @@ export async function migrateGuides(writePage, conceptNames, imageRoute) {
     '\n\nSee [Windows players](../../tools/platforms/#windows-players) for game requirements.');
 
   sdkSections.set('Install from an archive', '## Install from an archive\n\n' +
-    'Download your platform archive and its checksum from [GitHub Releases](https://github.com/jepemo/malvado/releases). ' +
-    'On Windows, extract the matching archive and add its bin directory to your PATH. ' +
-    'Run the doctor command to check the installed tools.\n\n' +
-    'For a macOS or Linux archive, use these commands.\n\n' + archive);
+    'To install manually on macOS or Linux, download the archive for your operating system and architecture ' +
+    'and its matching checksum from [GitHub Releases](https://github.com/jepemo/malvado/releases). ' +
+    'Open a terminal in the download directory. Use only one matching SDK archive for the commands below.\n\n' + archive);
   sdkSections.set('Windows players', '## Windows players\n\n' + windowsPlayers);
 
   const page = async (route, title, intro, selection) => {
@@ -141,6 +140,7 @@ export async function migrateGuides(writePage, conceptNames, imageRoute) {
     'docs/start/installation': 'Installation',
     'docs/start/first-program': 'Your first Malvado program',
     'docs/start/project-structure': 'Project structure',
+    'docs/tools/cli': 'CLI reference',
     'docs/tools/editor': 'Editor setup',
     'docs/tools/export': 'Build and export games',
     'docs/tools/platforms': 'Platform support',
@@ -157,30 +157,75 @@ export async function migrateGuides(writePage, conceptNames, imageRoute) {
   const publish = (route, intro, ...selection) => page(route, titles[route], intro, selection);
   const local = (from, to, label = titles[to]) => '[' + label + '](' + siteLink(from, to) + ')';
   await publish('docs/start/installation',
-    'Install a native SDK to get the Malvado command, C libraries, and experimental Rust crate. ' +
-    'The prebuilt SDK can run Lua projects without a compiler. Run `malvado --version` to verify the installation. Contributors can ' +
-    local('docs/start/installation', 'docs/contributing/build', 'build a development SDK from source') + '.',
+    'Install the desktop SDK for your computer so you can ' +
+    local('docs/start/installation', 'docs/start/first-program', 'run your first Lua game') + '. ' +
+    'Check the ' + local('docs/start/installation', 'docs/tools/platforms', 'supported platforms') +
+    ' or follow the contributor guide to ' +
+    local('docs/start/installation', 'docs/contributing/build', 'build Malvado from source') + '.',
     ['getting-started', 'Install the SDK', 'Uninstall the SDK'],
     ['sdk', 'Install from an archive']);
   await publish('docs/start/first-program',
-    'Create a small Lua game, run it, and edit its greeting. ' +
-    local('docs/start/first-program', 'docs/start/installation', 'Install the SDK') + ' first. ' +
-    'After the game runs, see [what the generator created](../project-structure/).',
+    'Open a window that says **Hello, Malvado!**, then put your own message in it. ' +
+    local('docs/start/first-program', 'docs/start/installation', 'Install the SDK') +
+    ' and use a desktop session with a display. After the game runs, see ' +
+    '[what the generator created](../project-structure/) or try ' +
+    '[the first gameplay examples](../../examples/#basics).',
     ['getting-started', 'Create and run a game', 'Create a project']);
   await publish('docs/start/project-structure',
-    'A generated project has a language-specific entry point. Run project commands from the project directory. ' +
-    'See the [asset paths guide](' + repoLink('docs/api/asset-sources.md') + '#game-asset-paths) for file lookup.',
+    'Start with the files from [your first Lua game](../first-program/). ' +
+    'Run project commands from the project directory. Use [editor setup](../../tools/editor/) ' +
+    'for Lua completion or [build and export](../../tools/export/) to share the game.',
     ['sdk', 'Create and run a game', 'Create a Rust game']);
+  await publish('docs/tools/cli', `Use \`malvado\` from a terminal after [installing the SDK](../../start/installation/).
+Run project commands from the project directory unless you supply a path.
+
+| Command | What it does |
+| --- | --- |
+| \`malvado --help\` | Lists commands supported by your installed CLI. |
+| \`malvado --version\` | Prints the CLI version. |
+| \`malvado doctor\` | Reports installed capabilities and tools. |
+| \`malvado new [--lang lua\\|c\\|rust] PATH\` | Creates a project in a new directory. Lua is the default. |
+| \`malvado check [PATH]\` | Checks Lua syntax, builds a C project, or runs Cargo's check for Rust. |
+| \`malvado run [PATH]\` | Starts a Lua script or builds and starts a C or Rust game. |
+| \`malvado run --headless [PATH]\` | Runs a Lua script without opening a window. |
+| \`malvado build [PATH]\` | Compiles a C or Rust game. |
+| \`malvado export [PATH]\` | Exports from the current project to a new destination. |
+| \`malvado fpg-export [--transparent-zero] INPUT OUTPUT\` | Converts supported FPG sprites to PNG files and a JSON manifest. |
+
+For Lua, pass a script or a project directory to \`run\`. Without a path,
+the command runs \`main.lua\` in the current directory. A headless script
+must provide its own way to finish.
+
+Use \`doctor\` to check for graphics support, CMake, Rust tools, and
+export components. A successful report can still list missing optional
+components. The command reports availability without testing the graphics driver.
+
+See the [detailed CLI reference](${repoLink('docs/development/cli.md')}) for
+exit codes, file rules, and platform-specific options. Follow
+[build and export games](../export/) for a distribution workflow.`);
   await publish('docs/tools/editor',
     'Use [Lua Language Server](' + siteLink('docs/tools/editor', 'docs/concepts/lua-language-server') +
     ') for completion and type checking in Lua projects.',
     ['getting-started', 'Lua in VS Code']);
   await publish('docs/tools/export',
-    'Use the build command to compile a native C or experimental Rust game. Export from the same project directory to share the game.',
+    'Prepare a game folder or package that someone else can run. ' +
+    'Start with a game that runs in your [installed SDK](../../start/installation/). ' +
+    'Check [platform support](../platforms/) before choosing a target. ' +
+    'See the [CLI reference](../cli/) for command options.',
     ['sdk', 'Export a game', 'Export for Android']);
   await publish('docs/tools/platforms',
-    'Check the [platform matrix](' + repoLink('docs/development/platforms.md') +
-    ') for supported SDKs, export targets and graphics requirements.',
+    'Use the desktop SDK that matches your computer. Choose an export format ' +
+    'for the computer or device that will run your game.\n\n' +
+    '| Platform | Install and author games | Share games |\n' +
+    '| --- | --- | --- |\n' +
+    '| macOS arm64 | Released SDK and shell installer | Native folder or macOS app bundle |\n' +
+    '| Linux x86_64 | Released SDK and shell installer | Native folder |\n' +
+    '| Windows x64 MSVC (beta) | Released SDK archive | Native folder with a Windows executable |\n' +
+    '| Android arm64 (beta) | Author on macOS arm64 or Linux x86_64 with a separate target SDK and Android tools | APK or Android App Bundle |\n\n' +
+    'Follow [installation](../../start/installation/) for a desktop SDK or ' +
+    '[build and export games](../export/) for a player package. Check the ' +
+    '[platform matrix](' + repoLink('docs/development/platforms.md') +
+    ') for graphics requirements, automated coverage, and Windows and Android hardware verification limits.',
     ['api', 'Choose a runtime and target'], ['sdk', 'Windows players']);
   await publish('docs/learn/process-model',
     sources.api.intro.replace(/^# .+\n/, '').trim() + '\n\n' +

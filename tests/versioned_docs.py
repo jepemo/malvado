@@ -149,7 +149,7 @@ class VersionedDocsTests(unittest.TestCase):
                     self.assertIn(f'{PAGES}{prefix}{destination}', links)
 
         for route in (CATCH, RUST_BASICS, 'docs/concepts/rust-processes/',
-                      'docs/reference/lua/processes/spawn/'):
+                      'docs/reference/lua/processes/spawn/', 'docs/tools/cli/'):
             self.assertTrue(pages[f'{PAGES}{prefix}{route}'].indexed)
 
         for page_url, page in pages.items():
