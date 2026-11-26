@@ -16,7 +16,43 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'docs' / 'tools' / 'prepare_versioned_site.py'
 VERSION = '2.0.0-beta.1'
 PAGES = 'https://malvado.dev'
-ROUTES = ('', 'api/', 'getting-started/', 'sdk/', 'docs/', 'docs/samples/')
+CATCH = 'docs/examples/catch/'
+RUST_BASICS = 'docs/examples/rust-basics/'
+SOURCE_BUILD = 'docs/contributing/build/'
+LEGACY = {
+    'getting-started/': {
+        'install-the-sdk': 'docs/start/installation/#install-the-sdk',
+        'uninstall-the-sdk': 'docs/start/installation/#uninstall-the-sdk',
+        'create-and-run-a-game': 'docs/start/first-program/#create-and-run-a-game',
+        'lua-in-vs-code': 'docs/tools/editor/#lua-in-vs-code',
+        'build-from-source-contributors': SOURCE_BUILD + '#build-from-source-contributors',
+        'try-more-examples': 'docs/examples/#basics',
+    },
+    'sdk/': {
+        'install-a-local-development-build': SOURCE_BUILD + '#install-a-local-development-build',
+        'windows-sdk-prefix': SOURCE_BUILD + '#windows-sdk-prefix',
+        'build-and-install-the-sdk': 'docs/contributing/release/#build-and-install-the-sdk',
+        'create-and-run-a-game': 'docs/start/project-structure/#create-and-run-a-game',
+        'create-a-rust-game': 'docs/start/project-structure/#create-a-rust-game',
+        'export-a-game': 'docs/tools/export/#export-a-game',
+        'export-for-android': 'docs/tools/export/#export-for-android',
+    },
+    'api/': {
+        'run-and-stop-processes': 'docs/learn/process-model/#run-and-stop-processes',
+        'organize-a-level': 'docs/patterns/level-lifecycle/#organize-a-level',
+        'choose-a-reference': 'docs/reference/#choose-a-reference',
+        'keep-resources-alive': 'docs/learn/resources/#keep-resources-alive',
+        'choose-a-runtime-and-target': 'docs/tools/platforms/#choose-a-runtime-and-target',
+    },
+    'docs/samples/': {
+        'lua': CATCH + '#lua',
+        'c': CATCH + '#c',
+        'rust-experimental': CATCH + '#rust-experimental',
+        'hello-world': RUST_BASICS + '#hello-world',
+        'moving-balls': RUST_BASICS + '#moving-balls',
+        'catch': CATCH + '#catch',
+    },
+}
 
 
 class Page(HTMLParser):
@@ -25,10 +61,13 @@ class Page(HTMLParser):
         self.canonical = None
         self.links = []
         self.anchors = set()
+        self.indexed = False
         self.feed(html)
 
     def handle_starttag(self, tag, attributes):
         attrs = dict(attributes)
+        if 'data-pagefind-body' in attrs:
+            self.indexed = True
         if 'id' in attrs:
             self.anchors.add(attrs['id'])
         if tag == 'link' and attrs.get('rel') == 'canonical':
@@ -42,21 +81,37 @@ class Page(HTMLParser):
 class VersionedDocsTests(unittest.TestCase):
     def check_site(self, site, prefix):
         pages = {}
-        for route in ROUTES:
+        for path in site.rglob('index.html'):
+            directory = path.parent.relative_to(site).as_posix()
+            route = '' if directory == '.' else directory + '/'
             page_url = f'{PAGES}{prefix}{route}'
-            page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
+            page = Page(path.read_text(encoding='utf-8'))
             self.assertEqual(page.canonical, page_url)
             pages[page_url] = page
 
         home = pages[f'{PAGES}{prefix}']
-        self.assertIn(f'{prefix}getting-started/', home.links)
+        self.assertIn(f'{prefix}docs/start/first-program/', home.links)
+        self.assertIn(f'{prefix}docs/examples/', home.links)
         self.assertIn(f'{prefix}favicon.svg', home.links)
-        self.assertIn('export-for-android', pages[f'{PAGES}{prefix}sdk/'].anchors)
         self.assertTrue((site / 'pagefind' / 'pagefind.js').is_file())
         self.assertFalse((site / 'legacy').exists())
 
+        for route, headings in LEGACY.items():
+            url = f'{PAGES}{prefix}{route}'
+            page = pages[url]
+            self.assertFalse(page.indexed)
+            links = {urljoin(url, link) for link in page.links}
+            for anchor, destination in headings.items():
+                with self.subTest(route=route, anchor=anchor):
+                    self.assertIn(anchor, page.anchors)
+                    self.assertIn(f'{PAGES}{prefix}{destination}', links)
+
+        for route in (CATCH, RUST_BASICS, 'docs/concepts/rust-processes/',
+                      'docs/reference/lua/processes/spawn/'):
+            self.assertTrue(pages[f'{PAGES}{prefix}{route}'].indexed)
+
         for page_url, page in pages.items():
-            for href in page.links:
+            for href in set(page.links):
                 destination = urlsplit(urljoin(page_url, href))
                 if destination.netloc != 'malvado.dev':
                     continue
@@ -74,7 +129,7 @@ class VersionedDocsTests(unittest.TestCase):
         site = ROOT / 'docs' / 'website' / 'dist'
         self.check_site(site, '/')
         self.assertIn('https://github.com/jepemo/malvado/tree/main/examples/catch',
-                      Page((site / 'docs' / 'samples' / 'index.html').read_text()).links)
+                      Page((site / CATCH / 'index.html').read_text()).links)
 
     def test_candidate_has_versioned_urls_and_locked_source_links(self):
         revision = subprocess.check_output(
@@ -90,24 +145,26 @@ class VersionedDocsTests(unittest.TestCase):
             site = output / VERSION
             self.check_site(site, f'/{VERSION}/')
             self.assertIn('meteors / main.lua', (site / 'index.html').read_text())
-            samples = (site / 'docs' / 'samples' / 'index.html').read_text()
+            catch = (site / CATCH / 'index.html').read_text()
+            rust_basics = (site / RUST_BASICS / 'index.html').read_text()
+            samples = catch + rust_basics
             for source in ('examples/catch/lua/main.lua', 'examples/catch/c/main.c',
                            'bindings/rust/malvado/examples/catch.rs', 'examples/rust/hello.rs',
                            'examples/rust/moving-balls.rs'):
                 with self.subTest(source=source):
                     self.assertIn(source, samples)
             self.assertIn(f'https://github.com/jepemo/malvado/tree/{revision}/examples/catch',
-                          Page(samples).links)
+                          Page(catch).links)
             self.assertIn(f'https://github.com/jepemo/malvado/tree/{revision}/examples/rust',
-                          Page(samples).links)
-            for page in ROUTES:
-                html = (site / page / 'index.html').read_text()
+                          Page(rust_basics).links)
+            for path in site.rglob('index.html'):
+                html = path.read_text()
                 self.assertIn(f'https://github.com/jepemo/malvado/blob/{revision}/', html)
                 for route in ('blob', 'tree', 'edit'):
                     self.assertNotIn(f'github.com/jepemo/malvado/{route}/main/', html)
                     self.assertNotIn(f'github.com/jepemo/malvado/{route}/master/', html)
             self.assertIn(f'git checkout --detach {revision}',
-                          (site / 'getting-started' / 'index.html').read_text())
+                          (site / SOURCE_BUILD / 'index.html').read_text())
 
             repeat = subprocess.run(command, capture_output=True, timeout=30)
             self.assertNotEqual(repeat.returncode, 0)

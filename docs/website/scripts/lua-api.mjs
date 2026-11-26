@@ -277,8 +277,8 @@ end)
 start(function() Player({x = 400, y = 300}) end, {title = "Move"})
 \`\`\`
 
-The functions are grouped below. See the [gameplay API guides](../../../api/) for
-the process model, and the concept guides for each area.`));
+Choose a family in the sidebar to find individual functions. See the
+[Lua process guide](../../concepts/lua-processes/) for the gameplay model.`));
 
 for (const group of groups) {
   const dir = new URL(`${group.id}/`, output);
