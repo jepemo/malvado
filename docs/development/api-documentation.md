@@ -64,6 +64,12 @@ function reference needs a complete runnable example or a direct link to a
 complete variant that demonstrates the function. Related functions can
 share a program.
 
+Keep published programs under [examples](../../examples/README.md). Use the
+[website include and download conventions](../website/README.md#publish-a-runnable-example)
+to reuse the same source in a reference, Learn chapter, tutorial, or gallery
+entry. For each tutorial checkpoint, give the reader a complete program and
+all files needed to resume from that step.
+
 Run the example with the documented command from a clean working directory.
 Check its output or behavior and bound the run when verifying it. Use a
 graphics or audio backend when the expected result depends on it. Report

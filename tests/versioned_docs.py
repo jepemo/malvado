@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from urllib.parse import unquote, urljoin, urlsplit
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,8 @@ PAGES = 'https://malvado.dev'
 CATCH = 'docs/examples/catch/'
 RUST_BASICS = 'docs/examples/rust-basics/'
 SOURCE_BUILD = 'docs/contributing/build/'
+ROLL_PAGE = 'docs/reference/lua/platform/rand/'
+IMAGE_PAGE = 'docs/examples/image/'
 LEGACY = {
     'getting-started/': {
         'install-the-sdk': 'docs/start/installation/#install-the-sdk',
@@ -79,6 +82,45 @@ class Page(HTMLParser):
 
 
 class VersionedDocsTests(unittest.TestCase):
+    def check_example_downloads(self, site, prefix, *, revision=None):
+        def source(path):
+            if revision:
+                return subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{revision}:{path}'])
+            return (ROOT / path).read_bytes()
+
+        def present(path):
+            if revision:
+                return bool(subprocess.check_output(
+                    ['git', '-C', str(ROOT), 'ls-tree', revision, '--', path]))
+            return True
+
+        def check_link(route, path):
+            page = Page((site / route / 'index.html').read_text(encoding='utf-8'))
+            page_url = PAGES + prefix + route
+            self.assertIn(PAGES + prefix + path, {urljoin(page_url, href) for href in page.links})
+
+        roll = 'example-downloads/roll/roll.lua'
+        if present('examples/rand'):
+            check_link(ROLL_PAGE, roll)
+            self.assertEqual((site / roll).read_bytes(), source('examples/rand/roll.lua'))
+        else:
+            self.assertFalse((site / roll).exists())
+
+        image = 'example-downloads/image/image.zip'
+        lesson = 'examples/features/image'
+        if present(lesson):
+            check_link('docs/examples/', IMAGE_PAGE)
+            check_link('docs/concepts/images/', IMAGE_PAGE)
+            check_link(IMAGE_PAGE, image)
+            with ZipFile(site / image) as bundle:
+                self.assertCountEqual(bundle.namelist(), ['main.lua', 'tile.png', 'LICENSE', 'NOTICE'])
+                self.assertEqual(bundle.read('main.lua'), source(f'{lesson}/lua/main.lua'))
+                self.assertEqual(bundle.read('tile.png'), source(f'{lesson}/assets/tile.png'))
+                self.assertEqual(bundle.read('LICENSE'), source('LICENSE'))
+                self.assertIn(b'Malvado project', bundle.read('NOTICE'))
+        else:
+            self.assertFalse((site / image).exists())
+
     def check_site(self, site, prefix):
         pages = {}
         for path in site.rglob('index.html'):
@@ -128,6 +170,7 @@ class VersionedDocsTests(unittest.TestCase):
     def test_public_site_preserves_live_routes(self):
         site = ROOT / 'docs' / 'website' / 'dist'
         self.check_site(site, '/')
+        self.check_example_downloads(site, '/')
         self.assertIn('https://github.com/jepemo/malvado/tree/main/examples/catch',
                       Page((site / CATCH / 'index.html').read_text()).links)
 
@@ -144,6 +187,7 @@ class VersionedDocsTests(unittest.TestCase):
             })
             site = output / VERSION
             self.check_site(site, f'/{VERSION}/')
+            self.check_example_downloads(site, f'/{VERSION}/', revision=revision)
             self.assertIn('meteors / main.lua', (site / 'index.html').read_text())
             catch = (site / CATCH / 'index.html').read_text()
             rust_basics = (site / RUST_BASICS / 'index.html').read_text()

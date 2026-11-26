@@ -32,12 +32,14 @@ def prepare(version, revision, output):
         'examples/helloworld/main.lua',
         'examples/meteors/main.lua',
         'examples/move/main.lua',
+        'LICENSE',
         f'docs/versions/{version}.md',
     ]
     git = ['git', '-C', str(ROOT)]
-    rust_lessons = 'examples/rust'
-    if subprocess.check_output([*git, 'ls-tree', revision, '--', rust_lessons], text=True):
-        sources.append(rust_lessons)
+    optional_lessons = ['examples/rust', 'examples/rand', 'examples/features/image']
+    for path in optional_lessons:
+        if subprocess.check_output([*git, 'ls-tree', revision, '--', path], text=True):
+            sources.append(path)
     snapshot = subprocess.check_output([*git, 'archive', revision, '--', *sources])
     with tempfile.TemporaryDirectory(prefix='malvado-docs-') as temporary:
         staged = Path(temporary)
@@ -50,7 +52,8 @@ def prepare(version, revision, output):
         for filename in ('astro.config.mjs', 'package.json', 'package-lock.json'):
             shutil.copyfile(WEBSITE / filename, website / filename)
         for directory in ('public', 'scripts', 'src'):
-            shutil.copytree(WEBSITE / directory, website / directory)
+            shutil.copytree(WEBSITE / directory, website / directory,
+                            ignore=shutil.ignore_patterns('example-downloads'))
         env = dict(os.environ, MALVADO_DOCS_VERSION=version, MALVADO_DOCS_REVISION=revision)
         output.mkdir(parents=True)
         try:

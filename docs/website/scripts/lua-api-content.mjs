@@ -863,10 +863,8 @@ export default {
       ['max', 'Required. The highest value, with the same type as `min` and a value of at least `min`.'],
     ],
     returns: 'One Lua integer from `min` through `max`. A wrong argument count, an invalid bound, or `min > max` raises a Lua error.',
-    exampleSetup: 'With the Malvado SDK installed, save this program as `roll.lua`. From that directory, run `malvado run --headless roll.lua`.',
-    example: `local mv = require("malvado")
-
-print("Dice roll: " .. mv.rand(1, 6))`,
+    exampleId: 'roll',
+    exampleSetup: 'With the Malvado SDK installed, save `roll.lua` in an empty directory. Open a terminal there and run `malvado run --headless roll.lua`.',
     exampleResult: 'The program prints `Dice roll:` followed by an integer from 1 to 6, then exits. Try `mv.rand(6, 6)` to see what happens when both bounds are equal.',
     notes: 'Calls to `rand` and `math.random` advance the same Lua generator. An invalid call leaves the generator state unchanged. See [pseudorandom numbers](../../../../concepts/lua-processes/#pseudorandom-numbers) for repeatable sequences.',
     related: ['rand_seed'],
