@@ -11,6 +11,7 @@ import shutil
 import tarfile
 import tempfile
 
+from release_notes import VERSION, candidate, read_tree
 from sdk_artifact import inspect_archive
 from verify_source import extract_source
 
@@ -19,20 +20,8 @@ def read_json(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def release_notes(path, version):
-    original = path.read_bytes()
-    text = original.decode('utf-8').replace('\r\n', '\n')
-    title = f'# Malvado {version}\n'
-    if text.startswith(title):
-        return original
-    section = re.search(r'^## Release notes\n(.*?)(?=^## |\Z)', text, re.M | re.S)
-    if not text.startswith(f'# {version}\n') or not section or not section[1].strip():
-        raise ValueError('Release notes do not match the candidate version or are missing')
-    return f'{title}\n{section[1].strip()}\n'.encode('utf-8')
-
-
-def collect(platform, source, docs, notes, version, output):
-    if not re.fullmatch(r'2\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?', version):
+def collect(platform, source, docs, version, output):
+    if not re.fullmatch(VERSION, version):
         raise ValueError('Invalid candidate version')
     report = read_json(platform / 'platform-candidate.json')
     revision = report['sha']
@@ -57,6 +46,7 @@ def collect(platform, source, docs, notes, version, output):
     with tempfile.TemporaryDirectory(prefix='malvado-candidate-source-') as temporary:
         tree, digest = extract_source(archive, revision, Path(temporary))
         notice = (tree / 'licenses' / 'raylib-NOTICES.txt').read_bytes()
+        notes_content = candidate(lambda path: read_tree(tree, path), version, revision).encode('utf-8')
     for sdk in archives:
         with tarfile.open(sdk, 'r:gz') as package:
             path = 'share/licenses/malvado/raylib-NOTICES.txt'
@@ -71,10 +61,14 @@ def collect(platform, source, docs, notes, version, output):
         raise ValueError('Source verification does not match the candidate')
     archives.append(archive)
 
-    expected_docs = {'version': version, 'revision': revision, 'path': f'{version}/'}
-    if read_json(docs / 'candidate.json') != expected_docs or not (docs / version / 'index.html').is_file():
-        raise ValueError('Documentation does not match the candidate')
-    notes_content = release_notes(notes, version)
+    expected_docs = {
+        'version': version, 'revision': revision, 'path': f'{version}/',
+        'release_notes_sha256': hashlib.sha256(notes_content).hexdigest(),
+    }
+    if (read_json(docs / 'candidate.json') != expected_docs
+            or not (docs / version / 'index.html').is_file()
+            or not (docs / version / 'docs' / 'changelog' / 'index.html').is_file()):
+        raise ValueError('Documentation or release notes do not match the candidate')
 
     output.mkdir()
     try:
@@ -100,11 +94,11 @@ def collect(platform, source, docs, notes, version, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('platform', 'source', 'docs', 'notes', 'output'):
+    for name in ('platform', 'source', 'docs', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
     parser.add_argument('--version', required=True)
     args = parser.parse_args()
-    collect(args.platform, args.source, args.docs, args.notes, args.version, args.output)
+    collect(args.platform, args.source, args.docs, args.version, args.output)
     print(f'Prepared draft candidate at {args.output}')
 
 

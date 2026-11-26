@@ -14,6 +14,7 @@ to plan a new page or revise an existing one.
 | Pattern or recipe | Solve a recurring game problem and understand when to use the solution. |
 | Gallery entry | Find a runnable example by topic and see what it does. |
 | API reference | Look up the exact public contract for an operation or value. |
+| Changelog | See what shipped, which games are affected, and what to change before upgrading. |
 | Internal contract | Maintain the engine or bindings, including invariants and implementation boundaries. |
 
 Use the [site migration map](../website/migration.md) for current routes.
@@ -126,3 +127,20 @@ hosts with a display. For an existing graphical SDK, run:
 mise exec -- python3 tools/test_rust_docs.py --sdk "/path/to/installed sdk"
 mise exec -- python3 tools/test_rust_docs.py --sdk "/path/to/installed sdk" --release
 ```
+
+## Write release notes
+
+Update [Unreleased](../changelog/unreleased.md) when a change affects game
+developers. Group related changes by feature. Write what a reader can now do
+and include the affected languages or platforms when it matters. Leave
+implementation details and verification records in the version plan.
+
+Use [the release note template](release-notes-template.md) for a release.
+Start with highlights and include only sections with relevant content.
+Give the old and new behavior, the reason for the change, and what the
+reader must do for each incompatibility. Verify any before and after example
+against its own version. Include short migration steps on the release page.
+For a longer upgrade, link to the guide from the canonical notes so both
+the website and GitHub Releases show it. State the supported source and
+target versions. Review defaults, units, resource lifetimes, data formats,
+and SDK or ABI requirements as well as names.

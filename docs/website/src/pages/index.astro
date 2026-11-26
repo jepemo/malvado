@@ -17,14 +17,14 @@ const examples = [
   { id: 'processes', label: 'Processes', file: 'meteors / main.lua', code: stripHeader(processes) },
   { id: 'movement', label: 'Movement', file: 'move / main.lua', code: stripHeader(movement) },
 ];
-const installReady = stable.trim() !== '';
-const installCommand = installReady
-  ? 'curl -fsSL https://malvado.dev/install.sh | bash'
-  : `curl -fsSL https://malvado.dev/install.sh | bash -s -- --version ${prerelease}`;
+const sdkVersion = version || stable || prerelease;
+const installCommand = `curl -fsSL https://malvado.dev/install.sh | bash -s -- --version ${sdkVersion}`;
+const releaseUrl = `${repository}/releases/tag/v${sdkVersion}`;
 const nav = [
   { label: 'Docs', href: `${base}docs/` },
   { label: 'Examples', href: `${base}docs/examples/` },
   { label: 'API', href: `${base}docs/reference/lua/` },
+  { label: 'Changelog', href: version ? 'https://malvado.dev/docs/changelog/' : '/docs/changelog/' },
 ];
 ---
 <!doctype html>
@@ -85,11 +85,10 @@ const nav = [
             </div>
             <Code code={installCommand} lang="bash" theme="github-dark" />
           </div>
-          {installReady ? (
-            <p class="section-note">Requires macOS arm64 or Linux x86_64. On Windows, download the SDK from <a href={`${repository}/releases`}>GitHub Releases</a>. See the <a href={`${base}docs/start/installation/`}>installation guide</a> for the full setup.</p>
-          ) : (
-            <p class="section-note">Malvado 2.0 is in beta and the stable v2.0.0 release is not published yet, so this command installs the verified <strong>{prerelease}</strong> SDK. It requires macOS arm64 or Linux x86_64; on Windows, download the SDK from <a href={`${repository}/releases`}>GitHub Releases</a>. See the <a href={`${base}docs/contributing/build/`}>source build guide</a> for contributor setup.</p>
-          )}
+          <p class="section-note">This command installs Malvado <strong>{sdkVersion}</strong>
+            when its SDK is available. Requires macOS arm64 or Linux x86_64. On Windows,
+            download the matching SDK from the <a href={releaseUrl}>GitHub release</a>.
+            See the <a href={`${base}docs/start/installation/`}>installation guide</a> for setup.</p>
         </div>
       </section>
       <section class="section" aria-labelledby="why-title">

@@ -179,6 +179,18 @@ documentation, examples, and metadata in the same change.
 Use the [writing guide](docs/development/api-documentation.md) and
 [templates](docs/development/documentation-templates.md).
 
+### Changelog and migration
+
+For each user-visible change, update [the unreleased notes](docs/changelog/unreleased.md)
+in the same change as the implementation, tests, and documentation. Explain
+what changed, why it matters, and which languages or platforms are affected.
+Mark deprecations, removals, and breaking changes explicitly. Give verified
+upgrade steps. Describe implemented behavior in clear English for game
+developers. Omit internal-only work and keep the changelog free of commit logs.
+
+Use the [writing guide](docs/development/api-documentation.md#write-release-notes)
+and [release note template](docs/development/release-notes-template.md).
+
 ### Writing style
 
 Follow ASD-STE100 Simplified Technical English principles:
@@ -303,7 +315,14 @@ Before declaring a version complete:
 
 Do not equate a completed checklist, source tag, and published release. Each has its own requirements.
 
-Do not create tags or publish releases without an explicit request.
+Before release, consolidate the unreleased entries and write highlights.
+Review breaking changes, migrations, and limitations against the exact
+candidate revision. Finalize its canonical notes, verify the generated site
+and release body, and prepare the next unreleased draft. Follow the
+[publishing runbook](docs/development/publishing.md#finalize-release-notes).
+
+Do not create tags, publish releases or packages, or edit external release
+descriptions without explicit maintainer authorization.
 
 ## 8. Final delivery
 

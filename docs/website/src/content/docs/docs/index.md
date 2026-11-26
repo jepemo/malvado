@@ -3,6 +3,10 @@ title: Introduction
 description: Learn to write games with Malvado processes.
 ---
 
+The unversioned guides follow current development. Use the
+[changelog](https://malvado.dev/docs/changelog/) to find the documentation
+for a published SDK. The site title shows the version on each snapshot.
+
 Malvado is a 2D game engine inspired by DIV Games Studio. The Lua
 starter opens a window and draws a greeting near the upper left.
 

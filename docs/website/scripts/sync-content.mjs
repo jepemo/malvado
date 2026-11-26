@@ -6,6 +6,7 @@ import { writeExampleGallery } from './example-gallery.mjs';
 import { learnLessons, writeLearnLessons } from './learn-lessons.mjs';
 import { dodgeTutorial, writeTutorials } from './tutorials.mjs';
 import { patterns, writePatterns } from './patterns.mjs';
+import { writeChangelog } from './changelog.mjs';
 
 // The repository guides and examples remain the source of truth.
 const output = new URL('../src/content/docs/docs/', import.meta.url);
@@ -94,6 +95,7 @@ async function writePage(route, title, body, pagefind = true, extension = 'md') 
   ].join('\n'));
 }
 
+await writeChangelog(writePage);
 await clearExampleDownloads();
 const imageRoute = 'docs/examples/image';
 const gallery = await writeExampleGallery(writePage);

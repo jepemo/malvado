@@ -102,7 +102,7 @@ run = "ctest --test-dir build-visual -C Debug -R '^visual_' --output-on-failure"
 
 [tasks.test-docs]
 description = "Check current guide links, anchors and link-checker regression fixtures"
-run = ["python3 tests/docs_links.py", "python3 tools/check_docs.py"]
+run = ["python3 tests/docs_links.py", "python3 tools/check_docs.py", "python3 tools/release_notes.py check", "python3 tests/release_notes.py"]
 
 [tasks.test-luals]
 description = "Validate the LuaLS type definitions with a real lua-language-server"

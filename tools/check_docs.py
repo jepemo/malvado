@@ -32,7 +32,11 @@ def prose(text):
 
 @lru_cache(maxsize=None)
 def anchors(path):
-    text = prose(path.read_text(encoding="utf-8"))
+    return markdown_anchors(path.read_text(encoding="utf-8"))
+
+
+def markdown_anchors(text):
+    text = prose(text)
     result = set(re.findall(r'<[^>]+\b(?:id|name)=[\'\"]([^\'\"]+)', text))
     seen = {}
     for heading in re.findall(r"^#{1,6}\s+(.+?)\s*#*$", text, re.MULTILINE):
@@ -71,9 +75,9 @@ def check_documents(paths, root):
 
 
 def documents():
-    paths = [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "docs/README.md",
+    paths = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "AGENTS.md", ROOT / "docs/README.md",
              ROOT / "bindings/rust/README.md", ROOT / "examples/README.md"]
-    for directory in ("api", "site", "development", "roadmap", "versions"):
+    for directory in ("api", "site", "development", "roadmap", "versions", "changelog"):
         paths.extend((ROOT / "docs" / directory).glob("*.md"))
     paths.extend((ROOT / "examples/features").rglob("README.md"))
     return sorted(set(paths))

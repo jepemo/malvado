@@ -3,6 +3,7 @@
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -10,20 +11,26 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 WEBSITE = ROOT / 'docs' / 'website'
+sys.path.insert(0, str(ROOT / 'tools'))
+from release_notes import REVISION, VERSION, candidate, read_tree
 
 
-def prepare(version, revision, output):
-    if not re.fullmatch(r'2\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?', version):
+def prepare(version, revision, output, require_notes=False):
+    if not re.fullmatch(VERSION, version):
         raise ValueError('expected a Malvado 2 version such as 2.0.0-beta.1')
-    if not re.fullmatch(r'[0-9a-f]{40}', revision):
+    if not re.fullmatch(REVISION, revision):
         raise ValueError('expected a full lowercase Git commit ID')
     if output.exists():
         raise FileExistsError(f'output directory already exists: {output}')
+    notes = None
+    if require_notes:
+        notes = candidate(lambda path: read_tree(ROOT, path, revision), version, revision).encode('utf-8')
     sources = [
         'docs/site/getting-started.md', 'docs/site/sdk.md', 'docs/site/api.md',
         'docs/api',
@@ -33,7 +40,6 @@ def prepare(version, revision, output):
         'examples/meteors/main.lua',
         'examples/move/main.lua',
         'LICENSE',
-        f'docs/versions/{version}.md',
     ]
     git = ['git', '-C', str(ROOT)]
     optional_lessons = [
@@ -65,6 +71,13 @@ def prepare(version, revision, output):
             shutil.copytree(WEBSITE / directory, website / directory,
                             ignore=shutil.ignore_patterns('example-downloads'))
         env = dict(os.environ, MALVADO_DOCS_VERSION=version, MALVADO_DOCS_REVISION=revision)
+        env.pop('MALVADO_DOCS_RELEASE_NOTES', None)
+        facts = {'version': version, 'revision': revision, 'path': f'{version}/'}
+        if notes is not None:
+            notes_path = staged / 'RELEASE-NOTES.md'
+            notes_path.write_bytes(notes)
+            env['MALVADO_DOCS_RELEASE_NOTES'] = str(notes_path)
+            facts['release_notes_sha256'] = hashlib.sha256(notes).hexdigest()
         output.mkdir(parents=True)
         try:
             subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=website, check=True)
@@ -72,7 +85,6 @@ def prepare(version, revision, output):
                 ['npm', 'run', 'build', '--', '--outDir', str((output / version).resolve())],
                 cwd=website, env=env, check=True,
             )
-            facts = {'version': version, 'revision': revision, 'path': f'{version}/'}
             (output / 'candidate.json').write_text(
                 json.dumps(facts, indent=2) + '\n', encoding='utf-8')
         except BaseException:
@@ -85,9 +97,10 @@ def main():
     parser.add_argument('version')
     parser.add_argument('revision')
     parser.add_argument('output', type=Path, help='new directory for the snapshot')
+    parser.add_argument('--require-notes', action='store_true', help='require finalized canonical release notes')
     args = parser.parse_args()
     try:
-        prepare(args.version, args.revision, args.output)
+        prepare(args.version, args.revision, args.output, args.require_notes)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'{error}\n')
 
