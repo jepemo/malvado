@@ -39,6 +39,13 @@ into the square and watch how much overlap is needed before the message
 appears. Assign `nil` to restore the graph-derived collider, or `false`
 to disable it.
 
+## Playground
+
+<!-- playground -->
+
+The [`rect_overlaps` reference](../../reference/lua/collision/rect_overlaps/)
+covers the rectangle input and return value.
+
 ## Move against a wall
 
 A process overlap query reports contact without moving a process. For a

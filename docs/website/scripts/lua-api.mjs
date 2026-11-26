@@ -1,6 +1,8 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { repoLink } from './site-context.mjs';
 import { publishExample } from './examples.mjs';
+import { learnLessons } from './learn-lessons.mjs';
+import { siteLink } from './guide-migration.mjs';
 import content from './lua-api-content.mjs';
 
 // Generate the Lua API reference from the repository inventories:
@@ -355,6 +357,14 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       .filter(Boolean);
     if (related.length)
       parts.push(`Related: ${related.join(', ')}.`, '');
+    if (detail.playground) {
+      const [name, label] = detail.playground;
+      const lesson = learnLessons.find((item) => item.name === name && item.playground);
+      if (lesson) {
+        const from = `docs/reference/lua/${group.id}/${entry.slug}`;
+        parts.push(`[${label}](${siteLink(from, lesson.slug, '#playground')}).`, '');
+      }
+    }
     parts.push(`See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for more examples and limits.`);
     await writeFile(new URL(`${entry.slug}.md`, dir), front(entry.title, entry.summary, parts.join('\n')));
   }

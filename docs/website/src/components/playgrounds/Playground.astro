@@ -1,0 +1,111 @@
+---
+interface Props {
+  id: string;
+  question: string;
+  description: string;
+}
+const { id, question, description } = Astro.props;
+---
+
+<figure class="playground" data-playground={id} aria-labelledby={`playground-${id}-caption`}>
+  <figcaption id={`playground-${id}-caption`}>
+    <strong>{question}</strong>
+    <span class="simulation-label">Conceptual simulation</span>
+  </figcaption>
+  <p>{description}</p>
+  <slot />
+</figure>
+
+<style>
+  .playground {
+    margin-inline: 0;
+    padding: clamp(0.8rem, 3vw, 1.5rem);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-sidebar);
+    color: var(--sl-color-text);
+  }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+
+  .simulation-label {
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+  }
+
+  .playground :global([hidden]) {
+    display: none;
+  }
+
+  .playground :global(.playground-controls:not([hidden])) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  .playground :global(.playground-controls label) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .playground :global(.playground-controls > *) {
+    margin-block-start: 0;
+  }
+
+  .playground :global(input[type="range"]) {
+    accent-color: var(--sl-color-text-accent);
+    inline-size: min(8rem, 100%);
+  }
+
+  .playground :global(button),
+  .playground :global(select) {
+    min-block-size: 2.5rem;
+    padding: 0.35em 0.75em;
+    font: inherit;
+    border: 1px solid var(--sl-color-gray-3);
+    border-radius: 0.35rem;
+    color: var(--sl-color-text);
+    background: var(--sl-color-bg);
+  }
+
+  .playground :global(button:disabled) {
+    opacity: 0.65;
+  }
+
+  .playground :global(:focus-visible) {
+    outline: 2px solid var(--sl-color-text-accent);
+    outline-offset: 3px;
+  }
+
+  .playground :global(svg[viewBox]) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    color: var(--sl-color-text);
+  }
+
+  .playground :global(.playground-readout) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .playground :global(.playground-announcement) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

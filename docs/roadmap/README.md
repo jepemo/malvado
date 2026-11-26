@@ -40,10 +40,23 @@ for new and updated documentation.
   Explore Asteroids for rotation and wraparound, a platformer for jumping
   and terrain, a top-down adventure for rooms and interaction, and a
   shoot 'em up for waves and projectiles.
-- Expand the [examples catalog](https://github.com/jepemo/malvado/issues/68) and add [interactive playgrounds](https://github.com/jepemo/malvado/issues/69), including the scheduler.
+- Expand the [examples catalog](https://github.com/jepemo/malvado/issues/68).
 - Apply the function template across the Lua API reference in [#70](https://github.com/jepemo/malvado/issues/70).
 - Enforce reference coverage, runnable examples, and website checks in CI in [#71](https://github.com/jepemo/malvado/issues/71).
 - Add [patterns](https://github.com/jepemo/malvado/issues/72) for game state, spawning, communication, and levels as verified examples become available.
+
+### Future playgrounds
+
+Add these lessons after their engine behavior and runnable examples can be verified.
+
+- Camera zoom. The current camera supports translation and viewport clipping.
+  Add zoom controls when the public camera API can change the view's scale.
+- Palette cycling. Keep pixel indices fixed and rotate the colors assigned to
+  those indices. Verify a palette API before presenting the effect as supported.
+- Easing curves and particles. Verify the APIs and choose an example that
+  shows how each affects gameplay or drawing.
+- In-browser game execution. Follow the [WebAssembly roadmap](webassembly.md)
+  for running Malvado games in a browser.
 
 ## Promotion into a release
 

@@ -1,60 +1,11 @@
 import assert from 'node:assert/strict';
-import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
-import { createServer } from 'node:http';
-import { extname } from 'node:path';
-import { after, before, test } from 'node:test';
-import { chromium } from 'playwright';
+import { test } from 'node:test';
+import { serveWebsite } from './website-browser.mjs';
 
-const dist = new URL('../dist/', import.meta.url);
-const mime = {
-  '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
-  '.wasm': 'application/wasm', '.png': 'image/png',
-};
-const server = createServer(async (request, response) => {
-  const name = new URL(request.url, 'http://localhost').pathname;
-  const file = new URL('.' + name + (name.endsWith('/') ? 'index.html' : ''), dist);
-  try {
-    const bytes = await readFile(file);
-    response.setHeader('content-type', mime[extname(file.pathname)] ?? 'application/octet-stream');
-    response.end(bytes);
-  } catch {
-    response.writeHead(404).end();
-  }
-});
+const withPage = serveWebsite('docs/examples/index.html');
 
-let browser, origin;
-before(async () => {
-  await readFile(new URL('docs/examples/index.html', dist));
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  origin = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch();
-});
-
-after(async () => {
-  await browser?.close();
-  server.close();
-});
-
-async function withPage(options, run) {
-  const context = await browser.newContext(options);
-  const page = await context.newPage();
-  page.setDefaultTimeout(8000);
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  try {
-    await run(page);
-    assert.deepEqual(errors, []);
-  } finally {
-    await context.close();
-  }
-}
-
-async function open(page, route = '') {
+async function open(page, origin, route = '') {
   const response = await page.goto(`${origin}/docs/examples/${route}`);
   assert.equal(response.status(), 200);
 }
@@ -72,8 +23,8 @@ async function selected(page, name) {
 }
 
 test('keyboard selection, exact copy and preference across examples', async () => {
-  await withPage({ permissions: ['clipboard-read', 'clipboard-write'] }, async (page) => {
-    await open(page, 'catch/');
+  await withPage({ permissions: ['clipboard-read', 'clipboard-write'] }, async (page, origin) => {
+    await open(page, origin, 'catch/');
     const lua = await selected(page, 'Lua');
     await lua.focus();
     await page.keyboard.press('ArrowLeft');
@@ -93,12 +44,12 @@ test('keyboard selection, exact copy and preference across examples', async () =
     assert.equal(await (await page.request.get(new URL(download, page.url()).href)).text(), source);
     await page.getByRole('tab', { name: 'C', exact: true }).press('End');
     await selected(page, 'Rust (experimental)');
-    await open(page, 'image/');
+    await open(page, origin, 'image/');
     await selected(page, 'Rust (experimental)');
-    await open(page, 'shapes/');
+    await open(page, origin, 'shapes/');
     assert.equal(await page.getByRole('tab').count(), 0);
     await page.getByRole('heading', { name: 'Lua', exact: true }).waitFor();
-    await open(page, 'catch/');
+    await open(page, origin, 'catch/');
     await selected(page, 'Rust (experimental)');
     await page.reload();
     await selected(page, 'Rust (experimental)');
@@ -106,7 +57,7 @@ test('keyboard selection, exact copy and preference across examples', async () =
 });
 
 test('blocked storage and clipboard leave the examples usable', async () => {
-  await withPage({}, async (page) => {
+  await withPage({}, async (page, origin) => {
     await page.addInitScript(() => {
       for (const name of ['getItem', 'setItem']) {
         const original = Storage.prototype[name];
@@ -117,20 +68,20 @@ test('blocked storage and clipboard leave the examples usable', async () => {
       }
       navigator.clipboard.writeText = () => Promise.reject(new DOMException('Clipboard blocked', 'NotAllowedError'));
     });
-    await open(page, 'catch/');
+    await open(page, origin, 'catch/');
     await selected(page, 'Lua');
     await page.getByRole('tab', { name: 'C', exact: true }).click();
     await selected(page, 'C');
     await page.getByRole('button', { name: 'Copy code' }).click();
     await page.getByText('Copy unavailable. Select the code to copy it manually.').waitFor();
-    await open(page, 'image/');
+    await open(page, origin, 'image/');
     await selected(page, 'Lua');
   });
 });
 
 test('the gallery and each language can be read without JavaScript', async () => {
-  await withPage({ javaScriptEnabled: false }, async (page) => {
-    await open(page);
+  await withPage({ javaScriptEnabled: false }, async (page, origin) => {
+    await open(page, origin);
     await page.getByRole('link', { name: 'Catch!', exact: true }).last().click();
     assert.equal(await page.getByRole('tablist').count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Copy code' }).count(), 0);
@@ -145,14 +96,14 @@ test('the gallery and each language can be read without JavaScript', async () =>
 });
 
 test('gallery filter, legacy links and site search', async () => {
-  await withPage({}, async (page) => {
-    await open(page);
+  await withPage({}, async (page, origin) => {
+    await open(page, origin);
     const filter = page.getByRole('searchbox', { name: 'Find an example' });
     await filter.fill('spawn fragments');
     assert.equal(await page.locator('[data-example-card]:visible').count(), 1);
     await page.getByRole('link', { name: 'Space Asteroids', exact: true }).click();
     assert(page.url().endsWith('/space-asteroids/'));
-    await open(page);
+    await open(page, origin);
     await filter.fill('zzunmatched');
     await page.getByText('0 examples', { exact: true }).waitFor();
     await filter.fill('');
@@ -167,10 +118,10 @@ test('gallery filter, legacy links and site search', async () => {
 });
 
 test('mobile layout and highlighting follow the site theme', async () => {
-  await withPage({ viewport: { width: 320, height: 700 }, isMobile: true, hasTouch: true }, async (page) => {
-    await open(page);
+  await withPage({ viewport: { width: 320, height: 700 }, isMobile: true, hasTouch: true }, async (page, origin) => {
+    await open(page, origin);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    await open(page, 'catch/');
+    await open(page, origin, 'catch/');
     const preview = page.getByRole('img', { name: /falling orange ball/ });
     await preview.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('img[src$="/gallery-previews/catch.png"]')?.naturalWidth > 0);

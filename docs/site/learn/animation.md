@@ -47,6 +47,10 @@ The default animation collider covers the union of the frames' bounds,
 so it can be larger than the frame you currently see. Set an explicit
 collider when a game needs a tighter hit area.
 
+## Playground
+
+<!-- playground -->
+
 See the [Lua animation reference](../../reference/lua/graphics/animation/) and
 the [animation guide for C and Lua](../../concepts/animations/).
 Experimental Rust has [native animation clocks and

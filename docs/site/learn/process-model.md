@@ -44,6 +44,10 @@ order of the next tick. Processes can skip turns due to cadence, sleep, or
 freeze. A process spawned during a tick can first run on the next tick or
 later.
 
+## Playground
+
+<!-- playground -->
+
 ## Try a change
 
 Swap the two calls to `worker` in `init`. Which name will appear first on each

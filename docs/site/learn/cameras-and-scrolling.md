@@ -46,6 +46,15 @@ viewport before using it to pick an object. Lua cameras currently have
 no zoom setting. Changing a process's `size` scales its own graphic and
 collider.
 
+## Playground
+
+<!-- playground -->
+
+The [`camera_set` reference](../../reference/lua/cameras/camera_set/)
+covers setting a camera's world position.
+
+## Try a change
+
 Try removing `camera_follow(self)` from the example. The camera stays
 at its initial location and the player can walk out of view. Its world
 movement works as before.

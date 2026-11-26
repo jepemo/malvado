@@ -9,7 +9,8 @@
     "prebuild": "node scripts/sync-content.mjs && node scripts/lua-api.mjs",
     "build": "astro build",
     "preview": "astro preview",
-    "test:gallery": "node --test tests/example-gallery.test.mjs"
+    "test:gallery": "node --test tests/example-gallery.test.mjs",
+    "test:playgrounds": "node --test tests/playgrounds.test.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.8",

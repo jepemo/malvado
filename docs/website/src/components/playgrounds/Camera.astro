@@ -1,0 +1,121 @@
+---
+import Playground from './Playground.astro';
+
+const world = { x: 120, y: 65 };
+const camera = { x: 100, y: 50 };
+const viewport = { x: 40, y: 30, width: 100, height: 65 };
+const screen = { x: world.x - camera.x + viewport.x, y: world.y - camera.y + viewport.y };
+---
+
+<Playground id="camera" question="How does moving the camera change a point on screen?"
+  description="Move the camera’s world position. The point stays at (120, 65) in the world. The screen viewport stays fixed at (40, 30) and clips the view to 100 × 65.">
+  <div class="views">
+    <div>
+      <strong>World</strong>
+      <svg viewBox="0 0 240 150" aria-hidden="true">
+        <rect class="boundary" x="1" y="1" width="238" height="148" rx="4" />
+        <rect class="viewport" data-world-view x={camera.x} y={camera.y}
+          width={viewport.width} height={viewport.height} />
+        <circle class="point" data-world-point cx={world.x} cy={world.y} r="4" />
+      </svg>
+    </div>
+    <div>
+      <strong>Screen</strong>
+      <svg viewBox="0 0 240 150" aria-hidden="true">
+        <rect class="boundary" x="1" y="1" width="238" height="148" rx="4" />
+        <svg class="screen-view" data-screen-view x={viewport.x} y={viewport.y}
+          width={viewport.width} height={viewport.height}>
+          <rect class="viewport" x="0.5" y="0.5" width={viewport.width - 1} height={viewport.height - 1} />
+          <circle class="point" data-screen-point cx={screen.x - viewport.x} cy={screen.y - viewport.y} r="4" />
+        </svg>
+      </svg>
+    </div>
+  </div>
+  <p class="playground-readout" data-summary role="status">
+    Camera ({camera.x}, {camera.y}). World point ({world.x}, {world.y}) maps to
+    screen ({screen.x}, {screen.y}) inside the viewport.
+  </p>
+  <fieldset class="playground-controls" data-controls hidden>
+    <legend>Camera position</legend>
+    <label>Camera X <input name="x" type="range" min="0" max="140" step="1" value={camera.x} /></label>
+    <label>Camera Y <input name="y" type="range" min="0" max="85" step="1" value={camera.y} /></label>
+    <button type="button" data-reset>Reset</button>
+  </fieldset>
+  <p>With local scroll set to zero, screen position equals world position minus
+    camera position plus viewport origin. Try moving the camera right past X = 120.
+    The projected point goes past the viewport’s left edge. Malvado’s camera
+    changes position without changing the view’s scale.</p>
+</Playground>
+
+<style>
+  .views {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 0.75rem;
+  }
+
+  .views > div {
+    margin-block-start: 0;
+  }
+
+  .boundary {
+    fill: var(--sl-color-bg);
+    stroke: var(--sl-color-gray-4);
+  }
+
+  .viewport {
+    fill: var(--sl-color-accent-low);
+    stroke: currentColor;
+    stroke-dasharray: 5 3;
+  }
+
+  .screen-view {
+    overflow: hidden;
+  }
+
+  .point {
+    fill: var(--sl-color-text-accent);
+    stroke: var(--sl-color-bg);
+  }
+</style>
+
+<script>
+  for (const root of document.querySelectorAll('[data-playground="camera"]')) {
+    const controls = root.querySelector<HTMLElement>('[data-controls]')!;
+    const [cameraX, cameraY] = Array.from(controls.querySelectorAll('input'));
+    const worldView = root.querySelector('[data-world-view]')!;
+    const screenView = root.querySelector('[data-screen-view]')!;
+    const worldPoint = root.querySelector('[data-world-point]')!;
+    const screenPoint = root.querySelector('[data-screen-point]')!;
+    const summary = root.querySelector('[data-summary]')!;
+    const worldX = Number(worldPoint.getAttribute('cx'));
+    const worldY = Number(worldPoint.getAttribute('cy'));
+    const viewportX = Number(screenView.getAttribute('x'));
+    const viewportY = Number(screenView.getAttribute('y'));
+    const width = Number(screenView.getAttribute('width'));
+    const height = Number(screenView.getAttribute('height'));
+
+    function render() {
+      const x = cameraX.valueAsNumber;
+      const y = cameraY.valueAsNumber;
+      const localX = worldX - x;
+      const localY = worldY - y;
+      const inside = localX >= 0 && localX < width && localY >= 0 && localY < height;
+      worldView.setAttribute('x', String(x));
+      worldView.setAttribute('y', String(y));
+      screenPoint.setAttribute('cx', String(localX));
+      screenPoint.setAttribute('cy', String(localY));
+      summary.textContent = `Camera (${x}, ${y}). World point (${worldX}, ${worldY}) maps to screen `
+        + `(${localX + viewportX}, ${localY + viewportY}) ${inside ? 'inside' : 'outside'} the viewport.`;
+    }
+
+    controls.addEventListener('input', render);
+    controls.querySelector('[data-reset]')!.addEventListener('click', () => {
+      cameraX.value = cameraX.defaultValue;
+      cameraY.value = cameraY.defaultValue;
+      render();
+    });
+    render();
+    controls.hidden = false;
+  }
+</script>
