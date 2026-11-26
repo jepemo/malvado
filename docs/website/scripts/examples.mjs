@@ -11,6 +11,11 @@ const repo = new URL('../../../', import.meta.url);
 const downloads = new URL('../public/example-downloads/', import.meta.url);
 const run = promisify(execFile);
 
+export const recipeNames = [
+  'game-states', 'finite-state-machine', 'spawn-enemies-and-bullets',
+  'coordinate-processes', 'level-lifecycle',
+];
+
 const examples = {
   hello: { directory: 'examples/helloworld/', source: 'main.lua' },
   meteors: { directory: 'examples/meteors/', source: 'main.lua' },
@@ -29,6 +34,8 @@ const examples = {
     '01-start', '02-player', '03-movement', '04-enemy',
     '05-spawn', '06-collision', '07-score', 'main',
   ].map((name) => [`dodge-${name}`, { directory: 'examples/dodge/', source: name + '.lua' }])),
+  ...Object.fromEntries(recipeNames.map((name) =>
+    [`recipe-${name}`, { directory: 'examples/gameplay-recipes/', source: name + '.lua' }])),
   'two-workers-c': { directory: 'examples/features/processes/', source: 'c/main.c' },
   'two-workers-rust': { directory: 'examples/features/processes/', source: 'rust/main.rs' },
   'two-workers': { directory: 'examples/features/processes/', source: 'lua/main.lua' },

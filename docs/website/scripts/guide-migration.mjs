@@ -85,7 +85,8 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames, processModelTitle, resourcesTitle, tutorialRoute) {
+export async function migrateGuides(writePage, conceptNames, processModelTitle, resourcesTitle,
+  tutorialRoute, hasLevelRecipe) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -246,15 +247,17 @@ exit codes, file rules, and platform-specific options. Follow
       repoLink('docs/api/asset-sources.md') + '#game-asset-paths) for loading assets.',
       ['api', 'Keep resources alive']);
   }
-  if (apiSections.has('Organize a level')) {
-    await publish('docs/patterns/level-lifecycle',
-      'Use process ownership to keep the lifetime of the active level independent of the game score.',
-      ['api', 'Organize a level']);
-  } else {
-    await publish('docs/patterns/level-lifecycle',
-      'Use [attached children](' + siteLink('docs/patterns/level-lifecycle', 'docs/concepts/lua-processes', '#children-and-ownership') +
-      ') for processes that should end when their owner ends. See the [process tree example](' +
-      repoLink('examples/process-tree', 'tree') + ') for a group of processes with a shared lifetime.');
+  if (!hasLevelRecipe) {
+    if (apiSections.has('Organize a level')) {
+      await publish('docs/patterns/level-lifecycle',
+        'Use process ownership to keep the lifetime of the active level independent of the game score.',
+        ['api', 'Organize a level']);
+    } else {
+      await publish('docs/patterns/level-lifecycle',
+        'Use [attached children](' + siteLink('docs/patterns/level-lifecycle', 'docs/concepts/lua-processes', '#children-and-ownership') +
+        ') for processes that should end when their owner ends. See the [process tree example](' +
+        repoLink('examples/process-tree', 'tree') + ') for a group of processes with a shared lifetime.');
+    }
   }
   await publish('docs/reference',
     'Find exact names, types and behavior for each language. Use the [Lua API](./lua/), the ' +

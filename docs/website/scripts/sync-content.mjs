@@ -5,6 +5,7 @@ import { clearExampleDownloads } from './examples.mjs';
 import { writeExampleGallery } from './example-gallery.mjs';
 import { learnLessons, writeLearnLessons } from './learn-lessons.mjs';
 import { dodgeTutorial, writeTutorials } from './tutorials.mjs';
+import { patterns, writePatterns } from './patterns.mjs';
 
 // The repository guides and examples remain the source of truth.
 const output = new URL('../src/content/docs/docs/', import.meta.url);
@@ -98,9 +99,12 @@ const imageRoute = 'docs/examples/image';
 const gallery = await writeExampleGallery(writePage);
 const processModel = learnLessons.find(({ name }) => name === 'process-model');
 const resources = learnLessons.find(({ name }) => name === 'resources');
-await migrateGuides(writePage, conceptNames, processModel?.label, resources?.label, dodgeTutorial?.route);
+const hasLevelRecipe = patterns.some(({ name }) => name === 'level-lifecycle');
+await migrateGuides(writePage, conceptNames, processModel?.label, resources?.label,
+  dodgeTutorial?.route, hasLevelRecipe);
 await writeLearnLessons(writePage, conceptNames);
 await writeTutorials(writePage, conceptNames);
+await writePatterns(writePage, conceptNames);
 
 function stripLicenseHeader(code) {
   return code.replace(/^(\/\/[^\n]*\n)+\s*/m, '').trim();

@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import { repoLink, repository, version } from './scripts/site-context.mjs';
 import { learnLessons } from './scripts/learn-lessons.mjs';
 import { dodgeTutorial } from './scripts/tutorials.mjs';
+import { patterns } from './scripts/patterns.mjs';
 
 export default defineConfig({
   site: 'https://malvado.dev',
@@ -43,7 +44,10 @@ export default defineConfig({
         { label: dodgeTutorial.title, slug: dodgeTutorial.route },
       ] }] : []),
       { label: 'Game programming patterns', collapsed: true, items: [
-        { label: 'Organize a level', slug: 'docs/patterns/level-lifecycle' },
+        ...patterns.map(({ label, slug }) => ({ label, slug })),
+        ...(!patterns.some(({ name }) => name === 'level-lifecycle') ? [
+          { label: 'Organize a level', slug: 'docs/patterns/level-lifecycle' },
+        ] : []),
       ] },
       { label: 'Examples', collapsed: true, items: [
         { label: 'Browse examples', slug: 'docs/examples' },
