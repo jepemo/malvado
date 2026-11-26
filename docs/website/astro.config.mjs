@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { repoLink, repository, version } from './scripts/site-context.mjs';
-import { processLessons } from './scripts/process-lessons.mjs';
+import { learnLessons } from './scripts/learn-lessons.mjs';
 
 export default defineConfig({
   site: 'https://malvado.dev',
@@ -21,19 +21,22 @@ export default defineConfig({
         { label: 'Project structure', slug: 'docs/start/project-structure' },
       ] },
       { label: 'Learn Malvado', collapsed: true, items: [
-        ...(processLessons.length ? processLessons.map(({ label, slug }) => ({ label, slug })) : [
+        ...learnLessons.map(({ label, slug }) => ({ label, slug })),
+        ...(!learnLessons.some(({ name }) => name === 'process-model') ? [
           { label: 'Processes across languages', slug: 'docs/learn/process-model' },
-        ]),
+        ] : []),
         { label: 'Lua process guide', slug: 'docs/concepts/lua-processes' },
-        { label: 'Drawing and coordinates', slug: 'docs/concepts/drawing' },
-        { label: 'Keyboard input', slug: 'docs/concepts/keyboard' },
-        { label: 'Images and sprites', slug: 'docs/concepts/images' },
-        { label: 'Animation', slug: 'docs/concepts/animations' },
-        { label: 'Collisions', slug: 'docs/concepts/collision' },
-        { label: 'Text and fonts', slug: 'docs/concepts/text' },
-        { label: 'Sound and music', slug: 'docs/concepts/audio' },
-        { label: '2D cameras', slug: 'docs/concepts/cameras' },
-        { label: 'Resource ownership in games', slug: 'docs/learn/resources' },
+        ...(!learnLessons.some(({ name }) => name === 'resources') ? [
+          { label: 'Drawing and coordinates', slug: 'docs/concepts/drawing' },
+          { label: 'Keyboard input', slug: 'docs/concepts/keyboard' },
+          { label: 'Images and sprites', slug: 'docs/concepts/images' },
+          { label: 'Animation', slug: 'docs/concepts/animations' },
+          { label: 'Collisions', slug: 'docs/concepts/collision' },
+          { label: 'Text and fonts', slug: 'docs/concepts/text' },
+          { label: 'Sound and music', slug: 'docs/concepts/audio' },
+          { label: '2D cameras', slug: 'docs/concepts/cameras' },
+          { label: 'Resource ownership in games', slug: 'docs/learn/resources' },
+        ] : []),
       ] },
       { label: 'Game programming patterns', collapsed: true, items: [
         { label: 'Organize a level', slug: 'docs/patterns/level-lifecycle' },

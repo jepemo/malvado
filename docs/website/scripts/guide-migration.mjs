@@ -85,7 +85,7 @@ function splitAt(text, marker) {
   return [text.slice(0, index).trimEnd(), text.slice(index).trimStart()];
 }
 
-export async function migrateGuides(writePage, conceptNames, imageRoute, processModelTitle) {
+export async function migrateGuides(writePage, conceptNames, imageRoute, processModelTitle, resourcesTitle) {
   const sources = {};
   for (const [page, headings] of Object.entries(guides)) {
     const source = await readFile(new URL('../../site/' + page + '.md', import.meta.url), 'utf8');
@@ -145,7 +145,7 @@ export async function migrateGuides(writePage, conceptNames, imageRoute, process
     'docs/tools/export': 'Build and export games',
     'docs/tools/platforms': 'Platform support',
     'docs/learn/process-model': processModelTitle ?? 'Processes across languages',
-    'docs/learn/resources': 'Resource ownership in games',
+    'docs/learn/resources': resourcesTitle ?? 'Resource ownership in games',
     'docs/patterns/level-lifecycle': 'Organize a level',
     'docs/reference': 'Choose an API reference',
     'docs/contributing/build': 'Build Malvado from source',
@@ -237,11 +237,13 @@ exit codes, file rules, and platform-specific options. Follow
       '[send messages](../../concepts/lua-processes/#send-and-receive-messages).',
       ['api', 'Run and stop processes']);
   }
-  await publish('docs/learn/resources',
-    'Use the resource handles provided by your language. See the [images guide](' +
-    siteLink('docs/learn/resources', 'docs/concepts/images') + ') and [asset paths](' +
-    repoLink('docs/api/asset-sources.md') + '#game-asset-paths) for loading assets.',
-    ['api', 'Keep resources alive']);
+  if (!resourcesTitle) {
+    await publish('docs/learn/resources',
+      'Use the resource handles provided by your language. See the [images guide](' +
+      siteLink('docs/learn/resources', 'docs/concepts/images') + ') and [asset paths](' +
+      repoLink('docs/api/asset-sources.md') + '#game-asset-paths) for loading assets.',
+      ['api', 'Keep resources alive']);
+  }
   if (apiSections.has('Organize a level')) {
     await publish('docs/patterns/level-lifecycle',
       'Use process ownership to keep the lifetime of the active level independent of the game score.',
