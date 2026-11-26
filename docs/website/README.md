@@ -5,10 +5,11 @@ from the repository. `scripts/sync-content.mjs` publishes chapters from the
 [site guides](../site/getting-started.md), [API guides](../api/README.md), and
 [runnable examples](../../examples/README.md) into the Astro content collection. `scripts/lua-api.mjs` generates one page per Lua function
 from [`docs/api/lua-globals.md`](../api/lua-globals.md) and
-[`docs/api/lua-namespaces.md`](../api/lua-namespaces.md), using the per-function
-text in `scripts/lua-api-content.mjs`. Both scripts run before builds and local
+[`docs/api/lua-namespaces.md`](../api/lua-namespaces.md), using the family files
+in [`scripts/lua-reference/`](scripts/lua-reference/). Both scripts run before builds and local
 development. Edit the sources to update the generated pages.
-See the [migration map](migration.md) for current routes and old fragments.
+See the [migration map](migration.md) for current routes and old fragments, and the
+[Lua reference migration](lua-reference-migration.md) for family coverage.
 
 The example generator uses Python 3's standard library to create ZIP
 downloads. From the repository root, run these commands with mise installed.
@@ -41,7 +42,7 @@ and versioned documentation.
 3. Use `publishExample(id, route)` when generating a guide, tutorial, or
    gallery page. Insert its `links` and `snippet` in the page. For the
    Lua reference, set `exampleId`, `exampleSetup`, and `exampleResult`
-   in `scripts/lua-api-content.mjs`. The build reads the actual source
+   in its family file. The build reads the actual source
    and fails if a declared file is missing. Use the same ID across pages
    or link to the page that introduces the lesson.
 4. Give each tutorial checkpoint its own ID and complete source tree.
@@ -79,7 +80,7 @@ simulation state in its own component.
 
 Register the component in `scripts/learn-lessons.mjs` and add the playground
 marker under a Playground heading in the source lesson. Link from relevant
-API entries in `scripts/lua-api-content.mjs`. Check the simulation against the
+API entries in the family files. Check the simulation against the
 current engine behavior and explain any simplifications in the lesson.
 
 Run `mise exec -- npm run test:playgrounds` after building the site and

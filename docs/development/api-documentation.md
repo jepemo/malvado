@@ -84,8 +84,8 @@ ownership, errors and platform limits. Follow the
 [public API documentation rules](../../AGENTS.md#public-api-documentation)
 when a public API changes.
 
-For website Lua references, edit the appropriate entry in
-`docs/website/scripts/lua-api-content.mjs`. The generator uses the
+For website Lua references, edit the appropriate family file in
+[`docs/website/scripts/lua-reference/`](../website/scripts/lua-reference/). The generator uses the
 [global](../api/lua-globals.md) and [namespace](../api/lua-namespaces.md)
 inventories for page structure. Check the annotations in
 [the LuaLS definitions](../../types/) and the

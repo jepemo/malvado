@@ -47,7 +47,7 @@ Published release snapshots keep their existing HTML.
 | /docs/concepts/c-contract/ | [C process API](../api/c-contract.md) | C API |
 | /docs/concepts/rust-processes/, rust-window/, rust-drawing/, rust-input/, rust-atlas/, rust-fpg/, rust-camera-animation/, rust-font/, rust-collision/, rust-audio/ | Same-named [Rust guides](../api/README.md) | Rust API (experimental). Titles include the label in search results. |
 | /docs/concepts/process-cleanup/, runner-timing/, resource-lifetime/ | Same-named [technical contracts](../api/README.md) | Contributing → Technical contracts. Gameplay guarantees stay linked from Learn and API. |
-| /docs/reference/lua/, /docs/reference/lua/{family}/, /docs/reference/lua/{family}/{function}/ | [Lua exports](../api/lua-globals.md), [Lua namespaces](../api/lua-namespaces.md), [generator](scripts/lua-api.mjs), and [per-function text](scripts/lua-api-content.mjs) | Lua API. Families include processes, input, graphics, drawing, images, animations, text, audio, cameras, collision, world, FPG, platform, and module. Each family links its functions. |
+| /docs/reference/lua/, /docs/reference/lua/{family}/, /docs/reference/lua/{family}/{function}/ | [Lua exports](../api/lua-globals.md), [Lua namespaces](../api/lua-namespaces.md), [generator](scripts/lua-api.mjs), and [family content](scripts/lua-reference/) | Lua API. Families include processes, input, graphics, drawing, images, animations, text, audio, cameras, collision, world, FPG, platform, and module. Each family links its functions. |
 
 Retained guide headings stay at their existing fragments. Repository-only
 material stays in the [API index](../api/README.md),
