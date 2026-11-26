@@ -1,6 +1,7 @@
 import { posix } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { repoLink, revision, version } from './site-context.mjs';
+import { repoLink, repository, revision, version } from './site-context.mjs';
+import { stable, prerelease } from './release.mjs';
 
 const guides = {
   'getting-started': {
@@ -133,6 +134,19 @@ export async function migrateGuides(writePage, conceptNames, processModelTitle, 
     let body = [intro, ...sections].filter(Boolean).join('\n\n');
     if (route === 'docs/contributing/build' && version) {
       body = body.replace('\ncd malvado\n', '\ncd malvado\ngit checkout --detach ' + revision + '\n');
+    }
+    if (route === 'docs/start/installation') {
+      const sdk = version || stable || prerelease;
+      body = body
+        .replace('curl -fsSL https://malvado.dev/install.sh | bash\n',
+          `curl -fsSL https://malvado.dev/install.sh | bash -s -- --version ${sdk}\n`)
+        .replace('downloads the latest stable SDK', `downloads the ${sdk} SDK`)
+        .replace(/malvado-sdk-2\.[\w.-]+-windows-AMD64\.tar\.gz/g,
+          `malvado-sdk-${sdk}-windows-AMD64.tar.gz`)
+        .replaceAll(`${repository}/releases)`, `${repository}/releases/tag/v${sdk})`);
+      if (version) {
+        body = `This guide covers Malvado ${version}. Use these commands once its SDK is available.\n\n${body}`;
+      }
     }
     await writePage(route, title, rewriteGuideLinks(body, route, conceptNames));
   };

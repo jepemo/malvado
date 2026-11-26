@@ -114,10 +114,10 @@ Pass the optional version to **Platform candidate** to assemble a draft
 release bundle. Use the same complete CI, Windows and Android runs required
 by the platform gate. The workflow downloads the source archive from the
 selected CI run, builds versioned documentation from the selected commit
-and reads the `Release notes` section of the version page at that commit.
-For historical revisions, the workflow also accepts a standalone notes
-file. See the [2.0.0 version page](../versions/2.0.0.md#release-notes)
-for the current format.
+and previews the [canonical release notes](publishing.md#finalize-release-notes)
+for that version. The collector renders the GitHub body from the same source
+archive and checks its digest against the candidate documentation metadata.
+The bundle requires nonempty, matching notes and valid repository links.
 
 The `release-candidate-<version>-<commit>` artifact includes the three
 desktop SDKs, the source archive, the reports, the versioned site and

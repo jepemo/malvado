@@ -97,6 +97,9 @@ export default defineConfig({
         { label: 'C process API', slug: 'docs/concepts/c-contract' },
         { label: 'C API reference', link: repoLink('docs/api/current-c-api.md') },
       ] },
+      process.env.MALVADO_DOCS_RELEASE_NOTES || !version
+        ? { label: 'Changelog', slug: 'docs/changelog' }
+        : { label: 'Changelog', link: 'https://malvado.dev/docs/changelog/' },
       { label: 'Contributing', collapsed: true, items: [
         { label: 'Build Malvado from source', slug: 'docs/contributing/build' },
         { label: 'Architecture', link: repoLink('docs/development/architecture.md') },

@@ -23,7 +23,9 @@ mise exec -- npm run dev
 
 Open `http://localhost:4321/`. Use `mise exec -- npm run build`
 to build the static site in `dist/`. Use `mise exec -- npm run preview`
-to check that build locally, including search.
+to check that build locally, including search. Run
+`mise exec -- npm run test:changelog` after installing Playwright Chromium
+to check release navigation, migration links, mobile layout, and search.
 
 See the [publishing guide](../development/publishing.md) for GitHub Pages
 and versioned documentation.

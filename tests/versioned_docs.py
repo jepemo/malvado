@@ -2,20 +2,34 @@
 """Check the public build and the candidate site built by the Pages command."""
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 
+import hashlib
 from html.parser import HTMLParser
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from urllib.parse import unquote, urljoin, urlsplit
 from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'docs' / 'tools' / 'prepare_versioned_site.py'
-VERSION = '2.0.0-beta.1'
+sys.path.insert(0, str(ROOT / 'docs' / 'tools'))
+from prepare_versioned_site import prepare
+from release_notes import candidate, read_tree
+
+VERSION = '2.999.0-rc.1'
+CHANGELOG = 'docs/changelog/'
+PUBLISHED_SNAPSHOTS = {
+    f'/{entry["version"]}/'
+    for entry in json.loads((ROOT / 'docs/changelog/publications.json').read_text())
+    if entry['docs'] == 'site'
+}
+HISTORICAL_INSTALL_GUIDES = {'/2.0.0/getting-started/', '/2.1.0/getting-started/'}
 PAGES = 'https://malvado.dev'
 CATCH = 'docs/examples/catch/'
 RUST_BASICS = 'docs/examples/rust-basics/'
@@ -115,16 +129,16 @@ class Page(HTMLParser):
 
 
 class VersionedDocsTests(unittest.TestCase):
-    def check_example_downloads(self, site, prefix, *, revision=None):
+    def check_example_downloads(self, site, prefix, *, revision=None, source_root=ROOT):
         def source(path):
             if revision:
-                return subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{revision}:{path}'])
+                return subprocess.check_output(['git', '-C', str(source_root), 'show', f'{revision}:{path}'])
             return (ROOT / path).read_bytes()
 
         def present(path):
             if revision:
                 return bool(subprocess.check_output(
-                    ['git', '-C', str(ROOT), 'ls-tree', revision, '--', path]))
+                    ['git', '-C', str(source_root), 'ls-tree', revision, '--', path]))
             return True
 
         def check_link(route, path):
@@ -271,6 +285,9 @@ class VersionedDocsTests(unittest.TestCase):
                 destination = urlsplit(urljoin(page_url, href))
                 if destination.netloc != 'malvado.dev':
                     continue
+                if (destination.path in PUBLISHED_SNAPSHOTS | HISTORICAL_INSTALL_GUIDES
+                        or (prefix != '/' and destination.path == f'/{CHANGELOG}')):
+                    continue
                 with self.subTest(source=page_url, link=href):
                     self.assertTrue(destination.path.startswith(prefix), destination.path)
                     path = site / unquote(destination.path.removeprefix(prefix))
@@ -285,23 +302,54 @@ class VersionedDocsTests(unittest.TestCase):
         site = ROOT / 'docs' / 'website' / 'dist'
         self.check_site(site, '/')
         self.check_example_downloads(site, '/')
+        release_index = Page((site / CHANGELOG / 'index.html').read_text())
+        self.assertTrue(release_index.indexed)
+        self.assertIn('./2.1.0/#breaking-changes', release_index.links)
+        self.assertFalse((site / CHANGELOG / 'unreleased').exists())
+        self.assertFalse((site / CHANGELOG / VERSION).exists())
         self.assertIn('https://github.com/jepemo/malvado/tree/main/examples/catch',
                       Page((site / CATCH / 'index.html').read_text()).links)
 
     def test_candidate_has_versioned_urls_and_locked_source_links(self):
-        revision = subprocess.check_output(
-            ['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
         with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / 'candidate docs'
-            command = [sys.executable, SCRIPT, VERSION, revision, output]
-            subprocess.run(command, check=True, timeout=240)
+            temporary = Path(directory)
+            checkout = temporary / 'source'
+            subprocess.run(['git', 'clone', '--quiet', '--shared', ROOT, checkout],
+                           check=True, timeout=40)
+            git = ['git', '-C', str(checkout)]
+            changelog = checkout / 'docs' / 'changelog'
+            changelog.mkdir(exist_ok=True)
+            notes = changelog / f'{VERSION}.md'
+            notes.write_text(f'# Malvado {VERSION}\n\n## Highlights\n\nReviewed candidate feature.\n\n'
+                             'Read the [fade guide](../api/fades.md).\n', encoding='utf-8')
+            (changelog / 'publications.json').write_text('[]\n')
+            subprocess.run([*git, 'add', 'docs/changelog'], check=True)
+            subprocess.run([*git, '-c', 'user.email=fixture@example.com', '-c', 'user.name=Fixture',
+                            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Finalize fixture notes'], check=True)
+            revision = subprocess.check_output([*git, 'rev-parse', 'HEAD'], text=True).strip()
+            notes.write_text('A later working copy edit.\n')
+            body = candidate(lambda path: read_tree(checkout, path, revision), VERSION, revision)
+            output = temporary / 'candidate docs'
+            with patch('prepare_versioned_site.ROOT', checkout):
+                prepare(VERSION, revision, output, require_notes=True)
+                with self.assertRaises(FileExistsError):
+                    prepare(VERSION, revision, output, require_notes=True)
+                with self.assertRaises(FileNotFoundError):
+                    prepare('2.999.0', revision, temporary / 'missing', require_notes=True)
             metadata = json.loads((output / 'candidate.json').read_text())
             self.assertEqual(metadata, {
                 'version': VERSION, 'revision': revision, 'path': f'{VERSION}/',
+                'release_notes_sha256': hashlib.sha256(body.encode()).hexdigest(),
             })
             site = output / VERSION
             self.check_site(site, f'/{VERSION}/')
-            self.check_example_downloads(site, f'/{VERSION}/', revision=revision)
+            self.check_example_downloads(site, f'/{VERSION}/', revision=revision, source_root=checkout)
+            preview = (site / CHANGELOG / 'index.html').read_text()
+            self.assertIn('Reviewed candidate feature.', preview)
+            self.assertNotIn('A later working copy edit.', preview)
+            self.assertIn(f'https://github.com/jepemo/malvado/blob/{revision}/docs/api/fades.md',
+                          Page(preview).links)
+            self.assertIn(f'--version {VERSION}', re.sub(r'<[^>]+>', '', (site / 'index.html').read_text()))
             self.assertIn('meteors / main.lua', (site / 'index.html').read_text())
             catch = (site / CATCH / 'index.html').read_text()
             rust_basics = (site / RUST_BASICS / 'index.html').read_text()
@@ -324,8 +372,6 @@ class VersionedDocsTests(unittest.TestCase):
             self.assertIn(f'git checkout --detach {revision}',
                           (site / SOURCE_BUILD / 'index.html').read_text())
 
-            repeat = subprocess.run(command, capture_output=True, timeout=30)
-            self.assertNotEqual(repeat.returncode, 0)
             self.assertTrue((site / 'index.html').is_file())
 
             invalid = output.parent / 'invalid'

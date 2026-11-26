@@ -1,0 +1,7 @@
+[
+  {"version": "2.1.0", "published": "2026-11-25", "status": "stable", "docs": "site"},
+  {"version": "2.0.0", "published": "2026-11-20", "status": "stable", "docs": "site"},
+  {"version": "2.0.0-beta.1", "published": "2026-11-19", "status": "prerelease", "docs": "bundle"},
+  {"version": "2.0.0-alpha.7", "published": "2026-11-13", "status": "prerelease", "docs": "source"},
+  {"version": "1.0", "published": "2017-07-29", "status": "stable", "docs": "source"}
+]

@@ -10,6 +10,7 @@ Start with [Get started](site/getting-started.md),
 | [`api/`](api/README.md) | Current gameplay contracts, language inventories and reference research. |
 | [`development/`](development/README.md) | Engine architecture, CLI reference, platform checks, CI and publishing. |
 | [`roadmap/`](roadmap/README.md) | Proposals to evaluate for future versions. |
+| [`changelog/`](../CHANGELOG.md) | Published release notes and upgrade steps. |
 | [`versions/`](versions/README.md) | Released scope, verification and the next planned release. |
 
 Documentation tools are in `docs/tools/`. See

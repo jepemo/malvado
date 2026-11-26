@@ -208,30 +208,36 @@ jobs:
           DISPLAY: ':99'
           LIBGL_ALWAYS_SOFTWARE: '1'
   docs:
-    name: Verify API catalog
+    name: Verify documentation and release notes
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: mise run catalog
       - run: git diff --exit-code -- docs/api/catalog.json docs/api/inventory.md
       - name: Check current guide links and anchors
-        run: python3 tools/check_docs.py
+        run: mise run test-docs
+      - name: Verify tagged release notes and exact-revision draft fixtures
+        run: |
+          python3 tools/release_notes.py check --verify-tags
+          python3 tests/collect_release_candidate.py
       - name: Build documentation
         working-directory: docs/website
         run: |
           mise install node
           mise exec -- npm ci --no-audit --no-fund
           mise exec -- npm run build
-      - name: Check the example gallery and playgrounds in Chromium
+      - name: Check the example gallery, playgrounds and changelog in Chromium
         working-directory: docs/website
         run: |
           mise exec -- npx playwright install --with-deps --only-shell chromium
           mise exec -- npm run test:gallery
           mise exec -- npm run test:playgrounds
+          mise exec -- npm run test:changelog
       - name: Verify versioned documentation
-        if: github.event_name != 'pull_request'
         working-directory: docs/website
         run: mise exec -- python3 ../../tests/versioned_docs.py
   source-archive:

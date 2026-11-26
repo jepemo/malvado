@@ -37,8 +37,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          versions=$(mise exec -- node --input-type=module -e \
-            'import { archivedStable, stable } from "./scripts/release.mjs"; console.log([...archivedStable, stable].filter(Boolean).join("\n"));')
+          versions=$(python3 ../../tools/release_notes.py snapshots)
           bundles=$(mktemp -d "${RUNNER_TEMP}/malvado-docs.XXXXXX")
           trap 'rm -rf "$bundles"' EXIT
           while IFS= read -r version; do
@@ -47,6 +46,7 @@ jobs:
             gh release download "v$version" --pattern "$bundle" --dir "$bundles"
             tar -xzf "$bundles/$bundle" -C dist --strip-components=2 "./docs/$version/"
             test -s "dist/$version/index.html"
+            python3 ../tools/archived_install.py "dist/$version" "$version"
           done <<< "$versions"
       - uses: actions/configure-pages@1f0c5cde4bc74cd7e1254d0cb4de8d49e9068c7d # v4
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
@@ -85,7 +85,7 @@ jobs:
         run: |
           mise install node
           mise exec -- python3 ../tools/prepare_versioned_site.py \
-            "$CANDIDATE_VERSION" "$CANDIDATE_REVISION" "$GITHUB_WORKSPACE/build/candidate-docs"
+            "$CANDIDATE_VERSION" "$CANDIDATE_REVISION" "$GITHUB_WORKSPACE/build/candidate-docs" --require-notes
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: docs-${{ inputs.version }}-${{ inputs.revision }}

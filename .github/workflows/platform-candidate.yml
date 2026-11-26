@@ -88,16 +88,10 @@ jobs:
             cd docs/website
             mise install node
             mise exec -- python3 ../tools/prepare_versioned_site.py \
-              "$CANDIDATE_VERSION" "$CANDIDATE_SHA" "$GITHUB_WORKSPACE/incoming/docs"
+              "$CANDIDATE_VERSION" "$CANDIDATE_SHA" "$GITHUB_WORKSPACE/incoming/docs" --require-notes
           )
-          version_page="$CANDIDATE_SHA:docs/versions/$CANDIDATE_VERSION"
-          if git cat-file -e "$version_page-release-notes.md"; then
-            git show "$version_page-release-notes.md" > incoming/notes.md
-          else
-            git show "$version_page.md" > incoming/notes.md
-          fi
           python3 tools/collect_release_candidate.py --platform platform-candidate \
-            --source incoming/source --docs incoming/docs --notes incoming/notes.md \
+            --source incoming/source --docs incoming/docs \
             --version "$CANDIDATE_VERSION" --output release-candidate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: inputs.version != ''

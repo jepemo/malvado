@@ -18,6 +18,7 @@ from sdk_artifact import inspect_archive
 SHA = 'a' * 40
 VERSION = '2.0.0-beta.1'
 NOTICE = b'expected dependency notice\n'
+NOTES = f'# Malvado {VERSION}\n\n## Highlights\n\nA verified release.\n'
 TARGETS = [('darwin', 'arm64'), ('linux', 'x86_64'), ('windows', 'AMD64')]
 
 
@@ -39,24 +40,32 @@ class DraftCandidateTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
         self.platform, self.source, self.docs = (root / name for name in ('platform', 'source', 'docs'))
-        self.output, self.notes = root / 'output', root / 'notes.md'
-        self.notes.write_text(f'# Malvado {VERSION}\n')
+        self.output = root / 'output'
         self.write_platform()
+        self.write_source(NOTES)
+        site = self.docs / VERSION
+        (site / 'docs' / 'changelog').mkdir(parents=True)
+        (site / 'index.html').write_text('<title>Candidate</title>')
+        (site / 'docs' / 'changelog' / 'index.html').write_text('<h1>Candidate notes</h1>')
+        self.write_docs(SHA)
+
+    def write_source(self, notes):
         prefix = f'malvado-source-{SHA}'
         archive = self.source / 'package' / f'{prefix}.tar.gz'
-        digest = package(archive, {
+        content = {
             f'{prefix}/SOURCE-REVISION': f'{SHA}\n'.encode(),
             f'{prefix}/licenses/raylib-NOTICES.txt': NOTICE,
-        }, SHA)
+            f'{prefix}/docs/changelog/publications.json': b'[]',
+        }
+        if notes is not None:
+            content[f'{prefix}/docs/changelog/{VERSION}.md'] = notes.encode()
+        digest = package(archive, content, SHA)
         self.source_report = {
             'revision': SHA, 'archive': archive.name, 'sha256': digest,
             'core_tests': 'passed', 'installed_c_sdk': 'passed',
             'verified_notices': ['raylib-NOTICES.txt'],
         }
         self.write_source_report()
-        (self.docs / VERSION).mkdir(parents=True)
-        (self.docs / VERSION / 'index.html').write_text('<title>Candidate</title>')
-        self.write_docs(SHA)
 
     def write_platform(self, replacement=NOTICE):
         sdks = []
@@ -77,43 +86,41 @@ class DraftCandidateTests(unittest.TestCase):
 
     def write_docs(self, revision):
         (self.docs / 'candidate.json').write_text(json.dumps(
-            dict(version=VERSION, revision=revision, path=f'{VERSION}/')))
+            dict(version=VERSION, revision=revision, path=f'{VERSION}/',
+                 release_notes_sha256=hashlib.sha256(NOTES.encode()).hexdigest())))
 
     def write_source_report(self):
         (self.source / 'verification.json').write_text(json.dumps(self.source_report))
 
     def collect(self):
-        return collect(self.platform, self.source, self.docs, self.notes, VERSION, self.output)
+        return collect(self.platform, self.source, self.docs, VERSION, self.output)
 
     def test_collects_artifacts_and_checksums(self):
         self.collect()
         self.assertEqual(len(list(self.output.glob('*.tar.gz'))), 4)
         checks = (self.output / 'SHA256SUMS').read_text().splitlines()
-        self.assertEqual(len(checks), 13)
+        self.assertEqual(len(checks), 14)
         for entry in checks:
             digest, name = entry.split('  ', 1)
             self.assertEqual(digest, hashlib.sha256((self.output / name).read_bytes()).hexdigest())
         with self.assertRaises(FileExistsError):
             self.collect()
-        self.assertEqual((self.output / 'RELEASE-NOTES.md').read_bytes(), self.notes.read_bytes())
+        self.assertEqual((self.output / 'RELEASE-NOTES.md').read_text(), NOTES)
 
-    def test_version_page_releases_only_its_release_notes(self):
-        self.notes.write_text(f'# {VERSION}\n\nStatus: planned.\n\n'
-                              '## Release notes\n\n### Changes\n\n- Delivered.\n\n'
-                              '## Checklist\n\n- [ ] Verify release.\n')
-        self.collect()
-        self.assertEqual((self.output / 'RELEASE-NOTES.md').read_text(),
-                         f'# Malvado {VERSION}\n\n### Changes\n\n- Delivered.\n')
-
-    def test_version_page_requires_matching_nonempty_release_notes(self):
-        for heading, section in ((VERSION, '## Checklist\n\nPending.'),
-                                  (VERSION, '## Release notes\n\n## Checklist\n\nPending.'),
-                                  ('2.0.0', '## Release notes\n\n- Delivered.')):
-            with self.subTest(heading=heading, section=section):
-                self.notes.write_text(f'# {heading}\n\n{section}\n')
-                with self.assertRaisesRegex(ValueError, 'Release notes'):
+    def test_rejects_missing_empty_or_mismatched_canonical_notes(self):
+        for notes in (None, f'# Malvado {VERSION}\n\n## Highlights\n',
+                      NOTES.replace(VERSION, '2.0.0')):
+            with self.subTest(notes=notes):
+                self.write_source(notes)
+                with self.assertRaises((ValueError, FileNotFoundError)):
                     self.collect()
                 self.assertFalse(self.output.exists())
+
+    def test_rejects_different_notes_in_documentation(self):
+        self.write_source(NOTES.replace('verified', 'revised'))
+        with self.assertRaisesRegex(ValueError, 'Documentation or release notes'):
+            self.collect()
+        self.assertFalse(self.output.exists())
 
     def test_wrong_documentation_or_source_evidence_is_rejected(self):
         self.write_docs('b' * 40)
