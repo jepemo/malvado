@@ -37,17 +37,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          versions=$(python3 ../../tools/release_notes.py snapshots)
-          bundles=$(mktemp -d "${RUNNER_TEMP}/malvado-docs.XXXXXX")
-          trap 'rm -rf "$bundles"' EXIT
-          while IFS= read -r version; do
-            [ -n "$version" ] || continue
-            bundle="malvado-$version-release-bundle.tar.gz"
-            gh release download "v$version" --pattern "$bundle" --dir "$bundles"
-            tar -xzf "$bundles/$bundle" -C dist --strip-components=2 "./docs/$version/"
-            test -s "dist/$version/index.html"
-            python3 ../tools/archived_install.py "dist/$version" "$version"
-          done <<< "$versions"
+          bash ../tools/include_published_snapshots.sh dist
+          python3 ../tools/check_built_site.py dist
       - uses: actions/configure-pages@1f0c5cde4bc74cd7e1254d0cb4de8d49e9068c7d # v4
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:

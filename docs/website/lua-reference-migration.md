@@ -48,5 +48,5 @@ Versioned reference pages link to the current runnable program when its source
 was added after the selected revision. The snapshot publishes downloads from
 its own revision when those files exist.
 
-Broader coverage enforcement and bounded example execution in CI are
-tracked in [Docs 11](https://github.com/jepemo/malvado/issues/71).
+See the [website validation commands](README.md#run-the-documentation-checks)
+for inventory checks and bounded execution of the current site downloads.

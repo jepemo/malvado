@@ -151,6 +151,9 @@ async function writeBundle(archive, files, credit) {
 export async function publishExample(id, route, language = 'lua') {
   const example = examples[id];
   if (!example) throw new Error(`Unknown documentation example: ${id}`);
+  const extension = { lua: '.lua', c: '.c', rust: '.rs' }[language];
+  if (!extension || !example.source.endsWith(extension))
+    throw new Error(`Documentation example ${id} does not have a ${language} entry point: ${example.source}`);
 
   const directory = new URL(example.directory, repo);
   if (revision) {

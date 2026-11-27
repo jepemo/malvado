@@ -88,11 +88,91 @@ current engine behavior and explain any simplifications in the lesson.
 Run `mise exec -- npm run test:playgrounds` after building the site and
 installing the Chromium test browser.
 
-## Verify runnable examples
+## Run the documentation checks
 
-Use `malvado run --headless` for Lua examples that need no graphics or audio
-and end on their own. For graphical examples, use a desktop display or the
-virtual display already used by CI. Use a timeout and check output or
-observable behavior. Keep the normal exit controls for interactive examples.
-Use the existing [lesson verifier](../../tools/test_beta_examples.py) and
-[CI tasks](../development/ci.md) when adding automated checks.
+From the repository root, install the site dependencies and build the current
+site. Run the shared guide and release-note checks with the reference and
+Chromium tests.
+
+```sh
+mise run test-docs
+mise exec -C docs/website -- npm ci
+mise exec -C docs/website -- npm run build
+mise exec -C docs/website -- npx playwright install --only-shell chromium
+mise exec -C docs/website -- node --test tests/lua-reference.test.mjs
+mise exec -C docs/website -- npm run test:gallery
+mise exec -C docs/website -- npm run test:playgrounds
+mise exec -C docs/website -- npm run test:changelog
+mise exec -C docs/website -- python3 ../../tests/versioned_docs.py
+python3 docs/tools/check_built_site.py docs/website/dist --current-only
+```
+
+The site build reads the code includes and example assets. The Lua generator
+checks the global, module-only, namespace and instance-method inventories.
+The runtime inventory tests check those inventories against the exported API.
+LuaLS coverage checks include managed methods. Callable namespaces have
+their own pages. Aliases use the shared page for their operation when the
+routes match. Instance methods belong to the corresponding procedural page.
+The separate legacy import and private implementation helpers are outside
+the current Lua API inventory.
+
+The checker compares supported call forms, documented parameter names and
+method arity and optionality. Runtime tests cover defaults such as process
+cadence. Review prose descriptions, units and other default values against
+the implementation when editing a reference.
+
+The rendered-site check covers links, fragments, assets and downloads. The
+local `--current-only` option reports links that need published snapshots.
+CI and Pages attach those snapshots with the same command. To run the full
+check locally, use GitHub CLI access and run these commands after the other
+website tests.
+
+```sh
+bash docs/tools/include_published_snapshots.sh docs/website/dist
+python3 docs/tools/check_built_site.py docs/website/dist
+```
+
+The release-note tests also check publication metadata and the generated
+root changelog. CI verifies tagged repository links. Historical examples
+remain tied to their source revision and SDK. The example runner below uses
+downloads from the current site build.
+
+## Run the published examples
+
+From the repository root, pass an installed CLI to the example verifier. The
+headless subset works with a Lua SDK with asset support. It checks syntax and
+output, and runs the Dodge! checkpoints and gameplay recipes from fresh
+directories.
+
+```sh
+python3 tests/docs_examples.py /path/to/sdk/bin/malvado docs/website/dist/example-downloads --headless
+```
+
+For the full run, use Linux with Malvado's desktop build dependencies,
+Xvfb, xauth, Openbox, wmctrl, xdotool and ImageMagick. Use the pinned Rust
+toolchain for the published Rust projects. Build a test SDK with paced
+silent audio and run the same checks as CI.
+
+```sh
+cmake -S . -B build-docs -DCMAKE_BUILD_TYPE=Debug -DMALVADO_TEST_NULL_AUDIO=ON
+cmake --build build-docs --parallel
+cmake --install build-docs --prefix "$PWD/build-docs/sdk"
+MALVADO_SDK_PREFIX="$PWD/build-docs/sdk" CARGO_TARGET_DIR="$PWD/build-docs/rust" \
+  cargo check --locked --offline --bins --manifest-path examples/rust/Cargo.toml
+bash docs/tools/test_desktop_examples.sh build-docs/sdk/bin/malvado docs/website/dist/example-downloads
+mise run clean-builds
+```
+
+The verifier checks every published download. It extracts bundled
+assets and creates C and Rust projects with the SDK templates. Each
+program must produce its expected trace or render visible content within
+a time limit. The windowed check samples software-rendered pixels and
+drives the input monitor's Space key. The tutorial harness provides
+deterministic movement, collision and restart inputs. The normal downloads
+keep their interactive controls.
+
+Check audible playback on a host with working audio. Check physical
+controllers and the Android on-screen keyboard on their supported targets.
+The browser tests verify keyboard behavior, theme, mobile layout and
+JavaScript errors. Review editorial quality and cross-version migration
+steps with the appropriate SDK.

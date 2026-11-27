@@ -10,6 +10,9 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from check_docs import check_documents
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "docs" / "tools"))
+from check_built_site import check_site
+
 
 class Links(unittest.TestCase):
     def test_utf8_headings(self):
@@ -49,6 +52,24 @@ class Links(unittest.TestCase):
             self.assertEqual(len(errors), 2)
             self.assertIn(':1: missing link target', errors[0])
             self.assertIn(':2: missing Markdown anchor', errors[1])
+
+    def test_built_migration_links_and_assets(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            site = Path(temporary)
+            (site / "2.1.0").mkdir()
+            (site / "index.html").write_text(
+                '<a href="/2.1.0/#install">Migration instructions</a><img src="tile.png">'
+            )
+            guide = site / "2.1.0" / "index.html"
+            guide.write_text('<h2 id="install">Install</h2>')
+            (site / "tile.png").write_bytes(b"image fixture")
+            self.assertEqual(check_site(site, {"2.1.0"})[1], [])
+            guide.write_text('<h2 id="renamed">Install</h2>')
+            (site / "tile.png").unlink()
+            errors = check_site(site, {"2.1.0"})[1]
+            self.assertEqual(len(errors), 2)
+            self.assertIn('missing site anchor /2.1.0/#install', errors[0])
+            self.assertIn('missing site target tile.png', errors[1])
 
     def test_repository_links_and_updated_headings(self):
         with tempfile.TemporaryDirectory() as temporary:

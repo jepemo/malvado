@@ -137,3 +137,19 @@ test('mobile layout and highlighting follow the site theme', async () => {
     assert.notEqual(backgrounds[0], backgrounds[1]);
   });
 });
+
+test('reference search reaches a runnable example on mobile', async () => {
+  await withPage({ viewport: { width: 320, height: 740 }, isMobile: true }, async (page, origin) => {
+    await page.goto(`${origin}/docs/reference/lua/`);
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.locator('input').fill('camera_move');
+    await dialog.locator('a[href*="/cameras/camera_move/"]').first().click();
+    const main = page.getByRole('main');
+    await main.getByRole('heading', { name: 'camera_move', exact: true }).waitFor();
+    await main.getByRole('heading', { name: 'Run the example', exact: true }).waitFor();
+    assert.match(await main.getByRole('link', { name: 'Download cameras.lua' }).getAttribute('href'),
+      /reference-cameras\/cameras\.lua$/);
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  });
+});
