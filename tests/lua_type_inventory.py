@@ -46,6 +46,35 @@ def global_definitions():
     return functions | variables
 
 
+# Match the receiver labels in the public method table to their LuaLS types.
+RECEIVERS = {
+    "camera": "MvCamera", "world": "MvCollisionWorld", "image": "MvImage",
+    "animation": "MvAnimation", "handle": "MvProcess", "sound": "MvSound",
+    "voice": "MvVoice", "music": "MvMusic", "atlas": "MvAtlas",
+    "fpg": "MvFpg", "manifest": "MvFpgManifest",
+}
+
+
+def check_method_definitions():
+    guide = (ROOT / "docs/api/lua-instance-methods.md").read_text(encoding="utf-8")
+    public = set(re.findall(r"^\| `(\w+):(\w+)\(", guide, re.MULTILINE))
+    names = {name: receiver for receiver, name in RECEIVERS.items()}
+    definitions = set()
+    for path in MODULE.parent.glob("*.d.lua"):
+        source = path.read_text(encoding="utf-8")
+        for method, cls in re.findall(r"^---@field (\w+) (?:\()?fun\(self: (\w+)", source, re.MULTILINE):
+            if cls in names:
+                definitions.add((names[cls], method))
+        for cls, variable in re.findall(r"^---@class (\w+)\s+local (\w+) = \{\}", source, re.MULTILINE):
+            if cls in names:
+                methods = re.findall(rf"^function {variable}:(\w+)\(", source, re.MULTILINE)
+                definitions.update((names[cls], method) for method in methods)
+    for label, difference in (("missing", public - definitions), ("stale", definitions - public)):
+        if difference:
+            calls = ", ".join(f"{receiver}:{method}" for receiver, method in sorted(difference))
+            yield f"{label} LuaLS instance method definitions: {calls}"
+
+
 def main():
     functions, globals_list = runtime_lists()
     module = module_definitions()
@@ -53,7 +82,7 @@ def main():
     missing_module = sorted(set(functions) - module)
     missing_globals = sorted(set(globals_list) - global_defs)
     missing_globals_in_module = sorted(set(globals_list) - module)
-    failures = []
+    failures = list(check_method_definitions())
     if missing_module:
         failures.append(f"module functions without type definitions: {', '.join(missing_module)}")
     if missing_globals:

@@ -3,7 +3,6 @@
 # Malvado 2; SPDX-License-Identifier: Apache-2.0
 
 import hashlib
-from html.parser import HTMLParser
 import json
 import re
 from pathlib import Path
@@ -19,6 +18,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'docs' / 'tools' / 'prepare_versioned_site.py'
 sys.path.insert(0, str(ROOT / 'docs' / 'tools'))
+from check_built_site import Page
 from prepare_versioned_site import prepare
 from release_notes import candidate, read_tree
 
@@ -103,29 +103,6 @@ LEGACY = {
         'catch': CATCH + '#catch',
     },
 }
-
-
-class Page(HTMLParser):
-    def __init__(self, html):
-        super().__init__()
-        self.canonical = None
-        self.links = []
-        self.anchors = set()
-        self.indexed = False
-        self.feed(html)
-
-    def handle_starttag(self, tag, attributes):
-        attrs = dict(attributes)
-        if 'data-pagefind-body' in attrs:
-            self.indexed = True
-        if 'id' in attrs:
-            self.anchors.add(attrs['id'])
-        if tag == 'link' and attrs.get('rel') == 'canonical':
-            self.canonical = attrs['href']
-        if tag in ('a', 'link') and 'href' in attrs:
-            self.links.append(attrs['href'])
-        if tag == 'script' and 'src' in attrs:
-            self.links.append(attrs['src'])
 
 
 class VersionedDocsTests(unittest.TestCase):

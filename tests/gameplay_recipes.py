@@ -29,6 +29,8 @@ def verify(cli, downloads):
         source = (downloads / f'recipe-{name}' if downloads else SOURCE) / filename
         with tempfile.TemporaryDirectory(prefix='malvado-recipe-') as directory:
             shutil.copyfile(source, Path(directory) / filename)
+            subprocess.run([cli, 'check', filename], cwd=directory, check=True, timeout=5,
+                           stdout=subprocess.DEVNULL)
             result = subprocess.run(
                 [cli, 'run', '--headless', filename], cwd=directory,
                 text=True, capture_output=True, timeout=5,

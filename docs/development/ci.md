@@ -9,7 +9,12 @@
 | `pages.yml` | Builds and publishes the documentation site. |
 
 Pull requests run the standard build and tests, installed Rust SDK tests,
-API catalog checks and guide link checks on Ubuntu.
+API catalog checks and documentation checks on Ubuntu. The documentation
+job checks reference coverage, guide links, the built site with published
+snapshots, and navigation and search in Chromium. It checks the current
+site downloads with an installed SDK and a software-rendered X11 session.
+See the [website verification commands](../website/README.md#run-the-documentation-checks)
+and [desktop example requirements](../website/README.md#run-the-published-examples).
 Each push to `main`, including a merge, runs the full Linux, macOS, Windows
 and Android checks. You can also run each full workflow manually on a branch.
 Windows and Android also run on their weekly schedules.

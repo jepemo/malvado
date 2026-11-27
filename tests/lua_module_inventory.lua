@@ -10,10 +10,11 @@ local function read(path)
 end
 local globals = read("docs/api/lua-globals.md")
 local namespaces = read("docs/api/lua-namespaces.md")
-local known = {import_globals = true, legacy_fpg = true, colors = true}
-assert(globals:find("`mv.import_globals`", 1, true))
-assert(globals:find("`mv.legacy_fpg`", 1, true))
-assert(type(mv.import_globals) == "function" and type(mv.legacy_fpg) == "function")
+local known = {colors = true}
+for name in globals:gmatch("\n%- `mv%.([%w_]+)`:") do
+  known[name] = true
+  assert(type(mv[name]) == "function", "missing module-only function: " .. name)
+end
 for name in globals:gmatch("| `([%w_]+)` | `mv%.[%w_]+` |") do known[name] = true end
 for name in namespaces:gmatch("| `mv%.([%w_]+)%.[%w_]+` |") do known[name] = true end
 for name in pairs(mv) do
@@ -91,7 +92,18 @@ end
 for _, key in ipairs({"r", "g", "b", "a", 1, 2, 3, 4}) do
   assert(type(mv.colors.RED[key]) == "number")
 end
+local windowed = os.getenv("MALVADO_INVENTORY_WINDOWED") == "1"
 local Probe = mv.process(function(self)
+  if windowed then
+    local image = mv.load_image("../examples/features/image/assets/tile.png")
+    local sound = mv.load_sound("../examples/audio/tone.wav")
+    local voice = assert(sound:play())
+    local music = mv.load_music("../examples/audio/tone.wav")
+    for receiver, object in pairs {image = image, sound = sound, voice = voice, music = music} do
+      check_methods(receiver, object, debug.getmetatable(object).__index, expected[receiver])
+    end
+    voice:stop()
+  end
   local _, entries = debug.getupvalue(debug.getmetatable(self).__index, 1)
   if not has_assets then
     assert(self.animation_elapsed == nil)

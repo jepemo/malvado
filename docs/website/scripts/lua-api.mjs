@@ -4,6 +4,7 @@ import { publishExample } from './examples.mjs';
 import { learnLessons } from './learn-lessons.mjs';
 import { siteLink } from './guide-migration.mjs';
 import content from './lua-api-content.mjs';
+import { checkLuaReference } from './check-lua-reference.mjs';
 
 // Generate the Lua API reference from the repository inventories:
 // docs/api/lua-namespaces.md and docs/api/lua-globals.md.
@@ -191,7 +192,8 @@ function parseGlobals(markdown) {
 }
 
 const namespaceFunctions = parseNamespaceFunctions(await read('docs/api/lua-namespaces.md'));
-const globals = parseGlobals(await read('docs/api/lua-globals.md'));
+const globalInventory = await read('docs/api/lua-globals.md');
+const globals = parseGlobals(globalInventory);
 if (namespaceFunctions.length < 40 || globals.length < 100)
   throw new Error('Unexpected Lua inventory shape; check docs/api/lua-*.md');
 
@@ -220,26 +222,32 @@ for (const group of groups) {
     entry.slug = entry.flat[0] ?? entry.name;
 }
 
-// Every flat function in the inventory must land in a page.
+// Public functions and their aliases must land in a page.
 const allEntries = groups.flatMap((group) => group.entries.map((entry) => ({ ...entry, group: group.id })));
-const entryKeys = new Set(allEntries.map(({ group, slug }) => `${group}/${slug}`));
-if (!revision) {
-  for (const key of Object.keys(content)) {
-    if (!entryKeys.has(key))
-      throw new Error(`Lua reference content has no inventory page: ${key}`);
-  }
-}
-const placed = new Set(groups.flatMap((group) => [
-  ...(group.constants ?? []),
-  ...group.entries.flatMap((entry) => entry.flat),
-]));
+const constants = ({ name, field }) => field.startsWith('colors.') || /^[A-Z][A-Z0-9_]*$/.test(name);
 const palette = globals.filter((entry) => entry.field.startsWith('colors.'));
 groups.find((group) => group.id === 'drawing').constants = palette.map((entry) => entry.name);
-for (const global of globals) {
-  if (global.field.startsWith('colors.') || /^(KEY|MOUSE|PAD|SIGNAL|STATUS)_/.test(global.name))
-    continue;
-  if (!placed.has(global.name))
-    throw new Error(`Global function not grouped in a page: ${global.name}`);
+
+if (!revision) {
+  const globalNames = new Set(globals.filter((entry) => !constants(entry)).map(({ name }) => name));
+  const withImport = (field) => globalNames.has(field.split('.')[0]) ? [`mv.${field}`, field] : [`mv.${field}`];
+  const publicForms = new Set([
+    ...globals.filter((entry) => !constants(entry)).flatMap(({ name, field }) => [name, `mv.${field}`]),
+    ...namespaceFunctions.flatMap(({ ns, name }) => withImport(`${ns}.${name}`)),
+    ...Array.from(globalInventory.matchAll(/^- \`(mv\.[a-z_0-9]+)\`:/gm), (row) => row[1]),
+  ]);
+  const methods = Array.from((await read('docs/api/lua-instance-methods.md'))
+    .matchAll(/^\| \`([^\`]+:[^\`]+)\` \| \`([^\`]+)\` \|/gm), (row) => row.slice(1));
+  const entries = groups.flatMap((group) => group.entries.map((entry) => ({
+    key: `${group.id}/${entry.slug}`,
+    forms: [
+      ...entry.flat.flatMap(withImport),
+      ...namespaceFunctions.filter(({ ns, name }) => ns === group.ns && name === entry.name)
+        .flatMap(({ ns, name }) => withImport(`${ns}.${name}`)),
+      ...(group.module?.some(({ name }) => name === entry.name) ? [`mv.${entry.name}`] : []),
+    ],
+  })));
+  checkLuaReference(entries, content, publicForms, methods);
 }
 
 const output = new URL('../src/content/docs/docs/reference/lua/', import.meta.url);
@@ -308,11 +316,11 @@ ${familyDetails[group.id] ?? ''}${constants}
 | --- | --- |
 ${table}`));
   for (const entry of group.entries) {
-    const namespaceForm = namespaceFunctions.some((fn) => fn.ns === group.ns && fn.name === entry.name && `${fn.ns}.${fn.name}` !== entry.flat[0])
-      ? ` or \`mv.${group.ns}.${entry.name}\``
-      : '';
     const detail = content[`${group.id}/${entry.slug}`];
     if (!detail && revision) {
+      const namespaceForm = namespaceFunctions.some((fn) => fn.ns === group.ns && fn.name === entry.name)
+        ? ` or \`mv.${group.ns}.${entry.name}\``
+        : '';
       const call = entry.flat.length
         ? `Use \`mv.${entry.flat[0]}\`${namespaceForm}, or import globals to call \`${entry.flat[0]}\`.`
         : `Call as \`${entry.title}\`.`;
@@ -356,8 +364,10 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       .map((name) => {
         const target = allEntries.find((item) => item.slug === name && item.group === group.id) ??
           allEntries.find((item) => item.slug === name);
-        if (!target)
+        if (!target) {
+          if (!revision) throw new Error(`Unknown related Lua function on ${route}: ${name}`);
           return null;
+        }
         const path = target.group === group.id ? `../${target.slug}/` : `../../${target.group}/${target.slug}/`;
         return `[\`${target.title}\`](${path})`;
       })
@@ -370,6 +380,8 @@ See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for arg
       const lesson = learnLessons.find((item) => item.name === name && item.playground);
       if (lesson) {
         parts.push(`[${label}](${siteLink(route, lesson.slug, '#playground')}).`, '');
+      } else if (!revision) {
+        throw new Error(`Unknown Lua reference playground on ${route}: ${name}`);
       }
     }
     parts.push(`See the [${guideLabel(group.guide)}](${guideLink(group.guide, 4)}) guide for more examples and limits.`);

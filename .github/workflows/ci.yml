@@ -210,7 +210,7 @@ jobs:
   docs:
     name: Verify documentation and release notes
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -230,6 +230,7 @@ jobs:
           mise install node
           mise exec -- npm ci --no-audit --no-fund
           mise exec -- npm run build
+          mise exec -- node --test tests/lua-reference.test.mjs
       - name: Check the example gallery, playgrounds and changelog in Chromium
         working-directory: docs/website
         run: |
@@ -240,6 +241,29 @@ jobs:
       - name: Verify versioned documentation
         working-directory: docs/website
         run: mise exec -- python3 ../../tests/versioned_docs.py
+      - name: Validate rendered links, assets and published snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash docs/tools/include_published_snapshots.sh docs/website/dist
+          python3 docs/tools/check_built_site.py docs/website/dist
+      - name: Install desktop example test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libgl1-mesa-dri xvfb xauth xdotool imagemagick openbox wmctrl
+      - name: Build a graphics-capable SDK for documentation examples
+        run: |
+          cmake -S . -B build-docs -DCMAKE_BUILD_TYPE=Debug -DMALVADO_TEST_NULL_AUDIO=ON
+          cmake --build build-docs --parallel
+          cmake --install build-docs --prefix "$RUNNER_TEMP/malvado-docs-sdk"
+          ctest --test-dir build-docs -R '^(lua_((type|namespace|module)_inventory|default_fps)|process_defaults)$' --output-on-failure
+      - name: Check the included Rust starter programs
+        env:
+          MALVADO_SDK_PREFIX: ${{ runner.temp }}/malvado-docs-sdk
+          CARGO_TARGET_DIR: ${{ runner.temp }}/rust-docs
+        run: cargo check --locked --offline --bins --manifest-path examples/rust/Cargo.toml
+      - name: Run published Lua, C and Rust examples on X11
+        run: bash docs/tools/test_desktop_examples.sh "$RUNNER_TEMP/malvado-docs-sdk/bin/malvado" docs/website/dist/example-downloads
   source-archive:
     name: Verify source archive
     if: github.event_name != 'pull_request'
